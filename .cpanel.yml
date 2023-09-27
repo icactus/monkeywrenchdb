@@ -2,4 +2,20 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/cdmb/public_html/
-    - /bin cp * $DEPLOYPATH
+    - /bin cp compresspdfs-totiff.py $DEPLOYPATH
+    - /bin cp fetch_new_recording.php $DEPLOYPATH
+    - /bin cp fetch_pieces.php $DEPLOYPATH
+    - /bin cp fetchinstruments_data.php $DEPLOYPATH
+    - /bin cp fetchrecordings_data.php $DEPLOYPATH
+    - /bin cp get_monkeywrench_metric_arr.php $DEPLOYPATH
+    - /bin cp get_new_instrument_data.php $DEPLOYPATH
+    - /bin cp get_preload.php $DEPLOYPATH
+    - /bin cp get_recording_instruments.php $DEPLOYPATH
+    - /bin cp index.php $DEPLOYPATH
+    - /bin cp metric-arr-post.php $DEPLOYPATH
+    - /bin cp mysql-metric-arr-submit.php $DEPLOYPATH
+    - /bin cp phpinfo.php $DEPLOYPATH
+    - /bin cp removetime.py $DEPLOYPATH
+    - /bin cp stripped-synpdf-extras.js $DEPLOYPATH
+    - /bin cp stripped-synpdf-styles.css $DEPLOYPATH
+    - /bin cp stripped-synpdf.js $DEPLOYPATH
