@@ -1,7 +1,7 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/cdmb/public_html/
+    - export DEPLOYPATH=/home/monkcdmb/public_html/
     - /bin/cp compresspdfs-totiff.py $DEPLOYPATH
     - /bin/cp fetch_new_recording.php $DEPLOYPATH
     - /bin/cp fetch_pieces.php $DEPLOYPATH
