@@ -1,11 +1,9 @@
 <?php
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "monkeywrenchdb";
+require_once '../phpfiles/config.php';
 
 // Establish the database connection
-$conn = new mysqli($servername, $username, $password, $dbname);
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+mysqli_set_charset($conn, 'utf8');
 
 // Check for any connection errors
 if ($conn->connect_error) {
