@@ -311,7 +311,7 @@ function sendVarToSynpdf(recordingFullData) {
 
 document.getElementById('invertButton').addEventListener('click', function() {
   document.body.classList.toggle('inverted');
-  this.textContent = document.body.classList.contains('inverted') ? 'Light Mode' : 'Hard Mode';
+  this.textContent = document.body.classList.contains('inverted') ? 'Light Mode' : 'Dark Mode';
   
   var img = document.getElementById('monkey-logo');
   img.src = document.body.classList.contains('inverted') ? 'monkeydark.png' : 'monkeywrench-monkey100x100.png';
@@ -452,9 +452,9 @@ $('#recordings-container').on('click', '.recordings-link', function() {
   //Setting the global instrument and recording values for dropdown use
   currentInstrumentGlobal = recordingFullData.instrument_id;
   currentRecordingGlobal = recordingFullData.recording_id;
+  document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
   loadRecording(recordingFullData)
   .then(function() {
-    document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
     msc_check_preload$$module$synpdf();
     $("#sidecontent").show();
     generateInstrumentsDropdown(recordingId)

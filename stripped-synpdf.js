@@ -523,7 +523,7 @@ function readPdf$$module$synpdf(a, b) {
 function goPage$$module$synpdf(a, b) {
     return pdfDoc$$module$synpdf.getPage(a).then(function(page) {
         var viewport2 = page.getViewport({ scale: (deMetriek$$module$synpdf[0] / page._pageInfo.view[2]) });
-        var viewport = page.getViewport({ scale: 5 });
+        var viewport = page.getViewport({ scale: 3 });
         var canvas = document.createElement("canvas");
         var ctx = canvas.getContext("2d");
         canvas.height = viewport.height;
@@ -624,6 +624,7 @@ function startIntf$$module$synpdf(a) {
 
 function resizePdf$$module$synpdf(scrollType) {
     if (scrollType === 1) {
+        doresize$$module$synpdf = 1 ;
         deNot$$module$synpdf.style["scroll-behavior"] = "auto" ;
     }
     pdfDoc$$module$synpdf && ($("#wait").text("Recomputing systems ..."), $("#wait").css({
@@ -667,7 +668,7 @@ async function onPlayerStateChange(event) {
             console.error('Failed to seek video:', error);
         }
     }
-    event.data == YT.PlayerState.PLAYING ? (dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100), setPauseState$$module$synpdf(!1)) : (dummyPlayer$$module$synpdf.clearKlok(), setPauseState$$module$synpdf(!0));
+    event.data == YT.PlayerState.PLAYING ? (dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 200), setPauseState$$module$synpdf(!1)) : (dummyPlayer$$module$synpdf.clearKlok(), setPauseState$$module$synpdf(!0));
     //newPlayerCue needs to subtract offset because time2x uses teTijden time to find deMaten position, not video time
     if (event.data == YT.PlayerState.CUED) {
         scrollFlag = 1 ;
