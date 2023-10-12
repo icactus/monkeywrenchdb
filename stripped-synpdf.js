@@ -174,8 +174,8 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                 break
             }
             if (c = deMaten$$module$synpdf[demix$$module$synpdf]) {
-                opt$$module$synpdf.lncsr &&
-                    b < deTijden$$module$synpdf.length - 1 ? (b = deTijden$$module$synpdf[b + 1], a = c.x + c.w * (a - d.t) / (b.t - d.t), d = 6) : (a = c.x, d = c.w);
+                a = c.x;
+                d = c.w;
                 if (a == xcurprev$$module$synpdf && c.y == ycurprev$$module$synpdf) break;
                 xcurprev$$module$synpdf = a;
                 b = this.maatloper[0].style;
@@ -183,9 +183,10 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                 b.top = c.y + "px";
                 b.width = d + "px";
                 b.height = c.h + "px";
-                c.y != ycurprev$$module$synpdf && doeRol$$module$synpdf(c.y - this.tmargin, 0);
+                var distanceToScroll = c.y - ycurprev$$module$synpdf; //if too far then pass 0 which will auto scroll instead of smooth
+                console.log(distanceToScroll);
+                c.y != ycurprev$$module$synpdf && doeRol$$module$synpdf(c.y - this.tmargin, Math.abs(distanceToScroll) > 500 ? 1 : 0);
                 ycurprev$$module$synpdf = c.y;
-                opt$$module$synpdf.synbox && this.showSyncInfo();
                 break
             }
         }
@@ -251,7 +252,7 @@ function findCurrentMeasureTime() {
       }
       reject("Measure time not found");
     });
-  }
+}
   
   
 
@@ -662,7 +663,7 @@ async function onPlayerStateChange(event) {
             console.log(newPlayerCue);
             await seekToPromise(newPlayerCue);  // Seek to newPlayerCue seconds
             console.log('Video has been successfully seeked');
-            elmed$$module$synpdf.pauseVideo(); 
+            elmed$$module$synpdf.playVideo(); 
             bypassTickFlag = 0;
         } catch (error) {
             console.error('Failed to seek video:', error);
@@ -940,19 +941,7 @@ function keyDown$$module$synpdf(a) {
                 repMaten$$module$synpdf.splice(-1), msc_wz$$module$synpdf.drawRepTokens()
         }
         a.preventDefault();
-        msc_wz$$module$synpdf.showSyncInfo()
     }
-}
-
-function str2arrbuf$$module$synpdf(a) {
-    for (var b = new ArrayBuffer(a.length), c = new Uint8Array(b), d = 0; d < a.length; d++) c[d] = a.charCodeAt(d);
-    return b
-}
-
-function txt2pdf$$module$synpdf(a) {
-    a = a.join("");
-    a = window.atob(a);
-    return str2arrbuf$$module$synpdf(a)
 }
 
 function msc_check_preload$$module$synpdf() {

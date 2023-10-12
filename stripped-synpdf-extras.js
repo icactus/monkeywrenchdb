@@ -107,29 +107,6 @@ function fetchSearchByInstrument() {
     }
   });
 }
-// function setInstrumentContainerHeight() {
-//   var windowHeight = window.innerHeight;
-//   var container = document.getElementById('instrument-links');
-
-//   if (container !== null) {
-//     var containerRect = container.getBoundingClientRect();
-//     var availableHeight = windowHeight - containerRect.top;
-
-//     container.style.height = availableHeight + 'px';
-//     container.style.maxHeight = '500px';
-//   } else {
-//     console.error("Element with ID 'instrument-links' does not exist on the page.");
-//     // Handle the error case, such as displaying a message or taking alternative actions
-//   }
-// }
-
-
-// // Call the setContainerHeight function when the window is resized
-// window.addEventListener('resize', setInstrumentContainerHeight);
-
-// // Call the setContainerHeight function initially
-// setInstrumentContainerHeight();
-
 
 function fetchPieces(instrumentId) {
   $.ajax({

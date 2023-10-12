@@ -232,11 +232,6 @@ sidecontentbar {
 .sidecontentbar-hidden {
     margin-left: -100%;
 }
-/* #hide-sidebar-button {
-    position: absolute;
-    top: 0;
-    right: 0;
-} */
 
 .instrument-container {
     display: grid;
