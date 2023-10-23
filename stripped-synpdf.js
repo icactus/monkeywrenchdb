@@ -519,7 +519,6 @@ function readPdf$$module$synpdf(a, b) {
           $("#notation").html('<h2>Loading PDF: ' + percentComplete.toFixed(2) + '%</h2>');
         };
         loadingTask.promise.then(function(a) {
-          console.log(a);
           pdfDoc$$module$synpdf = a;
           $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
           readPdfdoc$$module$synpdf();
