@@ -512,18 +512,20 @@ function readPdf$$module$synpdf(a, b) {
         readPdfdoc$$module$synpdf();
       };
     } else {
-        pdfjsLib.getDocument({
-          url: a,
-          onProgress: function(progressData) {
-            console.log('Loading progress: ' + (progressData.loaded / progressData.total) * 100 + '%');
-          }
-        }).promise.then(function(a) {
+        const loadingTask = pdfjsLib.getDocument(a);
+        loadingTask.onProgress = function(progressData) {
+          var percentComplete = (progressData.loaded / progressData.total) * 100;
+          // Update the 'notation' div with the progress
+          $("#notation").html('<h2>Loading PDF: ' + percentComplete.toFixed(2) + '%</h2>');
+        };
+        loadingTask.promise.then(function(a) {
           console.log(a);
           pdfDoc$$module$synpdf = a;
           $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
           readPdfdoc$$module$synpdf();
         });
-      }      
+      }
+          
   }
 
 //now returns a promise after each page so once it's all done we can call time2x in readpdfdoc() to scroll return on window resize.
