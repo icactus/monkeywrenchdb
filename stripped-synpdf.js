@@ -514,7 +514,7 @@ function readPdf$$module$synpdf(a, b) {
     } else {
         const loadingTask = pdfjsLib.getDocument(a);
         loadingTask.onProgress = function(progressData) {
-            var percentComplete = Math.min((progressData.loaded / progressData.total) * 100, 100);
+            var percentComplete = Math.min((progressData.loaded / progressData.total) * 100, 99);
             // Update the 'notation' div with the progress
             $("#notation").html('<h2>Loading PDF: ' + percentComplete.toFixed(0) + '%</h2>');
         };
