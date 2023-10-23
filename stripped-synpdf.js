@@ -512,16 +512,18 @@ function readPdf$$module$synpdf(a, b) {
         readPdfdoc$$module$synpdf();
       };
     } else {
-      pdfjsLib.getDocument(a).promise.then(function(a) {
-        var startTime = performance.now();
-        pdfDoc$$module$synpdf = a;
-        $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
-        var endTime = performance.now();
-        var timeTaken = endTime - startTime;
-        console.log("downloading pdf took " + timeTaken + " milliseconds");
-        readPdfdoc$$module$synpdf();
-      });
-    }
+        pdfjsLib.getDocument({
+          url: a,
+          onProgress: function(progressData) {
+            console.log('Loading progress: ' + (progressData.loaded / progressData.total) * 100 + '%');
+          }
+        }).promise.then(function(a) {
+          console.log(a);
+          pdfDoc$$module$synpdf = a;
+          $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
+          readPdfdoc$$module$synpdf();
+        });
+      }      
   }
 
 //now returns a promise after each page so once it's all done we can call time2x in readpdfdoc() to scroll return on window resize.
