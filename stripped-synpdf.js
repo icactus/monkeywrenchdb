@@ -513,8 +513,12 @@ function readPdf$$module$synpdf(a, b) {
       };
     } else {
       pdfjsLib.getDocument(a).promise.then(function(a) {
+        var startTime = performance.now();
         pdfDoc$$module$synpdf = a;
         $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
+        var endTime = performance.now();
+        var timeTaken = endTime - startTime;
+        console.log("downloading pdf took " + timeTaken + " milliseconds");
         readPdfdoc$$module$synpdf();
       });
     }
