@@ -106,7 +106,8 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     this.width = b.width;
     this.$cvs = $(b);
     $("#notation").empty();
-    b = $('<div id="rollijn" class="dashed"></div>');
+    //ADDED FULLSCREEN TOGGLE BUTTON
+    b = $('<button style="position:fixed; bottom:0; left:0;" onclick="toggleFullscreen(event)">Toggle Fullscreen</button><div id="rollijn" class="dashed"></div>');
     $("#notation").append(b);
     this.maatloper = $('<div class="demaat" style="background:rgba(215,255,71,0.2); left:0px; top:0px; width:0px; height:0px; z-index:2"></div>');
     $("#notation").append(this.maatloper);
@@ -1014,12 +1015,6 @@ function hideMenuHelp$$module$synpdf(a) {
     return b
 }
 
-function setFullscreen$$module$synpdf() {
-    var a = document.body,
-        b = a.requestFullscreen || a.mozRequestFullScreen || a.webkitRequestFullscreen,
-        c = document.exitFullscreen || document.mozCancelFullScreen || document.webkitExitFullscreen;
-    b && c && (opt$$module$synpdf.fscr ? b.call(a) : c.call(document))
-}
 $(document).ready(function() {
     deNot$$module$synpdf = document.getElementById("notation");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
@@ -1053,12 +1048,6 @@ $(document).ready(function() {
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin();
 
     });
-
-    $("body").on("fullscreenchange webkitfullscreenchange mozfullscreenchange",
-        function() {
-            var a = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
-            $("#fscr").prop("checked", null != a)
-        });
     window.addEventListener("message", function(a) {
         "play" == a.data && keyDown$$module$synpdf({
             key: " "

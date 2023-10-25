@@ -69,7 +69,7 @@
 
         </section1>
         <section2>
-            <div id="notation"><!--width needed for editmode pixel mapping -->
+            <div class="notation" id="notation"><!--width needed for editmode pixel mapping -->
                 <div class="collapsible">
                     <div class="search-heading" id="instruments-heading"><h2>Select Instrument</h2></div>
                     <div class="search-content instrument-container" id="instrument-links">

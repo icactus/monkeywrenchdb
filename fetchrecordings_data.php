@@ -14,7 +14,7 @@ if ($conn->connect_error) {
 $metricArrId = $_GET['metricArrId'];
 
 // Prepare the SQL query with a placeholder for metricArrId
-$stmt = $conn->prepare("SELECT metric_arr.metric_arr_id, recordings.ensemble_name, recordings.conductor_name, metric_arr.piece_id, composers.composer_last,
+$stmt = $conn->prepare("SELECT metric_arr.metric_arr_id, recordings.ensemble_name, recordings.conductor_name, recordings.year, metric_arr.piece_id, composers.composer_last,
                         pieces.piece_name, metric_arr.instrument_id, instruments.instrument_name, recordings.youtube_id, recordings.recording_id,
                         CASE 
                             WHEN metric_arr.measures_version = 1 THEN recordings.offset_js

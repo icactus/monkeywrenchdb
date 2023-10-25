@@ -201,10 +201,18 @@ function fetchRecordings(metricArrId) {
           //This part is necessary for instrument dropdown change because we need to refresh the measures_version info for each recording.
           // Populate the links
           recordings.forEach(function(recordingFullData) {
-            var link = $('<p><a href="#" class="recordings-link">' + recordingFullData.conductor_name + ' - ' + recordingFullData.ensemble_name + '</a></p>');
+            var conductorName = recordingFullData.conductor_name;
+            var ensembleName = recordingFullData.ensemble_name;
+            console.log(ensembleName);
+            var year = recordingFullData.year;
+            
+            var linkText = conductorName +
+                (ensembleName ? ' - ' + ensembleName : '') +
+                (year ? ' - ' + year : '');
+            var link = $('<p><a href="#" class="recordings-link">' + linkText + '</a></p>');
             link.children('a').data('recordingFullData', recordingFullData); // Attach the recording data to the <a> element
             container.append(link);
-            var option = $('<option value="' + recordingFullData.recording_id + '">' + recordingFullData.conductor_name + ' - ' + recordingFullData.ensemble_name + '</option>');
+            var option = $('<option value="' + recordingFullData.recording_id + '">' + linkText + '</option>');
             option.data('recordingFullData', recordingFullData);
             recordingsDropdown.append(option);
           });
@@ -540,3 +548,110 @@ document.getElementById("hide-sidebar-button").addEventListener("click", functio
       resizePdf$$module$synpdf(1);
   }
 });
+
+let originalWidth;
+let fullscreenWidth;
+
+document.addEventListener('fullscreenchange', function(event) {
+  if (!document.fullscreenElement) {
+    // The document has exited fullscreen mode
+    console.log('Exited fullscreen');
+    let scaleAmount = ((originalWidth / fullscreenWidth) * 100);
+    console.log(scaleAmount);
+    resizeDematenAndCanvas(scaleAmount);
+  }
+});
+
+function toggleFullscreen(event) {
+  event.stopPropagation();
+  const notationDiv = document.getElementById("notation");
+
+  if (!document.fullscreenElement) { // If not in fullscreen
+    if (notationDiv.requestFullscreen) {
+      notationDiv.requestFullscreen(); // Standard syntax
+    } else if (notationDiv.mozRequestFullScreen) { // Firefox
+      notationDiv.mozRequestFullScreen();
+    } else if (notationDiv.webkitRequestFullscreen) { // Chrome, Safari, and Opera
+      notationDiv.webkitRequestFullscreen();
+    } else if (notationDiv.msRequestFullscreen) { // IE/Edge
+      notationDiv.msRequestFullscreen();
+    }
+    let canvas = document.getElementsByTagName('canvas')[0]; // Assuming you're working with the first canvas element
+    let currentWidth = parseFloat(canvas.style.width);
+    originalWidth = currentWidth;
+    console.log('original width ', currentWidth);
+    let screenWidth = window.innerWidth;
+    fullscreenWidth = screenWidth;
+    console.log('screenwidth ', screenWidth);
+    let scaleAmount = ((screenWidth / currentWidth)) * 100;
+    console.log(scaleAmount);
+    resizeDematenAndCanvas(scaleAmount);
+
+
+  } else { // If already in fullscreen
+    if (document.exitFullscreen) {
+      document.exitFullscreen(); // Standard syntax
+    } else if (document.mozCancelFullScreen) { // Firefox
+      document.mozCancelFullScreen();
+    } else if (document.webkitExitFullscreen) { // Chrome, Safari, and Opera
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) { // IE/Edge
+      document.msExitFullscreen();
+    }
+  }
+  console.log('original width ', originalWidth);
+  console.log('fullscreenwidth ', fullscreenWidth);
+
+
+
+}
+
+// RESIZE ALL CANVASES USING CSS
+function resizeDematenAndCanvas(scaleAmount) {
+  deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount);
+  scaleCanvasElements(scaleAmount);
+  console.log('time2x', elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
+  msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
+}
+
+// RECALCULATE KNIP VALUES
+// DO THIS BY JUST SCALING ALL VALUES IN DEMATEN.
+// KNIP JUST NEEDS TO RUN THE FIRST TIME TO GET THE RELATIVE HEIGHT AND THEN SHOULD BE SCALABLE....
+
+// THIS WILL SCALE THE DEMATEN ARRAY - scaleAmount NEEDS TO BE PERCENT SO 100, 125, 150
+function scaleNestedArray(arr, scaleAmount) {
+  return arr.map(function(item) {
+    if (Array.isArray(item)) {
+      return scaleNestedArray(item, scaleAmount);
+    } else if (typeof item === 'object' && item !== null && ('x' in item || 'y' in item || 'w' in item || 'h' in item)) {
+      return {
+        x: (item.x * (scaleAmount / 100)),
+        y: (item.y * (scaleAmount / 100)),
+        w: (item.w * (scaleAmount / 100)),
+        h: (item.h * (scaleAmount / 100))
+      };
+    } else {
+      return item;
+    }
+  }); 
+}
+
+// THEN CALL scaleNestedArray(deMaten$$module$synpdf, CALCULATE CHANGE BETWEEN NEW WIDTH AND OLD)
+
+// THIS SCALES THE CANVAS
+function scaleCanvasElements(scaleAmount) {
+  var canvases = document.getElementsByTagName('canvas');
+  for (var i = 0; i < canvases.length; i++) {
+    var canvas = canvases[i];
+    var currentWidth = canvas.style.width;
+    var currentHeight = canvas.style.height;
+    console.log('canvas width and heigth: ', currentWidth, currentHeight);
+    canvas.style.width = (parseFloat(currentWidth) * (scaleAmount / 100)) + 'px';
+    canvas.style.height = (parseFloat(currentHeight) * (scaleAmount / 100)) + 'px';
+  }
+}
+
+// STILL NEED TO CALC CHANGE BETWEEN NEW AND OLD WIDTH
+
+
+// NEED TO REDRAW VISIBLE DEMATEN
