@@ -268,29 +268,26 @@ Wijzer$$module$synpdf.prototype.goMsre = function(a, b) {
                 TOFF$$module$synpdf + offset$$module$synpdf))
 };
 Wijzer$$module$synpdf.prototype.goUpDown = function(a, b, c) {
-    if (b && opt$$module$synpdf.advncd) c = 1 * opt$$module$synpdf.pagenum, opt$$module$synpdf.pagenum = a ? c + 1 : c - 1, setPagenum$$module$synpdf(c);
-    else {
-        var d = {},
-            e;
-        if (!(c.altKey || c.ctrlKey || c.shiftKey || c.metaKey)) {
-            c.preventDefault && c.preventDefault();
-            deMaten$$module$synpdf.forEach(function(a) {
-                return d[a.y + a.h] = 1
-            });
-            d = Object.keys(d).sort(function(a, b) {
-                return a - b
-            });
-            var f = deMaten$$module$synpdf[demix$$module$synpdf];
-            c = f.x + f.w / 2;
-            for (e = 0; d[e] < f.y;) e += 1;
-            if (b) {
-                for (b =
-                    0; b <= pageStfIx$$module$synpdf.length && e >= pageStfIx$$module$synpdf[b]; ++b);
-                a ? b == pageStfIx$$module$synpdf.length && (b = 0) : (b -= 2, 0 > b && (b = pageStfIx$$module$synpdf.length - 1));
-                a = d[pageStfIx$$module$synpdf[b]] - 5
-            } else a ? (a = d[e + 1] - 5, e == d.length - 1 && (a = d[0] - 5)) : (0 == e && (e = d.length), a = d[e - 1]);
-            this.x2time(c, a, !1)
-        }
+    var d = {},
+        e;
+    if (!(c.altKey || c.ctrlKey || c.shiftKey || c.metaKey)) {
+        c.preventDefault && c.preventDefault();
+        deMaten$$module$synpdf.forEach(function(a) {
+            return d[a.y + a.h] = 1
+        });
+        d = Object.keys(d).sort(function(a, b) {
+            return a - b
+        });
+        var f = deMaten$$module$synpdf[demix$$module$synpdf];
+        c = f.x + f.w / 2;
+        for (e = 0; d[e] < f.y;) e += 1;
+        if (b) {
+            for (b =
+                0; b <= pageStfIx$$module$synpdf.length && e >= pageStfIx$$module$synpdf[b]; ++b);
+            a ? b == pageStfIx$$module$synpdf.length && (b = 0) : (b -= 2, 0 > b && (b = pageStfIx$$module$synpdf.length - 1));
+            a = d[pageStfIx$$module$synpdf[b]] - 5
+        } else a ? (a = d[e + 1] - 5, e == d.length - 1 && (a = d[0] - 5)) : (0 == e && (e = d.length), a = d[e - 1]);
+        this.x2time(c, a, !1)
     }
 };
 
@@ -632,6 +629,7 @@ function startIntf$$module$synpdf(a) {
 }
 
 function resizePdf$$module$synpdf(scrollType) {
+    console.log('resizePdf$$module$synpdf');
     if (scrollType === 1) {
         doresize$$module$synpdf = 1 ;
         deNot$$module$synpdf.style["scroll-behavior"] = "auto" ;
@@ -963,9 +961,7 @@ function msc_check_preload$$module$synpdf() {
     opt$$module$synpdf.yubvid && !opt$$module$synpdf.nomed && setPlayer$$module$synpdf("", "");
     opt$$module$synpdf.no_menu && !fullmenu$$module$synpdf && ($("#sync").css("display", "none"), opt$$module$synpdf.btns = 0, $("body").on("contextmenu", function(a) {
         a.preventDefault()
-    }));
-    resetIntf$$module$synpdf(!1)
-    
+    }));   
 }
 
 function schaalMetriek$$module$synpdf() {
@@ -988,23 +984,11 @@ function schaalMetriek$$module$synpdf() {
     })
 }
 
-function resetIntf$$module$synpdf(a) {
-    $(window).off("resize").on("resize", function() {
-        doResize$$module$synpdf();
-    });    
-}
-
 function doResize$$module$synpdf() {
     var a = $("body").prop("clientWidth");
     a == bodyWidth$$module$synpdf ? msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin() : (bodyWidth$$module$synpdf = a, clearTimeout(resizeTimer$$module$synpdf), resizeTimer$$module$synpdf = setTimeout(function() {
         resizePdfSyn$$module$synpdf()
-    }, 200))
-}
-
-function hideMenu$$module$synpdf() {
-    $("#menu").toggle(!1);
-    
-    doReadPdf$$module$synpdf && (resizePdfSyn$$module$synpdf(), doReadPdf$$module$synpdf = 0)
+    }, 100))
 }
 
 function hideMenuHelp$$module$synpdf(a) {
@@ -1019,7 +1003,6 @@ $(document).ready(function() {
     deNot$$module$synpdf = document.getElementById("notation");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
-    resetIntf$$module$synpdf(!0);
     $("body").keydown(keyDown$$module$synpdf);
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
@@ -1034,19 +1017,8 @@ $(document).ready(function() {
     $("input[type=number]").keydown(function(a) {
         a.stopPropagation()
     });
-    $("#mbar").click(function(a) {
-        if ($("#menu").css("display") === "none") {
-          doReadPdf$$module$synpdf = 0;
-          $("#menu").css("display", "block");
-          $("#sync").css("border-top-left-radius", "16px");
-        } else {
-          hideMenu$$module$synpdf();
-          $("#sync").css("border-top-left-radius", "0px");
-        }
-      });
     $(window).resize(function() {
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin();
-
     });
     window.addEventListener("message", function(a) {
         "play" == a.data && keyDown$$module$synpdf({

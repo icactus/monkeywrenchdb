@@ -36,7 +36,7 @@
                         <button id="incrementButton">+</button>
                         <button id="decrementButton">-</button>
                         <input style="max-width:50px" type="text" id="speedField" readonly>
-                        <button id="hide-sidebar-button">sidebar</button>
+                        <!-- <button id="hide-sidebar-button">sidebar</button> -->
                     </div>
                 </div>
                 

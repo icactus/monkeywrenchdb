@@ -18,10 +18,20 @@ $stmt = $conn->prepare("SELECT i.instrument_id, r.recording_id, r.youtube_id, r.
                         CASE 
                             WHEN metric_arr.measures_version = 1 THEN r.offset_js
                             WHEN metric_arr.measures_version = 2 THEN r.offset_js2
+                            WHEN metric_arr.measures_version = 3 THEN r.offset_js_pt1
+                            WHEN metric_arr.measures_version = 4 THEN r.offset_js_pt2
+                            WHEN metric_arr.measures_version = 5 THEN r.offset_js_pt3
+                            WHEN metric_arr.measures_version = 6 THEN r.offset_js_pt4
+                            WHEN metric_arr.measures_version = 7 THEN r.offset_js_pt5
                         END AS offset_js,
                         CASE 
                             WHEN metric_arr.measures_version = 1 THEN r.times_arr_data
                             WHEN metric_arr.measures_version = 2 THEN r.times_arr_data_2
+                            WHEN metric_arr.measures_version = 3 THEN r.times_arr_data_pt1
+                            WHEN metric_arr.measures_version = 4 THEN r.times_arr_data_pt2
+                            WHEN metric_arr.measures_version = 5 THEN r.times_arr_data_pt3
+                            WHEN metric_arr.measures_version = 6 THEN r.times_arr_data_pt4
+                            WHEN metric_arr.measures_version = 7 THEN r.times_arr_data_pt5
                         END AS times_arr_data
                         FROM metric_arr
                         JOIN instruments i ON metric_arr.instrument_id = i.instrument_id

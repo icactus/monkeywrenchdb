@@ -239,9 +239,9 @@ sidecontentbar {
 #sidecontent {
     display:none;
 }
-.sidecontentbar-hidden {
+/* .sidecontentbar-hidden {
     margin-left: -100%;
-}
+} */
 
 .instrument-container {
     display: grid;
@@ -302,4 +302,7 @@ body.inverted #vidyub {
 }
 #instruments-dropdown {
     width:200px;
+}
+#recordings-dropdown {
+    max-width:300px;
 }

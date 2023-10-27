@@ -94,7 +94,7 @@ os.makedirs(processed_directory, exist_ok=True)
 
 # Loop through the PDF directory and handle each PDF
 for filename in os.listdir(pdf_directory):
-    if filename.endswith('.pdf'):
+    if filename.endswith('.pdf' or '.PDF'):
         pdf_path = os.path.join(pdf_directory, filename)
         image_base_name = os.path.splitext(filename)[0]  # Get the base name without extension
 
@@ -119,9 +119,10 @@ for filename in os.listdir(pdf_directory):
                 pdf_page_path = os.path.join(temp_directory, page_filename)
                 
                 # Convert each page to TIFF
+                #USEFUL OTHER THINGS:  '-kuwahara', '2', ALSO '-deskew', '40%', '+repage',
                 tiff_output_filename = f'{temp_directory}/{os.path.splitext(page_filename)[0]}.tif'
                 print(f"Converting {tiff_output_filename}")
-                subprocess.run(['magick', '-density', '600', pdf_page_path, '-deskew', '40%', '+repage', '-resize', '4000x', '-quality', '100', tiff_output_filename])
+                subprocess.run(['magick', '-density', '600', pdf_page_path, '-resize', '4000x', '-quality', '100', tiff_output_filename])
                 subprocess.run(['magick', '-density', '300', tiff_output_filename, '-resize', '2000x', '-monochrome', '-compress', 'Group4', tiff_output_filename])
 
                 os.remove(pdf_page_path)

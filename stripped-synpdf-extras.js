@@ -537,33 +537,20 @@ function decrementSpeed() {
 incrementButton.addEventListener('click', incrementSpeed);
 decrementButton.addEventListener('click', decrementSpeed);
 
-document.getElementById("hide-sidebar-button").addEventListener("click", function() {
-  var div = document.querySelector("sidecontentbar");
+// document.getElementById("hide-sidebar-button").addEventListener("click", function() {
+//   var div = document.querySelector("sidecontentbar");
 
-  if (div.classList.contains("sidecontentbar-hidden")) {
-      div.classList.remove("sidecontentbar-hidden");
-      resizePdf$$module$synpdf(1);
-  } else {
-      div.classList.add("sidecontentbar-hidden");
-      resizePdf$$module$synpdf(1);
-  }
-});
-
-let originalWidth;
-let fullscreenWidth;
-
-document.addEventListener('fullscreenchange', function(event) {
-  if (!document.fullscreenElement) {
-    // The document has exited fullscreen mode
-    console.log('Exited fullscreen');
-    let scaleAmount = ((originalWidth / fullscreenWidth) * 100);
-    console.log(scaleAmount);
-    resizeDematenAndCanvas(scaleAmount);
-  }
-});
+//   if (div.classList.contains("sidecontentbar-hidden")) {
+//       div.classList.remove("sidecontentbar-hidden");
+//       resizePdf$$module$synpdf(1);
+//   } else {
+//       div.classList.add("sidecontentbar-hidden");
+//       resizePdf$$module$synpdf(1);
+//   }
+// });
 
 function toggleFullscreen(event) {
-  event.stopPropagation();
+  // event.stopPropagation();
   const notationDiv = document.getElementById("notation");
 
   if (!document.fullscreenElement) { // If not in fullscreen
@@ -576,17 +563,6 @@ function toggleFullscreen(event) {
     } else if (notationDiv.msRequestFullscreen) { // IE/Edge
       notationDiv.msRequestFullscreen();
     }
-    let canvas = document.getElementsByTagName('canvas')[0]; // Assuming you're working with the first canvas element
-    let currentWidth = parseFloat(canvas.style.width);
-    originalWidth = currentWidth;
-    console.log('original width ', currentWidth);
-    let screenWidth = window.innerWidth;
-    fullscreenWidth = screenWidth;
-    console.log('screenwidth ', screenWidth);
-    let scaleAmount = ((screenWidth / currentWidth)) * 100;
-    console.log(scaleAmount);
-    resizeDematenAndCanvas(scaleAmount);
-
 
   } else { // If already in fullscreen
     if (document.exitFullscreen) {
@@ -599,11 +575,6 @@ function toggleFullscreen(event) {
       document.msExitFullscreen();
     }
   }
-  console.log('original width ', originalWidth);
-  console.log('fullscreenwidth ', fullscreenWidth);
-
-
-
 }
 
 // RESIZE ALL CANVASES USING CSS
@@ -613,10 +584,6 @@ function resizeDematenAndCanvas(scaleAmount) {
   console.log('time2x', elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
   msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
 }
-
-// RECALCULATE KNIP VALUES
-// DO THIS BY JUST SCALING ALL VALUES IN DEMATEN.
-// KNIP JUST NEEDS TO RUN THE FIRST TIME TO GET THE RELATIVE HEIGHT AND THEN SHOULD BE SCALABLE....
 
 // THIS WILL SCALE THE DEMATEN ARRAY - scaleAmount NEEDS TO BE PERCENT SO 100, 125, 150
 function scaleNestedArray(arr, scaleAmount) {
@@ -636,8 +603,6 @@ function scaleNestedArray(arr, scaleAmount) {
   }); 
 }
 
-// THEN CALL scaleNestedArray(deMaten$$module$synpdf, CALCULATE CHANGE BETWEEN NEW WIDTH AND OLD)
-
 // THIS SCALES THE CANVAS
 function scaleCanvasElements(scaleAmount) {
   var canvases = document.getElementsByTagName('canvas');
@@ -655,3 +620,35 @@ function scaleCanvasElements(scaleAmount) {
 
 
 // NEED TO REDRAW VISIBLE DEMATEN
+
+//DEBOUNCE FOR WINDOW RESIZE AND POSSIBLY OTHER PLACES
+function debounce(func, wait) {
+  var timeout;
+  return function() {
+      var context = this, args = arguments;
+      var later = function() {
+          timeout = null;
+          func.apply(context, args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+  };
+}
+
+//  RESIZE CANVAS AND DEMATEN WHEN WINDOW CHANGES INCLUDING FULLSCREEN AND MOBILE ROTATION
+function resizeCanvasTrigger() {
+  var previousWidth = $("#notation").width(); 
+
+  $(window).off("resize").on("resize", debounce(function() {
+
+      var newWidth = $("#notation").width();
+      var scaleAmount = (newWidth / previousWidth) * 100;
+      resizeDematenAndCanvas(scaleAmount);
+      previousWidth = newWidth;
+  }, 100)); // 100 ms debounce
+}
+
+
+$(document).ready(function() {
+  resizeCanvasTrigger();
+});

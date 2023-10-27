@@ -19,10 +19,20 @@ $stmt = $conn->prepare("SELECT metric_arr.metric_arr_id, recordings.ensemble_nam
                         CASE 
                             WHEN metric_arr.measures_version = 1 THEN recordings.offset_js
                             WHEN metric_arr.measures_version = 2 THEN recordings.offset_js2
+                            WHEN metric_arr.measures_version = 3 THEN recordings.offset_js_pt1
+                            WHEN metric_arr.measures_version = 4 THEN recordings.offset_js_pt2
+                            WHEN metric_arr.measures_version = 5 THEN recordings.offset_js_pt3
+                            WHEN metric_arr.measures_version = 6 THEN recordings.offset_js_pt4
+                            WHEN metric_arr.measures_version = 7 THEN recordings.offset_js_pt5
                         END AS offset_js,
                         CASE 
                             WHEN metric_arr.measures_version = 1 THEN recordings.times_arr_data
                             WHEN metric_arr.measures_version = 2 THEN recordings.times_arr_data_2
+                            WHEN metric_arr.measures_version = 3 THEN recordings.times_arr_data_pt1
+                            WHEN metric_arr.measures_version = 4 THEN recordings.times_arr_data_pt2
+                            WHEN metric_arr.measures_version = 5 THEN recordings.times_arr_data_pt3
+                            WHEN metric_arr.measures_version = 6 THEN recordings.times_arr_data_pt4
+                            WHEN metric_arr.measures_version = 7 THEN recordings.times_arr_data_pt5
                         END AS times_arr_data
                         FROM metric_arr
                         JOIN pieces ON metric_arr.piece_id = pieces.piece_id
