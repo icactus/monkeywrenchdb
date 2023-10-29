@@ -114,7 +114,6 @@ function fetchPieces(instrumentId) {
     method: 'GET',
     data: { instrumentId: instrumentId },
     success: function(response) {
-        
       var recordingsContainer = $('#recordings-container');
       recordingsContainer.empty();
 
@@ -124,23 +123,41 @@ function fetchPieces(instrumentId) {
       } else {
         var pieces = JSON.parse(response);
         var container = $('#pieces-container');
-
+        console.log(pieces);
         container.empty();
 
-        pieces.sort(function(a, b) {
-          var composerA = a.composer_last.toUpperCase();
-          var composerB = b.composer_last.toUpperCase();
-          return composerA.localeCompare(composerB);
-        });
+        // Group pieces by 'piece_category.category_name'
+        var groupedPieces = pieces.reduce(function(acc, piece) {
+          var categoryName = piece.category_name;
+          if (!acc[categoryName]) {
+            acc[categoryName] = [];
+          }
+          acc[categoryName].push(piece);
+          return acc;
+        }, {});
 
-        // Populate the links dynamically
-        pieces.forEach(function(piece) {
-          container.append('<p><a href="#" class="pieces-link" data-id="' + piece.metric_arr_id + '" data-piece-id="' + piece.piece_id + '" data-instrument-id="' + instrumentId +'">' + piece.composer_last + ' ' + piece.piece_name + '</a></p>');
+        // Iterate over each category
+        Object.keys(groupedPieces).forEach(function(categoryName) {
+          // Sort pieces within each category by 'composer_last'
+          groupedPieces[categoryName].sort(function(a, b) {
+            var composerA = a.composer_last.toUpperCase();
+            var composerB = b.composer_last.toUpperCase();
+            return composerA.localeCompare(composerB);
+          });
+
+          // Create a heading for the category
+          container.append('<h2>' + categoryName + '</h2>');
+
+          // Populate the links dynamically
+          groupedPieces[categoryName].forEach(function(piece) {
+            container.append('<p><a href="#" class="pieces-link" data-id="' + piece.metric_arr_id + '" data-piece-id="' + piece.piece_id + '" data-instrument-id="' + instrumentId +'">' + piece.composer_last + ' - ' + piece.piece_name + '</a></p>');
+          });
         });
       }
     }
   });
 }
+
 
 function generateInstrumentsDropdown(recordingId) {
   return new Promise(function(resolve, reject) {

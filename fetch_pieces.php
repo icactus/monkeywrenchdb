@@ -10,10 +10,11 @@ mysqli_set_charset($conn, 'utf8');
 $instrumentId = $_GET['instrumentId'];
 
 // Prepare the SQL query with a placeholder for the instrumentId
-$stmt = $conn->prepare("SELECT p.piece_id, p.piece_name, p.composer_id, c.composer_last, m.metric_arr_id
+$stmt = $conn->prepare("SELECT p.piece_id, p.piece_name, pc.category_name, p.composer_id, c.composer_last, m.metric_arr_id
                         FROM pieces p
                         JOIN composers c ON p.composer_id = c.composer_id
                         JOIN metric_arr m ON p.piece_id = m.piece_id 
+                        JOIN piece_categories pc ON p.category_id = pc.category_id
                         WHERE m.instrument_id = ?");
 
 // Bind the instrumentId to the placeholder in the SQL query
