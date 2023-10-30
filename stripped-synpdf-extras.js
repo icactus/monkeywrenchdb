@@ -13,6 +13,9 @@ let currentMeasureTime = 0 ;
 let newInstrumentTime2xFlag = 0 ;
 let scrollFlag = 0 ;
 
+//  NEED TO SET THIS UP
+let currentGlobalScaleAmount = 100;
+
 
 //Prevent resize with mousewheel on the notation section as this redisplays the advanced settings
 function stopWheelZoom(event) {
@@ -664,6 +667,47 @@ function resizeCanvasTrigger() {
       previousWidth = newWidth;
   }, 100)); // 100 ms debounce
 }
+
+// //CALCULATE PAGE SIZE FOR FITTING PAGE HEIGHT TO SCREEN
+// function resizePageFitToHeight() {
+//   // calculate scaleAmount such that the displayed page height will become 100% the viewport height of #notation.
+  
+//   // call resizeDematenAndCanvas(scaleAmount) to resize
+// }
+function resizePageFitToHeight() {
+  // Get the current displayed height of the #notation div
+  var notationDiv = document.getElementById("notation");
+  var rect = notationDiv.getBoundingClientRect();
+  var displayedHeight = rect.bottom - rect.top;
+
+  // Get the height of the first canvas element
+  var canvases = document.getElementsByTagName('canvas');
+  var firstCanvasHeight = canvases[0].clientHeight;
+
+  // Calculate the scale amount
+  var scaleAmount = (displayedHeight / firstCanvasHeight) * 100;
+
+  // Resize the canvas and dematen
+  resizeDematenAndCanvas(scaleAmount);
+}
+function resizePageFitToWidth() {
+  // Get the current width of the #notation div
+  var notationDiv = document.getElementById("notation");
+  var currentWidth = notationDiv.clientWidth;
+
+  // Get the width of the first canvas element
+  var canvases = document.getElementsByTagName('canvas');
+  var firstCanvasWidth = canvases[0].clientWidth;
+
+  // Calculate the scale amount
+  var scaleAmount = (currentWidth / firstCanvasWidth) * 100;
+
+  // Resize the canvas and dematen
+  resizeDematenAndCanvas(scaleAmount);
+}
+
+
+
 
 
 $(document).ready(function() {

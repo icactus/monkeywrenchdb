@@ -107,8 +107,17 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     this.$cvs = $(b);
     $("#notation").empty();
     //ADDED FULLSCREEN TOGGLE BUTTON
-    b = $('<button style="position:fixed; bottom:0; left:0;" onclick="toggleFullscreen(event)">Toggle Fullscreen</button><div id="rollijn" class="dashed"></div>');
-    $("#notation").append(b);
+    b = $(
+        `<div style="position:fixed; bottom:0; left:0;">
+        <button  onclick="toggleFullscreen(event)">Toggle Fullscreen</button>
+        <button onclick="resizePageFitToWidth()">Fit to Width</button>
+        <button onclick="resizePageFitToHeight()">Fit to Height</button>
+        <button onclick="resizeDematenAndCanvas(90)">Zoom -</button>
+        <button onclick="resizeDematenAndCanvas(110)">Zoom +</button>
+        </div>
+        <div id="rollijn" class="dashed"></div>`
+      );
+      $("#notation").append(b);
     this.maatloper = $('<div class="demaat" style="background:rgba(215,255,71,0.2); left:0px; top:0px; width:0px; height:0px; z-index:2"></div>');
     $("#notation").append(this.maatloper);
     this.times = a;
@@ -425,6 +434,7 @@ function knip$$module$synpdf(a, b, c) {
             })
         }
     }
+    //  REMOVING THIS BECAUSE IT UNNECESSARILY ADDS TIME MARKERS IF A RECORDING HAS LESS MARKERS THAN DEMATEN MEASURES
     // for (e = deTijden$$module$synpdf.length; e < deMaten$$module$synpdf.length; ++e) deTijden$$module$synpdf.push({
     //     t: 0 < e ? deTijden$$module$synpdf[e - 1].t +
     //         2 : 0,
