@@ -425,11 +425,11 @@ function knip$$module$synpdf(a, b, c) {
             })
         }
     }
-    for (e = deTijden$$module$synpdf.length; e < deMaten$$module$synpdf.length; ++e) deTijden$$module$synpdf.push({
-        t: 0 < e ? deTijden$$module$synpdf[e - 1].t +
-            2 : 0,
-        mix: e
-    });
+    // for (e = deTijden$$module$synpdf.length; e < deMaten$$module$synpdf.length; ++e) deTijden$$module$synpdf.push({
+    //     t: 0 < e ? deTijden$$module$synpdf[e - 1].t +
+    //         2 : 0,
+    //     mix: e
+    // });
     return a
 }
 
@@ -924,29 +924,6 @@ function keyDown$$module$synpdf(a) {
             
         default:
             c = 0
-    }
-    if (opt$$module$synpdf.synbox && msc_wz$$module$synpdf && !c) {
-        switch (b) {
-            case "b":
-                msc_wz$$module$synpdf.keySync(b);
-                break;
-            case ".":
-                a.ctrlKey ? msc_wz$$module$synpdf.changeOffset(gFac$$module$synpdf) : msc_wz$$module$synpdf.changeTimesKeyb(gFac$$module$synpdf);
-                break;
-            case ",":
-                a.ctrlKey ? msc_wz$$module$synpdf.changeOffset(-gFac$$module$synpdf) : msc_wz$$module$synpdf.changeTimesKeyb(-gFac$$module$synpdf);
-                break;
-            case "w":
-                saveTiming$$module$synpdf();
-                break;
-            case "Backspace":
-            case "c":
-                resetTiming$$module$synpdf();
-                break;
-            case "g":
-                repMaten$$module$synpdf.splice(-1), msc_wz$$module$synpdf.drawRepTokens()
-        }
-        a.preventDefault();
     }
 }
 
