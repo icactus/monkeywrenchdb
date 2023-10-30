@@ -668,12 +668,6 @@ function resizeCanvasTrigger() {
   }, 100)); // 100 ms debounce
 }
 
-// //CALCULATE PAGE SIZE FOR FITTING PAGE HEIGHT TO SCREEN
-// function resizePageFitToHeight() {
-//   // calculate scaleAmount such that the displayed page height will become 100% the viewport height of #notation.
-  
-//   // call resizeDematenAndCanvas(scaleAmount) to resize
-// }
 function resizePageFitToHeight() {
   // Get the current displayed height of the #notation div
   var notationDiv = document.getElementById("notation");

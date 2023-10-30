@@ -29,14 +29,7 @@
                                 <h2>MONKEY WRENCH</h2>
                                 <h2 id="logotext-database">DATABASE</h2>
                             </a>
-                        </div>
-                        <button id="invertButton">Dark Mode</button>    
-                    </div>
-                    <div id="speed-control">
-                        <button id="incrementButton">+</button>
-                        <button id="decrementButton">-</button>
-                        <input style="max-width:50px" type="text" id="speedField" readonly>
-                        <!-- <button id="hide-sidebar-button">sidebar</button> -->
+                        </div>  
                     </div>
                 </div>
                 
@@ -91,6 +84,13 @@
             </div> 
             <sidecontentbar>
                 <div id="sidecontent">
+                    <div id="speed-control">
+                        <p><b>Speed Control</b></p>
+                        <button id="decrementButton">-</button>
+                        <button id="incrementButton">+</button>
+                        <input style="max-width:50px" type="text" id="speedField" readonly>
+                        <!-- <button id="hide-sidebar-button">sidebar</button> -->
+                    </div>
                     <h2>Change Instrument</h2>
                     <select id="instruments-dropdown">
                         <option value="">Select Instrument</option>
@@ -99,7 +99,10 @@
                     <select id="recordings-dropdown">
                         <option value="">Select Recording</option>
                     </select>
+                    <div>
+                        <button id="invertButton">Dark Mode</button>
                     </div>
+                </div>
             </sidecontentbar>
         </section2>
         <section3>

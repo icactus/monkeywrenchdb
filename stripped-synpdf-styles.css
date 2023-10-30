@@ -159,6 +159,9 @@ sidecontentbar {
 #speed-control {
     align-self:end;
 }
+#invertButton {
+    margin-top:16px;
+}
 @media screen and (max-width: 899px)  and (orientation:portrait) {
     section2 {
         flex-direction:column;
