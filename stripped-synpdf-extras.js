@@ -453,6 +453,7 @@ $('#pieces-container').on('click', '.pieces-link', function() {
 
 $('#recordings-container').on('click', '.recordings-link', function() {
   let recordingFullData = $(this).data('recordingFullData');
+  console.log(recordingFullData);
   let recordingId = recordingFullData.recording_id;
   //Setting the global instrument and recording values for dropdown use
   currentInstrumentGlobal = recordingFullData.instrument_id;
@@ -476,51 +477,6 @@ $('#recordings-container').on('click', '.recordings-link', function() {
   });
 });
 
-$(document).ready(function() {
-  var collapsibles = document.getElementsByClassName("collapsible");
-  for (var i = 0; i < collapsibles.length; i++) {
-    collapsibles[i].addEventListener("click", function(event) {
-      var currentCollapsible = this;
-      var currentContent = this.querySelector(".search-content");
-      var nextCollapsible = currentCollapsible.nextElementSibling;
-      var nextContent = nextCollapsible ? nextCollapsible.querySelector(".search-content") : null;
-
-      // Close all collapsibles except the current one
-      for (var j = 0; j < collapsibles.length; j++) {
-        if (collapsibles[j] !== currentCollapsible) {
-          collapsibles[j].classList.remove("active");
-          collapsibles[j].querySelector(".search-content").style.display = "none";
-        }
-      }
-
-      // Toggle the current collapsible and show/hide its content
-      currentCollapsible.classList.toggle("active");
-      if (currentContent.style.display === "grid") {
-        currentContent.style.display = "none";
-      } else {
-        currentContent.style.display = "grid";
-      }
-
-      // Show the next collapsible and hide its content if it exists
-      if (nextCollapsible) {
-        nextCollapsible.classList.add("active");
-        if (nextContent) {
-          nextContent.style.display = "grid";
-        }
-      }
-    });
-    var container = collapsibles[i].querySelector(".search-content");
-    container.addEventListener("click", function(event) {
-      if (event.target.tagName !== 'A') {
-        event.stopPropagation();
-      }
-    });
-  }
-
-  // Trigger click event on the first collapsible to open it by default
-  collapsibles[0].click();
-  fetchSearchByInstrument();
-});
 
 // Speed control has to go in this file so that it loads after elements
 const incrementButton = document.getElementById('incrementButton');
@@ -700,10 +656,62 @@ function resizePageFitToWidth() {
   resizeDematenAndCanvas(scaleAmount);
 }
 
+const urlParams = new URLSearchParams(window.location.search);
+const urlInstrument = urlParams.get('instrument');
+console.log(urlInstrument);
+const urlPiece = urlParams.get('piece');
+const urlRecording = urlParams.get('recording');
+
+// if (instrument && piece && recording) {
+//   // Load the PDF and other data
+// }
 
 
 
 
 $(document).ready(function() {
+  var collapsibles = document.getElementsByClassName("collapsible");
+  for (var i = 0; i < collapsibles.length; i++) {
+    collapsibles[i].addEventListener("click", function(event) {
+      var currentCollapsible = this;
+      var currentContent = this.querySelector(".search-content");
+      var nextCollapsible = currentCollapsible.nextElementSibling;
+      var nextContent = nextCollapsible ? nextCollapsible.querySelector(".search-content") : null;
+
+      // Close all collapsibles except the current one
+      for (var j = 0; j < collapsibles.length; j++) {
+        if (collapsibles[j] !== currentCollapsible) {
+          collapsibles[j].classList.remove("active");
+          collapsibles[j].querySelector(".search-content").style.display = "none";
+        }
+      }
+
+      // Toggle the current collapsible and show/hide its content
+      currentCollapsible.classList.toggle("active");
+      if (currentContent.style.display === "grid") {
+        currentContent.style.display = "none";
+      } else {
+        currentContent.style.display = "grid";
+      }
+
+      // Show the next collapsible and hide its content if it exists
+      if (nextCollapsible) {
+        nextCollapsible.classList.add("active");
+        if (nextContent) {
+          nextContent.style.display = "grid";
+        }
+      }
+    });
+    var container = collapsibles[i].querySelector(".search-content");
+    container.addEventListener("click", function(event) {
+      if (event.target.tagName !== 'A') {
+        event.stopPropagation();
+      }
+    });
+  }
+
+  // Trigger click event on the first collapsible to open it by default
+  collapsibles[0].click();
+  fetchSearchByInstrument();
   resizeCanvasTrigger();
 });
