@@ -91,9 +91,9 @@
                         <input style="max-width:50px" type="text" id="speedField" readonly>
                         <!-- <button id="hide-sidebar-button">sidebar</button> -->
                     </div>
-                    <h2>Change Instrument</h2>
+                    <h2>Change Part</h2>
                     <select id="instruments-dropdown">
-                        <option value="">Select Instrument</option>
+                        <option value="">Select Part</option>
                     </select>
                     <h2>Change Recording</h2>
                     <select id="recordings-dropdown">
