@@ -406,6 +406,7 @@ $('#recordings-dropdown').change(function() {
           newPlayerCue = (currentMeasureTime + offset$$module$synpdf + TOFF$$module$synpdf);
         })
         .catch((error) => {
+          newPlayerCue = 0;
           // Handle the rejection
           console.error(error);
         });
