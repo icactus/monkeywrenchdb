@@ -118,7 +118,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         <div id="rollijn" class="dashed"></div>`
       );
       $("#notation").append(b);
-    this.maatloper = $('<div class="demaat" style="background:rgba(215,255,71,0.2); left:0px; top:0px; width:0px; height:0px; z-index:2"></div>');
+    this.maatloper = $('<div class="demaat" style="background:' + globalHighlightColor + '; opacity:0.2; left:0px; top:0px; width:0px; height:0px; z-index:2"></div>');
     $("#notation").append(this.maatloper);
     this.times = a;
     this.tixlb = tixlb$$module$synpdf;

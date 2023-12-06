@@ -12,9 +12,25 @@ let bypassTickFlag = 0 ;
 let currentMeasureTime = 0 ;
 let newInstrumentTime2xFlag = 0 ;
 let scrollFlag = 0 ;
+let globalHighlightColor = '#D7FF47';
 
 //  NEED TO SET THIS UP
 let currentGlobalScaleAmount = 100;
+
+//Color change for measure highlighting
+$("#favcolor").on("input", function() {
+  $(".demaat").css("background", $(this).val());
+  globalHighlightColor = this.value;
+});
+
+//color change reset button
+$("#reset-button").on("click", function() {
+  console.log('clicked');
+  let defaultColor = '#D7FF47';
+  $(".demaat").css("background", defaultColor);
+  globalHighlightColor = defaultColor;
+  $("#favcolor").val('#D7FF47');
+});
 
 
 //Prevent resize with mousewheel on the notation section as this redisplays the advanced settings
