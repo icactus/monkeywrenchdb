@@ -109,11 +109,44 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     //ADDED FULLSCREEN TOGGLE BUTTON
     b = $(
         `<div style="position:fixed; bottom:0; left:0;">
-        <button  onclick="toggleFullscreen(event)">Toggle Fullscreen</button>
+        <button class="zoom-buttons" onclick="toggleFullscreen(event)">
+        <?xml version="1.0" ?><svg height="20px" version="1.1" viewBox="0 0 14 14" width="20px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title/><desc/><defs/><g fill="none" fill-rule="evenodd" id="Page-1" stroke="none" stroke-width="1"><g fill="#000000" id="Core" transform="translate(-215.000000, -257.000000)"><g id="fullscreen" transform="translate(215.000000, 257.000000)"><path d="M2,9 L0,9 L0,14 L5,14 L5,12 L2,12 L2,9 L2,9 Z M0,5 L2,5 L2,2 L5,2 L5,0 L0,0 L0,5 L0,5 Z M12,12 L9,12 L9,14 L14,14 L14,9 L12,9 L12,12 L12,12 Z M9,0 L9,2 L12,2 L12,5 L14,5 L14,0 L9,0 L9,0 Z" id="Shape"/></g></g></g></svg>
+        </button>
         <button onclick="resizePageFitToWidth()">Fit to Width</button>
         <button onclick="resizePageFitToHeight()">Fit to Height</button>
-        <button onclick="resizeDematenAndCanvas(90)">Zoom -</button>
-        <button onclick="resizeDematenAndCanvas(110)">Zoom +</button>
+        <button class="zoom-buttons" onclick="resizeDematenAndCanvas(90)">
+            <?xml version="1.0" encoding="iso-8859-1"?>
+            <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+            <svg fill="#000000" height="20px" width="20px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+                viewBox="0 0 192.904 192.904" xml:space="preserve">
+            <g>
+                <path d="M190.707,180.101l-47.079-47.077c11.702-14.072,18.752-32.142,18.752-51.831C162.381,36.423,125.959,0,81.191,0
+                    C36.422,0,0,36.423,0,81.193c0,44.767,36.422,81.187,81.191,81.187c19.689,0,37.759-7.049,51.831-18.75l47.079,47.077
+                    c1.464,1.465,3.384,2.197,5.303,2.197c1.919,0,3.839-0.732,5.303-2.197C193.637,187.778,193.637,183.03,190.707,180.101z
+                    M15,81.193C15,44.694,44.693,15,81.191,15c36.497,0,66.189,29.694,66.189,66.193c0,36.496-29.692,66.187-66.189,66.187
+                    C44.693,147.38,15,117.689,15,81.193z"/>
+                <path d="M118.035,73.689H44.346c-4.142,0-7.5,3.358-7.5,7.5c0,4.142,3.358,7.5,7.5,7.5h73.689c4.142,0,7.5-3.358,7.5-7.5
+                    C125.535,77.047,122.177,73.689,118.035,73.689z"/>
+            </g>
+            </svg>
+        </button>
+        <button class="zoom-buttons" onclick="resizeDematenAndCanvas(110)">
+            <?xml version="1.0" encoding="iso-8859-1"?>
+                <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+                <svg fill="#000000" height="20px" width="20px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+                    viewBox="0 0 192.904 192.904" xml:space="preserve">
+                <g>
+                    <path d="M190.707,180.101l-47.078-47.077c11.702-14.072,18.752-32.142,18.752-51.831C162.381,36.423,125.959,0,81.191,0
+                        C36.422,0,0,36.423,0,81.193c0,44.767,36.422,81.187,81.191,81.187c19.688,0,37.759-7.049,51.831-18.751l47.079,47.078
+                        c1.464,1.465,3.384,2.197,5.303,2.197c1.919,0,3.839-0.732,5.304-2.197C193.637,187.778,193.637,183.03,190.707,180.101z
+                        M15,81.193C15,44.694,44.693,15,81.191,15c36.497,0,66.189,29.694,66.189,66.193c0,36.496-29.692,66.187-66.189,66.187
+                        C44.693,147.38,15,117.689,15,81.193z"/>
+                    <path d="M118.035,73.689H88.69V44.345c0-4.142-3.357-7.5-7.5-7.5s-7.5,3.358-7.5,7.5v29.345H44.346c-4.143,0-7.5,3.358-7.5,7.5
+                        c0,4.142,3.357,7.5,7.5,7.5H73.69v29.346c0,4.142,3.357,7.5,7.5,7.5s7.5-3.358,7.5-7.5V88.689h29.345c4.143,0,7.5-3.358,7.5-7.5
+                        C125.535,77.047,122.178,73.689,118.035,73.689z"/>
+                </g>
+                </svg>
+        </button>
         </div>
         <div id="rollijn" class="dashed"></div>`
       );
@@ -194,7 +227,6 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                 b.width = d + "px";
                 b.height = c.h + "px";
                 var distanceToScroll = c.y - ycurprev$$module$synpdf; //if too far then pass 0 which will auto scroll instead of smooth
-                console.log(distanceToScroll);
                 c.y != ycurprev$$module$synpdf && doeRol$$module$synpdf(c.y - this.tmargin, Math.abs(distanceToScroll) > 500 ? 1 : 0);
                 ycurprev$$module$synpdf = c.y;
                 break

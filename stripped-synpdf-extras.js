@@ -142,7 +142,6 @@ function fetchPieces(instrumentId) {
       } else {
         var pieces = JSON.parse(response);
         var container = $('#pieces-container');
-        console.log(pieces);
         container.empty();
 
         // Group pieces by 'piece_category.category_name'
@@ -530,18 +529,6 @@ function decrementSpeed() {
 incrementButton.addEventListener('click', incrementSpeed);
 decrementButton.addEventListener('click', decrementSpeed);
 
-// document.getElementById("hide-sidebar-button").addEventListener("click", function() {
-//   var div = document.querySelector("sidecontentbar");
-
-//   if (div.classList.contains("sidecontentbar-hidden")) {
-//       div.classList.remove("sidecontentbar-hidden");
-//       resizePdf$$module$synpdf(1);
-//   } else {
-//       div.classList.add("sidecontentbar-hidden");
-//       resizePdf$$module$synpdf(1);
-//   }
-// });
-
 function toggleFullscreen(event) {
   // event.stopPropagation();
   const notationDiv = document.getElementById("notation");
@@ -570,31 +557,54 @@ function toggleFullscreen(event) {
   }
 }
 
+let currentOffsetX = 0;
+let newOffsetX = 0;
+
+
 // RESIZE ALL CANVASES USING CSS
 function resizeDematenAndCanvas(scaleAmount) {
-  deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount);
+  var canvas = document.getElementsByTagName('canvas')[0];
+  const notationDiv = document.getElementById("notation");
+  var canvasRect = canvas.getBoundingClientRect();
+  var notationDivRect = notationDiv.getBoundingClientRect();
+  currentOffsetX = (canvasRect.left - notationDivRect.left);
+  console.log('currentoffsetx', currentOffsetX); 
   scaleCanvasElements(scaleAmount);
-  console.log('time2x', elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
+  var newCanvasRect = canvas.getBoundingClientRect();
+  var newNotationDivRect = notationDiv.getBoundingClientRect();
+  newOffsetX = (newCanvasRect.left - newNotationDivRect.left);
+  console.log('newoffsetx', newOffsetX);
+  let offsetX = newOffsetX - currentOffsetX;
+  console.log('offsetX', offsetX);
+  deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount, offsetX);
   msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
 }
 
 // THIS WILL SCALE THE DEMATEN ARRAY - scaleAmount NEEDS TO BE PERCENT SO 100, 125, 150
-function scaleNestedArray(arr, scaleAmount) {
-  return arr.map(function(item) {
-    if (Array.isArray(item)) {
-      return scaleNestedArray(item, scaleAmount);
-    } else if (typeof item === 'object' && item !== null && ('x' in item || 'y' in item || 'w' in item || 'h' in item)) {
-      return {
-        x: (item.x * (scaleAmount / 100)),
-        y: (item.y * (scaleAmount / 100)),
-        w: (item.w * (scaleAmount / 100)),
-        h: (item.h * (scaleAmount / 100))
-      };
-    } else {
-      return item;
-    }
-  }); 
+
+function scaleNestedArray(arr, scaleAmount, offsetX) {
+  let counter = 0;
+ return arr.map(function(item) {
+   if (Array.isArray(item)) {
+     return scaleNestedArray(item, scaleAmount, offsetX);
+   } else if (typeof item === 'object' && item !== null && ('x' in item || 'y' in item || 'w' in item || 'h' in item)) {
+     let xExample = ((item.x * (scaleAmount / 100)) );
+     if (counter === 0) {
+       console.log('First returned x value:', xExample, 'scaleAmount', scaleAmount);
+       counter++;
+     }
+     return {
+       x: xExample,
+       y: (item.y * (scaleAmount / 100)),
+       w: (item.w * (scaleAmount / 100)),
+       h: (item.h * (scaleAmount / 100))
+     };
+   } else {
+     return item;
+   }
+ }); 
 }
+
 
 // THIS SCALES THE CANVAS
 function scaleCanvasElements(scaleAmount) {
@@ -603,16 +613,12 @@ function scaleCanvasElements(scaleAmount) {
     var canvas = canvases[i];
     var currentWidth = canvas.style.width;
     var currentHeight = canvas.style.height;
-    console.log('canvas width and heigth: ', currentWidth, currentHeight);
     canvas.style.width = (parseFloat(currentWidth) * (scaleAmount / 100)) + 'px';
     canvas.style.height = (parseFloat(currentHeight) * (scaleAmount / 100)) + 'px';
+    // canvas.style.marginLeft = 'auto';
+    // canvas.style.marginRight = 'auto';
   }
 }
-
-// STILL NEED TO CALC CHANGE BETWEEN NEW AND OLD WIDTH
-
-
-// NEED TO REDRAW VISIBLE DEMATEN
 
 //DEBOUNCE FOR WINDOW RESIZE AND POSSIBLY OTHER PLACES
 function debounce(func, wait) {

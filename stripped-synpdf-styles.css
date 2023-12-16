@@ -162,6 +162,11 @@ sidecontentbar {
 #invertButton {
     margin-top:16px;
 }
+
+.zoom-buttons {
+    cursor:pointer;
+}
+
 @media screen and (max-width: 899px)  and (orientation:portrait) {
     section2 {
         flex-direction:column;
