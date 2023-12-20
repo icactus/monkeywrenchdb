@@ -2,10 +2,10 @@ html { width:100%; height:100%; margin: 0px; padding: 0px; background:white/*#e3
 body { width: 100%; height: 100%; margin: 0px; padding: 0px; background:white/*#e3f7fe*/; transition: filter 0.5s; }
 body { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 body { display: flex; flex-direction: column; font-size:100%; overflow-x:hidden;}
-label     { display: block; white-space: nowrap; }
-input     { vertical-align: middle; }
-input[type=checkbox] { margin-top: 7px; }
-input[type=number]   { width: 3.5em; }
+/* label     { display: block; white-space: nowrap; } */
+/* input     { vertical-align: middle; } */
+/* input[type=checkbox] { margin-top: 7px; }
+input[type=number]   { width: 3.5em; } */
 audio     { display: none; margin-right:5px; vertical-align:middle; }
 
 #knop     { position: absolute; z-index: 2; display:none; margin: 5px; }
@@ -71,12 +71,7 @@ a:hover {
     display: flex;
     justify-content: center;
     padding-top: 5px;
-    overflow: auto;
-
-    /*filter: contrast(700%) brightness(200%);
-    background: 
-	linear-gradient(125deg, rgb(218, 218, 255), rgba(0,0,0,0)),
-	url("data:image/svg+xml,%3Csvg viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.23' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); */
+    overflow-x: hidden;
     background: url(yellow-bg-gradient.png);
     background-position-y: -20px;
 }
@@ -156,15 +151,45 @@ sidecontentbar {
     background-color:#f3f6fc;
     min-width:200px;
 }
-#speed-control {
-    align-self:end;
+
+#first-controls {
+    display:flex;
+    column-gap:10px;
 }
+#first-controls p {
+    margin-top:0;
+}
+/* #speed-control {
+    align-self:end;
+} */
 #invertButton {
     margin-top:16px;
 }
 
-.zoom-buttons {
+#control-buttons-row {
+    display:flex;
+    flex-direction:row;
+}
+.control-buttons {
     cursor:pointer;
+}
+#decrementButton {
+    height:25px;
+    width:25px;
+}
+#incrementButton {
+    height:25px;
+    width:25px;
+}
+#speedField {
+    max-width:40px;
+    height:19px;
+}
+#favcolor {
+    height:25px;
+}
+#reset-button {
+    height:25px;
 }
 
 @media screen and (max-width: 899px)  and (orientation:portrait) {
@@ -175,6 +200,7 @@ sidecontentbar {
     }
     sidecontentbar {
         margin-top:0px;
+        min-height:25vh;
     }
 }
 
@@ -210,11 +236,17 @@ sidecontentbar {
     #logo-bar-wrapper {
         padding: 5px;
     }
+    #vidyub {
+        max-width:240px;
+        height:200px;
+    }
     section2 {
         margin-left:0;
     }
     sidecontentbar {
         width:200px;
+        padding-top: 50px;
+        overflow-y: scroll;
     }
     #monkey-logo {
         width:36px;
@@ -302,7 +334,7 @@ body.inverted #monkey-logo {
     transition: filter 0.5s ease;
 }
 body.inverted canvas {
-    filter: brightness(0.6) invert(100%) ;
+    filter: invert(100%) ;
 }
 body.inverted #vidyub {
     filter: invert(100%);
