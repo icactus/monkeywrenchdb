@@ -44,52 +44,84 @@ window.addEventListener('DOMContentLoaded', (event) => {
   document.body.addEventListener('wheel', stopWheelZoom, { passive: false });
 });
 
-
-function checkStorage(key, value) {
-  try {
-    localStorage.setItem(key, value);
-  } catch (e) {
-    if (e.name === 'QuotaExceededError' || e.name === 'QUOTA_EXCEEDED_ERR') {
-      // Local storage is full, delete the oldest item
-      deleteOldestItem();
-      // Try setting the item again
-      try {
-        localStorage.setItem(key, value);
-      } catch (e) {
-        // Still unable to set the item, return false
-        return false;
-      }
-    } else {
-      // Error other than quota exceeded, return false
-      return false;
-    }
+function setupPlayPauseButton() {
+  if (typeof ybplayer$$module$synpdf === 'undefined' || typeof ybplayer$$module$synpdf.getPlayerState !== 'function') {
+      // The YouTube Player is not ready yet, exit the function
+      return;
   }
-  return true;
+  var playPauseButton = document.getElementById("play-pause-button");
+  playPauseButton.addEventListener("click", function() {
+      if (ybplayer$$module$synpdf.getPlayerState() == YT.PlayerState.PLAYING) {
+          ybplayer$$module$synpdf.pauseVideo();
+      } else {
+          ybplayer$$module$synpdf.playVideo();
+      }
+      // Update the play-pause button after a delay to ensure the player's state has changed
+      setTimeout(updatePlayPauseButton, 250);
+  });
+  // Ensure the correct button is displayed when the buttons are created
+  updatePlayPauseButton();
+}
+
+function updatePlayPauseButton() {
+  var playIcon = document.getElementById("play-icon");
+  var pauseIcon = document.getElementById("pause-icon");
+  if (ybplayer$$module$synpdf.getPlayerState() == YT.PlayerState.PLAYING) {
+      playIcon.style.display = "none";
+      pauseIcon.style.display = "flex";
+  } else {
+      playIcon.style.display = "flex";
+      pauseIcon.style.display = "none";
+  }
 }
 
 
-function deleteOldestItem() {
-  let oldestKey = null;
-  let oldestTime = Date.now();
 
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    const itemStr = localStorage.getItem(key);
+// function checkStorage(key, value) {
+//   try {
+//     localStorage.setItem(key, value);
+//   } catch (e) {
+//     if (e.name === 'QuotaExceededError' || e.name === 'QUOTA_EXCEEDED_ERR') {
+//       // Local storage is full, delete the oldest item
+//       deleteOldestItem();
+//       // Try setting the item again
+//       try {
+//         localStorage.setItem(key, value);
+//       } catch (e) {
+//         // Still unable to set the item, return false
+//         return false;
+//       }
+//     } else {
+//       // Error other than quota exceeded, return false
+//       return false;
+//     }
+//   }
+//   return true;
+// }
 
-    if (itemStr) {
-      const item = JSON.parse(itemStr);
 
-      if (item.timestamp && item.timestamp < oldestTime) {
-        oldestTime = item.timestamp;
-        oldestKey = key;
-      }
-    }
-  }
+// function deleteOldestItem() {
+//   let oldestKey = null;
+//   let oldestTime = Date.now();
 
-  if (oldestKey) {
-    localStorage.removeItem(oldestKey);
-  }
-}
+//   for (let i = 0; i < localStorage.length; i++) {
+//     const key = localStorage.key(i);
+//     const itemStr = localStorage.getItem(key);
+
+//     if (itemStr) {
+//       const item = JSON.parse(itemStr);
+
+//       if (item.timestamp && item.timestamp < oldestTime) {
+//         oldestTime = item.timestamp;
+//         oldestKey = key;
+//       }
+//     }
+//   }
+
+//   if (oldestKey) {
+//     localStorage.removeItem(oldestKey);
+//   }
+// }
 
 // HORIZONTAL FETCHINSRUMENTS
 function fetchSearchByInstrument() {

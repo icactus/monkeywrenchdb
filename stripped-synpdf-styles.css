@@ -145,6 +145,9 @@ section2 {
     margin-top:10px;
     margin-left:16px;
 }
+#notation-controls-wrapper {
+    flex:1;
+}
 sidecontentbar {
     margin-top:100px;
     padding:1em;

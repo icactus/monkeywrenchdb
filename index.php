@@ -90,7 +90,8 @@
 
                     </div>
                 </div>
-            </div> 
+            </div>
+            
             <sidecontentbar>
                 <div id="sidecontent">
                     <div id="first-controls">
