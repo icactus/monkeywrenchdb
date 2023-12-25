@@ -625,7 +625,7 @@ function readPdf$$module$synpdf(a, b) {
         loadingTask.onProgress = function(progressData) {
             if (shouldUpdate) {
                 var percentComplete = Math.min((progressData.loaded / progressData.total) * 100, 100);
-                $("#notation").html('<h2>Loading PDF: ' + percentComplete.toFixed(0) + '%</h2>');
+                $("#notation").html('<h2 style="margin-left:10px">Loading PDF: ' + percentComplete.toFixed(0) + '%</h2>');
             }
         };        
         loadingTask.promise.then(function(a) {
@@ -636,7 +636,7 @@ function readPdf$$module$synpdf(a, b) {
         });
       }
   }
-
+let renderedPages = 1;
 //now returns a promise after each page so once it's all done we can call time2x in readpdfdoc() to scroll return on window resize.
 function goPage$$module$synpdf(a, b) {
     return pdfDoc$$module$synpdf.getPage(a).then(function(page) {
@@ -656,20 +656,29 @@ function goPage$$module$synpdf(a, b) {
             if (a === 1 && newInstrumentTime2xFlag === 1) {
                 msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
                 newInstrumentTime2xFlag = 0;
-              }
+            }
             if (doresize$$module$synpdf) {
                 resizePdf$$module$synpdf();
             } else {
                 if (a < pdfDoc$$module$synpdf.numPages) {
-                    return goPage$$module$synpdf(a + 1, b + viewport2.height);
+                   renderedPages++;
+                   let percentComplete = (renderedPages / pdfDoc$$module$synpdf.numPages) * 100;
+                   $("#loadingMessage2").html('<h2>Rendering PDF: ' + percentComplete.toFixed(0) + '%</h2>');
+                   $("#control-buttons-row").hide();
+                   $("#loadingMessage2").show();
+                   return goPage$$module$synpdf(a + 1, b + viewport2.height);
                 } else {
-                    rendering$$module$synpdf = 0;
-                    addDummySys$$module$synpdf();
+                   rendering$$module$synpdf = 0;
+                   addDummySys$$module$synpdf();
+                   renderedPages = 1;
+                   $("#control-buttons-row").show();
+                   $("#loadingMessage2").hide();
                 }
             }
         });
     });
-}
+ }
+ 
 
 function compPage$$module$synpdf(a, b, c) {
     var d = deMetriek$$module$synpdf[b];

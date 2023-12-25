@@ -145,6 +145,13 @@ section2 {
     margin-top:10px;
     margin-left:16px;
 }
+
+#loadingMessage2 {
+    position:fixed;
+    margin-left:10px;
+    z-index:100;
+}
+
 #notation-controls-wrapper {
     flex:1;
 }

@@ -75,55 +75,7 @@ function updatePlayPauseButton() {
   }
 }
 
-
-
-// function checkStorage(key, value) {
-//   try {
-//     localStorage.setItem(key, value);
-//   } catch (e) {
-//     if (e.name === 'QuotaExceededError' || e.name === 'QUOTA_EXCEEDED_ERR') {
-//       // Local storage is full, delete the oldest item
-//       deleteOldestItem();
-//       // Try setting the item again
-//       try {
-//         localStorage.setItem(key, value);
-//       } catch (e) {
-//         // Still unable to set the item, return false
-//         return false;
-//       }
-//     } else {
-//       // Error other than quota exceeded, return false
-//       return false;
-//     }
-//   }
-//   return true;
-// }
-
-
-// function deleteOldestItem() {
-//   let oldestKey = null;
-//   let oldestTime = Date.now();
-
-//   for (let i = 0; i < localStorage.length; i++) {
-//     const key = localStorage.key(i);
-//     const itemStr = localStorage.getItem(key);
-
-//     if (itemStr) {
-//       const item = JSON.parse(itemStr);
-
-//       if (item.timestamp && item.timestamp < oldestTime) {
-//         oldestTime = item.timestamp;
-//         oldestKey = key;
-//       }
-//     }
-//   }
-
-//   if (oldestKey) {
-//     localStorage.removeItem(oldestKey);
-//   }
-// }
-
-// HORIZONTAL FETCHINSRUMENTS
+// HORIZONTAL FETCHINSTRUMENTS
 function fetchSearchByInstrument() {
   $.ajax({
     url: 'fetchinstruments_data.php',
@@ -596,7 +548,7 @@ let newOffsetX = 0;
 // RESIZE ALL CANVASES USING CSS
 function resizeDematenAndCanvas(scaleAmount) {
   var canvas = document.getElementsByTagName('canvas')[0];
-  const notationDiv = document.getElementById("notation");
+  var notationDiv = document.getElementById("notation");
   var canvasRect = canvas.getBoundingClientRect();
   var notationDivRect = notationDiv.getBoundingClientRect();
   currentOffsetX = (canvasRect.left - notationDivRect.left);

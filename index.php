@@ -17,7 +17,7 @@
     <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.min.js"></script>
+    <!-- <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.min.js"></script> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
     <script src="stripped-synpdf.js"></script>
     <title>monkey wrench</title>
@@ -71,6 +71,8 @@
 
         </section1>
         <section2>
+            <div id="loadingMessage2">
+            </div>
             <div class="notation" id="notation"><!--width needed for editmode pixel mapping -->
                 <div class="collapsible">
                     <div class="search-heading" id="instruments-heading"><h2>Select Instrument</h2></div>
