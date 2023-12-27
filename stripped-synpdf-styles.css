@@ -208,8 +208,11 @@ sidecontentbar {
         margin-top:100px;
         margin-left:0;
     }
+
     sidecontentbar {
         margin-top:0px;
+    }
+    .dynamic-min-height {
         min-height:25vh;
     }
 }
@@ -309,7 +312,7 @@ sidecontentbar {
 .collapsible {
     background-color: #ddd;
     color: #444;
-    padding: 16px 0 16px 0;
+    padding: 1px 0 1px 0;
     margin-bottom:4px;
     width: 100%;
     text-align: left;

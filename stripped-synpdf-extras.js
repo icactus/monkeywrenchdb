@@ -148,7 +148,7 @@ function fetchPieces(instrumentId) {
           });
 
           // Create a heading for the category
-          container.append('<h2>' + categoryName + '</h2>');
+          container.append('<h3>' + categoryName + '</h3>');
 
           // Populate the links dynamically
           groupedPieces[categoryName].forEach(function(piece) {
@@ -452,6 +452,8 @@ $('#pieces-container').on('click', '.pieces-link', function() {
 });
 
 $('#recordings-container').on('click', '.recordings-link', function() {
+
+
   let recordingFullData = $(this).data('recordingFullData');
   console.log(recordingFullData);
   let recordingId = recordingFullData.recording_id;

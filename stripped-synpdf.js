@@ -106,8 +106,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     this.width = b.width;
     this.$cvs = $(b);
     $("#notation").empty();
-
-    //ADDED FULLSCREEN TOGGLE BUTTON
+    //PDF SIZING / PLAY / SETTINGS BUTTONS
     b = $(
         `<div id="control-buttons-row" style="position:fixed; bottom:0; right:0;">
             <button class="control-buttons" onclick="toggleFullscreen(event)">
@@ -661,8 +660,10 @@ function goPage$$module$synpdf(a, b) {
                 resizePdf$$module$synpdf();
             } else {
                 if (a < pdfDoc$$module$synpdf.numPages) {
+                    if (a === 1) {renderedPages = 1}; // start pages at 1 in case part switched before done rendering
                    renderedPages++;
                    let percentComplete = (renderedPages / pdfDoc$$module$synpdf.numPages) * 100;
+                   $("#loadingMessage2").hide(); // remove in case part switched before done rendering
                    $("#loadingMessage2").html('<h2>Rendering PDF: ' + percentComplete.toFixed(0) + '%</h2>');
                    $("#control-buttons-row").hide();
                    $("#loadingMessage2").show();
