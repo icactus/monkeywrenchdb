@@ -452,8 +452,11 @@ $('#pieces-container').on('click', '.pieces-link', function() {
 });
 
 $('#recordings-container').on('click', '.recordings-link', function() {
-
-
+  let sidecontentbar = document.querySelector('sidecontentbar'); // Size sidecontentbar for mobile
+  let section2 = document.querySelector('section2'); // same as above
+  sidecontentbar.classList.add('sidecontenbar-min-height');
+  section2.classList.add('section2-margin-top');
+  
   let recordingFullData = $(this).data('recordingFullData');
   console.log(recordingFullData);
   let recordingId = recordingFullData.recording_id;
