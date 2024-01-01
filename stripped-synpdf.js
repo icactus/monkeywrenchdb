@@ -108,7 +108,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     $("#notation").empty();
     //PDF SIZING / PLAY / SETTINGS BUTTONS
     b = $(
-        `<div id="control-buttons-row" style="position:fixed; bottom:0; right:0;">
+        `<div id="control-buttons-row">
             <button class="control-buttons" onclick="toggleFullscreen(event)">
                 <svg height="20pt" version="1.1" viewBox="0 0 14 14" width="20pt" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title/><desc/><defs/><g fill="none" fill-rule="evenodd" id="Page-1" stroke="none" stroke-width="1"><g fill="#000000" id="Core" transform="translate(-215.000000, -257.000000)"><g id="fullscreen" transform="translate(215.000000, 257.000000)"><path d="M2,9 L0,9 L0,14 L5,14 L5,12 L2,12 L2,9 L2,9 Z M0,5 L2,5 L2,2 L5,2 L5,0 L0,0 L0,5 L0,5 Z M12,12 L9,12 L9,14 L14,14 L14,9 L12,9 L12,12 L12,12 Z M9,0 L9,2 L12,2 L12,5 L14,5 L14,0 L9,0 L9,0 Z" id="Shape"/></g></g></g></svg>
             </button>
@@ -172,7 +172,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 <rect x="14" y="4" width="4" height="16"></rect>
                 </svg>
             </button>
-            <button class="control-buttons">
+            <button id="settings-button" onclick="toggleSettingsMenu()">
                 <svg fill="#000000" height="20pt" width="20pt" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
                     viewBox="0 0 512.003 512.003" xml:space="preserve">
                 <g>

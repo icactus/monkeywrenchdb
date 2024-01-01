@@ -37,7 +37,7 @@ canvas    { display: block; }
 #saveDlg pre { margin:0px; user-select: text; -webkit-user-select: text;} /*allow select save dialogue text */
 #saveDlg button { margin-left:1em; }
 #help     { display: none; width:90%; padding: 1%; background: white; position:absolute; top: 50%; left: 50%;
-            transform: translate(-50%,-50%); z-index:2; overflow-y: auto; max-height: 90%; border: grey double 5px; }
+            transform: translate(-50%,-50%); z-index:5; overflow-y: auto; max-height: 90%; border: grey double 5px; }
 #help.showhlp { display: block; }
 #helpm    { text-align: center; padding: 3px; }
 #noklik   { position: absolute; width: 100%; height: 100%; background: rgb(0,0,0,0.3); z-index:1; display: none; }
@@ -167,11 +167,13 @@ sidecontentbar {
     column-gap:10px;
 }
 #first-controls p {
-    margin-top:0;
+    margin:auto;
+    margin-right:10px;
 }
-/* #speed-control {
-    align-self:end;
-} */
+#speed-control, #highlight-control {
+    display:flex;
+    align-items:center;
+}
 #invertButton {
     margin-top:16px;
 }
@@ -179,8 +181,15 @@ sidecontentbar {
 #control-buttons-row {
     display:flex;
     flex-direction:row;
+    position:fixed;
+    bottom:0;
+    left:20px;
 }
 .control-buttons {
+    cursor:pointer;
+
+}
+#settings-button {
     cursor:pointer;
 }
 #decrementButton {
@@ -243,6 +252,23 @@ sidecontentbar {
     }
     #invertButton {
         display:none;
+    }
+    #control-buttons-row {
+        width:100%;
+        padding:4px 0;
+        left:0;
+        background-color:#f8f8f8;
+        border-top: solid 1px #cecece;
+    }
+    .control-buttons {
+        background-color:inherit;
+        border:none;
+    }
+    #play-pause-button {
+        margin-left:auto;
+    }
+    #settings-button {
+        margin-left:auto;
     }
 }
 

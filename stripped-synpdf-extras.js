@@ -75,6 +75,12 @@ function updatePlayPauseButton() {
   }
 }
 
+function toggleSettingsMenu() {
+  const settingsButton = document.getElementById("settings-button");
+  $("#help").toggleClass("showhlp");
+}
+
+
 // HORIZONTAL FETCHINSTRUMENTS
 function fetchSearchByInstrument() {
   $.ajax({
@@ -450,6 +456,12 @@ $('#pieces-container').on('click', '.pieces-link', function() {
   });
   fetchRecordings(metricArrId);
 });
+
+//When piece container is clicked check if there is more than one metricArrId for the instrument name for this piece
+//
+//If yes, then list those options below the name of the piece
+//
+//When an instrument name is clicked, load that specific metricArrData and continue to recordings
 
 $('#recordings-container').on('click', '.recordings-link', function() {
   let sidecontentbar = document.querySelector('sidecontentbar'); // Size sidecontentbar for mobile

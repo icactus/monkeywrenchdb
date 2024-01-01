@@ -98,14 +98,14 @@
                 <div id="sidecontent">
                     <div id="first-controls">
                         <div id="speed-control">
-                            <p><b>Speed Control</b></p>
+                            <p><b>Speed</b></p>
                             <button id="decrementButton">-</button>
                             <button id="incrementButton">+</button>
                             <input type="text" id="speedField" readonly>
                         </div>
                             <!-- <button id="hide-sidebar-button">sidebar</button> -->
                         <div id="highlight-control">
-                            <label for="favcolor"><p><b>Highlight color:</b></p></label>
+                            <label for="favcolor"><p><b>Highlight</b></p></label>
                             <input type="color" id="favcolor" name="favcolor" value="#D7FF47">
                             <button id="reset-button">
                                 <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 0 512 512">
@@ -115,16 +115,18 @@
                             </button>
                         </div>
                     </div>
-                    <h3>Change Part</h3>
-                    <select id="instruments-dropdown">
-                        <option value="">Select Part</option>
-                    </select>
-                    <h3>Change Recording</h3>
-                    <select id="recordings-dropdown">
-                        <option value="">Select Recording</option>
-                    </select>
-                    <div>
-                        <button id="invertButton">Dark Mode (buggy)</button>
+                    <div class="dropdown-wrapper">
+                        <h3>Change Part</h3>
+                        <select id="instruments-dropdown">
+                            <option value="">Select Part</option>
+                        </select>
+                        <h3>Change Recording</h3>
+                        <select id="recordings-dropdown">
+                            <option value="">Select Recording</option>
+                        </select>
+                        <div>
+                            <button id="invertButton">Dark Mode (buggy)</button>
+                        </div>
                     </div>
                 </div>
             </sidecontentbar>
