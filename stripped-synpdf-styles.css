@@ -73,6 +73,8 @@ a:hover {
     padding-top: 5px;
     overflow-x: hidden;
     background: url(yellow-bg-gradient.png);
+    background: rgb(255,250,0);
+    background: -webkit-linear-gradient(42deg, rgba(255,250,0,1) 0%, rgba(125,255,66,1) 31%, rgba(0,212,255,1) 100%);
     background-position-y: -20px;
 }
 #logo-bar-wrapper {
@@ -97,7 +99,8 @@ a:hover {
 }
 .monkeywrench-logo-text  {
     font-size:80%;
-    background: -webkit-linear-gradient(45deg, #09009f, #00ff95 80%);
+    /*background: -webkit-linear-gradient(45deg, #09009f, #00ff95 80%);*/
+    background:-webkit-linear-gradient(45deg, #e0b6ff, #3500ff 80%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
