@@ -12,7 +12,7 @@ let bypassTickFlag = 0 ;
 let currentMeasureTime = 0 ;
 let newInstrumentTime2xFlag = 0 ;
 let scrollFlag = 0 ;
-let globalHighlightColor = '#D7FF47';
+let globalHighlightColor = '#0000ff';
 
 //  NEED TO SET THIS UP
 let currentGlobalScaleAmount = 100;
@@ -26,10 +26,8 @@ $("#favcolor").on("input", function() {
 //color change reset button
 $("#reset-button").on("click", function() {
   console.log('clicked');
-  let defaultColor = '#D7FF47';
-  $(".demaat").css("background", defaultColor);
-  globalHighlightColor = defaultColor;
-  $("#favcolor").val('#D7FF47');
+  $(".demaat").css("background", globalHighlightColor);
+  $("#favcolor").val(globalHighlightColor);
 });
 
 

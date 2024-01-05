@@ -624,7 +624,7 @@ function readPdf$$module$synpdf(a, b) {
         loadingTask.onProgress = function(progressData) {
             if (shouldUpdate) {
                 var percentComplete = Math.min((progressData.loaded / progressData.total) * 100, 100);
-                $("#notation").html('<h2 style="margin-left:10px">Loading PDF: ' + percentComplete.toFixed(0) + '%</h2>');
+                $("#notation").html('<h2 style="margin-left:10px">Downloading PDF: ' + percentComplete.toFixed(0) + '%</h2>');
             }
         };        
         loadingTask.promise.then(function(a) {
@@ -639,8 +639,10 @@ let renderedPages = 1;
 //now returns a promise after each page so once it's all done we can call time2x in readpdfdoc() to scroll return on window resize.
 function goPage$$module$synpdf(a, b) {
     return pdfDoc$$module$synpdf.getPage(a).then(function(page) {
+        var scale = window.innerWidth < 768 ? 1 : 3;
         var viewport2 = page.getViewport({ scale: (deMetriek$$module$synpdf[0] / page._pageInfo.view[2]) });
-        var viewport = page.getViewport({ scale: 3 });
+        var viewport = page.getViewport({ scale: scale });
+        console.log(scale);
         var canvas = document.createElement("canvas");
         var ctx = canvas.getContext("2d");
         canvas.height = viewport.height;
@@ -664,7 +666,7 @@ function goPage$$module$synpdf(a, b) {
                    renderedPages++;
                    let percentComplete = (renderedPages / pdfDoc$$module$synpdf.numPages) * 100;
                    $("#loadingMessage2").hide(); // remove in case part switched before done rendering
-                   $("#loadingMessage2").html('<h2>Rendering PDF: ' + percentComplete.toFixed(0) + '%</h2>');
+                   $("#loadingMessage2").html('<h2>Rendering page: ' + renderedPages + '/' + pdfDoc$$module$synpdf.numPages + '</h2>');
                    $("#control-buttons-row").hide();
                    $("#loadingMessage2").show();
                    return goPage$$module$synpdf(a + 1, b + viewport2.height);
@@ -799,7 +801,7 @@ async function onPlayerStateChange(event) {
             console.error('Failed to seek video:', error);
         }
     }
-    event.data == YT.PlayerState.PLAYING ? (dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 200), setPauseState$$module$synpdf(!1)) : (dummyPlayer$$module$synpdf.clearKlok(), setPauseState$$module$synpdf(!0));
+    event.data == YT.PlayerState.PLAYING ? (dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 150), setPauseState$$module$synpdf(!1)) : (dummyPlayer$$module$synpdf.clearKlok(), setPauseState$$module$synpdf(!0));
     //newPlayerCue needs to subtract offset because time2x uses teTijden time to find deMaten position, not video time
     if (event.data == YT.PlayerState.CUED) {
         scrollFlag = 1 ;
