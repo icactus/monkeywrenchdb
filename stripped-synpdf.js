@@ -639,10 +639,8 @@ let renderedPages = 1;
 //now returns a promise after each page so once it's all done we can call time2x in readpdfdoc() to scroll return on window resize.
 function goPage$$module$synpdf(a, b) {
     return pdfDoc$$module$synpdf.getPage(a).then(function(page) {
-        var scale = window.innerWidth < 768 ? 1 : 3;
         var viewport2 = page.getViewport({ scale: (deMetriek$$module$synpdf[0] / page._pageInfo.view[2]) });
-        var viewport = page.getViewport({ scale: scale });
-        console.log(scale);
+        var viewport = page.getViewport({ scale: 3 });
         var canvas = document.createElement("canvas");
         var ctx = canvas.getContext("2d");
         canvas.height = viewport.height;

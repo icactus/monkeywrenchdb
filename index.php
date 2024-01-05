@@ -19,7 +19,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
     <!-- <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.min.js"></script> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
-    <script src="stripped-synpdf.js?v=2"></script>
+    <script src="stripped-synpdf.js?v=3"></script>
     <title>monkey wrench</title>
 </head>
 <body>
@@ -106,7 +106,7 @@
                             <!-- <button id="hide-sidebar-button">sidebar</button> -->
                         <div id="highlight-control">
                             <label for="favcolor"><p><b>Highlight</b></p></label>
-                            <input type="color" id="favcolor" name="favcolor" value="#D7FF47">
+                            <input type="color" id="favcolor" name="favcolor" value="#0000ff">
                             <button id="reset-button">
                                 <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 0 512 512">
                                 <!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2023 Fonticons, Inc.-->
@@ -192,6 +192,6 @@
             </div>
         </section3>
 
-<script src="stripped-synpdf-extras.js?v=2"></script>
+<script src="stripped-synpdf-extras.js?v=3"></script>
 </body>
 </html>
