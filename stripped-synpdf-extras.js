@@ -12,7 +12,7 @@ let bypassTickFlag = 0 ;
 let currentMeasureTime = 0 ;
 let newInstrumentTime2xFlag = 0 ;
 let scrollFlag = 0 ;
-let globalHighlightColor = '#0000ff';
+let globalHighlightColor = '#00d4ff';
 
 //  NEED TO SET THIS UP
 let currentGlobalScaleAmount = 100;
