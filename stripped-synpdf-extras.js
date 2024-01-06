@@ -501,7 +501,7 @@ const speedField = document.getElementById('speedField');
 let playbackSpeed = 1 ;
 
 function updateSpeedField() {
-    speedField.value = playbackSpeed.toFixed(2);
+    speedField.value = (playbackSpeed.toFixed(2) + 'x');
 }
 
 //set the playback speed to 1 by default

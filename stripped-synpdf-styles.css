@@ -165,19 +165,21 @@ sidecontentbar {
     min-width:200px;
 }
 
-#first-controls {
+#speed-part-row {
     display:flex;
-    column-gap:10px;
+    flex-direction:row;
+    gap:10px;
 }
-#first-controls p {
-    margin:auto;
-    margin-right:10px;
+#speed-control {
+    display:flex;
+    align-items:center;
+    flex-direction:column;
 }
-#speed-control, #highlight-control {
+#highlight-control {
     display:flex;
     align-items:center;
 }
-#invertButton {
+invertButton {
     margin-top:16px;
 }
 
@@ -196,22 +198,80 @@ sidecontentbar {
     cursor:pointer;
 }
 #decrementButton {
+    background:#f8f8f8;
     height:25px;
     width:25px;
+    box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+    border: 0;
+    outline: 0;
+    cursor:pointer;
+
 }
 #incrementButton {
+    background:#f8f8f8;
     height:25px;
     width:25px;
+    box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+    border: 0;
+    outline: 0;
+    cursor:pointer;
+
 }
+#incrementButton:hover, #decrementButton:hover, #favcolor:hover, #reset-button:hover {
+    background:#ddd;
+}
+
 #speedField {
     max-width:40px;
-    height:19px;
+    margin-left:5px;
+    padding-left:5px;
+    height:24px;
+    border:none;
 }
 #favcolor {
+    background:#f8f8f8;
+    border:none;
     height:25px;
+    box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+    cursor:pointer;
+    
 }
 #reset-button {
+    background:inherit;
+    padding-top:2px;
+    border:none;
     height:25px;
+    cursor:pointer;
+}
+
+
+select {
+  /* Reset */
+  appearance: none;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  /* Personalize */
+  padding: 1rem 4rem 1rem 1rem;
+  background: url(Caret_down_font_awesome.svg) no-repeat right 0.8em center / 1.4em,
+    linear-gradient(to left, #ddd 3em, #f8f8f8 3em);
+  color: black;
+  border-radius: 0.25em;
+  box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+  cursor: pointer;
+  /* Remove IE arrow */
+  &::-ms-expand {
+    display: none;
+  }
+  /* Remove focus outline */
+  &:focus {
+    outline: none;
+  }
+  /* <option> colors */
+  option {
+    color: inherit;
+    background-color: white;
+  }
 }
 
 @media screen and (max-width: 899px)  and (orientation:portrait) {
@@ -222,7 +282,7 @@ sidecontentbar {
     }
 
     .section2-margin-top {
-        margin-top:75px;
+        margin-top:100px;
     }
 
     sidecontentbar {
@@ -245,13 +305,18 @@ sidecontentbar {
     #vidyub {
         height:200px;
         align-self:center;
+        margin-top:4px;
     }
     #logo-bar-wrapper {
+        position:absolute;    
         flex-direction:row;
         padding:5px 50px 5px 5px;
     }
     #monkey-logo {
         width:36px;
+    }
+    .section2-margin-top {
+        margin-top:30px;
     }
     #invertButton {
         display:none;

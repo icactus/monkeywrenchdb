@@ -97,29 +97,37 @@
             <sidecontentbar>
                 <div id="sidecontent">
                     <div id="first-controls">
-                        <div id="speed-control">
-                            <p><b>Speed</b></p>
-                            <button id="decrementButton">-</button>
-                            <button id="incrementButton">+</button>
-                            <input type="text" id="speedField" readonly>
-                        </div>
-                            <!-- <button id="hide-sidebar-button">sidebar</button> -->
-                        <div id="highlight-control">
-                            <label for="favcolor"><p><b>Highlight</b></p></label>
-                            <input type="color" id="favcolor" name="favcolor" value="#00d4ff">
-                            <button id="reset-button">
-                                <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 0 512 512">
-                                <!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2023 Fonticons, Inc.-->
-                                <path d="M212.3 224.3H12c-6.6 0-12-5.4-12-12V12C0 5.4 5.4 0 12 0h48c6.6 0 12 5.4 12 12v78.1C117.8 39.3 184.3 7.5 258.2 8c136.9 1 246.4 111.6 246.2 248.5C504 393.3 393.1 504 256.3 504c-64.1 0-122.5-24.3-166.5-64.2-5.1-4.6-5.3-12.6-.5-17.4l34-34c4.5-4.5 11.7-4.7 16.4-.5C170.8 415.3 211.6 432 256.3 432c97.3 0 176-78.7 176-176 0-97.3-78.7-176-176-176-58.5 0-110.3 28.5-142.3 72.3h98.3c6.6 0 12 5.4 12 12v48c0 6.6-5.4 12-12 12z"/>
-                                </svg>
-                            </button>
+                        <div id="speed-part-row">
+                                <!-- <button id="hide-sidebar-button">sidebar</button> -->
+    <!--                        <div id="highlight-control">
+                                <label for="favcolor"><p><b>Highlight</b></p></label>
+                                <input type="color" id="favcolor" name="favcolor" value="#00d4ff">
+                                <button id="reset-button">
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 0 512 512">-->
+                                    <!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2023 Fonticons, Inc.-->
+    <!--                            <path d="M212.3 224.3H12c-6.6 0-12-5.4-12-12V12C0 5.4 5.4 0 12 0h48c6.6 0 12 5.4 12 12v78.1C117.8 39.3 184.3 7.5 258.2 8c136.9 1 246.4 111.6 246.2 248.5C504 393.3 393.1 504 256.3 504c-64.1 0-122.5-24.3-166.5-64.2-5.1-4.6-5.3-12.6-.5-17.4l34-34c4.5-4.5 11.7-4.7 16.4-.5C170.8 415.3 211.6 432 256.3 432c97.3 0 176-78.7 176-176 0-97.3-78.7-176-176-176-58.5 0-110.3 28.5-142.3 72.3h98.3c6.6 0 12 5.4 12 12v48c0 6.6-5.4 12-12 12z"/>
+                                    </svg>
+                                </button>
+                            </div>-->
+                            <div id="change-part-wrapper">
+                                <h3>Change Part</h3>
+                                <select id="instruments-dropdown">
+                                    <option value="">Select Part</option>
+                                </select>
+                            </div>
+                            <div id="speed-control">
+                                <div id="speed-title">
+                                    <h3>Speed</h3>
+                                </div>
+                                <div id="speed-content">
+                                    <button id="decrementButton">-</button>
+                                    <button id="incrementButton">+</button>
+                                    <input type="text" id="speedField" readonly>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="dropdown-wrapper">
-                        <h3>Change Part</h3>
-                        <select id="instruments-dropdown">
-                            <option value="">Select Part</option>
-                        </select>
+                    <div class="change-recording-wrapper">
                         <h3>Change Recording</h3>
                         <select id="recordings-dropdown">
                             <option value="">Select Recording</option>
