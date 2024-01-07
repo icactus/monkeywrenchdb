@@ -624,6 +624,7 @@ function readPdf$$module$synpdf(a, b) {
         loadingTask.onProgress = function(progressData) {
             if (shouldUpdate) {
                 var percentComplete = Math.min((progressData.loaded / progressData.total) * 100, 100);
+                $("#notation").addClass("notation-max-height")
                 $("#notation").html('<h2 style="margin-left:10px">Downloading PDF: ' + percentComplete.toFixed(0) + '%</h2>');
             }
         };        

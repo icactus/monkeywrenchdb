@@ -318,6 +318,12 @@ select {
     .section2-margin-top {
         margin-top:30px;
     }
+    #notation-max-height {
+        max-height:40vh;
+    }
+    #sidecontent {
+        margin-top:-24px;
+    }
     #invertButton {
         display:none;
     }
