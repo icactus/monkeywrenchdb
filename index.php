@@ -6,7 +6,7 @@
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date()); 
+  gtag('js', new Date());
 
   gtag('config', 'G-YG4R4TFWVX');
 </script>
@@ -14,12 +14,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="fonts.css" />
-    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=3" />
+    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=4" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
     <!-- <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.min.js"></script> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
-    <script src="stripped-synpdf.js?v=3"></script>
+    <script src="stripped-synpdf.js?v=4"></script>
     <title>monkey wrench</title>
 </head>
 <body>
@@ -200,6 +200,6 @@
             </div>
         </section3>
 
-<script src="stripped-synpdf-extras.js?v=3"></script>
+<script src="stripped-synpdf-extras.js?v=4"></script>
 </body>
 </html>
