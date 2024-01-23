@@ -624,6 +624,7 @@ function readPdf$$module$synpdf(a, b) {
         loadingTask.onProgress = function(progressData) {
             if (shouldUpdate) {
                 var percentComplete = Math.min((progressData.loaded / progressData.total) * 100, 100);
+                $("#loadingMessage2").hide(); // remove in case part switched before done rendering
                 $("#notation").addClass("notation-max-height")
                 $("#notation").html('<h2 style="margin-left:10px">Downloading PDF: ' + percentComplete.toFixed(0) + '%</h2>');
             }
@@ -664,7 +665,6 @@ function goPage$$module$synpdf(a, b) {
                     if (a === 1) {renderedPages = 1}; // start pages at 1 in case part switched before done rendering
                    renderedPages++;
                    let percentComplete = (renderedPages / pdfDoc$$module$synpdf.numPages) * 100;
-                   $("#loadingMessage2").hide(); // remove in case part switched before done rendering
                    $("#loadingMessage2").html('<h2>Rendering page: ' + renderedPages + '/' + pdfDoc$$module$synpdf.numPages + '</h2>');
                    $("#control-buttons-row").hide();
                    $("#loadingMessage2").show();

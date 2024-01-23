@@ -116,54 +116,78 @@ function fetchSearchByInstrument() {
 }
 
 function fetchPieces(instrumentId) {
-  $.ajax({
-    url: 'fetch_pieces.php',
-    method: 'GET',
-    data: { instrumentId: instrumentId },
-    success: function(response) {
-      var recordingsContainer = $('#recordings-container');
-      recordingsContainer.empty();
+    $.ajax({
+        url: 'fetch_pieces.php',
+        method: 'GET',
+        data: { instrumentId: instrumentId },
+        success: function(response) {
+            console.log(response);
+            var container = $('#pieces-container');
+            container.empty();
 
-      if (response === "No pieces found for the selected instrument") {
-        console.log("No pieces found for the selected instrument");
-        $('#pieces-container').html('<p>No pieces found for the selected instrument</p>');
-      } else {
-        var pieces = JSON.parse(response);
-        var container = $('#pieces-container');
-        container.empty();
+            if (response === "No pieces found for the selected instrument") {
+                console.log("No pieces found for the selected instrument");
+                container.html('<p>No pieces found for the selected instrument</p>');
+            } else {
+                var data = JSON.parse(response);
+                var pieces = data.pieces;
+                var instrumentName = data.instrumentName;
 
-        // Group pieces by 'piece_category.category_name'
-        var groupedPieces = pieces.reduce(function(acc, piece) {
-          var categoryName = piece.category_name;
-          if (!acc[categoryName]) {
-            acc[categoryName] = [];
-          }
-          acc[categoryName].push(piece);
-          return acc;
-        }, {});
+                // Group pieces by 'piece_category.category_name'
+                var groupedPieces = pieces.reduce(function(acc, piece) {
+                    var categoryName = piece.category_name;
+                    if (!acc[categoryName]) {
+                        acc[categoryName] = [];
+                    }
+                    acc[categoryName].push(piece);
+                    return acc;
+                }, {});
 
-        // Iterate over each category
-        Object.keys(groupedPieces).forEach(function(categoryName) {
-          // Sort pieces within each category by 'composer_last'
-          groupedPieces[categoryName].sort(function(a, b) {
-            var composerA = a.composer_last.toUpperCase();
-            var composerB = b.composer_last.toUpperCase();
-            return composerA.localeCompare(composerB);
-          });
+                // Rename 'Solo + Orchestra' and 'Solo + Piano' dynamically
+                if (groupedPieces['Solo + Orchestra']) {
+                    groupedPieces[instrumentName + ' + Orchestra'] = groupedPieces['Solo + Orchestra'];
+                    delete groupedPieces['Solo + Orchestra'];
+                }
+                if (groupedPieces['Solo + Piano']) {
+                    groupedPieces[instrumentName + ' + Piano'] = groupedPieces['Solo + Piano'];
+                    delete groupedPieces['Solo + Piano'];
+                }
 
-          // Create a heading for the category
-          container.append('<h3>' + categoryName + '</h3>');
+                // Desired order of categories by name, including dynamic category names
+                var desiredOrder = ['Orchestra', instrumentName + ' + Orchestra', instrumentName + ' + Piano', 'Solo', 'Opera', 'Chamber', 'Choral Works'];
 
-          // Populate the links dynamically
-          groupedPieces[categoryName].forEach(function(piece) {
-            container.append('<p><a href="#" class="pieces-link" data-id="' + piece.metric_arr_id + '" data-piece-id="' + piece.piece_id + '" data-instrument-id="' + instrumentId +'">' + piece.composer_last + ' - ' + piece.piece_name + '</a></p>');
-          });
-        });
-      }
-    }
-  });
+                // Reorder groupedPieces according to desiredOrder
+                var orderedGroupedPieces = desiredOrder.reduce(function(ordered, categoryName) {
+                    if (groupedPieces[categoryName]) {
+                        ordered[categoryName] = groupedPieces[categoryName];
+                    }
+                    return ordered;
+                }, {});
+
+                // Iterate over each category in orderedGroupedPieces
+                Object.keys(orderedGroupedPieces).forEach(function(categoryName) {
+                    // Sort pieces within each category by 'composer_last'
+                    orderedGroupedPieces[categoryName].sort(function(a, b) {
+                        var composerA = a.composer_last.toUpperCase();
+                        var composerB = b.composer_last.toUpperCase();
+                        return composerA.localeCompare(composerB);
+                    });
+
+                    // Create a heading for the category
+                    container.append('<h3>' + categoryName + '</h3>');
+
+                    // Populate the links dynamically
+                    orderedGroupedPieces[categoryName].forEach(function(piece) {
+                        container.append('<p><a href="#" class="pieces-link" data-id="' + piece.metric_arr_id + '" data-piece-id="' + piece.piece_id + '" data-instrument-id="' + instrumentId + '">' + piece.composer_last + ' - ' + piece.piece_name + '</a></p>');
+                    });
+                });
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log("AJAX error: " + textStatus + ' : ' + errorThrown);
+        }
+    });
 }
-
 
 function generateInstrumentsDropdown(recordingId) {
   return new Promise(function(resolve, reject) {
@@ -426,7 +450,7 @@ $('#recordings-dropdown').change(function() {
 $('#instrument-links').on('click', '.instrument-link-a', function() {
   var instrumentId = $(this).data('id');
   var instrumentText = $(this).text();
-  
+
   var headingElement = $("#instruments-heading").children().first();
   var newHeadingText = "Select Instrument: " + instrumentText;
   headingElement.replaceWith(function() {

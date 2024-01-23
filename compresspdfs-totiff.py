@@ -2,9 +2,10 @@ import os
 import subprocess
 from PyPDF2 import PdfReader, PdfWriter
 
-pdf_directory = 'C:/xampp/htdocs/synpdf_182/smallerpdfs/Newfolder'
-temp_directory = 'C:/xampp/htdocs/synpdf_182/smallerpdfs/temp'
-processed_directory = 'C:/xampp/htdocs/synpdf_182/smallerpdfs/processed'
+pdf_directory = '/home/jengaship/monkeywrenchdb/synpdf_182/smallerpdfs/Newfolder'
+temp_directory = '/home/jengaship/monkeywrenchdb/synpdf_182/smallerpdfs/temp'
+processed_directory = '/home/jengaship/monkeywrenchdb/synpdf_182/smallerpdfs/processed'
+magick_path = '/home/jengaship/monkeywrenchdb/magick'
 
 # Create directories if they don't exist
 os.makedirs(temp_directory, exist_ok=True)
@@ -40,14 +41,14 @@ for filename in os.listdir(pdf_directory):
                 #USEFUL OTHER THINGS:  '-kuwahara', '2', ALSO '-deskew', '40%', '+repage', 
                 tiff_output_filename = f'{temp_directory}/{os.path.splitext(page_filename)[0]}.tif'
                 print(f"Converting {tiff_output_filename}")
-                subprocess.run(['magick', '-density', '600', pdf_page_path, '-background', 'white', '-alpha', 'remove', '-quality', '100', tiff_output_filename])
-                subprocess.run(['magick', '-density', '300', tiff_output_filename, '-resize', '2000x', '-monochrome', '-compress', 'Group4', tiff_output_filename])
+                subprocess.run([magick_path, '-verbose', '-density', '600', pdf_page_path, '-background', 'white', '-alpha', 'remove', '-quality', '100', tiff_output_filename])
+                subprocess.run([magick_path, '-verbose', '-density', '300', tiff_output_filename, '-resize', '2000x', '-monochrome', '-compress', 'Group4', tiff_output_filename])
 
                 os.remove(pdf_page_path)
 
         # After handling a single PDF, combine the TIFF files into one PDF and save it to the processed directory
         processed_pdf_path = os.path.join(processed_directory, f'{image_base_name}.pdf')
-        subprocess.run(['magick', f'{temp_directory}/*.tif', processed_pdf_path])
+        subprocess.run([magick_path, f'{temp_directory}/*.tif', processed_pdf_path])
 
         # Clean up the temporary TIFF files
         for page_filename in os.listdir(temp_directory):

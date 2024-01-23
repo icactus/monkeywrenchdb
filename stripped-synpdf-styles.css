@@ -175,6 +175,10 @@ sidecontentbar {
     align-items:center;
     flex-direction:column;
 }
+#speed-content {
+    display:flex;
+    align-items:center;
+}
 #highlight-control {
     display:flex;
     align-items:center;
@@ -189,6 +193,7 @@ invertButton {
     position:fixed;
     bottom:0;
     left:20px;
+    z-index:5;
 }
 .control-buttons {
     cursor:pointer;
@@ -291,6 +296,12 @@ select {
     .sidecontenbar-min-height {
         
         min-height:25vh;
+    }
+}
+
+@media screen and (max-width: 767px) {
+    select {
+        padding: 0.5rem 4rem 0.5rem 0.5rem;
     }
 }
 
