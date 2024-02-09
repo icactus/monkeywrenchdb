@@ -40,6 +40,11 @@
                             </a>
                         </div>  
                     </div>
+                    <div class="nav-menu">
+                        <a id="help-link" href="#" onclick="toggleHelpLinkMenu(); return false;">Help</a>
+                        <a id="about-link" href="">About</a>
+                        <a id="donate-link" href="">Donate</a>
+                    </div>
                 </div>
                 
                 <div id="vidyub">
@@ -158,43 +163,21 @@
             <div id="render" class="dlog" style="left:5%; padding:0.5em;"></div>
             <div id="noklik"></div>
             <div id="help">
-                The menu is explained in the <a href="readme.html#menu" target="_blank">usage instructions</a><br>
-                <span>You can use the following keys:</span>
+                <span>Click/touch to navigate sheet music!</span><br>
+                <span>Keyboard controls:</span>
                 <table class="helptbl">
                     <tr><td><b>spacebar</b> or tap<br>in left margin</td>
                         <td>pause / continue</td>
-                        <td><b>f</b></td><td>toggle file buttons</td></tr>
-                    <tr><td><b>right arrow</b></td><td>go to next measure</td>       <td><b>l</b></td><td>toggle line cursor</td></tr>
+                        <td><b>up arrow / down arrow</b></td><td>move up or down lines</td></tr>
+                    <tr><td><b>right arrow</b></td><td>go to next measure</td>       <td><b>PgUp / PgDn</b></td><td>page up / page down</td></tr>
                     <tr><td><b>left arrow</b></td><td>go to previous measure</td>   <td><b>h</b></td><td>toggle help</td></tr>
-                    <tr><td><b>+</b>/<b>-</b></td><td>increase / decrease speed</td>  <td><b>m</b></td><td>toggle menu</td></tr>
+                    <tr><td><b>+</b>/<b>-</b></td><td>increase / decrease speed</td>  <td><b></b></td><td></td></tr>
                 </table>
-
-                In addition, when synchronization is enabled:
-                <table class="helptbl">
-                    <tr><td><b>b</b> or tap in score</td><td>record <a href="readme.html#sync" target="_blank">sync point</a>, 
-                        move to the next measure.</td>
-                        <td><b>g</b></td><td>remove a pair of <a href="readme.html#repeats" target="_blank">repeat marks</a>.</td></tr>
-                    <tr><td><b>backspace</b> or clear button</td>
-                        <td>backup one measure: erase current sync point (and all following, if any)</td>
-                        <td><b>long</b> click or <b>shift</b> click in measure</td>
-                        <td>add a <a href="readme.html#repeats" target="_blank">repeat mark</a> to the measure</td></tr>
-                    <tr><td><b>,</b></td><td>shorten the duration of the current measure</td>
-                        <td><b>ctrl-,</b></td><td>shorten the initial offset (play back time in the media file where
-                                                the first measure starts).</td></tr>
-                    <tr><td><b>.</b></td><td>lengthen the duration of the current measure.</td>
-                        <td><b>ctrl-.</b></td><td>lengthen the initial offset.</td></tr>
-                    <tr><td><b>w</b> or<br/>save&nbsp;button</td>
-                        <td colspan="3">save timings, pdf data and other settings to a file (see
-                        <a href="readme.html#preload" target="_blank">preload file</a>).
-                        Also works with dropbox. You can load a preload file with the score file button.
-                        </td></tr>
-                </table>
-                synchronizing:<ul>
-                    <li>At the start of every new (unsynchronized) measure the program waits for a click/tap in the score
-                    (or key press &apos;B&apos;)</li>
-                    <li>By clicking in the score (or typing key &apos;B&apos;) you synchronize the *first* beat of that measure to the audio.</li>
-                    <li>The duration of the current measure and the initial offset are shown in the top right corner of the display.
-                    You can precisely adjust these numbers with the keyboard sync commands (preferably when media is paused).</li>
+                Helpful Info:<ul>
+                <li>This site is under heavy contruction so many things may not work as expected!</li>
+               <li>Sheet music loads much faster on Chrome than Firefox.</li>
+                <li>Full screen, zoom, and other buttons do not appear until all pages have finished rendering.</li>
+                <li>Click on sheet music first before using arrow keys to navigate. Otherwise the arrow keys will be controlling the Youtube player.
                 </ul>
                 <button id="closehelp">Close</button>
             </div>

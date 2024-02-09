@@ -77,7 +77,10 @@ function toggleSettingsMenu() {
   const settingsButton = document.getElementById("settings-button");
   $("#help").toggleClass("showhlp");
 }
-
+function toggleHelpLinkMenu() {
+    const helpLink = document.getElementById("help-link");
+    $("#help").toggleClass("showhlp");
+}
 
 // HORIZONTAL FETCHINSTRUMENTS
 function fetchSearchByInstrument() {
@@ -166,11 +169,20 @@ function fetchPieces(instrumentId) {
 
                 // Iterate over each category in orderedGroupedPieces
                 Object.keys(orderedGroupedPieces).forEach(function(categoryName) {
-                    // Sort pieces within each category by 'composer_last'
+                    // Sort pieces within each category by 'composer_last' and then by 'piece_name'
                     orderedGroupedPieces[categoryName].sort(function(a, b) {
                         var composerA = a.composer_last.toUpperCase();
                         var composerB = b.composer_last.toUpperCase();
-                        return composerA.localeCompare(composerB);
+                        var result = composerA.localeCompare(composerB);
+
+                        // If composers are the same, sort by 'piece_name'
+                        if (result === 0) {
+                            var pieceA = a.piece_name.toUpperCase();
+                            var pieceB = b.piece_name.toUpperCase();
+                            result = pieceA.localeCompare(pieceB);
+                        }
+
+                        return result;
                     });
 
                     // Create a heading for the category

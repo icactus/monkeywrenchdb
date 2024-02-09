@@ -118,13 +118,22 @@ a:hover {
 #logotext-database {
     font-size:1em;
 }
-.monkeywrench-logo-text > a:link,
-.monkeywrench-logo-text > a:visited,
-.monkeywrench-logo-text > a:hover,
-.monkeywrench-logo-text > a:active {
+.monkeywrench-logo-text, .nav-menu > a:link,
+.monkeywrench-logo-text, .nav-menu > a:visited,
+.monkeywrench-logo-text, .nav-menu > a:hover,
+.monkeywrench-logo-text, .nav-menu > a:active {
   text-decoration: none !important;
 }
-
+.nav-menu a{
+    color:black;
+    padding:10px;
+}
+.nav-menu {
+    display:flex;
+    flex-direction:row;
+    
+    padding-left:20px;
+}
 
 
   
