@@ -14,7 +14,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="fonts.css" />
-    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=4" />
+    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=5" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
     <!-- <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.min.js"></script> -->
@@ -184,6 +184,6 @@
             </div>
         </section3>
 
-<script src="stripped-synpdf-extras.js?v=5"></script>
+<script src="stripped-synpdf-extras.js?v=6"></script>
 </body>
 </html>
