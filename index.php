@@ -175,7 +175,8 @@
                 </table>
                 Helpful Info:<ul>
                 <li>This site is under heavy contruction so many things may not work as expected!</li>
-               <li>Sheet music loads much faster on Chrome than Firefox.</li>
+                <li>This site breaks on older computers/devices for scores longer than 100 pages.</li>
+                <li>Sheet music loads much faster on Chrome than Firefox.</li>
                 <li>Full screen, zoom, and other buttons do not appear until all pages have finished rendering.</li>
                 <li>Click on sheet music first before using arrow keys to navigate. Otherwise the arrow keys will be controlling the Youtube player.
                 </ul>
