@@ -83,6 +83,7 @@ function toggleHelpLinkMenu() {
 }
 
 // HORIZONTAL FETCHINSTRUMENTS
+// HORIZONTAL FETCHINSTRUMENTS
 function fetchSearchByInstrument() {
   $.ajax({
     url: 'fetchinstruments_data.php',
@@ -107,7 +108,8 @@ function fetchSearchByInstrument() {
         groupDiv.append(groupName);
         
         instruments.forEach(function(instrument) {
-            groupDiv.append('<div class="instrument-link"><a href="#" class="instrument-link-a" data-id="' + instrument.instrument_id + '">' + instrument.instrument_name + '</a></div>');
+            // Append the instrument link with the total metric value in parentheses
+            groupDiv.append('<div class="instrument-link"><a href="#" class="instrument-link-a" data-id="' + instrument.instrument_id + '">' + instrument.instrument_name + ' (' + instrument.total_metric_value + ')</a></div>');
         });
         
         // Append the group div to the container
