@@ -19,7 +19,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
     <!-- <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.min.js"></script> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="stripped-synpdf.js?v=8"></script>
+    <script src="stripped-synpdf.js?v=9"></script>
     <title>monkey wrench</title>
 </head>
 <body>

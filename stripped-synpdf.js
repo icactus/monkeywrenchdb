@@ -944,7 +944,7 @@ async function onPlayerStateChange(event) {
             console.error('Failed to seek video:', error);
         }
     }
-    event.data == YT.PlayerState.PLAYING ? (dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 150), setPauseState$$module$synpdf(!1)) : (dummyPlayer$$module$synpdf.clearKlok(), setPauseState$$module$synpdf(!0));
+    event.data == YT.PlayerState.PLAYING ? (dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100), setPauseState$$module$synpdf(!1)) : (dummyPlayer$$module$synpdf.clearKlok(), setPauseState$$module$synpdf(!0));
     //newPlayerCue needs to subtract offset because time2x uses teTijden time to find deMaten position, not video time
     if (event.data == YT.PlayerState.CUED) {
         scrollFlag = 1 ;
