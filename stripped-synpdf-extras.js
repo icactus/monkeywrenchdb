@@ -83,7 +83,6 @@ function toggleHelpLinkMenu() {
 }
 
 // HORIZONTAL FETCHINSTRUMENTS
-// HORIZONTAL FETCHINSTRUMENTS
 function fetchSearchByInstrument() {
   $.ajax({
     url: 'fetchinstruments_data.php',
@@ -412,6 +411,8 @@ $('#instruments-dropdown').change(function() {
   fetchNewInstrument(instrumentData)
     .then(recordingFullData => {
       updateRecordingsData(instrumentData.metric_arr_id);
+      renderedCanvasesQueue = [];
+      renderingTasks = [];
       loadRecording(recordingFullData)
         .then(function() {
           console.log(msc_wz$$module$synpdf);

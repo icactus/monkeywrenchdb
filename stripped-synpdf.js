@@ -216,6 +216,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         <div id="rollijn" class="dashed"></div>`
       );
     $("#notation").append(b);
+    document.getElementById('notation').addEventListener('scroll', debouncedRenderVisibleAndNextPage);
     setupPlayPauseButton();
     this.maatloper = $('<div class="demaat" style="background:' + globalHighlightColor + '; opacity:0.2; left:0px; top:0px; width:0px; height:0px; z-index:2"></div>');
     $("#notation").append(this.maatloper);
@@ -350,10 +351,10 @@ function findCurrentMeasureTime() {
     return new Promise((resolve, reject) => {
       let d;
       for (let b = 0; b < deTijden$$module$synpdf.length; b++) {
-        console.log('findcurrentmeasuretime');
         if (demix$$module$synpdf === deTijden$$module$synpdf[b].mix) {
           d = deTijden$$module$synpdf[b].t;
           currentMeasureTime = d;
+          console.log('findcurrentmeasuretime');
           resolve();
           break;
         }
@@ -639,48 +640,191 @@ function readPdf$$module$synpdf(a, b) {
   }
 let renderedPages = 1;
 //now returns a promise after each page so once it's all done we can call time2x in readpdfdoc() to scroll return on window resize.
+// Initialize an array to store rendering tasks
+var renderingTasks = [];
+
 function goPage$$module$synpdf(a, b) {
     return pdfDoc$$module$synpdf.getPage(a).then(function(page) {
         var viewport2 = page.getViewport({ scale: (deMetriek$$module$synpdf[0] / page._pageInfo.view[2]) });
         var viewport = page.getViewport({ scale: 3 });
         var canvas = document.createElement("canvas");
         var ctx = canvas.getContext("2d");
+        canvas.id = 'canvas' + a;
         canvas.height = viewport.height;
         canvas.width = viewport.width;
         canvas.style.width = viewport2.width + "px";
         canvas.style.height = viewport2.height + "px";
-        return page.render({
-            canvasContext: ctx,
-            viewport: viewport,
-        }).promise.then(function() {
-            canvas = compPage$$module$synpdf(canvas, a, b);
-            if (a === 1 && newInstrumentTime2xFlag === 1) {
-                msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
-                newInstrumentTime2xFlag = 0;
-            }
-            if (doresize$$module$synpdf) {
-                resizePdf$$module$synpdf();
-            } else {
-                if (a < pdfDoc$$module$synpdf.numPages) {
-                    if (a === 1) {renderedPages = 1}; // start pages at 1 in case part switched before done rendering
-                   renderedPages++;
-                   let percentComplete = (renderedPages / pdfDoc$$module$synpdf.numPages) * 100;
-                   $("#loadingMessage2").html('<h2>Rendering page: ' + renderedPages + '/' + pdfDoc$$module$synpdf.numPages + '</h2>');
-                   $("#control-buttons-row").hide();
-                   $("#loadingMessage2").show();
-                   return goPage$$module$synpdf(a + 1, b + viewport2.height);
-                } else {
-                   rendering$$module$synpdf = 0;
-                   addDummySys$$module$synpdf();
-                   renderedPages = 1;
-                   $("#control-buttons-row").show();
-                   $("#loadingMessage2").hide();
-                }
-            }
+
+        // Store the rendering task instead of executing it immediately
+        renderingTasks.push(function() {
+            return page.render({
+                canvasContext: ctx,
+                viewport: viewport,
+            }).promise.then(function() {
+                // Update progress as each page is rendered
+                //renderedPages++;
+                //$("#loadingMessage2").show();
+                //let percentComplete = (renderedPages / pdfDoc$$module$synpdf.numPages) * 100;
+                //$("#loadingMessage2").html('<h2>Rendering page: ' + renderedPages + '/' + pdfDoc$$module$synpdf.numPages + '</h2>');
+            });
         });
+
+        canvas = compPage$$module$synpdf(canvas, a, b);
+        if (a === 1 && newInstrumentTime2xFlag === 1) {
+            msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
+            newInstrumentTime2xFlag = 0;
+        }
+        if (doresize$$module$synpdf) {
+            resizePdf$$module$synpdf();
+        } else {
+            if (a < pdfDoc$$module$synpdf.numPages) {
+                if (a === 1) {renderedPages = 1}; // start pages at 1 in case part switched before done rendering
+                $("#loadingMessage2").show();
+                return goPage$$module$synpdf(a + 1, b + viewport2.height);
+            } else {
+                rendering$$module$synpdf = 0;
+                addDummySys$$module$synpdf();
+                renderedPages = 1;
+                $("#loadingMessage2").hide();
+
+                // Once all pages are processed, execute the rendering tasks
+                console.log('gopage renderVisibleAndNextPage');
+                renderVisibleAndNextPage();
+            }
+        }
     });
- }
- 
+}
+
+function isElementInView(element) {
+    const rect = element.getBoundingClientRect();
+    return (
+        rect.bottom >= 0 && // Top of the element is not below the viewport
+        rect.right >= 0 && // Left of the element is not beyond the right edge of the viewport
+        rect.top <= (window.innerHeight || document.documentElement.clientHeight) && // Bottom of the element is not above the viewport
+        rect.left <= (window.innerWidth || document.documentElement.clientWidth) // Right of the element is not beyond the viewport
+    );
+}
+
+// This function identifies all currently visible canvases
+function findVisibleCanvases() {
+    const visiblePages = [];
+    for (let i = 1; i <= renderingTasks.length; i++) {
+        const canvasId = `canvas${i}`;
+        const canvas = document.getElementById(canvasId);
+        if (canvas && isElementInView(canvas)) {
+            visiblePages.push(i); // Use page numbers for clarity
+        }
+    }
+    return visiblePages;
+}
+
+// Wrap the renderVisibleCanvases call in a debounced function
+const debouncedRenderVisibleAndNextPage = debounce2(renderVisibleAndNextPage, 20);
+
+
+function debounce2(func, wait) {
+  var timeout;
+  return function() {
+      var context = this, args = arguments;
+      var later = function() {
+          timeout = null;
+          func.apply(context, args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+  };
+}
+
+var renderedCanvasesQueue = []; // Track rendered canvases
+var MAX_RENDERED_PAGES = 20; // Maximum number of pages to keep rendered
+
+function clearCanvas(canvas) {
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.classList.remove('rendered'); // Mark the canvas as not rendered
+}
+
+function manageRenderedCanvases(canvasId) {
+    // Check if the canvas is already in the queue
+    const index = renderedCanvasesQueue.indexOf(canvasId);
+    if (index > -1) {
+        // If it is, remove it from its current position
+        renderedCanvasesQueue.splice(index, 1);
+    }
+    
+    // Add (or re-add) the canvas ID to the front of the queue
+    renderedCanvasesQueue.unshift(canvasId); // Add to the beginning
+
+    // If we exceed the maximum number of rendered pages, clear the oldest
+    if (renderedCanvasesQueue.length > MAX_RENDERED_PAGES) {
+        var oldestCanvasId = renderedCanvasesQueue.pop(); // Remove the oldest from the end
+        var oldestCanvas = document.getElementById(oldestCanvasId);
+        if (oldestCanvas) {
+            clearCanvas(oldestCanvas); // Clear the canvas
+        }
+    }
+}
+
+//NEED TO CHANGE THIS SO THAT IT DOESN'T JUST HANDLE 2 AT A TIME. THE 2ND PAGE NEEDS TO BECOME THE 1ST WHEN IN VIEW...
+function renderVisibleAndNextPage() {
+    console.log('renderVisibleAndNextPage called');
+    const visiblePages = findVisiblePages(); // Assume this function returns an array of visible page numbers
+    const highestVisiblePage = Math.max(...visiblePages);
+
+    // Render all currently visible pages
+    visiblePages.forEach(pageNumber => {
+        const canvasId = `canvas${pageNumber}`;
+        const canvas = document.getElementById(canvasId);
+        if (canvas && !canvas.classList.contains('rendered')) {
+            renderPageIfNotRendered(pageNumber); // Assume this function is the async page rendering function
+        }
+    });
+
+    // Then, render the next page based on the highest visible page
+    const nextPage = highestVisiblePage + 1;
+    if (nextPage <= pdfDoc$$module$synpdf.numPages) {
+        const nextCanvasId = `canvas${nextPage}`;
+        const nextCanvas = document.getElementById(nextCanvasId);
+        if (nextCanvas && !nextCanvas.classList.contains('rendered')) {
+            renderPageIfNotRendered(nextPage);
+        }
+    }
+}
+
+function findVisiblePages() {
+    let visiblePages = [];
+    for (let i = 1; i <= pdfDoc$$module$synpdf.numPages; i++) {
+        const canvasId = `canvas${i}`;
+        const canvas = document.getElementById(canvasId);
+        if (canvas && isElementInView(canvas)) {
+            visiblePages.push(i);
+        }
+    }
+    return visiblePages;
+}
+
+var renderingStatus = {}; // Tracks the rendering status of each page
+
+function renderPageIfNotRendered(pageIndex) {
+    console.log('renderPageIfNotRendered called for page:', pageIndex);
+    const canvasId = `canvas${pageIndex}`;
+    const canvas = document.getElementById(canvasId);
+
+    // Check if the canvas is being rendered or has already been rendered
+    if (canvas && renderingStatus[pageIndex] !== 'rendering' && !canvas.classList.contains('rendered')) {
+        console.log('Starting rendering for page:', pageIndex);
+        renderingStatus[pageIndex] = 'rendering'; // Mark as rendering
+
+        renderingTasks[pageIndex - 1]().then(() => {
+            canvas.classList.add('rendered');
+            renderingStatus[pageIndex] = 'rendered'; // Mark as rendered
+            manageRenderedCanvases(canvasId); // Update the rendered canvases queue
+        }).catch(error => {
+            console.error('Error rendering page', pageIndex, error);
+            renderingStatus[pageIndex] = 'error'; // Mark as error if failed
+        });
+    }
+}
 
 function compPage$$module$synpdf(a, b, c) {
     var d = deMetriek$$module$synpdf[b];
