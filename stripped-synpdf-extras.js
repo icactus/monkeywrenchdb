@@ -413,6 +413,7 @@ $('#instruments-dropdown').change(function() {
       updateRecordingsData(instrumentData.metric_arr_id);
       renderedCanvasesQueue = [];
       renderingTasks = [];
+      canShowDemaat = false; // hiding demaat until pdf renders again
       loadRecording(recordingFullData)
         .then(function() {
           console.log(msc_wz$$module$synpdf);

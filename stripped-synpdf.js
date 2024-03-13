@@ -293,6 +293,9 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                 b.top = c.y + "px";
                 b.width = d + "px";
                 b.height = c.h + "px";
+                $('.demaat').hide();
+                if (canShowDemaat) {
+                $('.demaat').show()};
                 var distanceToScroll = c.y - ycurprev$$module$synpdf; //if too far then pass 0 which will auto scroll instead of smooth
                 c.y != ycurprev$$module$synpdf && doeRol$$module$synpdf(c.y - this.tmargin, Math.abs(distanceToScroll) > 500 ? 1 : 0);
                 ycurprev$$module$synpdf = c.y;
@@ -719,7 +722,7 @@ function findVisibleCanvases() {
 }
 
 // Wrap the renderVisibleCanvases call in a debounced function
-const debouncedRenderVisibleAndNextPage = debounce2(renderVisibleAndNextPage, 20);
+const debouncedRenderVisibleAndNextPage = debounce2(renderVisibleAndNextPage, 20); //duplicate debounce function in this file
 
 
 function debounce2(func, wait) {
@@ -736,7 +739,7 @@ function debounce2(func, wait) {
 }
 
 var renderedCanvasesQueue = []; // Track rendered canvases
-var MAX_RENDERED_PAGES = 20; // Maximum number of pages to keep rendered
+var MAX_RENDERED_PAGES = 10; // Maximum number of pages to keep rendered
 
 function clearCanvas(canvas) {
     var ctx = canvas.getContext('2d');
@@ -744,7 +747,11 @@ function clearCanvas(canvas) {
     canvas.classList.remove('rendered'); // Mark the canvas as not rendered
 }
 
+let canShowDemaat = false;
+
 function manageRenderedCanvases(canvasId) {
+    canShowDemaat = true;
+    $('.demaat').show();
     // Check if the canvas is already in the queue
     const index = renderedCanvasesQueue.indexOf(canvasId);
     if (index > -1) {
@@ -765,7 +772,6 @@ function manageRenderedCanvases(canvasId) {
     }
 }
 
-//NEED TO CHANGE THIS SO THAT IT DOESN'T JUST HANDLE 2 AT A TIME. THE 2ND PAGE NEEDS TO BECOME THE 1ST WHEN IN VIEW...
 function renderVisibleAndNextPage() {
     console.log('renderVisibleAndNextPage called');
     const visiblePages = findVisiblePages(); // Assume this function returns an array of visible page numbers
