@@ -17,9 +17,6 @@
     <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=7" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
-    <!-- <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.min.js"></script> -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="stripped-synpdf.js?v=10"></script>
     <title>monkey wrench</title>
 </head>
 <body>
@@ -174,16 +171,17 @@
                     <tr><td><b>+</b>/<b>-</b></td><td>increase / decrease speed</td>  <td><b></b></td><td></td></tr>
                 </table>
                 Helpful Info:<ul>
-                <li>This site is under heavy contruction so some things may not work!</li>
-                <li>Older computers/devices may have trouble loading sheet music longer than 100 pages (full scores).</li>
-                <li>Sheet music renders much faster on Chrome than Firefox.</li>
-                <li>Full screen, zoom, and other buttons do not appear until all pages have finished rendering.</li>
-                <li>Click on sheet music first before using arrow keys to navigate. Otherwise the arrow keys will be controlling the Youtube player.
+                <li>This site is under heavy contruction and it's just me so please be patient with improvements!</li>
+                <li>Eventually there will be some way to request/vote on new pieces and eventually user contributions.</li>
+                <li>Site runs best on Chrome/Safari. Firefox can be buggy.</li>
+                <li>Click on sheet music first before using arrow keys to navigate. Otherwise the arrow keys will control the YouTube player.
                 </ul>
                 <button id="closehelp">Close</button>
             </div>
         </section3>
 
-<script src="stripped-synpdf-extras.js?v=10"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="stripped-synpdf.js?v=10"></script>
+    <script src="stripped-synpdf-extras.js?v=10"></script>
 </body>
 </html>
