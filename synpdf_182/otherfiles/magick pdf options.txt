@@ -1,0 +1,26 @@
+c:\xampp\htdocs\synpdf_182\processpdfs>magick 000.tiff bmp:- | potrace -s - -o output.svg
+
+c:\xampp\htdocs\synpdf_182\processpdfs>magick -density 300 beethoven5flute.pdf -compress group4 %03d.tiff
+
+c:\xampp\htdocs\synpdf_182\processpdfs>magick 000.tiff bmp:- | potrace -s - -o output.svg
+
+c:\xampp\htdocs\synpdf_182\processpdfs>magick -resize 4000x -density 300 beethoven5flute.pdf -compress group4 %03d.tiff
+magick: no images found for operation `-resize' at CLI arg 1 @ error/operation.c/CLIOption/5461.
+
+c:\xampp\htdocs\synpdf_182\processpdfs>magick -resize 4000x -density 300 beethoven5flute.pdf -compress group4 %03d.tiff
+magick: no images found for operation `-resize' at CLI arg 1 @ error/operation.c/CLIOption/5461.
+
+c:\xampp\htdocs\synpdf_182\processpdfs>magick -density 300 -resize 4000x beethoven5flute.pdf -compress group4 %03d.tiff
+magick: no images found for operation `-resize' at CLI arg 3 @ error/operation.c/CLIOption/5461.
+
+c:\xampp\htdocs\synpdf_182\processpdfs>magick -density 300 beethoven5flute.pdf -resize 4000x -compress group4 %03d.tiff
+
+c:\xampp\htdocs\synpdf_182\processpdfs>magick *.pdf beethoven5-flute1-full.pdf
+
+c:\xampp\htdocs\synpdf_182\processpdfs>magick *.tiff beethoven5-flute1-full.pdf
+
+c:\xampp\htdocs\synpdf_182\processpdfs>magick *.tiff beethoven5-piccolo-full.pdf
+
+c:\xampp\htdocs\synpdf_182\processpdfs>magick *.tiff beethoven5-flute2-full.pdf
+
+c:\xampp\htdocs\synpdf_182\processpdfs>

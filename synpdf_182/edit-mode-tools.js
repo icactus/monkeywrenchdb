@@ -1,0 +1,556 @@
+let SplitclickCoordinates = [];
+let SplitclickY = 0;
+let QisActive = false;
+let SisActive = false;
+let WisActive = false;
+
+
+const indicatorElement = document.getElementById('indicator');
+const notation = document.getElementById('notation');
+
+
+function handleSplit(event) {
+    if (SisActive) {
+      SplitclickCoordinates = [event.clientX];
+      SplitclickY = event.clientY;
+  
+      SplitgenerateCoordinates([...SplitclickCoordinates]);
+      SplitclickCoordinates = [];
+      return true;
+    }
+    return false;
+}
+
+function SplitgenerateCoordinates(clickCoords) {
+  console.log(clickCoords);
+    let cxsBxsData = JSON.parse(localStorage.getItem('jsonString'));
+    let pagenum = parseInt(document.getElementById('pagenum').value);
+    
+    if(pagenum < 1 || pagenum >= cxsBxsData.length) {
+        alert('Invalid page number');
+        return;
+    }
+    
+    let rect = notation.getBoundingClientRect();
+    let x = Math.round(clickCoords[0] - rect.left + notation.scrollLeft);
+    let y = Math.round(SplitclickY - rect.top + notation.scrollTop);
+    for(let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
+        let cs_group = cxsBxsData[pagenum].cxs[j].cs;
+        
+        // Check if y falls within this range
+        if(y >= Math.min(...cs_group) && y <= Math.max(...cs_group)) {
+            let bxs_group = cxsBxsData[pagenum].bxs[j];
+            let closestLeft = null;
+            let closestRight = null;
+            
+            for (let i = 0; i < bxs_group.length; i++) {
+                if (bxs_group[i] < x) {
+                    closestLeft = bxs_group[i];
+                } else if (bxs_group[i] > x) {
+                    closestRight = bxs_group[i];
+                    break;
+                }
+            }
+            
+            if (closestLeft === null || closestRight === null) {
+                alert('Could not find two points to split between');
+                return;
+            }
+            
+            const startPoint = closestLeft;
+            const endPoint = closestRight;
+            console.log(startPoint, endPoint);
+
+            let count = parseInt(prompt("Enter the number of measures:"));
+            
+            if (isNaN(count)) {
+                alert('Invalid input for N');
+                return;
+            }
+            
+            // increment count by 1
+            count += 1;
+    
+            const step = (endPoint - startPoint) / (count - 1);
+    
+            for (let i = 1; i < count - 1; i++) {
+                let coordinate = startPoint + i * step;
+                coordinate = Math.round(coordinate * 10) / 10;
+                console.log(coordinate);
+                if(!bxs_group.includes(coordinate)){
+                    // Push X to correct bxs group
+                    cxsBxsData[pagenum].bxs[j].push(coordinate);
+                }
+            }
+            
+            // Sort 'bxs' group from low to high
+            cxsBxsData[pagenum].bxs[j].sort( (a, b) => a - b );
+    
+            localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
+            return;
+        }
+    }
+}
+
+
+
+function toggleQActivity() {
+    QisActive = !QisActive;
+
+    if (QisActive) {
+        console.log('Coordinate logging is ON');
+        indicatorElement.innerText = 'ON';
+        indicatorElement.classList.remove('inactive-indicator');
+        indicatorElement.classList.add('active-indicator');
+        indicatorElement.classList.add('crosshair-cursor');
+        document.body.style.cursor = 'crosshair';
+        if (SisActive) {
+          toggleSActivity();
+        }
+        if (WisActive) {
+          toggleWActivity();
+        }
+    } else {
+        console.log('Coordinate logging is OFF');
+        indicatorElement.innerText = 'OFF';
+        indicatorElement.classList.remove('active-indicator');
+        indicatorElement.classList.add('inactive-indicator');
+        if (!SisActive) {
+          indicatorElement.classList.remove('crosshair-cursor');
+          document.body.style.cursor = 'default';
+        }
+    }
+}
+
+function toggleSActivity() {
+    SisActive = !SisActive;
+    if (SisActive) {
+        console.log('split is ON');
+        indicatorElement.classList.add('crosshair-cursor');
+        document.body.style.cursor = 'crosshair';
+        if (QisActive) {
+          toggleQActivity();
+        }
+        if (WisActive) {
+            toggleWActivity();
+          }
+    } else {
+        console.log('split is OFF');
+        if (!QisActive) {
+          indicatorElement.classList.remove('crosshair-cursor');
+          document.body.style.cursor = 'default';
+        }
+    }
+}
+
+function toggleWActivity() {
+    WisActive = !WisActive;
+  
+    if (WisActive) {
+      console.log('insertCxsGroups is ON');
+      // Add any visual indicator or behavior for 'W' being active
+  
+      if (SisActive) {
+        toggleSActivity();
+      }
+      if (QisActive) {
+        toggleQActivity();
+      }
+    } else {
+      console.log('insertCxsGroups is OFF');
+    }
+}
+
+//Makes sure deMetriek is only saving integers when using P
+function roundValuesInArray(obj) {
+  for (var k in obj) {
+      if (typeof obj[k] === 'object' && obj[k] !== null) {
+          roundValuesInArray(obj[k]);
+      } else if (typeof obj[k] === 'number') {
+          obj[k] = Math.round(obj[k]);
+      }
+  }
+}
+
+document.addEventListener('keydown', function(event) {
+    if (document.querySelector('#synbox').checked) {
+        return;
+    }
+    switch(event.key) {
+        case 'a':
+            $("#menu input#advncd").click();
+            break;
+        case 'F':
+            $("#menu input#eerst").click();
+            break;
+        case 'Y':
+            $("#menu input#sysprf").click();
+            break;
+        case 'T':
+            $("#menu input#onestf").click();
+            break;
+        case 'q':
+            toggleQActivity();
+            break;
+        case 'S':
+            saveTiming$$module$synpdf();
+            break;
+        case 's':
+            toggleSActivity();
+            break;
+        case 'W':
+            startPoint = null;
+            endPoint = null;
+            break;
+        case 'w':
+            toggleWActivity();
+            break;
+        case 'p': // Puts current shaded measures into memory
+            var jsonString = deMetriek$$module$synpdf;
+            roundValuesInArray(jsonString);
+            localStorage.setItem('jsonString', JSON.stringify(jsonString));
+            break;
+            
+        case 'j':
+            let jsonCode = localStorage.getItem('jsonString');
+            let formattedCode = formatCode(jsonCode);
+            navigator.clipboard.writeText(formattedCode)
+            .then(() => {
+                console.log("bxscxs copied to clipboard");
+                console.log(JSON.parse(localStorage.getItem('jsonString')));
+            })
+            .catch((error) => {
+                console.error('Failed to copy coordinates to clipboard:', error);
+            });
+            break;
+        case '[':
+            if (parseFloat(opt$$module$synpdf.drmpl) <= 0.1) {
+                break;
+            };
+            opt$$module$synpdf.drmpl = ((Math.round(opt$$module$synpdf.drmpl * 10) - 1) / 10);
+            resizePdfSyn$$module$synpdf();
+            break;
+        // Now, whenever you update opt$$module$synpdf.drmpl, it also updates the input field:
+        case ']':
+            if (parseFloat(opt$$module$synpdf.drmpl) >= 0.9) {
+            break
+            };
+            opt$$module$synpdf.drmpl = ((Math.round(opt$$module$synpdf.drmpl * 10) + 1) / 10);
+            resizePdfSyn$$module$synpdf();
+            break;
+        case ';':
+            if (parseFloat(opt$$module$synpdf.drmpl2) <= 0) {
+                break;
+            };
+            opt$$module$synpdf.drmpl2 = ((Math.round(opt$$module$synpdf.drmpl2 * 10) - 1) / 10);
+            resizePdfSyn$$module$synpdf();
+            break;
+        // Now, whenever you update opt$$module$synpdf.drmpl, it also updates the input field:
+        case '\'':
+            if (parseFloat(opt$$module$synpdf.drmpl2) >= 2) {
+            break
+            };
+            opt$$module$synpdf.drmpl2 = ((Math.round(opt$$module$synpdf.drmpl2 * 10) + 1) / 10);
+            resizePdfSyn$$module$synpdf();
+            break;
+//        case ',':
+//            if (parseFloat(opt$$module$synpdf.mtdrmpl) <= 0) {
+//                break;
+//            };
+//            opt$$module$synpdf.mtdrmpl = ((Math.round(opt$$module$synpdf.mtdrmpl * 100) - 1) / 100);
+//            resizePdfSyn$$module$synpdf();
+//            break;
+//        // Now, whenever you update opt$$module$synpdf.drmpl, it also updates the input field:
+//        case '.':
+//            if (parseFloat(opt$$module$synpdf.mtdrmpl) >= 1) {
+//            break
+//            };
+//            opt$$module$synpdf.mtdrmpl = ((Math.round(opt$$module$synpdf.mtdrmpl * 100) + 1) / 100);
+//            resizePdfSyn$$module$synpdf();
+//            break;
+        case '\\':
+            if (opt$$module$synpdf.eerst === 1) {
+              opt$$module$synpdf.eerst = 0;
+            }
+            else {
+                opt$$module$synpdf.eerst = 1;
+            }
+            resizePdfSyn$$module$synpdf();
+            break;
+
+    }
+});
+
+
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(function() {
+      console.log('Copying to clipboard was successful!');
+  }, function(err) {
+      console.error('Could not copy text: ', err);
+  });
+}
+
+function addRemoveBxs$$module$synpdf(event) {
+    // Retrieve and parse data from local storage
+    let cxsBxsData = JSON.parse(localStorage.getItem('jsonString'));
+
+    // Validate the page number
+    let pagenum = parseInt(document.getElementById('pagenum').value);
+    if(pagenum < 1 || pagenum >= cxsBxsData.length) {
+        alert('Invalid page number');
+        return;
+    }
+
+    // Calculate x and y coordinates of the click event relative to the 'notation' element
+    var rect = notation.getBoundingClientRect();
+    var x = event.clientX - rect.left;
+    var y = Math.round(event.clientY - rect.top + notation.scrollTop);
+
+    for(let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
+        let cs_group = cxsBxsData[pagenum].cxs[j].cs;
+
+        // Check if y falls within this range
+        if(y >= Math.min(...cs_group) && y <= Math.max(...cs_group)) {
+            let isValueRemoved = false;
+
+            // Check each bxs value
+            for(let i = 0; i < cxsBxsData[pagenum].bxs[j].length; i++) {
+                // If the click is within 5 pixels left or right of the bxs value
+                if(Math.abs(x - cxsBxsData[pagenum].bxs[j][i]) <= 5) {
+                    // Remove the value from the array
+                    cxsBxsData[pagenum].bxs[j].splice(i, 1);
+                    isValueRemoved = true;
+                    break;
+                }
+            }
+
+            // If no value was removed, add a new value
+            if (!isValueRemoved) {
+                // Push the x coordinate to the corresponding bxs index
+                cxsBxsData[pagenum].bxs[j].push(x);
+                // Sort the 'bxs' group from low to high
+                cxsBxsData[pagenum].bxs[j].sort( (a, b) => a - b );
+            }
+
+            localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));   
+            //deMetriek$$module$synpdf = JSON.parse(localStorage.getItem('jsonString'));  /*this works but scrolls page on refresh*/
+            //setPagenum$$module$synpdf(opt$$module$synpdf.pagenum);
+            return true;
+        }
+    }
+    return false;
+}
+
+//format json to pretty
+function formatCode(s) {
+    return s
+        .replace(/{"cs"/g, '\n{"cs"')
+        .replace(/,\[/g, ',\n[')
+        .replace(/,"bxs":\[/g, ',\n"bxs":[\n')
+        .replace(/,{"cxs":/g, ',\n{"cxs":');
+}
+
+notation.addEventListener('click', function handleClick(event) {
+    if (handleSplit(event)) return;
+    if (handleWCxs(event)) return;
+    else if (!QisActive) return;
+    if (addRemoveBxs$$module$synpdf(event)) return;
+});
+
+
+
+notation.addEventListener('mousemove', function(e) {
+    var rect = notation.getBoundingClientRect();
+
+    var x = e.clientX - rect.left;
+    var y = Math.round(e.clientY - rect.top + notation.scrollTop);
+
+    tooltip.style.left = (x - 100) + 'px';
+    tooltip.style.top = Math.round((y - (-100 + notation.scrollTop))) + 'px';
+    if (QisActive) {
+        tooltip.innerHTML = "Q";
+    }
+    if (SisActive) {
+        tooltip.innerHTML = "S";
+    }
+    if (WisActive) {
+        tooltip.innerHTML = "W";
+
+    }
+    tooltip.style.display = "block";
+});
+
+function handleWCxs(event) {
+    if (WisActive) {
+        editCxsGroups$$module$synpdf(event);
+      return true;
+    }
+    return false;
+}
+
+
+let startPoint = null;
+let endPoint = null;
+
+function editCxsGroups$$module$synpdf(event) {
+    var rect = notation.getBoundingClientRect();
+
+    if (!startPoint) {
+        startPoint = {
+            x: event.clientX - rect.left,
+            y: Math.round(event.clientY - rect.top + notation.scrollTop),
+        };
+    } else {
+        endPoint = {
+            x: event.clientX - rect.left,
+            y: Math.round(event.clientY - rect.top + notation.scrollTop),
+        };
+        console.log(startPoint.y, endPoint.y);
+        let cxsBxsData = JSON.parse(localStorage.getItem('jsonString') || '[]');
+
+        let pagenum = parseInt(document.getElementById('pagenum').value);
+        if (pagenum < 0 || pagenum >= cxsBxsData.length) {
+            alert('Invalid page number');
+            return;
+        }
+
+        if (!cxsBxsData[pagenum].cxs) {
+            cxsBxsData[pagenum].cxs = [];
+        }
+        if (!cxsBxsData[pagenum].bxs) {
+            cxsBxsData[pagenum].bxs = [];
+        }
+
+        let overlappingGroupsIndexes = [];
+
+        for (let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
+            let cs_group = cxsBxsData[pagenum].cxs[j].cs;
+
+            if (Math.max(...cs_group) >= startPoint.y && Math.min(...cs_group) <= endPoint.y) {
+                overlappingGroupsIndexes.push(j);
+            }
+        }
+
+        // Remove overlapping cxs and bxs groups
+        for (let i = overlappingGroupsIndexes.length - 1; i >= 0; i--) {
+            let index = overlappingGroupsIndexes[i];
+            cxsBxsData[pagenum].cxs.splice(index, 1);
+            cxsBxsData[pagenum].bxs.splice(index, 1);
+        }
+
+        // Add the new cxs and bxs group
+        cxsBxsData[pagenum].cxs.push({ cs: [startPoint.y, endPoint.y], xs: { x1: startPoint.x, x2: endPoint.x } });
+        cxsBxsData[pagenum].bxs.push([startPoint.x, endPoint.x]);
+
+        let oldCxsOrder = [...cxsBxsData[pagenum].cxs];
+        cxsBxsData[pagenum].cxs.sort((a, b) => a.cs[0] - b.cs[0]);
+        let newBxsOrder = [];
+        for (let i = 0; i < cxsBxsData[pagenum].cxs.length; i++) {
+            let oldIndex = oldCxsOrder.indexOf(cxsBxsData[pagenum].cxs[i]);
+            newBxsOrder[i] = cxsBxsData[pagenum].bxs[oldIndex];
+        }
+        cxsBxsData[pagenum].bxs = newBxsOrder;
+
+        localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
+
+        // Reset the start and end points
+        startPoint = null;
+        endPoint = null;
+    }
+}
+
+//submit forms without navigating away
+const addNewComposerForm = document.getElementById("addnewcomposerform");
+addNewComposerForm.addEventListener("submit", function(event) {
+  event.preventDefault(); // Prevent the form from submitting normally
+  
+  const formData = new FormData(addNewComposerForm);
+  
+  fetch("composers-addnew.php", {
+    method: "POST",
+    body: formData
+  })
+  .then(response => response.text())
+  .then(data => {
+      // Handle the response from the server
+      console.log(data);
+      if (data.startsWith('Error')) {
+          alert("Form submission failed");
+      } else if (data === "success") {
+          alert("Form submitted successfully");
+      }
+  })
+
+  .catch(error => {
+    // Handle any errors that occur during the request
+    console.error(error);
+  });
+});
+//submit forms without navigating away
+const addNewPieceForm = document.getElementById("addnewpieceform");
+addNewPieceForm.addEventListener("submit", function(event) {
+  event.preventDefault(); // Prevent the form from submitting normally
+  
+  const formData = new FormData(addNewPieceForm);
+  
+  fetch("pieces-addnew.php", {
+    method: "POST",
+    body: formData
+  })
+  .then(response => response.text())
+  .then(data => {
+      // Handle the response from the server
+      console.log(data);
+      if (data.startsWith('Error')) {
+          alert("Form submission failed");
+      } else if (data === "success") {
+          alert("Form submitted successfully");
+      }
+  })
+  .catch(error => {
+    // Handle any errors that occur during the request
+    console.error(error);
+  });
+});
+
+const addNewMetricForm = document.getElementById("addnewmetricform");
+addNewMetricForm.addEventListener("submit", function(event) {
+  event.preventDefault(); // Prevent the form from submitting normally
+  
+  const formData = new FormData(addNewMetricForm);
+  
+  fetch("metric-arr-post.php", {
+    method: "POST",
+    body: formData
+  })
+  .then(response => response.text())
+  .then(data => {
+    // Handle the response from the server
+    console.log(data);
+    if (data === "success") {
+      alert("Form submitted successfully");
+    } else {
+      alert("Form submission failed");
+    }
+  })
+  .catch(error => {
+    // Handle any errors that occur during the request
+    console.error(error);
+  });
+});
+
+document.querySelectorAll('input[type="text"], textarea').forEach(function(input) {
+  input.addEventListener('keydown', function(e) {
+      e.stopPropagation();
+  });
+});
+
+
+//Prevent resize with mousewheel on the notation section as this redisplays the advanced settings
+function stopWheelZoom(event) {
+    if (event.ctrlKey == true) {
+      event.preventDefault();
+    }
+  }
+document.getElementById('notation').addEventListener('mousewheel', stopWheelZoom);
