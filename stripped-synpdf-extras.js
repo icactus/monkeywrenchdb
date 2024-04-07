@@ -99,6 +99,13 @@ function fetchSearchByInstrument() {
       // Populate the links dynamically
       Object.keys(groups).forEach(function(groupId) {
         var instruments = groups[groupId];
+
+        instruments.sort(function(a,b) {
+            var aIds = a.instrument_ids.map(Number);
+            var bIds = b.instrument_ids.map(Number);
+
+            return aIds[0] - bIds[0];
+        });
         // Create a new div for each group
         var groupDiv = $('<div class="instrument-group"></div>');
         
@@ -108,7 +115,7 @@ function fetchSearchByInstrument() {
         
         instruments.forEach(function(instrument) {
             // Append the instrument link with the total metric value in parentheses
-            groupDiv.append('<div class="instrument-link"><a href="#" class="instrument-link-a" data-id="' + instrument.instrument_id + '">' + instrument.instrument_name + ' (' + instrument.total_metric_value + ')</a></div>');
+            groupDiv.append('<div class="instrument-link"><a href="#" class="instrument-link-a" data-id="' + instrument.instrument_ids + '">' + instrument.instrument_name + ' (' + instrument.total_metric_value + ')</a></div>');
         });
         
         // Append the group div to the container
@@ -119,11 +126,11 @@ function fetchSearchByInstrument() {
   });
 }
 
-function fetchPieces(instrumentId) {
+function fetchPieces(instrumentIds) {
     $.ajax({
         url: 'fetch_pieces.php',
         method: 'GET',
-        data: { instrumentId: instrumentId },
+        data: { instrumentIds: instrumentIds },
         success: function(response) {
             console.log(response);
             var container = $('#pieces-container');
@@ -147,18 +154,45 @@ function fetchPieces(instrumentId) {
                     return acc;
                 }, {});
 
-                // Rename 'Solo + Orchestra' and 'Solo + Piano' dynamically
-                if (groupedPieces['Solo + Orchestra']) {
-                    groupedPieces[instrumentName + ' + Orchestra'] = groupedPieces['Solo + Orchestra'];
-                    delete groupedPieces['Solo + Orchestra'];
-                }
-                if (groupedPieces['Solo + Piano']) {
-                    groupedPieces[instrumentName + ' + Piano'] = groupedPieces['Solo + Piano'];
-                    delete groupedPieces['Solo + Piano'];
+                // Handle grouping and renaming based on instrumentName
+                var soloOrchestraKey = instrumentName + ' + Orchestra';
+                // When instrumentName is "Piano", group "Piano Accompaniment" and "Solo + Piano" together
+                var soloPianoKey = "Solo + Piano"; 
+
+                if (instrumentName === "Piano") {
+                    // Group "Orchestra" (renamed to "Piano Accompaniment") with "Solo + Piano"
+                    if (groupedPieces['Orchestra']) {
+                        if (!groupedPieces[soloPianoKey]) {
+                            groupedPieces[soloPianoKey] = [];
+                        }
+                        // Combine "Orchestra" pieces into "Solo + Piano"
+                        groupedPieces[soloPianoKey] = groupedPieces[soloPianoKey].concat(groupedPieces['Orchestra']);
+                        delete groupedPieces['Orchestra'];
+                    }
+
+                    // Ensure "Solo + Orchestra" is also appropriately handled, if necessary
+                    if (groupedPieces['Solo + Orchestra']) {
+                        groupedPieces[soloOrchestraKey] = groupedPieces['Solo + Orchestra'];
+                        delete groupedPieces['Solo + Orchestra'];
+                    }
+                } else {
+                    // For other instruments, handle renaming of "Solo + Orchestra" dynamically
+                    if (groupedPieces['Solo + Orchestra']) {
+                        groupedPieces[soloOrchestraKey] = groupedPieces['Solo + Orchestra'];
+                        delete groupedPieces['Solo + Orchestra'];
+                    }
+
+                    // Handle "Solo + Piano" dynamically for instruments other than Piano
+                    if (groupedPieces['Solo + Piano']) {
+                        groupedPieces[instrumentName + ' + Piano'] = groupedPieces['Solo + Piano'];
+                        delete groupedPieces['Solo + Piano'];
+                    }
                 }
 
-                // Desired order of categories by name, including dynamic category names
-                var desiredOrder = ['Orchestra', instrumentName + ' + Orchestra', instrumentName + ' + Piano', 'Solo', 'Opera', 'Chamber', 'Choral Works'];
+                // Desired order of categories by name, adjusting based on instrumentName
+                var desiredOrder = instrumentName === "Piano" ?
+                    ['Solo', soloOrchestraKey, soloPianoKey, 'Opera', 'Chamber', 'Choral Works'] :
+                    ['Orchestra', soloOrchestraKey, instrumentName + ' + Piano', 'Solo', 'Opera', 'Chamber', 'Choral Works'];
 
                 // Reorder groupedPieces according to desiredOrder
                 var orderedGroupedPieces = desiredOrder.reduce(function(ordered, categoryName) {
@@ -191,7 +225,7 @@ function fetchPieces(instrumentId) {
 
                     // Populate the links dynamically
                     orderedGroupedPieces[categoryName].forEach(function(piece) {
-                        container.append('<p><a href="#" class="pieces-link" data-id="' + piece.metric_arr_id + '" data-piece-id="' + piece.piece_id + '" data-instrument-id="' + instrumentId + '">' + piece.composer_last + ' - ' + piece.piece_name + '</a></p>');
+                        container.append('<p><a href="#" class="pieces-link" data-id="' + piece.metric_arr_id + '" data-piece-id="' + piece.piece_id + '" data-instrument-id="' + instrumentIds + '">' + piece.composer_last + ' - ' + piece.piece_name + '</a></p>');
                     });
                 });
             }

@@ -140,8 +140,8 @@ a:hover {
 #vid, #vidyub {
     display: none;
     align-self:end;
-    margin-right:5px;
-    max-width:300px;
+    margin-right:-3px;
+    max-width:350px;
     min-height:200px;
     height:100%;
     z-index:4;

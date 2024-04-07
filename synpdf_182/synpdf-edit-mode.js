@@ -1720,10 +1720,9 @@ function goJpeg$$module$synpdf(a) {   //allows loading of jpeg sheet music
 function tick$$module$synpdf(a) {
     if (elmed$$module$synpdf && msc_wz$$module$synpdf && (!yubchk$$module$synpdf || elmed$$module$synpdf == ybplayer$$module$synpdf)) {
         var b = (yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime) - offset$$module$synpdf;
-        hasMixer$$module$synpdf && (b = mixplayer$$module$mixer.currentTime - offset$$module$synpdf);
         var c = b;
         opt$$module$synpdf.loop && (b > lpRec$$module$synpdf.loopEnd && (b = lpRec$$module$synpdf.loopStart), b < lpRec$$module$synpdf.loopStart && (b =
-            lpRec$$module$synpdf.loopStart + TOFF$$module$synpdf), b != c && (yubchk$$module$synpdf ? elmed$$module$synpdf.seekTo(b + offset$$module$synpdf, !0) : elmed$$module$synpdf.currentTime = b + offset$$module$synpdf, hasMixer$$module$synpdf && (mixplayer$$module$mixer.currentTime = b + offset$$module$synpdf)));
+            lpRec$$module$synpdf.loopStart + TOFF$$module$synpdf), b != c && (yubchk$$module$synpdf ? elmed$$module$synpdf.seekTo(b + offset$$module$synpdf, !0) : elmed$$module$synpdf.currentTime = b + offset$$module$synpdf));
         !msc_wz$$module$synpdf || a && 0 != a % 10 || msc_wz$$module$synpdf.time2x(b)
     }
 }
@@ -1928,31 +1927,32 @@ function drawRes$$module$synpdf(a, b, c) {
     return b
 }
 
-function countPix$$module$synpdf(a, b) {
-    var c, d, e;  // Define the local variables
-    var imageWidth = a.width;  // Get the width of the image
+function countPix$$module$synpdf(image, sliceIndex) {
+    var pixelIndex, avgRowColor;  // Define the local variables
+    var imageWidth = image.width;  // Get the width of the image
     var g = 4 * imageWidth;  // Multiply width by 4 for later calculations
-    var imageHeight = a.height;  // Get the height of the image
-    a = d = a.getContext("2d").getImageData(0, 0, imageWidth, imageHeight).data;  // Extract the image data (RGBA values for each pixel)
-    var m = 0;  // Initialize variables for the upcoming loop
-    var n = [];
-    var l = 3 * g / 4, h = g;  // Some calculations for the loop parameters
-    opt$$module$synpdf.eerst && (l = 0, h = g / 4);  // Change l and h values based on opt$$module$synpdf.eerst
-    for (e = 0; e < imageHeight; e++) {  // Go through each row in the image
-        var k = 0;  // Initialize k, which will contain sum of pixels' color
-        for (c = m + l; c < m + h; c += 4) k += d[c], k += d[c + 1], k += d[c + 2];  // Calculate the average color value in each row
-        c = k / (3 * (h - l));  // Get an average color value
-        n.push(c);  // Add this value into n array
-        m += g  // Increase m for the next iteration
+    var imageHeight = image.height;  // Get the height of the image
+    var imagePixelData = image.getContext("2d").getImageData(0, 0, imageWidth, imageHeight).data;  // Extract the image data (RGBA values for each pixel)
+    var currentPixelOffset = 0;  // Initialize variables for the upcoming loop
+    var colorIntensityArray = [];
+    var loopStartOffset = 3 * g / 4, loopEndOffset = g;  // Some calculations for the loop parameters
+    opt$$module$synpdf.eerst && (loopStartOffset = 0, loopEndOffset = g / 4);  // Change loop offsets based on opt$$module$synpdf.eerst
+    for (currentRow = 0; currentRow < imageHeight; currentRow++) {  // Go through each row in the image
+        var colorSum = 0;  // Initialize colorSum, which will contain sum of pixels' color
+        for (pixelIndex = currentPixelOffset + loopStartOffset; pixelIndex < currentPixelOffset + loopEndOffset; pixelIndex += 4) 
+            colorSum += imagePixelData[pixelIndex], colorSum += imagePixelData[pixelIndex + 1], colorSum += imagePixelData[pixelIndex + 2];  // Calculate the average color value in each row
+        avgRowColor = colorSum / (3 * (loopEndOffset - loopStartOffset));  // Get an average color value
+        colorIntensityArray.push(avgRowColor);  // Add this value into colorIntensityArray
+        currentPixelOffset += g  // Increase currentPixelOffset for the next iteration
     }
-    let drawResResult = drawRes$$module$synpdf(n, imageWidth, imageHeight);  // Draw the results of the pixel analysis
+    let drawResResult = drawRes$$module$synpdf(colorIntensityArray, imageWidth, imageHeight);  // Draw the results of the pixel analysis
     console.log(drawResResult);
-    for (drawResResult = countVsys$$module$synpdf(drawResResult, g, a); drawResResult.length && skipn$$module$synpdf;) drawResResult.shift(), --skipn$$module$synpdf;  // Further process the image data
-    b && (drawResResult = drawResResult.slice(b - 1, b));  // Slice the results based on parameter 'b'
-    b = findBarLines$$module$synpdf(drawResResult, g, a);  // Find bar lines
+    for (drawResResult = countVsys$$module$synpdf(drawResResult, g, imagePixelData); drawResResult.length && skipn$$module$synpdf;) drawResResult.shift(), --skipn$$module$synpdf;  // Further process the image data
+    sliceIndex && (drawResResult = drawResResult.slice(sliceIndex - 1, sliceIndex));  // Slice the results based on parameter 'b'
+    sliceIndex = findBarLines$$module$synpdf(drawResResult, g, imagePixelData);  // Find bar lines
     return {
         cxs: drawResResult,  // Return the results
-        bxs: b
+        bxs: sliceIndex
     }
 }
 
@@ -2363,7 +2363,6 @@ function playPause$$module$synpdf(a, b) {
         var f = yubchk$$module$synpdf ? elmed$$module$synpdf.getPlayerState() : 0,
             g = yubchk$$module$synpdf ? 1 != f : elmed$$module$synpdf.paused;
         yubchk$$module$synpdf ? 5 != f && elmed$$module$synpdf.seekTo(e, !0) : elmed$$module$synpdf.currentTime = e;
-        hasMixer$$module$synpdf && (mixplayer$$module$mixer.currentTime = e);
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.time2x(e - offset$$module$synpdf);
         if (d) {
             if (g) {
@@ -2396,7 +2395,7 @@ function sendMsg$$module$synpdf(a) {
 }
 
 function setPauseState$$module$synpdf(a) {
-    msc_wz$$module$synpdf && (msc_wz$$module$synpdf.paused = a, $("#knop").val(a ? "Play" : "Pause"), $("#sync_out").css("background", a ? "" : "#ff0"), $("#vidyub, #vid").blur(), sendMsg$$module$synpdf(a ? "paused" : "playing"), hasMixer$$module$synpdf && (a ? mixplayer$$module$mixer.pause() : mixplayer$$module$mixer.play()))
+    msc_wz$$module$synpdf && (msc_wz$$module$synpdf.paused = a, $("#knop").val(a ? "Play" : "Pause"), $("#sync_out").css("background", a ? "" : "#ff0"), $("#vidyub, #vid").blur(), sendMsg$$module$synpdf(a ? "paused" : "playing"))
 }
 
 function pauseer$$module$synpdf() {
@@ -2438,7 +2437,6 @@ function keyDown$$module$synpdf(a) {
                 a.preventDefault();
             if (!elmed$$module$synpdf) break;
             var d = yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime;
-            hasMixer$$module$synpdf && (elmed$$module$synpdf.klok ? d = mixplayer$$module$mixer.currentTime : mixplayer$$module$mixer.currentTime = d);
             playPause2$$module$synpdf(!0, d);
             break;
         case "f":
