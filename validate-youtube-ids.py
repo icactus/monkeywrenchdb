@@ -36,8 +36,12 @@ with open(file_path, 'r') as file:
 # Split the YouTube IDs into chunks of 50
 id_chunks = list(chunk_list(youtube_ids, 50))
 
+# Initialize a list to collect all missing IDs across all chunks
+all_missing_ids = []
+
 # Process each chunk
-for chunk in id_chunks:
+for chunk_index, chunk in enumerate(id_chunks):
+    print(f"Processing batch {chunk_index + 1}/{len(id_chunks)}...")  # Optional: output the batch being processed
     request = youtube.videos().list(
         part="id,snippet,status",
         id=','.join(chunk)
@@ -48,10 +52,13 @@ for chunk in id_chunks:
         found_ids = set(video['id'] for video in response.get('items', []))
         missing_ids = set(chunk) - found_ids
         
-        print("Available Videos:")
-        for video in response.get('items', []):
-            print(f"ID: {video['id']}, Title: {video['snippet']['title']}")
-        
-        print("\nMissing or Removed Videos:")
-        for id in missing_ids:
-            print(f"ID: {id}")
+        # Add missing IDs from the current chunk to the overall list of missing IDs
+        all_missing_ids.extend(missing_ids)
+
+# After processing all chunks, check if there were any missing IDs
+if all_missing_ids:
+    print("\nThe following YouTube video IDs were not valid (missing or removed):")
+    for missing_id in all_missing_ids:
+        print(missing_id)
+else:
+    print("\nAll YouTube video IDs in the batch were validated successfully.")
