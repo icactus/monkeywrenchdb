@@ -40,7 +40,6 @@
                     <div class="nav-menu">
                         <a id="help-link" href="#" onclick="toggleHelpLinkMenu(); return false;">Help</a>
                         <a id="about-link" href="">About</a>
-                        <a id="donate-link" href="">Donate</a>
                     </div>
                 </div>
                 
@@ -182,6 +181,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="stripped-synpdf.js?v=10"></script>
-    <script src="stripped-synpdf-extras.js?v=10"></script>
+    <script src="stripped-synpdf-extras.js?v=11"></script>
 </body>
 </html>

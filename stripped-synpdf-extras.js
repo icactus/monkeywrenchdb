@@ -132,18 +132,26 @@ function fetchPieces(instrumentIds) {
         method: 'GET',
         data: { instrumentIds: instrumentIds },
         success: function(response) {
-            console.log(response);
             var container = $('#pieces-container');
             container.empty();
 
-            if (response === "No pieces found for the selected instrument") {
-                console.log("No pieces found for the selected instrument");
-                container.html('<p>No pieces found for the selected instrument</p>');
-            } else {
-                var data = JSON.parse(response);
-                var pieces = data.pieces;
-                var instrumentName = data.instrumentName;
+            // First, attempt to parse the JSON response
+            var data;
+            try {
+                data = JSON.parse(response);
+            } catch (e) {
+                console.error('Error parsing JSON response:', e);
+                return;
+            }
 
+            // Now, check if the 'message' key exists in the parsed object
+            if (data.message && data.message === "No pieces found for the selected instrument") {
+                console.log(data.message);
+                container.html('<p>' + data.message + '</p>');
+            } else {
+                // Your existing logic for handling the pieces data
+                var pieces = data.pieces || [];
+                var instrumentName = data.instrumentName || "";
                 // Group pieces by 'piece_category.category_name'
                 var groupedPieces = pieces.reduce(function(acc, piece) {
                     var categoryName = piece.category_name;
@@ -236,6 +244,28 @@ function fetchPieces(instrumentIds) {
     });
 }
 
+// Function to handle the click event on the link
+function checkInstrumentParts(pieceId, instrumentIds, callback) {
+    if (instrumentIds.split(',').length > 0) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', `check_multiple_parts.php?piece_id=${pieceId}&instrumentIds=${instrumentIds}`, true);
+        xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 400) {
+                var response = JSON.parse(xhr.responseText);
+                if (typeof callback === "function") {
+                    callback(response); // Call the callback function with the response data
+                }
+            } else {
+                console.error('Error from the server');
+            }
+        };
+        xhr.onerror = function() {
+            console.error('Request failed');
+        };
+        xhr.send();
+    }
+}
+
 function generateInstrumentsDropdown(recordingId) {
   return new Promise(function(resolve, reject) {
     var dropdown = document.getElementById("instruments-dropdown");
@@ -297,7 +327,6 @@ function fetchRecordings(metricArrId) {
           recordings.forEach(function(recordingFullData) {
             var conductorName = recordingFullData.conductor_name;
             var ensembleName = recordingFullData.ensemble_name;
-            console.log(ensembleName);
             var year = recordingFullData.year;
             
             var linkText = conductorName +
@@ -499,7 +528,13 @@ $('#recordings-dropdown').change(function() {
 
 $('#instrument-links').on('click', '.instrument-link-a', function() {
   var instrumentId = $(this).data('id');
+
   var instrumentText = $(this).text();
+  var lastParenthesisPosition = instrumentText.lastIndexOf('(');
+
+  if (lastParenthesisPosition !== -1) {
+      instrumentText = instrumentText.slice(0, lastParenthesisPosition).trim();
+  }
 
   var headingElement = $("#instruments-heading").children().first();
   var newHeadingText = "Select Instrument: " + instrumentText;
@@ -517,18 +552,60 @@ $('#instrument-links').on('click', '.instrument-link-a', function() {
   fetchPieces(instrumentId);
 });
 
-$('#pieces-container').on('click', '.pieces-link', function() {
-  var metricArrId = $(this).data('id');
-  var pieceText = $(this).text();
-  
-  var headingElement = $("#pieces-heading").children().first();
-  var newHeadingText = "Select Piece: " + pieceText;
-  headingElement.replaceWith(function() {
-    return $("<" + this.tagName + ">", { html: newHeadingText });
-  });
-  fetchRecordings(metricArrId);
+$('#pieces-container').on('click', '.pieces-link', function(event) {
+    event.preventDefault();
+    // Stop propagation immediately to handle it manually later
+    event.stopPropagation();
+
+    var pieceId = $(this).data('piece-id');
+    var instrumentIds = $(this).data('instrument-id').toString();
+    var clickedLink = $(this); // Store the clicked link for later use
+    
+    var pieceText = $(this).text();
+    var headingElement = $("#pieces-heading").children().first();
+    var newHeadingText = "Select Piece: " + pieceText;
+    headingElement.replaceWith(function() {
+      return $("<" + this.tagName + ">", { html: newHeadingText });
+    });
+    var handleData = function(data) {
+        if (data.length === 1) {
+            fetchRecordings(data[0].metric_arr_id);
+            // Find the closest collapsible element
+            var closestCollapsible = clickedLink.closest('.collapsible')[0];
+            if (closestCollapsible) {
+                toggleCollapsible(closestCollapsible);
+            }
+        } else if (data.length > 1) {
+            // If multiple instruments, stop propagation and handle as before
+            displayInstrumentLinks(data, clickedLink);
+        }
+    };
+
+    // Check if the instrument links container already exists
+    var existingContainer = clickedLink.next('.instrument-links');
+    if (existingContainer.length > 0) {
+        // If the container exists, simply toggle its visibility
+        existingContainer.toggle();
+    } else {
+        // If it doesn't exist, call checkInstrumentParts with the callback function
+        checkInstrumentParts(pieceId, instrumentIds, handleData);
+    }
 });
 
+function displayInstrumentLinks(data, clickedLink) {
+    var linksContainer = $('<div class="instrument-links"></div>');
+    data.forEach(function(item) {
+        var instrumentLink = $('<a href="#" class="instrument-link"></a>')
+            .text(item.instrument_name + ' ' + item.part_number)
+            .data('metric-arr-id', item.metric_arr_id)
+            .on('click', function(e) {
+                e.preventDefault();
+                fetchRecordings($(this).data('metric-arr-id'));
+            });
+        linksContainer.append(instrumentLink).append('<br>');
+    });
+    clickedLink.after(linksContainer);
+}
 //When piece container is clicked check if there is more than one metricArrId for the instrument name for this piece
 //
 //If yes, then list those options below the name of the piece
@@ -542,7 +619,6 @@ $('#recordings-container').on('click', '.recordings-link', function() {
   section2.classList.add('section2-margin-top');
   
   let recordingFullData = $(this).data('recordingFullData');
-  console.log(recordingFullData);
   let recordingId = recordingFullData.recording_id;
   //Setting the global instrument and recording values for dropdown use
   currentInstrumentGlobal = recordingFullData.instrument_id;
@@ -764,50 +840,57 @@ const urlRecording = urlParams.get('recording');
 
 
 
+function toggleCollapsible(collapsibleElement) {
+    var currentContent = collapsibleElement.querySelector(".search-content");
+    var nextCollapsible = collapsibleElement.nextElementSibling;
+    var nextContent = nextCollapsible ? nextCollapsible.querySelector(".search-content") : null;
 
-$(document).ready(function() {
-  var collapsibles = document.getElementsByClassName("collapsible");
-  for (var i = 0; i < collapsibles.length; i++) {
-    collapsibles[i].addEventListener("click", function(event) {
-      var currentCollapsible = this;
-      var currentContent = this.querySelector(".search-content");
-      var nextCollapsible = currentCollapsible.nextElementSibling;
-      var nextContent = nextCollapsible ? nextCollapsible.querySelector(".search-content") : null;
-
-      // Close all collapsibles except the current one
-      for (var j = 0; j < collapsibles.length; j++) {
-        if (collapsibles[j] !== currentCollapsible) {
-          collapsibles[j].classList.remove("active");
-          collapsibles[j].querySelector(".search-content").style.display = "none";
+    // Close all collapsibles except the current one
+    var collapsibles = document.getElementsByClassName("collapsible");
+    for (var j = 0; j < collapsibles.length; j++) {
+        if (collapsibles[j] !== collapsibleElement) {
+            collapsibles[j].classList.remove("active");
+            collapsibles[j].querySelector(".search-content").style.display = "none";
         }
-      }
+    }
 
-      // Toggle the current collapsible and show/hide its content
-      currentCollapsible.classList.toggle("active");
-      if (currentContent.style.display === "grid") {
+    // Toggle the current collapsible and show/hide its content
+    collapsibleElement.classList.toggle("active");
+    if (currentContent.style.display === "grid") {
         currentContent.style.display = "none";
-      } else {
+    } else {
         currentContent.style.display = "grid";
-      }
+    }
 
-      // Show the next collapsible and hide its content if it exists
-      if (nextCollapsible) {
+    // Show the next collapsible and hide its content if it exists
+    if (nextCollapsible) {
         nextCollapsible.classList.add("active");
         if (nextContent) {
-          nextContent.style.display = "grid";
+            nextContent.style.display = "grid";
         }
-      }
-    });
-    var container = collapsibles[i].querySelector(".search-content");
-    container.addEventListener("click", function(event) {
-      if (event.target.tagName !== 'A') {
-        event.stopPropagation();
-      }
-    });
-  }
+    }
+}
 
-  // Trigger click event on the first collapsible to open it by default
-  collapsibles[0].click();
-  fetchSearchByInstrument();
-  resizeCanvasTrigger();
+$(document).ready(function() {
+    // Attach click event listeners to collapsible headers
+    $('.collapsible').click(function(event) {
+        event.preventDefault();
+        event.stopPropagation(); // Ensure the event does not propagate further
+        toggleCollapsible(this);
+    });
+
+    // Prevent collapsing when clicking on links within .search-content, if necessary
+    $('.search-content').click(function(event) {
+        if (event.target.tagName !== 'A') {
+            event.stopPropagation(); // Stop propagation for non-anchor elements to maintain collapsible state
+        }
+    });
+
+    // Trigger the first collapsible to open it by default
+    if ($('.collapsible').length > 0) {
+        toggleCollapsible($('.collapsible')[0]);
+    }
 });
+
+fetchSearchByInstrument();
+resizeCanvasTrigger();
