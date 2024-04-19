@@ -20,7 +20,6 @@ deployment:
     - /bin/cp stripped-synpdf-styles.css $DEPLOYPATH
     - /bin/cp stripped-synpdf.js $DEPLOYPATH
     - /bin/cp check_multiple_parts.php $DEPLOYPATH
-    - /bin/cp synpdf_182/synpdf-edit-mode.php $DEPLOYPATH/editmode/
     - export DEPLOYPATH2=/home/monkcdmb/phpfiles/
     - /bin/cp phpfiles/synpdf-edit-mode.js $DEPLOYPATH2
     - /bin/cp phpfiles/edit-mode-tools.js $DEPLOYPATH2
