@@ -273,15 +273,15 @@ sidecontent {
                 <form class="inputform" id="addnewrecordingform" action="submit_recording.php" method="POST">
                     <div style="display:flex;">
                         <div>
-                            <label for="conductor_name">Main Artist Name</label>
+                            <label for="conductor_name">Conductor/Soloist Name</label>
                             <input type="text" name="conductor_name" placeholder="First Last" />
                         </div>
                         <div>
-                            <label for="ensemble_name">Ensemble/Soloist Name</label>
+                            <label for="ensemble_name">Ensemble Name</label>
                             <input type="text" name="ensemble_name" placeholder="English Version of Ensemble Name" />
                         </div>
                         <div>
-                            <label for="year">Year</label>
+                            <label for="year">Year Performed</label>
                             <input type="text" name="year" placeholder="Year as YYYY" />
                         </div>
                     </div>
