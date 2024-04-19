@@ -1,11 +1,9 @@
 <?php
-// Create a new mysqli instance with the provided database connection details
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "monkeywrenchdb";
+require_once 'config.php';
 
-$mysqli = new mysqli($servername, $username, $password, $dbname);
+// Establish the database connection
+$mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+mysqli_set_charset($mysqli, 'utf8');
 
 // Check the database connection
 if ($mysqli->connect_error) {
