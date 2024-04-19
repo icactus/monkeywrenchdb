@@ -5,6 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Edit Mode</title>
 <script src="jquery.min.js"></script>
 <!--    <script src="jquery-ui.min.js"></script> -->
     <script src="pdf.min.js"></script>
@@ -231,7 +232,7 @@ sidecontent {
                         <input type="submit" value="Submit" />
                     </div>
                 </form>
-
+                <!-- add new piece -->
                 <form class="inputform" id="addnewpieceform" action="pieces-addnew.php" method="POST">
                     <div>
                         <label for="piece_name">Add New Piece</label>
@@ -245,7 +246,7 @@ sidecontent {
                         <input type="submit" value="Submit" />
                     </div>
                 </form>
-
+                <!-- add metric_arr -->
                 <form class="inputform" id="addnewmetricform" action="metric-arr-post.php" method="POST">
                     <select name="piece_id">
                         <option value="">Select a piece...</option>
@@ -265,6 +266,29 @@ sidecontent {
 
                     <textarea name="metric_arr_data" placeholder="Paste metric arr data here..."></textarea>
 
+                    <input type="submit" value="Submit" />
+                </form>
+
+                <!-- add recording -->
+                <form class="inputform" id="addnewrecordingform" action="submit_recording.php" method="POST">
+                    <div style="display:flex;">
+                        <div>
+                            <label for="conductor_name">Main Artist Name</label>
+                            <input type="text" name="conductor_name" placeholder="First Last" />
+                        </div>
+                        <div>
+                            <label for="ensemble_name">Ensemble/Soloist Name</label>
+                            <input type="text" name="ensemble_name" placeholder="English Version of Ensemble Name" />
+                        </div>
+                        <div>
+                            <label for="year">Year</label>
+                            <input type="text" name="year" placeholder="Year as YYYY" />
+                        </div>
+                    </div>
+                    <input type="hidden" name="piece_id" id="piece_id" />
+                    <input type="hidden" name="offset_js" id="offset_js" />
+                    <input type="hidden" name="youtube_id" id="youtube_id" />
+                    <input type="hidden" name="times_arr_data" id ="times_arr_data" />
                     <input type="submit" value="Submit" />
                 </form>
             </div>

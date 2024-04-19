@@ -540,6 +540,61 @@ addNewMetricForm.addEventListener("submit", function(event) {
   });
 });
 
+document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('addnewrecordingform');
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        // Update form data with dynamically modified values
+        var updatedJsonData = JSON.stringify(deTijden$$module$synpdf);
+        document.getElementById('times_arr_data').value = updatedJsonData;
+
+        var youtubeId = opt$$module$synpdf.yubvid;
+        if (!youtubeId || youtubeId.trim() ==='') {
+            alert("YouTube ID is missing");
+            return;
+        }
+        document.getElementById('youtube_id').value = youtubeId;
+
+        var offsetJs = ((offset$$module$synpdf * 100 - 15) / 100).toFixed(2);
+        document.getElementById('offset_js').value = offsetJs;
+
+        var scoreFnm = scoreFnm$$module$synpdf;
+        if (!scoreFnm || !scoreFnm.includes('-')) {
+            alert("No file selected or filename is incorrectly formatted.");
+            return;
+        }
+        var pieceId = scoreFnm.split('-')[0];
+        document.getElementById('piece_id').value = pieceId;
+
+        // Prepare FormData object for AJAX request
+        const formData = new FormData(form);
+
+        // Perform the AJAX request
+        fetch(form.action, {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.text())  // Assuming the server responds with plain text
+        .then(data => {
+            console.log(data);  // Log server response to the console
+            if (data.startsWith('Error')) {
+                alert("Form submission failed: " + data);  // Show error if starts with 'Error'
+            } else if (data === "success") {
+                alert("Form submitted successfully");
+                // Optionally reset the form or redirect the user
+                // form.reset();
+                // window.location.href = 'some-confirmation-page.html';
+            }
+        })
+        .catch(error => {
+            console.error("Error during form submission: ", error);
+            alert("An error occurred: " + error.message);
+        });
+    });
+});
+
 document.querySelectorAll('input[type="text"], textarea').forEach(function(input) {
   input.addEventListener('keydown', function(e) {
       e.stopPropagation();
