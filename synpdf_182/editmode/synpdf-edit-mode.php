@@ -8,6 +8,7 @@
 <title>Edit Mode</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
 <!--    <script src="jquery-ui.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="synpdf-edit-mode.js?v=6"></script>
     <style>
 html { width:100%; height:100%; margin: 0px; padding: 0px; background:white/*#e3f7fe*/; }
@@ -362,7 +363,7 @@ sidecontent {
         </div>
     <!--</div> -->
 <!-- </div> -->
-    <script src="edit-mode-tools.js?v=6"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="edit-mode-tools.js?v=6"></script>
+
 </body>
 </html>
