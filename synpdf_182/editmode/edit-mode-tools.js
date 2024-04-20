@@ -467,7 +467,7 @@ addNewComposerForm.addEventListener("submit", function(event) {
   
   const formData = new FormData(addNewComposerForm);
   
-  fetch("composers-addnew.php", {
+  fetch("../../phpfiles/composers-addnew.php", {
     method: "POST",
     body: formData
   })
@@ -494,7 +494,7 @@ addNewPieceForm.addEventListener("submit", function(event) {
   
   const formData = new FormData(addNewPieceForm);
   
-  fetch("pieces-addnew.php", {
+  fetch("../../phpfiles/pieces-addnew.php", {
     method: "POST",
     body: formData
   })
@@ -520,7 +520,7 @@ addNewMetricForm.addEventListener("submit", function(event) {
   
   const formData = new FormData(addNewMetricForm);
   
-  fetch("metric-arr-post.php", {
+  fetch("../../phpfiles/metric-arr-post.php", {
     method: "POST",
     body: formData
   })
