@@ -12,7 +12,6 @@ deployment:
     - /bin/cp get_preload.php $DEPLOYPATH
     - /bin/cp get_recording_instruments.php $DEPLOYPATH
     - /bin/cp index.php $DEPLOYPATH
-    - /bin/cp metric-arr-post.php $DEPLOYPATH
     - /bin/cp mysql-metric-arr-submit.php $DEPLOYPATH
     - /bin/cp phpinfo.php $DEPLOYPATH
     - /bin/cp removetime.py $DEPLOYPATH
