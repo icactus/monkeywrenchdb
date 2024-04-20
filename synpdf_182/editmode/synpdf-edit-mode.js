@@ -6,7 +6,7 @@
 //~ without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 //~ See the GNU General Public License for more details. <http://www.gnu.org/licenses/gpl.html>.
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 
 //POLYFILL FOR BROWSER COMPATIBILITY//
