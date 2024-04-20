@@ -1,13 +1,14 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-<meta name="robots" content="noindex">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<title>Edit Mode</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
-<!--    <script src="jquery-ui.min.js"></script> -->
+    <meta name="robots" content="noindex">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Edit Mode</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+    <!--    <script src="jquery-ui.min.js"></script> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="synpdf-edit-mode.js?v=6"></script>
     <style>
