@@ -8,7 +8,11 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-$recordingId = $_GET['recordingId'];
+
+$instrumentId = isset($_GET['instrumentId']) ? $_GET['instrumentId'] : null;
+$pieceId = isset($_GET['pieceId']) ? $_GET['pieceId'] : null;
+$recordingId = isset($_GET['recordingId']) ? $_GET['recordingId'] : null;
+
 
 // Prepare the SQL query with a placeholder for recordingId
 $stmt = $conn->prepare("SELECT m.metric_arr_id,

@@ -1,7 +1,9 @@
-// Copyright (C) 2023 Isaac Trapkus - All Rights Reserved.
+// Copyright (C) 2023-2024 Isaac Trapkus - All Rights Reserved.
 
 let currentInstrumentGlobal = 0 ;
 let currentRecordingGlobal = 0 ;
+let currentMetricArrGlobal = 0;
+let globalRecordingFullData = [] ;
 let canvasesGlobal = [] ;
 let currentDeTijdenIndex = 0 ;
 let currentMeasureIndex = 0 ;
@@ -14,7 +16,6 @@ let newInstrumentTime2xFlag = 0 ;
 let scrollFlag = 0 ;
 let globalHighlightColor = '#00d4ff';
 
-//  NEED TO SET THIS UP
 let currentGlobalScaleAmount = 100;
 
 //Color change for measure highlighting
@@ -318,6 +319,9 @@ function fetchRecordings(metricArrId) {
           reject("No recordings found");
         } else {
           var recordings = JSON.parse(response);
+          globalRecordingFullData = recordings;
+          currentMetricArrGlobal = metricArrId;
+          console.log('global recordingfull data ',globalRecordingFullData);
           var container = $('#recordings-container');
           container.empty();
 
@@ -351,6 +355,7 @@ function fetchRecordings(metricArrId) {
 }
 
 //This version updates the recordings dropdown with new info when the instrument is changed but without regenerating it.
+//NEED TO GET RID OF THIS IF ONLY USING ONE MEASURES VERSION. LOOKS LIKE NEEDLESSLY REFETCHING RECORDING DATA.
 function updateRecordingsData(metricArrId) {
   return new Promise(function(resolve, reject) {
     $.ajax({
@@ -363,6 +368,8 @@ function updateRecordingsData(metricArrId) {
           reject("No recordings found");
         } else {
           var recordings = JSON.parse(response);
+          globalRecordingFullData = recordings;
+          console.log(' update recordings new fulldata ',globalRecordingFullData);
           var recordingsDropdown = $('#recordings-dropdown');
           var options = recordingsDropdown.find('option');
           // Update the data for each option, skipping the first one
@@ -387,6 +394,7 @@ function loadRecording(recordingFullData) {
     // Check if the data is already stored in local storage
     let metricId = recordingFullData.metric_arr_id;
     let recordingId = recordingFullData.recording_id;
+    currentRecordingFullData = recordingFullData;
     let storedId = metricId + '-' + recordingId;
     let storedData = localStorage.getItem(storedId);
     if (storedData) {
@@ -435,6 +443,8 @@ function fetchNewInstrument(instrumentData) {
       recordingId = instrumentData.recording_id;
     }
     let metricId = instrumentData.metric_arr_id;
+    currentMetricArrGlobal = metricId;
+    console.log('current metric arr ', currentMetricArrGlobal);
     var xhr = new XMLHttpRequest();
     xhr.open("GET", "get_new_instrument_data.php?recordingId=" + recordingId + "&metricId=" + metricId, true);
     xhr.onreadystatechange = function() {
@@ -570,6 +580,8 @@ $('#pieces-container').on('click', '.pieces-link', function(event) {
     var handleData = function(data) {
         if (data.length === 1) {
             fetchRecordings(data[0].metric_arr_id);
+            currentMetricArrGlobal = data[0].metric_arr_id;
+            console.log('current global metric arr ', currentMetricArrGlobal);
             // Find the closest collapsible element
             var closestCollapsible = clickedLink.closest('.collapsible')[0];
             if (closestCollapsible) {
@@ -601,45 +613,47 @@ function displayInstrumentLinks(data, clickedLink) {
             .on('click', function(e) {
                 e.preventDefault();
                 fetchRecordings($(this).data('metric-arr-id'));
+                currentMetricArrGlobal = ($(this).data('metric-arr-id'));
+                console.log('current metric arr ', currentMetricArrGlobal);
             });
         linksContainer.append(instrumentLink).append('<br>');
     });
     clickedLink.after(linksContainer);
 }
-//When piece container is clicked check if there is more than one metricArrId for the instrument name for this piece
-//
-//If yes, then list those options below the name of the piece
-//
-//When an instrument name is clicked, load that specific metricArrData and continue to recordings
+// FOR LOADING VIA CLICK IN RECORDINGS MENU OR FROM URL
+function handleRecordingSelection(recordingFullData) {
+    let sidecontentbar = document.querySelector('sidecontentbar'); // Size sidecontentbar for mobile
+    let section2 = document.querySelector('section2'); // same as above
+    sidecontentbar.classList.add('sidecontentbar-min-height');
+    section2.classList.add('section2-margin-top');
+    
+    let recordingId = recordingFullData.recording_id;
+    // Setting the global instrument and recording values for dropdown use
+    currentInstrumentGlobal = recordingFullData.instrument_id;
+    currentRecordingGlobal = recordingFullData.recording_id;
+    document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
+
+    loadRecording(recordingFullData)
+    .then(function() {
+        msc_check_preload$$module$synpdf();
+        $("#sidecontent").show();
+        generateInstrumentsDropdown(recordingId)
+        .then(function() {
+            $('#instruments-dropdown').val(currentInstrumentGlobal);
+            $('#recordings-dropdown').val(currentRecordingGlobal);
+        })
+        .catch(function(error) {
+            console.error("An error occurred while generating instruments dropdown:", error);
+        });
+    })
+    .catch(function(error) {
+        console.error("An error occurred while loading recording:", error);
+    });
+}
 
 $('#recordings-container').on('click', '.recordings-link', function() {
-  let sidecontentbar = document.querySelector('sidecontentbar'); // Size sidecontentbar for mobile
-  let section2 = document.querySelector('section2'); // same as above
-  sidecontentbar.classList.add('sidecontenbar-min-height');
-  section2.classList.add('section2-margin-top');
-  
-  let recordingFullData = $(this).data('recordingFullData');
-  let recordingId = recordingFullData.recording_id;
-  //Setting the global instrument and recording values for dropdown use
-  currentInstrumentGlobal = recordingFullData.instrument_id;
-  currentRecordingGlobal = recordingFullData.recording_id;
-  document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
-  loadRecording(recordingFullData)
-  .then(function() {
-    msc_check_preload$$module$synpdf();
-    $("#sidecontent").show();
-    generateInstrumentsDropdown(recordingId)
-      .then(function() {
-        $('#instruments-dropdown').val(currentInstrumentGlobal);
-        $('#recordings-dropdown').val(currentRecordingGlobal);
-      })
-      .catch(function(error) {
-        console.error("An error occurred:", error);
-      });
-  })
-  .catch(function(error) {
-    console.error("An error occurred:", error);
-  });
+    let recordingFullData = $(this).data('recordingFullData');
+    handleRecordingSelection(recordingFullData);
 });
 
 
@@ -828,18 +842,73 @@ function resizePageFitToWidth() {
   resizeDematenAndCanvas(scaleAmount);
 }
 
+// LOAD PIECE AND RECORDING VIA URL
 const urlParams = new URLSearchParams(window.location.search);
-const urlInstrument = urlParams.get('instrument');
-console.log(urlInstrument);
-const urlPiece = urlParams.get('piece');
-const urlRecording = urlParams.get('recording');
+const urlMetricArrId = urlParams.get('metricArrId');
+const urlRecordingId = urlParams.get('recordingId');
 
-// if (instrument && piece && recording) {
-//   // Load the PDF and other data
-// }
+// Check if the necessary parameters are present
+if (urlMetricArrId && urlRecordingId) {
+        //set global variables
+        currentMetricArrGlobal = urlMetricArrId;
+        currentRecordingGlobal = urlRecordingId;
+    
+    // Fetch recordings based on the Metric Arrangement ID
+    fetchRecordings(urlMetricArrId)
+    .then(recordings => {
+        // Find the specific recording data from the list of recordings
+        const recordingFullData = recordings.find(rec => rec.recording_id.toString() === urlRecordingId);
+        if (recordingFullData) {
+            // Handle the selection of a specific recording
+            handleRecordingSelection(recordingFullData);
+        } else {
+            console.error('Recording not found with the provided ID:', urlRecordingId);
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching recordings:', error);
+    });
+} else {
+    console.log("URL parameters 'metricArrId' or 'recordingId' are missing.");
+}
+
+//SHARE BUTTON
+document.getElementById('shareButton').addEventListener('click', function() {
+    // Fetch the current metric arrangement ID and recording ID from your application state or DOM
+    const metricArrId = currentMetricArrGlobal;  // Ensure this variable is updated based on your app's logic
+    const recordingId = currentRecordingGlobal;  // Ensure this variable is updated based on your app's logic
+
+    if (metricArrId && recordingId) {
+        // Dynamically construct the base URL using the current window location
+        const protocol = window.location.protocol; // 'http:' or 'https:'
+        const host = window.location.host; // 'localhost:8000' or 'monkeywrenchdb.org'
+        const path = '/index.php'; // Assuming 'index.php' is always the target file
+
+        const baseUrl = `${protocol}//${host}${path}`;
+
+        // Construct the query parameters
+        const queryParams = new URLSearchParams({
+            metricArrId: metricArrId,
+            recordingId: recordingId
+        }).toString();
+
+        // Combine base URL with query parameters to form the full URL
+        const fullUrl = `${baseUrl}?${queryParams}`;
+
+        // Set the generated URL in the text input for display and copying
+        document.getElementById('shareLink').value = fullUrl;
+        console.log('Share link generated:', fullUrl);
+
+        // Optional: Automatically select and copy the link to the clipboard
+        document.getElementById('shareLink').select();
+        document.execCommand('copy');
+    } else {
+        console.error("Missing parameters. Unable to generate share link.");
+    }
+});
 
 
-
+//HOMEPAGE COLLAPSIBLES
 function toggleCollapsible(collapsibleElement) {
     var currentContent = collapsibleElement.querySelector(".search-content");
     var nextCollapsible = collapsibleElement.nextElementSibling;
