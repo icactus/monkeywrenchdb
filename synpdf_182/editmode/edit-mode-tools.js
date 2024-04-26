@@ -1,3 +1,5 @@
+// Copyright (C) 2024 Isaac Trapkus
+
 let SplitclickCoordinates = [];
 let SplitclickY = 0;
 let QisActive = false;
@@ -204,6 +206,19 @@ document.addEventListener('keydown', function(event) {
             break;
         case 'w':
             toggleWActivity();
+            break;
+        case '/':
+            keyDown$$module$synpdf({
+                key: "PageDown"
+            });
+            break;
+        case '.':
+            keyDown$$module$synpdf({
+                key: "PageUp"
+            });
+            break;
+        case 'o':
+            resizePdfSyn$$module$synpdf();
             break;
         case 'p': // Puts current shaded measures into memory
             var jsonString = deMetriek$$module$synpdf;

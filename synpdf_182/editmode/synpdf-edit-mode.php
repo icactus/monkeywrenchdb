@@ -7,9 +7,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
-    <!--    <script src="jquery-ui.min.js"></script> -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="jquery.min.js"></script>
+    <script src="pdf.min.js"></script>
+
     <script src="synpdf-edit-mode.js?v=6"></script>
     <style>
 html { width:100%; height:100%; margin: 0px; padding: 0px; background:white/*#e3f7fe*/; }
@@ -31,7 +31,7 @@ audio     { display: none; margin-right:5px; vertical-align:middle; }
 #medlbl   { display: block; margin-top: 5px; }
 #yvdlbl   { display: none; margin-top: 5px; }
 #drplbl, #yublbl { display: inline-block; }
-#rollijn   { position:fixed; height:30px; width:100%; z-index:1; top: 50%; }
+#rollijn   { position:fixed; height:0px; width:1%; z-index:1; top: 50%; } /*can't do hidden position because needed for calcs*/
 #pdffile, #mediafile, #yubfile { display: inline-block; }
 #yubload  { top:10%; }
 #countin  { left:40%; font-size:10em; color:green; background:none; padding:0px; }
@@ -131,6 +131,18 @@ sidecontent {
     top:0;
     right:220px;
 }
+html {
+    filter: invert(0.85);
+}
+#notation {
+    filter: invert(1);
+}
+section2 {
+    filter: brightness(1.5);
+}
+#tooltip {
+    filter: invert(1);
+}
     </style>
 </head>
 <body>
@@ -161,12 +173,7 @@ sidecontent {
             <div id="crediv">
                 <div id="credits"></div>
                 <div id="credits2"></div>
-                <div id="pageNumberField">
-                    <button id="downBtn">-</button>
-                    <input type="number" id="pageNumber" value="1" min="1" readonly>
-                    <button id="upBtn">+</button>
-                  </div>
-                <p><!-- page coordinate editing section info -->Coordinate logging: <span id="indicator" class="inactive-indicator">OFF</span> Q is for adding or removing barlines, S is for setting multimeasure rests, W will draw a new staff area when you click the top left and bottom right corner of new area</p>
+                <p><!-- page coordinate editing section info -->Coordinate logging: <span id="indicator" class="inactive-indicator">OFF</span> Q is for adding or removing barlines, S is for setting multimeasure rests,<br> W will draw a new staff area when you click the top left and bottom right corner of new area</p>
             </div>
         </div>
         <div id="sync">
@@ -249,25 +256,29 @@ sidecontent {
                 </form>
                 <!-- add metric_arr -->
                 <form class="inputform" id="addnewmetricform" action="../../phpfiles/metric-arr-post.php" method="POST">
-                    <select name="piece_id">
-                        <option value="">Select a piece...</option>
-                        <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
-                            <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <div style="display:flex;">
+                        <div>
+                            <label for="piece_id">Add New Part Data</label>
+                            <select name="piece_id">
+                                <option value="">Select a piece...</option>
+                                <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
+                                    <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <select name="instrument_id">
+                            <option value="">Select an instrument...</option>
+                            <?php foreach ($instrumentsArray as $instrumentId => $instrumentName): ?>
+                                <option value="<?php echo $instrumentId; ?>"><?php echo $instrumentName; ?></option>
+                            <?php endforeach; ?>
+                        </select>
 
-                    <select name="instrument_id">
-                        <option value="">Select an instrument...</option>
-                        <?php foreach ($instrumentsArray as $instrumentId => $instrumentName): ?>
-                            <option value="<?php echo $instrumentId; ?>"><?php echo $instrumentName; ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                        <input type="hidden" name="measures_version" value="1" />
 
-                    <input type="text" name="measures_version" placeholder="Enter measures version..." />
+                        <textarea name="metric_arr_data" placeholder="Paste metric arr data here..."></textarea>
 
-                    <textarea name="metric_arr_data" placeholder="Paste metric arr data here..."></textarea>
-
-                    <input type="submit" value="Submit" />
+                        <input type="submit" value="Submit" />
+                    </div>
                 </form>
 
                 <!-- add recording -->

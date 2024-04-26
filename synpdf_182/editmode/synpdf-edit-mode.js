@@ -1,4 +1,4 @@
-//~ Modified Copyright (C) 2024: Isaac Trapkus
+//~ Copyright (C) 2024: Isaac Trapkus
 //~ Revision: 182, Copyright (C) 2015-2023: Willem Vree, contributions Stéphane David.
 //~ This program is free software; you can redistribute it and/or modify it under the terms of the
 //~ GNU General Public License as published by the Free Software Foundation; either version 2 of
@@ -7,7 +7,7 @@
 //~ without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 //~ See the GNU General Public License for more details. <http://www.gnu.org/licenses/gpl.html>.
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
 
 
 //POLYFILL FOR BROWSER COMPATIBILITY//
@@ -959,7 +959,7 @@ var msc_VERSION$$module$synpdf = 182,
         noplyr: 0,
         nodash: 0,
         skipn: 0,
-        drmpl2: 2,
+        drmpl2: 0.1,
         seln: 0,
         delay: 0,
         ipaddr: "",
@@ -970,7 +970,7 @@ var msc_VERSION$$module$synpdf = 182,
         zwgrens: .7,
         voorna: .9,
         mtdrmpl: .8,
-        dx: 3,
+        dx: 5,
         fscr: 0,
         pagenum: 1,
         playbtn: 0,
@@ -1588,8 +1588,8 @@ function addDummySys$$module$synpdf() {
         t: deTijden$$module$synpdf[a - 1].t + 2,
         mix: a
     });
-    $("#notation").append('<div id="leeg" style="height:' + bottomSpace$$module$synpdf +
-        'px">&nbsp;</div>');
+   // $("#notation").append('<div id="leeg" style="height:' + bottomSpace$$module$synpdf +
+   //     'px">&nbsp;</div>');
     msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin()
 }
 
@@ -1947,7 +1947,6 @@ function countPix$$module$synpdf(image, sliceIndex) {
         currentPixelOffset += g  // Increase currentPixelOffset for the next iteration
     }
     let drawResResult = drawRes$$module$synpdf(colorIntensityArray, imageWidth, imageHeight);  // Draw the results of the pixel analysis
-    console.log(drawResResult);
     for (drawResResult = countVsys$$module$synpdf(drawResResult, g, imagePixelData); drawResResult.length && skipn$$module$synpdf;) drawResResult.shift(), --skipn$$module$synpdf;  // Further process the image data
     sliceIndex && (drawResResult = drawResResult.slice(sliceIndex - 1, sliceIndex));  // Slice the results based on parameter 'b'
     sliceIndex = findBarLines$$module$synpdf(drawResResult, g, imagePixelData);  // Find bar lines

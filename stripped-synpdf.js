@@ -1,4 +1,4 @@
-//~ Copyright (C) 2015-2023
+//~ Copyright (C) 2015-2024
 //~ Isaac Trapkus,
 //~ Willem Vree, contributions Stéphane David.
 //~ This program is free software; you can redistribute it and/or modify it under the terms of the
@@ -511,38 +511,33 @@ function doeRol$$module$synpdf(a, b) {
 }
 
 
-function knip$$module$synpdf(a, b, c) {
-    var d = JSON.parse(JSON.stringify(b.cxs));
-    b = JSON.parse(JSON.stringify(b.bxs));
-    d.forEach(function(a) {
-        a.cs = a.cs.map(function(a) {
-            return 1 * a + c;
+function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight) {
+    let parsedPageMetricArr = JSON.parse(JSON.stringify(pageMetricArray.cxs));
+    let pageBarlineArray = JSON.parse(JSON.stringify(pageMetricArray.bxs));
+    parsedPageMetricArr.forEach(function(staffSystem) {
+        //convert each page's staff line pixel coordinates so they are relative to total pdf height
+        staffSystem.cs = staffSystem.cs.map(function(staffLineLoc) {
+            return 1 * staffLineLoc + cumulativeHeight;
         })
     });
-    var e;
-    for (e = 0; e < d.length; ++e) {
-        var f = d[e].cs;
-        var g = f[0];
-        var p = f[f.length - 1];
-        var m = b[e];
-        for (f = 0; f < m.length - 1; ++f) {
-            var n = m[f];
-            var l = m[f + 1];
+    for (let i = 0; i < parsedPageMetricArr.length; ++i) {
+        //staff means not just one staff but the entire system if applicable
+        let staff = parsedPageMetricArr[i].cs;
+        var staffTopLine = staff[0];
+        var staffBottomLine = staff[staff.length - 1];
+        var staffBarlineArr = pageBarlineArray[i];
+        for (let j = 0; j < staffBarlineArr.length - 1; ++j) {
+            var measureLeftBarline = staffBarlineArr[j];
+            var measureRightBarline = staffBarlineArr[j + 1];
             deMaten$$module$synpdf.push({
-                x: n,
-                y: g,
-                w: l - n,
-                h: p - g
+                x: measureLeftBarline,
+                y: staffTopLine,
+                w: measureRightBarline - measureLeftBarline,
+                h: staffBottomLine - staffTopLine 
             })
         }
     }
-    //  REMOVING THIS BECAUSE IT UNNECESSARILY ADDS TIME MARKERS IF A RECORDING HAS LESS MARKERS THAN DEMATEN MEASURES
-    // for (e = deTijden$$module$synpdf.length; e < deMaten$$module$synpdf.length; ++e) deTijden$$module$synpdf.push({
-    //     t: 0 < e ? deTijden$$module$synpdf[e - 1].t +
-    //         2 : 0,
-    //     mix: e
-    // });
-    return a
+    return canvas 
 }
 
 function addDummySys$$module$synpdf() {
@@ -646,13 +641,13 @@ let renderedPages = 1;
 // Initialize an array to store rendering tasks
 var renderingTasks = [];
 
-function goPage$$module$synpdf(a, b) {
-    return pdfDoc$$module$synpdf.getPage(a).then(function(page) {
+function goPage$$module$synpdf(pageNum, cumulativeHeight) {
+    return pdfDoc$$module$synpdf.getPage(pageNum).then(function(page) {
         var viewport2 = page.getViewport({ scale: (deMetriek$$module$synpdf[0] / page._pageInfo.view[2]) });
         var viewport = page.getViewport({ scale: 3 });
         var canvas = document.createElement("canvas");
         var ctx = canvas.getContext("2d");
-        canvas.id = 'canvas' + a;
+        canvas.id = 'canvas' + pageNum;
         canvas.height = viewport.height;
         canvas.width = viewport.width;
         canvas.style.width = viewport2.width + "px";
@@ -663,27 +658,20 @@ function goPage$$module$synpdf(a, b) {
             return page.render({
                 canvasContext: ctx,
                 viewport: viewport,
-            }).promise.then(function() {
-                // Update progress as each page is rendered
-                //renderedPages++;
-                //$("#loadingMessage2").show();
-                //let percentComplete = (renderedPages / pdfDoc$$module$synpdf.numPages) * 100;
-                //$("#loadingMessage2").html('<h2>Rendering page: ' + renderedPages + '/' + pdfDoc$$module$synpdf.numPages + '</h2>');
-            });
+            }).promise;
         });
-
-        canvas = compPage$$module$synpdf(canvas, a, b);
-        if (a === 1 && newInstrumentTime2xFlag === 1) {
+        canvas = compPage$$module$synpdf(canvas, pageNum, cumulativeHeight);
+        if (pageNum === 1 && newInstrumentTime2xFlag === 1) {
             msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
             newInstrumentTime2xFlag = 0;
         }
         if (doresize$$module$synpdf) {
             resizePdf$$module$synpdf();
         } else {
-            if (a < pdfDoc$$module$synpdf.numPages) {
-                if (a === 1) {renderedPages = 1}; // start pages at 1 in case part switched before done rendering
+            if (pageNum < pdfDoc$$module$synpdf.numPages) {
+                if (pageNum === 1) {renderedPages = 1}; // start pages at 1 in case part switched before done rendering
                 $("#loadingMessage2").show();
-                return goPage$$module$synpdf(a + 1, b + viewport2.height);
+                return goPage$$module$synpdf(pageNum + 1, cumulativeHeight + viewport2.height);
             } else {
                 rendering$$module$synpdf = 0;
                 addDummySys$$module$synpdf();
@@ -832,17 +820,17 @@ function renderPageIfNotRendered(pageIndex) {
     }
 }
 
-function compPage$$module$synpdf(a, b, c) {
-    var d = deMetriek$$module$synpdf[b];
+function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
+    var pageMetricArray = deMetriek$$module$synpdf[pageNum];
     pageNumChanged$$module$synpdf = 0;
-    a = knip$$module$synpdf(a, d, c);
+    canvas = knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight);//runs knip on the canvas to generate measure boxes (deMaten)
     pageStfIx$$module$synpdf.push(Cs$$module$synpdf.length);
-    Cs$$module$synpdf = Cs$$module$synpdf.concat(d.cxs);
-    msc_wz$$module$synpdf || startIntf$$module$synpdf(a);
-    $("#notation").append(a);
-    $(a).on("mousedown touchstart", kliklang$$module$synpdf);
+    Cs$$module$synpdf = Cs$$module$synpdf.concat(pageMetricArray.cxs);
+    msc_wz$$module$synpdf || startIntf$$module$synpdf(canvas);
+    $("#notation").append(canvas);
+    $(canvas).on("mousedown touchstart", kliklang$$module$synpdf);
     deMaten$$module$synpdf.length >= demix$$module$synpdf && msc_wz$$module$synpdf.cursorTime && msc_wz$$module$synpdf.time2x(msc_wz$$module$synpdf.cursorTime);
-    return a
+    return canvas 
 }
 
 function tick$$module$synpdf(a) {
