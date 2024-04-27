@@ -11,7 +11,7 @@
 //  This is a heavily modified and stripped version of Synpdf v.182. The original software
 //  can be found at https://wim.vree.org/js2/index.html.
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
 
 var opt$$module$synpdf, times_arr$$module$synpdf, offset_js$$module$synpdf, pdf_file$$module$synpdf, pdf_data$$module$synpdf, jpg_data$$module$synpdf, media_dir$$module$synpdf, metric_arr$$module$synpdf, pdfDoc$$module$synpdf, pdfData$$module$synpdf, jpgData$$module$synpdf, nPage$$module$synpdf =
     1,
@@ -357,7 +357,6 @@ function findCurrentMeasureTime() {
         if (demix$$module$synpdf === deTijden$$module$synpdf[b].mix) {
           d = deTijden$$module$synpdf[b].t;
           currentMeasureTime = d;
-          console.log('findcurrentmeasuretime');
           resolve();
           break;
         }
@@ -569,7 +568,6 @@ function addDummySys$$module$synpdf() {
 }
 
 function readPdfdoc$$module$synpdf() {
-    var startTime = performance.now();
     opt$$module$synpdf.pagewd = deNot$$module$synpdf.clientWidth;
     schaalMetriek$$module$synpdf();
     Cs$$module$synpdf = [];
@@ -581,9 +579,6 @@ function readPdfdoc$$module$synpdf() {
     rendering$$module$synpdf = 1;
     // $("#render").html("rendering ...").toggle(!0);
     return goPage$$module$synpdf(1, 0).then(function() {
-        var endTime = performance.now();
-        var timeTaken = endTime - startTime;
-        console.log("goPage$$module$synpdf took " + timeTaken + " milliseconds");
         return Promise.resolve(); // Resolve the promise after all pages are processed
     });
 }
@@ -679,7 +674,6 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
                 $("#loadingMessage2").hide();
 
                 // Once all pages are processed, execute the rendering tasks
-                console.log('gopage renderVisibleAndNextPage');
                 renderVisibleAndNextPage();
             }
         }
@@ -761,7 +755,6 @@ function manageRenderedCanvases(canvasId) {
 }
 
 function renderVisibleAndNextPage() {
-    console.log('renderVisibleAndNextPage called');
     const visiblePages = findVisiblePages(); // Assume this function returns an array of visible page numbers
     const highestVisiblePage = Math.max(...visiblePages);
 
@@ -800,13 +793,11 @@ function findVisiblePages() {
 var renderingStatus = {}; // Tracks the rendering status of each page
 
 function renderPageIfNotRendered(pageIndex) {
-    console.log('renderPageIfNotRendered called for page:', pageIndex);
     const canvasId = `canvas${pageIndex}`;
     const canvas = document.getElementById(canvasId);
 
     // Check if the canvas is being rendered or has already been rendered
     if (canvas && renderingStatus[pageIndex] !== 'rendering' && !canvas.classList.contains('rendered')) {
-        console.log('Starting rendering for page:', pageIndex);
         renderingStatus[pageIndex] = 'rendering'; // Mark as rendering
 
         renderingTasks[pageIndex - 1]().then(() => {
@@ -842,6 +833,7 @@ function tick$$module$synpdf(a) {
     }
 }
 
+//Long-click/touch handling
 function kliklang$$module$synpdf(a) {
     void 0 == touchDev$$module$synpdf && (touchDev$$module$synpdf = "touchstart" == a.type);
     var b = touchDev$$module$synpdf ? $(this) : $("body");
@@ -873,7 +865,6 @@ function kliklang$$module$synpdf(a) {
                 a = a.clientY;
                 a -= $("#notation").offset().top;
                 a += $("#notation").scrollTop();
-                console.log(c);
                 c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(d, a) : msc_wz$$module$synpdf.x2time(d, a, c)
             }
         })
@@ -890,7 +881,6 @@ function startIntf$$module$synpdf(a) {
 }
 
 function resizePdf$$module$synpdf(scrollType) {
-    console.log('resizePdf$$module$synpdf');
     if (scrollType === 1) {
         doresize$$module$synpdf = 1 ;
         deNot$$module$synpdf.style["scroll-behavior"] = "auto" ;
@@ -927,11 +917,9 @@ function yubApiReady$$module$synpdf() {
  
 async function onPlayerStateChange(event) {
     if (bypassTickFlag === 1) {
-        console.log('change recordingflag: ', bypassTickFlag);
         try {
             console.log(newPlayerCue);
             await seekToPromise(newPlayerCue); // Seek to newPlayerCue seconds
-            console.log('Video has been successfully seeked');
             elmed$$module$synpdf.playVideo(); 
             bypassTickFlag = 0;
         } catch (error) {
@@ -1034,7 +1022,6 @@ function setPlayer$$module$synpdf(a, b) {
 }
 
 function changeStartTime(newTime) {
-    console.log('changing starttime to ', newTime);
     elmed$$module$synpdf.cueVideoById({
         videoId: opt$$module$synpdf.yubvid,
         startSeconds: newTime

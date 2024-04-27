@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="fonts.css" />
     <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=8" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+    <script src="jquery.min.js"></script>
     <title>monkey wrench</title>
 </head>
 <body>
@@ -99,7 +99,6 @@
                 <div id="sidecontent">
                     <div id="first-controls">
                         <div id="speed-part-row">
-                                <!-- <button id="hide-sidebar-button">sidebar</button> -->
     <!--                        <div id="highlight-control">
                                 <label for="favcolor"><p><b>Highlight</b></p></label>
                                 <input type="color" id="favcolor" name="favcolor" value="#00d4ff">
@@ -183,8 +182,8 @@
             </div>
         </section3>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="stripped-synpdf.js?v=10"></script>
-    <script src="stripped-synpdf-extras.js?v=12"></script>
+    <script src="pdf.min.js"></script>
+    <script src="stripped-synpdf.js?v=11"></script>
+    <script src="stripped-synpdf-extras.js?v=13"></script>
 </body>
 </html>

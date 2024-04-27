@@ -3,7 +3,6 @@
 let currentInstrumentGlobal = 0 ;
 let currentRecordingGlobal = 0 ;
 let currentMetricArrGlobal = 0;
-let globalRecordingFullData = [] ;
 let canvasesGlobal = [] ;
 let currentDeTijdenIndex = 0 ;
 let currentMeasureIndex = 0 ;
@@ -319,9 +318,7 @@ function fetchRecordings(metricArrId) {
           reject("No recordings found");
         } else {
           var recordings = JSON.parse(response);
-          globalRecordingFullData = recordings;
           currentMetricArrGlobal = metricArrId;
-          console.log('global recordingfull data ',globalRecordingFullData);
           var container = $('#recordings-container');
           container.empty();
 
@@ -368,8 +365,6 @@ function updateRecordingsData(metricArrId) {
           reject("No recordings found");
         } else {
           var recordings = JSON.parse(response);
-          globalRecordingFullData = recordings;
-          console.log(' update recordings new fulldata ',globalRecordingFullData);
           var recordingsDropdown = $('#recordings-dropdown');
           var options = recordingsDropdown.find('option');
           // Update the data for each option, skipping the first one
@@ -391,17 +386,16 @@ function updateRecordingsData(metricArrId) {
 
 function loadRecording(recordingFullData) {
   return new Promise(function(resolve, reject) {
+    document.title = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`
     // Check if the data is already stored in local storage
     let metricId = recordingFullData.metric_arr_id;
     let recordingId = recordingFullData.recording_id;
-    currentRecordingFullData = recordingFullData;
+    currentRecordingFullData = recordingFullData; // CREATING THIS AS A GLOBAL VARIABLE FOR TESTING. NOT USED ELSEWHERE.
     let storedId = metricId + '-' + recordingId;
     let storedData = localStorage.getItem(storedId);
     if (storedData) {
       // If data exists in local storage, resolve the promise with the stored data
       let alreadyStoredData = JSON.parse(storedData);
-      console.log(alreadyStoredData);
-      console.log('already stored');
       sendVarToSynpdf(alreadyStoredData); // Assign the variables if data is stored locally
       resolve();
     } else {
@@ -476,6 +470,7 @@ function fetchNewRecording() {
 }
 
 $('#instruments-dropdown').change(function() {
+  resetShareLink();
   const selectedOption = $(this).find('option:selected');
   const instrumentData = selectedOption.data('instrumentData');
   currentInstrumentGlobal = instrumentData.instrument_id;
@@ -489,7 +484,6 @@ $('#instruments-dropdown').change(function() {
       canShowDemaat = false; // hiding demaat until pdf renders again
       loadRecording(recordingFullData)
         .then(function() {
-          console.log(msc_wz$$module$synpdf);
           msc_wz$$module$synpdf = [];
           newInstrumentTime2xFlag = 1 ;
           readPdf$$module$synpdf(pdf_file$$module$synpdf, "url");
@@ -506,6 +500,7 @@ $('#instruments-dropdown').change(function() {
 
 
 $('#recordings-dropdown').change(function() {
+  resetShareLink();
   const selectedOption = $(this).find('option:selected');
   const recordingFullData = selectedOption.data('recordingFullData');
   currentRecordingGlobal = recordingFullData.recording_id;
@@ -727,45 +722,43 @@ let newOffsetX = 0;
 // RESIZE ALL CANVASES USING CSS
 function resizeDematenAndCanvas(scaleAmount) {
   var canvas = document.getElementsByTagName('canvas')[0];
-  var notationDiv = document.getElementById("notation");
-  var canvasRect = canvas.getBoundingClientRect();
-  var notationDivRect = notationDiv.getBoundingClientRect();
-  currentOffsetX = (canvasRect.left - notationDivRect.left);
-  console.log('currentoffsetx', currentOffsetX); 
-  scaleCanvasElements(scaleAmount);
-  var newCanvasRect = canvas.getBoundingClientRect();
-  var newNotationDivRect = notationDiv.getBoundingClientRect();
-  newOffsetX = (newCanvasRect.left - newNotationDivRect.left);
-  console.log('newoffsetx', newOffsetX);
-  let offsetX = newOffsetX - currentOffsetX;
-  console.log('offsetX', offsetX);
-  deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount, offsetX);
-  msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
+  if (canvas) {
+      var notationDiv = document.getElementById("notation");
+      var canvasRect = canvas.getBoundingClientRect();
+      var notationDivRect = notationDiv.getBoundingClientRect();
+      currentOffsetX = (canvasRect.left - notationDivRect.left);
+      scaleCanvasElements(scaleAmount);
+      var newCanvasRect = canvas.getBoundingClientRect();
+      var newNotationDivRect = notationDiv.getBoundingClientRect();
+      newOffsetX = (newCanvasRect.left - newNotationDivRect.left);
+      let offsetX = newOffsetX - currentOffsetX;
+      deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount, offsetX);
+      msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
+  }
 }
 
 // THIS WILL SCALE THE DEMATEN ARRAY - scaleAmount NEEDS TO BE PERCENT SO 100, 125, 150
 
 function scaleNestedArray(arr, scaleAmount, offsetX) {
-  let counter = 0;
- return arr.map(function(item) {
-   if (Array.isArray(item)) {
-     return scaleNestedArray(item, scaleAmount, offsetX);
-   } else if (typeof item === 'object' && item !== null && ('x' in item || 'y' in item || 'w' in item || 'h' in item)) {
-     let xExample = ((item.x * (scaleAmount / 100)) );
-     if (counter === 0) {
-       console.log('First returned x value:', xExample, 'scaleAmount', scaleAmount);
-       counter++;
-     }
-     return {
-       x: xExample,
-       y: (item.y * (scaleAmount / 100)),
-       w: (item.w * (scaleAmount / 100)),
-       h: (item.h * (scaleAmount / 100))
-     };
-   } else {
-     return item;
-   }
- }); 
+    let counter = 0;
+    return arr.map(function(item) {
+      if (Array.isArray(item)) {
+        return scaleNestedArray(item, scaleAmount, offsetX);
+      } else if (typeof item === 'object' && item !== null && ('x' in item || 'y' in item || 'w' in item || 'h' in item)) {
+        let xExample = ((item.x * (scaleAmount / 100)) );
+        if (counter === 0) {
+          counter++;
+        }
+        return {
+          x: xExample,
+          y: (item.y * (scaleAmount / 100)),
+          w: (item.w * (scaleAmount / 100)),
+          h: (item.h * (scaleAmount / 100))
+        };
+      } else {
+        return item;
+      }
+    }); 
 }
 
 
@@ -842,72 +835,6 @@ function resizePageFitToWidth() {
   resizeDematenAndCanvas(scaleAmount);
 }
 
-// LOAD PIECE AND RECORDING VIA URL
-const urlParams = new URLSearchParams(window.location.search);
-const urlMetricArrId = urlParams.get('metricArrId');
-const urlRecordingId = urlParams.get('recordingId');
-
-// Check if the necessary parameters are present
-if (urlMetricArrId && urlRecordingId) {
-        //set global variables
-        currentMetricArrGlobal = urlMetricArrId;
-        currentRecordingGlobal = urlRecordingId;
-    
-    // Fetch recordings based on the Metric Arrangement ID
-    fetchRecordings(urlMetricArrId)
-    .then(recordings => {
-        // Find the specific recording data from the list of recordings
-        const recordingFullData = recordings.find(rec => rec.recording_id.toString() === urlRecordingId);
-        if (recordingFullData) {
-            // Handle the selection of a specific recording
-            handleRecordingSelection(recordingFullData);
-        } else {
-            console.error('Recording not found with the provided ID:', urlRecordingId);
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching recordings:', error);
-    });
-} else {
-    console.log("URL parameters 'metricArrId' or 'recordingId' are missing.");
-}
-
-//SHARE BUTTON
-document.getElementById('shareButton').addEventListener('click', function() {
-    // Fetch the current metric arrangement ID and recording ID from your application state or DOM
-    const metricArrId = currentMetricArrGlobal;  // Ensure this variable is updated based on your app's logic
-    const recordingId = currentRecordingGlobal;  // Ensure this variable is updated based on your app's logic
-
-    if (metricArrId && recordingId) {
-        // Dynamically construct the base URL using the current window location
-        const protocol = window.location.protocol; // 'http:' or 'https:'
-        const host = window.location.host; // 'localhost:8000' or 'monkeywrenchdb.org'
-        const path = '/index.php'; // Assuming 'index.php' is always the target file
-
-        const baseUrl = `${protocol}//${host}${path}`;
-
-        // Construct the query parameters
-        const queryParams = new URLSearchParams({
-            metricArrId: metricArrId,
-            recordingId: recordingId
-        }).toString();
-
-        // Combine base URL with query parameters to form the full URL
-        const fullUrl = `${baseUrl}?${queryParams}`;
-
-        // Set the generated URL in the text input for display and copying
-        document.getElementById('shareLink').value = fullUrl;
-        console.log('Share link generated:', fullUrl);
-
-        // Optional: Automatically select and copy the link to the clipboard
-        document.getElementById('shareLink').select();
-        document.execCommand('copy');
-    } else {
-        console.error("Missing parameters. Unable to generate share link.");
-    }
-});
-
-
 //HOMEPAGE COLLAPSIBLES
 function toggleCollapsible(collapsibleElement) {
     var currentContent = collapsibleElement.querySelector(".search-content");
@@ -940,6 +867,10 @@ function toggleCollapsible(collapsibleElement) {
     }
 }
 
+function resetShareLink() {
+    document.getElementById('shareLink').value = '';
+}
+
 $(document).ready(function() {
     // Attach click event listeners to collapsible headers
     $('.collapsible').click(function(event) {
@@ -959,7 +890,69 @@ $(document).ready(function() {
     if ($('.collapsible').length > 0) {
         toggleCollapsible($('.collapsible')[0]);
     }
+    // LOAD PIECE AND RECORDING VIA URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlMetricArrId = urlParams.get('metricArrId');
+    const urlRecordingId = urlParams.get('recordingId');
+
+    // check for URL parameters 
+    if (urlMetricArrId && urlRecordingId) {
+            //set global variables
+            currentMetricArrGlobal = urlMetricArrId;
+            currentRecordingGlobal = urlRecordingId;
+        
+        // Fetch recordings based on the Metric Arrangement ID
+        fetchRecordings(urlMetricArrId)
+        .then(recordings => {
+            // Find the specific recording data from the list of recordings
+            const recordingFullData = recordings.find(rec => rec.recording_id.toString() === urlRecordingId);
+            if (recordingFullData) {
+                // Handle the selection of a specific recording
+                handleRecordingSelection(recordingFullData);
+            } else {
+                console.error('Recording not found with the provided ID:', urlRecordingId);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching recordings:', error);
+        });
+    } 
+
+    //SHARE BUTTON
+    document.getElementById('shareButton').addEventListener('click', function() {
+
+        const metricArrId = currentMetricArrGlobal;  
+        const recordingId = currentRecordingGlobal; 
+
+        if (metricArrId && recordingId) {
+            // Dynamically construct the base URL using the current window location
+            const protocol = window.location.protocol; 
+            const host = window.location.host; 
+            const path = '/index.php'; 
+
+            const baseUrl = `${protocol}//${host}${path}`;
+
+            // Construct the query parameters
+            const queryParams = new URLSearchParams({
+                metricArrId: metricArrId,
+                recordingId: recordingId
+            }).toString();
+
+            // Combine base URL with query parameters to form the full URL
+            const fullUrl = `${baseUrl}?${queryParams}`;
+
+            // Set the generated URL in the text input for display and copying
+            document.getElementById('shareLink').value = fullUrl;
+            console.log('Share link generated:', fullUrl);
+
+            // Optional: Automatically select and copy the link to the clipboard
+            document.getElementById('shareLink').select();
+            document.execCommand('copy');
+        } else {
+            console.error("Missing parameters. Unable to generate share link.");
+        }
+    });
+    fetchSearchByInstrument();
+    resizeCanvasTrigger();
 });
 
-fetchSearchByInstrument();
-resizeCanvasTrigger();
