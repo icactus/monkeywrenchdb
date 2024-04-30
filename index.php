@@ -97,6 +97,7 @@
             
             <sidecontentbar>
                 <div id="sidecontent">
+                    <div id="composer-piece-name"></div>
                     <div id="first-controls">
                         <div id="speed-part-row">
     <!--                        <div id="highlight-control">

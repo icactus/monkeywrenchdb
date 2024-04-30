@@ -14,7 +14,7 @@ $metricId = $_GET['metricId'];
 $recordingId = $_GET['recordingId'];
 
 // Prepare the SQL query with placeholders for metricId and recordingId
-$stmt = $conn->prepare("SELECT metric_arr.*, p.piece_name, r.recording_id, r.piece_id, r.youtube_id, r.offset_js, r.times_arr_data, c.composer_last,
+$stmt = $conn->prepare("SELECT metric_arr.*, pieces.piece_name, r.recording_id, r.piece_id, r.youtube_id, r.offset_js, r.times_arr_data, c.composer_last,
                         r.conductor_name, r.ensemble_name, i.instrument_name,
                         CASE 
                             WHEN metric_arr.measures_version = 1 THEN r.offset_js
@@ -38,7 +38,6 @@ $stmt = $conn->prepare("SELECT metric_arr.*, p.piece_name, r.recording_id, r.pie
                         JOIN pieces ON metric_arr.piece_id = pieces.piece_id
                         JOIN instruments i ON metric_arr.instrument_id = i.instrument_id
                         JOIN recordings r ON metric_arr.piece_id = r.piece_id
-                        JOIN pieces p ON metric_arr.piece_id = pieces.piece_id
                         JOIN composers c ON pieces.composer_id = c.composer_id
                         WHERE metric_arr.metric_arr_id = ? 
                         AND r.recording_id = ?");

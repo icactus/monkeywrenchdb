@@ -386,7 +386,11 @@ function updateRecordingsData(metricArrId) {
 
 function loadRecording(recordingFullData) {
   return new Promise(function(resolve, reject) {
-    document.title = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`
+        console.log(recordingFullData);
+    document.title = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`;
+    //add title to composer-piece-name Div
+    let targetDiv = document.getElementById('composer-piece-name');
+    targetDiv.innerHTML = `<h3>${recordingFullData.composer_last} - ${recordingFullData.piece_name}</h3>` 
     // Check if the data is already stored in local storage
     let metricId = recordingFullData.metric_arr_id;
     let recordingId = recordingFullData.recording_id;

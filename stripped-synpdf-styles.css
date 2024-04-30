@@ -10,7 +10,7 @@ audio     { display: none; margin-right:5px; vertical-align:middle; }
 
 #knop     { position: absolute; z-index: 2; display:none; margin: 5px; }
 #rollijn   { position:fixed; height:30px; width:200px; z-index:1; top: 30%; }
-#pdffile, #mediafile, #yubfile { display: inline-block; }
+#pdffile, #mediafile, #yubfile { display: inline-block;}
 #yubload  { top:10%; }
 #countin  { left:40%; font-size:10em; color:green; background:none; padding:0px; }
 canvas    { display: block; }
@@ -27,7 +27,6 @@ canvas    { display: block; }
     display: block;
     border-top-left-radius: 16px;
   }
-/*#l8, #lq, #lp, #lj  { border-top: 2px dashed black; margin-top: 0.3em; } // DIVIDER LINES IN MENU */
 #saveDlg  { position:absolute; top:5%; left: 10%; width:80%; height:80%; z-index:3; background: #eee; display:none; margin: 0px;
             border: medium black ridge; box-shadow: 10px 10px 5px #888888; }
 #saveDlg #div1 { height:2%; }
@@ -41,7 +40,7 @@ canvas    { display: block; }
 #help.showhlp { display: block; }
 #helpm    { text-align: center; padding: 3px; }
 #noklik   { position: absolute; width: 100%; height: 100%; background: rgb(0,0,0,0.3); z-index:1; display: none; }
-.dlog     { display: none; position: absolute; left:30%; top:30%; background: rgb(200,200,255); padding:2em; z-index: 2;}
+.dlog     { display: none; position: absolute; left:30%; top:30%; background:#a7f0ff; padding:2em; z-index: 2;box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;}
 .helptbl { border: thin black solid; margin-top:0.5em; margin-bottom:0.5em;
            margin-left: 3%; width: 97%; table-layout: fixed; border-collapse: collapse; }
 .helptbl td { padding:0.2em; vertical-align: top; }
@@ -172,6 +171,7 @@ sidecontentbar {
     padding:1em;
     background-color:#f3f6fc;
     min-width:200px;
+    max-width:350px;
 }
 
 #speed-part-row {
@@ -306,6 +306,9 @@ select {
         
         min-height:25vh;
     }
+    #sidecontent  h3 {
+        margin-bottom:0;
+    }
 }
 
 @media screen and (max-width: 767px) {
@@ -385,6 +388,9 @@ select {
         width:200px;
         padding-top: 50px;
         overflow-y: scroll;
+    }
+    #sidecontent h3 {
+        margin-bottom:0;
     }
     #monkey-logo {
         width:36px;
