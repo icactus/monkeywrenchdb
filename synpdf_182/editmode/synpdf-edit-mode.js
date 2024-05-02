@@ -2605,7 +2605,8 @@ function evalPreload$$module$synpdf(a) {
         b = JSON.parse(b);
         switch (a) {
             case "pdf_file":
-                pdf_file$$module$synpdf = b;
+                pdf_file$$module$synpdf = "../pdfs/" + b;
+                console.log(pdf_file$$module$synpdf);
                 break;
             case "media_dir":
                 media_dir$$module$synpdf = b;
