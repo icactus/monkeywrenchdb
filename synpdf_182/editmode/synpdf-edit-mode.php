@@ -114,6 +114,7 @@ section2 {
     margin-top:10px;
     margin-left:20px;
     filter: brightness(1.5);
+    overflow-x: hidden;
 }
 #notation { width:1000px; overflow-y:scroll; overflow-x:auto; position: relative; background: #f8f8f8; }
 
