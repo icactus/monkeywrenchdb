@@ -6,7 +6,7 @@
 //# **** You may have to correct the path to the media file below! (media_file="...";) ****
 //########################################
 //#
-pdf_file = "45-48.pdf";
+pdf_file = "45-78.pdf";
 media_file = "";
 msc_tracks = "";
 offset_js = 6.86;

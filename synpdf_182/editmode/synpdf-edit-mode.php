@@ -10,7 +10,7 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 
-    <script src="synpdf-edit-mode.js?v=8"></script>
+    <script src="synpdf-edit-mode.js?v=9"></script>
     <style>
 html { width:100%; height:100%; margin: 0px; padding: 0px; background:white/*#e3f7fe*/; }
 body { width: 100%; height: 100%; margin: 0px; padding: 0px; background:white/*#e3f7fe*/; transition: filter 0.5s; }
@@ -21,7 +21,7 @@ input     { vertical-align: middle; }
 input[type=checkbox] { margin-top: 7px; }
 input[type=number]   { width: 3.5em; }
 audio     { display: none; margin-right:5px; vertical-align:middle; }
-#vid, #vidyub { display: none; margin-right:5px; height:100%; } /*change height from 100% to 200px*/
+#vid, #vidyub { display: none; margin-right:5px; height:100%; z-index:2; } /*change height from 100% to 200px*/
 #crediv   { display: flex; flex-direction: column; justify-content: center; font-size: small; padding: 1em; }
 #medbts   { position: absolute; left: 5px; font-size:small; visibility:hidden; z-index:1; }
 #buttons  { flex: 0 0 auto; display: flex; justify-content: center; padding-top: 5px; overflow: auto; }
@@ -105,11 +105,15 @@ canvas    { display: block; }
     display:flex;
     margin: 1em;
 }
+section1 {
+    background: -webkit-linear-gradient(42deg, rgba(255,250,0,1) 0%, rgba(125,255,66,1) 31%, rgba(0,212,255,1) 100%);
+}
 section2 {
     height:100%;
     display: flex;
     margin-top:10px;
     margin-left:20px;
+    filter: brightness(1.5);
 }
 #notation { width:1000px; overflow-y:scroll; overflow-x:auto; position: relative; background: #f8f8f8; }
 
@@ -117,14 +121,6 @@ sidecontent {
     margin-top:100px;
     padding:1em;
     background-color:#f3f6fc;
-
-}
-#vidyub {
-    position:fixed;
-    top:100px;
-    right:0;
-    width:300px !important;
-    height:200px;
 }
 #spdlbl {
     position:fixed;
@@ -137,8 +133,13 @@ html {
 #notation {
     filter: invert(1);
 }
-section2 {
-    filter: brightness(1.5);
+#vidyub {
+    position:fixed;
+    top:100px;
+    right:0;
+    width:300px !important;
+    height:200px;
+    filter:invert(1);
 }
 #tooltip {
     filter: invert(1);
@@ -377,7 +378,7 @@ section2 {
         </div>
     <!--</div> -->
 <!-- </div> -->
-<script src="edit-mode-tools.js?v=7"></script>
+<script src="edit-mode-tools.js?v=8"></script>
 
 </body>
 </html>
