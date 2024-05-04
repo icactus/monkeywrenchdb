@@ -216,6 +216,11 @@ section2 {
         <input id="knop" type="button" value="play">
 
         <div id="database-menus-wrapper">
+            <div style="display:flex;">
+                <h3 style="margin:0">Database Controls</h3>
+                <button id="database-menu-show" onclick="$('#database-menus').show(); return false;">Show</button>
+                <button id="database-menu-hide" onclick="$('#database-menus').hide(); return false;">Hide</button>
+            </div>
             <div id="database-menus">
                 <!-- inputs for adding piece data -->
                 <form class="inputform" id="addnewcomposerform" action="../../phpfiles/composers-addnew.php" method="POST">
@@ -303,8 +308,6 @@ section2 {
                     <input type="submit" value="Submit" />
                 </form>
             </div>
-            <button id="database-menu-show" onclick="$('#database-menus').show(); return false;">Show</button>
-            <button id="database-menu-hide" onclick="$('#database-menus').hide(); return false;">Hide</button>
         </div>
     </section1>
     <section2>

@@ -623,3 +623,6 @@ function stopWheelZoom(event) {
     }
   }
 document.getElementById('notation').addEventListener('mousewheel', stopWheelZoom);
+
+//hide database tools on page load
+$('#database-menus').hide()

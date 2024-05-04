@@ -2761,7 +2761,8 @@ function schaalMetriek$$module$synpdf() {
 function resetIntf$$module$synpdf(a) {
     for (var b in opt_url$$module$synpdf) opt$$module$synpdf[b] = opt_url$$module$synpdf[b];
     opt$$module$synpdf.ipadr && webSokOpen$$module$synpdf(opt$$module$synpdf.ipadr);
-    opt$$module$synpdf.media_height && $("#buttons").css("left" == opt$$module$synpdf.hrz ? "width" : "height", opt$$module$synpdf.media_height);
+    //Commenting out below - We don't need space for buttons since player is to the side.
+    //opt$$module$synpdf.media_height && $("#buttons").css("left" == opt$$module$synpdf.hrz ? "width" : "height", opt$$module$synpdf.media_height);
     opt$$module$synpdf.mmin && !fullmenu$$module$synpdf && opt$$module$synpdf.mmin.split(",").forEach(function(a) {
         return $("#" + a).toggle(0)
     });
