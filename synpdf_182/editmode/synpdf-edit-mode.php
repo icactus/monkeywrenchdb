@@ -161,7 +161,6 @@ section2 {
                     <input type="text" id="yubid" size="11" value="qx-ymShyfIk" title="11 characters" pattern="[A-Za-z0-9\-_]{11}"/>
                     <input type="button" id="yknp" value="load"/>
                 </div></label>
-                <label id="drplbl">use dropbox:<input id="drpuse" type="checkbox" tabindex="3"/></label>
                 <label id="yublbl">use youtube:<input id="yubuse" type="checkbox" tabindex="4"/></label>
             </div>
             <audio id="aud" controls="controls">Your browser does not support the audio element.</audio>

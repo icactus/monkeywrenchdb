@@ -382,7 +382,7 @@ notation.addEventListener('mousemove', function(e) {
     var y = Math.round(e.clientY - rect.top + notation.scrollTop);
 
     tooltip.style.left = (x - 100) + 'px';
-    tooltip.style.top = Math.round((y - (-100 + notation.scrollTop))) + 'px';
+    tooltip.style.top = Math.round((y - (-50 + notation.scrollTop))) + 'px';
     if (QisActive) {
         tooltip.innerHTML = "Q";
     }
@@ -391,7 +391,6 @@ notation.addEventListener('mousemove', function(e) {
     }
     if (WisActive) {
         tooltip.innerHTML = "W";
-
     }
     tooltip.style.display = "block";
 });
