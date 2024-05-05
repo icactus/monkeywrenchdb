@@ -480,8 +480,9 @@ addNewComposerForm.addEventListener("submit", function(event) {
   event.preventDefault(); // Prevent the form from submitting normally
   
   const formData = new FormData(addNewComposerForm);
+  formData.append('action', 'add_composer');
   
-  fetch("../../phpfiles/composers-addnew.php", {
+  fetch("./dispatcher.php", {
     method: "POST",
     body: formData
   })
@@ -507,8 +508,9 @@ addNewPieceForm.addEventListener("submit", function(event) {
   event.preventDefault(); // Prevent the form from submitting normally
   
   const formData = new FormData(addNewPieceForm);
+  formData.append('action', 'add_piece');
   
-  fetch("../../phpfiles/pieces-addnew.php", {
+  fetch("./dispatcher.php", {
     method: "POST",
     body: formData
   })
@@ -533,8 +535,9 @@ addNewMetricForm.addEventListener("submit", function(event) {
   event.preventDefault(); // Prevent the form from submitting normally
   
   const formData = new FormData(addNewMetricForm);
+  formData.append('action', 'add_metric_arr');
   
-  fetch("../../phpfiles/metric-arr-post.php", {
+  fetch("./dispatcher.php", {
     method: "POST",
     body: formData
   })
@@ -584,9 +587,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Prepare FormData object for AJAX request
         const formData = new FormData(form);
+        formData.append('action', 'add_recording');
 
         // Perform the AJAX request
-        fetch(form.action, {
+        fetch('./dispatcher.php', {
             method: "POST",
             body: formData
         })

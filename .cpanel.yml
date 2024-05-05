@@ -23,11 +23,11 @@ deployment:
     - /bin/cp synpdf_182/editmode/synpdf-edit-mode.php $DEPLOYPATH3 
     - /bin/cp synpdf_182/editmode/edit-mode-tools.js $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/synpdf-edit-mode.js $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/dispatcher.php $DEPLOYPATH3
     - export DEPLOYPATH2=/home/monkcdmb/phpfiles/
     - /bin/cp phpfiles/composers-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/get_pieces_and_composers.php $DEPLOYPATH2
     - /bin/cp phpfiles/metric-arr-post.php $DEPLOYPATH2
     - /bin/cp phpfiles/pieces-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/submit_recording.php $DEPLOYPATH2
-
 

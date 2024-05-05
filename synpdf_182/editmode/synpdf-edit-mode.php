@@ -225,7 +225,7 @@ html {
             </div>
             <div id="database-menus">
                 <!-- inputs for adding piece data -->
-                <form class="inputform" id="addnewcomposerform" action="../../phpfiles/composers-addnew.php" method="POST">
+                <form class="inputform" id="addnewcomposerform" method="POST">
                     <div style="display:flex;">
                         <div>
                             <label for="composer_last">New Composer Last</label>
@@ -247,7 +247,7 @@ html {
                     </div>
                 </form>
                 <!-- add new piece -->
-                <form class="inputform" id="addnewpieceform" action="../.../phpfiles/pieces-addnew.php" method="POST">
+                <form class="inputform" id="addnewpieceform" method="POST">
                     <div>
                         <label for="piece_name">Add New Piece</label>
                         <input type="text" name="piece_name" placeholder="Enter piece_name" />
@@ -261,7 +261,7 @@ html {
                     </div>
                 </form>
                 <!-- add metric_arr -->
-                <form class="inputform" id="addnewmetricform" action="../../phpfiles/metric-arr-post.php" method="POST">
+                <form class="inputform" id="addnewmetricform" method="POST">
                     <div style="display:flex;">
                         <div>
                             <label for="piece_id">Add New Part Data</label>
@@ -288,7 +288,7 @@ html {
                 </form>
 
                 <!-- add recording -->
-                <form class="inputform" id="addnewrecordingform" action="../../phpfiles/submit_recording.php" method="POST">
+                <form class="inputform" id="addnewrecordingform" method="POST">
                     <div style="display:flex;">
                         <div>
                             <label for="conductor_name">Conductor/Soloist Name</label>
