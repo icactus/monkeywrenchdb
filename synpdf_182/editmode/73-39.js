@@ -13,8 +13,8 @@ offset_js = 8.29;
 opt = {"speed":1,"no_menu":0,"btns":1,"spdctl":1,"cropx":0,"drmpl":0.7,"pagewd":1000,"synbox":0,
 "wpdf":0,"lncsr":0,"nomed":0,"noplyr":0,"nodash":0,"skipn":0,"drmpl2":0,"seln":0,"delay":0,
 "ipaddr":"","mstr":0,"bpmsr":"4-20-1","loop":false,"annot":0,"zwgrens":0.7,"voorna":0.9,"mtdrmpl":0.8,
-"dx":3,"fscr":0,"pagenum":"1","playbtn":0,"mmin":"","fixwd":"1000","lastSynced":845,"eerst":0,
-"sysprf":0,"onestf":0,"advncd":false,"yubvid":"5173oQf1Lb8","media_height":"200px"};
+"dx":3,"fscr":0,"pagenum":"1","playbtn":0,"mmin":"","fixwd":"1000","lastSynced":-2,"eerst":0,
+"sysprf":0,"onestf":0,"advncd":false,"yubvid":"4WhizSggjfo","media_height":"200px"};
 lpRec = {"loopBtn":1,"loopStart":0,"loopEnd":7200};
 times_arr = [{"t":0,"mix":0},{"t":2.304,"mix":1},{"t":3.448,"mix":2},{"t":4.789,"mix":3},{"t":5.885,
 "mix":4},{"t":7.089,"mix":5},{"t":8.245,"mix":6},{"t":9.416,"mix":7},{"t":10.675,"mix":8},
