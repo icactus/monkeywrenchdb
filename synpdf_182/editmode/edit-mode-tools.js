@@ -557,6 +557,9 @@ addNewMetricForm.addEventListener("submit", function(event) {
   });
 });
 
+//Allows user to manually mass correct timing across a range - adjustTimeValues(deTijden$$module$synpdf, 5, 10, 0.5);
+const adjustTimeValues = (array, startIndex, endIndex, timeShift) => (startIndex < 0 || endIndex >= array.length || startIndex > endIndex) ? console.error("Invalid indices") : array.slice(startIndex, endIndex + 1).forEach(item => item.t += timeShift);
+
 document.addEventListener('DOMContentLoaded', function() {
     var form = document.getElementById('addnewrecordingform');
 
