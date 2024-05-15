@@ -379,7 +379,7 @@ html {
         </div>
     <!--</div> -->
 <!-- </div> -->
-<script src="edit-mode-tools.js?v=11"></script>
+<script src="edit-mode-tools.js?v=12"></script>
 
 </body>
 </html>
