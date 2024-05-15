@@ -577,7 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         document.getElementById('youtube_id').value = youtubeId;
 
-        var offsetJs = ((offset$$module$synpdf * 100 - 15) / 100).toFixed(2);
+        var offsetJs = (offset$$module$synpdf);
         document.getElementById('offset_js').value = offsetJs;
 
         var scoreFnm = scoreFnm$$module$synpdf;
