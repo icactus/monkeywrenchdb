@@ -13,7 +13,7 @@ offset_js = 5.18;
 opt = {"speed":1.3,"no_menu":0,"btns":1,"spdctl":1,"cropx":0,"drmpl":0.4,"pagewd":1000,"synbox":0,
 "wpdf":0,"lncsr":0,"nomed":0,"noplyr":0,"nodash":0,"skipn":0,"drmpl2":0.1,"seln":0,"delay":0,
 "ipaddr":"","mstr":0,"bpmsr":"4-20-1","loop":false,"annot":0,"zwgrens":0.7,"voorna":0.9,"mtdrmpl":0.8,
-"dx":3,"fscr":0,"pagenum":"76","playbtn":0,"mmin":"","fixwd":"1000","lastSynced":1930,"eerst":true,
+"dx":3,"fscr":0,"pagenum":"76","playbtn":0,"mmin":"","fixwd":"1000","lastSynced":9999,"eerst":true,
 "sysprf":true,"onestf":0,"advncd":false,"yubvid":"-4788Tmz9Zo","media_height":"200px"};
 lpRec = {"loopBtn":1,"loopStart":0,"loopEnd":7200};
 times_arr = [{"t":0,"mix":0},{"t":4.632,"mix":1},{"t":8.066,"mix":2},{"t":11.168,"mix":3},{"t":14.401,
