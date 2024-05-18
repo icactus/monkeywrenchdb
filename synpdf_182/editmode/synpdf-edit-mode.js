@@ -1137,6 +1137,7 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                     b < deTijden$$module$synpdf.length - 1 ? (b = deTijden$$module$synpdf[b + 1], a = c.x + c.w * (a - d.t) / (b.t - d.t), d = 6) : (a = c.x, d = c.w);
                 if (a == xcurprev$$module$synpdf && c.y == ycurprev$$module$synpdf) break;
                 xcurprev$$module$synpdf = a;
+                document.getElementById('detix-box').textContent = detix$$module$synpdf;
                 b = this.maatloper[0].style;
                 b.left = a + "px";
                 b.top = c.y + "px";
@@ -1230,32 +1231,42 @@ Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
         }
     }
 };
-Wijzer$$module$synpdf.prototype.keySync = function(a) {
+Wijzer$$module$synpdf.prototype.keySync = function(keyType) {
     if (opt$$module$synpdf.synbox) {
         this.paused && keyDown$$module$synpdf({
             key: " "
         });
-        a = (yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime) - offset$$module$synpdf - .2;
-        a = Math.round(1E3 * a) / 1E3;
-        var b = detix$$module$synpdf + 1;
-        var c = demix$$module$synpdf + 1;
-        if (void 0 == deTijden$$module$synpdf[b]) {
-            if (deTijden$$module$synpdf[detix$$module$synpdf] && .2 > a - deTijden$$module$synpdf[detix$$module$synpdf].t) {
+        let currentTime = (yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime) - offset$$module$synpdf - .2;
+        currentTime = Math.round(1E3 * currentTime) / 1E3;
+        var detix = detix$$module$synpdf + 1;
+        var demix = demix$$module$synpdf + 1;
+        if (void 0 == deTijden$$module$synpdf[detix]) {
+            if (deTijden$$module$synpdf[detix$$module$synpdf] && .2 > currentTime - deTijden$$module$synpdf[detix$$module$synpdf].t) {
                 alert("you pressed B less then 0.2 secs after the previous bar line");
                 return
             }
-            deTijden$$module$synpdf[b] = {};
-            lastSynced$$module$synpdf = b
+            deTijden$$module$synpdf[detix] = {};
+            lastSynced$$module$synpdf = detix;
         } else {
-            var d = deTijden$$module$synpdf[detix$$module$synpdf].t;
-            .5 > (a - d) / (deTijden$$module$synpdf[b].t - d) && (b = detix$$module$synpdf, c = demix$$module$synpdf)
+
+            // If B was pressed in first half measure then change current measure start time, if in second half, change next measure.
+            // var d = deTijden$$module$synpdf[detix$$module$synpdf].t;
+            // .5 > (a - d) / (deTijden$$module$synpdf[b].t - d) && (b = detix$$module$synpdf, c = demix$$module$synpdf)
+            if (keyType === 'b') {
+                detix = detix$$module$synpdf + 1;
+                demix = demix$$module$synpdf + 1;
+            }
+            if (keyType === 'c') {
+                detix = detix$$module$synpdf;
+                demix = demix$$module$synpdf;
+            }
         }
-        0 == b && (offset$$module$synpdf = a, a -= offset$$module$synpdf);
-        repMaten$$module$synpdf.length && repMaten$$module$synpdf[0].jmp == demix$$module$synpdf && (c = repMaten$$module$synpdf.shift().dst, this.drawRepTokens());
-        deTijden$$module$synpdf[b].t = a;
-        deTijden$$module$synpdf[b].mix = c;
-        this.time2x(a);
-        c ==
+        0 == detix && (offset$$module$synpdf = currentTime, currentTime -= offset$$module$synpdf);
+        repMaten$$module$synpdf.length && repMaten$$module$synpdf[0].jmp == demix$$module$synpdf && (demix = repMaten$$module$synpdf.shift().dst, this.drawRepTokens());
+        deTijden$$module$synpdf[detix].t = currentTime;
+        deTijden$$module$synpdf[detix].mix = demix;
+        this.time2x(currentTime);
+        demix ==
             deMaten$$module$synpdf.length - 1 && (opt$$module$synpdf.synbox = 0, syncChk$$module$synpdf(), $("#synbox").prop("checked", !1), pauseer$$module$synpdf(), playPause2$$module$synpdf(!1, TOFF$$module$synpdf + offset$$module$synpdf))
     }
 };
@@ -2479,6 +2490,7 @@ function keyDown$$module$synpdf(a) {
     if (opt$$module$synpdf.synbox && msc_wz$$module$synpdf && !c) {
         switch (b) {
             case "b":
+            case "c":
                 msc_wz$$module$synpdf.keySync(b);
                 break;
             case ".":

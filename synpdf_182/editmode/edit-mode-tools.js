@@ -558,7 +558,25 @@ addNewMetricForm.addEventListener("submit", function(event) {
 });
 
 //Allows user to manually mass correct timing across a range - adjustTimeValues(deTijden$$module$synpdf, 5, 10, 0.5);
-const adjustTimeValues = (startIndex, endIndex, timeShift) => (startIndex < 0 || endIndex >= deTijden$$module$synpdf.length || startIndex > endIndex) ? console.error("Invalid indices") : deTijden$$module$synpdf.slice(startIndex, endIndex + 1).forEach(item => item.t += timeShift);
+const adjT= (startIndex, endIndex, timeShift) => (startIndex < 0 || endIndex >= deTijden$$module$synpdf.length || startIndex > endIndex) ? console.error("Invalid indices") : deTijden$$module$synpdf.slice(startIndex, endIndex + 1).forEach(item => item.t += timeShift);
+
+function avgT(startIndex, endIndex) {
+  // Ensure the indices are within the bounds of the array
+  if (startIndex < 0 || endIndex >= deTijden$$module$synpdf.length || startIndex > endIndex) {
+    console.error("Invalid indices");
+    return;
+  }
+
+  // Calculate the total range and average increment
+  const totalRange = deTijden$$module$synpdf[endIndex].t - deTijden$$module$synpdf[startIndex].t;
+  const count = endIndex - startIndex;
+  const averageIncrement = totalRange / count;
+
+  // Update the "t" values in the specified range with the calculated average increment, rounded to 3 decimal places
+  for (let i = 1; i <= count; i++) {
+    deTijden$$module$synpdf[startIndex + i].t = parseFloat((deTijden$$module$synpdf[startIndex].t + i * averageIncrement).toFixed(3));
+  }
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     var form = document.getElementById('addnewrecordingform');

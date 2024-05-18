@@ -145,6 +145,12 @@ html {
 #tooltip {
     filter: invert(1);
 }
+#database-menu-top {
+    display:flex;
+}
+#database-menu-top h3 {
+    margin:0;
+}
     </style>
 </head>
 <body>
@@ -218,10 +224,12 @@ html {
         <input id="knop" type="button" value="play">
 
         <div id="database-menus-wrapper">
-            <div style="display:flex;">
-                <h3 style="margin:0">Database Controls</h3>
+            <div id="database-menu-top">
+                <h3>Database Controls</h3>
                 <button id="database-menu-show" onclick="$('#database-menus').show(); return false;">Show</button>
                 <button id="database-menu-hide" onclick="$('#database-menus').hide(); return false;">Hide</button>
+                <h3>Current Measure: </h3>
+                <h3 id ="detix-box"></h3>
             </div>
             <div id="database-menus">
                 <!-- inputs for adding piece data -->
