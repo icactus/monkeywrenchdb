@@ -578,7 +578,60 @@ function avgT(startIndex, endIndex) {
   }
 }
 
+function gotoMeasure() {
+    const input = document.getElementById('detix-input');
+    let measureNumber = input.value === "" ? NaN : parseInt(input.value, 10);
+    const maxMeasure = deTijden$$module$synpdf.length - 2; //2 because 1 is final cutoff and 2 is last measure starting barline
+
+    if (isNaN(measureNumber) || measureNumber < 0) {
+        measureNumber = 0;
+    } else if (measureNumber > maxMeasure) {
+        measureNumber = maxMeasure;
+    }
+    msc_wz$$module$synpdf.time2x(deTijden$$module$synpdf[measureNumber].t);
+    input.blur();
+    notation.focus();
+    return false;
+}
+
+function limitInputLength(input) {
+    if (input.value.length > 4) {
+        input.value = input.value.slice(0,4);
+    }
+}
+
+function addM(startMix, endMix, initialT, incrementT) {
+    const currentMeasure = deTijden$$module$synpdf[detix$$module$synpdf];
+    const newEntries = [];
+
+    for (let mix = startMix; mix <= endMix; mix++) {
+        const t = initialT + (mix - startMix) * incrementT + currentMeasure.t;
+        newEntries.push({ "t": t, "mix": mix });
+    }
+
+    // Insert new entries after the current measure
+    deTijden$$module$synpdf.splice(detix$$module$synpdf + 1, 0, ...newEntries);
+
+    // Check if the next mix value after the inserted entries is sequential
+    const nextMixIndex = detix$$module$synpdf + newEntries.length + 1;
+    const expectedNextMix = endMix + 1;
+
+    if (nextMixIndex < deTijden$$module$synpdf.length) {
+        for (let i = nextMixIndex; i < deTijden$$module$synpdf.length; i++) {
+            if (deTijden$$module$synpdf[i].mix === expectedNextMix) {
+                // Delete all entries from nextMixIndex to i-1
+                deTijden$$module$synpdf.splice(nextMixIndex, i - nextMixIndex);
+                break;
+            }
+        }
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('goto-measure-form').addEventListener('submit', function() {
+        event.preventDefault();
+        return gotoMeasure();
+    });
     var form = document.getElementById('addnewrecordingform');
 
     form.addEventListener('submit', function(event) {

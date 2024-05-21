@@ -230,6 +230,11 @@ html {
                 <button id="database-menu-hide" onclick="$('#database-menus').hide(); return false;">Hide</button>
                 <h3>Current Measure: </h3>
                 <h3 id ="detix-box"></h3>
+                <form id="goto-measure-form">
+                    <label for="detix-box">Goto Measure</label>
+                    <input id="detix-input" type="number" name="detix-input" placeholder="0" min="0" max="9999" size="4" oninput="limitInputLength(this)" />
+                    <input type="submit" value="Go">
+                </form>
             </div>
             <div id="database-menus">
                 <!-- inputs for adding piece data -->
@@ -387,7 +392,7 @@ html {
         </div>
     <!--</div> -->
 <!-- </div> -->
-<script src="edit-mode-tools.js?v=13"></script>
+<script src="edit-mode-tools.js?v=14"></script>
 
 </body>
 </html>
