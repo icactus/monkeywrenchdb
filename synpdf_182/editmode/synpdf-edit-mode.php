@@ -228,13 +228,21 @@ html {
                 <h3>Database Controls</h3>
                 <button id="database-menu-show" onclick="$('#database-menus').show(); return false;">Show</button>
                 <button id="database-menu-hide" onclick="$('#database-menus').hide(); return false;">Hide</button>
-                <h3>Current Measure: </h3>
-                <h3 id ="detix-box"></h3>
+                <div>
+                    <div id="detix-box"></div>
+                    <div id="demix-box"></div>
+                </div>
                 <form id="goto-measure-form">
-                    <label for="detix-box">Goto Measure</label>
+                    <label for="detix-box">Goto detix</label>
                     <input id="detix-input" type="number" name="detix-input" placeholder="0" min="0" max="9999" size="4" oninput="limitInputLength(this)" />
                     <input type="submit" value="Go">
                 </form>
+                <label for="threshold-input"><h3>Short M Threshold:</h3></label>
+                    <input id="threshold-input" type="number" step="0.01" value="0.35">
+                    <button id="prev-timing-btn">Prev</button>
+                    <button id="check-timing-btn">Next</button>
+                    <button id="refresh-btn">Refresh</button>
+                    <div id="match-info" style="padding-left:10px"></div>
             </div>
             <div id="database-menus">
                 <!-- inputs for adding piece data -->

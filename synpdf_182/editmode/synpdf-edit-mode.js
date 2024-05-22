@@ -1137,7 +1137,8 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                     b < deTijden$$module$synpdf.length - 1 ? (b = deTijden$$module$synpdf[b + 1], a = c.x + c.w * (a - d.t) / (b.t - d.t), d = 6) : (a = c.x, d = c.w);
                 if (a == xcurprev$$module$synpdf && c.y == ycurprev$$module$synpdf) break;
                 xcurprev$$module$synpdf = a;
-                document.getElementById('detix-box').textContent = detix$$module$synpdf;
+                document.getElementById('detix-box').innerHTML = `<h3>detix: ${detix$$module$synpdf}</h3>`;
+                document.getElementById('demix-box').innerHTML = `<h3>demix: ${demix$$module$synpdf}</h3>`;
                 b = this.maatloper[0].style;
                 b.left = a + "px";
                 b.top = c.y + "px";

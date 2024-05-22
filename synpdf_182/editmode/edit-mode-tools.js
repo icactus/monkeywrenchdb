@@ -627,11 +627,85 @@ function addM(startMix, endMix, initialT, incrementT) {
     }
 };
 
+let measureThreshold = 0.35;
+let timingMatches = [];
+let currentMatchIndex = -1;
+
+function findTimingMatches() {
+    timingMatches = [];
+    for (let i = 0; i < deTijden$$module$synpdf.length - 1; i++) {
+        let time_diff = deTijden$$module$synpdf[i + 1]['t'] - deTijden$$module$synpdf[i]['t'];
+        if (time_diff <= measureThreshold) {
+            timingMatches.push(i);
+        }
+    }
+}
+
+function updateMeasureThreshold() {
+    const newThreshold = parseFloat(document.getElementById('threshold-input').value);
+    if (newThreshold !== measureThreshold) {
+        measureThreshold = newThreshold;
+        currentMatchIndex = -1; // Reset current match index
+        findTimingMatches(); // Recalculate matches
+    }
+}
+
+function checkTiming() {
+    updateMeasureThreshold();
+
+    if (timingMatches.length > 0) {
+        // Find the next match index
+        currentMatchIndex = (currentMatchIndex + 1) % timingMatches.length;
+        detix$$module$synpdf = timingMatches[currentMatchIndex];
+        msc_wz$$module$synpdf.time2x(deTijden$$module$synpdf[detix$$module$synpdf].t);
+        document.getElementById('match-info').textContent = `${currentMatchIndex + 1}/${timingMatches.length}`;
+    } else {
+        console.log('No measure found with time difference less than', measureThreshold, 'seconds.');
+        document.getElementById('match-info').textContent = '0/0';
+    }
+}
+
+function prevTiming() {
+    updateMeasureThreshold();
+
+    if (timingMatches.length > 0) {
+        // Find the previous match index
+        currentMatchIndex = (currentMatchIndex - 1 + timingMatches.length) % timingMatches.length;
+        detix$$module$synpdf = timingMatches[currentMatchIndex];
+        msc_wz$$module$synpdf.time2x(deTijden$$module$synpdf[detix$$module$synpdf].t);
+        document.getElementById('match-info').textContent = `${currentMatchIndex + 1}/${timingMatches.length}`;
+    } else {
+        console.log('No measure found with time difference less than', measureThreshold, 'seconds.');
+        document.getElementById('match-info').textContent = '0/0';
+    }
+}
+
+function refreshMatches() {
+    const previousDetix = detix$$module$synpdf;
+    findTimingMatches();
+    // Keep the current measure index the same if it's still in the matches, otherwise find the closest
+    currentMatchIndex = timingMatches.indexOf(previousDetix);
+    if (currentMatchIndex === -1 && timingMatches.length > 0) {
+        // If the current measure is not in the matches, find the closest match
+        currentMatchIndex = timingMatches.findIndex(match => match > previousDetix);
+        if (currentMatchIndex === -1) {
+            currentMatchIndex = timingMatches.length - 1; // If no match is found, use the last match
+        }
+    }
+    document.getElementById('match-info').textContent = currentMatchIndex !== -1 
+        ? `${currentMatchIndex + 1}/${timingMatches.length}` 
+        : `0/${timingMatches.length}`;
+    console.log('Timing matches refreshed.');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('goto-measure-form').addEventListener('submit', function() {
         event.preventDefault();
         return gotoMeasure();
     });
+    document.getElementById('check-timing-btn').addEventListener('click', checkTiming);
+    document.getElementById('prev-timing-btn').addEventListener('click', prevTiming);
+    document.getElementById('refresh-btn').addEventListener('click', refreshMatches);
     var form = document.getElementById('addnewrecordingform');
 
     form.addEventListener('submit', function(event) {
