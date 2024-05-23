@@ -13,38 +13,38 @@ const notation = document.getElementById('notation');
 
 function handleSplit(event) {
     if (SisActive) {
-      SplitclickCoordinates = [event.clientX];
-      SplitclickY = event.clientY;
-  
-      SplitgenerateCoordinates([...SplitclickCoordinates]);
-      SplitclickCoordinates = [];
-      return true;
+        SplitclickCoordinates = [event.clientX];
+        SplitclickY = event.clientY;
+
+        SplitgenerateCoordinates([...SplitclickCoordinates]);
+        SplitclickCoordinates = [];
+        return true;
     }
     return false;
 }
 
 function SplitgenerateCoordinates(clickCoords) {
-  console.log(clickCoords);
+    console.log(clickCoords);
     let cxsBxsData = JSON.parse(localStorage.getItem('jsonString'));
     let pagenum = parseInt(document.getElementById('pagenum').value);
-    
-    if(pagenum < 1 || pagenum >= cxsBxsData.length) {
+
+    if (pagenum < 1 || pagenum >= cxsBxsData.length) {
         alert('Invalid page number');
         return;
     }
-    
+
     let rect = notation.getBoundingClientRect();
     let x = Math.round(clickCoords[0] - rect.left + notation.scrollLeft);
     let y = Math.round(SplitclickY - rect.top + notation.scrollTop);
-    for(let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
+    for (let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
         let cs_group = cxsBxsData[pagenum].cxs[j].cs;
-        
+
         // Check if y falls within this range
-        if(y >= Math.min(...cs_group) && y <= Math.max(...cs_group)) {
+        if (y >= Math.min(...cs_group) && y <= Math.max(...cs_group)) {
             let bxs_group = cxsBxsData[pagenum].bxs[j];
             let closestLeft = null;
             let closestRight = null;
-            
+
             for (let i = 0; i < bxs_group.length; i++) {
                 if (bxs_group[i] < x) {
                     closestLeft = bxs_group[i];
@@ -53,41 +53,41 @@ function SplitgenerateCoordinates(clickCoords) {
                     break;
                 }
             }
-            
+
             if (closestLeft === null || closestRight === null) {
                 alert('Could not find two points to split between');
                 return;
             }
-            
+
             const startPoint = closestLeft;
             const endPoint = closestRight;
             console.log(startPoint, endPoint);
 
             let count = parseInt(prompt("Enter the number of measures:"));
-            
+
             if (isNaN(count)) {
                 alert('Invalid input for N');
                 return;
             }
-            
+
             // increment count by 1
             count += 1;
-    
+
             const step = (endPoint - startPoint) / (count - 1);
-    
+
             for (let i = 1; i < count - 1; i++) {
                 let coordinate = startPoint + i * step;
                 coordinate = Math.round(coordinate * 10) / 10;
                 console.log(coordinate);
-                if(!bxs_group.includes(coordinate)){
+                if (!bxs_group.includes(coordinate)) {
                     // Push X to correct bxs group
                     cxsBxsData[pagenum].bxs[j].push(coordinate);
                 }
             }
-            
+
             // Sort 'bxs' group from low to high
-            cxsBxsData[pagenum].bxs[j].sort( (a, b) => a - b );
-    
+            cxsBxsData[pagenum].bxs[j].sort((a, b) => a - b);
+
             localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
             return;
         }
@@ -107,10 +107,10 @@ function toggleQActivity() {
         indicatorElement.classList.add('crosshair-cursor');
         document.body.style.cursor = 'crosshair';
         if (SisActive) {
-          toggleSActivity();
+            toggleSActivity();
         }
         if (WisActive) {
-          toggleWActivity();
+            toggleWActivity();
         }
     } else {
         console.log('Coordinate logging is OFF');
@@ -118,8 +118,8 @@ function toggleQActivity() {
         indicatorElement.classList.remove('active-indicator');
         indicatorElement.classList.add('inactive-indicator');
         if (!SisActive) {
-          indicatorElement.classList.remove('crosshair-cursor');
-          document.body.style.cursor = 'default';
+            indicatorElement.classList.remove('crosshair-cursor');
+            document.body.style.cursor = 'default';
         }
     }
 }
@@ -131,54 +131,54 @@ function toggleSActivity() {
         indicatorElement.classList.add('crosshair-cursor');
         document.body.style.cursor = 'crosshair';
         if (QisActive) {
-          toggleQActivity();
+            toggleQActivity();
         }
         if (WisActive) {
             toggleWActivity();
-          }
+        }
     } else {
         console.log('split is OFF');
         if (!QisActive) {
-          indicatorElement.classList.remove('crosshair-cursor');
-          document.body.style.cursor = 'default';
+            indicatorElement.classList.remove('crosshair-cursor');
+            document.body.style.cursor = 'default';
         }
     }
 }
 
 function toggleWActivity() {
     WisActive = !WisActive;
-  
+
     if (WisActive) {
-      console.log('insertCxsGroups is ON');
-      // Add any visual indicator or behavior for 'W' being active
-  
-      if (SisActive) {
-        toggleSActivity();
-      }
-      if (QisActive) {
-        toggleQActivity();
-      }
+        console.log('insertCxsGroups is ON');
+        // Add any visual indicator or behavior for 'W' being active
+
+        if (SisActive) {
+            toggleSActivity();
+        }
+        if (QisActive) {
+            toggleQActivity();
+        }
     } else {
-      console.log('insertCxsGroups is OFF');
+        console.log('insertCxsGroups is OFF');
     }
 }
 
 //Makes sure deMetriek is only saving integers when using P
 function roundValuesInArray(obj) {
-  for (var k in obj) {
-      if (typeof obj[k] === 'object' && obj[k] !== null) {
-          roundValuesInArray(obj[k]);
-      } else if (typeof obj[k] === 'number') {
-          obj[k] = Math.round(obj[k]);
-      }
-  }
+    for (var k in obj) {
+        if (typeof obj[k] === 'object' && obj[k] !== null) {
+            roundValuesInArray(obj[k]);
+        } else if (typeof obj[k] === 'number') {
+            obj[k] = Math.round(obj[k]);
+        }
+    }
 }
 
 document.addEventListener('keydown', function(event) {
     if (document.querySelector('#synbox').checked) {
         return;
     }
-    switch(event.key) {
+    switch (event.key) {
         case 'a':
             $("#menu input#advncd").click();
             break;
@@ -225,18 +225,18 @@ document.addEventListener('keydown', function(event) {
             roundValuesInArray(jsonString);
             localStorage.setItem('jsonString', JSON.stringify(jsonString));
             break;
-            
+
         case 'j':
             let jsonCode = localStorage.getItem('jsonString');
             let formattedCode = formatCode(jsonCode);
             navigator.clipboard.writeText(formattedCode)
-            .then(() => {
-                console.log("bxscxs copied to clipboard");
-                console.log(JSON.parse(localStorage.getItem('jsonString')));
-            })
-            .catch((error) => {
-                console.error('Failed to copy coordinates to clipboard:', error);
-            });
+                .then(() => {
+                    console.log("bxscxs copied to clipboard");
+                    console.log(JSON.parse(localStorage.getItem('jsonString')));
+                })
+                .catch((error) => {
+                    console.error('Failed to copy coordinates to clipboard:', error);
+                });
             break;
         case '[':
             if (parseFloat(opt$$module$synpdf.drmpl) <= 0.1) {
@@ -248,7 +248,7 @@ document.addEventListener('keydown', function(event) {
         // Now, whenever you update opt$$module$synpdf.drmpl, it also updates the input field:
         case ']':
             if (parseFloat(opt$$module$synpdf.drmpl) >= 0.9) {
-            break
+                break
             };
             opt$$module$synpdf.drmpl = ((Math.round(opt$$module$synpdf.drmpl * 10) + 1) / 10);
             resizePdfSyn$$module$synpdf();
@@ -263,29 +263,29 @@ document.addEventListener('keydown', function(event) {
         // Now, whenever you update opt$$module$synpdf.drmpl, it also updates the input field:
         case '\'':
             if (parseFloat(opt$$module$synpdf.drmpl2) >= 2) {
-            break
+                break
             };
             opt$$module$synpdf.drmpl2 = ((Math.round(opt$$module$synpdf.drmpl2 * 10) + 1) / 10);
             resizePdfSyn$$module$synpdf();
             break;
-//        case ',':
-//            if (parseFloat(opt$$module$synpdf.mtdrmpl) <= 0) {
-//                break;
-//            };
-//            opt$$module$synpdf.mtdrmpl = ((Math.round(opt$$module$synpdf.mtdrmpl * 100) - 1) / 100);
-//            resizePdfSyn$$module$synpdf();
-//            break;
-//        // Now, whenever you update opt$$module$synpdf.drmpl, it also updates the input field:
-//        case '.':
-//            if (parseFloat(opt$$module$synpdf.mtdrmpl) >= 1) {
-//            break
-//            };
-//            opt$$module$synpdf.mtdrmpl = ((Math.round(opt$$module$synpdf.mtdrmpl * 100) + 1) / 100);
-//            resizePdfSyn$$module$synpdf();
-//            break;
+        //        case ',':
+        //            if (parseFloat(opt$$module$synpdf.mtdrmpl) <= 0) {
+        //                break;
+        //            };
+        //            opt$$module$synpdf.mtdrmpl = ((Math.round(opt$$module$synpdf.mtdrmpl * 100) - 1) / 100);
+        //            resizePdfSyn$$module$synpdf();
+        //            break;
+        //        // Now, whenever you update opt$$module$synpdf.drmpl, it also updates the input field:
+        //        case '.':
+        //            if (parseFloat(opt$$module$synpdf.mtdrmpl) >= 1) {
+        //            break
+        //            };
+        //            opt$$module$synpdf.mtdrmpl = ((Math.round(opt$$module$synpdf.mtdrmpl * 100) + 1) / 100);
+        //            resizePdfSyn$$module$synpdf();
+        //            break;
         case '\\':
             if (opt$$module$synpdf.eerst === 1) {
-              opt$$module$synpdf.eerst = 0;
+                opt$$module$synpdf.eerst = 0;
             }
             else {
                 opt$$module$synpdf.eerst = 1;
@@ -299,11 +299,11 @@ document.addEventListener('keydown', function(event) {
 
 
 function copyToClipboard(text) {
-  navigator.clipboard.writeText(text).then(function() {
-      console.log('Copying to clipboard was successful!');
-  }, function(err) {
-      console.error('Could not copy text: ', err);
-  });
+    navigator.clipboard.writeText(text).then(function() {
+        console.log('Copying to clipboard was successful!');
+    }, function(err) {
+        console.error('Could not copy text: ', err);
+    });
 }
 
 function addRemoveBxs$$module$synpdf(event) {
@@ -312,7 +312,7 @@ function addRemoveBxs$$module$synpdf(event) {
 
     // Validate the page number
     let pagenum = parseInt(document.getElementById('pagenum').value);
-    if(pagenum < 1 || pagenum >= cxsBxsData.length) {
+    if (pagenum < 1 || pagenum >= cxsBxsData.length) {
         alert('Invalid page number');
         return;
     }
@@ -322,17 +322,17 @@ function addRemoveBxs$$module$synpdf(event) {
     var x = event.clientX - rect.left;
     var y = Math.round(event.clientY - rect.top + notation.scrollTop);
 
-    for(let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
+    for (let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
         let cs_group = cxsBxsData[pagenum].cxs[j].cs;
 
         // Check if y falls within this range
-        if(y >= Math.min(...cs_group) && y <= Math.max(...cs_group)) {
+        if (y >= Math.min(...cs_group) && y <= Math.max(...cs_group)) {
             let isValueRemoved = false;
 
             // Check each bxs value
-            for(let i = 0; i < cxsBxsData[pagenum].bxs[j].length; i++) {
+            for (let i = 0; i < cxsBxsData[pagenum].bxs[j].length; i++) {
                 // If the click is within 5 pixels left or right of the bxs value
-                if(Math.abs(x - cxsBxsData[pagenum].bxs[j][i]) <= 5) {
+                if (Math.abs(x - cxsBxsData[pagenum].bxs[j][i]) <= 5) {
                     // Remove the value from the array
                     cxsBxsData[pagenum].bxs[j].splice(i, 1);
                     isValueRemoved = true;
@@ -345,10 +345,10 @@ function addRemoveBxs$$module$synpdf(event) {
                 // Push the x coordinate to the corresponding bxs index
                 cxsBxsData[pagenum].bxs[j].push(x);
                 // Sort the 'bxs' group from low to high
-                cxsBxsData[pagenum].bxs[j].sort( (a, b) => a - b );
+                cxsBxsData[pagenum].bxs[j].sort((a, b) => a - b);
             }
 
-            localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));   
+            localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
             //deMetriek$$module$synpdf = JSON.parse(localStorage.getItem('jsonString'));  /*this works but scrolls page on refresh*/
             //setPagenum$$module$synpdf(opt$$module$synpdf.pagenum);
             return true;
@@ -398,7 +398,7 @@ notation.addEventListener('mousemove', function(e) {
 function handleWCxs(event) {
     if (WisActive) {
         editCxsGroups$$module$synpdf(event);
-      return true;
+        return true;
     }
     return false;
 }
@@ -477,105 +477,105 @@ function editCxsGroups$$module$synpdf(event) {
 //submit forms without navigating away
 const addNewComposerForm = document.getElementById("addnewcomposerform");
 addNewComposerForm.addEventListener("submit", function(event) {
-  event.preventDefault(); // Prevent the form from submitting normally
-  
-  const formData = new FormData(addNewComposerForm);
-  formData.append('action', 'add_composer');
-  
-  fetch("./dispatcher.php", {
-    method: "POST",
-    body: formData
-  })
-  .then(response => response.text())
-  .then(data => {
-      // Handle the response from the server
-      console.log(data);
-      if (data.startsWith('Error')) {
-          alert("Form submission failed");
-      } else if (data === "success") {
-          alert("Form submitted successfully");
-      }
-  })
+    event.preventDefault(); // Prevent the form from submitting normally
 
-  .catch(error => {
-    // Handle any errors that occur during the request
-    console.error(error);
-  });
+    const formData = new FormData(addNewComposerForm);
+    formData.append('action', 'add_composer');
+
+    fetch("./dispatcher.php", {
+        method: "POST",
+        body: formData
+    })
+        .then(response => response.text())
+        .then(data => {
+            // Handle the response from the server
+            console.log(data);
+            if (data.startsWith('Error')) {
+                alert("Form submission failed");
+            } else if (data === "success") {
+                alert("Form submitted successfully");
+            }
+        })
+
+        .catch(error => {
+            // Handle any errors that occur during the request
+            console.error(error);
+        });
 });
 //submit forms without navigating away
 const addNewPieceForm = document.getElementById("addnewpieceform");
 addNewPieceForm.addEventListener("submit", function(event) {
-  event.preventDefault(); // Prevent the form from submitting normally
-  
-  const formData = new FormData(addNewPieceForm);
-  formData.append('action', 'add_piece');
-  
-  fetch("./dispatcher.php", {
-    method: "POST",
-    body: formData
-  })
-  .then(response => response.text())
-  .then(data => {
-      // Handle the response from the server
-      console.log(data);
-      if (data.startsWith('Error')) {
-          alert("Form submission failed");
-      } else if (data === "success") {
-          alert("Form submitted successfully");
-      }
-  })
-  .catch(error => {
-    // Handle any errors that occur during the request
-    console.error(error);
-  });
+    event.preventDefault(); // Prevent the form from submitting normally
+
+    const formData = new FormData(addNewPieceForm);
+    formData.append('action', 'add_piece');
+
+    fetch("./dispatcher.php", {
+        method: "POST",
+        body: formData
+    })
+        .then(response => response.text())
+        .then(data => {
+            // Handle the response from the server
+            console.log(data);
+            if (data.startsWith('Error')) {
+                alert("Form submission failed");
+            } else if (data === "success") {
+                alert("Form submitted successfully");
+            }
+        })
+        .catch(error => {
+            // Handle any errors that occur during the request
+            console.error(error);
+        });
 });
 
 const addNewMetricForm = document.getElementById("addnewmetricform");
 addNewMetricForm.addEventListener("submit", function(event) {
-  event.preventDefault(); // Prevent the form from submitting normally
-  
-  const formData = new FormData(addNewMetricForm);
-  formData.append('action', 'add_metric_arr');
-  
-  fetch("./dispatcher.php", {
-    method: "POST",
-    body: formData
-  })
-  .then(response => response.text())
-  .then(data => {
-    // Handle the response from the server
-    console.log(data);
-    if (data === "success") {
-      alert("Form submitted successfully");
-    } else {
-      alert("Form submission failed");
-    }
-  })
-  .catch(error => {
-    // Handle any errors that occur during the request
-    console.error(error);
-  });
+    event.preventDefault(); // Prevent the form from submitting normally
+
+    const formData = new FormData(addNewMetricForm);
+    formData.append('action', 'add_metric_arr');
+
+    fetch("./dispatcher.php", {
+        method: "POST",
+        body: formData
+    })
+        .then(response => response.text())
+        .then(data => {
+            // Handle the response from the server
+            console.log(data);
+            if (data === "success") {
+                alert("Form submitted successfully");
+            } else {
+                alert("Form submission failed");
+            }
+        })
+        .catch(error => {
+            // Handle any errors that occur during the request
+            console.error(error);
+        });
 });
 
 //Allows user to manually mass correct timing across a range - adjustTimeValues(deTijden$$module$synpdf, 5, 10, 0.5);
-const adjT= (startIndex, endIndex, timeShift) => (startIndex < 0 || endIndex >= deTijden$$module$synpdf.length || startIndex > endIndex) ? console.error("Invalid indices") : deTijden$$module$synpdf.slice(startIndex, endIndex + 1).forEach(item => item.t += timeShift);
+const adjT = (startIndex, endIndex, timeShift) => (startIndex < 0 || endIndex >= deTijden$$module$synpdf.length || startIndex > endIndex) ? console.error("Invalid indices") : deTijden$$module$synpdf.slice(startIndex, endIndex + 1).forEach(item => item.t += timeShift);
 
 function avgT(startIndex, endIndex) {
-  // Ensure the indices are within the bounds of the array
-  if (startIndex < 0 || endIndex >= deTijden$$module$synpdf.length || startIndex > endIndex) {
-    console.error("Invalid indices");
-    return;
-  }
+    // Ensure the indices are within the bounds of the array
+    if (startIndex < 0 || endIndex >= deTijden$$module$synpdf.length || startIndex > endIndex) {
+        console.error("Invalid indices");
+        return;
+    }
 
-  // Calculate the total range and average increment
-  const totalRange = deTijden$$module$synpdf[endIndex].t - deTijden$$module$synpdf[startIndex].t;
-  const count = endIndex - startIndex;
-  const averageIncrement = totalRange / count;
+    // Calculate the total range and average increment
+    const totalRange = deTijden$$module$synpdf[endIndex].t - deTijden$$module$synpdf[startIndex].t;
+    const count = endIndex - startIndex;
+    const averageIncrement = totalRange / count;
 
-  // Update the "t" values in the specified range with the calculated average increment, rounded to 3 decimal places
-  for (let i = 1; i <= count; i++) {
-    deTijden$$module$synpdf[startIndex + i].t = parseFloat((deTijden$$module$synpdf[startIndex].t + i * averageIncrement).toFixed(3));
-  }
+    // Update the "t" values in the specified range with the calculated average increment, rounded to 3 decimal places
+    for (let i = 1; i <= count; i++) {
+        deTijden$$module$synpdf[startIndex + i].t = parseFloat((deTijden$$module$synpdf[startIndex].t + i * averageIncrement).toFixed(3));
+    }
 }
 
 function gotoMeasure() {
@@ -596,7 +596,7 @@ function gotoMeasure() {
 
 function limitInputLength(input) {
     if (input.value.length > 4) {
-        input.value = input.value.slice(0,4);
+        input.value = input.value.slice(0, 4);
     }
 }
 
@@ -692,14 +692,33 @@ function refreshMatches() {
             currentMatchIndex = timingMatches.length - 1; // If no match is found, use the last match
         }
     }
-    document.getElementById('match-info').textContent = currentMatchIndex !== -1 
-        ? `${currentMatchIndex + 1}/${timingMatches.length}` 
+    document.getElementById('match-info').textContent = currentMatchIndex !== -1
+        ? `${currentMatchIndex + 1}/${timingMatches.length}`
         : `0/${timingMatches.length}`;
     console.log('Timing matches refreshed.');
 }
 
+function frontT(startIndex, endIndex) {
+    // Calculate the total time between startIndex and endIndex + 1
+    if (startIndex < 0 || endIndex + 1 >= deTijden$$module$synpdf.length) {
+        console.error("Invalid index values provided.");
+        return;
+    }
+
+    const totalT = deTijden$$module$synpdf[endIndex + 1]['t'] - deTijden$$module$synpdf[startIndex]['t'];
+
+    // Update the time of the first measure to include the total time
+    deTijden$$module$synpdf[startIndex + 1]['t'] += totalT;
+
+    // Update the subsequent measures with a minimal increment
+    for (let i = startIndex + 2; i <= endIndex; i++) {
+        deTijden$$module$synpdf[i]['t'] = deTijden$$module$synpdf[i - 1]['t'] + 0.001;
+    }
+}
+
+
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('goto-measure-form').addEventListener('submit', function() {
+    document.getElementById('goto-measure-form').addEventListener('submit', function(event) {
         event.preventDefault();
         return gotoMeasure();
     });
@@ -716,7 +735,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('times_arr_data').value = updatedJsonData;
 
         var youtubeId = opt$$module$synpdf.yubvid;
-        if (!youtubeId || youtubeId.trim() ==='') {
+        if (!youtubeId || youtubeId.trim() === '') {
             alert("YouTube ID is missing");
             return;
         }
@@ -742,38 +761,38 @@ document.addEventListener('DOMContentLoaded', function() {
             method: "POST",
             body: formData
         })
-        .then(response => response.text())  // Assuming the server responds with plain text
-        .then(data => {
-            console.log(data);  // Log server response to the console
-            if (data.startsWith('Error')) {
-                alert("Form submission failed: " + data);  // Show error if starts with 'Error'
-            } else if (data === "success") {
-                alert("Form submitted successfully");
-                // Optionally reset the form or redirect the user
-                // form.reset();
-                // window.location.href = 'some-confirmation-page.html';
-            }
-        })
-        .catch(error => {
-            console.error("Error during form submission: ", error);
-            alert("An error occurred: " + error.message);
-        });
+            .then(response => response.text())  // Assuming the server responds with plain text
+            .then(data => {
+                console.log(data);  // Log server response to the console
+                if (data.startsWith('Error')) {
+                    alert("Form submission failed: " + data);  // Show error if starts with 'Error'
+                } else if (data === "success") {
+                    alert("Form submitted successfully");
+                    // Optionally reset the form or redirect the user
+                    // form.reset();
+                    // window.location.href = 'some-confirmation-page.html';
+                }
+            })
+            .catch(error => {
+                console.error("Error during form submission: ", error);
+                alert("An error occurred: " + error.message);
+            });
     });
 });
 
 document.querySelectorAll('input[type="text"], textarea').forEach(function(input) {
-  input.addEventListener('keydown', function(e) {
-      e.stopPropagation();
-  });
+    input.addEventListener('keydown', function(e) {
+        e.stopPropagation();
+    });
 });
 
 
 //Prevent resize with mousewheel on the notation section as this redisplays the advanced settings
 function stopWheelZoom(event) {
     if (event.ctrlKey == true) {
-      event.preventDefault();
+        event.preventDefault();
     }
-  }
+}
 document.getElementById('notation').addEventListener('mousewheel', stopWheelZoom);
 
 //hide database tools on page load
