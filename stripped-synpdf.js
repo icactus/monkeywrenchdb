@@ -214,7 +214,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
             </button>
         </div>
         <div id="rollijn" class="dashed"></div>`
-      );
+    );
     $("#notation").append(b);
     document.getElementById('notation').addEventListener('scroll', debouncedRenderVisibleAndNextPage);
     setupPlayPauseButton();
@@ -295,7 +295,8 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                 b.height = c.h + "px";
                 $('.demaat').hide();
                 if (canShowDemaat) {
-                $('.demaat').show()};
+                    $('.demaat').show()
+                };
                 var distanceToScroll = c.y - ycurprev$$module$synpdf; //if too far then pass 0 which will auto scroll instead of smooth
                 c.y != ycurprev$$module$synpdf && doeRol$$module$synpdf(c.y - this.tmargin, Math.abs(distanceToScroll) > 500 ? 1 : 0);
                 ycurprev$$module$synpdf = c.y;
@@ -332,7 +333,7 @@ Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
                 if (d == deTijden$$module$synpdf[b].mix) {
                     d = deTijden$$module$synpdf[b].t;
                     //Get the time for the first repeat version of this measure otherwise other recordings can mess this up.
-                    currentMeasureTime = d ;
+                    currentMeasureTime = d;
                     var f = b < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[b +
                         1].t : d + 2;
                     b = d + (f - d) * (a - e.x) / e.w;
@@ -352,20 +353,20 @@ Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
 
 function findCurrentMeasureTime() {
     return new Promise((resolve, reject) => {
-      let d;
-      for (let b = 0; b < deTijden$$module$synpdf.length; b++) {
-        if (demix$$module$synpdf === deTijden$$module$synpdf[b].mix) {
-          d = deTijden$$module$synpdf[b].t;
-          currentMeasureTime = d;
-          resolve();
-          break;
+        let d;
+        for (let b = 0; b < deTijden$$module$synpdf.length; b++) {
+            if (demix$$module$synpdf === deTijden$$module$synpdf[b].mix) {
+                d = deTijden$$module$synpdf[b].t;
+                currentMeasureTime = d;
+                resolve();
+                break;
+            }
         }
-      }
-      reject("Measure time not found");
+        reject("Measure time not found");
     });
 }
-  
-  
+
+
 
 Wijzer$$module$synpdf.prototype.goMsre = function(a, b) {
     0 == deTijden$$module$synpdf.length || b.altKey || b.ctrlKey || b
@@ -374,8 +375,8 @@ Wijzer$$module$synpdf.prototype.goMsre = function(a, b) {
             (detix$$module$synpdf = deTijden$$module$synpdf.length - 1),
             detix$$module$synpdf >= deTijden$$module$synpdf.length && (
                 detix$$module$synpdf = 0), playPause2$$module$synpdf(!1,
-                deTijden$$module$synpdf[detix$$module$synpdf].t +
-                TOFF$$module$synpdf + offset$$module$synpdf))
+                    deTijden$$module$synpdf[detix$$module$synpdf].t +
+                    TOFF$$module$synpdf + offset$$module$synpdf))
 };
 Wijzer$$module$synpdf.prototype.goUpDown = function(a, b, c) {
     var d = {},
@@ -432,13 +433,13 @@ Wijzer$$module$synpdf.prototype.setTmargin = function() {
 
 Wijzer$$module$synpdf.prototype.compCountIn = function() {
     var a = {
-            time: 2.5,
-            num: 4
-        },
+        time: 2.5,
+        num: 4
+    },
         b = opt$$module$synpdf.bpmsr.split("-").map(function(a) {
             return parseInt(a)
         });
-    a.time = (deTijden$$module$synpdf[detix$$module$synpdf + 1].t - deTijden$$module$synpdf[detix$$module$synpdf].t) / b[0] ;
+    a.time = (deTijden$$module$synpdf[detix$$module$synpdf + 1].t - deTijden$$module$synpdf[detix$$module$synpdf].t) / b[0];
     a.num = b[0];
     return a
 };
@@ -461,7 +462,7 @@ DummyPlayer$$module$synpdf.prototype.play = function() {
     if (-1 == this.klok) {
         var a = this;
         this.setKlok(function() {
-            a.currentTime += a.step / 1E3 ;
+            a.currentTime += a.step / 1E3;
             tick$$module$synpdf()
         }, this.step)
     }
@@ -498,9 +499,9 @@ function doeRol$$module$synpdf(a, b) {
         a = Math.round(a);
         if (deNot$$module$synpdf.scrollTop != a) {
             if (scrollFlag === 1) {
-                deNot$$module$synpdf.style["scroll-behavior"] = "auto" ;
+                deNot$$module$synpdf.style["scroll-behavior"] = "auto";
                 deNot$$module$synpdf.scrollTop = a;
-            } 
+            }
             else {
                 deNot$$module$synpdf.style["scroll-behavior"] = b ? "auto" : "smooth";
                 deNot$$module$synpdf.scrollTop = a;
@@ -532,11 +533,11 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight) {
                 x: measureLeftBarline,
                 y: staffTopLine,
                 w: measureRightBarline - measureLeftBarline,
-                h: staffBottomLine - staffTopLine 
+                h: staffBottomLine - staffTopLine
             })
         }
     }
-    return canvas 
+    return canvas
 }
 
 function addDummySys$$module$synpdf() {
@@ -583,54 +584,83 @@ function readPdfdoc$$module$synpdf() {
     });
 }
 
-function readPdf$$module$synpdf(a, b) {
+function readPdf$$module$synpdf(pdfData, b) {
     initGlobals$$module$synpdf();
-  
-    var c = a,
-      d;
-  
-    if (b === "url") {
-      d = /jpe?g$/i.test(c);
-    }
-  
-    if (b === "pdfbin") {
-      a = new Uint8Array(a);
-    }
-  
-    if (b === "jpgbin") {
-      jpgData = new Uint8Array(a);
-      b = "url";
-      c = new Blob([a], { type: "image/jpeg" });
-      c = URL.createObjectURL(c);
-    }
-  
-    if (b === "url" && (d || /^blob:/.test(c))) {
-      pdfDoc$$module$synpdf = new Image();
-      pdfDoc$$module$synpdf.crossOrigin = "anonymous";
-      pdfDoc$$module$synpdf.src = c;
-      pdfDoc$$module$synpdf.onload = function() {
-        readPdfdoc$$module$synpdf();
-      };
-    } else {
-        let shouldUpdate = true;
 
-        const loadingTask = pdfjsLib.getDocument(a);
+    var pdfCopy = pdfData,
+        d;
+
+    // Check if the URL points to a JPEG image if the type is "url"
+    if (b === "url") {
+        d = /jpe?g$/i.test(pdfCopy);
+    }
+
+    // Convert to Uint8Array if the type is "pdfbin"
+    if (b === "pdfbin") {
+        pdfData = new Uint8Array(pdfData);
+    }
+    // Handle JPEG binary data
+    if (b === "jpgbin") {
+        jpgData = new Uint8Array(pdfData);
+        b = "url";
+        pdfCopy = new Blob([pdfData], { type: "image/jpeg" });
+        pdfCopy = URL.createObjectURL(pdfCopy);
+    }
+    // Load the document as an Image if the type is "url" and it's a JPEG or Blob URL
+    if (b === "url" && (d || /^blob:/.test(pdfCopy))) {
+        pdfDoc$$module$synpdf = new Image();
+        pdfDoc$$module$synpdf.crossOrigin = "anonymous";
+        pdfDoc$$module$synpdf.src = pdfCopy;
+        pdfDoc$$module$synpdf.onload = function() {
+            readPdfdoc$$module$synpdf();
+        };
+    } else {
+        // Handle PDF binary data using pdfjsLib
+        let shouldUpdate = true;
+        const startTime = new Date().getTime();
+
+        const loadingTask = pdfjsLib.getDocument(pdfData);
         loadingTask.onProgress = function(progressData) {
             if (shouldUpdate) {
-                var percentComplete = Math.min((progressData.loaded / progressData.total) * 100, 100);
-                $("#loadingMessage2").hide(); // remove in case part switched before done rendering
-                $("#notation").addClass("notation-max-height")
-                $("#notation").html('<h2 style="margin-left:10px">Downloading PDF: ' + percentComplete.toFixed(0) + '%</h2>');
+                const currentTime = new Date().getTime();
+                const elapsedTime = (currentTime - startTime) / 1000; // in seconds
+                const loadedMB = (progressData.loaded / (1024 * 1024)).toFixed(2);
+                const totalMB = (progressData.total / (1024 * 1024)).toFixed(2);
+                const speedMBps = (loadedMB / elapsedTime).toFixed(2);
+                const percentComplete = (progressData.loaded / progressData.total) * 100;
+
+                // Create and update progress elements dynamically
+                let notationDiv = $("#notation");
+                notationDiv.addClass("notation-max-height");
+
+                if ($("#progress-container").length === 0) {
+                    notationDiv.html(`
+                        <div id="progress-container" style="width: 100%; text-align: center; margin: 20px 0;">
+                            <progress id="progress-bar" value="0" max="100" style="width: 80%; height: 20px;"></progress>
+                            <div id="progress-info" style="margin-top: 10px; font-size: 20px;"></div>
+                        </div>
+                    `);
+                }
+
+                // Update progress bar
+                const progressBar = document.getElementById('progress-bar');
+                progressBar.value = percentComplete;
+
+                // Update progress info
+                const progressInfo = document.getElementById('progress-info');
+                progressInfo.textContent = `${loadedMB}MB/${totalMB}MB - ${speedMBps}MBps`;
+
+                $("#loadingMessage2").hide(); // Remove in case part switched before done rendering
             }
-        };        
-        loadingTask.promise.then(function(a) {
-            pdfDoc$$module$synpdf = a;
+        };
+        loadingTask.promise.then(function(pdfData) {
+            pdfDoc$$module$synpdf = pdfData;
             $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
             shouldUpdate = false;
             readPdfdoc$$module$synpdf();
         });
-      }
-  }
+    }
+}
 let renderedPages = 1;
 //now returns a promise after each page so once it's all done we can call time2x in readpdfdoc() to scroll return on window resize.
 // Initialize an array to store rendering tasks
@@ -664,7 +694,7 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
             resizePdf$$module$synpdf();
         } else {
             if (pageNum < pdfDoc$$module$synpdf.numPages) {
-                if (pageNum === 1) {renderedPages = 1}; // start pages at 1 in case part switched before done rendering
+                if (pageNum === 1) { renderedPages = 1 }; // start pages at 1 in case part switched before done rendering
                 $("#loadingMessage2").show();
                 return goPage$$module$synpdf(pageNum + 1, cumulativeHeight + viewport2.height);
             } else {
@@ -708,16 +738,16 @@ const debouncedRenderVisibleAndNextPage = debounce2(renderVisibleAndNextPage, 20
 
 
 function debounce2(func, wait) {
-  var timeout;
-  return function() {
-      var context = this, args = arguments;
-      var later = function() {
-          timeout = null;
-          func.apply(context, args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-  };
+    var timeout;
+    return function() {
+        var context = this, args = arguments;
+        var later = function() {
+            timeout = null;
+            func.apply(context, args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
 var renderedCanvasesQueue = []; // Track rendered canvases
@@ -740,7 +770,7 @@ function manageRenderedCanvases(canvasId) {
         // If it is, remove it from its current position
         renderedCanvasesQueue.splice(index, 1);
     }
-    
+
     // Add (or re-add) the canvas ID to the front of the queue
     renderedCanvasesQueue.unshift(canvasId); // Add to the beginning
 
@@ -821,7 +851,7 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
     $("#notation").append(canvas);
     $(canvas).on("mousedown touchstart", kliklang$$module$synpdf);
     deMaten$$module$synpdf.length >= demix$$module$synpdf && msc_wz$$module$synpdf.cursorTime && msc_wz$$module$synpdf.time2x(msc_wz$$module$synpdf.cursorTime);
-    return canvas 
+    return canvas
 }
 
 function tick$$module$synpdf(a) {
@@ -882,8 +912,8 @@ function startIntf$$module$synpdf(a) {
 
 function resizePdf$$module$synpdf(scrollType) {
     if (scrollType === 1) {
-        doresize$$module$synpdf = 1 ;
-        deNot$$module$synpdf.style["scroll-behavior"] = "auto" ;
+        doresize$$module$synpdf = 1;
+        deNot$$module$synpdf.style["scroll-behavior"] = "auto";
     }
     pdfDoc$$module$synpdf && ($("#wait").text("Recomputing systems ..."), $("#wait").css({
         display: "block",
@@ -901,26 +931,26 @@ function resizePdfSyn$$module$synpdf() {
 }
 
 function yubApiReady$$module$synpdf() {
-   ybplayer$$module$synpdf = new YT.Player("vidyub", {
-       events: {
-           'onReady': function() {
-               $("#yubuse").prop("checked", !0);
-               yubload$$module$synpdf();
-               setupPlayPauseButton();
-           },
-           'onStateChange': onPlayerStateChange
-       }
-   });
+    ybplayer$$module$synpdf = new YT.Player("vidyub", {
+        events: {
+            'onReady': function() {
+                $("#yubuse").prop("checked", !0);
+                yubload$$module$synpdf();
+                setupPlayPauseButton();
+            },
+            'onStateChange': onPlayerStateChange
+        }
+    });
 }
 
- 
- 
+
+
 async function onPlayerStateChange(event) {
     if (bypassTickFlag === 1) {
         try {
             console.log(newPlayerCue);
             await seekToPromise(newPlayerCue); // Seek to newPlayerCue seconds
-            elmed$$module$synpdf.playVideo(); 
+            elmed$$module$synpdf.playVideo();
             bypassTickFlag = 0;
         } catch (error) {
             console.error('Failed to seek video:', error);
@@ -929,39 +959,39 @@ async function onPlayerStateChange(event) {
     event.data == YT.PlayerState.PLAYING ? (dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100), setPauseState$$module$synpdf(!1)) : (dummyPlayer$$module$synpdf.clearKlok(), setPauseState$$module$synpdf(!0));
     //newPlayerCue needs to subtract offset because time2x uses teTijden time to find deMaten position, not video time
     if (event.data == YT.PlayerState.CUED) {
-        scrollFlag = 1 ;
+        scrollFlag = 1;
         msc_wz$$module$synpdf.time2x(newPlayerCue - offset$$module$synpdf);
         setNotationHeight$$module$synpdf();
     }
     if (event.data == YT.PlayerState.PAUSED) {
-        scrollFlag = 1 ;
+        scrollFlag = 1;
     }
-  
+
     // Add a delay before updating the play-pause button icon
     setTimeout(updatePlayPauseButton, 250);
- }
- 
- 
+}
+
+
 
 function seekToPromise(time) {
     return new Promise((resolve, reject) => {
-      elmed$$module$synpdf.seekTo(time, true);
-  
-      // Listen for the video time to update
-      const interval = setInterval(() => {
-        if (elmed$$module$synpdf.getCurrentTime() === time) {
-          clearInterval(interval);
-          resolve();
-        }
-      }, 100);
-  
-      // Optionally, add a timeout to reject the promise after a certain period
-      setTimeout(() => {
-        clearInterval(interval);
-        reject(new Error('Timeout after trying to seek to the desired time'));
-      }, 10000);  // 10 seconds timeout
+        elmed$$module$synpdf.seekTo(time, true);
+
+        // Listen for the video time to update
+        const interval = setInterval(() => {
+            if (elmed$$module$synpdf.getCurrentTime() === time) {
+                clearInterval(interval);
+                resolve();
+            }
+        }, 100);
+
+        // Optionally, add a timeout to reject the promise after a certain period
+        setTimeout(() => {
+            clearInterval(interval);
+            reject(new Error('Timeout after trying to seek to the desired time'));
+        }, 10000);  // 10 seconds timeout
     });
-  }
+}
 
 function yubload$$module$synpdf(a) {
     function b(a) {
@@ -1026,7 +1056,7 @@ function changeStartTime(newTime) {
         videoId: opt$$module$synpdf.yubvid,
         startSeconds: newTime
     });
-   
+
 }
 function setNotationHeight$$module$synpdf() {
     $("#buttons").toggleClass("noheight", !!opt$$module$synpdf.noplyr);
@@ -1176,7 +1206,7 @@ function keyDown$$module$synpdf(a) {
             $("#menu, #saveDlg").toggle(!1);
             $("#help").toggleClass("showhlp", !1);
             break;
-            
+
         default:
             c = 0
     }
@@ -1193,7 +1223,7 @@ function msc_check_preload$$module$synpdf() {
     opt$$module$synpdf.yubvid && !opt$$module$synpdf.nomed && setPlayer$$module$synpdf("", "");
     opt$$module$synpdf.no_menu && !fullmenu$$module$synpdf && ($("#sync").css("display", "none"), opt$$module$synpdf.btns = 0, $("body").on("contextmenu", function(a) {
         a.preventDefault()
-    }));   
+    }));
 }
 
 function schaalMetriek$$module$synpdf() {
@@ -1239,7 +1269,7 @@ $(document).ready(function() {
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
     });
-    
+
     $("#closehelp").click(function() {
         $("#help").toggleClass("showhlp", 0)
     });
@@ -1261,5 +1291,5 @@ $(document).ready(function() {
                 key: a[1]
             })
     })
-      
+
 });
