@@ -460,7 +460,7 @@ select {
     padding: 0 16px;
     display: none;
     overflow: hidden;
-    font-size:100% ;
+    font-size:125% ;
     background-color: #f8f8f8;
 }
 .search-content p {

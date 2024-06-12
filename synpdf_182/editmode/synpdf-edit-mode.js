@@ -267,7 +267,7 @@ $jscomp.polyfill("Promise", function(a) {
 }, "es6", "es3");
 $jscomp.SYMBOL_PREFIX = "jscomp_symbol_";
 $jscomp.initSymbol = function() {
-    $jscomp.initSymbol = function() {};
+    $jscomp.initSymbol = function() { };
     $jscomp.global.Symbol || ($jscomp.global.Symbol = $jscomp.Symbol)
 };
 $jscomp.SymbolClass = function(a, b) {
@@ -300,13 +300,13 @@ $jscomp.initSymbolIterator = function() {
             return $jscomp.iteratorPrototype($jscomp.arrayIteratorImpl(this))
         }
     });
-    $jscomp.initSymbolIterator = function() {}
+    $jscomp.initSymbolIterator = function() { }
 };
 $jscomp.initSymbolAsyncIterator = function() {
     $jscomp.initSymbol();
     var a = $jscomp.global.Symbol.asyncIterator;
     a || (a = $jscomp.global.Symbol.asyncIterator = $jscomp.global.Symbol("Symbol.asyncIterator"));
-    $jscomp.initSymbolAsyncIterator = function() {}
+    $jscomp.initSymbolAsyncIterator = function() { }
 };
 $jscomp.iteratorPrototype = function(a) {
     $jscomp.initSymbolIterator();
@@ -320,12 +320,12 @@ $jscomp.iteratorPrototype = function(a) {
 };
 $jscomp.underscoreProtoCanBeSet = function() {
     var a = {
-            a: !0
-        },
+        a: !0
+    },
         b = {};
     try {
         return b.__proto__ = a, b.a
-    } catch (c) {}
+    } catch (c) { }
     return !1
 };
 $jscomp.setPrototypeOf = "function" == typeof Object.setPrototypeOf ? Object.setPrototypeOf : $jscomp.underscoreProtoCanBeSet() ? function(a, b) {
@@ -615,7 +615,7 @@ var playing$$module$mixer = 0,
     trackMute$$module$mixer = [],
     trackPan$$module$mixer = [],
     tracksOn$$module$mixer, tracksOnPrev$$module$mixer, soloTrk$$module$mixer, startTime$$module$mixer, playPos$$module$mixer =
-    0,
+        0,
     playbtn$$module$mixer, posElm$$module$mixer, progressElm$$module$mixer, nframes$$module$mixer = 0,
     animFrame$$module$mixer, vumax$$module$mixer = 0,
     duration$$module$mixer, wasplaying$$module$mixer = 0,
@@ -698,7 +698,7 @@ function startstop$$module$mixer(a) {
             c.start(0, a);
             audnode$$module$mixer[b] = c
         } playing$$module$mixer ? (playing$$module$mixer = 0, playbtn$$module$mixer.value = "play", playPos$$module$mixer = audioCtx$$module$mixer.currentTime - startTime$$module$mixer,
-        cancelAnimationFrame(animFrame$$module$mixer)) : (playing$$module$mixer = 1, playbtn$$module$mixer.value = "pause", startTime$$module$mixer = audioCtx$$module$mixer.currentTime - a, peakMeter$$module$mixer())
+            cancelAnimationFrame(animFrame$$module$mixer)) : (playing$$module$mixer = 1, playbtn$$module$mixer.value = "pause", startTime$$module$mixer = audioCtx$$module$mixer.currentTime - a, peakMeter$$module$mixer())
 }
 
 function peakMeter$$module$mixer() {
@@ -760,8 +760,8 @@ function setpan$$module$mixer(a) {
 
 function setTrkNames$$module$mixer(a) {
     for (var b = urls$$module$mixer.map(function(a) {
-            return a.split("/").pop().split(".")[0]
-        }), c = document.getElementById("buttons"), d = 0; d < b.length; ++d) {
+        return a.split("/").pop().split(".")[0]
+    }), c = document.getElementById("buttons"), d = 0; d < b.length; ++d) {
         var e = "hrz" == a || "left" == a ? trkhrz$$module$mixer : trkvrt$$module$mixer;
         e = e.replace("XXX", "<b>" + b[d] + "</b>").replace(/YYY/g, d);
         c.insertAdjacentHTML("beforeend", e)
@@ -824,8 +824,8 @@ function setTrkHandlers$$module$mixer() {
     });
     (b =
         document.getElementById("mute5")) && b.addEventListener("click", function(a) {
-        return mutemstr$$module$mixer()
-    })
+            return mutemstr$$module$mixer()
+        })
 }
 
 function setTrkOrient$$module$mixer(a) {
@@ -880,38 +880,38 @@ function initMixer$$module$mixer(a, b) {
     })
 }
 var mixplayer$$module$mixer = {
-        get currentTime() {
-            return playPos$$module$mixer
-        },
-        set currentTime(a) {
-            playing$$module$mixer && (startstop$$module$mixer(0), startstop$$module$mixer(a));
-            playPos$$module$mixer = a;
-            posElm$$module$mixer.innerHTML = a.toFixed(1);
-            progressElm$$module$mixer.value = a / duration$$module$mixer
-        },
-        get paused() {
-            return !playing$$module$mixer
-        },
-        init: function(a, b, c) {
-            return initMixer$$module$mixer(a, b, c)
-        },
-        setTrkOrient: function(a) {
-            return setTrkOrient$$module$mixer(a)
-        },
-        play: function() {
-            playing$$module$mixer ||
-                startstop$$module$mixer(playPos$$module$mixer)
-        },
-        pause: function() {
-            playing$$module$mixer && startstop$$module$mixer(0)
-        }
+    get currentTime() {
+        return playPos$$module$mixer
     },
+    set currentTime(a) {
+        playing$$module$mixer && (startstop$$module$mixer(0), startstop$$module$mixer(a));
+        playPos$$module$mixer = a;
+        posElm$$module$mixer.innerHTML = a.toFixed(1);
+        progressElm$$module$mixer.value = a / duration$$module$mixer
+    },
+    get paused() {
+        return !playing$$module$mixer
+    },
+    init: function(a, b, c) {
+        return initMixer$$module$mixer(a, b, c)
+    },
+    setTrkOrient: function(a) {
+        return setTrkOrient$$module$mixer(a)
+    },
+    play: function() {
+        playing$$module$mixer ||
+            startstop$$module$mixer(playPos$$module$mixer)
+    },
+    pause: function() {
+        playing$$module$mixer && startstop$$module$mixer(0)
+    }
+},
     module$mixer = {
         mixplayer: mixplayer$$module$mixer
     };
 var msc_VERSION$$module$synpdf = 182,
     opt$$module$synpdf, msc_credits$$module$synpdf, times_arr$$module$synpdf, offset_js$$module$synpdf, pdf_file$$module$synpdf, media_file$$module$synpdf, pdf_data$$module$synpdf, jpg_data$$module$synpdf, tix_lb$$module$synpdf, annots$$module$synpdf, lpRec$$module$synpdf, metric_arr$$module$synpdf, play_list$$module$synpdf, adv_settings$$module$synpdf, msc_tracks$$module$synpdf, media_dir$$module$synpdf, pdfDoc$$module$synpdf, pdfData$$module$synpdf, jpgData$$module$synpdf, nPage$$module$synpdf =
-    1,
+        1,
     Cs$$module$synpdf = [],
     times$$module$synpdf, tixlb$$module$synpdf, lbtix$$module$synpdf, ybplayer$$module$synpdf, yubchk$$module$synpdf = 0,
     pbrates$$module$synpdf = [],
@@ -1156,9 +1156,9 @@ Wijzer$$module$synpdf.prototype.drawTags = function() {
     var a = this.width;
     var b = opt$$module$synpdf.cropx;
     for (var c in {
-            atag: 1,
-            btag: 1
-        })
+        atag: 1,
+        btag: 1
+    })
         if (c in lpRec$$module$synpdf) {
             var d = lpRec$$module$synpdf[c];
             var e = (2 * b + a) / (2 * d.c + d.w);
@@ -1356,9 +1356,9 @@ Wijzer$$module$synpdf.prototype.setTmargin = function() {
 
 Wijzer$$module$synpdf.prototype.compCountIn = function() {
     var a = {
-            time: 2.5,
-            num: 4
-        },
+        time: 2.5,
+        num: 4
+    },
         b = opt$$module$synpdf.bpmsr.split("-").map(function(a) {
             return parseInt(a)
         });
@@ -1601,8 +1601,8 @@ function addDummySys$$module$synpdf() {
         t: deTijden$$module$synpdf[a - 1].t + 2,
         mix: a
     });
-   // $("#notation").append('<div id="leeg" style="height:' + bottomSpace$$module$synpdf +
-   //     'px">&nbsp;</div>');
+    // $("#notation").append('<div id="leeg" style="height:' + bottomSpace$$module$synpdf +
+    //     'px">&nbsp;</div>');
     msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin()
 }
 
@@ -1618,53 +1618,53 @@ function readPdfdoc$$module$synpdf() {
     rendering$$module$synpdf = 1;
     $("#render").html("rendering ...").toggle(!0);
     pdfDoc$$module$synpdf.src ? setTimeout(function() {  // tries jpeg first, then reads as pdf
-            goJpeg$$module$synpdf(0) 
-        },
+        goJpeg$$module$synpdf(0)
+    },
         100) : goPage$$module$synpdf(1, 0)
 }
 
 function readPdf$$module$synpdf(a, b) {
     initGlobals$$module$synpdf();
-  
+
     var c = a,
-      d;
-  
+        d;
+
     if (b === "url") {
-      d = /jpe?g$/i.test(c);
+        d = /jpe?g$/i.test(c);
     }
-  
+
     if (b === "pdfbin") {
-      a = new Uint8Array(a);
+        a = new Uint8Array(a);
     }
-  
+
     if (b === "jpgbin") {
-      jpgData = new Uint8Array(a);
-      b = "url";
-      c = new Blob([a], { type: "image/jpeg" });
-      c = URL.createObjectURL(c);
+        jpgData = new Uint8Array(a);
+        b = "url";
+        c = new Blob([a], { type: "image/jpeg" });
+        c = URL.createObjectURL(c);
     }
-  
+
     if (b === "url" && (d || /^blob:/.test(c))) {
-      pdfDoc$$module$synpdf = new Image();
-      pdfDoc$$module$synpdf.crossOrigin = "anonymous";
-      pdfDoc$$module$synpdf.src = c;
-      pdfDoc$$module$synpdf.onload = function() {
-        readPdfdoc$$module$synpdf();
-      };
+        pdfDoc$$module$synpdf = new Image();
+        pdfDoc$$module$synpdf.crossOrigin = "anonymous";
+        pdfDoc$$module$synpdf.src = c;
+        pdfDoc$$module$synpdf.onload = function() {
+            readPdfdoc$$module$synpdf();
+        };
     } else {
-      pdfjsLib.getDocument(a).promise.then(function(a) {
-        pdfDoc$$module$synpdf = a;
-        $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
-        readPdfdoc$$module$synpdf();
-      });
+        pdfjsLib.getDocument(a).promise.then(function(a) {
+            pdfDoc$$module$synpdf = a;
+            $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
+            readPdfdoc$$module$synpdf();
+        });
     }
-  }
+}
 
 function goPage$$module$synpdf(a, b) {
     opt$$module$synpdf.advncd && (a = 1 * opt$$module$synpdf.pagenum);  // If advanced mode is on, set the page number to the predefined value
-    pdfDoc$$module$synpdf.getPage(a).then(function(page) { 
+    pdfDoc$$module$synpdf.getPage(a).then(function(page) {
         $("#render").html("rendering page: " + a + "/" + pdfDoc$$module$synpdf._pdfInfo.numPages);  // Update the HTML element with id='render' with the page number
-        var d = page.getViewport({ scale : (deMetriek$$module$synpdf[0] / page._pageInfo.view[2])});
+        var d = page.getViewport({ scale: (deMetriek$$module$synpdf[0] / page._pageInfo.view[2]) });
         var e = document.createElement("canvas");  // Create a canvas element
         var f = e.getContext("2d");
         e.height = d.height;  // Set the dimensions of the canvas to match the page size
@@ -1674,14 +1674,14 @@ function goPage$$module$synpdf(a, b) {
             viewport: d
         }).promise.then(function() {  // After rendering, proceed to further process the page
             e = compPage$$module$synpdf(e, a, b);
-            if(opt$$module$synpdf.advncd) {  // Continue based on global condition variables
+            if (opt$$module$synpdf.advncd) {  // Continue based on global condition variables
                 rendering$$module$synpdf = 0;
                 addDummySys$$module$synpdf();
             } else {
-                if(doresize$$module$synpdf) {
+                if (doresize$$module$synpdf) {
                     resizePdf$$module$synpdf();
                 } else {
-                    if(a < pdfDoc$$module$synpdf.numPages) {
+                    if (a < pdfDoc$$module$synpdf.numPages) {
                         goPage$$module$synpdf(a + 1, b + e.height);
                     } else {
                         rendering$$module$synpdf = 0;
@@ -1858,7 +1858,7 @@ function drawRes$$module$synpdf(a, b, c) {
         for (var c, d; 5 < a.length;)
             if (c = a.length - 1, d = a[1] - a[0], c = a[c] - a[c - 1], d > b + 1 || d < b - 1) a.shift();
             else if (c > b + 1 || c < b - 1) a.pop();
-        else break;
+            else break;
         a[a.length - 1] - a[0] < 2 * b && (a = []);
         return a
     }
@@ -1953,7 +1953,7 @@ function countPix$$module$synpdf(image, sliceIndex) {
     opt$$module$synpdf.eerst && (loopStartOffset = 0, loopEndOffset = g / 4);  // Change loop offsets based on opt$$module$synpdf.eerst
     for (currentRow = 0; currentRow < imageHeight; currentRow++) {  // Go through each row in the image
         var colorSum = 0;  // Initialize colorSum, which will contain sum of pixels' color
-        for (pixelIndex = currentPixelOffset + loopStartOffset; pixelIndex < currentPixelOffset + loopEndOffset; pixelIndex += 4) 
+        for (pixelIndex = currentPixelOffset + loopStartOffset; pixelIndex < currentPixelOffset + loopEndOffset; pixelIndex += 4)
             colorSum += imagePixelData[pixelIndex], colorSum += imagePixelData[pixelIndex + 1], colorSum += imagePixelData[pixelIndex + 2];  // Calculate the average color value in each row
         avgRowColor = colorSum / (3 * (loopEndOffset - loopStartOffset));  // Get an average color value
         colorIntensityArray.push(avgRowColor);  // Add this value into colorIntensityArray
@@ -1997,8 +1997,8 @@ function countVsys$$module$synpdf(a, b, c) {
                         d; d < h.length && h[d] <= k - 5;) d += 1;
                     l.push([e, d - 1])
                 } l.sort(function(a, b) {
-                return b[1] - b[0] - (a[1] - a[0])
-            });
+                    return b[1] - b[0] - (a[1] - a[0])
+                });
             h = l[0][0];
             d = l[0][1];
             m.push({
@@ -2255,7 +2255,7 @@ function setPlayer$$module$synpdf(a, b) {
         setNotationHeight$$module$synpdf() // below media_height is changed from 30% to 200px
     } else yubchk$$module$synpdf = 1, opt$$module$synpdf.media_height || (opt$$module$synpdf.media_height = "200px"), $("#vid, #aud").css("display", "none"), $("#vidyub").css("display", "inline-block"), yubload$$module$synpdf(function() {
         elmed$$module$synpdf = ybplayer$$module$synpdf;
-       /// pbrates$$module$synpdf = elmed$$module$synpdf.getAvailablePlaybackRates();     ///COMMENTING OUT ALLOWS YOUTUBE RATES AT 0.05 SPEED INCREMENT
+        /// pbrates$$module$synpdf = elmed$$module$synpdf.getAvailablePlaybackRates();     ///COMMENTING OUT ALLOWS YOUTUBE RATES AT 0.05 SPEED INCREMENT
         setSpeed$$module$synpdf(0);
         setNotationHeight$$module$synpdf();
         elmed$$module$synpdf.cueVideoById({
@@ -2484,8 +2484,8 @@ function keyDown$$module$synpdf(a) {
             deMetriek$$module$synpdf = JSON.parse(localStorage.getItem('jsonString'));
             setPagenum$$module$synpdf(opt$$module$synpdf.pagenum);
             break;
-              
-          
+
+
         default:
             c = 0
     }
@@ -2576,16 +2576,16 @@ function saveTiming$$module$synpdf() {
             (b + d + e + f + g + p + m + n + l + k + h + c + "\n");
         var r = "data:text/plain;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(l)));
         $("#drpuse").prop("checked") ? ($("#err").text(""), Dropbox.save(r, scoreFnm$$module$synpdf + ".js", {
-                success: function() {
-                    $("#err").text('"' + scoreFnm$$module$synpdf + '.js" saved to your Dropbox.\n')
-                },
-                progress: function(a) {},
-                cancel: function() {},
-                error: function(a) {
-                    $("#err").text("Error: " + a + "\n");
-                    $("#err").append("fnm: " + scoreFnm$$module$synpdf + ", len: " + r.length + "\n")
-                }
-            })) : "save" == $(this).attr("id") ?
+            success: function() {
+                $("#err").text('"' + scoreFnm$$module$synpdf + '.js" saved to your Dropbox.\n')
+            },
+            progress: function(a) { },
+            cancel: function() { },
+            error: function(a) {
+                $("#err").text("Error: " + a + "\n");
+                $("#err").append("fnm: " + scoreFnm$$module$synpdf + ", len: " + r.length + "\n")
+            }
+        })) : "save" == $(this).attr("id") ?
             (l = document.createElement("a"), l.href = r, l.download = scoreFnm$$module$synpdf + ".js", l.text = "Save synchronization data", $("#saveDiv").append(l), l.click()) : ($("#saveDlg pre").html(l), $("#saveDlg").css("display", "block"))
     }
 }
@@ -2665,34 +2665,34 @@ function evalPreload$$module$synpdf(a) {
 //REPLACE PRELOAD WITH MYSQL DATABASE VIA PHP
 function getPreloadFromDB() {
     return new Promise((resolve, reject) => {
-      $.ajax({
-        url: 'get_preload.php',
-        success: function(response) {
-            try {
-                response = JSON.parse(response); // Parse the JSON string
+        $.ajax({
+            url: 'get_preload.php',
+            success: function(response) {
+                try {
+                    response = JSON.parse(response); // Parse the JSON string
                 } catch (error) {
-                console.error('Error parsing JSON:', error);
+                    console.error('Error parsing JSON:', error);
                 }
-            resolve(response);
-        },
-        error: function(error) {
-          reject(error);
-        }
-      });
+                resolve(response);
+            },
+            error: function(error) {
+                reject(error);
+            }
+        });
     });
-  }
-  
-  function fetchDataFromDB() {
+}
+
+function fetchDataFromDB() {
     return getPreloadFromDB()
-      .then(function(response) {
-        // Return the response to be handled in the chain
-        return response;
-      })
-      .catch(function(error) {
-        // Handle any errors that occurred during the AJAX call
-        console.error(error);
-      });
-  }
+        .then(function(response) {
+            // Return the response to be handled in the chain
+            return response;
+        })
+        .catch(function(error) {
+            // Handle any errors that occurred during the AJAX call
+            console.error(error);
+        });
+}
 
 
 function msc_preload$$module$synpdf(a) {
@@ -2705,9 +2705,9 @@ function msc_preload$$module$synpdf(a) {
     if (1 < d.length)
         for (d = d[1].split("&"), c = 0; c < d.length; c++) {
             var f = d[c].replace(/d:(\w{15}\/[^.]+\.)/, "https://dl.dropboxusercontent.com/s/$1");
-            (a = f.match(/ln=([01])/)) ? opt_url$$module$synpdf.lncsr = parseInt(a[1]): (a = f.match(/ip=(\d+.\d+.\d+.\d+)/)) ? opt_url$$module$synpdf.ipadr = a[1] : (a = f.match(/^d([\d.]+)$/)) ?
+            (a = f.match(/ln=([01])/)) ? opt_url$$module$synpdf.lncsr = parseInt(a[1]) : (a = f.match(/ip=(\d+.\d+.\d+.\d+)/)) ? opt_url$$module$synpdf.ipadr = a[1] : (a = f.match(/^d([\d.]+)$/)) ?
                 opt_url$$module$synpdf.delay = parseFloat(a[1]) : (a = f.match(/^mmin=([\w,]*)$/)) ? opt_url$$module$synpdf.mmin = a[1] : (a = f.match(/^trks=(.*)$/)) ? msc_tracks$$module$synpdf = a[1].split(",") : (a = f.match(/^mdir=(.*)$/)) ? media_dir$$module$synpdf = a[1] : f.match(/ip=host/) && e ? opt_url$$module$synpdf.ipadr = e : "mstr" == f ? opt_url$$module$synpdf.mstr = 1 : "nomed" == f ? (opt_url$$module$synpdf.nomed = 1, opt_url$$module$synpdf.noplyr = 1) : "playbtn" == f ? opt_url$$module$synpdf.playbtn = 1 : (a = f.match(/cnt=([\d-]+)/)) ? opt_url$$module$synpdf.bpmsr =
-                a[1] : "nosm" == f ? hasSmooth$$module$synpdf = !1 : "fullmenu" == f ? fullmenu$$module$synpdf = 1 : "hrz" == f ? opt_url$$module$synpdf.hrz = "hrz" : "hrzleft" == f ? opt_url$$module$synpdf.hrz = "left" : b = f;
+                    a[1] : "nosm" == f ? hasSmooth$$module$synpdf = !1 : "fullmenu" == f ? fullmenu$$module$synpdf = 1 : "hrz" == f ? opt_url$$module$synpdf.hrz = "hrz" : "hrzleft" == f ? opt_url$$module$synpdf.hrz = "left" : b = f;
             /\.(pdf|jpg)$/.test(b) && (pdf_file$$module$synpdf = b, b = "");
             /\.(ogg|mp3|mp4|webm)$/.test(b) && (media_file$$module$synpdf = b, b = "")
         }
@@ -2742,8 +2742,8 @@ function msc_check_preload$$module$synpdf() {
         }));
         opt$$module$synpdf.yubvid && !opt$$module$synpdf.nomed && setPlayer$$module$synpdf("", "");
         msc_credits$$module$synpdf && (a = msc_credits$$module$synpdf.reduce(function(a, b) {
-                return a + b
-            }),
+            return a + b
+        }),
             $("#credits").html(a));
         opt$$module$synpdf.no_menu && !fullmenu$$module$synpdf && ($("#sync").css("display", "none"), opt$$module$synpdf.btns = 0, $("body").on("contextmenu", function(a) {
             a.preventDefault()
@@ -2935,17 +2935,17 @@ function doResize$$module$synpdf() {
 
 function loaddrop$$module$synpdf() {
     var a = Dropbox.createChooseButton({
-            success: readDbxFile$$module$synpdf,
-            cancel: function() {},
-            linkType: "preview",
-            multiselect: !1,
-            extensions: [".pdf", ".txt", ".js", ".jpg"]
-        }),
+        success: readDbxFile$$module$synpdf,
+        cancel: function() { },
+        linkType: "preview",
+        multiselect: !1,
+        extensions: [".pdf", ".txt", ".js", ".jpg"]
+    }),
         b = Dropbox.createChooseButton({
             success: function(a) {
                 readMedia$$module$synpdf("dbx", a)
             },
-            cancel: function() {},
+            cancel: function() { },
             linkType: "preview",
             multiselect: !1,
             extensions: [".ogg", ".mp3", ".webm", ".mp4"]
@@ -3016,7 +3016,7 @@ function addtips$$module$synpdf() {
 
 function hideMenu$$module$synpdf() {
     $("#menu").toggle(!1);
-    
+
     doReadPdf$$module$synpdf && (resizePdfSyn$$module$synpdf(), doReadPdf$$module$synpdf = 0)
 }
 
@@ -3115,37 +3115,37 @@ $(document).ready(function() {
     let drmplValue = parseFloat($('#menu input#drmpl').get(0).value);
 
     Object.defineProperty(opt$$module$synpdf, 'drmpl', {
-       get: function() {
-           return drmplValue;
-       },
-       set: function(newValue) {
-           drmplValue = newValue;
-           $('#menu input#drmpl').get(0).value = newValue;
-       }
+        get: function() {
+            return drmplValue;
+        },
+        set: function(newValue) {
+            drmplValue = newValue;
+            $('#menu input#drmpl').get(0).value = newValue;
+        }
     });
     //Adding Cluster Threshold control SET and GET
     let drmpl2Value = parseFloat($('#menu input#drmpl2').get(0).value);
 
     Object.defineProperty(opt$$module$synpdf, 'drmpl2', {
-       get: function() {
-           return drmpl2Value;
-       },
-       set: function(newValue) {
-           drmpl2Value = newValue;
-           $('#menu input#drmpl2').get(0).value = newValue;
-       }
+        get: function() {
+            return drmpl2Value;
+        },
+        set: function(newValue) {
+            drmpl2Value = newValue;
+            $('#menu input#drmpl2').get(0).value = newValue;
+        }
     });
     //Adding Barline Threshold control SET and GET
     let mtdrmplValue = parseFloat($('#menu input#mtdrmpl').get(0).value);
 
     Object.defineProperty(opt$$module$synpdf, 'mtdrmpl', {
-       get: function() {
-           return mtdrmplValue;
-       },
-       set: function(newValue) {
-           mtdrmplValue = newValue;
-           $('#menu input#mtdrmpl').get(0).value = newValue;
-       }
+        get: function() {
+            return mtdrmplValue;
+        },
+        set: function(newValue) {
+            mtdrmplValue = newValue;
+            $('#menu input#mtdrmpl').get(0).value = newValue;
+        }
     });
 });
 var module$synpdf = {

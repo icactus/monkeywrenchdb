@@ -1,81 +1,100 @@
 // Copyright (C) 2023-2024 Isaac Trapkus - All Rights Reserved.
 
-let currentInstrumentGlobal = 0 ;
-let currentRecordingGlobal = 0 ;
+let currentInstrumentGlobal = 0;
+let currentRecordingGlobal = 0;
 let currentMetricArrGlobal = 0;
-let canvasesGlobal = [] ;
-let currentDeTijdenIndex = 0 ;
-let currentMeasureIndex = 0 ;
-let newPlayerCue ;
-let startTime ;
-let currentCursorTime = 0 ;
-let bypassTickFlag = 0 ;
-let currentMeasureTime = 0 ;
-let newInstrumentTime2xFlag = 0 ;
-let scrollFlag = 0 ;
+let canvasesGlobal = [];
+let currentDeTijdenIndex = 0;
+let currentMeasureIndex = 0;
+let newPlayerCue;
+let startTime;
+let currentCursorTime = 0;
+let bypassTickFlag = 0;
+let currentMeasureTime = 0;
+let newInstrumentTime2xFlag = 0;
+let scrollFlag = 0;
 let globalHighlightColor = '#00d4ff';
 
 let currentGlobalScaleAmount = 100;
 
+const sheetMusicSvg = ` 
+<span class="sheet-music-icon">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="13"
+   height="15"
+   version="1.1"
+   id="svg411"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs415" />
+  <path
+     id="rect407"
+     d="m 1,14 h 11 v 1 H 1 Z m 11,-1 h 1 v 1 H 12 Z M 0,13 h 1 v 1 H 0 Z m 12,-1 h 1 v 1 H 12 Z M 0,12 h 1 v 1 H 0 Z m 12,-1 h 1 v 1 H 12 Z M 0,11 h 1 v 1 H 0 Z m 12,-1 h 1 v 1 H 12 Z M 2,10 h 8 v 1 H 2 Z m -2,0 h 1 v 1 H 0 Z M 12,9 h 1 v 1 H 12 Z M 0,9 h 1 v 1 H 0 Z M 12,8 h 1 V 9 H 12 Z M 0,8 H 1 V 9 H 0 Z M 12,7 h 1 V 8 H 12 Z M 2,7 h 8 V 8 H 2 Z M 0,7 H 1 V 8 H 0 Z M 12,6 h 1 V 7 H 12 Z M 0,6 H 1 V 7 H 0 Z M 12,5 h 1 V 6 H 12 Z M 0,5 H 1 V 6 H 0 Z M 8,4 h 5 V 5 H 8 Z M 2,4 H 6 V 5 H 2 Z M 0,4 H 1 V 5 H 0 Z M 12,3 h 1 V 4 H 12 Z M 8,3 H 9 V 4 H 8 Z M 0,3 H 1 V 4 H 0 Z M 11,2 h 1 V 3 H 11 Z M 8,2 H 9 V 3 H 8 Z M 0,2 H 1 V 3 H 0 Z M 10,1 h 1 V 2 H 10 Z M 8,1 H 9 V 2 H 8 Z M 0,1 H 1 V 2 H 0 Z M 1,0 h 9 V 1 H 1 Z"
+   fill="currentColor"/>
+</svg>
+</span>`
+
 //Color change for measure highlighting
 $("#favcolor").on("input", function() {
-  $(".demaat").css("background", $(this).val());
-  globalHighlightColor = this.value;
+    $(".demaat").css("background", $(this).val());
+    globalHighlightColor = this.value;
 });
 
 //color change reset button
 $("#reset-button").on("click", function() {
-  console.log('clicked');
-  $(".demaat").css("background", globalHighlightColor);
-  $("#favcolor").val(globalHighlightColor);
+    console.log('clicked');
+    $(".demaat").css("background", globalHighlightColor);
+    $("#favcolor").val(globalHighlightColor);
 });
 
 
 //Prevent resize with mousewheel on the notation section as this redisplays the advanced settings
 function stopWheelZoom(event) {
-  if (event.ctrlKey) {
-    event.preventDefault();
-  }
+    if (event.ctrlKey) {
+        event.preventDefault();
+    }
 }
 
 window.addEventListener('DOMContentLoaded', (event) => {
-  document.body.addEventListener('wheel', stopWheelZoom, { passive: false });
+    document.body.addEventListener('wheel', stopWheelZoom, { passive: false });
 });
 
 function setupPlayPauseButton() {
-  if (typeof ybplayer$$module$synpdf === 'undefined' || typeof ybplayer$$module$synpdf.getPlayerState !== 'function') {
-      // The YouTube Player is not ready yet, exit the function
-      return;
-  }
-  var playPauseButton = document.getElementById("play-pause-button");
-  playPauseButton.addEventListener("click", function() {
-      if (ybplayer$$module$synpdf.getPlayerState() == YT.PlayerState.PLAYING) {
-          ybplayer$$module$synpdf.pauseVideo();
-      } else {
-          ybplayer$$module$synpdf.playVideo();
-      }
-      // Update the play-pause button after a delay to ensure the player's state has changed
-      setTimeout(updatePlayPauseButton, 250);
-  });
-  // Ensure the correct button is displayed when the buttons are created
-  updatePlayPauseButton();
+    if (typeof ybplayer$$module$synpdf === 'undefined' || typeof ybplayer$$module$synpdf.getPlayerState !== 'function') {
+        // The YouTube Player is not ready yet, exit the function
+        return;
+    }
+    var playPauseButton = document.getElementById("play-pause-button");
+    playPauseButton.addEventListener("click", function() {
+        if (ybplayer$$module$synpdf.getPlayerState() == YT.PlayerState.PLAYING) {
+            ybplayer$$module$synpdf.pauseVideo();
+        } else {
+            ybplayer$$module$synpdf.playVideo();
+        }
+        // Update the play-pause button after a delay to ensure the player's state has changed
+        setTimeout(updatePlayPauseButton, 250);
+    });
+    // Ensure the correct button is displayed when the buttons are created
+    updatePlayPauseButton();
 }
 
 function updatePlayPauseButton() {
-  var playIcon = document.getElementById("play-icon");
-  var pauseIcon = document.getElementById("pause-icon");
-  if (ybplayer$$module$synpdf.getPlayerState() == YT.PlayerState.PLAYING) {
-      playIcon.style.display = "none";
-      pauseIcon.style.display = "flex";
-  } else {
-      playIcon.style.display = "flex";
-      pauseIcon.style.display = "none";
-  }
+    var playIcon = document.getElementById("play-icon");
+    var pauseIcon = document.getElementById("pause-icon");
+    if (ybplayer$$module$synpdf.getPlayerState() == YT.PlayerState.PLAYING) {
+        playIcon.style.display = "none";
+        pauseIcon.style.display = "flex";
+    } else {
+        playIcon.style.display = "flex";
+        pauseIcon.style.display = "none";
+    }
 }
 
 function toggleSettingsMenu() {
-  const settingsButton = document.getElementById("settings-button");
-  $("#help").toggleClass("showhlp");
+    const settingsButton = document.getElementById("settings-button");
+    $("#help").toggleClass("showhlp");
 }
 function toggleHelpLinkMenu() {
     const helpLink = document.getElementById("help-link");
@@ -84,46 +103,46 @@ function toggleHelpLinkMenu() {
 
 // HORIZONTAL FETCHINSTRUMENTS
 function fetchSearchByInstrument() {
-  $.ajax({
-    url: 'fetchinstruments_data.php',
-    method: 'GET',
-    success: function(response) {
-      var groups = JSON.parse(response);
+    $.ajax({
+        url: 'fetchinstruments_data.php',
+        method: 'GET',
+        success: function(response) {
+            var groups = JSON.parse(response);
 
-      // Get the container element where the links will be populated
-      var container = $('#instrument-links');
+            // Get the container element where the links will be populated
+            var container = $('#instrument-links');
 
-      // Clear any existing links
-      container.empty();
+            // Clear any existing links
+            container.empty();
 
-      // Populate the links dynamically
-      Object.keys(groups).forEach(function(groupId) {
-        var instruments = groups[groupId];
+            // Populate the links dynamically
+            Object.keys(groups).forEach(function(groupId) {
+                var instruments = groups[groupId];
 
-        instruments.sort(function(a,b) {
-            var aIds = a.instrument_ids.map(Number);
-            var bIds = b.instrument_ids.map(Number);
+                instruments.sort(function(a, b) {
+                    var aIds = a.instrument_ids.map(Number);
+                    var bIds = b.instrument_ids.map(Number);
 
-            return aIds[0] - bIds[0];
-        });
-        // Create a new div for each group
-        var groupDiv = $('<div class="instrument-group"></div>');
-        
-        // Create a new element for the group name and append it to the group div
-        var groupName = $('<h3></h3>').text(instruments[0].instrument_group_name);
-        groupDiv.append(groupName);
-        
-        instruments.forEach(function(instrument) {
-            // Append the instrument link with the total metric value in parentheses
-            groupDiv.append('<div class="instrument-link"><a href="#" class="instrument-link-a" data-id="' + instrument.instrument_ids + '">' + instrument.instrument_name + ' (' + instrument.total_metric_value + ')</a></div>');
-        });
-        
-        // Append the group div to the container
-        container.append(groupDiv);
-      });
-    
-    }
-  });
+                    return aIds[0] - bIds[0];
+                });
+                // Create a new div for each group
+                var groupDiv = $('<div class="instrument-group"></div>');
+
+                // Create a new element for the group name and append it to the group div
+                var groupName = $('<h3></h3>').text(instruments[0].instrument_group_name);
+                groupDiv.append(groupName);
+
+                instruments.forEach(function(instrument) {
+                    // Append the instrument link with the total metric value in parentheses
+                    groupDiv.append('<div class="instrument-link"><a href="#" class="instrument-link-a" data-id="' + instrument.instrument_ids + '">' + instrument.instrument_name + ' (' + instrument.total_metric_value + ')</a>' + sheetMusicSvg + '</div>');
+                });
+
+                // Append the group div to the container
+                container.append(groupDiv);
+            });
+
+        }
+    });
 }
 
 function fetchPieces(instrumentIds) {
@@ -165,7 +184,7 @@ function fetchPieces(instrumentIds) {
                 // Handle grouping and renaming based on instrumentName
                 var soloOrchestraKey = instrumentName + ' + Orchestra';
                 // When instrumentName is "Piano", group "Piano Accompaniment" and "Solo + Piano" together
-                var soloPianoKey = "Solo + Piano"; 
+                var soloPianoKey = "Solo + Piano";
 
                 if (instrumentName === "Piano") {
                     // Group "Orchestra" (renamed to "Piano Accompaniment") with "Solo + Piano"
@@ -233,7 +252,7 @@ function fetchPieces(instrumentIds) {
 
                     // Populate the links dynamically
                     orderedGroupedPieces[categoryName].forEach(function(piece) {
-                        container.append('<p><a href="#" class="pieces-link" data-id="' + piece.metric_arr_id + '" data-piece-id="' + piece.piece_id + '" data-instrument-id="' + instrumentIds + '">' + piece.composer_last + ' - ' + piece.piece_name + '</a></p>');
+                        container.append('<p><a href="#" class="pieces-link" data-id="' + piece.metric_arr_id + '" data-piece-id="' + piece.piece_id + '" data-instrument-id="' + instrumentIds + '">' + piece.composer_last + ' - ' + piece.piece_name + '(' + piece.total_recordings_value + ')♫</a></p>');
                     });
                 });
             }
@@ -267,298 +286,303 @@ function checkInstrumentParts(pieceId, instrumentIds, callback) {
 }
 
 function generateInstrumentsDropdown(recordingId) {
-  return new Promise(function(resolve, reject) {
-    var dropdown = document.getElementById("instruments-dropdown");
-    // Clear the menu but keep the default
-    dropdown.innerHTML = "";
-    var defaultOption = document.createElement("option");
-    defaultOption.textContent = "Select Instrument";
-    dropdown.appendChild(defaultOption);
+    return new Promise(function(resolve, reject) {
+        var dropdown = document.getElementById("instruments-dropdown");
+        // Clear the menu but keep the default
+        dropdown.innerHTML = "";
+        var defaultOption = document.createElement("option");
+        defaultOption.textContent = "Select Instrument";
+        dropdown.appendChild(defaultOption);
 
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", "get_recording_instruments.php?recordingId=" + recordingId, true);
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4) {
-        if (xhr.status === 200) {
-          var data = JSON.parse(xhr.responseText);
-          for (var i = 0; i < data.length; i++) {
-            var option = document.createElement("option");
-            option.value = data[i].instrument_id;
-            option.textContent = data[i].displayText;
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "get_recording_instruments.php?recordingId=" + recordingId, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    var data = JSON.parse(xhr.responseText);
+                    for (var i = 0; i < data.length; i++) {
+                        var option = document.createElement("option");
+                        option.value = data[i].instrument_id;
+                        option.textContent = data[i].displayText;
 
-            // Attach the full data as a data attribute
-            option.dataset.instrumentData = JSON.stringify(data[i]);
-            dropdown.appendChild(option);
-          }
-          resolve();
-        } else {
-          reject("Error: " + xhr.status);
-        }
-      }
-    };
-    xhr.onerror = function() {
-      reject("Error: Request failed");
-    };
-    xhr.send();
-  });
+                        // Attach the full data as a data attribute
+                        option.dataset.instrumentData = JSON.stringify(data[i]);
+                        dropdown.appendChild(option);
+                    }
+                    resolve();
+                } else {
+                    reject("Error: " + xhr.status);
+                }
+            }
+        };
+        xhr.onerror = function() {
+            reject("Error: Request failed");
+        };
+        xhr.send();
+    });
 }
 
 
 function fetchRecordings(metricArrId) {
-  return new Promise(function(resolve, reject) {
-    $.ajax({
-      url: 'fetchrecordings_data.php',
-      method: 'GET',
-      data: { metricArrId: metricArrId },
-      success: function(response) {
-        var recordingsDropdown = $('#recordings-dropdown');
-        recordingsDropdown.empty();
-        if (response === "No recordings found for the selected piece") {
-          $('#recordings-container').html('<p>No recordings found for the selected piece</p>');
-          reject("No recordings found");
-        } else {
-          var recordings = JSON.parse(response);
-          currentMetricArrGlobal = metricArrId;
-          var container = $('#recordings-container');
-          container.empty();
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: 'fetchrecordings_data.php',
+            method: 'GET',
+            data: { metricArrId: metricArrId },
+            success: function(response) {
+                var recordingsDropdown = $('#recordings-dropdown');
+                recordingsDropdown.empty();
+                if (response === "No recordings found for the selected piece") {
+                    $('#recordings-container').html('<p>No recordings found for the selected piece</p>');
+                    reject("No recordings found");
+                } else {
+                    var recordings = JSON.parse(response);
+                    currentMetricArrGlobal = metricArrId;
+                    var container = $('#recordings-container');
+                    container.empty();
 
-          recordingsDropdown.append('<option value="">Select Recording</option>');
-          //This part is necessary for instrument dropdown change because we need to refresh the measures_version info for each recording.
-          // Populate the links
-          recordings.forEach(function(recordingFullData) {
-            var conductorName = recordingFullData.conductor_name;
-            var ensembleName = recordingFullData.ensemble_name;
-            var year = recordingFullData.year;
-            
-            var linkText = conductorName +
-                (ensembleName ? ' - ' + ensembleName : '') +
-                (year ? ' - ' + year : '');
-            var link = $('<p><a href="#" class="recordings-link">' + linkText + '</a></p>');
-            link.children('a').data('recordingFullData', recordingFullData); // Attach the recording data to the <a> element
-            container.append(link);
-            var option = $('<option value="' + recordingFullData.recording_id + '">' + linkText + '</option>');
-            option.data('recordingFullData', recordingFullData);
-            recordingsDropdown.append(option);
-          });
+                    recordingsDropdown.append('<option value="">Select Recording</option>');
+                    //This part is necessary for instrument dropdown change because we need to refresh the measures_version info for each recording.
+                    // Populate the links
+                    recordings.forEach(function(recordingFullData) {
+                        var conductorName = recordingFullData.conductor_name;
+                        var ensembleName = recordingFullData.ensemble_name;
+                        var year = recordingFullData.year;
 
-          resolve(recordings); // Resolve the Promise with the recordings data
-        }
-      },
-      error: function(error) {
-        reject(error); // Reject the Promise with the error message
-      }
+                        var linkText = conductorName +
+                            (ensembleName ? ' - ' + ensembleName : '') +
+                            (year ? ' - ' + year : '');
+                        var link = $('<p><a href="#" class="recordings-link">' + linkText + '</a></p>');
+                        link.children('a').data('recordingFullData', recordingFullData); // Attach the recording data to the <a> element
+                        container.append(link);
+                        var option = $('<option value="' + recordingFullData.recording_id + '">' + linkText + '</option>');
+                        option.data('recordingFullData', recordingFullData);
+                        recordingsDropdown.append(option);
+                    });
+
+                    resolve(recordings); // Resolve the Promise with the recordings data
+                }
+            },
+            error: function(error) {
+                reject(error); // Reject the Promise with the error message
+            }
+        });
     });
-  });
 }
 
 //This version updates the recordings dropdown with new info when the instrument is changed but without regenerating it.
 //NEED TO GET RID OF THIS IF ONLY USING ONE MEASURES VERSION. LOOKS LIKE NEEDLESSLY REFETCHING RECORDING DATA.
 function updateRecordingsData(metricArrId) {
-  return new Promise(function(resolve, reject) {
-    $.ajax({
-      url: 'fetchrecordings_data.php',
-      method: 'GET',
-      data: { metricArrId: metricArrId },
-      success: function(response) {
-        if (response === "No recordings found for the selected piece") {
-          $('#recordings-container').html('<p>No recordings found for the selected piece</p>');
-          reject("No recordings found");
-        } else {
-          var recordings = JSON.parse(response);
-          var recordingsDropdown = $('#recordings-dropdown');
-          var options = recordingsDropdown.find('option');
-          // Update the data for each option, skipping the first one
-          options.each(function(index, option) {
-            if (index !== 0 && index-1 < recordings.length) { // Ensure there is a corresponding recording
-              var recordingFullData = recordings[index-1];
-              $(option).data('recordingFullData', recordingFullData);
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: 'fetchrecordings_data.php',
+            method: 'GET',
+            data: { metricArrId: metricArrId },
+            success: function(response) {
+                if (response === "No recordings found for the selected piece") {
+                    $('#recordings-container').html('<p>No recordings found for the selected piece</p>');
+                    reject("No recordings found");
+                } else {
+                    var recordings = JSON.parse(response);
+                    var recordingsDropdown = $('#recordings-dropdown');
+                    var options = recordingsDropdown.find('option');
+                    // Update the data for each option, skipping the first one
+                    options.each(function(index, option) {
+                        if (index !== 0 && index - 1 < recordings.length) { // Ensure there is a corresponding recording
+                            var recordingFullData = recordings[index - 1];
+                            $(option).data('recordingFullData', recordingFullData);
+                        }
+                    });
+                    resolve(recordings); // Resolve the Promise with the recordings data
+                }
+            },
+            error: function(error) {
+                reject(error); // Reject the Promise with the error message
             }
-          });
-          resolve(recordings); // Resolve the Promise with the recordings data
-        }
-      },
-      error: function(error) {
-        reject(error); // Reject the Promise with the error message
-      }
+        });
     });
-  });
 }
 
 function loadRecording(recordingFullData) {
-  return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve, reject) {
         console.log(recordingFullData);
-    document.title = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`;
-    //add title to composer-piece-name Div
-    let targetDiv = document.getElementById('composer-piece-name');
-    targetDiv.innerHTML = `<h3>${recordingFullData.composer_last} - ${recordingFullData.piece_name}</h3>` 
-    // Check if the data is already stored in local storage
-    let metricId = recordingFullData.metric_arr_id;
-    let recordingId = recordingFullData.recording_id;
-    currentRecordingFullData = recordingFullData; // CREATING THIS AS A GLOBAL VARIABLE FOR TESTING. NOT USED ELSEWHERE.
-    let storedId = metricId + '-' + recordingId;
-    let storedData = localStorage.getItem(storedId);
-    if (storedData) {
-      // If data exists in local storage, resolve the promise with the stored data
-      let alreadyStoredData = JSON.parse(storedData);
-      sendVarToSynpdf(alreadyStoredData); // Assign the variables if data is stored locally
-      resolve();
-    } else {
-        var pdfFileName = "./pdfs/" + recordingFullData.piece_id + "-" + recordingFullData.instrument_id + ".pdf";
-        recordingFullData.pdf_file_name = pdfFileName;
-        recordingFullData.timestamp = Date.now();
-        localStorage.setItem(storedId, JSON.stringify(recordingFullData));
-        sendVarToSynpdf(recordingFullData); 
-        resolve();
-      }
-  });
+        document.title = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`;
+        //add title to composer-piece-name Div
+        let targetDiv = document.getElementById('composer-piece-name');
+        targetDiv.innerHTML = `<h3>${recordingFullData.composer_last} - ${recordingFullData.piece_name}</h3>`
+        // Check if the data is already stored in local storage
+        let metricId = recordingFullData.metric_arr_id;
+        let recordingId = recordingFullData.recording_id;
+        currentRecordingFullData = recordingFullData; // CREATING THIS AS A GLOBAL VARIABLE FOR TESTING. NOT USED ELSEWHERE.
+        let storedId = metricId + '-' + recordingId;
+        let storedData = localStorage.getItem(storedId);
+        if (storedData) {
+            // If data exists in local storage, resolve the promise with the stored data
+            let alreadyStoredData = JSON.parse(storedData);
+            sendVarToSynpdf(alreadyStoredData); // Assign the variables if data is stored locally
+            resolve();
+        } else {
+            var pdfFileName = "./pdfs/" + recordingFullData.piece_id + "-" + recordingFullData.instrument_id + ".pdf";
+            recordingFullData.pdf_file_name = pdfFileName;
+            recordingFullData.timestamp = Date.now();
+            localStorage.setItem(storedId, JSON.stringify(recordingFullData));
+            sendVarToSynpdf(recordingFullData);
+            resolve();
+        }
+    });
 }
 
 
 function sendVarToSynpdf(recordingFullData) {
-  pdf_file$$module$synpdf = recordingFullData.pdf_file_name;
-  deMetriek$$module$synpdf = metric_arr$$module$synpdf = JSON.parse(recordingFullData.metric_arr_data);
-  deTijden$$module$synpdf = times_arr$$module$synpdf = JSON.parse(recordingFullData.times_arr_data);
-  offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
-  opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
+    pdf_file$$module$synpdf = recordingFullData.pdf_file_name;
+    deMetriek$$module$synpdf = metric_arr$$module$synpdf = JSON.parse(recordingFullData.metric_arr_data);
+    deTijden$$module$synpdf = times_arr$$module$synpdf = JSON.parse(recordingFullData.times_arr_data);
+    offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
+    opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
 }
 
 
 document.getElementById('invertButton').addEventListener('click', function() {
-  document.body.classList.toggle('inverted');
-  this.textContent = document.body.classList.contains('inverted') ? 'Light Mode' : 'Dark Mode';
-  
-  var img = document.getElementById('monkey-logo');
-  img.src = document.body.classList.contains('inverted') ? 'monkeydark.png' : 'monkeywrench-monkey100x100.png';
+    document.body.classList.toggle('inverted');
+    this.textContent = document.body.classList.contains('inverted') ? 'Light Mode' : 'Dark Mode';
+
+    var img = document.getElementById('monkey-logo');
+    img.src = document.body.classList.contains('inverted') ? 'monkeydark.png' : 'monkeywrench-monkey100x100.png';
 });
 
 function fetchNewInstrument(instrumentData) {
-  return new Promise((resolve, reject) => {
-    let recordingId;
-    if (currentRecordingGlobal) {
-      recordingId = currentRecordingGlobal;
-    } else {
-      console.log('no currentRecordingGlobal');
-      recordingId = instrumentData.recording_id;
-    }
-    let metricId = instrumentData.metric_arr_id;
-    currentMetricArrGlobal = metricId;
-    console.log('current metric arr ', currentMetricArrGlobal);
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", "get_new_instrument_data.php?recordingId=" + recordingId + "&metricId=" + metricId, true);
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4 && xhr.status === 200) {
-        let recordingFullData = JSON.parse(xhr.responseText);
-        resolve(recordingFullData);
-      } else if (xhr.readyState === 4) {
-        reject(xhr.status);
-      }
-    }
-    xhr.send();
-  });
+    return new Promise((resolve, reject) => {
+        let recordingId;
+        if (currentRecordingGlobal) {
+            recordingId = currentRecordingGlobal;
+        } else {
+            console.log('no currentRecordingGlobal');
+            recordingId = instrumentData.recording_id;
+        }
+        let metricId = instrumentData.metric_arr_id;
+        currentMetricArrGlobal = metricId;
+        console.log('current metric arr ', currentMetricArrGlobal);
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "get_new_instrument_data.php?recordingId=" + recordingId + "&metricId=" + metricId, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                let recordingFullData = JSON.parse(xhr.responseText);
+                resolve(recordingFullData);
+            } else if (xhr.readyState === 4) {
+                reject(xhr.status);
+            }
+        }
+        xhr.send();
+    });
 }
 
 function fetchNewRecording() {
-  return new Promise((resolve, reject) => {
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", "fetch_new_recording.php?recordingId=" + currentRecordingGlobal + "&InstrumentId=" + currentInstrumentGlobal, true);
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4 && xhr.status === 200) {
-        let newRecordingData = JSON.parse(xhr.responseText);
-        resolve(newRecordingData);
-      } else if (xhr.readyState === 4) {
-        reject(xhr.status);
-      }
-    }
-    xhr.send();
-  });
+    return new Promise((resolve, reject) => {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "fetch_new_recording.php?recordingId=" + currentRecordingGlobal + "&InstrumentId=" + currentInstrumentGlobal, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                let newRecordingData = JSON.parse(xhr.responseText);
+                resolve(newRecordingData);
+            } else if (xhr.readyState === 4) {
+                reject(xhr.status);
+            }
+        }
+        xhr.send();
+    });
 }
 
 $('#instruments-dropdown').change(function() {
-  resetShareLink();
-  const selectedOption = $(this).find('option:selected');
-  const instrumentData = selectedOption.data('instrumentData');
-  currentInstrumentGlobal = instrumentData.instrument_id;
-  document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
+    resetShareLink();
+    const selectedOption = $(this).find('option:selected');
+    const instrumentData = selectedOption.data('instrumentData');
+    currentInstrumentGlobal = instrumentData.instrument_id;
+    document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
 
-  fetchNewInstrument(instrumentData)
-    .then(recordingFullData => {
-      updateRecordingsData(instrumentData.metric_arr_id);
-      renderedCanvasesQueue = [];
-      renderingTasks = [];
-      canShowDemaat = false; // hiding demaat until pdf renders again
-      loadRecording(recordingFullData)
-        .then(function() {
-          msc_wz$$module$synpdf = [];
-          newInstrumentTime2xFlag = 1 ;
-          readPdf$$module$synpdf(pdf_file$$module$synpdf, "url");
-          scrollFlag = 1 ;
+    fetchNewInstrument(instrumentData)
+        .then(recordingFullData => {
+            updateRecordingsData(instrumentData.metric_arr_id);
+            renderedCanvasesQueue = [];
+            renderingTasks = [];
+            canShowDemaat = false; // hiding demaat until pdf renders again
+            loadRecording(recordingFullData)
+                .then(function() {
+                    msc_wz$$module$synpdf = [];
+                    newInstrumentTime2xFlag = 1;
+                    readPdf$$module$synpdf(pdf_file$$module$synpdf, "url");
+                    scrollFlag = 1;
+                })
+                .catch(error => {
+                    console.error(`Error loading recording: ${error}`);
+                });
         })
         .catch(error => {
-          console.error(`Error loading recording: ${error}`);
+            console.error(`Error fetching new instrument: ${error}`);
         });
-    })
-    .catch(error => {
-      console.error(`Error fetching new instrument: ${error}`);
-    });
 });
 
 
 $('#recordings-dropdown').change(function() {
-  resetShareLink();
-  const selectedOption = $(this).find('option:selected');
-  const recordingFullData = selectedOption.data('recordingFullData');
-  currentRecordingGlobal = recordingFullData.recording_id;
-  bypassTickFlag = 1 ;
+    resetShareLink();
+    const selectedOption = $(this).find('option:selected');
+    const recordingFullData = selectedOption.data('recordingFullData');
+    currentRecordingGlobal = recordingFullData.recording_id;
+    bypassTickFlag = 1;
 
-  fetchNewRecording()
-    .then(newRecordingData => {
-      deTijden$$module$synpdf = metric_arr$$module$synpdf = JSON.parse(newRecordingData.times_arr_data);
-      offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(newRecordingData.offset_js);
-      opt$$module$synpdf = { yubvid: newRecordingData.youtube_id };
-      //you need currentMeasureTime here and not just the detijden array measure match so that it's getting the first repeat if any.
-      findCurrentMeasureTime()
-        .then(() => {
-          newPlayerCue = (currentMeasureTime + offset$$module$synpdf + TOFF$$module$synpdf);
+    fetchNewRecording()
+        .then(newRecordingData => {
+            deTijden$$module$synpdf = metric_arr$$module$synpdf = JSON.parse(newRecordingData.times_arr_data);
+            offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(newRecordingData.offset_js);
+            opt$$module$synpdf = { yubvid: newRecordingData.youtube_id };
+            //you need currentMeasureTime here and not just the detijden array measure match so that it's getting the first repeat if any.
+            findCurrentMeasureTime()
+                .then(() => {
+                    newPlayerCue = (currentMeasureTime + offset$$module$synpdf + TOFF$$module$synpdf);
+                })
+                .catch((error) => {
+                    newPlayerCue = 0;
+                    // Handle the rejection
+                    console.error(error);
+                });
+            //calling to set currentMeasureTime in case current measure was played to and not clicked.
+            changeStartTime(newPlayerCue);
         })
-        .catch((error) => {
-          newPlayerCue = 0;
-          // Handle the rejection
-          console.error(error);
+        .catch(error => {
+            console.error(`Error fetching new recording: ${error}`);
         });
- //calling to set currentMeasureTime in case current measure was played to and not clicked.
-      changeStartTime(newPlayerCue);
-      })
-    .catch(error => {
-      console.error(`Error fetching new recording: ${error}`);
-    });
-    
+
 });
 
 
-$('#instrument-links').on('click', '.instrument-link-a', function() {
-  var instrumentId = $(this).data('id');
+$('#instrument-links').on('click', '.instrument-link-a', function(event) {
+    event.preventDefault();
+    var instrumentId = $(this).data('id');
 
-  var instrumentText = $(this).text();
-  var lastParenthesisPosition = instrumentText.lastIndexOf('(');
+    var instrumentText = $(this).text();
+    var lastParenthesisPosition = instrumentText.lastIndexOf('(');
 
-  if (lastParenthesisPosition !== -1) {
-      instrumentText = instrumentText.slice(0, lastParenthesisPosition).trim();
-  }
+    if (lastParenthesisPosition !== -1) {
+        instrumentText = instrumentText.slice(0, lastParenthesisPosition).trim();
+    }
 
-  var headingElement = $("#instruments-heading").children().first();
-  var newHeadingText = "Select Instrument: " + instrumentText;
-  headingElement.replaceWith(function() {
-    return $("<" + this.tagName + ">", { html: newHeadingText });
-  });
+    var headingElement = $("#instruments-heading").children().first();
+    var newHeadingText = "Select Instrument: " + instrumentText;
+    headingElement.replaceWith(function() {
+        return $("<" + this.tagName + ">", { html: newHeadingText });
+    });
 
-  //Clear previous pieces selection
-  var piecesHeadingElement = $("#pieces-heading").children().first();
+    //Clear previous pieces selection
+    var piecesHeadingElement = $("#pieces-heading").children().first();
 
-  var clearPiecesHeadingText = "Select Piece:"
-  piecesHeadingElement.replaceWith(function() {
-    return $("<" + this.tagName + ">", { html: clearPiecesHeadingText });
-  });
-  fetchPieces(instrumentId);
+    var clearPiecesHeadingText = "Select Piece:"
+    piecesHeadingElement.replaceWith(function() {
+        return $("<" + this.tagName + ">", { html: clearPiecesHeadingText });
+    });
+    fetchPieces(instrumentId);
+});
+// Make sure the click event propagates to the link when clicking the SVG
+$('#instrument-links').on('click', '.svg-icon', function(event) {
+    $(this).closest('.instrument-link').trigger('click');
 });
 
 $('#pieces-container').on('click', '.pieces-link', function(event) {
@@ -569,12 +593,12 @@ $('#pieces-container').on('click', '.pieces-link', function(event) {
     var pieceId = $(this).data('piece-id');
     var instrumentIds = $(this).data('instrument-id').toString();
     var clickedLink = $(this); // Store the clicked link for later use
-    
+
     var pieceText = $(this).text();
     var headingElement = $("#pieces-heading").children().first();
     var newHeadingText = "Select Piece: " + pieceText;
     headingElement.replaceWith(function() {
-      return $("<" + this.tagName + ">", { html: newHeadingText });
+        return $("<" + this.tagName + ">", { html: newHeadingText });
     });
     var handleData = function(data) {
         if (data.length === 1) {
@@ -625,7 +649,7 @@ function handleRecordingSelection(recordingFullData) {
     let section2 = document.querySelector('section2'); // same as above
     sidecontentbar.classList.add('sidecontentbar-min-height');
     section2.classList.add('section2-margin-top');
-    
+
     let recordingId = recordingFullData.recording_id;
     // Setting the global instrument and recording values for dropdown use
     currentInstrumentGlobal = recordingFullData.instrument_id;
@@ -633,21 +657,21 @@ function handleRecordingSelection(recordingFullData) {
     document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
 
     loadRecording(recordingFullData)
-    .then(function() {
-        msc_check_preload$$module$synpdf();
-        $("#sidecontent").show();
-        generateInstrumentsDropdown(recordingId)
         .then(function() {
-            $('#instruments-dropdown').val(currentInstrumentGlobal);
-            $('#recordings-dropdown').val(currentRecordingGlobal);
+            msc_check_preload$$module$synpdf();
+            $("#sidecontent").show();
+            generateInstrumentsDropdown(recordingId)
+                .then(function() {
+                    $('#instruments-dropdown').val(currentInstrumentGlobal);
+                    $('#recordings-dropdown').val(currentRecordingGlobal);
+                })
+                .catch(function(error) {
+                    console.error("An error occurred while generating instruments dropdown:", error);
+                });
         })
         .catch(function(error) {
-            console.error("An error occurred while generating instruments dropdown:", error);
+            console.error("An error occurred while loading recording:", error);
         });
-    })
-    .catch(function(error) {
-        console.error("An error occurred while loading recording:", error);
-    });
 }
 
 $('#recordings-container').on('click', '.recordings-link', function() {
@@ -661,7 +685,7 @@ const incrementButton = document.getElementById('incrementButton');
 const decrementButton = document.getElementById('decrementButton');
 const speedField = document.getElementById('speedField');
 
-let playbackSpeed = 1 ;
+let playbackSpeed = 1;
 
 function updateSpeedField() {
     speedField.value = (playbackSpeed.toFixed(2) + 'x');
@@ -671,18 +695,18 @@ function updateSpeedField() {
 updateSpeedField();
 
 function incrementSpeed() {
-    playbackSpeed = Math.round((playbackSpeed + 0.05) * 100) / 100 ;
+    playbackSpeed = Math.round((playbackSpeed + 0.05) * 100) / 100;
     if (playbackSpeed > 2) {
-      playbackSpeed = 2;
+        playbackSpeed = 2;
     }
     elmed$$module$synpdf.setPlaybackRate(playbackSpeed);
     updateSpeedField();
 }
 
 function decrementSpeed() {
-      playbackSpeed = Math.round((playbackSpeed - 0.05) * 100) / 100 ;
+    playbackSpeed = Math.round((playbackSpeed - 0.05) * 100) / 100;
     if (playbackSpeed < 0.25) {
-      playbackSpeed = 0.25;
+        playbackSpeed = 0.25;
     }
     elmed$$module$synpdf.setPlaybackRate(playbackSpeed);
     updateSpeedField();
@@ -692,31 +716,31 @@ incrementButton.addEventListener('click', incrementSpeed);
 decrementButton.addEventListener('click', decrementSpeed);
 
 function toggleFullscreen(event) {
-  // event.stopPropagation();
-  const notationDiv = document.getElementById("notation");
+    // event.stopPropagation();
+    const notationDiv = document.getElementById("notation");
 
-  if (!document.fullscreenElement) { // If not in fullscreen
-    if (notationDiv.requestFullscreen) {
-      notationDiv.requestFullscreen(); // Standard syntax
-    } else if (notationDiv.mozRequestFullScreen) { // Firefox
-      notationDiv.mozRequestFullScreen();
-    } else if (notationDiv.webkitRequestFullscreen) { // Chrome, Safari, and Opera
-      notationDiv.webkitRequestFullscreen();
-    } else if (notationDiv.msRequestFullscreen) { // IE/Edge
-      notationDiv.msRequestFullscreen();
-    }
+    if (!document.fullscreenElement) { // If not in fullscreen
+        if (notationDiv.requestFullscreen) {
+            notationDiv.requestFullscreen(); // Standard syntax
+        } else if (notationDiv.mozRequestFullScreen) { // Firefox
+            notationDiv.mozRequestFullScreen();
+        } else if (notationDiv.webkitRequestFullscreen) { // Chrome, Safari, and Opera
+            notationDiv.webkitRequestFullscreen();
+        } else if (notationDiv.msRequestFullscreen) { // IE/Edge
+            notationDiv.msRequestFullscreen();
+        }
 
-  } else { // If already in fullscreen
-    if (document.exitFullscreen) {
-      document.exitFullscreen(); // Standard syntax
-    } else if (document.mozCancelFullScreen) { // Firefox
-      document.mozCancelFullScreen();
-    } else if (document.webkitExitFullscreen) { // Chrome, Safari, and Opera
-      document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) { // IE/Edge
-      document.msExitFullscreen();
+    } else { // If already in fullscreen
+        if (document.exitFullscreen) {
+            document.exitFullscreen(); // Standard syntax
+        } else if (document.mozCancelFullScreen) { // Firefox
+            document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) { // Chrome, Safari, and Opera
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { // IE/Edge
+            document.msExitFullscreen();
+        }
     }
-  }
 }
 
 let currentOffsetX = 0;
@@ -725,20 +749,20 @@ let newOffsetX = 0;
 
 // RESIZE ALL CANVASES USING CSS
 function resizeDematenAndCanvas(scaleAmount) {
-  var canvas = document.getElementsByTagName('canvas')[0];
-  if (canvas) {
-      var notationDiv = document.getElementById("notation");
-      var canvasRect = canvas.getBoundingClientRect();
-      var notationDivRect = notationDiv.getBoundingClientRect();
-      currentOffsetX = (canvasRect.left - notationDivRect.left);
-      scaleCanvasElements(scaleAmount);
-      var newCanvasRect = canvas.getBoundingClientRect();
-      var newNotationDivRect = notationDiv.getBoundingClientRect();
-      newOffsetX = (newCanvasRect.left - newNotationDivRect.left);
-      let offsetX = newOffsetX - currentOffsetX;
-      deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount, offsetX);
-      msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
-  }
+    var canvas = document.getElementsByTagName('canvas')[0];
+    if (canvas) {
+        var notationDiv = document.getElementById("notation");
+        var canvasRect = canvas.getBoundingClientRect();
+        var notationDivRect = notationDiv.getBoundingClientRect();
+        currentOffsetX = (canvasRect.left - notationDivRect.left);
+        scaleCanvasElements(scaleAmount);
+        var newCanvasRect = canvas.getBoundingClientRect();
+        var newNotationDivRect = notationDiv.getBoundingClientRect();
+        newOffsetX = (newCanvasRect.left - newNotationDivRect.left);
+        let offsetX = newOffsetX - currentOffsetX;
+        deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount, offsetX);
+        msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
+    }
 }
 
 // THIS WILL SCALE THE DEMATEN ARRAY - scaleAmount NEEDS TO BE PERCENT SO 100, 125, 150
@@ -746,97 +770,97 @@ function resizeDematenAndCanvas(scaleAmount) {
 function scaleNestedArray(arr, scaleAmount, offsetX) {
     let counter = 0;
     return arr.map(function(item) {
-      if (Array.isArray(item)) {
-        return scaleNestedArray(item, scaleAmount, offsetX);
-      } else if (typeof item === 'object' && item !== null && ('x' in item || 'y' in item || 'w' in item || 'h' in item)) {
-        let xExample = ((item.x * (scaleAmount / 100)) );
-        if (counter === 0) {
-          counter++;
+        if (Array.isArray(item)) {
+            return scaleNestedArray(item, scaleAmount, offsetX);
+        } else if (typeof item === 'object' && item !== null && ('x' in item || 'y' in item || 'w' in item || 'h' in item)) {
+            let xExample = ((item.x * (scaleAmount / 100)));
+            if (counter === 0) {
+                counter++;
+            }
+            return {
+                x: xExample,
+                y: (item.y * (scaleAmount / 100)),
+                w: (item.w * (scaleAmount / 100)),
+                h: (item.h * (scaleAmount / 100))
+            };
+        } else {
+            return item;
         }
-        return {
-          x: xExample,
-          y: (item.y * (scaleAmount / 100)),
-          w: (item.w * (scaleAmount / 100)),
-          h: (item.h * (scaleAmount / 100))
-        };
-      } else {
-        return item;
-      }
-    }); 
+    });
 }
 
 
 // THIS SCALES THE CANVAS
 function scaleCanvasElements(scaleAmount) {
-  var canvases = document.getElementsByTagName('canvas');
-  for (var i = 0; i < canvases.length; i++) {
-    var canvas = canvases[i];
-    var currentWidth = canvas.style.width;
-    var currentHeight = canvas.style.height;
-    canvas.style.width = (parseFloat(currentWidth) * (scaleAmount / 100)) + 'px';
-    canvas.style.height = (parseFloat(currentHeight) * (scaleAmount / 100)) + 'px';
-    // canvas.style.marginLeft = 'auto';
-    // canvas.style.marginRight = 'auto';
-  }
+    var canvases = document.getElementsByTagName('canvas');
+    for (var i = 0; i < canvases.length; i++) {
+        var canvas = canvases[i];
+        var currentWidth = canvas.style.width;
+        var currentHeight = canvas.style.height;
+        canvas.style.width = (parseFloat(currentWidth) * (scaleAmount / 100)) + 'px';
+        canvas.style.height = (parseFloat(currentHeight) * (scaleAmount / 100)) + 'px';
+        // canvas.style.marginLeft = 'auto';
+        // canvas.style.marginRight = 'auto';
+    }
 }
 
 //DEBOUNCE FOR WINDOW RESIZE AND POSSIBLY OTHER PLACES
 function debounce(func, wait) {
-  var timeout;
-  return function() {
-      var context = this, args = arguments;
-      var later = function() {
-          timeout = null;
-          func.apply(context, args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-  };
+    var timeout;
+    return function() {
+        var context = this, args = arguments;
+        var later = function() {
+            timeout = null;
+            func.apply(context, args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
 //  RESIZE CANVAS AND DEMATEN WHEN WINDOW CHANGES INCLUDING FULLSCREEN AND MOBILE ROTATION
 function resizeCanvasTrigger() {
-  var previousWidth = $("#notation").width(); 
+    var previousWidth = $("#notation").width();
 
-  $(window).off("resize").on("resize", debounce(function() {
+    $(window).off("resize").on("resize", debounce(function() {
 
-      var newWidth = $("#notation").width();
-      var scaleAmount = (newWidth / previousWidth) * 100;
-      resizeDematenAndCanvas(scaleAmount);
-      previousWidth = newWidth;
-  }, 100)); // 100 ms debounce
+        var newWidth = $("#notation").width();
+        var scaleAmount = (newWidth / previousWidth) * 100;
+        resizeDematenAndCanvas(scaleAmount);
+        previousWidth = newWidth;
+    }, 100)); // 100 ms debounce
 }
 
 function resizePageFitToHeight() {
-  // Get the current displayed height of the #notation div
-  var notationDiv = document.getElementById("notation");
-  var rect = notationDiv.getBoundingClientRect();
-  var displayedHeight = rect.bottom - rect.top;
+    // Get the current displayed height of the #notation div
+    var notationDiv = document.getElementById("notation");
+    var rect = notationDiv.getBoundingClientRect();
+    var displayedHeight = rect.bottom - rect.top;
 
-  // Get the height of the first canvas element
-  var canvases = document.getElementsByTagName('canvas');
-  var firstCanvasHeight = canvases[0].clientHeight;
+    // Get the height of the first canvas element
+    var canvases = document.getElementsByTagName('canvas');
+    var firstCanvasHeight = canvases[0].clientHeight;
 
-  // Calculate the scale amount
-  var scaleAmount = (displayedHeight / firstCanvasHeight) * 100;
+    // Calculate the scale amount
+    var scaleAmount = (displayedHeight / firstCanvasHeight) * 100;
 
-  // Resize the canvas and dematen
-  resizeDematenAndCanvas(scaleAmount);
+    // Resize the canvas and dematen
+    resizeDematenAndCanvas(scaleAmount);
 }
 function resizePageFitToWidth() {
-  // Get the current width of the #notation div
-  var notationDiv = document.getElementById("notation");
-  var currentWidth = notationDiv.clientWidth;
+    // Get the current width of the #notation div
+    var notationDiv = document.getElementById("notation");
+    var currentWidth = notationDiv.clientWidth;
 
-  // Get the width of the first canvas element
-  var canvases = document.getElementsByTagName('canvas');
-  var firstCanvasWidth = canvases[0].clientWidth;
+    // Get the width of the first canvas element
+    var canvases = document.getElementsByTagName('canvas');
+    var firstCanvasWidth = canvases[0].clientWidth;
 
-  // Calculate the scale amount
-  var scaleAmount = (currentWidth / firstCanvasWidth) * 100;
+    // Calculate the scale amount
+    var scaleAmount = (currentWidth / firstCanvasWidth) * 100;
 
-  // Resize the canvas and dematen
-  resizeDematenAndCanvas(scaleAmount);
+    // Resize the canvas and dematen
+    resizeDematenAndCanvas(scaleAmount);
 }
 
 //HOMEPAGE COLLAPSIBLES
@@ -901,38 +925,38 @@ $(document).ready(function() {
 
     // check for URL parameters 
     if (urlMetricArrId && urlRecordingId) {
-            //set global variables
-            currentMetricArrGlobal = urlMetricArrId;
-            currentRecordingGlobal = urlRecordingId;
-        
+        //set global variables
+        currentMetricArrGlobal = urlMetricArrId;
+        currentRecordingGlobal = urlRecordingId;
+
         // Fetch recordings based on the Metric Arrangement ID
         fetchRecordings(urlMetricArrId)
-        .then(recordings => {
-            // Find the specific recording data from the list of recordings
-            const recordingFullData = recordings.find(rec => rec.recording_id.toString() === urlRecordingId);
-            if (recordingFullData) {
-                // Handle the selection of a specific recording
-                handleRecordingSelection(recordingFullData);
-            } else {
-                console.error('Recording not found with the provided ID:', urlRecordingId);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching recordings:', error);
-        });
-    } 
+            .then(recordings => {
+                // Find the specific recording data from the list of recordings
+                const recordingFullData = recordings.find(rec => rec.recording_id.toString() === urlRecordingId);
+                if (recordingFullData) {
+                    // Handle the selection of a specific recording
+                    handleRecordingSelection(recordingFullData);
+                } else {
+                    console.error('Recording not found with the provided ID:', urlRecordingId);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching recordings:', error);
+            });
+    }
 
     //SHARE BUTTON
     document.getElementById('shareButton').addEventListener('click', function() {
 
-        const metricArrId = currentMetricArrGlobal;  
-        const recordingId = currentRecordingGlobal; 
+        const metricArrId = currentMetricArrGlobal;
+        const recordingId = currentRecordingGlobal;
 
         if (metricArrId && recordingId) {
             // Dynamically construct the base URL using the current window location
-            const protocol = window.location.protocol; 
-            const host = window.location.host; 
-            const path = '/index.php'; 
+            const protocol = window.location.protocol;
+            const host = window.location.host;
+            const path = '/index.php';
 
             const baseUrl = `${protocol}//${host}${path}`;
 

@@ -23,7 +23,7 @@ var opt$$module$synpdf, times_arr$$module$synpdf, offset_js$$module$synpdf, pdf_
     rendering$$module$synpdf = 0,
     doresize$$module$synpdf = 0,
     resizeTimer$$module$synpdf = -1,
-    gFac$$module$synpdf, mediaFnm$$module$synpdf, pdfFnm$$module$synpdf, scoreFnm$$module$synpdf, bottomSpace$$module$synpdf = 500,
+    mediaFnm$$module$synpdf, pdfFnm$$module$synpdf, scoreFnm$$module$synpdf, bottomSpace$$module$synpdf = 500,
     touch_tb$$module$synpdf,
     touch_moved$$module$synpdf = 0,
     touchDev$$module$synpdf = void 0,
@@ -84,17 +84,18 @@ function initPreload$$module$synpdf() {
 
 function initGlobals$$module$synpdf() {
     offset$$module$synpdf = offset_js$$module$synpdf || 0; // need this =offsetjs || part otherwise offset stays 0 on instrument swap
-    gFac$$module$synpdf = .1;
     pdfDoc$$module$synpdf = {};
     jpgData$$module$synpdf = pdfData$$module$synpdf = null;
-    (deTijden$$module$synpdf = times_arr$$module$synpdf ? times_arr$$module$synpdf : []) && deTijden$$module$synpdf.length && deTijden$$module$synpdf[0].length && (deTijden$$module$synpdf = deTijden$$module$synpdf.reduce(function(a, b) {
-        return a.concat(b.slice(1))
-    }), deTijden$$module$synpdf = deTijden$$module$synpdf.map(function(a, b) {
-        return {
-            t: a,
-            mix: b
-        }
-    }));
+    //replacing below since deTijden seems always equal to times_arr outside editmode
+    deTijden$$module$synpdf = times_arr$$module$synpdf;
+    //    (deTijden$$module$synpdf = times_arr$$module$synpdf ? times_arr$$module$synpdf : []) && deTijden$$module$synpdf.length && deTijden$$module$synpdf[0].length && (deTijden$$module$synpdf = deTijden$$module$synpdf.reduce(function(a, b) {
+    //        return a.concat(b.slice(1))
+    //    }), deTijden$$module$synpdf = deTijden$$module$synpdf.map(function(a, b) {
+    //        return {
+    //            t: a,
+    //            mix: b
+    //        }
+    //    }));
     detix$$module$synpdf =
         0;
     lastSynced$$module$synpdf = -2 == opt$$module$synpdf.lastSynced ? deTijden$$module$synpdf.length - 1 : opt$$module$synpdf.lastSynced;
@@ -584,30 +585,30 @@ function readPdfdoc$$module$synpdf() {
     });
 }
 
-function readPdf$$module$synpdf(pdfData, b) {
+function readPdf$$module$synpdf(pdfData, dataType) {
     initGlobals$$module$synpdf();
 
     var pdfCopy = pdfData,
         d;
 
     // Check if the URL points to a JPEG image if the type is "url"
-    if (b === "url") {
+    if (dataType === "url") {
         d = /jpe?g$/i.test(pdfCopy);
     }
 
     // Convert to Uint8Array if the type is "pdfbin"
-    if (b === "pdfbin") {
+    if (dataType === "pdfbin") {
         pdfData = new Uint8Array(pdfData);
     }
     // Handle JPEG binary data
-    if (b === "jpgbin") {
+    if (dataType === "jpgbin") {
         jpgData = new Uint8Array(pdfData);
-        b = "url";
+        dataType = "url";
         pdfCopy = new Blob([pdfData], { type: "image/jpeg" });
         pdfCopy = URL.createObjectURL(pdfCopy);
     }
     // Load the document as an Image if the type is "url" and it's a JPEG or Blob URL
-    if (b === "url" && (d || /^blob:/.test(pdfCopy))) {
+    if (dataType === "url" && (d || /^blob:/.test(pdfCopy))) {
         pdfDoc$$module$synpdf = new Image();
         pdfDoc$$module$synpdf.crossOrigin = "anonymous";
         pdfDoc$$module$synpdf.src = pdfCopy;
@@ -643,8 +644,6 @@ function readPdf$$module$synpdf(pdfData, b) {
                 }
 
                 // Update progress bar
-                const progressBar = document.getElementById('progress-bar');
-                progressBar.value = percentComplete;
 
                 // Update progress info
                 const progressInfo = document.getElementById('progress-info');
