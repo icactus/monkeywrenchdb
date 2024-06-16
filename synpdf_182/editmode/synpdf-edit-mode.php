@@ -304,11 +304,16 @@ html {
 
                         <textarea name="metric_arr_data" placeholder="Paste metric arr data here..."></textarea>
                         <input type="file" id="fknp2" name="file" accept=".pdf" tabindex="1" required/>
-                        <button type="button" id="uploadButton">Upload File</button>
                         <input type="submit" value="Submit" />
                     </div>
                 </form>
-
+                <!-- test upload -->
+                <form action="upload_test.php" method="post" enctype="multipart/form-data">
+                        <label for="file">Choose file to upload:</label>
+                        <input type="file" name="file" id="file" required>
+                        <br><br>
+                        <input type="submit" value="Upload File">
+                    </form>
                 <!-- add recording -->
                 <form class="inputform" id="addnewrecordingform" method="POST">
                     <div style="display:flex;">
