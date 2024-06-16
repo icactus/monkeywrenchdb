@@ -716,6 +716,11 @@ function frontT(startIndex, endIndex) {
     }
 }
 
+document.getElementById('addnewmetricform').addEventListener('submit', function() {
+    const originalFileInput = document.getElementById('fknp');
+    const hiddenFileInput = document.getElementById('hiddenFileInput');
+    hiddenFileInput.files = originalFileInput.files;
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('goto-measure-form').addEventListener('submit', function(event) {

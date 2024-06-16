@@ -163,7 +163,7 @@ html {
     <section1>
         <div id="buttons">
             <div id="medbts">
-                <label><span id="pdflbl">pdf file: </span><div id="pdffile"><input type="file" id="fknp" accept=".pdf,.js,.jpg" tabindex="1"/></div></label>
+                <label><span id="pdflbl">pdf file: </span><div id="pdffile"><input type="file" id="fknp" name="file" accept=".pdf,.js,.jpg" tabindex="1"/></div></label>
                 <label id="medlbl">media file: <div id="mediafile"><input type="file" id="mknp" accept="audio/*, video/*" tabindex="2"/></div></label>
                 <label id="yvdlbl">youtube id: <div id="yubfile">
                     <input type="text" id="yubid" size="11" value="qx-ymShyfIk" title="11 characters" pattern="[A-Za-z0-9\-_]{11}"/>
