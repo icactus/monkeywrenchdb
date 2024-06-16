@@ -777,29 +777,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert("An error occurred: " + error.message);
             });
     });
-    document.getElementById('addnewmetricform').addEventListener('submit', function(event) {
-        // Prevent the form from submitting immediately
-        event.preventDefault();
-
-        const originalFileInput = document.getElementById('fknp');
-        const form = event.target;
-
-        // Create a new file input element and copy the original file input's files to it
-        const hiddenFileInput = document.createElement('input');
-        hiddenFileInput.type = 'file';
-        hiddenFileInput.name = originalFileInput.name;
-        hiddenFileInput.files = originalFileInput.files;
-        hiddenFileInput.style.display = 'none';
-
-        // Append the new file input to the form
-        form.appendChild(hiddenFileInput);
-
-        // Remove the original file input to avoid duplication
-        originalFileInput.remove();
-
-        // Submit the form
-        form.submit();
-    });
 });
 
 document.querySelectorAll('input[type="text"], textarea').forEach(function(input) {

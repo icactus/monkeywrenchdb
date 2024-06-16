@@ -303,7 +303,8 @@ html {
                         <input type="hidden" name="measures_version" value="1" />
 
                         <textarea name="metric_arr_data" placeholder="Paste metric arr data here..."></textarea>
-                        <input type="hidden" id="hiddenFileInput" name="file"/>
+                        <input type="file" id="fknp2" name="file" accept=".pdf" tabindex="1" required/>
+                        <button type="button" id="uploadButton">Upload File</button>
                         <input type="submit" value="Submit" />
                     </div>
                 </form>
@@ -400,7 +401,7 @@ html {
         </div>
     <!--</div> -->
 <!-- </div> -->
-<script src="edit-mode-tools.js?v=16"></script>
+<script src="edit-mode-tools.js?v=17"></script>
 
 </body>
 </html>
