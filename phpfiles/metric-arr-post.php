@@ -10,10 +10,6 @@ if ($mysqli->connect_error) {
     die("Connection failed: " . $mysqli->connect_error);
 }
 
-function log_message($message) {
-    error_log($message, 3, "/path/to/your/logfile.log");  // Change the path to your log file
-}
-
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Collect form data
     $piece_id = $_POST['piece_id'];
