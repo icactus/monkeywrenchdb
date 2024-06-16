@@ -20,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Check if file was uploaded
     if (isset($_FILES['file']) && $_FILES['file']['error'] == UPLOAD_ERR_OK) {
         // Specify the target directory
-        $target_dir = "../public_html/pdfs/";
+        $target_dir = "../pdfs/";
         $target_file = $target_dir . basename($_FILES["file"]["name"]);
         $uploadOk = 1;
         $fileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
