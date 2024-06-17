@@ -134,7 +134,7 @@ function fetchSearchByInstrument() {
 
                 instruments.forEach(function(instrument) {
                     // Append the instrument link with the total metric value in parentheses
-                    groupDiv.append('<div class="instrument-link"><a href="#" class="instrument-link-a" data-id="' + instrument.instrument_ids + '">' + instrument.instrument_name + ' (' + instrument.total_metric_value + ')</a>' + sheetMusicSvg + '</div>');
+                    groupDiv.append('<div class="instrument-link"><a href="#" class="instrument-link-a" data-id="' + instrument.instrument_ids + '">' + instrument.instrument_name + '</a> (' + instrument.total_metric_value + ')' + sheetMusicSvg + '</div>');
                 });
 
                 // Append the group div to the container
@@ -252,7 +252,7 @@ function fetchPieces(instrumentIds) {
 
                     // Populate the links dynamically
                     orderedGroupedPieces[categoryName].forEach(function(piece) {
-                        container.append('<p><a href="#" class="pieces-link" data-id="' + piece.metric_arr_id + '" data-piece-id="' + piece.piece_id + '" data-instrument-id="' + instrumentIds + '">' + piece.composer_last + ' - ' + piece.piece_name + '(' + piece.total_recordings_value + ')♫</a></p>');
+                        container.append('<p><a href="#" class="pieces-link" data-id="' + piece.metric_arr_id + '" data-piece-id="' + piece.piece_id + '" data-instrument-id="' + instrumentIds + '">' + piece.composer_last + ' - ' + piece.piece_name + '</a> (' + piece.total_recordings_value + ')♫</p>');
                     });
                 });
             }
@@ -587,7 +587,6 @@ $('#instrument-links').on('click', '.svg-icon', function(event) {
 
 $('#pieces-container').on('click', '.pieces-link', function(event) {
     event.preventDefault();
-    // Stop propagation immediately to handle it manually later
     event.stopPropagation();
 
     var pieceId = $(this).data('piece-id');

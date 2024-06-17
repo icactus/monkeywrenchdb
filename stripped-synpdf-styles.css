@@ -61,8 +61,17 @@ canvas    { display: block; }
 a {
     text-decoration: none;
 }
-a:hover {
-    text-decoration: underline;
+#notation a:link {
+    color:blue;
+}
+#notation a:hover {
+    background-color:#00d4ff33;
+}
+#notation a:visited {
+    color:blue;
+}
+#notation a:active {
+    color:blue;
 }
 
 #header {
