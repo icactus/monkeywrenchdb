@@ -972,7 +972,7 @@ $(document).ready(function() {
             document.getElementById('shareLink').value = fullUrl;
             console.log('Share link generated:', fullUrl);
 
-            nagivator.clipboard.writeText(fullUrl).catch(err => {
+            navigator.clipboard.writeText(fullUrl).catch(err => {
                 console.log('Failed to copy link', err);
             });
         } else {
