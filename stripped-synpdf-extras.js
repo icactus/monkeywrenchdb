@@ -57,7 +57,7 @@ function stopWheelZoom(event) {
     }
 }
 
-window.addEventListener('DOMContentLoaded', (event) => {
+window.addEventListener('DOMContentLoaded', () => {
     document.body.addEventListener('wheel', stopWheelZoom, { passive: false });
 });
 
@@ -972,9 +972,9 @@ $(document).ready(function() {
             document.getElementById('shareLink').value = fullUrl;
             console.log('Share link generated:', fullUrl);
 
-            // Optional: Automatically select and copy the link to the clipboard
-            document.getElementById('shareLink').select();
-            document.execCommand('copy');
+            nagivator.clipboard.writeText(fullUrl).catch(err => {
+                console.log('Failed to copy link', err);
+            });
         } else {
             console.error("Missing parameters. Unable to generate share link.");
         }
