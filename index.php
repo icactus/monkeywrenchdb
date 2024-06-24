@@ -175,6 +175,7 @@
                 </table>
                 Helpful Info:<ul>
                 <li>This site is under heavy contruction and it's just me so please be patient with improvements!</li>
+                <li>Best on Desktop or tablet - older mobile devices may have problems displaying full scores.</li>
                 <li>Eventually there will be some way to request/vote on new pieces and eventually user contributions.</li>
                 <li>Site runs best on Chrome/Safari. Firefox can be buggy.</li>
                 <li>Click on sheet music first before using arrow keys to navigate. Otherwise the arrow keys will control the YouTube player.

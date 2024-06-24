@@ -982,4 +982,3 @@ $(document).ready(function() {
     fetchSearchByInstrument();
     resizeCanvasTrigger();
 });
-
