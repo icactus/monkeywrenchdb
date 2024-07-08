@@ -76,19 +76,19 @@
             </div>
             <div class="notation" id="notation"><!--width needed for editmode pixel mapping -->
                 <div class="collapsible">
-                    <div class="search-heading" id="instruments-heading"><h2>Select Instrument</h2></div>
+                    <div class="search-heading" id="instruments-heading"><h2>1. Select Instrument</h2></div>
                     <div class="search-content instrument-container" id="instrument-links">
                         
                     </div>
                 </div>
                 <div class="collapsible">
-                    <div class="search-heading" id="pieces-heading"><h2>Select Piece</h2></div>
+                    <div class="search-heading" id="pieces-heading"><h2>2. Select Piece</h2></div>
                     <div class="search-content" id="pieces-container">
 
                     </div>
                 </div>
                 <div class="collapsible">
-                    <div class="search-heading" id="recordings-heading"><h2>Select Recording</h2></div>
+                    <div class="search-heading" id="recordings-heading"><h2>3. Select Recording</h2></div>
                     <div class="search-content" id="recordings-container">
 
                     </div>
