@@ -407,25 +407,28 @@ function loadRecording(recordingFullData) {
     return new Promise(function(resolve, reject) {
         console.log(recordingFullData);
         document.title = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`;
-        //add title to composer-piece-name Div
+        // Add title to composer-piece-name Div
         let targetDiv = document.getElementById('composer-piece-name');
-        targetDiv.innerHTML = `<h3>${recordingFullData.composer_last} - ${recordingFullData.piece_name}</h3>`
-        // Check if the data is already stored in local storage
+        targetDiv.innerHTML = `<h3>${recordingFullData.composer_last} - ${recordingFullData.piece_name}</h3>`;
+
+        // Create a unique ID for the recording
         let metricId = recordingFullData.metric_arr_id;
         let recordingId = recordingFullData.recording_id;
-        currentRecordingFullData = recordingFullData; // CREATING THIS AS A GLOBAL VARIABLE FOR TESTING. NOT USED ELSEWHERE.
+        currentRecordingFullData = recordingFullData; // Global variable for testing
         let storedId = metricId + '-' + recordingId;
-        let storedData = localStorage.getItem(storedId);
+
+        // Check if the data is already stored in the cache
+        let storedData = cache[storedId];
         if (storedData) {
-            // If data exists in local storage, resolve the promise with the stored data
-            let alreadyStoredData = JSON.parse(storedData);
-            sendVarToSynpdf(alreadyStoredData); // Assign the variables if data is stored locally
+            // If data exists in cache, resolve the promise with the cached data
+            sendVarToSynpdf(storedData); // Assign the variables if data is cached
             resolve();
         } else {
+            // If data does not exist in cache, fetch and store it
             var pdfFileName = "./pdfs/" + recordingFullData.piece_id + "-" + recordingFullData.instrument_id + ".pdf";
             recordingFullData.pdf_file_name = pdfFileName;
             recordingFullData.timestamp = Date.now();
-            localStorage.setItem(storedId, JSON.stringify(recordingFullData));
+            cache[storedId] = recordingFullData; // Store in cache
             sendVarToSynpdf(recordingFullData);
             resolve();
         }
@@ -566,7 +569,7 @@ $('#instrument-links').on('click', '.instrument-link-a', function(event) {
     }
 
     var headingElement = $("#instruments-heading").children().first();
-    var newHeadingText = "Select Instrument: " + instrumentText;
+    var newHeadingText = "1. Select Instrument: " + instrumentText;
     headingElement.replaceWith(function() {
         return $("<" + this.tagName + ">", { html: newHeadingText });
     });
@@ -574,7 +577,7 @@ $('#instrument-links').on('click', '.instrument-link-a', function(event) {
     //Clear previous pieces selection
     var piecesHeadingElement = $("#pieces-heading").children().first();
 
-    var clearPiecesHeadingText = "Select Piece:"
+    var clearPiecesHeadingText = "2. Select Piece:"
     piecesHeadingElement.replaceWith(function() {
         return $("<" + this.tagName + ">", { html: clearPiecesHeadingText });
     });
