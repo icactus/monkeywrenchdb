@@ -403,6 +403,8 @@ function updateRecordingsData(metricArrId) {
     });
 }
 
+
+let recordingCache = {};
 function loadRecording(recordingFullData) {
     return new Promise(function(resolve, reject) {
         console.log(recordingFullData);
@@ -418,7 +420,7 @@ function loadRecording(recordingFullData) {
         let storedId = metricId + '-' + recordingId;
 
         // Check if the data is already stored in the cache
-        let storedData = cache[storedId];
+        let storedData = recordingCache[storedId];
         if (storedData) {
             // If data exists in cache, resolve the promise with the cached data
             sendVarToSynpdf(storedData); // Assign the variables if data is cached
@@ -428,7 +430,7 @@ function loadRecording(recordingFullData) {
             var pdfFileName = "./pdfs/" + recordingFullData.piece_id + "-" + recordingFullData.instrument_id + ".pdf";
             recordingFullData.pdf_file_name = pdfFileName;
             recordingFullData.timestamp = Date.now();
-            cache[storedId] = recordingFullData; // Store in cache
+            recordingCache[storedId] = recordingFullData;
             sendVarToSynpdf(recordingFullData);
             resolve();
         }
