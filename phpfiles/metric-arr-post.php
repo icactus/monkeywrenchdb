@@ -17,6 +17,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $measures_version = $_POST['measures_version'];
     $metric_arr_data = $_POST['metric_arr_data'];
 
+    // Debugging outputs
+    echo "Piece ID: " . htmlspecialchars($piece_id) . "<br>";
+    echo "Instrument ID: " . htmlspecialchars($instrument_id) . "<br>";
+    echo "Measures Version: " . htmlspecialchars($measures_version) . "<br>";
+    echo "Metric Array Data: " . htmlspecialchars($metric_arr_data) . "<br>";
+
     // Initialize a flag to track the upload status
     $fileUploadStatus = false;
 
@@ -30,31 +36,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Check file size (limit to 50MB)
         if ($_FILES["file"]["size"] > 50000000) {
-            echo "Sorry, your file is too large.";
+            echo "Sorry, your file is too large.<br>";
             $uploadOk = 0;
         }
 
         // Allow certain file formats
         $allowedFileTypes = ['pdf'];
         if (!in_array($fileType, $allowedFileTypes)) {
-            echo "Sorry, only PDF files are allowed.";
+            echo "Sorry, only PDF files are allowed.<br>";
             $uploadOk = 0;
         }
 
         // Check if file already exists
         if (file_exists($target_file)) {
-            echo "Sorry, file already exists. File not uploaded.";
+            echo "Sorry, file already exists. File not uploaded.<br>";
             $uploadOk = 0;
         }
 
         if ($uploadOk == 0) {
-            echo "Sorry, your file was not uploaded.";
+            echo "Sorry, your file was not uploaded.<br>";
         } else {
             // Attempt to move the uploaded file to the target directory
             if (move_uploaded_file($_FILES["file"]["tmp_name"], $target_file)) {
                 $fileUploadStatus = true;
+                echo "The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.<br>";
             } else {
-                echo "Sorry, there was an error uploading your file.";
+                echo "Sorry, there was an error uploading your file.<br>";
             }
         }
     }
@@ -63,6 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $mysqli->begin_transaction();
 
     if (isset($_POST['update'])) {
+        echo "Update route triggered.<br>";
         // Update existing data
         $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? WHERE piece_id = ? AND instrument_id = ?";
         $stmt = $mysqli->prepare($updateQuery);
@@ -71,21 +79,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($stmt->affected_rows === 0) {
             // If the update did not affect any rows, it means the entry does not exist
-            echo 'Error: No matching record found to update.';
+            echo 'Error: No matching record found to update.<br>';
             $stmt->close();
             // Roll back the transaction
             $mysqli->rollback();
         } else {
             // Commit the transaction
             $mysqli->commit();
-            echo "The data has been updated.";
+            echo "The data has been updated.<br>";
 
             if ($fileUploadStatus) {
-                echo " The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.";
+                echo " The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.<br>";
             }
             $stmt->close();
         }
     } elseif (isset($_POST['submit'])) {
+        echo "Submit route triggered.<br>";
         // Insert new data
         $insertQuery = "INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data) VALUES (?, ?, ?, ?)";
         $stmt = $mysqli->prepare($insertQuery);
@@ -94,17 +103,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($stmt->affected_rows === 0) {
             // Error in insertion
-            echo 'Error in insertion: ' . $stmt->error;
+            echo 'Error in insertion: ' . $stmt->error . "<br>";
             $stmt->close();
             // Roll back the transaction
             $mysqli->rollback();
         } else {
             // Commit the transaction
             $mysqli->commit();
-            echo "The data has been inserted.";
+            echo "The data has been inserted.<br>";
 
             if ($fileUploadStatus) {
-                echo " The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.";
+                echo " The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.<br>";
             }
             $stmt->close();
         }
