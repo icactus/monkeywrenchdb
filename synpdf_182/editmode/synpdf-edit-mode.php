@@ -282,7 +282,7 @@ html {
                     </div>
                 </form>
                 <!-- add metric_arr -->
-                <form class="inputform" id="addnewmetricform" method="POST">
+                <form class="inputform" id="addnewmetricform" method="POST" enctype="multipart/form-data">
                     <div style="display:flex;">
                         <div>
                             <label for="piece_id">Add New Part Data</label>
