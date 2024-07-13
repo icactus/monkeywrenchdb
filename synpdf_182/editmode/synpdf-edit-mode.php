@@ -304,7 +304,8 @@ html {
 
                         <textarea name="metric_arr_data" placeholder="Paste metric arr data here..."></textarea>
                         <input type="file" id="fknp2" name="file" accept=".pdf" tabindex="1" required/>
-                        <input type="submit" value="Submit" />
+                        <input type="submit" name="submit" value="Submit" />
+                        <input type="submit" name="update" value="Update" />
                     </div>
                 </form>
                 <!-- add recording -->
@@ -399,7 +400,7 @@ html {
         </div>
     <!--</div> -->
 <!-- </div> -->
-<script src="edit-mode-tools.js?v=17"></script>
+<script src="edit-mode-tools.js?v=18"></script>
 
 </body>
 </html>

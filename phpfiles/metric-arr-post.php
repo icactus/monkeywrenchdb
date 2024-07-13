@@ -17,6 +17,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $measures_version = $_POST['measures_version'];
     $metric_arr_data = $_POST['metric_arr_data'];
 
+    // Initialize a flag to track the upload status
+    $fileUploadStatus = false;
+
     // Check if file was uploaded
     if (isset($_FILES['file']) && $_FILES['file']['error'] == UPLOAD_ERR_OK) {
         // Specify the target directory
@@ -24,12 +27,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $target_file = $target_dir . basename($_FILES["file"]["name"]);
         $uploadOk = 1;
         $fileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-
-        // Check if file already exists
-        if (file_exists($target_file)) {
-            echo "Sorry, file already exists.";
-            $uploadOk = 0;
-        }
 
         // Check file size (limit to 50MB)
         if ($_FILES["file"]["size"] > 50000000) {
@@ -44,43 +41,56 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $uploadOk = 0;
         }
 
+        // Check if file already exists
+        if (file_exists($target_file)) {
+            echo "Sorry, file already exists. File not uploaded.";
+            $uploadOk = 0;
+        }
+
         if ($uploadOk == 0) {
             echo "Sorry, your file was not uploaded.";
         } else {
             // Attempt to move the uploaded file to the target directory
             if (move_uploaded_file($_FILES["file"]["tmp_name"], $target_file)) {
-                // Start a transaction
-                $mysqli->begin_transaction();
-
-                // Insert data into metric_arr table
-                $insertQuery = "INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data) VALUES (?, ?, ?, ?)";
-
-                // Prepare and execute the query
-                $stmt = $mysqli->prepare($insertQuery);
-                $stmt->bind_param("iiis", $piece_id, $instrument_id, $measures_version, $metric_arr_data); // Adjust according to your data types.
-                $stmt->execute();
-
-                if ($stmt->affected_rows === 0) {
-                    // Error in insertion
-                    echo 'Error in insertion: ' . $stmt->error;
-                    $stmt->close();
-                    // Roll back the transaction
-                    $mysqli->rollback();
-                } else {
-                    // Commit the transaction
-                    $mysqli->commit();
-                    echo "The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded and data has been inserted.";
-                    $stmt->close();
-                }
+                $fileUploadStatus = true;
             } else {
                 echo "Sorry, there was an error uploading your file.";
-                // Roll back the transaction
-                $mysqli->rollback();
             }
         }
+    }
+
+    // Start a transaction
+    $mysqli->begin_transaction();
+
+    if (isset($_POST['update'])) {
+        // Update existing data
+        $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? WHERE piece_id = ? AND instrument_id = ?";
+        $stmt = $mysqli->prepare($updateQuery);
+        $stmt->bind_param("isii", $measures_version, $metric_arr_data, $piece_id, $instrument_id);
     } else {
-        // Handle cases where the file is not uploaded correctly
-        echo "No file was uploaded or there was an error during upload.";
+        // Insert new data
+        $insertQuery = "INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data) VALUES (?, ?, ?, ?)";
+        $stmt = $mysqli->prepare($insertQuery);
+        $stmt->bind_param("iiis", $piece_id, $instrument_id, $measures_version, $metric_arr_data);
+    }
+
+    $stmt->execute();
+
+    if ($stmt->affected_rows === 0) {
+        // Error in insertion or update
+        echo 'Error: ' . $stmt->error;
+        $stmt->close();
+        // Roll back the transaction
+        $mysqli->rollback();
+    } else {
+        // Commit the transaction
+        $mysqli->commit();
+        echo "The data has been " . (isset($_POST['update']) ? "updated" : "inserted") . ".";
+
+        if ($fileUploadStatus) {
+            echo " The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.";
+        }
+        $stmt->close();
     }
 }
 ?>
