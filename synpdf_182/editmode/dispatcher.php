@@ -1,4 +1,3 @@
-
 <?php
 // Prevent direct script access via the dispatcher
 if (!isset($_POST['action'])) {
