@@ -400,7 +400,7 @@ html {
         </div>
     <!--</div> -->
 <!-- </div> -->
-<script src="edit-mode-tools.js?v=18"></script>
+<script src="edit-mode-tools.js?v=19"></script>
 
 </body>
 </html>
