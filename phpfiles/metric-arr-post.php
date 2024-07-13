@@ -74,48 +74,56 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Update existing data
         $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? WHERE piece_id = ? AND instrument_id = ?";
         $stmt = $mysqli->prepare($updateQuery);
-        $stmt->bind_param("isii", $measures_version, $metric_arr_data, $piece_id, $instrument_id);
-        $stmt->execute();
-
-        if ($stmt->affected_rows === 0) {
-            // If the update did not affect any rows, it means the entry does not exist
-            echo 'Error: No matching record found to update.<br>';
-            $stmt->close();
-            // Roll back the transaction
-            $mysqli->rollback();
+        if ($stmt === false) {
+            echo 'Error preparing statement: ' . $mysqli->error . "<br>";
         } else {
-            // Commit the transaction
-            $mysqli->commit();
-            echo "The data has been updated.<br>";
+            $stmt->bind_param("isii", $measures_version, $metric_arr_data, $piece_id, $instrument_id);
+            $stmt->execute();
 
-            if ($fileUploadStatus) {
-                echo " The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.<br>";
+            if ($stmt->affected_rows === 0) {
+                // If the update did not affect any rows, it means the entry does not exist
+                echo 'Error: No matching record found to update.<br>';
+                $stmt->close();
+                // Roll back the transaction
+                $mysqli->rollback();
+            } else {
+                // Commit the transaction
+                $mysqli->commit();
+                echo "The data has been updated.<br>";
+
+                if ($fileUploadStatus) {
+                    echo " The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.<br>";
+                }
+                $stmt->close();
             }
-            $stmt->close();
         }
     } elseif (isset($_POST['submit'])) {
         echo "Submit route triggered.<br>";
         // Insert new data
         $insertQuery = "INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data) VALUES (?, ?, ?, ?)";
         $stmt = $mysqli->prepare($insertQuery);
-        $stmt->bind_param("iiis", $piece_id, $instrument_id, $measures_version, $metric_arr_data);
-        $stmt->execute();
-
-        if ($stmt->affected_rows === 0) {
-            // Error in insertion
-            echo 'Error in insertion: ' . $stmt->error . "<br>";
-            $stmt->close();
-            // Roll back the transaction
-            $mysqli->rollback();
+        if ($stmt === false) {
+            echo 'Error preparing statement: ' . $mysqli->error . "<br>";
         } else {
-            // Commit the transaction
-            $mysqli->commit();
-            echo "The data has been inserted.<br>";
+            $stmt->bind_param("iiis", $piece_id, $instrument_id, $measures_version, $metric_arr_data);
+            $stmt->execute();
 
-            if ($fileUploadStatus) {
-                echo " The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.<br>";
+            if ($stmt->affected_rows === 0) {
+                // Error in insertion
+                echo 'Error in insertion: ' . $stmt->error . "<br>";
+                $stmt->close();
+                // Roll back the transaction
+                $mysqli->rollback();
+            } else {
+                // Commit the transaction
+                $mysqli->commit();
+                echo "The data has been inserted.<br>";
+
+                if ($fileUploadStatus) {
+                    echo " The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.<br>";
+                }
+                $stmt->close();
             }
-            $stmt->close();
         }
     }
 }
