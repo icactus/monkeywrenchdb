@@ -552,7 +552,7 @@ addNewMetricForm.addEventListener("submit", function(event) {
         .then(data => {
             // Handle the response from the server
             console.log(data);
-            if (data === "success") {
+            if (data.includes("The data has been inserted.") || data.includes("The data has been updated.")) {
                 alert("Form submitted successfully");
             } else {
                 alert("Form submission failed");
