@@ -21,12 +21,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     echo "Piece ID: " . htmlspecialchars($piece_id) . "<br>";
     echo "Instrument ID: " . htmlspecialchars($instrument_id) . "<br>";
     echo "Measures Version: " . htmlspecialchars($measures_version) . "<br>";
-    echo "Metric Array Data: " . htmlspecialchars($metric_arr_data) . "<br>";
 
-    // Initialize a flag to track the upload status
-    $fileUploadStatus = false;
+    // Debug button presses
+    if (isset($_POST['submit'])) {
+        echo "Submit button pressed<br>";
+    }
+    if (isset($_POST['update'])) {
+        echo "Update button pressed<br>";
+    }
 
     // Check if file was uploaded
+    $fileUploadStatus = false;
     if (isset($_FILES['file']) && $_FILES['file']['error'] == UPLOAD_ERR_OK) {
         // Specify the target directory
         $target_dir = "../pdfs/";
@@ -64,12 +69,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 echo "Sorry, there was an error uploading your file.<br>";
             }
         }
+    } else {
+        if (isset($_FILES['file'])) {
+            echo "File upload error: " . $_FILES['file']['error'] . "<br>";
+        }
     }
+
+    // Determine which button was pressed
+    $action = isset($_POST['submit']) ? 'submit' : (isset($_POST['update']) ? 'update' : '');
+
+    // Debugging the action variable
+    echo "Action determined: " . $action . "<br>";
 
     // Start a transaction
     $mysqli->begin_transaction();
 
-    if (isset($_POST['update'])) {
+    if ($action == 'update') {
         echo "Update route triggered.<br>";
         // Update existing data
         $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? WHERE piece_id = ? AND instrument_id = ?";
@@ -90,14 +105,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 // Commit the transaction
                 $mysqli->commit();
                 echo "The data has been updated.<br>";
-
-                if ($fileUploadStatus) {
-                    echo " The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.<br>";
-                }
                 $stmt->close();
             }
         }
-    } elseif (isset($_POST['submit'])) {
+    } elseif ($action == 'submit') {
         echo "Submit route triggered.<br>";
         // Insert new data
         $insertQuery = "INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data) VALUES (?, ?, ?, ?)";
@@ -118,13 +129,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 // Commit the transaction
                 $mysqli->commit();
                 echo "The data has been inserted.<br>";
-
-                if ($fileUploadStatus) {
-                    echo " The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.<br>";
-                }
                 $stmt->close();
             }
         }
+    } else {
+        echo "No action determined.<br>";
     }
 }
 ?>
