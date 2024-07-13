@@ -531,6 +531,7 @@ addNewPieceForm.addEventListener("submit", function(event) {
 });
 
 const addNewMetricForm = document.getElementById("addnewmetricform");
+
 addNewMetricForm.addEventListener("submit", function(event) {
     event.preventDefault(); // Prevent the form from submitting normally
 
@@ -552,8 +553,14 @@ addNewMetricForm.addEventListener("submit", function(event) {
         .then(data => {
             // Handle the response from the server
             console.log(data);
-            if (data.includes("The data has been inserted.") || data.includes("The data has been updated.")) {
+
+            const isDataSuccess = data.includes("The data has been inserted.") || data.includes("The data has been updated.");
+            const isFileError = data.includes("Sorry, file already exists. File not uploaded.") || data.includes("Sorry, your file was not uploaded.");
+
+            if (isDataSuccess && !isFileError) {
                 alert("Form submitted successfully");
+            } else if (isDataSuccess && isFileError) {
+                alert("Data updated successfully");
             } else {
                 alert("Form submission failed");
             }
@@ -561,6 +568,7 @@ addNewMetricForm.addEventListener("submit", function(event) {
         .catch(error => {
             // Handle any errors that occur during the request
             console.error(error);
+            alert("An error occurred during the form submission.");
         });
 });
 
