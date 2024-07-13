@@ -22,14 +22,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     echo "Instrument ID: " . htmlspecialchars($instrument_id) . "<br>";
     echo "Measures Version: " . htmlspecialchars($measures_version) . "<br>";
 
-    // Debug button presses
-    if (isset($_POST['submit'])) {
-        echo "Submit button pressed<br>";
-    }
-    if (isset($_POST['update'])) {
-        echo "Update button pressed<br>";
-    }
-
     // Check if file was uploaded
     $fileUploadStatus = false;
     if (isset($_FILES['file']) && $_FILES['file']['error'] == UPLOAD_ERR_OK) {
@@ -76,7 +68,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // Determine which button was pressed
-    $action = isset($_POST['submit']) ? 'submit' : (isset($_POST['update']) ? 'update' : '');
+    $action = '';
+    if (isset($_POST['submit'])) {
+        $action = 'submit';
+    } elseif (isset($_POST['update'])) {
+        $action = 'update';
+    }
 
     // Debugging the action variable
     echo "Action determined: " . $action . "<br>";
