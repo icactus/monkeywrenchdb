@@ -23,7 +23,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     error_log("Piece ID: " . htmlspecialchars($piece_id));
     error_log("Instrument ID: " . htmlspecialchars($instrument_id));
     error_log("Measures Version: " . htmlspecialchars($measures_version));
-    error_log("Metric Arr Data: " . htmlspecialchars($metric_arr_data));
 
     // Check if file was uploaded
     $fileUploadStatus = false;

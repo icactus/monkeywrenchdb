@@ -530,7 +530,9 @@ addNewPieceForm.addEventListener("submit", function(event) {
         });
 });
 
-document.getElementById("addnewmetricform").addEventListener("submit", function(event) {
+const addNewMetricForm = document.getElementById("addnewmetricform");
+
+addNewMetricForm.addEventListener("submit", function(event) {
     event.preventDefault(); // Prevent the form from submitting normally
 
     // Determine which button was clicked
@@ -539,7 +541,7 @@ document.getElementById("addnewmetricform").addEventListener("submit", function(
     const buttonValue = submitButton.value;
 
     // Create a new FormData object from the form
-    const formData = new FormData(this);
+    const formData = new FormData(addNewMetricForm);
     formData.append('action', 'add_metric_arr');
     formData.append(buttonName, buttonValue); // Append the name and value of the button
 
