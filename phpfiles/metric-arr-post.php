@@ -23,7 +23,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $response .= "Piece ID: " . htmlspecialchars($piece_id) . "<br>";
     $response .= "Instrument ID: " . htmlspecialchars($instrument_id) . "<br>";
     $response .= "Measures Version: " . htmlspecialchars($measures_version) . "<br>";
-    $response .= "Metric Array Data: " . htmlspecialchars($metric_arr_data) . "<br>";
 
     // Check if file was uploaded
     $fileUploadStatus = false;
@@ -105,7 +104,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     if ($stmt === false) {
                         $response .= 'Error preparing update statement: ' . $mysqli->error . "<br>";
                     } else {
-                        $stmt->bind_param("isii", $measures_version, $metric_arr_data, $piece_id, $instrument_id);
+                        $stmt->bind_param("iiis", $piece_id, $instrument_id, $measures_version, $metric_arr_data);
                         $stmt->execute();
 
                         if ($stmt->affected_rows === 0) {
