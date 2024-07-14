@@ -114,7 +114,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $response .= "Submit route triggered.<br>";
 
         // Debugging the insertion data
-        $response .= "Preparing to insert data: piece_id = $piece_id, instrument_id = $instrument_id, measures_version = $measures_version, metric_arr_data = $metric_arr_data<br>";
+        $response .= "Preparing to insert data: piece_id = $piece_id, instrument_id = $instrument_id, measures_version = $measures_version";
 
         // Insert new data
         $insertQuery = "INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data) VALUES (?, ?, ?, ?)";
