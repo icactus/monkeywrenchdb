@@ -18,6 +18,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $instrument_id = $_POST['instrument_id'];
     $measures_version = $_POST['measures_version'];
 
+    // Debugging outputs
+    $response .= "Piece ID: " . htmlspecialchars($piece_id) . "<br>";
+    $response .= "Instrument ID: " . htmlspecialchars($instrument_id) . "<br>";
+    $response .= "Measures Version: " . htmlspecialchars($measures_version) . "<br>";
+
     // Check if file was uploaded
     $fileUploadStatus = false;
     if (isset($_FILES['file']) && $_FILES['file']['error'] == UPLOAD_ERR_OK) {
@@ -107,6 +112,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     } elseif ($action == 'submit') {
         $response .= "Submit route triggered.<br>";
+
+        // Debugging the insertion data
+        $response .= "Preparing to insert data: piece_id = $piece_id, instrument_id = $instrument_id, measures_version = $measures_version, metric_arr_data = $metric_arr_data<br>";
+
         // Insert new data
         $insertQuery = "INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data) VALUES (?, ?, ?, ?)";
         $stmt = $mysqli->prepare($insertQuery);
