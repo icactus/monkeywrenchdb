@@ -23,6 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     error_log("Piece ID: " . htmlspecialchars($piece_id));
     error_log("Instrument ID: " . htmlspecialchars($instrument_id));
     error_log("Measures Version: " . htmlspecialchars($measures_version));
+    error_log("Metric Arr Data: " . htmlspecialchars($metric_arr_data));
 
     // Check if file was uploaded
     $fileUploadStatus = false;
@@ -90,6 +91,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $checkQuery = "SELECT * FROM metric_arr WHERE piece_id = ? AND instrument_id = ?";
             $stmt = $mysqli->prepare($checkQuery);
             if ($stmt === false) {
+                error_log('Error preparing check statement: ' . $mysqli->error);
                 $response .= 'Error preparing check statement: ' . $mysqli->error . "<br>";
             } else {
                 $stmt->bind_param("ii", $piece_id, $instrument_id);
@@ -102,6 +104,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? WHERE piece_id = ? AND instrument_id = ?";
                     $stmt = $mysqli->prepare($updateQuery);
                     if ($stmt === false) {
+                        error_log('Error preparing update statement: ' . $mysqli->error);
                         $response .= 'Error preparing update statement: ' . $mysqli->error . "<br>";
                     } else {
                         // Debug the values being bound to the query
