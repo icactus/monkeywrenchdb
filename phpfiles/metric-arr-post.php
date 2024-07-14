@@ -17,6 +17,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $piece_id = $_POST['piece_id'];
     $instrument_id = $_POST['instrument_id'];
     $measures_version = $_POST['measures_version'];
+    $metric_arr_data = $_POST['metric_arr_data'];
 
     // Debugging outputs
     $response .= "Piece ID: " . htmlspecialchars($piece_id) . "<br>";
@@ -114,7 +115,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $response .= "Submit route triggered.<br>";
 
         // Debugging the insertion data
-        $response .= "Preparing to insert data: piece_id = $piece_id, instrument_id = $instrument_id, measures_version = $measures_version";
+        $response .= "Preparing to insert data: piece_id = $piece_id, instrument_id = $instrument_id, measures_version = $measures_version, metric_arr_data = $metric_arr_data<br>";
 
         // Insert new data
         $insertQuery = "INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data) VALUES (?, ?, ?, ?)";
