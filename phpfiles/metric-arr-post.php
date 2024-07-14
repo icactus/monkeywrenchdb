@@ -23,6 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $response .= "Piece ID: " . htmlspecialchars($piece_id) . "<br>";
     $response .= "Instrument ID: " . htmlspecialchars($instrument_id) . "<br>";
     $response .= "Measures Version: " . htmlspecialchars($measures_version) . "<br>";
+    $response .= "Metric Array Data: " . htmlspecialchars($metric_arr_data) . "<br>";
 
     // Check if file was uploaded
     $fileUploadStatus = false;
@@ -86,26 +87,41 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($action == 'update') {
         $response .= "Update route triggered.<br>";
         if (!empty($metric_arr_data)) {
-            // Update existing data
-            $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? WHERE piece_id = ? AND instrument_id = ?";
-            $stmt = $mysqli->prepare($updateQuery);
+            // Check if the record exists
+            $checkQuery = "SELECT * FROM metric_arr WHERE piece_id = ? AND instrument_id = ?";
+            $stmt = $mysqli->prepare($checkQuery);
             if ($stmt === false) {
-                $response .= 'Error preparing statement: ' . $mysqli->error . "<br>";
+                $response .= 'Error preparing check statement: ' . $mysqli->error . "<br>";
             } else {
-                $stmt->bind_param("isii", $measures_version, $metric_arr_data, $piece_id, $instrument_id);
+                $stmt->bind_param("ii", $piece_id, $instrument_id);
                 $stmt->execute();
+                $result = $stmt->get_result();
 
-                if ($stmt->affected_rows === 0) {
-                    // If the update did not affect any rows, it means the entry does not exist
-                    $response .= 'Error: No matching record found to update.<br>';
-                    $stmt->close();
-                    // Roll back the transaction
-                    $mysqli->rollback();
+                if ($result->num_rows > 0) {
+                    // Record exists, proceed to update
+                    $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? WHERE piece_id = ? AND instrument_id = ?";
+                    $stmt = $mysqli->prepare($updateQuery);
+                    if ($stmt === false) {
+                        $response .= 'Error preparing update statement: ' . $mysqli->error . "<br>";
+                    } else {
+                        $stmt->bind_param("isii", $measures_version, $metric_arr_data, $piece_id, $instrument_id);
+                        $stmt->execute();
+
+                        if ($stmt->affected_rows === 0) {
+                            // If the update did not affect any rows, it means the entry does not exist
+                            $response .= 'Error: No matching record found to update.<br>';
+                            $stmt->close();
+                            // Roll back the transaction
+                            $mysqli->rollback();
+                        } else {
+                            // Commit the transaction
+                            $mysqli->commit();
+                            $response .= "The data has been updated.<br>";
+                            $stmt->close();
+                        }
+                    }
                 } else {
-                    // Commit the transaction
-                    $mysqli->commit();
-                    $response .= "The data has been updated.<br>";
-                    $stmt->close();
+                    $response .= 'Error: No matching record found to update.<br>';
                 }
             }
         } else {
