@@ -99,6 +99,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 if ($result->num_rows > 0) {
                     // Record exists, proceed to update
+                    $response .= "Record exists. Proceeding with update.<br>";
                     $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? WHERE piece_id = ? AND instrument_id = ?";
                     $stmt = $mysqli->prepare($updateQuery);
                     if ($stmt === false) {
