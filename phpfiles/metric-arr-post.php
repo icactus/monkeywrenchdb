@@ -10,12 +10,13 @@ if ($mysqli->connect_error) {
     die("Connection failed: " . $mysqli->connect_error);
 }
 
+$response = '';
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Collect form data
     $piece_id = $_POST['piece_id'];
     $instrument_id = $_POST['instrument_id'];
     $measures_version = $_POST['measures_version'];
-    $metric_arr_data = $_POST['metric_arr_data'];
 
     // Check if file was uploaded
     $fileUploadStatus = false;
@@ -28,37 +29,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Check file size (limit to 50MB)
         if ($_FILES["file"]["size"] > 50000000) {
-            echo "Sorry, your file is too large.<br>";
+            $response .= "Sorry, your file is too large.<br>";
             $uploadOk = 0;
         }
 
         // Allow certain file formats
         $allowedFileTypes = ['pdf'];
         if (!in_array($fileType, $allowedFileTypes)) {
-            echo "Sorry, only PDF files are allowed.<br>";
+            $response .= "Sorry, only PDF files are allowed.<br>";
             $uploadOk = 0;
         }
 
         // Check if file already exists
         if (file_exists($target_file)) {
-            echo "Sorry, file already exists. File not uploaded.<br>";
+            $response .= "Sorry, file already exists. File not uploaded.<br>";
             $uploadOk = 0;
         }
 
         if ($uploadOk == 0) {
-            echo "Sorry, your file was not uploaded.<br>";
+            $response .= "Sorry, your file was not uploaded.<br>";
         } else {
             // Attempt to move the uploaded file to the target directory
             if (move_uploaded_file($_FILES["file"]["tmp_name"], $target_file)) {
                 $fileUploadStatus = true;
-                echo "The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.<br>";
+                $response .= "The file " . htmlspecialchars(basename($_FILES["file"]["name"])) . " has been uploaded.<br>";
             } else {
-                echo "Sorry, there was an error uploading your file.<br>";
+                $response .= "Sorry, there was an error uploading your file.<br>";
             }
         }
     } else {
         if (isset($_FILES['file'])) {
-            echo "File upload error: " . $_FILES['file']['error'] . "<br>";
+            $response .= "File upload error: " . $_FILES['file']['error'] . "<br>";
         }
     }
 
@@ -70,55 +71,69 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $action = 'update';
     }
 
+    // Debugging the action variable
+    $response .= "Action determined: " . $action . "<br>";
+
     // Start a transaction
     $mysqli->begin_transaction();
 
     if ($action == 'update') {
-        $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? WHERE piece_id = ? AND instrument_id = ?";
-        $stmt = $mysqli->prepare($updateQuery);
-        if ($stmt === false) {
-            echo 'Error preparing statement: ' . $mysqli->error . "<br>";
-        } else {
-            $stmt->bind_param("isii", $measures_version, $metric_arr_data, $piece_id, $instrument_id);
-            $stmt->execute();
-
-            if ($stmt->affected_rows === 0) {
-                // If the update did not affect any rows, it means the entry does not exist
-                echo 'Error: No matching record found to update.<br>';
-                $stmt->close();
-                // Roll back the transaction
-                $mysqli->rollback();
+        $response .= "Update route triggered.<br>";
+        if (!empty($metric_arr_data)) {
+            // Update existing data
+            $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? WHERE piece_id = ? AND instrument_id = ?";
+            $stmt = $mysqli->prepare($updateQuery);
+            if ($stmt === false) {
+                $response .= 'Error preparing statement: ' . $mysqli->error . "<br>";
             } else {
-                // Commit the transaction
-                $mysqli->commit();
-                echo "The data has been updated.<br>";
-                $stmt->close();
+                $stmt->bind_param("isii", $measures_version, $metric_arr_data, $piece_id, $instrument_id);
+                $stmt->execute();
+
+                if ($stmt->affected_rows === 0) {
+                    // If the update did not affect any rows, it means the entry does not exist
+                    $response .= 'Error: No matching record found to update.<br>';
+                    $stmt->close();
+                    // Roll back the transaction
+                    $mysqli->rollback();
+                } else {
+                    // Commit the transaction
+                    $mysqli->commit();
+                    $response .= "The data has been updated.<br>";
+                    $stmt->close();
+                }
             }
+        } else {
+            $response .= "No update to metric_arr_data because it is empty.<br>";
         }
     } elseif ($action == 'submit') {
+        $response .= "Submit route triggered.<br>";
+        // Insert new data
         $insertQuery = "INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data) VALUES (?, ?, ?, ?)";
         $stmt = $mysqli->prepare($insertQuery);
         if ($stmt === false) {
-            echo 'Error preparing statement: ' . $mysqli->error . "<br>";
+            $response .= 'Error preparing statement: ' . $mysqli->error . "<br>";
         } else {
             $stmt->bind_param("iiis", $piece_id, $instrument_id, $measures_version, $metric_arr_data);
             $stmt->execute();
 
             if ($stmt->affected_rows === 0) {
                 // Error in insertion
-                echo 'Error in insertion: ' . $stmt->error . "<br>";
+                $response .= 'Error in insertion: ' . $stmt->error . "<br>";
                 $stmt->close();
                 // Roll back the transaction
                 $mysqli->rollback();
             } else {
                 // Commit the transaction
                 $mysqli->commit();
-                echo "The data has been inserted.<br>";
+                $response .= "The data has been inserted.<br>";
                 $stmt->close();
             }
         }
     } else {
-        echo "No action determined.<br>";
+        $response .= "No action determined.<br>";
     }
+
+    // Output the response
+    echo $response;
 }
 ?>
