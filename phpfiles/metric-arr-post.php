@@ -23,7 +23,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $response .= "Piece ID: " . htmlspecialchars($piece_id) . "<br>";
     $response .= "Instrument ID: " . htmlspecialchars($instrument_id) . "<br>";
     $response .= "Measures Version: " . htmlspecialchars($measures_version) . "<br>";
-    $response .= "Metric Array Data: " . htmlspecialchars($metric_arr_data) . "<br>";
 
     // Check if file was uploaded
     $fileUploadStatus = false;
