@@ -20,9 +20,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $metric_arr_data = $_POST['metric_arr_data'];
 
     // Debugging outputs
-    $response .= "Piece ID: " . htmlspecialchars($piece_id) . "<br>";
-    $response .= "Instrument ID: " . htmlspecialchars($instrument_id) . "<br>";
-    $response .= "Measures Version: " . htmlspecialchars($measures_version) . "<br>";
+    error_log("Piece ID: " . htmlspecialchars($piece_id));
+    error_log("Instrument ID: " . htmlspecialchars($instrument_id));
+    error_log("Measures Version: " . htmlspecialchars($measures_version));
+    error_log("Metric Arr Data: " . htmlspecialchars($metric_arr_data));
 
     // Check if file was uploaded
     $fileUploadStatus = false;
@@ -78,13 +79,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // Debugging the action variable
-    $response .= "Action determined: " . $action . "<br>";
+    error_log("Action determined: " . $action);
 
     // Start a transaction
     $mysqli->begin_transaction();
 
     if ($action == 'update') {
-        $response .= "Update route triggered.<br>";
+        error_log("Update route triggered.");
         if (!empty($metric_arr_data)) {
             // Check if the record exists
             $checkQuery = "SELECT * FROM metric_arr WHERE piece_id = ? AND instrument_id = ?";
@@ -98,20 +99,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 if ($result->num_rows > 0) {
                     // Record exists, proceed to update
-                    $response .= "Record exists. Proceeding with update.<br>";
+                    error_log("Record exists. Proceeding with update.");
                     $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? WHERE piece_id = ? AND instrument_id = ?";
                     $stmt = $mysqli->prepare($updateQuery);
                     if ($stmt === false) {
                         $response .= 'Error preparing update statement: ' . $mysqli->error . "<br>";
                     } else {
                         // Debug the values being bound to the query
-                        $response .= "Binding values: measures_version = $measures_version, metric_arr_data = $metric_arr_data, piece_id = $piece_id, instrument_id = $instrument_id<br>";
+                        error_log("Binding values: measures_version = $measures_version, metric_arr_data = $metric_arr_data, piece_id = $piece_id, instrument_id = $instrument_id");
 
                         $stmt->bind_param("isii", $measures_version, $metric_arr_data, $piece_id, $instrument_id);
                         $stmt->execute();
 
                         if ($stmt->affected_rows === 0) {
                             // If the update did not affect any rows, it means the entry does not exist
+                            error_log('Error: No matching record found to update.');
                             $response .= 'Error: No matching record found to update.<br>';
                             $stmt->close();
                             // Roll back the transaction
@@ -119,24 +121,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         } else {
                             // Commit the transaction
                             $mysqli->commit();
+                            error_log("The data has been updated.");
                             $response .= "The data has been updated.<br>";
                             $stmt->close();
                         }
                     }
                 } else {
+                    error_log('Error: No matching record found to update.');
                     $response .= 'Error: No matching record found to update.<br>';
                 }
             }
         } else {
+            error_log("No update to metric_arr_data because it is empty.");
             $response .= "No update to metric_arr_data because it is empty.<br>";
         }
     } elseif ($action == 'submit') {
-        $response .= "Submit route triggered.<br>";
+        error_log("Submit route triggered.");
 
         // Insert new data
         $insertQuery = "INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data) VALUES (?, ?, ?, ?)";
         $stmt = $mysqli->prepare($insertQuery);
         if ($stmt === false) {
+            error_log('Error preparing statement: ' . $mysqli->error);
             $response .= 'Error preparing statement: ' . $mysqli->error . "<br>";
         } else {
             $stmt->bind_param("iiis", $piece_id, $instrument_id, $measures_version, $metric_arr_data);
@@ -144,6 +150,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             if ($stmt->affected_rows === 0) {
                 // Error in insertion
+                error_log('Error in insertion: ' . $stmt->error);
                 $response .= 'Error in insertion: ' . $stmt->error . "<br>";
                 $stmt->close();
                 // Roll back the transaction
@@ -151,11 +158,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             } else {
                 // Commit the transaction
                 $mysqli->commit();
+                error_log("The data has been inserted.");
                 $response .= "The data has been inserted.<br>";
                 $stmt->close();
             }
         }
     } else {
+        error_log("No action determined.");
         $response .= "No action determined.<br>";
     }
 
