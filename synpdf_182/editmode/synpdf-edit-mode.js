@@ -727,8 +727,8 @@ Wijzer$$module$synpdf.prototype.changeOffset = function(a) {
 };
 Wijzer$$module$synpdf.prototype.startSync = function() {
     deTijden$$module$synpdf.splice(lastSynced$$module$synpdf + 1);
-    //lastSynced$$module$synpdf = deTijden$$module$synpdf.length - 1;
-    lastSynced$$module$synpdf = 9999;
+    lastSynced$$module$synpdf = deTijden$$module$synpdf.length - 1;
+    //lastSynced$$module$synpdf = 9999;
     if (-1 == lastSynced$$module$synpdf) {
         $(".demaat").css({
             width: "0px",
