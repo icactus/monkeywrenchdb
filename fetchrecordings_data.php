@@ -1,5 +1,5 @@
 <?php
-require_once '../phpfiles/config.php';
+require_once '../phpfiles/read_only_user_config.php';
 
 // Establish the database connection
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
