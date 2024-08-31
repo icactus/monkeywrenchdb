@@ -408,10 +408,14 @@ let recordingCache = {};
 function loadRecording(recordingFullData) {
     return new Promise(function(resolve, reject) {
         console.log(recordingFullData);
-        document.title = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`;
+
+        // Update the document title
+        let newTitle = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`;
+        document.title = newTitle;
+
         // Add title to composer-piece-name Div
         let targetDiv = document.getElementById('composer-piece-name');
-        targetDiv.innerHTML = `<h3>${recordingFullData.composer_last} - ${recordingFullData.piece_name}</h3>`;
+        targetDiv.innerHTML = `<h3>${newTitle}</h3>`;
 
         // Create a unique ID for the recording
         let metricId = recordingFullData.metric_arr_id;
@@ -434,6 +438,12 @@ function loadRecording(recordingFullData) {
             sendVarToSynpdf(recordingFullData);
             resolve();
         }
+
+        // Send a page view event to Google Analytics with the updated title
+        gtag('event', 'page_view', {
+            'page_title': newTitle,
+            'page_path': window.location.pathname
+        });
     });
 }
 
