@@ -175,7 +175,7 @@ html {
             <video id="vid" controls="controls">Your browser does not support the video element.</video>
             <div id="vidyub"></div>
             <form id="spdlbl">speed: 
-                        <input id="speed" type="number" min="0.1" step="0.05" max="4.0" title="0.1 <= float <= 4.0"> 
+                        <input id="speed" type="number" min="0.1" step="0.05" max="2.0" title="0.1 <= float <= 2.0"> 
             </form>
             <div id="crediv">
                 <div id="credits"></div>
