@@ -821,7 +821,7 @@ function DummyPlayer$$module$synpdf() {
     this.klok = -1;
     this.step = 200;
     this.playing = 0;
-    initPbRates$$module$synpdf(.1, 4, .05)
+    initPbRates$$module$synpdf(.1, 2, .05)
 }
 DummyPlayer$$module$synpdf.prototype.pause = function() {
     this.clearKlok();
