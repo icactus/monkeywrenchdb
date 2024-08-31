@@ -644,6 +644,8 @@ function readPdf$$module$synpdf(pdfData, dataType) {
                 }
 
                 // Update progress bar
+                const progressBar = document.getElementById('progress-bar');
+                progressBar.value = percentComplete;
 
                 // Update progress info
                 const progressInfo = document.getElementById('progress-info');
