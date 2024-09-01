@@ -183,6 +183,6 @@
 
     <script src="pdf.min.js"></script>
     <script src="stripped-synpdf.js?v=13"></script>
-    <script src="stripped-synpdf-extras.js?v=19"></script>
+    <script src="stripped-synpdf-extras.js?v=20"></script>
 </body>
 </html>
