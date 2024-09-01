@@ -879,16 +879,16 @@ function resizePageFitToWidth() {
 
 //HOMEPAGE COLLAPSIBLES
 function toggleCollapsible(collapsibleElement) {
+    console.log('togglecoll');
     var currentContent = collapsibleElement.querySelector(".search-content");
-    var nextCollapsible = collapsibleElement.nextElementSibling;
-    var nextContent = nextCollapsible ? nextCollapsible.querySelector(".search-content") : null;
 
     // Close all collapsibles except the current one
     var collapsibles = document.getElementsByClassName("collapsible");
     for (var j = 0; j < collapsibles.length; j++) {
+        var content = collapsibles[j].querySelector(".search-content");
         if (collapsibles[j] !== collapsibleElement) {
             collapsibles[j].classList.remove("active");
-            collapsibles[j].querySelector(".search-content").style.display = "none";
+            content.style.display = "none";
         }
     }
 
@@ -900,12 +900,12 @@ function toggleCollapsible(collapsibleElement) {
         currentContent.style.display = "grid";
     }
 
-    // Show the next collapsible and hide its content if it exists
+    // Automatically toggle the next collapsible if it exists
+    var nextCollapsible = collapsibleElement.nextElementSibling;
     if (nextCollapsible) {
+        var nextContent = nextCollapsible.querySelector(".search-content");
         nextCollapsible.classList.add("active");
-        if (nextContent) {
-            nextContent.style.display = "grid";
-        }
+        nextContent.style.display = "grid";
     }
 }
 
@@ -930,16 +930,24 @@ $(document).ready(function() {
 
     // Trigger the first collapsible to open it by default
     if ($('.collapsible').length > 0) {
-        toggleCollapsible($('.collapsible')[0]);
+        // Open the first collapsible
+        var firstCollapsible = $('.collapsible').first();
+        firstCollapsible.addClass('active');
+        firstCollapsible.find('.search-content').css('display', 'grid');
+
+        // Ensure all other collapsibles are closed
+        $('.collapsible').not(firstCollapsible).removeClass('active');
+        $('.collapsible').not(firstCollapsible).find('.search-content').css('display', 'none');
     }
+
     // LOAD PIECE AND RECORDING VIA URL
     const urlParams = new URLSearchParams(window.location.search);
     const urlMetricArrId = urlParams.get('metricArrId');
     const urlRecordingId = urlParams.get('recordingId');
 
-    // check for URL parameters 
+    // Check for URL parameters 
     if (urlMetricArrId && urlRecordingId) {
-        //set global variables
+        // Set global variables
         currentMetricArrGlobal = urlMetricArrId;
         currentRecordingGlobal = urlRecordingId;
 

@@ -75,22 +75,22 @@
             <div id="loadingMessage2">
             </div>
             <div class="notation" id="notation"><!--width needed for editmode pixel mapping -->
-                <div class="collapsible">
+                <div class="collapsible active">
                     <div class="search-heading" id="instruments-heading"><h2>1. Select Instrument</h2></div>
                     <div class="search-content instrument-container" id="instrument-links">
-                        
+<a href="asdf" class="instrument-link-a">asdf asd fasdfsadfdsafdsaf sadf</a>
                     </div>
                 </div>
                 <div class="collapsible">
                     <div class="search-heading" id="pieces-heading"><h2>2. Select Piece</h2></div>
                     <div class="search-content" id="pieces-container">
-
+<a href="askljfd" class="pieces-link">sad fsad fasd fsadfsdf</a>
                     </div>
                 </div>
                 <div class="collapsible">
                     <div class="search-heading" id="recordings-heading"><h2>3. Select Recording</h2></div>
                     <div class="search-content" id="recordings-container">
-
+<a href="nowhere" class="recording-link">asdfa sas fdsadfsadfasfsad</a>
                     </div>
                 </div>
             </div>
