@@ -879,7 +879,6 @@ function resizePageFitToWidth() {
 
 //HOMEPAGE COLLAPSIBLES
 function toggleCollapsible(collapsibleElement) {
-    console.log('togglecoll');
     var currentContent = collapsibleElement.querySelector(".search-content");
 
     // Close all collapsibles except the current one

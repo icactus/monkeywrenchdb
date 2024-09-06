@@ -938,12 +938,16 @@ function yubApiReady$$module$synpdf() {
                 $("#yubuse").prop("checked", !0);
                 yubload$$module$synpdf();
                 setupPlayPauseButton();
+                onPlayerReady();
+
             },
             'onStateChange': onPlayerStateChange
         }
     });
 }
-
+function onPlayerReady() {
+    document.getElementById('notation').focus();
+}
 
 
 async function onPlayerStateChange(event) {
