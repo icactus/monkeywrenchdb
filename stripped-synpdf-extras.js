@@ -366,7 +366,8 @@ function fetchRecordings(metricArrId) {
 
                         var linkText =
                             (year ? year + ' - ' : '') +
-                            (conductorName ? conductorName + ' - ' : '') +
+                            (conductorName ? conductorName : '') +
+                            (conductorName && ensembleName ? ' - ' : '') +
                             (ensembleName ? ensembleName : '');
                         var link = $('<p><a href="#" class="recordings-link">' + linkText + '</a></p>');
                         link.children('a').data('recordingFullData', recordingFullData); // Attach the recording data to the <a> element
