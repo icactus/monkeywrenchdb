@@ -257,6 +257,7 @@ function fetchPieces(instrumentIds) {
                 });
             }
         },
+        //what is this jqXHR? looks like a typo
         error: function(jqXHR, textStatus, errorThrown) {
             console.log("AJAX error: " + textStatus + ' : ' + errorThrown);
         }
