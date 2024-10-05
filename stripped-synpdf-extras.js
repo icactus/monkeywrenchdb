@@ -620,6 +620,9 @@ $('#pieces-container').on('click', '.pieces-link', function(event) {
     event.preventDefault();
     event.stopPropagation();
 
+
+    let container = $('#recordings-container');
+    container.empty();
     var pieceId = $(this).data('piece-id');
     var instrumentIds = $(this).data('instrument-id').toString();
     var clickedLink = $(this); // Store the clicked link for later use
