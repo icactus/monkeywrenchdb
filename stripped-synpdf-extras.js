@@ -260,6 +260,8 @@ function fetchPieces(instrumentIds) {
         //what is this jqXHR? looks like a typo
         error: function(jqXHR, textStatus, errorThrown) {
             console.log("AJAX error: " + textStatus + ' : ' + errorThrown);
+            console.log("Status code: " + jqXHR.status);
+            console.log("Response text: " + jqXHR.responseText);
         }
     });
 }
@@ -345,6 +347,18 @@ function fetchRecordings(metricArrId) {
                     recordingsDropdown.append('<option value="">Select Recording</option>');
                     //This part is necessary for instrument dropdown change because we need to refresh the measures_version info for each recording.
                     // Populate the links
+                    recordings.sort(function(a, b) {
+                        // Compare year
+                        var yearComparison = a.year - b.year;
+                        if (yearComparison !== 0) return yearComparison;
+
+                        // Compare conductor_name
+                        var conductorComparison = (a.conductor_name || '').localeCompare(b.conductor_name || '');
+                        if (conductorComparison !== 0) return conductorComparison;
+
+                        // Compare ensemble_name
+                        return (a.ensemble_name || '').localeCompare(b.ensemble_name || '');
+                    });
                     recordings.forEach(function(recordingFullData) {
                         var conductorName = recordingFullData.conductor_name;
                         var ensembleName = recordingFullData.ensemble_name;
