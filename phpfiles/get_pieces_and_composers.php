@@ -56,9 +56,8 @@ $instrumentsArray = array();
 while ($row = $instrumentsResult->fetch_array()) {
     $instrumentsArray[$row["instrument_id"]] = $row["instrument_id"] . " - " . $row["instrument_name"] . " " . $row["part_number"] . " " . $row["instrument_key"];
 }
-
 // Query to get list of categories
-$categoriesQuery = "SELECT category_id, category_name FROM pieces_categories ORDER BY category_id ASC";
+$categoriesQuery = "SELECT category_id, category_name FROM piece_categories ORDER BY category_id ASC";
 $categoriesResult = $mysqli->query($categoriesQuery);
 
 // Build array of categories for dropdown
