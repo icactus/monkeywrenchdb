@@ -278,6 +278,19 @@ html {
                                 <option value="<?php echo $composer_id; ?>"><?php echo $name; ?></option>
                             <?php endforeach; ?>
                         </select>
+                        <label for="category_id">Category:</label>
+                        <select name="category_id">
+                            <?php foreach($categoriesArray as $category_id => $category_display): ?>
+                                <option value="<?php echo $category_id; ?>"><?php echo $category_display; ?></option>
+                            <?php endforeach; ?>
+                        </select>
+
+                        <label for="solo_instrument_id">Solo Instrument:</label>
+                        <select name="solo_instrument_id">
+                            <?php foreach($instrumentsArray as $instrument_id => $instrument_display): ?>
+                                <option value="<?php echo $instrument_id; ?>"><?php echo $instrument_display; ?></option>
+                            <?php endforeach; ?>
+                        </select>
                         <input type="submit" value="Submit" />
                     </div>
                 </form>

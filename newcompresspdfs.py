@@ -1,4 +1,3 @@
-
 import os
 import subprocess
 from PyPDF2 import PdfReader, PdfWriter
@@ -7,14 +6,13 @@ from concurrent.futures import ProcessPoolExecutor
 pdf_directory = '/home/jengaship/monkeywrenchdb/synpdf_182/smallerpdfs/Newfolder'
 temp_directory = '/home/jengaship/monkeywrenchdb/synpdf_182/smallerpdfs/temp'
 processed_directory = '/home/jengaship/monkeywrenchdb/synpdf_182/smallerpdfs/processed'
-magick_path = '/home/jengaship/monkeywrenchdb/magick'
 
 # Ensure directories exist
 os.makedirs(temp_directory, exist_ok=True)
 os.makedirs(processed_directory, exist_ok=True)
 
 def extract_and_convert_pdf_page(args):
-    magick_path, pdf_path, output_pdf_path, temp_directory, image_base_name, page_number = args
+    pdf_path, output_pdf_path, temp_directory, image_base_name, page_number = args
     # Extract PDF page
     pdf = PdfReader(pdf_path)
     page = pdf.pages[page_number]
@@ -24,22 +22,22 @@ def extract_and_convert_pdf_page(args):
     with open(output_filename, 'wb') as output_file:
         output_pdf.write(output_file)
     
-    # Convert to TIFF
+    # Convert to TIFF using global 'magick'
     tiff_output_filename = f'{temp_directory}/{image_base_name}-page{page_number + 1:03d}.tif'
-    subprocess.run([magick_path, '-verbose', '-density', '600', output_filename, '-background', 'white', '-alpha', 'remove', '-quality', '100', tiff_output_filename])
-    subprocess.run([magick_path, '-verbose', '-density', '300', tiff_output_filename, '-resize', '2000x', '-monochrome', '-compress', 'Group4', tiff_output_filename])
+    subprocess.run(['magick', '-verbose', '-density', '600', output_filename, '-background', 'white', '-alpha', 'remove', '-quality', '90', tiff_output_filename])
+    subprocess.run(['magick', '-verbose', '-density', '300', tiff_output_filename, '-resize', '2000x', '-monochrome', '-compress', 'Group4', tiff_output_filename])
     
     # Clean up
     os.remove(output_filename)
     return tiff_output_filename
 
-def process_pdf_file(pdf_path, magick_path, temp_directory, processed_directory):
+def process_pdf_file(pdf_path, temp_directory, processed_directory):
     image_base_name = os.path.splitext(os.path.basename(pdf_path))[0]
     pdf = PdfReader(pdf_path)
     page_count = len(pdf.pages)
 
     # Prepare arguments for parallel processing
-    args = [(magick_path, pdf_path, pdf_path, temp_directory, image_base_name, page_number) for page_number in range(page_count)]
+    args = [(pdf_path, pdf_path, temp_directory, image_base_name, page_number) for page_number in range(page_count)]
 
     # Process each page in parallel
     with ProcessPoolExecutor() as executor:
@@ -47,7 +45,7 @@ def process_pdf_file(pdf_path, magick_path, temp_directory, processed_directory)
     
     # Combine TIFF files into one PDF
     processed_pdf_path = os.path.join(processed_directory, f'{image_base_name}.pdf')
-    subprocess.run([magick_path, f'{temp_directory}/{image_base_name}-page*.tif', processed_pdf_path])
+    subprocess.run(['magick', f'{temp_directory}/{image_base_name}-page*.tif', processed_pdf_path])
 
     # Clean up TIFF files
     for tiff_file in tiff_files:
@@ -57,4 +55,4 @@ def process_pdf_file(pdf_path, magick_path, temp_directory, processed_directory)
 for filename in os.listdir(pdf_directory):
     if filename.lower().endswith('.pdf'):
         pdf_path = os.path.join(pdf_directory, filename)
-        process_pdf_file(pdf_path, magick_path, temp_directory, processed_directory)
+        process_pdf_file(pdf_path, temp_directory, processed_directory)
