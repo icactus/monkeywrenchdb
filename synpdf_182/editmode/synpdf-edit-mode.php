@@ -251,10 +251,12 @@ html {
                         <div>
                             <label for="composer_last">New Composer Last</label>
                             <input type="text" name="composer_last" placeholder="Enter Composer Last" />
-
+                        </div>
+                        <div>
                             <label for="composer_first">New Composer First</label>
                             <input type="text" name="composer_first" placeholder="Enter Composer First" />
-
+                        </div>
+                        <div>
                             <label for="composers_list">Current Composer List</label>
                             <select name="composers_list">
                                 <?php foreach($composersArray as $id => $name): ?>
@@ -267,28 +269,34 @@ html {
                 </form>
                 <!-- add new piece -->
                 <form class="inputform" id="addnewpieceform" method="POST">
-                    <div>
-                        <label for="piece_name">Add New Piece</label>
-                        <input type="text" name="piece_name" placeholder="Enter piece_name" />
-                    
-                        <select name="composer_id">
-                            <?php foreach($composersArray as $composer_id => $name): ?>
-                                <option value="<?php echo $composer_id; ?>"><?php echo $name; ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <label for="category_id">Category:</label>
-                        <select name="category_id">
-                            <?php foreach($categoriesArray as $category_id => $category_display): ?>
-                                <option value="<?php echo $category_id; ?>"><?php echo $category_display; ?></option>
-                            <?php endforeach; ?>
-                        </select>
-
-                        <label for="solo_instrument_id">Solo Instrument:</label>
-                        <select name="solo_instrument_id">
-                            <?php foreach($instrumentsArray as $instrument_id => $instrument_display): ?>
-                                <option value="<?php echo $instrument_id; ?>"><?php echo $instrument_display; ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                    <div style="display:flex;">
+                        <div>
+                            <label for="piece_name">Add New Piece</label>
+                            <input type="text" name="piece_name" placeholder="Enter piece_name" />
+                        </div>
+                        <div> 
+                            <select name="composer_id">
+                                <?php foreach($composersArray as $composer_id => $name): ?>
+                                    <option value="<?php echo $composer_id; ?>"><?php echo $name; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="category_id">Category:</label>
+                            <select name="category_id">
+                                <?php foreach($categoriesArray as $category_id => $category_display): ?>
+                                    <option value="<?php echo $category_id; ?>"><?php echo $category_display; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="solo_instrument_id">Solo Instrument:</label>
+                            <select name="solo_instrument_id">
+                                <?php foreach($instrumentsArray as $instrument_id => $instrument_display): ?>
+                                    <option value="<?php echo $instrument_id; ?>"><?php echo $instrument_display; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                         <input type="submit" value="Submit" />
                     </div>
                 </form>
