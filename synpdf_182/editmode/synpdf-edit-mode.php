@@ -251,12 +251,10 @@ html {
                         <div>
                             <label for="composer_last">New Composer Last</label>
                             <input type="text" name="composer_last" placeholder="Enter Composer Last" />
-                        </div>
-                        <div>
+
                             <label for="composer_first">New Composer First</label>
                             <input type="text" name="composer_first" placeholder="Enter Composer First" />
-                        </div>
-                        <div>
+
                             <label for="composers_list">Current Composer List</label>
                             <select name="composers_list">
                                 <?php foreach($composersArray as $id => $name): ?>
