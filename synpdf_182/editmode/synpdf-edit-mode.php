@@ -275,6 +275,7 @@ html {
                             <input type="text" name="piece_name" placeholder="Enter piece_name" />
                         </div>
                         <div> 
+                            <label for="composer_id">Composer Name</label>
                             <select name="composer_id">
                                 <?php foreach($composersArray as $composer_id => $name): ?>
                                     <option value="<?php echo $composer_id; ?>"><?php echo $name; ?></option>
