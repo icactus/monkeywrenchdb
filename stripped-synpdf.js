@@ -939,7 +939,19 @@ function yubApiReady$$module$synpdf() {
                 yubload$$module$synpdf();
                 setupPlayPauseButton();
                 onPlayerReady();
-
+                // Attach focus management to the YouTube iframe once it's ready
+                const youtubePlayer = document.getElementById('vidyub');
+                if (youtubePlayer) {
+                    youtubePlayer.addEventListener('focus', () => {
+                        setTimeout(() => {
+                            youtubePlayer.blur();
+                            if (deNot$$module$synpdf) {
+                                deNot$$module$synpdf.focus();
+                            }
+                            console.log('YouTube player blurred and notation focused');
+                        }, 10); // Delay to allow focus before blurring
+                    });
+                }
             },
             'onStateChange': onPlayerStateChange
         }
@@ -1270,22 +1282,7 @@ $(document).ready(function() {
     deNot$$module$synpdf = document.getElementById("notation");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
-    $("body").keydown(function(event) {
-        console.log('keydown');
-        const youtubePlayer = document.getElementById('vidyub');
-
-        // If YouTube player is focused, blur it to prevent keyboard control
-        if (youtubePlayer && document.activeElement === youtubePlayer) {
-            youtubePlayer.blur();
-            // Optionally set focus to 'notation' div or another main element
-            deNot$$module$synpdf.focus();
-            console.log('denot was focused');
-        }
-
-        // Call the main key handler
-        keyDown$$module$synpdf(event);
-        console.log('keydown called');
-    });
+    $("body").keydown(keyDown$$module$synpdf);
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
     });
