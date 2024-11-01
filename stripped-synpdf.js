@@ -939,8 +939,7 @@ function yubApiReady$$module$synpdf() {
                 yubload$$module$synpdf();
                 setupPlayPauseButton();
                 onPlayerReady();
-                // Attach focus management to ensure player is not controlled by keys
-                attachGlobalKeyListener();
+
             },
             'onStateChange': onPlayerStateChange
         }
@@ -1267,25 +1266,23 @@ function hideMenuHelp$$module$synpdf(a) {
     return b
 }
 
-function attachGlobalKeyListener() {
-    document.addEventListener('keydown', function(event) {
-        // Reference to the YouTube iframe
-        const youtubePlayer = document.getElementById('vidyub');
-
-        // If the YouTube player is focused, blur it to prevent keyboard control
-        if (youtubePlayer && document.activeElement === youtubePlayer) {
-            youtubePlayer.blur();
-        }
-
-        // Then call your existing key handler function to proceed as intended
-        keyDown$$module$synpdf(event);
-    });
-}
-
 $(document).ready(function() {
     deNot$$module$synpdf = document.getElementById("notation");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
+    $("body").keydown(function(event) {
+        const youtubePlayer = document.getElementById('vidyub');
+
+        // If YouTube player is focused, blur it to prevent keyboard control
+        if (youtubePlayer && document.activeElement === youtubePlayer) {
+            youtubePlayer.blur();
+            // Optionally set focus to 'notation' div or another main element
+            deNot$$module$synpdf.focus();
+        }
+
+        // Call the main key handler
+        keyDown$$module$synpdf(event);
+    });
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
     });
