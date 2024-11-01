@@ -1271,6 +1271,7 @@ $(document).ready(function() {
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
     $("body").keydown(function(event) {
+        console.log('keydown');
         const youtubePlayer = document.getElementById('vidyub');
 
         // If YouTube player is focused, blur it to prevent keyboard control
@@ -1278,10 +1279,12 @@ $(document).ready(function() {
             youtubePlayer.blur();
             // Optionally set focus to 'notation' div or another main element
             deNot$$module$synpdf.focus();
+            console.log('denot was focused');
         }
 
         // Call the main key handler
         keyDown$$module$synpdf(event);
+        console.log('keydown called');
     });
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
