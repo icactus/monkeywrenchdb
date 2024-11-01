@@ -1157,10 +1157,6 @@ function pauseer$$module$synpdf() {
 function keyDown$$module$synpdf(a) {
     var b = a.key,
         c = 1;
-    // Prevent the default action for arrow keys to avoid YouTube player control
-    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown'].includes(b)) {
-        a.preventDefault && a.preventDefault();
-    }
     switch (b) {
         case "ArrowLeft":
         case "Left":
@@ -1274,7 +1270,7 @@ $(document).ready(function() {
     deNot$$module$synpdf = document.getElementById("notation");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
-    $(window).keydown(keyDown$$module$synpdf);
+    $("body").keydown(keyDown$$module$synpdf);
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
     });
