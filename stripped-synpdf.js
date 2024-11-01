@@ -939,19 +939,7 @@ function yubApiReady$$module$synpdf() {
                 yubload$$module$synpdf();
                 setupPlayPauseButton();
                 onPlayerReady();
-                // Attach focus management to the YouTube iframe once it's ready
-                const youtubePlayer = document.getElementById('vidyub');
-                if (youtubePlayer) {
-                    youtubePlayer.addEventListener('focus', () => {
-                        setTimeout(() => {
-                            youtubePlayer.blur();
-                            if (deNot$$module$synpdf) {
-                                deNot$$module$synpdf.focus();
-                            }
-                            console.log('YouTube player blurred and notation focused');
-                        }, 10); // Delay to allow focus before blurring
-                    });
-                }
+
             },
             'onStateChange': onPlayerStateChange
         }
@@ -1169,6 +1157,10 @@ function pauseer$$module$synpdf() {
 function keyDown$$module$synpdf(a) {
     var b = a.key,
         c = 1;
+    // Prevent the default action for arrow keys to avoid YouTube player control
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown'].includes(b)) {
+        a.preventDefault && a.preventDefault();
+    }
     switch (b) {
         case "ArrowLeft":
         case "Left":
@@ -1282,7 +1274,7 @@ $(document).ready(function() {
     deNot$$module$synpdf = document.getElementById("notation");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
-    $("body").keydown(keyDown$$module$synpdf);
+    $(window).keydown(keyDown$$module$synpdf);
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
     });
