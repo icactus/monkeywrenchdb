@@ -939,29 +939,12 @@ function yubApiReady$$module$synpdf() {
                 yubload$$module$synpdf();
                 setupPlayPauseButton();
                 onPlayerReady();
-
-                // Attach focus management to the YouTube iframe
-                attachYouTubeFocusManagement();
+                // Attach focus management to ensure player is not controlled by keys
+                attachGlobalKeyListener();
             },
             'onStateChange': onPlayerStateChange
         }
     });
-}
-
-function attachYouTubeFocusManagement() {
-    const youtubePlayer = document.getElementById("vidyub");
-    if (youtubePlayer) {
-        // Add a click event listener to the YouTube iframe
-        youtubePlayer.addEventListener("click", () => {
-            // Add a slight delay to ensure the player registers the click first
-            setTimeout(() => {
-                // Blur the YouTube player to remove focus from it
-                youtubePlayer.blur();
-                // Optionally focus back to the main content div
-                document.getElementById('notation').focus();
-            }, 500); // Adjust the delay if needed
-        });
-    }
 }
 function onPlayerReady() {
     document.getElementById('notation').focus();
@@ -1284,11 +1267,25 @@ function hideMenuHelp$$module$synpdf(a) {
     return b
 }
 
+function attachGlobalKeyListener() {
+    document.addEventListener('keydown', function(event) {
+        // Reference to the YouTube iframe
+        const youtubePlayer = document.getElementById('vidyub');
+
+        // If the YouTube player is focused, blur it to prevent keyboard control
+        if (youtubePlayer && document.activeElement === youtubePlayer) {
+            youtubePlayer.blur();
+        }
+
+        // Then call your existing key handler function to proceed as intended
+        keyDown$$module$synpdf(event);
+    });
+}
+
 $(document).ready(function() {
     deNot$$module$synpdf = document.getElementById("notation");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
-    $("body").keydown(keyDown$$module$synpdf);
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
     });
