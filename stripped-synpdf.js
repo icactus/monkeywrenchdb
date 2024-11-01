@@ -940,10 +940,28 @@ function yubApiReady$$module$synpdf() {
                 setupPlayPauseButton();
                 onPlayerReady();
 
+                // Attach focus management to the YouTube iframe
+                attachYouTubeFocusManagement();
             },
             'onStateChange': onPlayerStateChange
         }
     });
+}
+
+function attachYouTubeFocusManagement() {
+    const youtubePlayer = document.getElementById("vidyub");
+    if (youtubePlayer) {
+        // Add a click event listener to the YouTube iframe
+        youtubePlayer.addEventListener("click", () => {
+            // Add a slight delay to ensure the player registers the click first
+            setTimeout(() => {
+                // Blur the YouTube player to remove focus from it
+                youtubePlayer.blur();
+                // Optionally focus back to the main content div
+                document.getElementById('notation').focus();
+            }, 500); // Adjust the delay if needed
+        });
+    }
 }
 function onPlayerReady() {
     document.getElementById('notation').focus();
