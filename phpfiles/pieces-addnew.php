@@ -15,14 +15,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $piece_name = $_POST['piece_name'];
     $composer_id = $_POST['composer_id'];
     $category_id = $_POST['category_id'];
-    $solo_instrument_id = $_POST['solo_instrument_id'];
+    $solo_instrument_id = isset($_POST['solo_instrument_id']) && $_POST['solo_instrument_id'] !== "null" ? (int)$_POST['solo_instrument_id'] : null;
 
     // SQL query to insert data into pieces table
     $insertQuery = "INSERT INTO pieces (piece_name, composer_id, category_id, solo_instrument_id) VALUES (?, ?, ?, ?)";
 
     // Prepare and execute the query
     $stmt = $mysqli->prepare($insertQuery);
-    $stmt->bind_param("siii", $piece_name, $composer_id, $category_id, $solo_instrument_id); // "siii" - string for piece_name and three integers for composer_id, category_id, solo_instrument_id
+    
+    if ($solo_instrument_id === null) {
+        $stmt->bind_param("sii", $piece_name, $composer_id, $category_id);
+    } else {
+        $stmt->bind_param("siii", $piece_name, $composer_id, $category_id, $solo_instrument_id);
+    }
+
     $stmt->execute();
 
     if ($stmt->affected_rows === 0) {

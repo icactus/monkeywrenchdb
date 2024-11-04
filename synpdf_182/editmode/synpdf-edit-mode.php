@@ -10,7 +10,7 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 
-    <script src="synpdf-edit-mode.js?v=16"></script>
+    <script src="synpdf-edit-mode.js?v=17"></script>
     <style>
 html { width:100%; height:100%; margin: 0px; padding: 0px; background:white/*#e3f7fe*/; }
 body { width: 100%; height: 100%; margin: 0px; padding: 0px; background:white/*#e3f7fe*/; transition: filter 0.5s; }
@@ -420,7 +420,7 @@ html {
         </div>
     <!--</div> -->
 <!-- </div> -->
-<script src="edit-mode-tools.js?v=26"></script>
+<script src="edit-mode-tools.js?v=27"></script>
 
 </body>
 </html>

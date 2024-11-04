@@ -508,6 +508,13 @@ addNewPieceForm.addEventListener("submit", function(event) {
     event.preventDefault(); // Prevent the form from submitting normally
 
     const formData = new FormData(addNewPieceForm);
+
+    // Handle "None" selection for solo_instrument_id
+    const soloInstrumentSelect = addNewPieceForm.querySelector('select[name="solo_instrument_id"]');
+    if (soloInstrumentSelect && soloInstrumentSelect.value === "") {
+        formData.set('solo_instrument_id', 'null'); // Set to 'null' as a string to handle appropriately in PHP
+    }
+
     formData.append('action', 'add_piece');
 
     fetch("./dispatcher.php", {
