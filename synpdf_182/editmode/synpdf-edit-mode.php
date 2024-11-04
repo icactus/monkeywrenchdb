@@ -292,9 +292,12 @@ html {
                         </div>
                         <div>
                             <label for="solo_instrument_id">Solo Instrument:</label>
-                            <select name="solo_instrument_id">
+                            <select name="solo_instrument_id" id="solo_instrument_id">
+                                <!-- Add a "None" option before the dynamic options are added -->
+                                <option value="" <?php echo !isset($_POST['solo_instrument_id']) || $_POST['solo_instrument_id'] == "" ? 'selected' : ''; ?>>None</option>
+                                
                                 <?php foreach($instrumentsArray as $instrument_id => $instrument_display): ?>
-                                    <option value="<?php echo $instrument_id; ?>"><?php echo $instrument_display; ?></option>
+                                    <option value="<?php echo $instrument_id; ?>" <?php echo isset($_POST['solo_instrument_id']) && $_POST['solo_instrument_id'] == $instrument_id ? 'selected' : ''; ?>><?php echo $instrument_display; ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
