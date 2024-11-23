@@ -670,7 +670,7 @@ var renderingTasks = [];
 function goPage$$module$synpdf(pageNum, cumulativeHeight) {
     return pdfDoc$$module$synpdf.getPage(pageNum).then(function(page) {
         var viewport2 = page.getViewport({ scale: (deMetriek$$module$synpdf[0] / page._pageInfo.view[2]) });
-        var viewport = page.getViewport({ scale: 3 });
+        var viewport = page.getViewport({ scale: 5 });
         var canvas = document.createElement("canvas");
         var ctx = canvas.getContext("2d");
         canvas.id = 'canvas' + pageNum;
