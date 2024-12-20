@@ -687,22 +687,23 @@ var renderingTasks = [];
 function goPage$$module$synpdf(pageNum, cumulativeHeight) {
     return pdfDoc$$module$synpdf.getPage(pageNum).then(function(page) {
         const devicePixelRatio = window.devicePixelRatio || 1; // For high-resolution displays
-        const scale = deMetriek$$module$synpdf[0] / page._pageInfo.view[2]; // Full resolution scale factor
+        const scale = deMetriek$$module$synpdf[0] / page._pageInfo.view[2]; // Base scale factor
+        const enhancedScale = scale * devicePixelRatio * 2; // Double resolution
 
-        // Viewport for full-resolution rendering
-        let viewport = page.getViewport({ scale: scale * devicePixelRatio}); 
+        // Viewport for high-resolution rendering
+        let viewport = page.getViewport({ scale: enhancedScale });
 
         // Create canvas element
-        let canvas = document.createElement("canvas");
+        let canvas = document.createElement("canvas"); // Use let for reassignability
         let ctx = canvas.getContext("2d");
 
         canvas.id = `canvas${pageNum}`;
-        canvas.width = Math.floor(viewport.width*2); // Full resolution width - 2 for rotation or zoom quality
-        canvas.height = Math.floor(viewport.height*2); // Full resolution height - 2 for rotation or zoom quality
+        canvas.width = Math.floor(viewport.width); // Full resolution width
+        canvas.height = Math.floor(viewport.height); // Full resolution height
 
-        // Set CSS size for initial zoom (default view)
-        canvas.style.width = `${viewport.width / devicePixelRatio}px`;
-        canvas.style.height = `${viewport.height / devicePixelRatio}px`;
+        // Set CSS size for default zoom (logical size for display)
+        canvas.style.width = `${viewport.width / (devicePixelRatio * 2)}px`; // Downscale visually
+        canvas.style.height = `${viewport.height / (devicePixelRatio * 2)}px`;
 
         // Queue rendering task
         renderingTasks.push(() => {
@@ -712,7 +713,7 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
             }).promise;
         });
 
-        // Additional processing for canvas (e.g., attaching to DOM)
+        // Reassign canvas after processing
         canvas = compPage$$module$synpdf(canvas, pageNum, cumulativeHeight);
 
         // Handle first page timing for new instruments
@@ -728,7 +729,7 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
             if (pageNum < pdfDoc$$module$synpdf.numPages) {
                 if (pageNum === 1) renderedPages = 1; // Start rendering counter
                 $("#loadingMessage2").show();
-                return goPage$$module$synpdf(pageNum + 1, cumulativeHeight + viewport.height / devicePixelRatio);
+                return goPage$$module$synpdf(pageNum + 1, cumulativeHeight + viewport.height / (devicePixelRatio * 2));
             } else {
                 // Finalize rendering
                 rendering$$module$synpdf = 0;
