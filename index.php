@@ -181,7 +181,7 @@
             </div>
         </section3>
 
-    <script src="stripped-synpdf.js?v=31"></script>
+    <script src="stripped-synpdf.js?v=32"></script>
     <script src="stripped-synpdf-extras.js?v=25"></script>
 </body>
 </html>
