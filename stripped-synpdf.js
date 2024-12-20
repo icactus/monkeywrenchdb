@@ -686,45 +686,63 @@ var renderingTasks = [];
 
 function goPage$$module$synpdf(pageNum, cumulativeHeight) {
     return pdfDoc$$module$synpdf.getPage(pageNum).then(function(page) {
-        var viewport2 = page.getViewport({ scale: (deMetriek$$module$synpdf[0] / page._pageInfo.view[2]) });
-        var viewport = page.getViewport({ scale: 2 });
-        var canvas = document.createElement("canvas");
-        var ctx = canvas.getContext("2d");
-        canvas.id = 'canvas' + pageNum;
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        canvas.style.width = viewport2.width + "px";
-        canvas.style.height = viewport2.height + "px";
+        const devicePixelRatio = window.devicePixelRatio || 1; // For high-resolution displays
+        const scale = deMetriek$$module$synpdf[0] / page._pageInfo.view[2]; // Full resolution scale factor
 
-        // Store the rendering task instead of executing it immediately
-        renderingTasks.push(function() {
+        // Viewport for full-resolution rendering
+        const viewport = page.getViewport({ scale: scale * devicePixelRatio });
+
+        // Create canvas element
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.id = `canvas${pageNum}`;
+        canvas.width = Math.floor(viewport.width); // Full resolution width
+        canvas.height = Math.floor(viewport.height); // Full resolution height
+
+        // Set CSS size for initial zoom (default view)
+        canvas.style.width = `${viewport.width / devicePixelRatio}px`;
+        canvas.style.height = `${viewport.height / devicePixelRatio}px`;
+
+        // Queue rendering task
+        renderingTasks.push(() => {
             return page.render({
                 canvasContext: ctx,
                 viewport: viewport,
             }).promise;
         });
+
+        // Additional processing for canvas (e.g., attaching to DOM)
         canvas = compPage$$module$synpdf(canvas, pageNum, cumulativeHeight);
+
+        // Handle first page timing for new instruments
         if (pageNum === 1 && newInstrumentTime2xFlag === 1) {
             msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
             newInstrumentTime2xFlag = 0;
         }
+
+        // Handle resizing or recursive rendering of subsequent pages
         if (doresize$$module$synpdf) {
             resizePdf$$module$synpdf();
         } else {
             if (pageNum < pdfDoc$$module$synpdf.numPages) {
-                if (pageNum === 1) { renderedPages = 1 }; // start pages at 1 in case part switched before done rendering
+                if (pageNum === 1) renderedPages = 1; // Start rendering counter
                 $("#loadingMessage2").show();
-                return goPage$$module$synpdf(pageNum + 1, cumulativeHeight + viewport2.height);
+                return goPage$$module$synpdf(pageNum + 1, cumulativeHeight + viewport.height / devicePixelRatio);
             } else {
+                // Finalize rendering
                 rendering$$module$synpdf = 0;
                 addDummySys$$module$synpdf();
                 renderedPages = 1;
                 $("#loadingMessage2").hide();
 
-                // Once all pages are processed, execute the rendering tasks
+                // Execute queued rendering tasks
                 renderVisibleAndNextPage();
             }
         }
+    }).catch(function(error) {
+        console.error(`Failed to render page ${pageNum}:`, error);
+        $("#loadingMessage2").hide();
     });
 }
 
