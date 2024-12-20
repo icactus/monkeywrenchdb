@@ -690,15 +690,15 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
         const scale = deMetriek$$module$synpdf[0] / page._pageInfo.view[2]; // Full resolution scale factor
 
         // Viewport for full-resolution rendering
-        let viewport = page.getViewport({ scale: scale * devicePixelRatio * 2 }); // 2 for future rotating or zooming 
+        let viewport = page.getViewport({ scale: scale * devicePixelRatio}); 
 
         // Create canvas element
         let canvas = document.createElement("canvas");
         let ctx = canvas.getContext("2d");
 
         canvas.id = `canvas${pageNum}`;
-        canvas.width = Math.floor(viewport.width); // Full resolution width
-        canvas.height = Math.floor(viewport.height); // Full resolution height
+        canvas.width = Math.floor(viewport.width*2); // Full resolution width - 2 for rotation or zoom quality
+        canvas.height = Math.floor(viewport.height*2); // Full resolution height - 2 for rotation or zoom quality
 
         // Set CSS size for initial zoom (default view)
         canvas.style.width = `${viewport.width / devicePixelRatio}px`;
