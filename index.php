@@ -181,8 +181,8 @@
             </div>
         </section3>
 
-    <script src="pdf.min.js"></script>
-    <script src="stripped-synpdf.js?v=22"></script>
+    <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.min.mjs"></script>
+    <script type="module" src="stripped-synpdf.js?v=22"></script>
     <script src="stripped-synpdf-extras.js?v=25"></script>
 </body>
 </html>
