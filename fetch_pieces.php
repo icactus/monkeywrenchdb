@@ -37,7 +37,7 @@ $sql = "
       CASE 
         WHEN pc.category_id = 5 THEN 
           CASE
-            -- If there's a matching 'solo' instrument for this piece that equals main.instrument_name,
+            -- If matching 'solo' instrument for this piece that equals main.instrument_name,
             -- display 'Violin + Orchestra' (or 'Flute + Orchestra', etc.)
             WHEN EXISTS (
               SELECT 1
