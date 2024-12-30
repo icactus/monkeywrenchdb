@@ -35,30 +35,15 @@ $sql = "
       p.piece_id,
       p.piece_name,
       CASE 
-        WHEN pc.category_id = 5 THEN 
-          CASE
-            -- 1) If 'main.instrument_name' is 'Orchestra Full Score', override to 'Solo + Orchestra'
-            WHEN main.instrument_name = 'Orchestra Full Score' 
-              THEN 'Solo + Orchestra'
-            
-            -- 2) If there's a matching solo instrument for this piece that equals 'main.instrument_name',
-            --    display 'Violin + Orchestra' (or 'Flute + Orchestra', etc.)
-            WHEN EXISTS (
-              SELECT 1
-              FROM instruments solo
-              JOIN pieces pp ON pp.solo_instrument_id = solo.instrument_id
-              WHERE pp.piece_id = p.piece_id
-                AND solo.instrument_name = main.instrument_name
-            )
-            THEN CONCAT(main.instrument_name, ' + Orchestra')
-            
-            -- 3) Otherwise, default to 'Solo + Orchestra'
-            ELSE 'Solo + Orchestra'
-          END
-        ELSE
-          pc.category_name 
+        WHEN pc.category_id = 5 AND EXISTS (
+          SELECT 1
+          FROM instruments solo
+          JOIN pieces pp ON pp.solo_instrument_id = solo.instrument_id
+          WHERE pp.piece_id = p.piece_id
+          AND solo.instrument_name != main.instrument_name
+        ) THEN 'Orchestra'
+        ELSE pc.category_name 
       END AS category_name,
-      
       p.composer_id AS composer_id,
       c.composer_last AS composer_last,
       MAX(m.metric_arr_id) AS metric_arr_id,
