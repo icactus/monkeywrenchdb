@@ -292,7 +292,7 @@ document.addEventListener('keydown', function(event) {
             }
             resizePdfSyn$$module$synpdf();
             break;
-        case 's':
+        case 'M':
             $('#database-menus').toggle();
             break;
     }
