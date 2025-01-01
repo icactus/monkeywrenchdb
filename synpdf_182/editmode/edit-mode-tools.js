@@ -474,67 +474,79 @@ function editCxsGroups$$module$synpdf(event) {
     }
 }
 
-//submit forms without navigating away
-const addNewComposerForm = document.getElementById("addnewcomposerform");
-addNewComposerForm.addEventListener("submit", function(event) {
-    event.preventDefault(); // Prevent the form from submitting normally
+// Example: Submitting the "Add Composer" form
+const addNewComposerForm = document.getElementById('addnewcomposerform');
+addNewComposerForm.addEventListener('submit', function (event) {
+    event.preventDefault();
 
-    const formData = new FormData(addNewComposerForm);
-    formData.append('action', 'add_composer');
+    const formData = new FormData(this);
+    formData.append('action', 'add_composer');  // so dispatcher knows what to include
 
-    fetch("./dispatcher.php", {
-        method: "POST",
+    fetch('./dispatcher.php', {
+        method: 'POST',
         body: formData
     })
-        .then(response => response.text())
-        .then(data => {
-            // Handle the response from the server
-            console.log(data);
-            if (data.startsWith('Error')) {
-                alert("Form submission failed");
-            } else if (data === "success") {
-                alert("Form submitted successfully");
+    .then(response => response.json()) 
+    .then(data => {
+        console.log('Dispatcher response:', data);
+        if (data.success) {
+            alert(data.message || 'Composer added successfully!');
+            // e.g., update composer dropdown
+            const composerDropdown = document.querySelector('select[name="composer_id"]');
+            if (composerDropdown && data.composers) {
+                composerDropdown.innerHTML = '';
+                data.composers.forEach(composer => {
+                    const opt = document.createElement('option');
+                    opt.value = composer.id;
+                    opt.textContent = composer.name;
+                    composerDropdown.appendChild(opt);
+                });
             }
-        })
-
-        .catch(error => {
-            // Handle any errors that occur during the request
-            console.error(error);
-        });
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error adding composer:', error);
+        alert('An error occurred.');
+    });
 });
-//submit forms without navigating away
-const addNewPieceForm = document.getElementById("addnewpieceform");
-addNewPieceForm.addEventListener("submit", function(event) {
-    event.preventDefault(); // Prevent the form from submitting normally
+// Example: Submitting the "Add New Piece" form
+const addNewPieceForm = document.getElementById('addnewpieceform');
+addNewPieceForm.addEventListener('submit', function (event) {
+    event.preventDefault();
 
-    const formData = new FormData(addNewPieceForm);
+    const formData = new FormData(this);
+    formData.append('action', 'add_piece');  // so dispatcher knows what to include
 
-    // Handle "None" selection for solo_instrument_id
-    const soloInstrumentSelect = addNewPieceForm.querySelector('select[name="solo_instrument_id"]');
-    if (soloInstrumentSelect && soloInstrumentSelect.value === "") {
-        formData.set('solo_instrument_id', 'null'); // Set to 'null' as a string to handle appropriately in PHP
-    }
-
-    formData.append('action', 'add_piece');
-
-    fetch("./dispatcher.php", {
-        method: "POST",
+    fetch('./dispatcher.php', {
+        method: 'POST',
         body: formData
     })
-        .then(response => response.text())
-        .then(data => {
-            // Handle the response from the server
-            console.log(data);
-            if (data.startsWith('Error')) {
-                alert("Form submission failed");
-            } else if (data === "success") {
-                alert("Form submitted successfully");
+    .then(response => response.json())
+    .then(data => {
+        console.log('Dispatcher response:', data);
+        if (data.success) {
+            alert(data.message || 'Piece added successfully!');
+            // e.g., update piece dropdown
+            const pieceDropdown = document.querySelector('select[name="piece_id"]');
+            if (pieceDropdown && data.pieces) {
+                pieceDropdown.innerHTML = '';
+                data.pieces.forEach(piece => {
+                    const opt = document.createElement('option');
+                    opt.value = piece.id;
+                    opt.textContent = piece.name;
+                    pieceDropdown.appendChild(opt);
+                });
             }
-        })
-        .catch(error => {
-            // Handle any errors that occur during the request
-            console.error(error);
-        });
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error adding piece:', error);
+        alert('An error occurred.');
+    });
 });
 
 const addNewMetricForm = document.getElementById("addnewmetricform");
@@ -739,78 +751,7 @@ function frontT(startIndex, endIndex) {
 }
 
 
-// For Edit Mode forms
-// Handles form submissions for adding composers or pieces
-function handleEditModeFormSubmission(formId, apiEndpoint, updateCallback) {
-    const form = document.getElementById(formId);
-
-    form.addEventListener("submit", function (event) {
-        event.preventDefault(); // Prevent the form from reloading the page
-
-        const formData = new FormData(this);
-
-        // Send the form data via AJAX
-        fetch(apiEndpoint, {
-            method: "POST",
-            body: formData,
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Call the appropriate update function
-                updateCallback(data);
-                alert(data.message || "Operation successful!");
-            } else {
-                alert(data.message || "Something went wrong.");
-            }
-        })
-        .catch(error => console.error(`Error in ${formId} submission:`, error));
-    });
-}
-
-// Updates only composer dropdowns
-function updateComposerDropdowns(data) {
-    if (data.composers) {
-        const composerDropdowns = document.querySelectorAll("select[name='composers_list'], select[name='composer_id']");
-        composerDropdowns.forEach(dropdown => {
-            dropdown.innerHTML = ""; // Clear existing options
-            data.composers.forEach(composer => {
-                const option = document.createElement("option");
-                option.value = composer.id;
-                option.textContent = composer.name;
-                dropdown.appendChild(option);
-            });
-        });
-    }
-}
-
-// Updates only piece dropdowns
-function updatePieceDropdowns(data) {
-    if (data.pieces) {
-        const pieceDropdowns = document.querySelectorAll("select[name='piece_id']");
-        pieceDropdowns.forEach(dropdown => {
-            dropdown.innerHTML = ""; // Clear existing options
-            data.pieces.forEach(piece => {
-                const option = document.createElement("option");
-                option.value = piece.id;
-                option.textContent = piece.name;
-                dropdown.appendChild(option);
-            });
-        });
-    }
-}
-
-// Attach the event handlers to forms
-function initializeEditModeFormHandlers() {
-    // Update composer dropdowns when a new composer is added
-    handleEditModeFormSubmission("addnewcomposerform", "add_composer.php", updateComposerDropdowns);
-
-    // Update piece dropdowns when a new piece is added
-    handleEditModeFormSubmission("addnewpieceform", "add_piece.php", updatePieceDropdowns);
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-    initializeEditModeFormHandlers();
     document.getElementById('goto-measure-form').addEventListener('submit', function(event) {
         event.preventDefault();
         return gotoMeasure();
