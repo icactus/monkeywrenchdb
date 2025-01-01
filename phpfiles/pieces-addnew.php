@@ -47,23 +47,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             SELECT p.piece_id, p.piece_name, c.composer_last 
             FROM pieces p
             LEFT JOIN composers c ON p.composer_id = c.composer_id
-            ORDER BY p.piece_name ASC
         ");
 
         if ($result) {
             $piecesArray = [];
             while ($row = $result->fetch_assoc()) {
-                $piecesArray[$row["piece_id"]] = $row["composer_last"] . " #" . $row["piece_id"] . " - " . $row["piece_name"];
+                $piecesArray[] = [
+                    'id' => $row['piece_id'],
+                    'name' => $row['composer_last'] . " #" . $row['piece_id'] . " - " . $row['piece_name']
+                ];
             }
 
-            // Return success response with updated pieces array
             echo json_encode([
                 'success' => true,
                 'message' => 'Piece added successfully!',
-                'pieces' => $piecesArray
+                'pieces' => $piecesArray // Unsorted array
             ]);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to fetch updated piece list']);
+            echo json_encode(['success' => false, 'message' => 'Failed to fetch pieces']);
         }
     } else {
         echo json_encode(['success' => false, 'message' => 'Error inserting piece: ' . $stmt->error]);

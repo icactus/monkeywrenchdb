@@ -536,14 +536,18 @@ addNewPieceForm.addEventListener('submit', function (event) {
             // e.g., update piece dropdown
             if (data.pieces) {
                 const pieceDropdowns = document.querySelectorAll("select[name='piece_id']");
+
+                // Sort the pieces array by the 'name' field
+                const sortedPieces = data.pieces.sort((a, b) => a.name.localeCompare(b.name));
+
                 pieceDropdowns.forEach(dropdown => {
                     dropdown.innerHTML = ""; // Clear existing options
-                    for (const [id, name] of Object.entries(data.pieces)) {
+                    sortedPieces.forEach(piece => {
                         const option = document.createElement("option");
-                        option.value = id;
-                        option.textContent = name;
+                        option.value = piece.id;
+                        option.textContent = piece.name;
                         dropdown.appendChild(option);
-                    }
+                    });
                 });
             }
         } else {
