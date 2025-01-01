@@ -1,4 +1,4 @@
-//~ Copyright (C) 2024: Isaac Trapkus
+//~ Copyright (C) 2023-2025: Isaac Trapkus
 //~ Revision: 182, Copyright (C) 2015-2023: Willem Vree, contributions Stéphane David.
 //~ This program is free software; you can redistribute it and/or modify it under the terms of the
 //~ GNU General Public License as published by the Free Software Foundation; either version 2 of
@@ -386,7 +386,7 @@ var msc_VERSION$$module$synpdf = 182,
         sysprf: 0,
         onestf: 0
     },
-    //advanced options for finding measures//
+    //advanced options for identifying measures//
     adv_names$$module$synpdf = {
         drmpl: 1,
         drmpl2: 1,
@@ -1588,6 +1588,9 @@ function medbtnSwitch$$module$synpdf() {
 
 function yubApiReady$$module$synpdf() {
     ybplayer$$module$synpdf = new YT.Player("vidyub", {
+        playerVars: {
+            disablekb: 1 // keyboard controls mess up measure nav
+        },
         events: {
             onReady: function() {
                 $("#yubuse").prop("checked", !0);

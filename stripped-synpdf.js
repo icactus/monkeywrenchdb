@@ -969,6 +969,9 @@ function resizePdfSyn$$module$synpdf() {
 
 function yubApiReady$$module$synpdf() {
     ybplayer$$module$synpdf = new YT.Player("vidyub", {
+        playerVars: {
+            disablekb: 1 // keyboard controls mess up measure nav
+        },
         events: {
             'onReady': function() {
                 $("#yubuse").prop("checked", !0);
