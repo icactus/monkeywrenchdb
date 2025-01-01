@@ -696,6 +696,7 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
         // Create canvas element
         let canvas = document.createElement("canvas"); // Use let for reassignability
         let ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
 
         canvas.id = `canvas${pageNum}`;
         canvas.width = Math.floor(viewport.width); // Full resolution width
