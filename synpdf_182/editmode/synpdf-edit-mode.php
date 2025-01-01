@@ -226,8 +226,7 @@ html {
         <div id="database-menus-wrapper">
             <div id="database-menu-top">
                 <h3>Database Controls</h3>
-                <button id="database-menu-show" onclick="$('#database-menus').show(); return false;">Show</button>
-                <button id="database-menu-hide" onclick="$('#database-menus').hide(); return false;">Hide</button>
+                <button id="database-menu-toggle" onclick="$('#database-menus').toggle(); return false;">Show/Hide</button>
                 <div>
                     <div id="detix-box"></div>
                     <div id="demix-box"></div>
@@ -423,7 +422,7 @@ html {
         </div>
     <!--</div> -->
 <!-- </div> -->
-<script src="edit-mode-tools.js?v=35"></script>
+<script src="edit-mode-tools.js?v=36"></script>
 
 </body>
 </html>
