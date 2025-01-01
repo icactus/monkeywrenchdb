@@ -296,8 +296,7 @@ document.addEventListener('keydown', function(event) {
             $('#database-menus').toggle();
             break;
         case 'R':
-            const checkbox = document.getElementById('synbox');
-            checkbox.checked = !checkbox.checked;
+            $('#synbox').prop('checked', !$('#synbox').prop('checked'));
             break;
     }
 });
