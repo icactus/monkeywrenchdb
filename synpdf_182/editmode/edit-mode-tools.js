@@ -738,7 +738,79 @@ function frontT(startIndex, endIndex) {
     }
 }
 
+
+// For Edit Mode forms
+// Handles form submissions for adding composers or pieces
+function handleEditModeFormSubmission(formId, apiEndpoint, updateCallback) {
+    const form = document.getElementById(formId);
+
+    form.addEventListener("submit", function (event) {
+        event.preventDefault(); // Prevent the form from reloading the page
+
+        const formData = new FormData(this);
+
+        // Send the form data via AJAX
+        fetch(apiEndpoint, {
+            method: "POST",
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Call the appropriate update function
+                updateCallback(data);
+                alert(data.message || "Operation successful!");
+            } else {
+                alert(data.message || "Something went wrong.");
+            }
+        })
+        .catch(error => console.error(`Error in ${formId} submission:`, error));
+    });
+}
+
+// Updates only composer dropdowns
+function updateComposerDropdowns(data) {
+    if (data.composers) {
+        const composerDropdowns = document.querySelectorAll("select[name='composers_list'], select[name='composer_id']");
+        composerDropdowns.forEach(dropdown => {
+            dropdown.innerHTML = ""; // Clear existing options
+            data.composers.forEach(composer => {
+                const option = document.createElement("option");
+                option.value = composer.id;
+                option.textContent = composer.name;
+                dropdown.appendChild(option);
+            });
+        });
+    }
+}
+
+// Updates only piece dropdowns
+function updatePieceDropdowns(data) {
+    if (data.pieces) {
+        const pieceDropdowns = document.querySelectorAll("select[name='piece_id']");
+        pieceDropdowns.forEach(dropdown => {
+            dropdown.innerHTML = ""; // Clear existing options
+            data.pieces.forEach(piece => {
+                const option = document.createElement("option");
+                option.value = piece.id;
+                option.textContent = piece.name;
+                dropdown.appendChild(option);
+            });
+        });
+    }
+}
+
+// Attach the event handlers to forms
+function initializeEditModeFormHandlers() {
+    // Update composer dropdowns when a new composer is added
+    handleEditModeFormSubmission("addnewcomposerform", "add_composer.php", updateComposerDropdowns);
+
+    // Update piece dropdowns when a new piece is added
+    handleEditModeFormSubmission("addnewpieceform", "add_piece.php", updatePieceDropdowns);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    initializeEditModeFormHandlers();
     document.getElementById('goto-measure-form').addEventListener('submit', function(event) {
         event.preventDefault();
         return gotoMeasure();
