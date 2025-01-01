@@ -491,17 +491,22 @@ addNewComposerForm.addEventListener('submit', function (event) {
         console.log('Dispatcher response:', data);
         if (data.success) {
             alert(data.message || 'Composer added successfully!');
-            // e.g., update composer dropdown
-            const composerDropdown = document.querySelector('select[name="composer_id"]');
-            if (composerDropdown && data.composers) {
-                composerDropdown.innerHTML = '';
-                data.composers.forEach(composer => {
-                    const opt = document.createElement('option');
-                    opt.value = composer.id;
-                    opt.textContent = composer.name;
-                    composerDropdown.appendChild(opt);
-                });
-            }
+            
+            //select composer dropdowns
+            const composerDropdowns = document.querySelectorAll('select[name="composer_id"], select[name="composers_list"]');
+                if (composerDropdowns.length > 0 && data.composers) {
+                    composerDropdowns.forEach(dropdown => {
+                        dropdown.innerHTML = ''; // Clear existing options
+                        
+                        // Add new options from the updated composer list
+                        data.composers.forEach(composer => {
+                            const opt = document.createElement('option');
+                            opt.value = composer.id;
+                            opt.textContent = composer.name;
+                            dropdown.appendChild(opt);
+                        });
+                    });
+                }
         } else {
             alert('Error: ' + data.message);
         }
