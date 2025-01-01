@@ -18,7 +18,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $piece_name = $_POST['piece_name'] ?? '';
     $composer_id = $_POST['composer_id'] ?? '';
     $category_id = $_POST['category_id'] ?? '';
-    $solo_instrument_id = isset($_POST['solo_instrument_id']) && $_POST['solo_instrument_id'] !== "null" ? (int)$_POST['solo_instrument_id'] : null;
+    $solo_instrument_id = isset($_POST['solo_instrument_id']) && $_POST['solo_instrument_id'] !== '' 
+        ? (int)$_POST['solo_instrument_id'] 
+        : null;
 
     // Validate inputs
     if (empty($piece_name) || empty($composer_id) || empty($category_id)) {
@@ -26,39 +28,39 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         exit;
     }
 
-    // Prepare SQL query to insert data into pieces table
-    if ($solo_instrument_id === null) {
-        // Insert NULL for solo_instrument_id
-        $insertQuery = "INSERT INTO pieces (piece_name, composer_id, category_id, solo_instrument_id) VALUES (?, ?, ?, NULL)";
-        $stmt = $mysqli->prepare($insertQuery);
-        if (!$stmt) {
-            echo json_encode(['success' => false, 'message' => 'Error preparing statement: ' . $mysqli->error]);
-            exit;
-        }
-        $stmt->bind_param("sii", $piece_name, $composer_id, $category_id);
-    } else {
-        // Bind all values including solo_instrument_id
-        $insertQuery = "INSERT INTO pieces (piece_name, composer_id, category_id, solo_instrument_id) VALUES (?, ?, ?, ?)";
-        $stmt = $mysqli->prepare($insertQuery);
-        if (!$stmt) {
-            echo json_encode(['success' => false, 'message' => 'Error preparing statement: ' . $mysqli->error]);
-            exit;
-        }
-        $stmt->bind_param("siii", $piece_name, $composer_id, $category_id, $solo_instrument_id);
+    // Prepare a single SQL query
+    $insertQuery = "INSERT INTO pieces (piece_name, composer_id, category_id, solo_instrument_id) VALUES (?, ?, ?, ?)";
+    $stmt = $mysqli->prepare($insertQuery);
+
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Error preparing statement: ' . $mysqli->error]);
+        exit;
     }
+
+    // Bind all values, including NULL for solo_instrument_id if applicable
+    $stmt->bind_param("siii", $piece_name, $composer_id, $category_id, $solo_instrument_id);
 
     // Execute the query
     if ($stmt->execute()) {
         // Fetch the updated list of pieces
-        $result = $mysqli->query("SELECT piece_id AS id, piece_name AS name FROM pieces ORDER BY piece_name ASC");
-        if ($result) {
-            $pieces = $result->fetch_all(MYSQLI_ASSOC);
+        $result = $mysqli->query("
+            SELECT p.piece_id, p.piece_name, c.composer_last 
+            FROM pieces p
+            LEFT JOIN composers c ON p.composer_id = c.composer_id
+            ORDER BY p.piece_name ASC
+        ");
 
-            // Return success response with updated pieces
+        if ($result) {
+            $piecesArray = [];
+            while ($row = $result->fetch_assoc()) {
+                $piecesArray[$row["piece_id"]] = $row["composer_last"] . " #" . $row["piece_id"] . " - " . $row["piece_name"];
+            }
+
+            // Return success response with updated pieces array
             echo json_encode([
                 'success' => true,
                 'message' => 'Piece added successfully!',
-                'pieces' => $pieces
+                'pieces' => $piecesArray
             ]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to fetch updated piece list']);
