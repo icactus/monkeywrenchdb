@@ -422,7 +422,7 @@ html {
         </div>
     <!--</div> -->
 <!-- </div> -->
-<script src="edit-mode-tools.js?v=39"></script>
+<script src="edit-mode-tools.js?v=40"></script>
 
 </body>
 </html>
