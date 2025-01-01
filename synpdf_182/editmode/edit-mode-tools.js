@@ -516,7 +516,7 @@ addNewComposerForm.addEventListener('submit', function (event) {
         alert('An error occurred.');
     });
 });
-// Example: Submitting the "Add New Piece" form
+
 const addNewPieceForm = document.getElementById('addnewpieceform');
 addNewPieceForm.addEventListener('submit', function (event) {
     event.preventDefault();
@@ -534,14 +534,16 @@ addNewPieceForm.addEventListener('submit', function (event) {
         if (data.success) {
             alert(data.message || 'Piece added successfully!');
             // e.g., update piece dropdown
-            const pieceDropdown = document.querySelector('select[name="piece_id"]');
-            if (pieceDropdown && data.pieces) {
-                pieceDropdown.innerHTML = '';
-                data.pieces.forEach(piece => {
-                    const opt = document.createElement('option');
-                    opt.value = piece.id;
-                    opt.textContent = piece.name;
-                    pieceDropdown.appendChild(opt);
+            if (data.pieces) {
+                const pieceDropdowns = document.querySelectorAll("select[name='piece_id']");
+                pieceDropdowns.forEach(dropdown => {
+                    dropdown.innerHTML = ""; // Clear existing options
+                    for (const [id, name] of Object.entries(data.pieces)) {
+                        const option = document.createElement("option");
+                        option.value = id;
+                        option.textContent = name;
+                        dropdown.appendChild(option);
+                    }
                 });
             }
         } else {
