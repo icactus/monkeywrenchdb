@@ -292,7 +292,9 @@ document.addEventListener('keydown', function(event) {
             }
             resizePdfSyn$$module$synpdf();
             break;
-
+        case 's':
+            $('#database-menus').toggle();
+            break;
     }
 });
 
