@@ -295,6 +295,10 @@ document.addEventListener('keydown', function(event) {
         case 'M':
             $('#database-menus').toggle();
             break;
+        case 'R':
+            const checkbox = document.getElementById('synbox');
+            checkbox.checked = !checkbox.checked;
+            break;
     }
 });
 
