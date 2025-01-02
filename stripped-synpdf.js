@@ -715,7 +715,7 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
 
         // Set CSS size for default zoom (logical size for display)
         canvas.style.width = `${viewport.width / (devicePixelRatio)}px`; // Downscale visually
-        canvas.style.height = `${viewport.height / (devicePixelRatio2)}px`;
+        canvas.style.height = `${viewport.height / (devicePixelRatio)}px`;
 
         // Queue rendering task
         renderingTasks.push(() => {
