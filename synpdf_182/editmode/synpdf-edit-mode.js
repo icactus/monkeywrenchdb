@@ -1117,7 +1117,6 @@ function compPage$$module$synpdf(a, b, c) {
     Cs$$module$synpdf = Cs$$module$synpdf.concat(d.cxs);
     msc_wz$$module$synpdf || startIntf$$module$synpdf(a);
     $("#notation").append(a);
-    $(a).on("mousedown touchstart", kliklang$$module$synpdf);
     deMaten$$module$synpdf.length >= demix$$module$synpdf && msc_wz$$module$synpdf.cursorTime && msc_wz$$module$synpdf.time2x(msc_wz$$module$synpdf.cursorTime);
     maatStrepen$$module$synpdf();
     if (disableScrollingCheck === 1) disableScrolling();
@@ -1146,42 +1145,6 @@ function tick$$module$synpdf(a) {
     }
 }
 
-function kliklang$$module$synpdf(a) {
-    void 0 == touchDev$$module$synpdf && (touchDev$$module$synpdf = "touchstart" == a.type);
-    var b = touchDev$$module$synpdf ? $(this) : $("body");
-    a.stopPropagation();
-    if (hideMenuHelp$$module$synpdf(0) || touchDev$$module$synpdf && "mousedown" == a.type) a.preventDefault();
-    else {
-        touch_moved$$module$synpdf = 0;
-        a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
-        var c = a.clientY,
-            d = a.clientX;
-        touch_tb$$module$synpdf = (new Date).getTime();
-        var e = a.shiftKey;
-        b.on(touchDev$$module$synpdf ? "touchmove" :
-            "mousemove",
-            function(a) {
-                a.stopPropagation();
-                a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
-                touch_moved$$module$synpdf = 10 < Math.abs(a.clientY - c) + Math.abs(a.clientX - d)
-            });
-        b.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function(a) {
-            a.stopPropagation();
-            a.preventDefault();
-            b.off("mousemove touchmove mouseup touchend");
-            if (!touch_moved$$module$synpdf) {
-                a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
-                var c = 500 < (new Date).getTime() - touch_tb$$module$synpdf || e;
-                var d = a.clientX;
-                d -= msc_wz$$module$synpdf.xoffset;
-                a = a.clientY;
-                a -= $("#notation").offset().top;
-                a += $("#notation").scrollTop();
-                c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(d, a) : msc_wz$$module$synpdf.x2time(d, a, c)
-            }
-        })
-    }
-}
 
 function annot_move$$module$synpdf(a) {
     if (opt$$module$synpdf.annot) {
