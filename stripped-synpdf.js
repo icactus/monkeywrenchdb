@@ -696,7 +696,7 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
     return pdfDoc$$module$synpdf.getPage(pageNum).then(function(page) {
         const devicePixelRatio = window.devicePixelRatio || 1; // For high-resolution displays
         const scale = deMetriek$$module$synpdf[0] / page._pageInfo.view[2]; // Base scale factor
-        const enhancedScale = scale * devicePixelRatio2; // Double resolution
+        const enhancedScale = scale * devicePixelRatio; // Double resolution
         console.log('scale:', scale, ' |enhanced scale:', enhancedScale);
         // Viewport for high-resolution rendering
         let viewport = page.getViewport({ scale: enhancedScale });
