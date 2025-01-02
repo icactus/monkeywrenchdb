@@ -711,6 +711,7 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
             return page.render({
                 canvasContext: ctx,
                 viewport: viewport,
+                intent: print, // better display quality slightly
             }).promise;
         });
 
