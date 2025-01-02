@@ -720,8 +720,9 @@ function readPdf$$module$synpdf(pdfData, dataType) {
         });
     }
 }
+
+
 let renderedPages = 1;
-//now returns a promise after each page so once it's all done we can call time2x in readpdfdoc() to scroll return on window resize.
 // Initialize an array to store rendering tasks
 var renderingTasks = [];
 
@@ -733,7 +734,145 @@ function isPhone() {
     return Math.min(width, height) <= 768; // Typical phone breakpoint
 }
 
+// IntersectionObserver related variables and functions
+let observer;
+const renderedCanvasesQueue = new Set(); // Track rendered canvases
+const MAX_RENDERED_PAGES = isPhone() ? 4 : 10; // Maximum number of pages to keep rendered
+var renderingStatus = {}; // Tracks the rendering status of each page
 
+let canShowDemaat = false;
+
+// RenderingQueue Class for Controlled Concurrency
+class RenderingQueue {
+    constructor(concurrency = 2) { // Adjust concurrency as needed
+        this.queue = [];
+        this.running = 0;
+        this.concurrency = concurrency;
+    }
+
+    enqueue(task) {
+        this.queue.push(task);
+        this.runNext();
+    }
+
+    runNext() {
+        if (this.running >= this.concurrency || this.queue.length === 0) {
+            return;
+        }
+
+        const task = this.queue.shift();
+        this.running++;
+        task().then(() => {
+            this.running--;
+            this.runNext();
+        }).catch(error => {
+            console.error('Rendering task failed:', error);
+            this.running--;
+            this.runNext();
+        });
+    }
+}
+
+// Initialize the rendering queue with desired concurrency
+const renderingQueue = new RenderingQueue(2); // Example: 2 concurrent tasks
+
+// Initialize IntersectionObserver
+function initIntersectionObserver() {
+    const options = {
+        root: document.getElementById('notation'), // The scrollable container
+        rootMargin: '200px 0px', // Preload when 200px before entering viewport vertically
+        threshold: 0.1 // Trigger when 10% of the canvas is visible
+    };
+
+    observer = new IntersectionObserver(handleIntersect, options);
+}
+
+// Callback for IntersectionObserver
+function handleIntersect(entries) {
+    entries.forEach(entry => {
+        const canvas = entry.target;
+        const pageNumber = parseInt(canvas.id.replace('canvas', ''), 10);
+
+        if (entry.isIntersecting) {
+            // Render the current page if not already rendered
+            renderPageIfNotRendered(pageNumber);
+
+            // Preload the next page
+            const nextPageNumber = pageNumber + 1;
+            if (nextPageNumber <= pdfDoc$$module$synpdf.numPages) {
+                renderPageIfNotRendered(nextPageNumber);
+            }
+        } else {
+            // Optionally, unrender the page to save memory
+            // manageRenderedCanvases(canvas.id); // Uncomment if you want to unrender
+        }
+    });
+}
+
+// Function to render a page if it hasn't been rendered yet
+function renderPageIfNotRendered(pageIndex) {
+    const canvasId = `canvas${pageIndex}`;
+    const canvas = document.getElementById(canvasId);
+
+    // Check if the canvas is being rendered or has already been rendered
+    if (canvas && renderingStatus[pageIndex] !== 'rendering' && !canvas.classList.contains('rendered')) {
+        renderingStatus[pageIndex] = 'rendering'; // Mark as rendering
+
+        // Retrieve the rendering task
+        const renderTask = renderingTasks[pageIndex - 1];
+        if (typeof renderTask === 'function') {
+            // Enqueue the rendering task
+            renderingQueue.enqueue(() => {
+                return renderTask().then(() => {
+                    canvas.classList.add('rendered');
+                    renderingStatus[pageIndex] = 'rendered'; // Mark as rendered
+                    manageRenderedCanvases(canvasId); // Update the rendered canvases queue
+                }).catch(error => {
+                    console.error('Error rendering page', pageIndex, error);
+                    renderingStatus[pageIndex] = 'error'; // Mark as error if failed
+                });
+            });
+        }
+    }
+}
+
+// Function to manage the rendered canvases queue
+function manageRenderedCanvases(canvasId) {
+    canShowDemaat = true;
+    $('.demaat').show();
+
+    // If the canvas is already in the set, remove it to re-add (to update its position)
+    if (renderedCanvasesQueue.has(canvasId)) {
+        renderedCanvasesQueue.delete(canvasId);
+    }
+
+    // Add the canvasId to the set
+    renderedCanvasesQueue.add(canvasId);
+
+    // If the number of rendered pages exceeds the maximum, remove the oldest
+    if (renderedCanvasesQueue.size > MAX_RENDERED_PAGES) {
+        // Retrieve the first (oldest) canvasId
+        const oldestCanvasId = renderedCanvasesQueue.values().next().value;
+        renderedCanvasesQueue.delete(oldestCanvasId);
+        const oldestCanvas = document.getElementById(oldestCanvasId);
+        if (oldestCanvas) {
+            clearCanvas(oldestCanvas); // Clear the canvas
+            // Optionally, unobserve the canvas to free up resources
+            if (observer) {
+                observer.unobserve(oldestCanvas);
+            }
+        }
+    }
+}
+
+// Function to clear a canvas
+function clearCanvas(canvas) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.classList.remove('rendered'); // Mark the canvas as not rendered
+}
+
+// Function to create and append a canvas, then observe it
 function goPage$$module$synpdf(pageNum, cumulativeHeight) {
     return pdfDoc$$module$synpdf.getPage(pageNum).then(function(page) {
         const devicePixelRatio = window.devicePixelRatio || 1; // For high-resolution displays
@@ -748,7 +887,7 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
         let ctx = canvas.getContext("2d");
         ctx.imageSmoothingEnabled = true;
         if (isPhone()) {
-            ctx.imageSmoothingEnabled = false; // less work for mobile
+            ctx.imageSmoothingEnabled = false; // Less work for mobile
         }
 
         canvas.id = `canvas${pageNum}`;
@@ -791,8 +930,6 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
                 renderedPages = 1;
                 $("#loadingMessage2").hide();
 
-                // Execute queued rendering tasks
-                renderVisibleAndNextPage();
             }
         }
     }).catch(function(error) {
@@ -801,149 +938,26 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
     });
 }
 
-function isElementInView(element) {
-    const rect = element.getBoundingClientRect();
-    return (
-        rect.bottom >= 0 && // Top of the element is not below the viewport
-        rect.right >= 0 && // Left of the element is not beyond the right edge of the viewport
-        rect.top <= (window.innerHeight || document.documentElement.clientHeight) && // Bottom of the element is not above the viewport
-        rect.left <= (window.innerWidth || document.documentElement.clientWidth) // Right of the element is not beyond the viewport
-    );
-}
-
-// This function identifies all currently visible canvases
-function findVisibleCanvases() {
-    const visiblePages = [];
-    for (let i = 1; i <= renderingTasks.length; i++) {
-        const canvasId = `canvas${i}`;
-        const canvas = document.getElementById(canvasId);
-        if (canvas && isElementInView(canvas)) {
-            visiblePages.push(i); // Use page numbers for clarity
-        }
-    }
-    return visiblePages;
-}
-
-// Wrap the renderVisibleCanvases call in a debounced function
-const debouncedRenderVisibleAndNextPage = debounce2(renderVisibleAndNextPage, 100); //duplicate debounce function in this file
-
-
-function debounce2(func, wait) {
-    var timeout;
-    return function() {
-        var context = this, args = arguments;
-        var later = function() {
-            timeout = null;
-            func.apply(context, args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-var renderedCanvasesQueue = []; // Track rendered canvases
-var MAX_RENDERED_PAGES = isPhone() ? 4 : 10; // Maximum number of pages to keep rendered
-
-function clearCanvas(canvas) {
-    var ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    canvas.classList.remove('rendered'); // Mark the canvas as not rendered
-}
-
-let canShowDemaat = false;
-
-function manageRenderedCanvases(canvasId) {
-    canShowDemaat = true;
-    $('.demaat').show();
-    // Check if the canvas is already in the queue
-    const index = renderedCanvasesQueue.indexOf(canvasId);
-    if (index > -1) {
-        // If it is, remove it from its current position
-        renderedCanvasesQueue.splice(index, 1);
-    }
-
-    // Add (or re-add) the canvas ID to the front of the queue
-    renderedCanvasesQueue.unshift(canvasId); // Add to the beginning
-
-    // If we exceed the maximum number of rendered pages, clear the oldest
-    if (renderedCanvasesQueue.length > MAX_RENDERED_PAGES) {
-        var oldestCanvasId = renderedCanvasesQueue.pop(); // Remove the oldest from the end
-        var oldestCanvas = document.getElementById(oldestCanvasId);
-        if (oldestCanvas) {
-            clearCanvas(oldestCanvas); // Clear the canvas
-        }
-    }
-}
-
-function renderVisibleAndNextPage() {
-    const visiblePages = findVisiblePages(); // Assume this function returns an array of visible page numbers
-    const highestVisiblePage = Math.max(...visiblePages);
-
-    // Render all currently visible pages
-    visiblePages.forEach(pageNumber => {
-        const canvasId = `canvas${pageNumber}`;
-        const canvas = document.getElementById(canvasId);
-        if (canvas && !canvas.classList.contains('rendered')) {
-            renderPageIfNotRendered(pageNumber); // Assume this function is the async page rendering function
-        }
-    });
-
-    // Then, render the next page based on the highest visible page
-    const nextPage = highestVisiblePage + 1;
-    if (nextPage <= pdfDoc$$module$synpdf.numPages) {
-        const nextCanvasId = `canvas${nextPage}`;
-        const nextCanvas = document.getElementById(nextCanvasId);
-        if (nextCanvas && !nextCanvas.classList.contains('rendered')) {
-            renderPageIfNotRendered(nextPage);
-        }
-    }
-}
-
-function findVisiblePages() {
-    let visiblePages = [];
-    for (let i = 1; i <= pdfDoc$$module$synpdf.numPages; i++) {
-        const canvasId = `canvas${i}`;
-        const canvas = document.getElementById(canvasId);
-        if (canvas && isElementInView(canvas)) {
-            visiblePages.push(i);
-        }
-    }
-    return visiblePages;
-}
-
-var renderingStatus = {}; // Tracks the rendering status of each page
-
-function renderPageIfNotRendered(pageIndex) {
-    const canvasId = `canvas${pageIndex}`;
-    const canvas = document.getElementById(canvasId);
-
-    // Check if the canvas is being rendered or has already been rendered
-    if (canvas && renderingStatus[pageIndex] !== 'rendering' && !canvas.classList.contains('rendered')) {
-        renderingStatus[pageIndex] = 'rendering'; // Mark as rendering
-
-        renderingTasks[pageIndex - 1]().then(() => {
-            canvas.classList.add('rendered');
-            renderingStatus[pageIndex] = 'rendered'; // Mark as rendered
-            manageRenderedCanvases(canvasId); // Update the rendered canvases queue
-        }).catch(error => {
-            console.error('Error rendering page', pageIndex, error);
-            renderingStatus[pageIndex] = 'error'; // Mark as error if failed
-        });
-    }
-}
 
 function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
     var pageMetricArray = deMetriek$$module$synpdf[pageNum];
     pageNumChanged$$module$synpdf = 0;
-    canvas = knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight);//runs knip on the canvas to generate measure boxes (deMaten)
+    canvas = knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight); // Generates measure boxes (deMaten)
     pageStfIx$$module$synpdf.push(Cs$$module$synpdf.length);
     Cs$$module$synpdf = Cs$$module$synpdf.concat(pageMetricArray.cxs);
     msc_wz$$module$synpdf || startIntf$$module$synpdf(canvas);
     $("#notation").append(canvas);
+
+    // Start observing the canvas for visibility
+    if (observer) {
+        observer.observe(canvas);
+    }
+
     $(canvas).on("mousedown touchstart", kliklang$$module$synpdf);
     deMaten$$module$synpdf.length >= demix$$module$synpdf && msc_wz$$module$synpdf.cursorTime && msc_wz$$module$synpdf.time2x(msc_wz$$module$synpdf.cursorTime);
-    return canvas
+    return canvas;
 }
+
 
 function tick$$module$synpdf(a) {
     if (elmed$$module$synpdf && msc_wz$$module$synpdf && (!yubchk$$module$synpdf || elmed$$module$synpdf == ybplayer$$module$synpdf)) {
@@ -1363,6 +1377,7 @@ $(document).ready(function() {
     deNot$$module$synpdf = document.getElementById("notation");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
+    initIntersectionObserver(); // Initialize observer for page rendering 
     $("body").keydown(keyDown$$module$synpdf);
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
