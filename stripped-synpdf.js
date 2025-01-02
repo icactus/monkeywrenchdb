@@ -737,7 +737,7 @@ function isPhone() {
 // IntersectionObserver related variables and functions
 let observer;
 const renderedCanvasesQueue = new Set(); // Track rendered canvases
-const MAX_RENDERED_PAGES = isPhone() ? 4 : 10; // Maximum number of pages to keep rendered
+const MAX_RENDERED_PAGES = phoneCheck ? 4 : 10; // Maximum number of pages to keep rendered
 var renderingStatus = {}; // Tracks the rendering status of each page
 
 let canShowDemaat = false;
@@ -882,7 +882,7 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
         let canvas = document.createElement("canvas"); // Use let for reassignability
         let ctx = canvas.getContext("2d");
         ctx.imageSmoothingEnabled = true;
-        if (isPhone()) {
+        if (phoneCheck) {
             ctx.imageSmoothingEnabled = false; // Less work for mobile
         }
 
@@ -1308,7 +1308,6 @@ function keyDown$$module$synpdf(a) {
             incrementSpeed();
             break;
         case "-":
-            decrementSpeed();
             break;
         case "Escape":
             $("#menu, #saveDlg").toggle(!1);
@@ -1373,6 +1372,7 @@ $(document).ready(function() {
     deNot$$module$synpdf = document.getElementById("notation");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
+    const phoneCheck = isPhone();
     $("body").keydown(keyDown$$module$synpdf);
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
