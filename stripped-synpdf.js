@@ -336,7 +336,10 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                 return; // Exit the function as no update is needed
             }
 
-            // Update previous positions
+            // Calculate distance to scroll BEFORE updating ycurprev
+            var distanceToScroll = c.y - ycurprev$$module$synpdf;
+
+            // Update previous positions AFTER calculating distance
             xcurprev$$module$synpdf = a;
             ycurprev$$module$synpdf = c.y;
 
@@ -353,10 +356,10 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                 $('.demaat').show();
             }
 
-            // Calculate distance to scroll and handle scrolling logic
-            var distanceToScroll = c.y - ycurprev$$module$synpdf; // If too far, pass 0 to trigger auto-scroll
-            if (c.y !== ycurprev$$module$synpdf) {
-                doeRol$$module$synpdf(c.y - this.tmargin, Math.abs(distanceToScroll) > 500 ? 1 : 0);
+            // Handle scrolling logic
+            if (distanceToScroll !== 0) { // Check if there is a distance to scroll
+                var scrollFlagValue = Math.abs(distanceToScroll) > 500 ? 1 : 0;
+                doeRol$$module$synpdf(c.y - this.tmargin, scrollFlagValue);
             }
         }
     }
