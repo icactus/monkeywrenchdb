@@ -234,7 +234,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         <div id="rollijn" class="dashed"></div>`
     );
     $("#notation").append(b);
-    document.getElementById('notation').addEventListener('scroll', debouncedRenderVisibleAndNextPage);
+    initIntersectionObserver(); // Initialize observer for page rendering 
     setupPlayPauseButton();
     this.maatloper = $('<div class="demaat" style="background:' + globalHighlightColor + '; opacity:0.2; left:0px; top:0px; width:0px; height:0px; z-index:2"></div>');
     $("#notation").append(this.maatloper);
@@ -1377,7 +1377,6 @@ $(document).ready(function() {
     deNot$$module$synpdf = document.getElementById("notation");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
-    initIntersectionObserver(); // Initialize observer for page rendering 
     $("body").keydown(keyDown$$module$synpdf);
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
