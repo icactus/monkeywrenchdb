@@ -726,6 +726,7 @@ let renderedPages = 1;
 // Initialize an array to store rendering tasks
 var renderingTasks = [];
 
+let phoneCheck = false;
 function isPhone() {
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -1372,7 +1373,7 @@ $(document).ready(function() {
     deNot$$module$synpdf = document.getElementById("notation");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
-    const phoneCheck = isPhone();
+    phoneCheck = isPhone();
     $("body").keydown(keyDown$$module$synpdf);
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
