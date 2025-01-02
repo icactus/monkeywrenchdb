@@ -684,6 +684,14 @@ let renderedPages = 1;
 // Initialize an array to store rendering tasks
 var renderingTasks = [];
 
+function isPhone() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Consider it a phone if either dimension is small
+    return Math.min(width, height) <= 768; // Typical phone breakpoint
+}
+
 function goPage$$module$synpdf(pageNum, cumulativeHeight) {
     return pdfDoc$$module$synpdf.getPage(pageNum).then(function(page) {
         const devicePixelRatio = window.devicePixelRatio || 1; // For high-resolution displays
@@ -697,6 +705,9 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
         let canvas = document.createElement("canvas"); // Use let for reassignability
         let ctx = canvas.getContext("2d");
         ctx.imageSmoothingEnabled = true;
+        if (isPhone()) {
+            ctx.imageSmoothingEnabled = false;
+        }
 
         canvas.id = `canvas${pageNum}`;
         canvas.width = Math.floor(viewport.width); // Full resolution width
