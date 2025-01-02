@@ -697,7 +697,6 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
         const devicePixelRatio = window.devicePixelRatio || 1; // For high-resolution displays
         const scale = deMetriek$$module$synpdf[0] / page._pageInfo.view[2]; // Base scale factor
         const enhancedScale = scale * devicePixelRatio; // Double resolution
-        console.log('scale:', scale, ' |enhanced scale:', enhancedScale);
         // Viewport for high-resolution rendering
         let viewport = page.getViewport({ scale: enhancedScale });
 
@@ -714,8 +713,8 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
         canvas.height = Math.floor(viewport.height); // Full resolution height
 
         // Set CSS size for default zoom (logical size for display)
-        canvas.style.width = `${viewport.width / (devicePixelRatio * 2)}px`; // Downscale visually
-        canvas.style.height = `${viewport.height / (devicePixelRatio * 2)}px`;
+        canvas.style.width = `${viewport.width / (devicePixelRatio)}px`; // Downscale visually
+        canvas.style.height = `${viewport.height / (devicePixelRatio)}px`;
 
         // Queue rendering task
         renderingTasks.push(() => {
