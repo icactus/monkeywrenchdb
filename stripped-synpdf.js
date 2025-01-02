@@ -291,34 +291,72 @@ Wijzer$$module$synpdf.prototype.setOffsetX = function() {
 Wijzer$$module$synpdf.prototype.time2x = function(a) {
     var b, c;
     this.cursorTime = a;
-    for (b = deTijden$$module$synpdf.length - 1; 0 <= b; --b) {
-        var d = deTijden$$module$synpdf[b];
-        if (!(d.t > a)) {
-            demix$$module$synpdf = d.mix;
-            detix$$module$synpdf = b;
-            if (!opt$$module$synpdf.synbox && detix$$module$synpdf == deTijden$$module$synpdf.length - 1 && !m1_timer$$module$synpdf) {
-                msc_wz$$module$synpdf.goMsre(1, {});
-                pauseer$$module$synpdf();
-                break
+
+    // Initialize binary search boundaries
+    var low = 0;
+    var high = deTijden$$module$synpdf.length - 1;
+    var mid;
+    var foundIndex = -1;
+
+    // Perform binary search to find the last measure where d.t <= a
+    while (low <= high) {
+        mid = Math.floor((low + high) / 2);
+        var currentMeasure = deTijden$$module$synpdf[mid];
+        
+        if (currentMeasure.t <= a) {
+            foundIndex = mid;       // Potential candidate found
+            low = mid + 1;          // Continue searching in the upper half
+        } else {
+            high = mid - 1;         // Continue searching in the lower half
+        }
+    }
+
+    // If a valid measure is found
+    if (foundIndex !== -1) {
+        b = foundIndex;
+        c = deTijden$$module$synpdf[b];
+        demix$$module$synpdf = c.mix;
+        detix$$module$synpdf = b;
+
+        // Handle special case: end of playback without a timer
+        if (!opt$$module$synpdf.synbox && detix$$module$synpdf === deTijden$$module$synpdf.length - 1 && !m1_timer$$module$synpdf) {
+            msc_wz$$module$synpdf.goMsre(1, {});
+            pauseer$$module$synpdf();
+            return; // Exit the function after handling
+        }
+
+        // Retrieve corresponding 'maten' data
+        c = deMaten$$module$synpdf[demix$$module$synpdf];
+        if (c) {
+            a = c.x;
+            d = c.w;
+
+            // If the position hasn't changed, no need to update
+            if (a === xcurprev$$module$synpdf && c.y === ycurprev$$module$synpdf) {
+                return; // Exit the function as no update is needed
             }
-            if (c = deMaten$$module$synpdf[demix$$module$synpdf]) {
-                a = c.x;
-                d = c.w;
-                if (a == xcurprev$$module$synpdf && c.y == ycurprev$$module$synpdf) break;
-                xcurprev$$module$synpdf = a;
-                b = this.maatloper[0].style;
-                b.left = a + "px";
-                b.top = c.y + "px";
-                b.width = d + "px";
-                b.height = c.h + "px";
-                $('.demaat').hide();
-                if (canShowDemaat) {
-                    $('.demaat').show()
-                };
-                var distanceToScroll = c.y - ycurprev$$module$synpdf; //if too far then pass 0 which will auto scroll instead of smooth
-                c.y != ycurprev$$module$synpdf && doeRol$$module$synpdf(c.y - this.tmargin, Math.abs(distanceToScroll) > 500 ? 1 : 0);
-                ycurprev$$module$synpdf = c.y;
-                break
+
+            // Update previous positions
+            xcurprev$$module$synpdf = a;
+            ycurprev$$module$synpdf = c.y;
+
+            // Update the style properties using CSS positioning
+            b = this.maatloper[0].style;
+            b.left = a + "px";
+            b.top = c.y + "px";
+            b.width = d + "px";
+            b.height = c.h + "px";
+
+            // Toggle visibility of '.demaat' elements based on 'canShowDemaat'
+            $('.demaat').hide();
+            if (canShowDemaat) {
+                $('.demaat').show();
+            }
+
+            // Calculate distance to scroll and handle scrolling logic
+            var distanceToScroll = c.y - ycurprev$$module$synpdf; // If too far, pass 0 to trigger auto-scroll
+            if (c.y !== ycurprev$$module$synpdf) {
+                doeRol$$module$synpdf(c.y - this.tmargin, Math.abs(distanceToScroll) > 500 ? 1 : 0);
             }
         }
     }
@@ -691,6 +729,7 @@ function isPhone() {
     // Consider it a phone if either dimension is small
     return Math.min(width, height) <= 768; // Typical phone breakpoint
 }
+
 
 function goPage$$module$synpdf(pageNum, cumulativeHeight) {
     return pdfDoc$$module$synpdf.getPage(pageNum).then(function(page) {
