@@ -842,7 +842,7 @@ function debounce2(func, wait) {
 }
 
 var renderedCanvasesQueue = []; // Track rendered canvases
-var MAX_RENDERED_PAGES = 10; // Maximum number of pages to keep rendered
+var MAX_RENDERED_PAGES = isPhone() ? 3 : 10; // Maximum number of pages to keep rendered
 
 function clearCanvas(canvas) {
     var ctx = canvas.getContext('2d');
