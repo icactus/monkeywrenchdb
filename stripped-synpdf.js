@@ -857,10 +857,6 @@ function manageRenderedCanvases(canvasId) {
         const oldestCanvas = document.getElementById(oldestCanvasId);
         if (oldestCanvas) {
             clearCanvas(oldestCanvas); // Clear the canvas
-            // Optionally, unobserve the canvas to free up resources
-            if (observer) {
-                observer.unobserve(oldestCanvas);
-            }
         }
     }
 }
