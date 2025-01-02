@@ -825,7 +825,7 @@ function findVisibleCanvases() {
 }
 
 // Wrap the renderVisibleCanvases call in a debounced function
-const debouncedRenderVisibleAndNextPage = debounce2(renderVisibleAndNextPage, 20); //duplicate debounce function in this file
+const debouncedRenderVisibleAndNextPage = debounce2(renderVisibleAndNextPage, 100); //duplicate debounce function in this file
 
 
 function debounce2(func, wait) {
