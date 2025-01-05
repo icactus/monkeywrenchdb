@@ -772,6 +772,10 @@ class RenderingQueue {
             this.runNext();
         });
     }
+
+    clear() {
+        this.queue = [];
+    }
 }
 
 // Initialize the rendering queue with desired concurrency
