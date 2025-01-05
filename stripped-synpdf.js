@@ -1313,6 +1313,7 @@ function keyDown$$module$synpdf(a) {
             incrementSpeed();
             break;
         case "-":
+            decrementSpeed();
             break;
         case "Escape":
             $("#menu, #saveDlg").toggle(!1);
