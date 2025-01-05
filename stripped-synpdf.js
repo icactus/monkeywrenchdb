@@ -500,7 +500,7 @@ Wijzer$$module$synpdf.prototype.compCountIn = function() {
         });
     a.time = (deTijden$$module$synpdf[detix$$module$synpdf + 1].t - deTijden$$module$synpdf[detix$$module$synpdf].t) / b[0];
     a.num = b[0];
-    return a
+    return arecordingFullData
 };
 
 
@@ -737,7 +737,7 @@ function isPhone() {
 
 // IntersectionObserver related variables and functions
 let observer;
-const renderedCanvasesQueue = new Set(); // Track rendered canvases
+let renderedCanvasesQueue = new Set(); // Track rendered canvases
 const MAX_RENDERED_PAGES = phoneCheck ? 4 : 10; // Maximum number of pages to keep rendered
 var renderingStatus = {}; // Tracks the rendering status of each page
 
