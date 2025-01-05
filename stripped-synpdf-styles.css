@@ -35,7 +35,7 @@ canvas    { display: block; }
 #saveDlg #div3 { height:6%; overflow: hidden; }
 #saveDlg pre { margin:0px; user-select: text; -webkit-user-select: text;} /*allow select save dialogue text */
 #saveDlg button { margin-left:1em; }
-#help     { display: none; width:90%; padding: 1%; background: white; position:absolute; top: 50%; left: 50%;
+#help     { display: none; min-width:300px; padding: 1%; background: white; position:absolute; top: 50%; left: 50%;
             transform: translate(-50%,-50%); z-index:5; overflow-y: auto; max-height: 90%; border: grey double 5px; }
 #help.showhlp { display: block; }
 #helpm    { text-align: center; padding: 3px; }
@@ -45,6 +45,7 @@ canvas    { display: block; }
            margin-left: 3%; width: 97%; table-layout: fixed; border-collapse: collapse; }
 .helptbl td { padding:0.2em; vertical-align: top; }
 .helptbl tr:nth-child(even) { background-color: #eee; }
+.helptbl td:nth-child(3) { border-left: thin black solid } 
 .noheight { display: none !important; }
 .preimp   { color: red; }
 .dashed   { border-bottom: thin dashed black; }
@@ -78,7 +79,6 @@ a {
     height: 200px;
     display: flex;
     justify-content: center;
-    padding-top: 5px;
     overflow-x: hidden;
     background: url(yellow-bg-gradient.png);
     background: rgb(255,250,0);

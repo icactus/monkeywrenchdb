@@ -160,22 +160,19 @@
             <div id="render" class="dlog" style="left:5%; padding:0.5em;"></div>
             <div id="noklik"></div>
             <div id="help">
-                <span>Click/touch to navigate sheet music!</span><br>
+                <span><b>Click/touch</b> to navigate sheet music!</span><br>
+                <br>
                 <span>Keyboard controls:</span>
                 <table class="helptbl">
                     <tr><td><b>spacebar</b> or tap<br>in left margin</td>
-                        <td>pause / continue</td>
-                        <td><b>up arrow / down arrow</b></td><td>move up or down lines</td></tr>
-                    <tr><td><b>right arrow</b></td><td>go to next measure</td>       <td><b>PgUp / PgDn</b></td><td>page up / page down</td></tr>
-                    <tr><td><b>left arrow</b></td><td>go to previous measure</td>   <td><b>h</b></td><td>toggle help</td></tr>
-                    <tr><td><b>+</b>/<b>-</b></td><td>increase / decrease speed</td>  <td><b></b></td><td></td></tr>
+                        <td>play / pause</td>
+                        <td><b>PgUp / PgDn</b></td><td>page up / page down</td></tr>
+                    <tr><td><b>arrow keys</b></td><td>navigate measures</td><td><b>h</b></td><td>toggle help</td></tr>
+                    <tr><td><b>+</b>/<b>-</b></td><td>change player speed</td>  <td><b></b></td><td></td></tr>
                 </table>
                 Helpful Info:<ul>
                 <li>This site is under heavy contruction and it's just me so please be patient with improvements!</li>
                 <li>Best on Desktop or tablet - older mobile devices may have problems displaying full scores.</li>
-                <li>Eventually there will be some way to request/vote on new pieces and eventually user contributions.</li>
-                <li>Site runs best on Chrome/Safari. Firefox can be buggy.</li>
-                <li>Click on sheet music first before using arrow keys to navigate. Otherwise the arrow keys will control the YouTube player.
                 </ul>
                 <button id="closehelp">Close</button>
             </div>
