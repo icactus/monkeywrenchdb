@@ -536,6 +536,8 @@ $('#instruments-dropdown').change(function() {
             updateRecordingsData(instrumentData.metric_arr_id);
             renderedCanvasesQueue = [];
             renderingTasks = [];
+            renderedCanvasesQueue = new Set();
+            renderingQueue.clear();
             canShowDemaat = false; // hiding demaat until pdf renders again
             loadRecording(recordingFullData)
                 .then(function() {
