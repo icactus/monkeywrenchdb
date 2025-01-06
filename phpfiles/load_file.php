@@ -9,7 +9,7 @@ if (!preg_match('/^\d+$/', $piece_id)) {
 }
 
 // Define the path to your .js files
-$directory = realpath(__DIR__ . '/../../editmode-loadfiles/');
+$directory = realpath(__DIR__ . '/../editmode-loadfiles/');
 $filePath  = $directory . '/' . $piece_id . '.js';
 
 // Check if the file exists and is readable
