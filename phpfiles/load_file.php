@@ -20,7 +20,7 @@ if (!preg_match('/^\d+$/', $piece_id)) {
 }
 
 // Define the directory path (relative to this script)
-$directory = realpath(__DIR__ . '/../editmode-loadfiles/');
+$directory = realpath(__DIR__ . '/../synpdf_182/editmode-loadfiles/');
 
 // Ensure the directory exists
 if ($directory === false || !is_dir($directory)) {

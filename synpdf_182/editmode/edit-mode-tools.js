@@ -884,7 +884,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Fetch the JS file via the PHP endpoint
-        fetch('load_file.php?piece_id=' + encodeURIComponent(pieceId))
+        fetch('../../phpfiles/load_file.php?piece_id=' + encodeURIComponent(pieceId))
             .then(response => {
                 if (!response.ok) {
                     if (response.status === 400) {
