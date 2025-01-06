@@ -675,7 +675,7 @@
                     <form class="inputform" id="loadScore" method="POST">
                         <div>
                             <label for="piece_id1">Select Piece</label>
-                            <select name="piece_id1">
+                            <select id="piece_id1">
                                 <option value="">Select piece...</option>
                                 <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
                                     <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
