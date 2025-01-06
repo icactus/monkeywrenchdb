@@ -29,4 +29,5 @@ deployment:
     - /bin/cp phpfiles/metric-arr-post.php $DEPLOYPATH2
     - /bin/cp phpfiles/pieces-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/submit_recording.php $DEPLOYPATH2
+    - /bin/cp phpfiles/load_file.php $DEPLOYPATH2
 

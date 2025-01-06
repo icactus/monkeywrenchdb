@@ -782,7 +782,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetchedDataDiv.innerHTML = 'Loading...';
 
         // Fetch the file via the PHP endpoint
-        fetch('loadFile.php?piece_id=' + encodeURIComponent(pieceId))
+        fetch('../phpfiles/load_file.php?piece_id=' + encodeURIComponent(pieceId))
             .then(response => {
                 if (!response.ok) {
                     if (response.status === 400) {
