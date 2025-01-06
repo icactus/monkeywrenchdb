@@ -685,7 +685,7 @@
                     </form>
                     <form class="inputform" id="addnewrecordingform" method="POST">
                         <div>
-                            <label for="conductor_name">Conductor/Soloist Name</label>
+                            <label for="conductor_name">Conductor/Soloist</label>
                             <input type="text" name="conductor_name" placeholder="First Last" />
                         </div>
                         <div>
