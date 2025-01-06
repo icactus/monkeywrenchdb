@@ -842,22 +842,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!response.ok) {
                     throw new Error('HTTP error! status: ' + response.status);
                 }
-                return response.json();
+                return response.arrayBuffer();  // <--- Retrieve raw binary
             })
-            .then(data => {
-                if (data.error) {
-                    throw new Error(data.error);
-                }
+            .then(arrayBuf => {
+                // arrayBuf is now the raw binary content of the .js file
+                // Create a File object (just like a local file)
+                const file = new File([arrayBuf], pieceId + '.js', { type: 'application/javascript' });
 
-                console.log('File loaded:', data.fileName);
-                console.log('File content:', data.fileContent);
-
-                // Pass the file content to your existing processing logic
-                readLocalFile$$module$synpdf(new File([data.fileContent], data.fileName));
+                // Pass it to your existing function
+                readLocalFile$$module$synpdf(file);
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('Error: ' + error.message);
+                console.error('Error fetching .js file:', error);
             });
     });
 });

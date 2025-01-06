@@ -1,38 +1,33 @@
 <?php
-header('Content-Type: application/json');
+// load_file.php or included script in dispatcher
 
-// Ensure piece_id is provided and validate it
-if (!isset($_GET['piece_id']) || !preg_match('/^\d+$/', $_GET['piece_id'])) {
-	echo json_encode(['error' => 'Invalid or missing piece_id']);
+header('Content-Type: application/octet-stream');
+// or 'Content-Type: text/plain' if you prefer
+
+// Validate and sanitize piece_id
+$piece_id = $_GET['piece_id'] ?? '';
+if (!preg_match('/^\d+$/', $piece_id)) {
+	http_response_code(400);
+	echo "Invalid piece_id";
 	exit;
 }
 
-$piece_id = $_GET['piece_id'];
+// Build the path to your .js file
+$directory = realpath(__DIR__ . '/../editmode-loadfiles/');
+$filePath  = $directory . '/' . $piece_id . '.js';
 
-// Define the path to the directory containing your files
-$fileDir = realpath(__DIR__ . '/../editmode-loadfiles/');
-if (!$fileDir) {
-	echo json_encode(['error' => 'File directory not found']);
+// Serve the raw file content (binary or text)
+if (!file_exists($filePath)) {
+	http_response_code(404);
+	echo "File not found";
+	exit;
+}
+$fileContents = file_get_contents($filePath);
+if ($fileContents === false) {
+	http_response_code(500);
+	echo "Failed to read file";
 	exit;
 }
 
-// Construct the file path
-$filePath = $fileDir . '/' . $piece_id . '.js';
-
-// Check if the file exists and is readable
-if (!file_exists($filePath) || !is_readable($filePath)) {
-	echo json_encode(['error' => 'File not found']);
-	exit;
-}
-
-// Read and return the file content
-$fileContent = file_get_contents($filePath);
-if ($fileContent === false) {
-	echo json_encode(['error' => 'Failed to read the file']);
-	exit;
-}
-
-echo json_encode([
-	'fileName' => basename($filePath),
-	'fileContent' => $fileContent,
-]);
+// Output the raw content
+echo $fileContents;
