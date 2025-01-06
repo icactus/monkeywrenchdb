@@ -764,52 +764,6 @@ function frontT(startIndex, endIndex) {
 }
 
 
-document.addEventListener('DOMContentLoaded', function() {
-    const loadBtn = document.getElementById('loadBtn');
-    const pieceSelect = document.getElementById('piece_id1');
-
-    loadBtn.addEventListener('click', function() {
-        const pieceId = pieceSelect.value.trim();
-
-        if (!pieceId) {
-            alert('Please select a piece.');
-            return;
-        }
-
-        // Fetch the JS file via the PHP endpoint
-        fetch('loadFile.php?piece_id=' + encodeURIComponent(pieceId))
-            .then(response => {
-                if (!response.ok) {
-                    if (response.status === 400) {
-                        throw new Error('Bad Request: ' + response.statusText);
-                    } else if (response.status === 404) {
-                        throw new Error('File not found.');
-                    } else {
-                        throw new Error('An error occurred while fetching the file.');
-                    }
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-
-                // Create a Blob from the JS content
-                const blob = new Blob([data.fileContent], { type: 'application/javascript' });
-
-                // Create a File object from the Blob
-                const file = new File([blob], data.fileName, { type: 'application/javascript' });
-
-                // Pass the File object to your existing function
-                readLocalFile$$module$synpdf(file);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error: ' + error.message);
-            });
-    });
-});
 
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('goto-measure-form').addEventListener('submit', function(event) {
