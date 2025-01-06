@@ -1,6 +1,6 @@
 <?php
+// File: /public/loadFile.php
 
-// Set header to return JSON responses
 header('Content-Type: application/json');
 
 // Retrieve and validate piece_id from GET parameters
@@ -12,7 +12,7 @@ if (empty($piece_id)) {
 	exit;
 }
 
-// Sanitize piece_id to allow only numbers (assuming piece_id is numeric)
+// Sanitize piece_id to allow only digits since piece_id is numeric
 if (!preg_match('/^\d+$/', $piece_id)) {
 	http_response_code(400);
 	echo json_encode(['error' => 'Invalid piece_id format']);
@@ -29,25 +29,18 @@ if ($directory === false || !is_dir($directory)) {
 	exit;
 }
 
-// Construct the file search pattern
-$pattern = $directory . '/' . $piece_id . '-*.js';
+// Construct the file search pattern (e.g., "93.js")
+$pattern = $directory . '/' . $piece_id . '.js';
 
-// Use glob to find matching files
-$files = glob($pattern);
-
-// Check if any files match
-if (empty($files)) {
+// Check if the specific file exists
+if (!file_exists($pattern)) {
 	http_response_code(404); // Not Found
-	echo json_encode(['error' => 'No files found for the given piece_id']);
+	echo json_encode(['error' => 'No file found for the given piece_id']);
 	exit;
 }
 
-// For this example, take the first matching file
-$filePath = $files[0];
-$fileName = basename($filePath);
-
 // Read the file contents
-$fileContents = file_get_contents($filePath);
+$fileContents = file_get_contents($pattern);
 
 if ($fileContents === false) {
 	http_response_code(500); // Internal Server Error
@@ -57,6 +50,6 @@ if ($fileContents === false) {
 
 // Return the file contents as a string
 echo json_encode([
-	'fileName' => $fileName,
+	'fileName' => basename($pattern),
 	'fileContent' => $fileContents
 ]);

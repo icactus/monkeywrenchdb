@@ -1551,20 +1551,40 @@ function readPdfOrJs$$module$synpdf(a) {
     $("#impbox").prop("checked") ? copyTiming$$module$synpdf(b, a) : (msc_wz$$module$synpdf = null, 0 <= b.indexOf("//# This page") || 0 <= b.indexOf("play_list") ? (initPreload$$module$synpdf(), b = arrbuf2str$$module$synpdf(a), evalPreload$$module$synpdf(b), msc_check_preload$$module$synpdf()) : /jpe?g$/i.test(pdfFnm$$module$synpdf) ? readPdf$$module$synpdf(a, "jpgbin") : readPdf$$module$synpdf(a, "pdfbin"))
 }
 
-function readLocalFile$$module$synpdf() {
+function readLocalFile$$module$synpdf(file = null) {
+    // Reset or initialize necessary variables
     metric_arr$$module$synpdf = tix_lb$$module$synpdf = offset_js$$module$synpdf = times_arr$$module$synpdf = void 0;
     deMetriek$$module$synpdf = [opt$$module$synpdf.pagewd];
     adv_settings$$module$synpdf = void 0;
     annots$$module$synpdf = [];
     initLoopRec$$module$synpdf();
-    var a = new FileReader;
-    a.onload = function() {
-        readPdfOrJs$$module$synpdf(a.result)
+
+    // Create a new FileReader instance
+    var reader = new FileReader();
+
+    // Define the onload event handler
+    reader.onload = function() {
+        readPdfOrJs$$module$synpdf(reader.result);
     };
-    var b = $("#fknp").prop("files")[0];
-    pdfFnm$$module$synpdf = b.name;
-    scoreFnm$$module$synpdf = b.name.split(".")[0];
-    a.readAsArrayBuffer(b)
+
+    var selectedFile;
+    if (file) {
+        selectedFile = file;
+    } else {
+        selectedFile = $("#fknp").prop("files")[0];
+    }
+
+    if (!selectedFile) {
+        $("#err").text("No file selected.");
+        return;
+    }
+
+    // Set global variables based on the file
+    pdfFnm$$module$synpdf = selectedFile.name;
+    scoreFnm$$module$synpdf = selectedFile.name.split(".")[0];
+
+    // Read the file as an ArrayBuffer
+    reader.readAsArrayBuffer(selectedFile);
 }
 
 function readMedia$$module$synpdf(a, b) {

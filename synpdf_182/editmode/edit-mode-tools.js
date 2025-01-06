@@ -764,25 +764,20 @@ function frontT(startIndex, endIndex) {
 }
 
 
-//Load js file for syncing with youtube
 document.addEventListener('DOMContentLoaded', function() {
     const loadBtn = document.getElementById('loadBtn');
     const pieceSelect = document.getElementById('piece_id1');
-    const fetchedDataDiv = document.getElementById('fetchedData');
 
     loadBtn.addEventListener('click', function() {
-        const pieceId = pieceSelect.value;
+        const pieceId = pieceSelect.value.trim();
 
         if (!pieceId) {
             alert('Please select a piece.');
             return;
         }
 
-        // Show loading indicator
-        fetchedDataDiv.innerHTML = 'Loading...';
-
-        // Fetch the file via the PHP endpoint
-        fetch('../phpfiles/load_file.php?piece_id=' + encodeURIComponent(pieceId))
+        // Fetch the JS file via the PHP endpoint
+        fetch('loadFile.php?piece_id=' + encodeURIComponent(pieceId))
             .then(response => {
                 if (!response.ok) {
                     if (response.status === 400) {
@@ -800,38 +795,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error(data.error);
                 }
 
-                // Decode the base64 file data
-                const binaryData = atob(data.fileData);
-                const len = binaryData.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) {
-                    bytes[i] = binaryData.charCodeAt(i);
-                }
-
-                // Create a Blob from the bytes
-                const blob = new Blob([bytes], { type: 'application/pdf' });
+                // Create a Blob from the JS content
+                const blob = new Blob([data.fileContent], { type: 'application/javascript' });
 
                 // Create a File object from the Blob
-                const file = new File([blob], data.fileName, { type: 'application/pdf' });
+                const file = new File([blob], data.fileName, { type: 'application/javascript' });
 
-                // Call your existing function with the File object
+                // Pass the File object to your existing function
                 readLocalFile$$module$synpdf(file);
-
-                // Optionally, display success message or handle UI updates
-                fetchedDataDiv.innerHTML = 'File loaded successfully.';
             })
             .catch(error => {
                 console.error('Error:', error);
-                fetchedDataDiv.innerHTML = `<span style="color: red;">${sanitizeHTML(error.message)}</span>`;
+                alert('Error: ' + error.message);
             });
     });
-
-    // Function to sanitize HTML to prevent XSS attacks
-    function sanitizeHTML(str) {
-        const temp = document.createElement('div');
-        temp.textContent = str;
-        return temp.innerHTML;
-    }
 });
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -893,6 +870,50 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 console.error("Error during form submission: ", error);
                 alert("An error occurred: " + error.message);
+            });
+    });
+    const loadBtn = document.getElementById('loadBtn');
+    const pieceSelect = document.getElementById('piece_id1');
+
+    loadBtn.addEventListener('click', function() {
+        const pieceId = pieceSelect.value.trim();
+
+        if (!pieceId) {
+            alert('Please select a piece.');
+            return;
+        }
+
+        // Fetch the JS file via the PHP endpoint
+        fetch('loadFile.php?piece_id=' + encodeURIComponent(pieceId))
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 400) {
+                        throw new Error('Bad Request: ' + response.statusText);
+                    } else if (response.status === 404) {
+                        throw new Error('File not found.');
+                    } else {
+                        throw new Error('An error occurred while fetching the file.');
+                    }
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Create a Blob from the JS content
+                const blob = new Blob([data.fileContent], { type: 'application/javascript' });
+
+                // Create a File object from the Blob
+                const file = new File([blob], data.fileName, { type: 'application/javascript' });
+
+                // Pass the File object to your existing function
+                readLocalFile$$module$synpdf(file);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
             });
     });
 });
