@@ -671,17 +671,17 @@
                     </div>
                 </form>
                 <!-- add recording -->
-
                 <div style="display:flex;">
                     <form class="inputform" id="loadScore" method="POST">
                         <div>
-                            <label for="piece_id2">Select Score</label>
-                            <select name="piece_id2">
+                            <label for="piece_id1">Select Score</label>
+                            <select name="piece_id1">
                                 <option value="">Select piece...</option>
                                 <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
                                     <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
                                 <?php endforeach; ?>
                             </select>
+                        </div>
                     </form>
                     <form class="inputform" id="addnewrecordingform" method="POST">
                         <div>
@@ -720,7 +720,7 @@
     <div id="saveDlg">
         <div id="div1"></div>
         <div id="div4"></div><!--no space between inline-block elements! because it is rendered!!!
-        -->
+-->
         <div id="div2">
             <pre></pre>
         </div>
