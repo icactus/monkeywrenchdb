@@ -681,6 +681,7 @@
                                     <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <button type="button">Load</button>
                         </div>
                     </form>
                     <form class="inputform" id="addnewrecordingform" method="POST">
