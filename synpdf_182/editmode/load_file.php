@@ -1,5 +1,4 @@
 <?php
-// load_js.php
 
 // Enable error reporting for debugging (disable in production)
 ini_set('display_errors', 1);
@@ -21,7 +20,7 @@ if (!preg_match('/^\d+$/', $piece_id)) {
 }
 
 // Define the directory where .js files are stored
-$directory = realpath(__DIR__ . '../editmode-files/');
+$directory = realpath(__DIR__ . '../editmode-loadfiles/');
 if (!$directory) {
 	send_response(500, "Server configuration error: Directory not found.");
 }
