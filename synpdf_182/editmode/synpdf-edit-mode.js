@@ -1570,8 +1570,22 @@ function readLocalFile$$module$synpdf(file = null) {
     // Determine the selected file
     var selectedFile = file || $("#fknp").prop("files")[0];
 
+    // Debugging: Log the file object
+    console.log("readLocalFile called with file:", file);
+    console.log("Selected file:", selectedFile);
+
     if (!selectedFile) {
         $("#err").text("No file selected.");
+        return;
+    }
+
+    // Debugging: Log the file name
+    console.log("Selected file name:", selectedFile.name);
+
+    // Ensure selectedFile has a name property
+    if (typeof selectedFile.name !== 'string') {
+        console.error("Selected file does not have a valid 'name' property.");
+        $("#err").text("Selected file is invalid.");
         return;
     }
 
