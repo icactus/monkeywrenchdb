@@ -764,7 +764,6 @@ function frontT(startIndex, endIndex) {
 }
 
 
-
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('goto-measure-form').addEventListener('submit', function(event) {
         event.preventDefault();
