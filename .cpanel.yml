@@ -23,6 +23,7 @@ deployment:
     - /bin/cp synpdf_182/editmode/edit-mode-tools.js $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/synpdf-edit-mode.js $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/dispatcher.php $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/syncer.php $DEPLOYPATH3
     - export DEPLOYPATH2=/home/monkcdmb/phpfiles/
     - /bin/cp phpfiles/composers-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/get_pieces_and_composers.php $DEPLOYPATH2

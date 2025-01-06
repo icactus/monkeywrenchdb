@@ -309,7 +309,7 @@ html {
                         <div>
                             <label for="piece_id">Add New Part Data</label>
                             <select name="piece_id">
-                                <option value="">Select a piece...</option>
+                                <option value="">Select piece...</option>
                                 <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
                                     <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
                                 <?php endforeach; ?>
@@ -331,6 +331,17 @@ html {
                     </div>
                 </form>
                 <!-- add recording -->
+                    <form class="inputform" id="loadScore" method="POST">
+                        <div style="display:flex;">
+                            <div>
+                            <label for="piece_id2">Select Score</label>
+                            <select name="piece_id2">
+                                <option value="">Select piece...</option>
+                                <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
+                                    <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                    </form>
                 <form class="inputform" id="addnewrecordingform" method="POST">
                     <div style="display:flex;">
                         <div>
