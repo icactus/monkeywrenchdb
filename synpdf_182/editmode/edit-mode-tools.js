@@ -764,26 +764,34 @@ function frontT(startIndex, endIndex) {
 }
 
 
-// Function to fetch and load a .js file directly from the server
+// Function to fetch and load a .js file via load_js.php
 function fetchAndLoadJsFile(pieceId) {
-    // Construct the URL to the .js file
-    const jsFileUrl = `https://monkeywrenchdb.org/jsfiles/${encodeURIComponent(pieceId)}.js`;
+    // Construct the URL to the load_js.php script with the piece_id parameter
+    const loadJsUrl = `../../phpfiles/load_file.php?piece_id=${encodeURIComponent(pieceId)}`;
 
-    fetch(jsFileUrl)
+    fetch(loadJsUrl)
         .then(response => {
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // If the response is not OK, throw an error to be caught below
+                return response.text().then(text => {
+                    throw new Error(text || `HTTP error! status: ${response.status}`);
+                });
             }
-            return response.text(); // Fetch as text since it's a .js file
+            return response.text(); // Since it's a .js file
         })
         .then(rawJsContent => {
             // Create a Blob from the raw JS content
             const blob = new Blob([rawJsContent], { type: 'application/javascript' });
 
-            // Create a File object from the Blob
-            const file = new File([blob], `${pieceId}.js`, { type: 'application/javascript' });
+            // Attempt to extract the filename from the raw JS content (optional)
+            // Assuming you have a comment in the .js file like "// Filename: 183-39.js"
+            const filenameMatch = rawJsContent.match(/\/\/\s*Filename:\s*(\S+)/i);
+            const filename = filenameMatch ? filenameMatch[1] : `${pieceId}-unknown.js`;
 
-            // Pass the File object to your existing function
+            // Create a File object from the Blob
+            const file = new File([blob], filename, { type: 'application/javascript' });
+
+            // Pass the File object to your existing processing function
             readLocalFile$$module$synpdf(file);
         })
         .catch(error => {
