@@ -21,7 +21,8 @@ $actions = [
     'add_composer' => 'composers-addnew.php',
     'add_piece' => 'pieces-addnew.php',
     'add_metric_arr' => 'metric-arr-post.php',
-    'add_recording' => 'submit_recording.php'
+    'add_recording' => 'submit_recording.php',
+    'load_file' => 'load_file.php', // Add load_file as an allowed action
 ];
 
 // Check if the requested action is allowed and the file exists
@@ -30,4 +31,3 @@ if (array_key_exists($action, $actions) && file_exists($scriptPath . $actions[$a
 } else {
     echo 'Invalid action or file does not exist';
 }
-?>

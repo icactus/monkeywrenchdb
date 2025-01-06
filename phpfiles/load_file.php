@@ -1,55 +1,38 @@
 <?php
-// File: /public/loadFile.php
-
 header('Content-Type: application/json');
 
-// Retrieve and validate piece_id from GET parameters
-$piece_id = isset($_GET['piece_id']) ? $_GET['piece_id'] : '';
-
-if (empty($piece_id)) {
-	http_response_code(400); // Bad Request
-	echo json_encode(['error' => 'piece_id is required']);
+// Ensure piece_id is provided and validate it
+if (!isset($_GET['piece_id']) || !preg_match('/^\d+$/', $_GET['piece_id'])) {
+	echo json_encode(['error' => 'Invalid or missing piece_id']);
 	exit;
 }
 
-// Sanitize piece_id to allow only digits since piece_id is numeric
-if (!preg_match('/^\d+$/', $piece_id)) {
-	http_response_code(400);
-	echo json_encode(['error' => 'Invalid piece_id format']);
-	exit;
-}
+$piece_id = $_GET['piece_id'];
 
-// Define the directory path (relative to this script)
-$directory = realpath(__DIR__ . '/../synpdf_182/editmode-loadfiles/');
-
-// Ensure the directory exists
-if ($directory === false || !is_dir($directory)) {
-	http_response_code(500); // Internal Server Error
+// Define the path to the directory containing your files
+$fileDir = realpath(__DIR__ . '/../editmode-loadfiles/');
+if (!$fileDir) {
 	echo json_encode(['error' => 'File directory not found']);
 	exit;
 }
 
-// Construct the file search pattern (e.g., "93.js")
-$pattern = $directory . '/' . $piece_id . '.js';
+// Construct the file path
+$filePath = $fileDir . '/' . $piece_id . '.js';
 
-// Check if the specific file exists
-if (!file_exists($pattern)) {
-	http_response_code(404); // Not Found
-	echo json_encode(['error' => 'No file found for the given piece_id']);
+// Check if the file exists and is readable
+if (!file_exists($filePath) || !is_readable($filePath)) {
+	echo json_encode(['error' => 'File not found']);
 	exit;
 }
 
-// Read the file contents
-$fileContents = file_get_contents($pattern);
-
-if ($fileContents === false) {
-	http_response_code(500); // Internal Server Error
+// Read and return the file content
+$fileContent = file_get_contents($filePath);
+if ($fileContent === false) {
 	echo json_encode(['error' => 'Failed to read the file']);
 	exit;
 }
 
-// Return the file contents as a string
 echo json_encode([
-	'fileName' => basename($pattern),
-	'fileContent' => $fileContents
+	'fileName' => basename($filePath),
+	'fileContent' => $fileContent,
 ]);
