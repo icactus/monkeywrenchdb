@@ -11,7 +11,7 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 
-    <script src="synpdf-edit-mode.js?v=19"></script>
+    <script src="synpdf-edit-mode.js?v=20"></script>
     <style>
         html {
             width: 100%;
@@ -811,7 +811,7 @@
     </div>
     <!--</div> -->
     <!-- </div> -->
-    <script src="edit-mode-tools.js?v=48"></script>
+    <script src="edit-mode-tools.js?v=49"></script>
 
 </body>
 
