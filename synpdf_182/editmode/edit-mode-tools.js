@@ -764,6 +764,32 @@ function frontT(startIndex, endIndex) {
 }
 
 
+function fetchAndLoadJsFile(pieceId) {
+    fetch(`./dispatcher.php?action=load_file&piece_id=${encodeURIComponent(pieceId)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text(); // Fetch as text since it's a .js file
+        })
+        .then(rawJsContent => {
+            // Create a Blob from the raw JS content
+            const blob = new Blob([rawJsContent], { type: 'application/javascript' });
+
+            // Create a File object from the Blob
+            const file = new File([blob], `${pieceId}.js`, { type: 'application/javascript' });
+
+            // Pass the File object to your existing function
+            readLocalFile$$module$synpdf(file);
+        })
+        .catch(error => {
+            console.error('Error fetching .js file:', error);
+            alert(`Error fetching .js file: ${error.message}`);
+        });
+}
+
+
+
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('goto-measure-form').addEventListener('submit', function(event) {
         event.preventDefault();
@@ -825,8 +851,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert("An error occurred: " + error.message);
             });
     });
-    const loadBtn = document.getElementById('loadBtn');
-    const pieceSelect = document.getElementById('piece_id1');
+    const loadBtn = document.getElementById('loadBtn'); // Assuming you have a button with id="loadBtn"
+    const pieceSelect = document.getElementById('piece_id1'); // Your <select> element
 
     loadBtn.addEventListener('click', function() {
         const pieceId = pieceSelect.value.trim();
@@ -836,25 +862,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Fetch the JS file via the PHP endpoint
-        fetch('./dispatcher.php?action=load_file&piece_id=' + encodeURIComponent(pieceId))
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('HTTP error! status: ' + response.status);
-                }
-                return response.arrayBuffer();  // <--- Retrieve raw binary
-            })
-            .then(arrayBuf => {
-                // arrayBuf is now the raw binary content of the .js file
-                // Create a File object (just like a local file)
-                const file = new File([arrayBuf], pieceId + '.js', { type: 'application/javascript' });
-
-                // Pass it to your existing function
-                readLocalFile$$module$synpdf(file);
-            })
-            .catch(error => {
-                console.error('Error fetching .js file:', error);
-            });
+        fetchAndLoadJsFile(pieceId);
     });
 });
 
