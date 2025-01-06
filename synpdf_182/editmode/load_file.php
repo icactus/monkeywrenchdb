@@ -21,7 +21,7 @@ if (!preg_match('/^\d+$/', $piece_id)) {
 }
 
 // Define the directory where .js files are stored
-$directory = realpath(__DIR__ . '/../public_html/editmode-files/');
+$directory = realpath(__DIR__ . '../editmode-files/');
 if (!$directory) {
 	send_response(500, "Server configuration error: Directory not found.");
 }
