@@ -767,7 +767,7 @@ function frontT(startIndex, endIndex) {
 // Function to fetch and load a .js file via load_js.php
 function fetchAndLoadJsFile(pieceId) {
     // Construct the URL to the load_js.php script with the piece_id parameter
-    const loadJsUrl = `../../phpfiles/load_file.php?piece_id=${encodeURIComponent(pieceId)}`;
+    const loadJsUrl = `./load_file.php?piece_id=${encodeURIComponent(pieceId)}`;
 
     fetch(loadJsUrl)
         .then(response => {
