@@ -837,16 +837,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Fetch the JS file via the PHP endpoint
-        fetch('./dispatcher.php?action=load_file&piece_id=' + encodeURIComponent(pieceId))
+        fetch('/dispatcher.php?action=load_file&piece_id=' + encodeURIComponent(pieceId))
             .then(response => {
                 if (!response.ok) {
-                    if (response.status === 400) {
-                        throw new Error('Bad Request: ' + response.statusText);
-                    } else if (response.status === 404) {
-                        throw new Error('File not found.');
-                    } else {
-                        throw new Error('An error occurred while fetching the file.');
-                    }
+                    throw new Error('HTTP error! status: ' + response.status);
                 }
                 return response.json();
             })
@@ -855,14 +849,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error(data.error);
                 }
 
-                // Create a Blob from the JS content
-                const blob = new Blob([data.fileContent], { type: 'application/javascript' });
+                console.log('File loaded:', data.fileName);
+                console.log('File content:', data.fileContent);
 
-                // Create a File object from the Blob
-                const file = new File([blob], data.fileName, { type: 'application/javascript' });
-
-                // Pass the File object to your existing function
-                readLocalFile$$module$synpdf(file);
+                // Pass the file content to your existing processing logic
+                readLocalFile$$module$synpdf(new File([data.fileContent], data.fileName));
             })
             .catch(error => {
                 console.error('Error:', error);
