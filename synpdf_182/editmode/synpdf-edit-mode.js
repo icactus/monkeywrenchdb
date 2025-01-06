@@ -1558,7 +1558,7 @@ function readLocalFile$$module$synpdf() {
     annots$$module$synpdf = [];
     initLoopRec$$module$synpdf();
     var a = new FileReader;
-    a.onload = function(b) {
+    a.onload = function() {
         readPdfOrJs$$module$synpdf(a.result)
     };
     var b = $("#fknp").prop("files")[0];

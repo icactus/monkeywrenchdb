@@ -478,7 +478,7 @@ function editCxsGroups$$module$synpdf(event) {
 
 // Example: Submitting the "Add Composer" form
 const addNewComposerForm = document.getElementById('addnewcomposerform');
-addNewComposerForm.addEventListener('submit', function (event) {
+addNewComposerForm.addEventListener('submit', function(event) {
     event.preventDefault();
 
     const formData = new FormData(this);
@@ -488,18 +488,18 @@ addNewComposerForm.addEventListener('submit', function (event) {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json()) 
-    .then(data => {
-        console.log('Dispatcher response:', data);
-        if (data.success) {
-            alert(data.message || 'Composer added successfully!');
-            
-            //select composer dropdowns
-            const composerDropdowns = document.querySelectorAll('select[name="composer_id"], select[name="composers_list"]');
+        .then(response => response.json())
+        .then(data => {
+            console.log('Dispatcher response:', data);
+            if (data.success) {
+                alert(data.message || 'Composer added successfully!');
+
+                //select composer dropdowns
+                const composerDropdowns = document.querySelectorAll('select[name="composer_id"], select[name="composers_list"]');
                 if (composerDropdowns.length > 0 && data.composers) {
                     composerDropdowns.forEach(dropdown => {
                         dropdown.innerHTML = ''; // Clear existing options
-                        
+
                         // Add new options from the updated composer list
                         data.composers.forEach(composer => {
                             const opt = document.createElement('option');
@@ -509,18 +509,18 @@ addNewComposerForm.addEventListener('submit', function (event) {
                         });
                     });
                 }
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error adding composer:', error);
-        alert('An error occurred.');
-    });
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error adding composer:', error);
+            alert('An error occurred.');
+        });
 });
 
 const addNewPieceForm = document.getElementById('addnewpieceform');
-addNewPieceForm.addEventListener('submit', function (event) {
+addNewPieceForm.addEventListener('submit', function(event) {
     event.preventDefault();
 
     const formData = new FormData(this);
@@ -530,36 +530,36 @@ addNewPieceForm.addEventListener('submit', function (event) {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Dispatcher response:', data);
-        if (data.success) {
-            alert(data.message || 'Piece added successfully!');
-            // e.g., update piece dropdown
-            if (data.pieces) {
-                const pieceDropdowns = document.querySelectorAll("select[name='piece_id']");
+        .then(response => response.json())
+        .then(data => {
+            console.log('Dispatcher response:', data);
+            if (data.success) {
+                alert(data.message || 'Piece added successfully!');
+                // e.g., update piece dropdown
+                if (data.pieces) {
+                    const pieceDropdowns = document.querySelectorAll("select[name='piece_id']");
 
-                // Sort the pieces array by the 'name' field
-                const sortedPieces = data.pieces.sort((a, b) => a.name.localeCompare(b.name));
+                    // Sort the pieces array by the 'name' field
+                    const sortedPieces = data.pieces.sort((a, b) => a.name.localeCompare(b.name));
 
-                pieceDropdowns.forEach(dropdown => {
-                    dropdown.innerHTML = ""; // Clear existing options
-                    sortedPieces.forEach(piece => {
-                        const option = document.createElement("option");
-                        option.value = piece.id;
-                        option.textContent = piece.name;
-                        dropdown.appendChild(option);
+                    pieceDropdowns.forEach(dropdown => {
+                        dropdown.innerHTML = ""; // Clear existing options
+                        sortedPieces.forEach(piece => {
+                            const option = document.createElement("option");
+                            option.value = piece.id;
+                            option.textContent = piece.name;
+                            dropdown.appendChild(option);
+                        });
                     });
-                });
+                }
+            } else {
+                alert('Error: ' + data.message);
             }
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error adding piece:', error);
-        alert('An error occurred.');
-    });
+        })
+        .catch(error => {
+            console.error('Error adding piece:', error);
+            alert('An error occurred.');
+        });
 });
 
 const addNewMetricForm = document.getElementById("addnewmetricform");
@@ -763,6 +763,76 @@ function frontT(startIndex, endIndex) {
     }
 }
 
+
+//Load js file for syncing with youtube
+document.addEventListener('DOMContentLoaded', function() {
+    const loadBtn = document.getElementById('loadBtn');
+    const pieceSelect = document.getElementById('piece_id1');
+    const fetchedDataDiv = document.getElementById('fetchedData');
+
+    loadBtn.addEventListener('click', function() {
+        const pieceId = pieceSelect.value;
+
+        if (!pieceId) {
+            alert('Please select a piece.');
+            return;
+        }
+
+        // Show loading indicator
+        fetchedDataDiv.innerHTML = 'Loading...';
+
+        // Fetch the file via the PHP endpoint
+        fetch('loadFile.php?piece_id=' + encodeURIComponent(pieceId))
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 400) {
+                        throw new Error('Bad Request: ' + response.statusText);
+                    } else if (response.status === 404) {
+                        throw new Error('File not found.');
+                    } else {
+                        throw new Error('An error occurred while fetching the file.');
+                    }
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Decode the base64 file data
+                const binaryData = atob(data.fileData);
+                const len = binaryData.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryData.charCodeAt(i);
+                }
+
+                // Create a Blob from the bytes
+                const blob = new Blob([bytes], { type: 'application/pdf' });
+
+                // Create a File object from the Blob
+                const file = new File([blob], data.fileName, { type: 'application/pdf' });
+
+                // Call your existing function with the File object
+                readLocalFile$$module$synpdf(file);
+
+                // Optionally, display success message or handle UI updates
+                fetchedDataDiv.innerHTML = 'File loaded successfully.';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                fetchedDataDiv.innerHTML = `<span style="color: red;">${sanitizeHTML(error.message)}</span>`;
+            });
+    });
+
+    // Function to sanitize HTML to prevent XSS attacks
+    function sanitizeHTML(str) {
+        const temp = document.createElement('div');
+        temp.textContent = str;
+        return temp.innerHTML;
+    }
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('goto-measure-form').addEventListener('submit', function(event) {
