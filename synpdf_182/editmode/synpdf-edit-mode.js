@@ -1567,12 +1567,8 @@ function readLocalFile$$module$synpdf(file = null) {
         readPdfOrJs$$module$synpdf(reader.result);
     };
 
-    var selectedFile;
-    if (file) {
-        selectedFile = file;
-    } else {
-        selectedFile = $("#fknp").prop("files")[0];
-    }
+    // Determine the selected file
+    var selectedFile = file || $("#fknp").prop("files")[0];
 
     if (!selectedFile) {
         $("#err").text("No file selected.");
@@ -1581,7 +1577,7 @@ function readLocalFile$$module$synpdf(file = null) {
 
     // Set global variables based on the file
     pdfFnm$$module$synpdf = selectedFile.name;
-    console.log(selectedFile.name);
+    console.log(selectedFile.name); // Should now log the correct file name
     scoreFnm$$module$synpdf = selectedFile.name.split(".")[0];
 
     // Read the file as an ArrayBuffer
