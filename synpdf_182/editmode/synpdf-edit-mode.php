@@ -682,7 +682,7 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <button type="button">Load</button>
+                        <button type="button" id="loadBtn">Load</button>
                     </form>
                     <form class="inputform" id="addnewrecordingform" method="POST">
                         <div>
