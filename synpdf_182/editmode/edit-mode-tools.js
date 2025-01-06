@@ -777,7 +777,6 @@ function fetchAndLoadJsFile(pieceId) {
                     throw new Error(text || `HTTP error! status: ${response.status}`);
                 });
             }
-            console.log(response.text());
             return response.text(); // Since it's a .js file
         })
         .then(rawJsContent => {
