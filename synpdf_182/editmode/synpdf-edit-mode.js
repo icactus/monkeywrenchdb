@@ -1552,38 +1552,29 @@ function readPdfOrJs$$module$synpdf(a) {
 }
 
 function readLocalFile$$module$synpdf(file = null) {
-    // Reset or initialize necessary variables
+    // Reset variables
     metric_arr$$module$synpdf = tix_lb$$module$synpdf = offset_js$$module$synpdf = times_arr$$module$synpdf = void 0;
     deMetriek$$module$synpdf = [opt$$module$synpdf.pagewd];
     adv_settings$$module$synpdf = void 0;
     annots$$module$synpdf = [];
     initLoopRec$$module$synpdf();
 
-    // Create a new FileReader instance
-    var reader = new FileReader();
-
-    // Define the onload event handler
+    const reader = new FileReader();
     reader.onload = function() {
         readPdfOrJs$$module$synpdf(reader.result);
     };
 
-    var selectedFile;
-    if (file) {
-        selectedFile = file;
-    } else {
-        selectedFile = $("#fknp").prop("files")[0];
-    }
-
+    // If a server-fetched File is passed in, use it; else get local file from #fknp
+    const selectedFile = file ?? $("#fknp").prop("files")[0];
     if (!selectedFile) {
         $("#err").text("No file selected.");
         return;
     }
 
-    // Set global variables based on the file
     pdfFnm$$module$synpdf = selectedFile.name;
     scoreFnm$$module$synpdf = selectedFile.name.split(".")[0];
 
-    // Read the file as an ArrayBuffer
+    // Read as ArrayBuffer, just like local files
     reader.readAsArrayBuffer(selectedFile);
 }
 
