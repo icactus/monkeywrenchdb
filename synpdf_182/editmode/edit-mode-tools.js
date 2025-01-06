@@ -764,8 +764,12 @@ function frontT(startIndex, endIndex) {
 }
 
 
+// Function to fetch and load a .js file directly from the server
 function fetchAndLoadJsFile(pieceId) {
-    fetch(`./dispatcher.php?action=load_file&piece_id=${encodeURIComponent(pieceId)}`)
+    // Construct the URL to the .js file
+    const jsFileUrl = `https://monkeywrenchdb.org/jsfiles/${encodeURIComponent(pieceId)}.js`;
+
+    fetch(jsFileUrl)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -783,8 +787,8 @@ function fetchAndLoadJsFile(pieceId) {
             readLocalFile$$module$synpdf(file);
         })
         .catch(error => {
-            console.error('Error fetching .js file:', error);
-            alert(`Error fetching .js file: ${error.message}`);
+            console.error('Error fetching or processing .js file:', error);
+            $("#err").text(`Error loading file: ${error.message}`);
         });
 }
 

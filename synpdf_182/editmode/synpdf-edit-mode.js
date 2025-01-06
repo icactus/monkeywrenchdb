@@ -1577,7 +1577,7 @@ function readLocalFile$$module$synpdf(file = null) {
 
     // Set global variables based on the file
     pdfFnm$$module$synpdf = selectedFile.name;
-    console.log(selectedFile.name); // Should now log the correct file name
+    console.log("Loaded file:", selectedFile.name); // Logs the file name
     scoreFnm$$module$synpdf = selectedFile.name.split(".")[0];
 
     // Read the file as an ArrayBuffer
