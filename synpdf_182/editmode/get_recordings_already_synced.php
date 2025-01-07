@@ -11,8 +11,8 @@ require_once '../../phpfiles/read_only_user_config.php';
 // Function to send JSON responses
 function sendResponse($status, $data)
 {
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['status' => $status, 'data' => $data], JSON_UNESCAPED_UNICODE);
+    header('Content-Type: application/json;');
+    echo json_encode(['status' => $status, 'data' => $data]);
     exit;
 }
 
@@ -25,14 +25,12 @@ $piece_id = (int)$_GET['piece_id'];
 
 // Establish the database connection using mysqli with error handling
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+mysqli_set_charset($conn, 'utf8');
 
 // Check the connection
 if ($conn->connect_error) {
     sendResponse('error', 'Database connection failed: ' . $conn->connect_error);
 }
-
-// Set character set to UTF-8
-$conn->set_charset('utf8');
 
 // Prepare the SQL query to fetch recordings for the given piece_id
 $sql = "SELECT conductor_name, ensemble_name, year
