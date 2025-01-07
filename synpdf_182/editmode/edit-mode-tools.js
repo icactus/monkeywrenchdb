@@ -845,7 +845,7 @@ function populateRecordingsDropdown(recordings) {
 
     recordings.forEach((recording, index) => {
         const option = document.createElement('option');
-        option.text = `${recording.year} - ${recording.conductor_soloist} (${recording.ensemble})`;
+        option.text = `${recording.year} - ${recording.conductor_name} (${recording.ensemble_name})`;
         option.value = index; // Or use a unique identifier if available
         dropdown.add(option);
     });
