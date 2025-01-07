@@ -924,7 +924,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         fetchAndLoadJsFile(pieceId);
-        loadAlreadySyncedRecordings();
+        loadAlreadySyncedRecordings(pieceId);
     });
     const rewindBtn = document.getElementById('rewind');
     rewindBtn.addEventListener('click', function() {
