@@ -245,7 +245,7 @@
             height: 90%;
             width: 99%;
             /*fixes large gap after rendering*/
-            margin-top: -100%;
+            margin-top: -1000%;
             overflow: scroll;
             background: white;
             display: inline-block;
