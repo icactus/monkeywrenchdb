@@ -812,7 +812,7 @@ function loadAlreadySyncedRecordings(pieceId) {
                     throw new Error(text || `HTTP error! status: ${response.status}`);
                 });
             }
-            console.log(response);
+            console.log(response.json());
             return response.json(); // Expecting JSON response
         })
         .then(data => {
