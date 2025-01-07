@@ -816,7 +816,6 @@ function loadAlreadySyncedRecordings(pieceId) {
         })
         .then(data => {
             if (data.status === 'success') {
-                console.log(data.data);
                 populateRecordingsDropdown(data.data);
             } else {
                 console.error('Error fetching recordings:', data.data);
