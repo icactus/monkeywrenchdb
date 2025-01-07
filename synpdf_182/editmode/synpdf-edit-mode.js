@@ -2339,14 +2339,70 @@ function hideSpeedChk$$module$synpdf() {
 }
 
 function syncChk$$module$synpdf() {
-    if (msc_wz$$module$synpdf)
-        if ($("#sync_out, .reptkn").toggle(!!opt$$module$synpdf.synbox), $("#lm").toggle(!opt$$module$synpdf.synbox), opt$$module$synpdf.advncd ? $(".mexp").toggle(!opt$$module$synpdf.synbox) : $(".mnrm").toggle(!opt$$module$synpdf.synbox), opt$$module$synpdf.synbox) msc_wz$$module$synpdf.showSyncInfo(), msc_wz$$module$synpdf.startSync();
-        else
-            for (var a = lastSynced$$module$synpdf + 1; a < deMaten$$module$synpdf.length; ++a) deTijden$$module$synpdf.push({
-                t: 0 < a ? deTijden$$module$synpdf[a -
-                    1].t + 2 : 0,
-                mix: a
-            })
+    // Check if the sync module exists
+    if (!msc_wz$$module$synpdf) {
+        console.warn("Sync module 'msc_wz$$module$synpdf' is not defined.");
+        return;
+    }
+
+    // Determine if the sync box is checked
+    const isSyncBoxChecked = !!opt$$module$synpdf.synbox;
+
+    // Toggle visibility of UI elements based on sync box state
+    $("#sync_out, .reptkn").toggle(isSyncBoxChecked);
+    $("#lm").toggle(!isSyncBoxChecked);
+
+    if (opt$$module$synpdf.advncd) {
+        $(".mexp").toggle(!isSyncBoxChecked);
+    } else {
+        $(".mnrm").toggle(!isSyncBoxChecked);
+    }
+
+    if (isSyncBoxChecked) {
+        // If sync box is checked, show sync info and start syncing
+        msc_wz$$module$synpdf.showSyncInfo();
+        msc_wz$$module$synpdf.startSync();
+    } else {
+        // If sync box is unchecked, handle measure synchronization
+        if (lastSynced$$module$synpdf === -1) {
+            if (deTijden$$module$synpdf.length === 0) {
+                // Initialize measures if deTijden is empty
+                initializeMeasures();
+            } else {
+                // deTijden is not empty; do not push measures to prevent duplication
+                console.info("Measures already initialized. No action taken.");
+            }
+        } else {
+            // Push new filler timestamps starting from lastSynced + 1
+            pushNewMeasures();
+        }
+    }
+}
+
+// Function to initialize measures when lastSynced is -1 and deTijden is empty
+function initializeMeasures() {
+    for (let a = 0; a < deMaten$$module$synpdf.length; ++a) {
+        deTijden$$module$synpdf.push({
+            t: a > 0 ? deTijden$$module$synpdf[a - 1].t + 2 : 0,
+            mix: a
+        });
+    }
+    // Update lastSynced to the last measure index
+    lastSynced$$module$synpdf = deMaten$$module$synpdf.length - 1;
+    console.info("Measures initialized successfully.");
+}
+
+// Function to push new measures when lastSynced is >= 0
+function pushNewMeasures() {
+    for (let a = lastSynced$$module$synpdf + 1; a < deMaten$$module$synpdf.length; ++a) {
+        deTijden$$module$synpdf.push({
+            t: a > 0 ? deTijden$$module$synpdf[a - 1].t + 2 : 0,
+            mix: a
+        });
+    }
+    // Update lastSynced to the last measure index
+    lastSynced$$module$synpdf = deMaten$$module$synpdf.length - 1;
+    console.info("New measures pushed successfully.");
 }
 
 function doResize$$module$synpdf() {
