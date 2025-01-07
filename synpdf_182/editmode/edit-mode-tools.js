@@ -832,8 +832,8 @@ function loadAlreadySyncedRecordings(pieceId) {
 function populateRecordingsDropdown(recordings) {
     const dropdown = document.getElementById('recordingsAlready');
 
-    // Clear existing options except the first placeholder
-    dropdown.options.length = 1; // Keep the first option
+    // Clear existing options
+    dropdown.options.length = 0;
 
     if (recordings.length === 0) {
         const option = document.createElement('option');
