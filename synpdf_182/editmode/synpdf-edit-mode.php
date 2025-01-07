@@ -709,13 +709,13 @@
                             <label for="year">Year Performed</label>
                             <input type="text" name="year" placeholder="Year as YYYY" />
                         </div>
+                        <input type="hidden" name="piece_id" id="piece_id" />
+                        <input type="hidden" name="offset_js" id="offset_js" />
+                        <input type="hidden" name="youtube_id" id="youtube_id" />
+                        <input type="hidden" name="times_arr_data" id="times_arr_data" />
+                        <input type="submit" value="Submit" />
+                    </form>
                 </div>
-                <input type="hidden" name="piece_id" id="piece_id" />
-                <input type="hidden" name="offset_js" id="offset_js" />
-                <input type="hidden" name="youtube_id" id="youtube_id" />
-                <input type="hidden" name="times_arr_data" id="times_arr_data" />
-                <input type="submit" value="Submit" />
-                </form>
             </div>
         </div>
     </section1>
