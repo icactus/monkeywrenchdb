@@ -259,7 +259,8 @@
 
         #saveDlg #div2 {
             flex: 1;
-            overflow: auto;
+            max-height: 90%;
+            overflow-y: scroll;
             background: white;
         }
 
@@ -730,11 +731,9 @@
     <div id="countin" class="dlog"></div>
     <div id="saveDlg">
         <div id="div1"></div>
-        <div>
-            <div id="div4"></div>
-            <div id="div2">
-                <pre></pre>
-            </div>
+        <div id="div4"></div>
+        <div id="div2">
+            <pre></pre>
         </div>
         <div id="div1"></div>
         <div id="div3">
