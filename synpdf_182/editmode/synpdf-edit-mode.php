@@ -11,7 +11,7 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 
-    <script src="synpdf-edit-mode.js?v=28"></script>
+    <script src="synpdf-edit-mode.js?v=29"></script>
     <style>
         html {
             width: 100%;
@@ -684,6 +684,7 @@
                         </div>
                         <button type="button" id="loadBtn">Load</button>
                     </form>
+                    <button type="button" id="rewind">Rewind</button>
                     <form class="inputform" id="addnewrecordingform" method="POST">
                         <div>
                             <label for="conductor_name">Conductor/Soloist</label>
@@ -811,7 +812,7 @@
     </div>
     <!--</div> -->
     <!-- </div> -->
-    <script src="edit-mode-tools.js?v=56"></script>
+    <script src="edit-mode-tools.js?v=57"></script>
 
 </body>
 

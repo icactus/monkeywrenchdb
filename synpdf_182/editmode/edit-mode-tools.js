@@ -863,8 +863,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert("An error occurred: " + error.message);
             });
     });
-    const loadBtn = document.getElementById('loadBtn'); // Assuming you have a button with id="loadBtn"
-    const pieceSelect = document.getElementById('piece_id1'); // Your <select> element
+    const loadBtn = document.getElementById('loadBtn');
+    const pieceSelect = document.getElementById('piece_id1');
 
     loadBtn.addEventListener('click', function() {
         const pieceId = pieceSelect.value.trim();
@@ -875,6 +875,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         fetchAndLoadJsFile(pieceId);
+    });
+    const rewindBtn = document.getElementById('rewind');
+    rewindBtn.addEventListener('click', function() {
+        resetTiming$$module$synpdf();
     });
 });
 
