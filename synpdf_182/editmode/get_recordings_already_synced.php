@@ -1,4 +1,3 @@
-
 <?php
 // Enable error reporting for debugging (disable in production)
 ini_set('display_errors', 1);
@@ -11,8 +10,8 @@ require_once '../../phpfiles/read_only_user_config.php';
 // Function to send JSON responses
 function sendResponse($status, $data)
 {
-    header('Content-Type: application/json;');
-    echo json_encode(['status' => $status, 'data' => $data]);
+    header('Content-Type: application/json; charset=utf-8'); // Ensure UTF-8 charset
+    echo json_encode(['status' => $status, 'data' => $data], JSON_UNESCAPED_UNICODE); // Preserve Unicode characters
     exit;
 }
 
@@ -25,7 +24,7 @@ $piece_id = (int)$_GET['piece_id'];
 
 // Establish the database connection using mysqli with error handling
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-mysqli_set_charset($conn, 'utf8');
+mysqli_set_charset($conn, 'utf8mb4'); // Use 'utf8mb4' for full Unicode support
 
 // Check the connection
 if ($conn->connect_error) {
@@ -62,8 +61,8 @@ $recordings = [];
 while ($row = $result->fetch_assoc()) {
     $recordings[] = [
         'year' => $row['year'],
-        'conductor_name' => $row['conductor_name'],
-        'ensemble_name' => $row['ensemble_name']
+        'conductor_name' => $row['conductor_name'], // No encoding applied
+        'ensemble_name' => $row['ensemble_name']    // No encoding applied
     ];
 }
 
@@ -77,4 +76,3 @@ if (count($recordings) > 0) {
 } else {
     sendResponse('success', []); // Return empty array if no recordings found
 }
-?>
