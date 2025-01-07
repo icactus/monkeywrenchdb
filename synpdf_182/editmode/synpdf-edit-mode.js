@@ -2491,7 +2491,15 @@ $(document).ready(function() {
         $("#help").toggleClass("showhlp")
     });
     $("#buttons").on("mousedown touchstart", msc_shift$$module$synpdf);
-    $("#fknp").change(readLocalFile$$module$synpdf);
+    // File button now has file as correct parameter 
+    $("#fknp").on('change', function() {
+        const file = this.files[0];
+        if (file) {
+            readLocalFile$$module$synpdf(file);
+        } else {
+            $("#err").text("No file selected.");
+        }
+    });
     $("#mknp").change(function() {
         readMedia$$module$synpdf("btn", [])
     });
