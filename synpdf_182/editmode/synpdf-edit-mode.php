@@ -721,8 +721,7 @@
     <div id="countin" class="dlog"></div>
     <div id="saveDlg">
         <div id="div1"></div>
-        <div id="div4"></div><!--no space between inline-block elements! because it is rendered!!!
--->
+        <div id="div4"></div>
         <div id="div2">
             <pre></pre>
         </div>
