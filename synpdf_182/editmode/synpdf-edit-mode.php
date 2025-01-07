@@ -683,8 +683,8 @@
                             </select>
                         </div>
                         <button type="button" id="loadBtn">Load</button>
+                        <button type="button" id="rewind">Rewind</button>
                     </form>
-                    <button type="button" id="rewind">Rewind</button>
                     <form class="inputform" id="addnewrecordingform" method="POST">
                         <div>
                             <label for="conductor_name">Conductor/Soloist</label>
