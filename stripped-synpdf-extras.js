@@ -340,7 +340,6 @@ function fetchRecordings(metricArrId) {
                     reject("No recordings found");
                 } else {
                     var recordings = JSON.parse(response);
-                    console.log(recordings);
                     currentMetricArrGlobal = metricArrId;
                     var container = $('#recordings-container');
                     container.empty();

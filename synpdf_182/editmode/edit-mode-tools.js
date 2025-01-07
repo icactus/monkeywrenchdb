@@ -846,7 +846,10 @@ function populateRecordingsDropdown(recordings) {
 
     recordings.forEach((recording, index) => {
         const option = document.createElement('option');
-        option.text = `${recording.year} - ${recording.conductor_name} (${recording.ensemble_name})`;
+        // Decode HTML entities before setting the text
+        const decodedConductor = decodeHTMLEntities(recording.conductor_name);
+        const decodedEnsemble = decodeHTMLEntities(recording.ensemble_name);
+        option.text = `${recording.year} - ${decodedConductor} (${decodedEnsemble})`;
         option.value = index;
         dropdown.add(option);
     });
