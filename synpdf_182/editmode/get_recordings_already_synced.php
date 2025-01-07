@@ -11,8 +11,8 @@ require_once '../../phpfiles/read_only_user_config.php';
 // Function to send JSON responses
 function sendResponse($status, $data)
 {
-    header('Content-Type: application/json');
-    echo json_encode(['status' => $status, 'data' => $data]);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['status' => $status, 'data' => $data], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
