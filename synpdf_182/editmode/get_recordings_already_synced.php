@@ -6,7 +6,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 // Include database configuration
-require_once '../phpfiles/read_only_user_config.php';
+require_once '../../phpfiles/read_only_user_config.php';
 
 // Function to send JSON responses
 function sendResponse($status, $data)
