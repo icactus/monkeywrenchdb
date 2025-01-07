@@ -1,6 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 
+
 <head>
     <meta name="robots" content="noindex">
     <meta charset="utf-8">
@@ -232,43 +233,51 @@
             z-index: 3;
             background: #eee;
             display: none;
-            margin: 0px;
+            margin: 0;
             border: medium black ridge;
             box-shadow: 10px 10px 5px #888888;
+            display: flex;
+            flex-direction: column;
         }
 
         #saveDlg #div1 {
             height: 2%;
         }
 
-        #saveDlg #div2 {
+        #saveDlg #contentWrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
             height: 90%;
-            width: 99%;
-            overflow: scroll;
-            background: white;
-            display: inline-block;
-            vertical-align: bottom;
         }
 
         #saveDlg #div4 {
-            height: 90%;
             width: 1%;
-            display: inline-block;
-            vertical-align: bottom;
+            background: #ccc;
+            /* Optional: Add background for visibility */
+        }
+
+        #saveDlg #div2 {
+            flex: 1;
+            overflow: auto;
+            background: white;
         }
 
         #saveDlg #div3 {
             height: 6%;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            padding: 0 1em;
         }
 
         #saveDlg pre {
-            margin: 0px;
+            margin: 0;
             user-select: text;
             -webkit-user-select: text;
         }
 
-        /*allow select save dialogue text */
+        /* Allow select save dialogue text */
         #saveDlg button {
             margin-left: 1em;
         }
@@ -721,9 +730,11 @@
     <div id="countin" class="dlog"></div>
     <div id="saveDlg">
         <div id="div1"></div>
-        <div id="div4"></div>
-        <div id="div2">
-            <pre></pre>
+        <div>
+            <div id="div4"></div>
+            <div id="div2">
+                <pre></pre>
+            </div>
         </div>
         <div id="div1"></div>
         <div id="div3">
