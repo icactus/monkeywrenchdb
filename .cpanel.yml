@@ -18,12 +18,7 @@ deployment:
     - /bin/cp stripped-synpdf-styles.css $DEPLOYPATH
     - /bin/cp stripped-synpdf.js $DEPLOYPATH
     - /bin/cp check_multiple_parts.php $DEPLOYPATH
-    - export DEPLOYPATH3=/home/monkcdmb/public_html/editmode/
-    - /bin/cp synpdf_182/editmode/synpdf-edit-mode.php $DEPLOYPATH3 
-    - /bin/cp synpdf_182/editmode/edit-mode-tools.js $DEPLOYPATH3
-    - /bin/cp synpdf_182/editmode/synpdf-edit-mode.js $DEPLOYPATH3
-    - /bin/cp synpdf_182/editmode/dispatcher.php $DEPLOYPATH3
-    - /bin/cp synpdf_182/editmode/load_file.php $DEPLOYPATH3
+
     - export DEPLOYPATH2=/home/monkcdmb/phpfiles/
     - /bin/cp phpfiles/composers-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/get_pieces_and_composers.php $DEPLOYPATH2
@@ -31,3 +26,10 @@ deployment:
     - /bin/cp phpfiles/pieces-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/submit_recording.php $DEPLOYPATH2
 
+    - export DEPLOYPATH3=/home/monkcdmb/public_html/editmode/
+    - /bin/cp synpdf_182/editmode/synpdf-edit-mode.php $DEPLOYPATH3 
+    - /bin/cp synpdf_182/editmode/edit-mode-tools.js $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/synpdf-edit-mode.js $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/dispatcher.php $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/load_file.php $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/get_recordings_already_synced.php $DEPLOYPATH3

@@ -800,7 +800,56 @@ function fetchAndLoadJsFile(pieceId) {
         });
 }
 
+function fetchRecordings(pieceId) {
+    // Construct the URL to the get_recordings.php script with the piece_id parameter
+    const getRecordingsUrl = `./get_recordings_already_synced.php?piece_id=${encodeURIComponent(pieceId)}`;
 
+    fetch(getRecordingsUrl)
+        .then(response => {
+            if (!response.ok) {
+                // If the response is not OK, throw an error to be caught below
+                return response.text().then(text => {
+                    throw new Error(text || `HTTP error! status: ${response.status}`);
+                });
+            }
+            return response.json(); // Expecting JSON response
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                populateRecordingsDropdown(data.data);
+            } else {
+                console.error('Error fetching recordings:', data.data);
+                document.getElementById("err").textContent = `Error fetching recordings: ${data.data}`;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching recordings:', error);
+            document.getElementById("err").textContent = `Error fetching recordings: ${error.message}`;
+        });
+}
+
+// Function to populate the recordings dropdown
+function populateRecordingsDropdown(recordings) {
+    const dropdown = document.getElementById('recordingsAlready');
+
+    // Clear existing options except the first placeholder
+    dropdown.options.length = 1; // Keep the first option
+
+    if (recordings.length === 0) {
+        const option = document.createElement('option');
+        option.text = 'No recordings available';
+        option.value = '';
+        dropdown.add(option);
+        return;
+    }
+
+    recordings.forEach((recording, index) => {
+        const option = document.createElement('option');
+        option.text = `${recording.year} - ${recording.conductor_soloist} (${recording.ensemble})`;
+        option.value = index; // Or use a unique identifier if available
+        dropdown.add(option);
+    });
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('goto-measure-form').addEventListener('submit', function(event) {
@@ -875,6 +924,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         fetchAndLoadJsFile(pieceId);
+        loadAlreadySyncedRecordings();
     });
     const rewindBtn = document.getElementById('rewind');
     rewindBtn.addEventListener('click', function() {

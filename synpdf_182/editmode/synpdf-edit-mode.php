@@ -686,6 +686,13 @@
                         </div>
                         <button type="button" id="loadBtn">Load</button>
                         <button type="button" id="rewind">Rewind</button>
+                        <div>
+                            <label for="recordingsAlready">Check if Already Exists</label>
+                            <select id="recordingsAlready">
+                                <option value="">-- Already Synced Recordings --</option>
+                                </option>
+                            </select>
+                        </div>
                     </form>
                     <form class="inputform" id="addnewrecordingform" method="POST">
                         <div>
