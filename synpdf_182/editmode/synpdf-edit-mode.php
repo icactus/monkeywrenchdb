@@ -673,8 +673,8 @@
                     </div>
                 </form>
                 <!-- add recording -->
-                <div style="display:flex;">
-                    <form class="inputform" id="loadScore" method="POST">
+                <form class="inputform" id="loadScore" method="POST">
+                    <div style="display:flex;">
                         <div>
                             <label for="piece_id1">Select Piece</label>
                             <select id="piece_id1">
@@ -693,7 +693,9 @@
                                 </option>
                             </select>
                         </div>
-                    </form>
+                    </div>
+                </form>
+                <div style="display:flex;">
                     <form class="inputform" id="addnewrecordingform" method="POST">
                         <div>
                             <label for="conductor_name">Conductor/Soloist</label>
