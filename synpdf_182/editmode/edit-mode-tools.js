@@ -800,7 +800,7 @@ function fetchAndLoadJsFile(pieceId) {
         });
 }
 
-function fetchRecordings(pieceId) {
+function loadAlreadySyncedRecordings(pieceId) {
     // Construct the URL to the get_recordings.php script with the piece_id parameter
     const getRecordingsUrl = `./get_recordings_already_synced.php?piece_id=${encodeURIComponent(pieceId)}`;
 
