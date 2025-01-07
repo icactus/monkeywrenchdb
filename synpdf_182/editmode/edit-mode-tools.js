@@ -829,6 +829,13 @@ function loadAlreadySyncedRecordings(pieceId) {
         });
 }
 
+// Function to decode HTML entities
+function decodeHTMLEntities(text) {
+    var parser = new DOMParser();
+    var dom = parser.parseFromString('<!doctype html><body>' + text, 'text/html');
+    return dom.body.textContent;
+}
+
 // Function to populate the recordings dropdown
 function populateRecordingsDropdown(recordings) {
     const dropdown = document.getElementById('recordingsAlready');

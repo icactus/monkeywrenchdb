@@ -822,7 +822,7 @@
     </div>
     <!--</div> -->
     <!-- </div> -->
-    <script src="edit-mode-tools.js?v=66"></script>
+    <script src="edit-mode-tools.js?v=67"></script>
 
 </body>
 
