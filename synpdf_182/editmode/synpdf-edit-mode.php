@@ -244,6 +244,8 @@
         #saveDlg #div2 {
             height: 90%;
             width: 99%;
+            /*fixes large gap after rendering*/
+            margin-top: -100%;
             overflow: scroll;
             background: white;
             display: inline-block;
