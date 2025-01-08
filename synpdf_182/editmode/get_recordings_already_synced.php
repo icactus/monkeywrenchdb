@@ -32,7 +32,7 @@ if ($conn->connect_error) {
 }
 
 // Prepare the SQL query to fetch recordings for the given piece_id
-$sql = "SELECT conductor_name, ensemble_name, year
+$sql = "SELECT conductor_name, ensemble_name, year, youtube_id
         FROM recordings
         WHERE piece_id = ?
         ORDER BY year DESC";
@@ -61,8 +61,9 @@ $recordings = [];
 while ($row = $result->fetch_assoc()) {
     $recordings[] = [
         'year' => $row['year'],
-        'conductor_name' => $row['conductor_name'], // No encoding applied
-        'ensemble_name' => $row['ensemble_name']    // No encoding applied
+        'conductor_name' => $row['conductor_name'],
+        'ensemble_name' => $row['ensemble_name'],
+        'youtube_id' => $row['youtube_id']
     ];
 }
 

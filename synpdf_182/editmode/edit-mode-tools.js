@@ -828,6 +828,9 @@ function loadAlreadySyncedRecordings(pieceId) {
         });
 }
 
+// Global Set to store YouTube IDs
+const youtubeIds = new Set();
+
 // Function to decode HTML entities
 function decodeHTMLEntities(text) {
     var parser = new DOMParser();
@@ -841,6 +844,8 @@ function populateRecordingsDropdown(recordings) {
 
     // Clear existing options
     dropdown.options.length = 0;
+
+    youtubeIds.clear(); // Ensure it's empty before adding new IDs
 
     if (recordings.length === 0) {
         const option = document.createElement('option');
@@ -858,10 +863,38 @@ function populateRecordingsDropdown(recordings) {
         option.text = `${recording.year} - ${decodedConductor} (${decodedEnsemble})`;
         option.value = index;
         dropdown.add(option);
+        youtubeIds.add(recording.youtube_id.trim());
+    });
+}
+
+// Function to handle the "Load YouTube" button click
+function setupYoutubeIdValidation() {
+    const loadButton = document.getElementById('yknp');
+    const inputField = document.getElementById('yubid');
+
+    loadButton.addEventListener('click', function() {
+        const enteredId = inputField.value.trim();
+
+        // Validate the input format using regex
+        const youtubeIdPattern = /^[A-Za-z0-9\-_]{11}$/;
+        if (!youtubeIdPattern.test(enteredId)) {
+            alert('Please enter a valid YouTube ID (11 characters, letters, numbers, hyphens, or underscores).');
+            return;
+        }
+
+        // Check if the entered ID exists in the Set
+        if (currentYoutubeIds.has(enteredId)) {
+            alert('YouTube video is already synced and in the database. Please find a different video to sync.');
+            return
+
+        } else {
+            return
+        }
     });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    setupYoutubeIdValidation();
     document.getElementById('goto-measure-form').addEventListener('submit', function(event) {
         event.preventDefault();
         return gotoMeasure();
