@@ -883,7 +883,7 @@ function setupYoutubeIdValidation() {
         }
 
         // Check if the entered ID exists in the Set
-        if (currentYoutubeIds.has(enteredId)) {
+        if (youtubeIds.has(enteredId)) {
             alert('YouTube video is already synced and in the database. Please find a different video to sync.');
             return
 
