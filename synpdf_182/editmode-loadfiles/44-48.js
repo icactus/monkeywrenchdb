@@ -16,11 +16,7 @@ opt = {"speed":1,"no_menu":0,"btns":1,"spdctl":1,"cropx":0,"drmpl":0.30000000000
 "mtdrmpl":0.8,"dx":3,"fscr":0,"pagenum":2,"playbtn":0,"mmin":"","fixwd":1000,"lastSynced":-1,
 "eerst":0,"sysprf":true,"onestf":0,"advncd":false};
 lpRec = {"loopBtn":1,"loopStart":0,"loopEnd":7200};
-times_arr = [{"t":0,"mix":0},{"t":2,"mix":1},{"t":4,"mix":2},{"t":6,"mix":3},{"t":8,"mix":4},
-{"t":10,"mix":5},{"t":12,"mix":6},{"t":14,"mix":7},{"t":16,"mix":8},{"t":18,"mix":9},{"t":20,
-"mix":10},{"t":22,"mix":11},{"t":24,"mix":12},{"t":26,"mix":13},{"t":28,"mix":14},{"t":30,
-"mix":15},{"t":32,"mix":16},{"t":34,"mix":17},{"t":36,"mix":18},{"t":38,"mix":19},{"t":40,
-"mix":20}];
+times_arr = [];
 adv_settings = {"1":{"drmpl":0.30000000000000004,"drmpl2":2,"skipn":0,"seln":0,"eerst":0,"sysprf":true,
 "onestf":0,"zwgrens":0.7,"voorna":0.9,"mtdrmpl":0.8,"dx":3,"fixwd":1000},"2":{"drmpl":0.30000000000000004,
 "drmpl2":2,"skipn":0,"seln":0,"eerst":0,"sysprf":true,"onestf":0,"zwgrens":0.7,"voorna":0.9,

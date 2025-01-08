@@ -16,21 +16,7 @@ opt = {"speed":1,"no_menu":0,"btns":1,"spdctl":1,"cropx":0,"drmpl":0.4,"pagewd":
 "mtdrmpl":"0.75","dx":3,"fscr":0,"pagenum":45,"playbtn":0,"mmin":"","fixwd":"1000","lastSynced":-1,
 "eerst":1,"sysprf":true,"onestf":false,"advncd":false};
 lpRec = {"loopBtn":1,"loopStart":0,"loopEnd":7200};
-times_arr = [{"t":0,"mix":0},{"t":0,"mix":1},{"t":0,"mix":2},{"t":0,"mix":3},{"t":0,"mix":4},
-{"t":0,"mix":5},{"t":0,"mix":6},{"t":0,"mix":7},{"t":0,"mix":8},{"t":0,"mix":9},{"t":0,"mix":10},
-{"t":0,"mix":11},{"t":0,"mix":12},{"t":0,"mix":13},{"t":0,"mix":14},{"t":0,"mix":15},{"t":0,
-"mix":16},{"t":0,"mix":17},{"t":0,"mix":18},{"t":0,"mix":19},{"t":0,"mix":20},{"t":0,"mix":21},
-{"t":0,"mix":22},{"t":0,"mix":23},{"t":0,"mix":24},{"t":0,"mix":25},{"t":0,"mix":26},{"t":0,
-"mix":27},{"t":0,"mix":28},{"t":0,"mix":29},{"t":0,"mix":30},{"t":0,"mix":31},{"t":0,"mix":32},
-{"t":0,"mix":33},{"t":0,"mix":34},{"t":0,"mix":35},{"t":0,"mix":36},{"t":0,"mix":37},{"t":0,
-"mix":38},{"t":0,"mix":39},{"t":0,"mix":40},{"t":0,"mix":41},{"t":0,"mix":42},{"t":0,"mix":43},
-{"t":0,"mix":44},{"t":0,"mix":45},{"t":0,"mix":46},{"t":0,"mix":47},{"t":0,"mix":48},{"t":0,
-"mix":49},{"t":0,"mix":50},{"t":0,"mix":51},{"t":0,"mix":52},{"t":0,"mix":53},{"t":0,"mix":54},
-{"t":0,"mix":55},{"t":0,"mix":56},{"t":0,"mix":57},{"t":0,"mix":58},{"t":0,"mix":59},{"t":0,
-"mix":60},{"t":0,"mix":61},{"t":0,"mix":62},{"t":0,"mix":63},{"t":0,"mix":64},{"t":0,"mix":65},
-{"t":0,"mix":66},{"t":0,"mix":67},{"t":0,"mix":68},{"t":0,"mix":69},{"t":0,"mix":70},{"t":0,
-"mix":71},{"t":0,"mix":72},{"t":0,"mix":73},{"t":0,"mix":74},{"t":0,"mix":75},{"t":0,"mix":76},
-{"t":2,"mix":544},{"t":2,"mix":545}];
+times_arr = [];
 adv_settings = {"1":{"drmpl":0.4,"drmpl2":0,"skipn":0,"seln":0,"eerst":true,"sysprf":true,"onestf":0,
 "zwgrens":0.7,"voorna":"0.75","mtdrmpl":"0.75","dx":3,"fixwd":1000},"2":{"drmpl":0.4,"drmpl2":0.1,
 "skipn":0,"seln":0,"eerst":0,"sysprf":true,"onestf":0,"zwgrens":0.7,"voorna":"0.75","mtdrmpl":"0.75",

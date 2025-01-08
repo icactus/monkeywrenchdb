@@ -16,19 +16,7 @@ opt = {"speed":1,"no_menu":0,"btns":1,"spdctl":1,"cropx":0,"drmpl":0.4,"pagewd":
 "dx":3,"fscr":0,"pagenum":1,"playbtn":0,"mmin":"","fixwd":1000,"lastSynced":-1,"eerst":0,
 "sysprf":0,"onestf":0,"advncd":false};
 lpRec = {"loopBtn":1,"loopStart":0,"loopEnd":7200};
-times_arr = [{"t":0,"mix":0},{"t":2,"mix":1},{"t":4,"mix":2},{"t":6,"mix":3},{"t":8,"mix":4},
-{"t":10,"mix":5},{"t":12,"mix":6},{"t":14,"mix":7},{"t":16,"mix":8},{"t":18,"mix":9},{"t":20,
-"mix":10},{"t":22,"mix":11},{"t":24,"mix":12},{"t":26,"mix":13},{"t":28,"mix":14},{"t":30,
-"mix":15},{"t":32,"mix":16},{"t":34,"mix":17},{"t":36,"mix":18},{"t":38,"mix":19},{"t":40,
-"mix":20},{"t":42,"mix":21},{"t":44,"mix":22},{"t":46,"mix":23},{"t":48,"mix":24},{"t":50,
-"mix":25},{"t":52,"mix":26},{"t":54,"mix":27},{"t":56,"mix":28},{"t":58,"mix":29},{"t":60,
-"mix":30},{"t":62,"mix":31},{"t":64,"mix":32},{"t":66,"mix":33},{"t":68,"mix":34},{"t":70,
-"mix":35},{"t":72,"mix":36},{"t":74,"mix":37},{"t":76,"mix":38},{"t":78,"mix":39},{"t":80,
-"mix":40},{"t":82,"mix":41},{"t":84,"mix":42},{"t":86,"mix":43},{"t":88,"mix":44},{"t":90,
-"mix":45},{"t":92,"mix":46},{"t":94,"mix":47},{"t":96,"mix":48},{"t":98,"mix":49},{"t":100,
-"mix":50},{"t":102,"mix":51},{"t":104,"mix":52},{"t":106,"mix":53},{"t":108,"mix":54},{"t":110,
-"mix":55},{"t":112,"mix":56},{"t":114,"mix":57},{"t":116,"mix":58},{"t":118,"mix":59},{"t":120,
-"mix":60},{"t":122,"mix":61},{"t":124,"mix":62},{"t":126,"mix":63}];
+times_arr = [];
 adv_settings = {"1":{"drmpl":0.4,"drmpl2":2,"skipn":0,"seln":0,"eerst":0,"sysprf":0,"onestf":0,
 "zwgrens":0.7,"voorna":0.9,"mtdrmpl":0.8,"dx":3,"fixwd":1000},"2":{"drmpl":0.4,"drmpl2":2,
 "skipn":0,"seln":0,"eerst":0,"sysprf":true,"onestf":0,"zwgrens":0.7,"voorna":0.9,"mtdrmpl":0.8,

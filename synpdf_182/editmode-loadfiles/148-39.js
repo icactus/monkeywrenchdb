@@ -16,17 +16,7 @@ opt = {"speed":1,"no_menu":0,"btns":1,"spdctl":1,"cropx":0,"drmpl":0.4,"pagewd":
 "mtdrmpl":"0.75","dx":"5","fscr":0,"pagenum":1,"playbtn":0,"mmin":"","fixwd":1000,"lastSynced":-1,
 "eerst":0,"sysprf":true,"onestf":0,"advncd":false,"yubvid":"Fg2i2NB-i3o","media_height":"200px"};
 lpRec = {"loopBtn":1,"loopStart":0,"loopEnd":7200};
-times_arr = [{"t":0,"mix":0},{"t":2,"mix":1},{"t":4,"mix":2},{"t":6,"mix":3},{"t":8,"mix":4},
-{"t":10,"mix":5},{"t":12,"mix":6},{"t":14,"mix":7},{"t":16,"mix":8},{"t":18,"mix":9},{"t":20,
-"mix":10},{"t":22,"mix":11},{"t":24,"mix":12},{"t":26,"mix":13},{"t":28,"mix":14},{"t":30,
-"mix":15},{"t":32,"mix":16},{"t":34,"mix":17},{"t":36,"mix":18},{"t":38,"mix":19},{"t":40,
-"mix":20},{"t":42,"mix":21},{"t":44,"mix":22},{"t":46,"mix":23},{"t":48,"mix":24},{"t":50,
-"mix":25},{"t":52,"mix":26},{"t":0,"mix":0},{"t":2,"mix":1},{"t":4,"mix":2},{"t":6,"mix":3},
-{"t":8,"mix":4},{"t":10,"mix":5},{"t":12,"mix":6},{"t":14,"mix":7},{"t":16,"mix":8},{"t":18,
-"mix":9},{"t":20,"mix":10},{"t":22,"mix":11},{"t":24,"mix":12},{"t":26,"mix":13},{"t":28,
-"mix":14},{"t":30,"mix":15},{"t":32,"mix":16},{"t":34,"mix":17},{"t":36,"mix":18},{"t":38,
-"mix":19},{"t":40,"mix":20},{"t":42,"mix":21},{"t":44,"mix":22},{"t":46,"mix":23},{"t":48,
-"mix":24},{"t":50,"mix":25},{"t":52,"mix":26}];
+times_arr = [];
 adv_settings = {"1":{"drmpl":0.4,"drmpl2":0,"skipn":0,"seln":0,"eerst":0,"sysprf":true,"onestf":0,
 "zwgrens":"0.9","voorna":"0.75","mtdrmpl":"0.75","dx":"5","fixwd":1000},"2":{"drmpl":0.4,
 "drmpl2":0,"skipn":0,"seln":0,"eerst":0,"sysprf":true,"onestf":0,"zwgrens":"0.9","voorna":"0.7",
