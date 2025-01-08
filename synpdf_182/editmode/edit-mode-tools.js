@@ -867,34 +867,7 @@ function populateRecordingsDropdown(recordings) {
     });
 }
 
-// Function to handle the "Load YouTube" button click
-function setupYoutubeIdValidation() {
-    const loadButton = document.getElementById('yknp');
-    const inputField = document.getElementById('yubid');
-
-    loadButton.addEventListener('click', function() {
-        const enteredId = inputField.value.trim();
-
-        // Validate the input format using regex
-        const youtubeIdPattern = /^[A-Za-z0-9\-_]{11}$/;
-        if (!youtubeIdPattern.test(enteredId)) {
-            alert('Please enter a valid YouTube ID (11 characters, letters, numbers, hyphens, or underscores).');
-            return;
-        }
-
-        // Check if the entered ID exists in the Set
-        if (youtubeIds.has(enteredId)) {
-            alert('YouTube video is already synced and in the database. Please find a different video to sync.');
-            return
-
-        } else {
-            return
-        }
-    });
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-    setupYoutubeIdValidation();
     document.getElementById('goto-measure-form').addEventListener('submit', function(event) {
         event.preventDefault();
         return gotoMeasure();

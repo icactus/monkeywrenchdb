@@ -1588,7 +1588,17 @@ function readMedia$$module$synpdf(a, b) {
 }
 
 function readMediaYub$$module$synpdf() {
-    $("#yubid")[0].checkValidity() ? (opt$$module$synpdf.yubvid = $("#yubid").val(), setPlayer$$module$synpdf("", "")) : alert("The youtube video id should be 11 characters long,\neach from 'A' to 'Z', 'a' to 'z', '0' to '9', '-' or '_'")
+    const yubidField = document.getElementById('yubid');
+    const enteredId = yubidField.value.trim();
+
+    // Check if the entered ID exists in global Set
+    if (youtubeIds.has(enteredId)) {
+        alert('YouTube video is already synced and in the database. Please find a different video to sync.');
+        return
+
+    } else {
+        $("#yubid")[0].checkValidity() ? (opt$$module$synpdf.yubvid = $("#yubid").val(), setPlayer$$module$synpdf("", "")) : alert("The youtube video id should be 11 characters long,\neach from 'A' to 'Z', 'a' to 'z', '0' to '9', '-' or '_'")
+    }
 }
 
 function initPbRates$$module$synpdf(a, b, c) {
