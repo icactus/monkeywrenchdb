@@ -1597,6 +1597,7 @@ function readMediaYub$$module$synpdf() {
         return
 
     } else {
+        $('#database-menus').hide;
         $("#yubid")[0].checkValidity() ? (opt$$module$synpdf.yubvid = $("#yubid").val(), setPlayer$$module$synpdf("", "")) : alert("The youtube video id should be 11 characters long,\neach from 'A' to 'Z', 'a' to 'z', '0' to '9', '-' or '_'")
     }
 }
