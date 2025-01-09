@@ -294,7 +294,7 @@ function generateInstrumentsDropdown(recordingId) {
         // Clear the menu but keep the default
         dropdown.innerHTML = "";
         var defaultOption = document.createElement("option");
-        defaultOption.textContent = "<b>Change Part</b>";
+        defaultOption.textContent = "Change Part";
         dropdown.appendChild(defaultOption);
 
         var xhr = new XMLHttpRequest();
@@ -344,7 +344,7 @@ function fetchRecordings(metricArrId) {
                     var container = $('#recordings-container');
                     container.empty();
 
-                    recordingsDropdown.append('<option value=""><b>Change Recording</b></option>');
+                    recordingsDropdown.append('<option value="">Change Recording</option>');
                     //This part is necessary for instrument dropdown change because we need to refresh the measures_version info for each recording.
                     // Populate the links
                     recordings.sort(function(a, b) {

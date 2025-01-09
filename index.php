@@ -119,7 +119,7 @@
                                 </button>
                             </div>-->
                         <div id="change-part-wrapper">
-                            <!-- <h3>Change Part</h3> -->
+                            <h3>Change Part</h3>
                             <select id="instruments-dropdown">
                                 <option value="">Change Part</option>
                             </select>
@@ -137,7 +137,7 @@
                     </div>
                 </div>
                 <div class="change-recording-wrapper">
-                    <!-- <h3>Change Recording</h3> -->
+                    <h3>Change Recording</h3>
                     <select id="recordings-dropdown">
                         <option value="">Change Recording</option>
                     </select>
@@ -206,7 +206,7 @@
     </section3>
 
     <script src="stripped-synpdf.js?v=60"></script>
-    <script src="stripped-synpdf-extras.js?v=28"></script>
+    <script src="stripped-synpdf-extras.js?v=27"></script>
 </body>
 
 </html>
