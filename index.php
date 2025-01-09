@@ -119,9 +119,9 @@
                                 </button>
                             </div>-->
                         <div id="change-part-wrapper">
-                            <h3>Change Part</h3>
+                            <!-- <h3>Change Part</h3> -->
                             <select id="instruments-dropdown">
-                                <option value="">Select Part</option>
+                                <option value="">Change Part</option>
                             </select>
                         </div>
                         <div id="speed-control">
@@ -137,9 +137,9 @@
                     </div>
                 </div>
                 <div class="change-recording-wrapper">
-                    <h3>Change Recording</h3>
+                    <!-- <h3>Change Recording</h3> -->
                     <select id="recordings-dropdown">
-                        <option value="">Select Recording</option>
+                        <option value="">Change Recording</option>
                     </select>
                     <div>
                         <button id="invertButton">Dark Mode (buggy)</button>

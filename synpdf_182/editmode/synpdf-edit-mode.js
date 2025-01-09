@@ -728,7 +728,6 @@ Wijzer$$module$synpdf.prototype.changeOffset = function(a) {
 Wijzer$$module$synpdf.prototype.startSync = function() {
     deTijden$$module$synpdf.splice(lastSynced$$module$synpdf + 1);
     lastSynced$$module$synpdf = deTijden$$module$synpdf.length - 1;
-    //lastSynced$$module$synpdf = 9999;
     if (-1 == lastSynced$$module$synpdf) {
         $(".demaat").css({
             width: "0px",
@@ -2349,16 +2348,27 @@ function hideSpeedChk$$module$synpdf() {
     $("#rollijn").toggleClass("dashed", !opt$$module$synpdf.nodash)
 }
 
+
 function syncChk$$module$synpdf() {
     if (msc_wz$$module$synpdf)
-        if ($("#sync_out, .reptkn").toggle(!!opt$$module$synpdf.synbox), $("#lm").toggle(!opt$$module$synpdf.synbox), opt$$module$synpdf.advncd ? $(".mexp").toggle(!opt$$module$synpdf.synbox) : $(".mnrm").toggle(!opt$$module$synpdf.synbox), opt$$module$synpdf.synbox) msc_wz$$module$synpdf.showSyncInfo(), msc_wz$$module$synpdf.startSync();
+        if (
+            $("#sync_out, .reptkn").toggle(!!opt$$module$synpdf.synbox),
+            $("#lm").toggle(!opt$$module$synpdf.synbox),
+            opt$$module$synpdf.advncd
+                ? $(".mexp").toggle(!opt$$module$synpdf.synbox)
+                : $(".mnrm").toggle(!opt$$module$synpdf.synbox),
+            opt$$module$synpdf.synbox
+        )
+            msc_wz$$module$synpdf.showSyncInfo(),
+                msc_wz$$module$synpdf.startSync();
         else
-            for (var a = lastSynced$$module$synpdf + 1; a < deMaten$$module$synpdf.length; ++a) deTijden$$module$synpdf.push({
-                t: 0 < a ? deTijden$$module$synpdf[a -
-                    1].t + 2 : 0,
-                mix: a
-            })
+            for (var a = lastSynced$$module$synpdf + 1; a < deMaten$$module$synpdf.length; ++a)
+                deTijden$$module$synpdf.push({
+                    t: a > 0 ? deTijden$$module$synpdf[a - 1].t + 2 : 0,
+                    mix: a
+                });
 }
+
 
 function doResize$$module$synpdf() {
     var a = $("body").prop("clientWidth");
