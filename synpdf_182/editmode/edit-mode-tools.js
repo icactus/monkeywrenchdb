@@ -946,6 +946,7 @@ document.addEventListener('DOMContentLoaded', function() {
     rewindBtn.addEventListener('click', function() {
         lastSynced$$module$synpdf = -1;
         detix$$module$synpdf = 0;
+        demix$$module$synpdf = 0;
         opt$$module$synpdf.pagenum = 1;
         resetTiming$$module$synpdf();
     });
