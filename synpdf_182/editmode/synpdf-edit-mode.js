@@ -654,14 +654,12 @@ Wijzer$$module$synpdf.prototype.keySync = function(keyType) {
             deTijden$$module$synpdf[detix] = {};
             lastSynced$$module$synpdf = detix;
         } else {
-
-            // If B was pressed in first half measure then change current measure start time, if in second half, change next measure.
-            // var d = deTijden$$module$synpdf[detix$$module$synpdf].t;
-            // .5 > (a - d) / (deTijden$$module$synpdf[b].t - d) && (b = detix$$module$synpdf, c = demix$$module$synpdf)
+            // B is for setting start of next measure
             if (keyType === 'b') {
                 detix = detix$$module$synpdf + 1;
                 demix = demix$$module$synpdf + 1;
             }
+            // C is for resetting start of current measure. Following measure must already be set for this to work.
             if (keyType === 'c') {
                 detix = detix$$module$synpdf;
                 demix = demix$$module$synpdf;
@@ -1938,7 +1936,6 @@ function keyDown$$module$synpdf(a) {
                 saveTiming$$module$synpdf();
                 break;
             case "Backspace":
-            case "c":
                 resetTiming$$module$synpdf();
                 break;
             case "g":
@@ -2351,22 +2348,13 @@ function hideSpeedChk$$module$synpdf() {
 
 function syncChk$$module$synpdf() {
     if (msc_wz$$module$synpdf)
-        if (
-            $("#sync_out, .reptkn").toggle(!!opt$$module$synpdf.synbox),
-            $("#lm").toggle(!opt$$module$synpdf.synbox),
-            opt$$module$synpdf.advncd
-                ? $(".mexp").toggle(!opt$$module$synpdf.synbox)
-                : $(".mnrm").toggle(!opt$$module$synpdf.synbox),
-            opt$$module$synpdf.synbox
-        )
-            msc_wz$$module$synpdf.showSyncInfo(),
-                msc_wz$$module$synpdf.startSync();
+        if ($("#sync_out, .reptkn").toggle(!!opt$$module$synpdf.synbox), $("#lm").toggle(!opt$$module$synpdf.synbox), opt$$module$synpdf.advncd ? $(".mexp").toggle(!opt$$module$synpdf.synbox) : $(".mnrm").toggle(!opt$$module$synpdf.synbox), opt$$module$synpdf.synbox) msc_wz$$module$synpdf.showSyncInfo(), msc_wz$$module$synpdf.startSync();
         else
-            for (var a = lastSynced$$module$synpdf + 1; a < deMaten$$module$synpdf.length; ++a)
-                deTijden$$module$synpdf.push({
-                    t: a > 0 ? deTijden$$module$synpdf[a - 1].t + 2 : 0,
-                    mix: a
-                });
+            for (var a = lastSynced$$module$synpdf + 1; a < deMaten$$module$synpdf.length; ++a) deTijden$$module$synpdf.push({
+                t: 0 < a ? deTijden$$module$synpdf[a -
+                    1].t + 2 : 0,
+                mix: a
+            })
 }
 
 
