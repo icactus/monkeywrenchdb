@@ -2347,14 +2347,42 @@ function hideSpeedChk$$module$synpdf() {
 
 
 function syncChk$$module$synpdf() {
-    if (msc_wz$$module$synpdf)
-        if ($("#sync_out, .reptkn").toggle(!!opt$$module$synpdf.synbox), $("#lm").toggle(!opt$$module$synpdf.synbox), opt$$module$synpdf.advncd ? $(".mexp").toggle(!opt$$module$synpdf.synbox) : $(".mnrm").toggle(!opt$$module$synpdf.synbox), opt$$module$synpdf.synbox) msc_wz$$module$synpdf.showSyncInfo(), msc_wz$$module$synpdf.startSync();
-        else
-            for (var a = lastSynced$$module$synpdf + 1; a < deMaten$$module$synpdf.length; ++a) deTijden$$module$synpdf.push({
-                t: 0 < a ? deTijden$$module$synpdf[a -
-                    1].t + 2 : 0,
-                mix: a
-            })
+    // Check if the synchronization module is available
+    if (msc_wz$$module$synpdf) {
+        // Toggle visibility of elements based on the sync box state
+        $("#sync_out, .reptkn").toggle(!!opt$$module$synpdf.synbox);
+        $("#lm").toggle(!opt$$module$synpdf.synbox);
+
+        // Toggle advanced or normal measure display based on settings
+        if (opt$$module$synpdf.advncd) {
+            $(".mexp").toggle(!opt$$module$synpdf.synbox);
+        } else {
+            $(".mnrm").toggle(!opt$$module$synpdf.synbox);
+        }
+
+        // Determine action based on the sync box state
+        if (opt$$module$synpdf.synbox) {
+            // If sync is enabled:
+            // 1. Show synchronization information
+            // 2. Start the synchronization process
+            msc_wz$$module$synpdf.showSyncInfo();
+            msc_wz$$module$synpdf.startSync();
+        } else {
+            //If sync is disabled...
+            //Don't push more filler timestamps if we haven't synced anything and there are already timestamps.
+            if (lastSynced$$module$synpdf === -1 && deTijden$$module$synpdf.length > 0) {
+                return;
+            } else {
+                // Add filler timestamps for measures that haven't been synced yet
+                for (var a = lastSynced$$module$synpdf + 1; a < deMaten$$module$synpdf.length; ++a) {
+                    deTijden$$module$synpdf.push({
+                        t: a > 0 ? deTijden$$module$synpdf[a - 1].t + 2 : 0, // Increment timestamp by 2 or start at 0
+                        mix: a // Assign measure index
+                    });
+                }
+            }
+        }
+    }
 }
 
 
