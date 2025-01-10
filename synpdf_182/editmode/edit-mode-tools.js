@@ -948,6 +948,7 @@ document.addEventListener('DOMContentLoaded', function() {
         detix$$module$synpdf = 0;
         demix$$module$synpdf = 0;
         opt$$module$synpdf.pagenum = 1;
+        msc_wz$$module$synpdf.time2x(0);
         resetTiming$$module$synpdf();
     });
 });
