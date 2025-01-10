@@ -944,7 +944,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     const rewindBtn = document.getElementById('rewind');
     rewindBtn.addEventListener('click', function() {
-        //deTijden$$module$synpdf = [];
+        lastSynced$$module$synpdf = -1;
+        detix$$module$synpdf = 0;
         resetTiming$$module$synpdf();
     });
 });
