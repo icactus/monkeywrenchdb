@@ -25,7 +25,7 @@ $stmt = $conn->prepare("
     JOIN pieces p            ON m.piece_id      = p.piece_id
     JOIN recordings r        ON p.piece_id      = r.piece_id
     JOIN instruments i       ON m.instrument_id = i.instrument_id
-    JOIN instrument_groups ig ON i.instrument_group_id = ig.instrument_group_id
+    JOIN instrument_group ig ON i.instrument_group_id = ig.instrument_group_id
     WHERE r.recording_id = ?
     ORDER BY
         CASE 
