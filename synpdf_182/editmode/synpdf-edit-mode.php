@@ -487,10 +487,11 @@
 
         #database-menu-top h3 {
             margin: 0;
+        }
 
-            .dropdown-menu {
-                max-width: 200px;
-            }
+        .dropdown-menu {
+            max-width: 200px;
+        }
     </style>
 </head>
 
