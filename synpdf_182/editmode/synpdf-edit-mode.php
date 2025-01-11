@@ -487,7 +487,10 @@
 
         #database-menu-top h3 {
             margin: 0;
-        }
+
+            .dropdown-menu {
+                max-width: 200px;
+            }
     </style>
 </head>
 
@@ -650,7 +653,7 @@
                     <div style="display:flex;">
                         <div>
                             <label for="piece_id">Add New Part Data</label>
-                            <select name="piece_id">
+                            <select class="dropdown-menu" name="piece_id">
                                 <option value="">Select piece...</option>
                                 <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
                                     <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
@@ -677,7 +680,7 @@
                     <div style="display:flex;">
                         <div>
                             <label for="piece_id1">Select Piece</label>
-                            <select id="piece_id1">
+                            <select class="dropdown-menu" id="piece_id1">
                                 <option value="">Select piece...</option>
                                 <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
                                     <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>

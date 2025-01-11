@@ -1544,8 +1544,34 @@ function readDbxFile$$module$synpdf(a) {
 }
 
 function readPdfOrJs$$module$synpdf(a) {
-    var b = arrbuf2str$$module$synpdf(a.slice(0, 4E3));
-    $("#impbox").prop("checked") ? copyTiming$$module$synpdf(b, a) : (msc_wz$$module$synpdf = null, 0 <= b.indexOf("//# This page") || 0 <= b.indexOf("play_list") ? (initPreload$$module$synpdf(), b = arrbuf2str$$module$synpdf(a), evalPreload$$module$synpdf(b), msc_check_preload$$module$synpdf()) : /jpe?g$/i.test(pdfFnm$$module$synpdf) ? readPdf$$module$synpdf(a, "jpgbin") : readPdf$$module$synpdf(a, "pdfbin"))
+    // Convert the first 4000 bytes of the array buffer to a string
+    const initialContent = arrbuf2str$$module$synpdf(a.slice(0, 4000));
+
+    // Check if the "impbox" checkbox is checked
+    if ($("#impbox").prop("checked")) {
+        // Copy timing data if the checkbox is checked
+        copyTiming$$module$synpdf(initialContent, a);
+    } else {
+        // Reset some state variables
+        msc_wz$$module$synpdf = null;
+
+        // Check if the content indicates a preloadable JS file
+        if (
+            initialContent.includes("//# This page") ||
+            initialContent.includes("play_list")
+        ) {
+            initPreload$$module$synpdf(); // Initialize preload
+            const fullContent = arrbuf2str$$module$synpdf(a); // Convert entire buffer to string
+            evalPreload$$module$synpdf(fullContent); // Evaluate the preloaded JS
+            msc_check_preload$$module$synpdf(); // Check preload state
+        } else if (/jpe?g$/i.test(pdfFnm$$module$synpdf)) {
+            // If the file name ends in .jpg or .jpeg, treat it as image binary
+            readPdf$$module$synpdf(a, "jpgbin");
+        } else {
+            // Otherwise, treat it as a regular PDF
+            readPdf$$module$synpdf(a, "pdfbin");
+        }
+    }
 }
 
 function readLocalFile$$module$synpdf(file = null) {
@@ -2092,6 +2118,38 @@ function evalPreload$$module$synpdf(a) {
     })
 }
 
+
+async function evalPreloadNoFile(pieceId) {
+    try {
+        // Fetch times_arr from your PHP endpoint
+        const response = await fetch(`./get_times_arr.php?piece_id=${encodeURIComponent(pieceId)}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch times_arr. Status: ${response.status}`);
+        }
+        const timesArrData = await response.json();
+
+        // Set default values for all other variables
+        pdf_file$$module$synpdf = `${window.location.hostname === "localhost" ? "../../pdfs/" : "../pdfs/"}${pieceId}.pdf`;
+        media_file$$module$synpdf = ""; // Default empty
+        msc_tracks$$module$synpdf = ""; // Default empty
+        offset_js$$module$synpdf = 0; // Default offset
+        opt$$module$synpdf = {}; // Default empty options
+        lpRec$$module$synpdf = {}; // Default empty lpRec
+        times_arr$$module$synpdf = timesArrData; // Set from the PHP response
+        adv_settings$$module$synpdf = {}; // Default empty advanced settings
+        metric_arr$$module$synpdf = []; // Default empty metric array
+
+        console.log("Preload data set:", {
+            pdf_file: pdf_file$$module$synpdf,
+            times_arr: times_arr$$module$synpdf,
+        });
+
+    } catch (error) {
+        console.error("Error in evalPreload$$module$synpdf:", error);
+        $("#err").text(`Error loading preload data: ${error.message}`);
+    }
+}
+
 //REPLACE PRELOAD WITH MYSQL DATABASE VIA PHP
 function getPreloadFromDB() {
     return new Promise((resolve, reject) => {
@@ -2128,26 +2186,101 @@ function fetchDataFromDB() {
 function msc_preload$$module$synpdf(a) {
     initPreload$$module$synpdf();
     $("#err").text("");
+
     var b, c;
     var d = window.location.href.replace("?dl=0", "").split("?");
-    a && (d = ["", a]);
-    if (a = d[0].match(/:\/\/([^/:]+)/)) var e = a[1];
-    if (1 < d.length)
-        for (d = d[1].split("&"), c = 0; c < d.length; c++) {
+
+    // If a is provided, treat it as our 'query' part
+    if (a) {
+        d = ["", a];
+    }
+
+    // Extract the host if present
+    if ((a = d[0].match(/:\/\/([^/:]+)/))) {
+        var e = a[1];
+    }
+
+    // If there's a query string, process it
+    if (d.length > 1) {
+        d = d[1].split("&");
+
+        for (c = 0; c < d.length; c++) {
             var f = d[c].replace(/d:(\w{15}\/[^.]+\.)/, "https://dl.dropboxusercontent.com/s/$1");
-            (a = f.match(/ln=([01])/)) ? opt_url$$module$synpdf.lncsr = parseInt(a[1]) : (a = f.match(/ip=(\d+.\d+.\d+.\d+)/)) ? opt_url$$module$synpdf.ipadr = a[1] : (a = f.match(/^d([\d.]+)$/)) ?
-                opt_url$$module$synpdf.delay = parseFloat(a[1]) : (a = f.match(/^mmin=([\w,]*)$/)) ? opt_url$$module$synpdf.mmin = a[1] : (a = f.match(/^trks=(.*)$/)) ? msc_tracks$$module$synpdf = a[1].split(",") : (a = f.match(/^mdir=(.*)$/)) ? media_dir$$module$synpdf = a[1] : f.match(/ip=host/) && e ? opt_url$$module$synpdf.ipadr = e : "mstr" == f ? opt_url$$module$synpdf.mstr = 1 : "nomed" == f ? (opt_url$$module$synpdf.nomed = 1, opt_url$$module$synpdf.noplyr = 1) : "playbtn" == f ? opt_url$$module$synpdf.playbtn = 1 : (a = f.match(/cnt=([\d-]+)/)) ? opt_url$$module$synpdf.bpmsr =
-                    a[1] : "nosm" == f ? hasSmooth$$module$synpdf = !1 : "fullmenu" == f ? fullmenu$$module$synpdf = 1 : "hrz" == f ? opt_url$$module$synpdf.hrz = "hrz" : "hrzleft" == f ? opt_url$$module$synpdf.hrz = "left" : b = f;
-            /\.(pdf|jpg)$/.test(b) && (pdf_file$$module$synpdf = b, b = "");
-            /\.(ogg|mp3|mp4|webm)$/.test(b) && (media_file$$module$synpdf = b, b = "")
+
+            if ((a = f.match(/ln=([01])/))) {
+                opt_url$$module$synpdf.lncsr = parseInt(a[1]);
+            } else if ((a = f.match(/ip=(\d+.\d+.\d+.\d+)/))) {
+                opt_url$$module$synpdf.ipadr = a[1];
+            } else if ((a = f.match(/^d([\d.]+)$/))) {
+                opt_url$$module$synpdf.delay = parseFloat(a[1]);
+            } else if ((a = f.match(/^mmin=([\w,]*)$/))) {
+                opt_url$$module$synpdf.mmin = a[1];
+            } else if ((a = f.match(/^trks=(.*)$/))) {
+                msc_tracks$$module$synpdf = a[1].split(",");
+            } else if ((a = f.match(/^mdir=(.*)$/))) {
+                media_dir$$module$synpdf = a[1];
+            } else if (f.match(/ip=host/) && e) {
+                opt_url$$module$synpdf.ipadr = e;
+            } else if (f === "mstr") {
+                opt_url$$module$synpdf.mstr = 1;
+            } else if (f === "nomed") {
+                opt_url$$module$synpdf.nomed = 1;
+                opt_url$$module$synpdf.noplyr = 1;
+            } else if (f === "playbtn") {
+                opt_url$$module$synpdf.playbtn = 1;
+            } else if ((a = f.match(/cnt=([\d-]+)/))) {
+                opt_url$$module$synpdf.bpmsr = a[1];
+            } else if (f === "nosm") {
+                hasSmooth$$module$synpdf = false;
+            } else if (f === "fullmenu") {
+                fullmenu$$module$synpdf = 1;
+            } else if (f === "hrz") {
+                opt_url$$module$synpdf.hrz = "hrz";
+            } else if (f === "hrzleft") {
+                opt_url$$module$synpdf.hrz = "left";
+            } else {
+                b = f;
+            }
+
+            // Check for PDF or JPG
+            if (/\.(pdf|jpg)$/.test(b)) {
+                pdf_file$$module$synpdf = b;
+                b = "";
+            }
+
+            // Check for audio/video
+            if (/\.(ogg|mp3|mp4|webm)$/.test(b)) {
+                media_file$$module$synpdf = b;
+                b = "";
+            }
         }
-    if (b || pdf_file$$module$synpdf) $("#wait").html("Loading ..."), $("#wait").toggle(!0);
-    pdf_file$$module$synpdf || media_file$$module$synpdf || msc_tracks$$module$synpdf && !b ? msc_check_preload$$module$synpdf() :
-        b && (0 <= b.indexOf("dropbox.com") && (b += "?dl=1"), get_file$$module$synpdf(b, function(a) {
+    }
+
+    // If there's at least one file to load, show the loader
+    if (b || pdf_file$$module$synpdf) {
+        $("#wait").html("Loading ...");
+        $("#wait").toggle(true);
+    }
+
+    // If we already have needed files or tracks, just check preload
+    if (
+        pdf_file$$module$synpdf ||
+        media_file$$module$synpdf ||
+        (msc_tracks$$module$synpdf && !b)
+    ) {
+        msc_check_preload$$module$synpdf();
+    } else if (b) {
+        // If it's a Dropbox link, append download param
+        if (b.indexOf("dropbox.com") >= 0) {
+            b += "?dl=1";
+        }
+        get_file$$module$synpdf(b, function(a) {
             evalPreload$$module$synpdf(a);
-            msc_check_preload$$module$synpdf()
-        }));
-    return b || pdf_file$$module$synpdf || media_file$$module$synpdf || msc_tracks$$module$synpdf
+            msc_check_preload$$module$synpdf();
+        });
+    }
+
+    return b || pdf_file$$module$synpdf || media_file$$module$synpdf || msc_tracks$$module$synpdf;
 }
 
 function msc_check_preload$$module$synpdf() {
