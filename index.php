@@ -80,25 +80,51 @@
         <div id="loadingMessage2">
         </div>
         <div class="notation" id="notation"><!--width needed for editmode pixel mapping -->
-            <div class="collapsible active">
-                <div class="search-heading" id="instruments-heading">
-                    <h2>1. Select Instrument</h2>
-                </div>
-                <div class="search-content instrument-container" id="instrument-links">
-                </div>
+            <!-- TAB HEADERS -->
+            <div class="tabs">
+                <ul class="tab-header-row">
+                    <li class="tab-header active" data-tab="tab-instruments">
+                        <h2>Select<br> Instrument</h2>
+                    </li>
+                    <li class="tab-header disabled" data-tab="tab-pieces">
+                        <h2>Select<br>Piece</h2>
+                    </li>
+                    <li class="tab-header disabled" data-tab="tab-recordings">
+                        <h2>Select<br>Recording</h2>
+                    </li>
+                </ul>
             </div>
-            <div class="collapsible">
-                <div class="search-heading" id="pieces-heading">
-                    <h2>2. Select Piece</h2>
+            <div class="tab-contents">
+                <div id="tab-instruments" class="tab-content active" style="display:block;">
+                    <div class="search-content instrument-container" id="instrument-links">
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                    </div>
                 </div>
-                <div class="search-content" id="pieces-container">
+                <div id="tab-pieces" class="tab-content" style="display:none;">
+                    <div class="search-content" id="pieces-container">
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                    </div>
                 </div>
-            </div>
-            <div class="collapsible">
-                <div class="search-heading" id="recordings-heading">
-                    <h2>3. Select Recording</h2>
-                </div>
-                <div class="search-content" id="recordings-container">
+                <div id="tab-recordings" class="tab-content" style="display:none;">
+                    <div class="search-content" id="recordings-container">
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                        <p>asldfasdfjkasdfasdfsd</p>
+                    </div>
                 </div>
             </div>
         </div>

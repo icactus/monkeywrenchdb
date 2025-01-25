@@ -144,6 +144,44 @@ function fetchSearchByInstrument() {
         }
     });
 }
+//Handle Click on Instrument Link from Instruments tab
+$('#instrument-links').on('click', '.instrument-link-a', function(event) {
+    event.preventDefault();
+    var instrumentId = $(this).data('id');
+
+    var instrumentText = $(this).text();
+    var lastParenthesisPosition = instrumentText.lastIndexOf('(');
+
+    if (lastParenthesisPosition !== -1) {
+        instrumentText = instrumentText.slice(0, lastParenthesisPosition).trim();
+    }
+
+    var headingElement = $("#tab-instruments").children().first();
+    var newHeadingText = "1. Select Instrument: " + instrumentText;
+    headingElement.replaceWith(function() {
+        return $("<" + this.tagName + ">", { html: newHeadingText });
+    });
+
+    //Clear previous pieces selection
+    var piecesHeadingElement = $("#tab-pieces").children().first();
+
+    var clearPiecesHeadingText = "Select Piece"
+    piecesHeadingElement.replaceWith(function() {
+        return $("<" + this.tagName + ">", { html: clearPiecesHeadingText });
+    });
+
+    // Reset the Recordings tab heading and disable it
+    const recordingsHeading = $('#tab-recordings h2');
+    recordingsHeading.text('Select Recording');
+    $('.tab-header[data-tab="tab-recordings"]').addClass('disabled');
+
+    openTab('tab-pieces');
+    fetchPieces(instrumentId);
+});
+// Make sure the click event propagates to the link when clicking the SVG
+$('#instrument-links').on('click', '.svg-icon', function() {
+    $(this).closest('.instrument-link').trigger('click');
+});
 
 function fetchPieces(instrumentIds) {
     $.ajax({
@@ -265,6 +303,50 @@ function fetchPieces(instrumentIds) {
         }
     });
 }
+
+$('#pieces-container').on('click', '.pieces-link', function(event) {
+    event.preventDefault();
+
+    // Clear out old recordings
+    $('#recordings-container').empty();
+
+    const pieceId = $(this).data('piece-id');
+    const instrumentIds = $(this).data('instrument-id').toString();
+    const clickedLink = $(this);
+
+    // Adjust heading text for the "Pieces" tab, if needed
+    const pieceText = $(this).text();
+    $('#tab-pieces h2').text("Select Piece: " + pieceText);
+
+    // Callback after we check multiple parts
+    const handleData = function(data) {
+        if (data.length === 1) {
+            // EXACTLY ONE sub-part (e.g. only "Violin 1")
+            // 1) Fetch recordings for that single sub-part
+            fetchRecordings(data[0].metric_arr_id);
+            currentMetricArrGlobal = data[0].metric_arr_id;
+            console.log('currentMetricArrGlobal:', currentMetricArrGlobal);
+
+            // 2) Move to the Recordings tab immediately
+            openTab("tab-recordings");
+
+        } else if (data.length > 1) {
+            // MULTIPLE sub-parts (e.g. "Violin 1" AND "Violin 2")
+            // Show them inline so the user can pick which sub-instrument
+            displayInstrumentLinks(data, clickedLink);
+        }
+    };
+
+    // Check if we already inserted a sub-instrument-links container
+    const existingContainer = clickedLink.next('.instrument-links');
+    if (existingContainer.length > 0) {
+        // If it exists, just toggle or show it
+        existingContainer.toggle();
+    } else {
+        // If not, fetch the sub-instrument parts
+        checkInstrumentParts(pieceId, instrumentIds, handleData);
+    }
+});
 
 // Function to handle the click event on the link
 function checkInstrumentParts(pieceId, instrumentIds, callback) {
@@ -588,81 +670,6 @@ $('#recordings-dropdown').change(function() {
 });
 
 
-$('#instrument-links').on('click', '.instrument-link-a', function(event) {
-    event.preventDefault();
-    var instrumentId = $(this).data('id');
-
-    var instrumentText = $(this).text();
-    var lastParenthesisPosition = instrumentText.lastIndexOf('(');
-
-    if (lastParenthesisPosition !== -1) {
-        instrumentText = instrumentText.slice(0, lastParenthesisPosition).trim();
-    }
-
-    var headingElement = $("#instruments-heading").children().first();
-    var newHeadingText = "1. Select Instrument: " + instrumentText;
-    headingElement.replaceWith(function() {
-        return $("<" + this.tagName + ">", { html: newHeadingText });
-    });
-
-    //Clear previous pieces selection
-    var piecesHeadingElement = $("#pieces-heading").children().first();
-
-    var clearPiecesHeadingText = "2. Select Piece:"
-    piecesHeadingElement.replaceWith(function() {
-        return $("<" + this.tagName + ">", { html: clearPiecesHeadingText });
-    });
-    fetchPieces(instrumentId);
-});
-// Make sure the click event propagates to the link when clicking the SVG
-$('#instrument-links').on('click', '.svg-icon', function(event) {
-    $(this).closest('.instrument-link').trigger('click');
-});
-
-$('#pieces-container').on('click', '.pieces-link', function(event) {
-    event.preventDefault();
-    event.stopPropagation();
-
-
-    let container = $('#recordings-container');
-    container.empty();
-    var pieceId = $(this).data('piece-id');
-    var instrumentIds = $(this).data('instrument-id').toString();
-    var clickedLink = $(this); // Store the clicked link for later use
-
-    var pieceText = $(this).text();
-    var headingElement = $("#pieces-heading").children().first();
-    var newHeadingText = "Select Piece: " + pieceText;
-    headingElement.replaceWith(function() {
-        return $("<" + this.tagName + ">", { html: newHeadingText });
-    });
-    var handleData = function(data) {
-        if (data.length === 1) {
-            fetchRecordings(data[0].metric_arr_id);
-            currentMetricArrGlobal = data[0].metric_arr_id;
-            console.log('current global metric arr ', currentMetricArrGlobal);
-            // Find the closest collapsible element
-            var closestCollapsible = clickedLink.closest('.collapsible')[0];
-            if (closestCollapsible) {
-                toggleCollapsible(closestCollapsible);
-            }
-        } else if (data.length > 1) {
-            // If multiple instruments, stop propagation and handle as before
-            displayInstrumentLinks(data, clickedLink);
-        }
-    };
-
-    // Check if the instrument links container already exists
-    var existingContainer = clickedLink.next('.instrument-links');
-    if (existingContainer.length > 0) {
-        // If the container exists, simply toggle its visibility
-        existingContainer.toggle();
-    } else {
-        // If it doesn't exist, call checkInstrumentParts with the callback function
-        checkInstrumentParts(pieceId, instrumentIds, handleData);
-    }
-});
-
 function displayInstrumentLinks(data, clickedLink) {
     var linksContainer = $('<div class="instrument-links"></div>');
     data.forEach(function(item) {
@@ -899,67 +906,70 @@ function resizePageFitToWidth() {
     resizeDematenAndCanvas(scaleAmount);
 }
 
-//HOMEPAGE COLLAPSIBLES
-function toggleCollapsible(collapsibleElement) {
-    var currentContent = collapsibleElement.querySelector(".search-content");
+function openTab(tabId) {
+    // Make the target tab-header active
+    $('.tab-header').removeClass('active');
+    const $targetTabHeader = $('.tab-header[data-tab="' + tabId + '"]');
+    $targetTabHeader.removeClass('disabled').addClass('active');
 
-    // Close all collapsibles except the current one
-    var collapsibles = document.getElementsByClassName("collapsible");
-    for (var j = 0; j < collapsibles.length; j++) {
-        var content = collapsibles[j].querySelector(".search-content");
-        if (collapsibles[j] !== collapsibleElement) {
-            collapsibles[j].classList.remove("active");
-            content.style.display = "none";
-        }
-    }
+    // Hide all tab-contents
+    $('.tab-content').hide();
 
-    // Toggle the current collapsible and show/hide its content
-    collapsibleElement.classList.toggle("active");
-    if (currentContent.style.display === "grid") {
-        currentContent.style.display = "none";
-    } else {
-        currentContent.style.display = "grid";
-    }
-
-    // Automatically toggle the next collapsible if it exists
-    var nextCollapsible = collapsibleElement.nextElementSibling;
-    if (nextCollapsible) {
-        var nextContent = nextCollapsible.querySelector(".search-content");
-        nextCollapsible.classList.add("active");
-        nextContent.style.display = "grid";
-    }
+    // Show the matching content
+    $('#' + tabId).show();
 }
+//HOMEPAGE COLLAPSIBLES
+// function toggleCollapsible(collapsibleElement) {
+//     var currentContent = collapsibleElement.querySelector(".search-content");
+//
+//     // Close all collapsibles except the current one
+//     var collapsibles = document.getElementsByClassName("tab");
+//     for (var j = 0; j < collapsibles.length; j++) {
+//         var content = collapsibles[j].querySelector(".search-content");
+//         if (collapsibles[j] !== collapsibleElement) {
+//             collapsibles[j].classList.remove("active");
+//             content.style.display = "none";
+//         }
+//     }
+//
+//     // Toggle the current collapsible and show/hide its content
+//     collapsibleElement.classList.toggle("active");
+//     if (currentContent.style.display === "grid") {
+//         currentContent.style.display = "none";
+//     } else {
+//         currentContent.style.display = "grid";
+//     }
+//
+//     // Automatically toggle the next collapsible if it exists
+//     var nextCollapsible = collapsibleElement.nextElementSibling;
+//     if (nextCollapsible) {
+//         var nextContent = nextCollapsible.querySelector(".search-content");
+//         nextCollapsible.classList.add("active");
+//         nextContent.style.display = "grid";
+//     }
+// }
 
 function resetShareLink() {
     document.getElementById('shareLink').value = '';
 }
 
 $(document).ready(function() {
-    // Attach click event listeners to collapsible headers
-    $('.collapsible').click(function(event) {
-        event.preventDefault();
-        event.stopPropagation(); // Ensure the event does not propagate further
-        toggleCollapsible(this);
+    // Click handler for tab headers
+    $('.tab-header').on('click', function() {
+        // If tab is disabled, ignore
+        if ($(this).hasClass('disabled')) return;
+
+        // Remove active from all tab headers, then add to clicked one
+        $('.tab-header').removeClass('active');
+        $(this).addClass('active');
+
+        // Hide all tab-content
+        $('.tab-content').hide();
+
+        // Show the one matching this header's data-tab
+        const tabId = $(this).data('tab');  // e.g. "tab-instruments"
+        $('#' + tabId).show();
     });
-
-    // Prevent collapsing when clicking on links within .search-content, if necessary
-    $('.search-content').click(function(event) {
-        if (event.target.tagName !== 'A') {
-            event.stopPropagation(); // Stop propagation for non-anchor elements to maintain collapsible state
-        }
-    });
-
-    // Trigger the first collapsible to open it by default
-    if ($('.collapsible').length > 0) {
-        // Open the first collapsible
-        var firstCollapsible = $('.collapsible').first();
-        firstCollapsible.addClass('active');
-        firstCollapsible.find('.search-content').css('display', 'grid');
-
-        // Ensure all other collapsibles are closed
-        $('.collapsible').not(firstCollapsible).removeClass('active');
-        $('.collapsible').not(firstCollapsible).find('.search-content').css('display', 'none');
-    }
 
     // LOAD PIECE AND RECORDING VIA URL
     const urlParams = new URLSearchParams(window.location.search);
