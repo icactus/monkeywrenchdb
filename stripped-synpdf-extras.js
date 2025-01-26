@@ -284,7 +284,18 @@ function fetchPieces(instrumentIds) {
 
                     // Populate the links dynamically
                     orderedGroupedPieces[categoryName].forEach(function(piece) {
-                        container.append('<p><a href="#" class="pieces-link" data-id="' + piece.metric_arr_id + '" data-piece-id="' + piece.piece_id + '" data-instrument-id="' + instrumentIds + '">' + piece.composer_last + ' - ' + piece.piece_name + '</a> (' + piece.total_recordings_value + ')♫</p>');
+                        const pieceLink = `
+                            <p>
+                                <a href="#" 
+                                   class="pieces-link" 
+                                   data-id="${piece.metric_arr_id}" 
+                                   data-piece-id="${piece.piece_id}" 
+                                   data-instrument-id="${instrumentIds}">
+                                    <b>${piece.composer_last}</b> - ${piece.piece_name}
+                                </a> 
+                                (${piece.total_recordings_value})♫
+                            </p>`;
+                        container.append(pieceLink);
                     });
                 });
             }

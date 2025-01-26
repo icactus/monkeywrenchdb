@@ -213,7 +213,7 @@
     </section3>
 
     <script src="stripped-synpdf.js?v=60"></script>
-    <script src="stripped-synpdf-extras.js?v=30"></script>
+    <script src="stripped-synpdf-extras.js?v=31"></script>
 </body>
 
 </html>
