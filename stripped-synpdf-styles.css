@@ -297,6 +297,16 @@ select {
   }
 }
 
+.instrument-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+}
+.instrument-group:nth-child(2) {
+    break-inside: avoid;
+    break-after: column; /* Set a column break after group 2 */
+}
+
 @media screen and (max-width: 899px)  and (orientation:portrait) {
     section2 {
         flex-direction:column;
@@ -312,7 +322,6 @@ select {
         margin-top:0px;
     }
     .sidecontenbar-min-height {
-        
         min-height:25vh;
     }
     #sidecontent  h3 {
@@ -324,6 +333,8 @@ select {
     select {
         padding: 0.5rem 4rem 0.5rem 0.5rem;
     }
+    .instrument-container {
+        display:block; /*normal grid creates x-scrolling.*/
 }
 
 @media screen and (max-width: 767px) and (orientation:portrait) {
@@ -436,15 +447,6 @@ select {
     margin-left: -100%;
 } */
 
-.instrument-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-}
-.instrument-group:nth-child(2) {
-    break-inside: avoid;
-    break-after: column; /* Set a column break after group 2 */
-}
 .tabs {
     position:sticky;
     top: -1px; /* hides 1px strip at top when scrolling */
