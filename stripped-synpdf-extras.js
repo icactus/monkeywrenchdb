@@ -195,7 +195,7 @@ function fetchPieces(instrumentIds) {
             } else {
                 // Your existing logic for handling the pieces data
                 var pieces = data.pieces || [];
-                var instrumentName = data.instrumentName || "";
+                var instrumentName = (data.instrumentName || "").trim();
                 const instHeading = instrumentName.endsWith("Score")
                     ? `${instrumentName}s`
                     : `${instrumentName} Parts`;
