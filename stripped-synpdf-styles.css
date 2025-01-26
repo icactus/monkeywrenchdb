@@ -447,7 +447,7 @@ select {
 }
 .tabs {
     position:sticky;
-    top:0;
+    top:-1px; /* hides 1px strip at top when scrolling */
 }
 .tab-header-row{
     display:flex;
