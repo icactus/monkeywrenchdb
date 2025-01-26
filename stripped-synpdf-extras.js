@@ -196,6 +196,7 @@ function fetchPieces(instrumentIds) {
                 // Your existing logic for handling the pieces data
                 var pieces = data.pieces || [];
                 var instrumentName = data.instrumentName || "";
+                console.log(instrumentName);
                 container.append('<h2>' + instrumentName + ' Parts</h2>');
                 // Group pieces by 'piece_category.category_name'
                 var groupedPieces = pieces.reduce(function(acc, piece) {
