@@ -83,13 +83,13 @@
             <!-- TAB HEADERS -->
             <div class="tabs">
                 <ul class="tab-header-row">
-                    <li class="tab-header active" data-tab="tab-instruments">
+                    <li class="tab-header active" id="instruments-heading" data-tab="tab-instruments">
                         <h2>Select<br> Instrument</h2>
                     </li>
-                    <li class="tab-header disabled" data-tab="tab-pieces">
+                    <li class="tab-header disabled" id="pieces-heading" data-tab="tab-pieces">
                         <h2>Select<br>Piece</h2>
                     </li>
-                    <li class="tab-header disabled" data-tab="tab-recordings">
+                    <li class="tab-header disabled" id="recordings-heading" data-tab="tab-recordings">
                         <h2>Select<br>Recording</h2>
                     </li>
                 </ul>
@@ -97,33 +97,14 @@
             <div class="tab-contents">
                 <div id="tab-instruments" class="tab-content active" style="display:block;">
                     <div class="search-content instrument-container" id="instrument-links">
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
                     </div>
                 </div>
                 <div id="tab-pieces" class="tab-content" style="display:none;">
                     <div class="search-content" id="pieces-container">
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
                     </div>
                 </div>
                 <div id="tab-recordings" class="tab-content" style="display:none;">
                     <div class="search-content" id="recordings-container">
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
-                        <p>asldfasdfjkasdfasdfsd</p>
                     </div>
                 </div>
             </div>
@@ -232,7 +213,7 @@
     </section3>
 
     <script src="stripped-synpdf.js?v=60"></script>
-    <script src="stripped-synpdf-extras.js?v=28"></script>
+    <script src="stripped-synpdf-extras.js?v=29"></script>
 </body>
 
 </html>

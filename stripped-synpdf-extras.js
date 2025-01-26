@@ -149,33 +149,27 @@ $('#instrument-links').on('click', '.instrument-link-a', function(event) {
     event.preventDefault();
     var instrumentId = $(this).data('id');
 
+    // Grab the link text and remove parentheses if found
     var instrumentText = $(this).text();
     var lastParenthesisPosition = instrumentText.lastIndexOf('(');
-
     if (lastParenthesisPosition !== -1) {
         instrumentText = instrumentText.slice(0, lastParenthesisPosition).trim();
     }
 
-    var headingElement = $("#tab-instruments").children().first();
-    var newHeadingText = "1. Select Instrument: " + instrumentText;
-    headingElement.replaceWith(function() {
-        return $("<" + this.tagName + ">", { html: newHeadingText });
-    });
+    // Update the Instruments heading text
+    $('#instruments-heading').text("1. Select Instrument: " + instrumentText);
 
-    //Clear previous pieces selection
-    var piecesHeadingElement = $("#tab-pieces").children().first();
+    // Reset the Pieces heading
+    $('#pieces-heading').text("Select Piece");
 
-    var clearPiecesHeadingText = "Select Piece"
-    piecesHeadingElement.replaceWith(function() {
-        return $("<" + this.tagName + ">", { html: clearPiecesHeadingText });
-    });
-
-    // Reset the Recordings tab heading and disable it
-    const recordingsHeading = $('#tab-recordings h2');
-    recordingsHeading.text('Select Recording');
+    // Reset the Recordings heading and disable that tab
+    $('#recordings-heading').text("Select Recording");
     $('.tab-header[data-tab="tab-recordings"]').addClass('disabled');
 
+    // Switch to the Pieces tab
     openTab('tab-pieces');
+
+    // Fetch pieces for this instrument
     fetchPieces(instrumentId);
 });
 // Make sure the click event propagates to the link when clicking the SVG
