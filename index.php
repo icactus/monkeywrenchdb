@@ -84,13 +84,13 @@
             <div class="tabs">
                 <ul class="tab-header-row">
                     <li class="tab-header active" data-tab="tab-instruments">
-                        <h2 id="instruments-heading">Select<br> Instrument</h2>
+                        <h2 id="instruments-heading">Select Instrument</h2>
                     </li>
                     <li class="tab-header disabled" data-tab="tab-pieces">
-                        <h2 id="pieces-heading">Select<br>Piece</h2>
+                        <h2 id="pieces-heading">Select Piece</h2>
                     </li>
                     <li class="tab-header disabled" data-tab="tab-recordings">
-                        <h2 id="recordings-heading">Select<br>Recording</h2>
+                        <h2 id="recordings-heading">Select Recording</h2>
                     </li>
                 </ul>
             </div>

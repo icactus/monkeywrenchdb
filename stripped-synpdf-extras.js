@@ -156,14 +156,7 @@ $('#instrument-links').on('click', '.instrument-link-a', function(event) {
         instrumentText = instrumentText.slice(0, lastParenthesisPosition).trim();
     }
 
-    // Update the Instruments heading text
-    $('#instruments-heading').html("Select<br>Instrument: " + instrumentText);
-
-    // Reset the Pieces heading
-    $('#pieces-heading').html("Select<br>Piece");
-
-    // Reset the Recordings heading and disable that tab
-    $('#recordings-heading').html("Select<br>Recording");
+    // Disable recordings tab
     $('.tab-header[data-tab="tab-recordings"]').addClass('disabled');
 
     // Switch to the Pieces tab
@@ -203,6 +196,7 @@ function fetchPieces(instrumentIds) {
                 // Your existing logic for handling the pieces data
                 var pieces = data.pieces || [];
                 var instrumentName = data.instrumentName || "";
+                container.append('<h2>' + instrumentName + ' Parts</h2>');
                 // Group pieces by 'piece_category.category_name'
                 var groupedPieces = pieces.reduce(function(acc, piece) {
                     var categoryName = piece.category_name;
