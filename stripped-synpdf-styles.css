@@ -448,14 +448,13 @@ select {
 .tabs {
     position:sticky;
     top: -1px; /* hides 1px strip at top when scrolling */
-    padding-top: 12px;
+    padding-top: 8px;
     background-color: #ddd;
 }
 .tab-header-row{
     display: flex;
     margin: 0;
     padding: 0;
-    background-color: #ddd;
     list-style: none;
     box-shadow: inset 0px -5px 15px -10px rgba(0,0,0,0.6)
 }
