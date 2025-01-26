@@ -199,6 +199,7 @@ function fetchPieces(instrumentIds) {
                 const instHeading = instrumentName.endsWith("Score")
                     ? `${instrumentName}s`
                     : `${instrumentName} Parts`;
+                console.log(instHeading);
                 container.append(`<h2>${instHeading}</h2>`);
                 // Group pieces by 'piece_category.category_name'
                 var groupedPieces = pieces.reduce(function(acc, piece) {
