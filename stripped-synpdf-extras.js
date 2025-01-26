@@ -418,7 +418,6 @@ function fetchRecordings(metricArrId) {
                     var recordings = JSON.parse(response);
                     currentMetricArrGlobal = metricArrId;
                     var container = $('#recordings-container');
-                    container.empty();
 
                     recordingsDropdown.append('<option value="">Change Recording</option>');
                     //This part is necessary for instrument dropdown change because we need to refresh the measures_version info for each recording.
