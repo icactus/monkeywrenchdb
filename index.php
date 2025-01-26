@@ -97,51 +97,6 @@
             <div class="tab-contents">
                 <div id="tab-instruments" class="tab-content active" style="display:block;">
                     <div class="search-content instrument-container" id="instrument-links">
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
-                        <p>asdf asdfasdfasdf</p>
                     </div>
                 </div>
                 <div id="tab-pieces" class="tab-content" style="display:none;">
