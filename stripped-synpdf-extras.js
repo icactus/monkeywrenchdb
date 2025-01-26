@@ -158,7 +158,7 @@ $('#instrument-links').on('click', '.instrument-link-a', function(event) {
 
     // Disable recordings tab
     $('.tab-header[data-tab="tab-recordings"]').addClass('disabled');
-
+    $('#pieces-container').empty();
     // Switch to the Pieces tab
     openTab('tab-pieces');
 
@@ -316,10 +316,6 @@ $('#pieces-container').on('click', '.pieces-link', function(event) {
     const pieceId = $(this).data('piece-id');
     const instrumentIds = $(this).data('instrument-id').toString();
     const clickedLink = $(this);
-
-    // Adjust heading text for the "Pieces" tab, if needed
-    const pieceText = $(this).text();
-    $('#tab-pieces h2').html("Select<br>Piece: " + pieceText);
 
     // Callback after we check multiple parts
     const handleData = function(data) {
