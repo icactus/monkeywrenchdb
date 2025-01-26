@@ -466,7 +466,7 @@ select {
     margin:0;
 }
 .tab-header.active {
-  background: #f8f8f8;
+  background: #fff;
 }
 .tab-header.disabled {
   opacity: 0.5;
@@ -487,9 +487,8 @@ select {
 }
   
 .search-content {
-    width:100%;
+    width:auto;
     padding: 8px 16px;
-   /* overflow: hidden; */
     font-size:125% ;
 }
 .search-content p {
