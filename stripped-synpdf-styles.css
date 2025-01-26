@@ -501,6 +501,9 @@ select {
     padding: 8px;
     font-size:125% ;
 }
+.search-content h2 {
+    white-space:normal; /* piece title should wrap*/
+}
 .search-content p {
     margin:0 0.25em;
 }
