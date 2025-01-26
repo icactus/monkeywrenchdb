@@ -157,13 +157,13 @@ $('#instrument-links').on('click', '.instrument-link-a', function(event) {
     }
 
     // Update the Instruments heading text
-    $('#instruments-heading').text("1. Select Instrument: " + instrumentText);
+    $('#instruments-heading').html("Select<br>Instrument: " + instrumentText);
 
     // Reset the Pieces heading
-    $('#pieces-heading').text("Select Piece");
+    $('#pieces-heading').html("Select<br>Piece");
 
     // Reset the Recordings heading and disable that tab
-    $('#recordings-heading').text("Select Recording");
+    $('#recordings-heading').html("Select<br>Recording");
     $('.tab-header[data-tab="tab-recordings"]').addClass('disabled');
 
     // Switch to the Pieces tab
@@ -310,23 +310,19 @@ $('#pieces-container').on('click', '.pieces-link', function(event) {
 
     // Adjust heading text for the "Pieces" tab, if needed
     const pieceText = $(this).text();
-    $('#tab-pieces h2').text("Select Piece: " + pieceText);
+    $('#tab-pieces h2').html("Select<br>Piece: " + pieceText);
 
     // Callback after we check multiple parts
     const handleData = function(data) {
         if (data.length === 1) {
-            // EXACTLY ONE sub-part (e.g. only "Violin 1")
-            // 1) Fetch recordings for that single sub-part
+            // EXACTLY ONE sub-part
             fetchRecordings(data[0].metric_arr_id);
             currentMetricArrGlobal = data[0].metric_arr_id;
-            console.log('currentMetricArrGlobal:', currentMetricArrGlobal);
 
-            // 2) Move to the Recordings tab immediately
+            // Switch to Recordings tab
             openTab("tab-recordings");
-
         } else if (data.length > 1) {
-            // MULTIPLE sub-parts (e.g. "Violin 1" AND "Violin 2")
-            // Show them inline so the user can pick which sub-instrument
+            // MULTIPLE sub-parts
             displayInstrumentLinks(data, clickedLink);
         }
     };
@@ -334,10 +330,9 @@ $('#pieces-container').on('click', '.pieces-link', function(event) {
     // Check if we already inserted a sub-instrument-links container
     const existingContainer = clickedLink.next('.instrument-links');
     if (existingContainer.length > 0) {
-        // If it exists, just toggle or show it
         existingContainer.toggle();
     } else {
-        // If not, fetch the sub-instrument parts
+        // if not, fetch the sub-instrument parts
         checkInstrumentParts(pieceId, instrumentIds, handleData);
     }
 });
@@ -674,7 +669,8 @@ function displayInstrumentLinks(data, clickedLink) {
                 e.preventDefault();
                 fetchRecordings($(this).data('metric-arr-id'));
                 currentMetricArrGlobal = ($(this).data('metric-arr-id'));
-                console.log('current metric arr ', currentMetricArrGlobal);
+                // Switch to Recordings tab
+                openTab("tab-recordings");
             });
         linksContainer.append(instrumentLink).append('<br>');
     });

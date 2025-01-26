@@ -83,14 +83,14 @@
             <!-- TAB HEADERS -->
             <div class="tabs">
                 <ul class="tab-header-row">
-                    <li class="tab-header active" id="instruments-heading" data-tab="tab-instruments">
-                        <h2>Select<br> Instrument</h2>
+                    <li class="tab-header active" data-tab="tab-instruments">
+                        <h2 id="instruments-heading">Select<br> Instrument</h2>
                     </li>
-                    <li class="tab-header disabled" id="pieces-heading" data-tab="tab-pieces">
-                        <h2>Select<br>Piece</h2>
+                    <li class="tab-header disabled" data-tab="tab-pieces">
+                        <h2 id="pieces-heading">Select<br>Piece</h2>
                     </li>
-                    <li class="tab-header disabled" id="recordings-heading" data-tab="tab-recordings">
-                        <h2>Select<br>Recording</h2>
+                    <li class="tab-header disabled" data-tab="tab-recordings">
+                        <h2 id="recordings-heading">Select<br>Recording</h2>
                     </li>
                 </ul>
             </div>
@@ -213,7 +213,7 @@
     </section3>
 
     <script src="stripped-synpdf.js?v=60"></script>
-    <script src="stripped-synpdf-extras.js?v=29"></script>
+    <script src="stripped-synpdf-extras.js?v=30"></script>
 </body>
 
 </html>
