@@ -335,6 +335,7 @@ select {
     }
     .instrument-container {
         display:block; /*normal grid creates x-scrolling.*/
+    }
 }
 
 @media screen and (max-width: 767px) and (orientation:portrait) {
