@@ -473,6 +473,9 @@ select {
     box-shadow: -5px 0 10px -5px rgba(0, 0, 0, 0.5);
     cursor:default;
 }
+.tab-header.active:hover {
+    background-color:#f8f8f8;
+}
 .tab-header.disabled {
   pointer-events: none; /* prevent clicking if disabled */
 }
@@ -486,11 +489,9 @@ select {
     text-align: left;
     text-decoration: none;
   }
-  
 .tab-header:hover {
     background-color:#f1f1f1;
 }
-  
 .search-content {
     overflow-x:auto;
     white-space:nowrap;
