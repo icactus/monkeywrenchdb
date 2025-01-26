@@ -312,8 +312,8 @@ $('#pieces-container').on('click', '.pieces-link', function(event) {
 
     // Clear out old recordings
     $('#recordings-container').empty();
-    $('#recordings-container').prepend($('<h2>').text($(this).text()));
-    $('#recordings-container').prepend($('<h3>').text('Recordings'));
+    $('#recordings-container').append($('<h2>').text($(this).text()));
+    $('#recordings-container').append($('<h3>').text('Recordings'));
     const pieceId = $(this).data('piece-id');
     const instrumentIds = $(this).data('instrument-id').toString();
     const clickedLink = $(this);
