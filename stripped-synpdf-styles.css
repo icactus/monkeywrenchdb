@@ -471,6 +471,7 @@ select {
     background: #f8f8f8;
     border: 0;
     box-shadow: -5px 0 10px -5px rgba(0, 0, 0, 0.5);
+    cursor:default;
 }
 .tab-header.disabled {
   pointer-events: none; /* prevent clicking if disabled */
