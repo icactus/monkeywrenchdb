@@ -196,8 +196,10 @@ function fetchPieces(instrumentIds) {
                 // Your existing logic for handling the pieces data
                 var pieces = data.pieces || [];
                 var instrumentName = data.instrumentName || "";
-                console.log('asdfasdf' + instrumentName);
-                container.append('<h2>' + instrumentName + ' Parts</h2>');
+                const instHeading = instrumentName.endsWith("Score")
+                    ? `${instrumentName}s`
+                    : `${instrumentName} Parts`;
+                container.append(`<h2>${instHeading}</h2>`);
                 // Group pieces by 'piece_category.category_name'
                 var groupedPieces = pieces.reduce(function(acc, piece) {
                     var categoryName = piece.category_name;
