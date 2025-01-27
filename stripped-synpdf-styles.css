@@ -469,6 +469,7 @@ select {
 }
 .tab-header h2{
     margin: 0;
+    color:#444;
 }
 .tab-header.active {
     background: #f8f8f8;
@@ -478,6 +479,9 @@ select {
 }
 .tab-header.active:hover {
     background-color:#f8f8f8;
+}
+.tab-header.active h2 {
+    color:#000;
 }
 .tab-header.disabled {
   pointer-events: none; /* prevent clicking if disabled */
