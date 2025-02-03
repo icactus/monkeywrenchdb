@@ -93,12 +93,16 @@ function updatePlayPauseButton() {
 }
 
 function toggleSettingsMenu() {
-    const settingsButton = document.getElementById("settings-button");
     $("#help").toggleClass("showhlp");
+    $("#about").toggleClass("showabout", !1);
 }
 function toggleHelpLinkMenu() {
-    const helpLink = document.getElementById("help-link");
     $("#help").toggleClass("showhlp");
+    $("#about").toggleClass("showabout", !1);
+}
+function toggleAboutLinkMenu() {
+    $("#about").toggleClass("showabout");
+    $("#help").toggleClass("showhlp", !1);
 }
 
 // HORIZONTAL FETCHINSTRUMENTS

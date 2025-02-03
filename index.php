@@ -44,7 +44,7 @@
                 </div>
                 <div class="nav-menu">
                     <a id="help-link" href="#" onclick="toggleHelpLinkMenu(); return false;">Help</a>
-                    <a id="about-link" href="">About</a>
+                    <a id="about-link" href="#" onclick="toggleAboutLinkMenu(); return false;">About</a>
                 </div>
             </div>
 
@@ -146,7 +146,7 @@
                 <div class="change-recording-wrapper">
                     <h3>Change Recording</h3>
                     <select id="recordings-dropdown">
-                        <option value="">Change Recording</option>
+                        <option value="">Change Recording</optionfrom part to score>
                     </select>
                     <div>
                         <button id="invertButton">Dark Mode (buggy)</button>
@@ -181,8 +181,13 @@
         <div id="render" class="dlog" style="left:5%; padding:0.5em;"></div>
         <div id="noklik"></div>
         <div id="help">
-            <span><b>Click/touch</b> to navigate sheet music!</span><br>
-            <br>
+            <span>Navigatable sheet music synced to YouTube!</span><br>
+            <ul>
+                <li>Two-way sync: <b>click/touch</b> measures or player to navigate.</li>
+                <li>Jump between recordings or from part to score without losing your place.</li>
+                <li>Play along, score study, and practice aid.</li>
+                <li>Growing database of the most performed classical music.</li>
+            </ul>
             <span>Keyboard controls:</span>
             <table class="helptbl">
                 <tr>
@@ -204,16 +209,22 @@
                     <td></td>
                 </tr>
             </table>
-            Helpful Info:<ul>
+            <ul>
                 <li>This site is under heavy contruction and it's just me so please be patient with improvements!</li>
-                <li>Best on Desktop or tablet - older mobile devices may have problems displaying full scores.</li>
             </ul>
             <button id="closehelp">Close</button>
         </div>
+        <div id="about">
+            <p><b>Monkey Wrench Database</b> is built on a modified fork of SynPdf by <a href="https://wim.vree.org/">Willem Vree</a>. Without his amazing open source project none of this would be possible.</p>
+            <p>This site is a solo project by Isaac Trapkus, bassist with the NY Phil. I am not a professional programmer (<a href="https://bassmentrosin.com">but I do make bass rosin</a>). Please forgive my many skill issues.</p>
+            <p>Syncing is done by detecting staves and barlines algorithmically with manual correction. It takes 1-2 minutes per page of sheet music. AI is still not at the point where it can do this task. Recordings are manually synced by playing through the video and logging timestamps with keypresses (usually at 1.5-2x playback speed). Dynamic Time Warping makes it possible to automate adding additional recordings once a piece has a manual timestamp record. But the time to proof-read the recording is about the same as doing it manually.</p>
+            <p>If you find this project important and have the programming skills to make meaningful contributions to its development, please be in touch! icactusmusic AT gmail DOT com.</p>
+            <button id="closeabout">Close</button>
+        </div>
     </section3>
 
-    <script src="stripped-synpdf.js?v=60"></script>
-    <script src="stripped-synpdf-extras.js?v=43"></script>
+    <script src="stripped-synpdf.js?v=61"></script>
+    <script src="stripped-synpdf-extras.js?v=44"></script>
 </body>
 
 </html>

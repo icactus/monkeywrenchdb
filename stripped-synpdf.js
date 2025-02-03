@@ -1,4 +1,4 @@
-//~ Copyright (C) 2015-2025
+//~ Copyright (C) 2015-2025stripped
 //~ Isaac Trapkus,
 //~ Willem Vree, contributions Stéphane David.
 //~ This program is free software; you can redistribute it and/or modify it under the terms of the
@@ -302,7 +302,7 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
     while (low <= high) {
         mid = Math.floor((low + high) / 2);
         var currentMeasure = deTijden$$module$synpdf[mid];
-        
+
         if (currentMeasure.t <= a) {
             foundIndex = mid;       // Potential candidate found
             low = mid + 1;          // Continue searching in the upper half
@@ -1296,11 +1296,16 @@ function keyDown$$module$synpdf(a) {
             var time = yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime;
             playPause2$$module$synpdf(!0, time);
             break;
+        case "a":
+            $("#about").toggleClass("showabout");
+            $("#help").toggleClass("showhlp", !1);
+            break;
         case "f":
             $("#btns").click();
             break;
         case "h":
             $("#help").toggleClass("showhlp");
+            $("#about").toggleClass("showabout", !1);
             break;
         case "l":
             $("#lncsr").click();
@@ -1318,6 +1323,7 @@ function keyDown$$module$synpdf(a) {
         case "Escape":
             $("#menu, #saveDlg").toggle(!1);
             $("#help").toggleClass("showhlp", !1);
+            $("#about").toggleClass("showabout", !1);
             break;
 
         default:
@@ -1386,6 +1392,9 @@ $(document).ready(function() {
 
     $("#closehelp").click(function() {
         $("#help").toggleClass("showhlp", 0)
+    });
+    $("#closeabout").click(function() {
+        $("#about").toggleClass("showabout", 0)
     });
     $("#helpm").click(function() {
         $("#help").toggleClass("showhlp")
