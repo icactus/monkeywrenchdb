@@ -18,7 +18,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="fonts.css" />
-    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=24" />
+    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=25" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <script src="jquery.min.js"></script>
     <title>monkey wrench</title>
@@ -223,8 +223,8 @@
         </div>
     </section3>
 
-    <script src="stripped-synpdf.js?v=61"></script>
-    <script src="stripped-synpdf-extras.js?v=44"></script>
+    <script src="stripped-synpdf.js?v=62"></script>
+    <script src="stripped-synpdf-extras.js?v=45"></script>
 </body>
 
 </html>
