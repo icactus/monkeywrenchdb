@@ -163,8 +163,12 @@ $('#instrument-links').on('click', '.instrument-link-a', function(event) {
     // Disable recordings tab
     $('.tab-header[data-tab="tab-recordings"]').addClass('disabled');
     $('#pieces-container').empty();
+
     // Switch to the Pieces tab
     openTab('tab-pieces');
+
+    //display animated loading
+    $('#pieces-container').html('<h2 class="loading">Loading<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></h2>');
 
     // Fetch pieces for this instrument
     fetchPieces(instrumentId);
