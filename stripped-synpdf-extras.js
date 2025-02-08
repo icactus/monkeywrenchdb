@@ -337,7 +337,7 @@ $('#pieces-container').on('click', '.pieces-link', function(event) {
             openTab("tab-recordings");
         } else if (data.length > 1) {
             // MULTIPLE sub-parts
-            displayInstrumentLinks(data, clickedLink);
+            displayMultiplePartLinks(data, clickedLink);
         }
     };
 
@@ -347,12 +347,12 @@ $('#pieces-container').on('click', '.pieces-link', function(event) {
         existingContainer.toggle();
     } else {
         // if not, fetch the sub-instrument parts
-        checkInstrumentParts(pieceId, instrumentIds, handleData);
+        checkMultipleParts(pieceId, instrumentIds, handleData);
     }
 });
 
 // Function to handle the click event on the link
-function checkInstrumentParts(pieceId, instrumentIds, callback) {
+function checkMultipleParts(pieceId, instrumentIds, callback) {
     if (instrumentIds.split(',').length > 0) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', `check_multiple_parts.php?piece_id=${pieceId}&instrumentIds=${instrumentIds}`, true);
@@ -429,8 +429,6 @@ function fetchRecordings(metricArrId) {
                     var container = $('#recordings-container');
 
                     recordingsDropdown.append('<option value="">Change Recording</option>');
-                    //DELETED THE MEASURES VERSION FEATURE MENTIONED BELOW
-                    //This part is necessary for instrument dropdown change because we need to refresh the measures_version info for each recording.
                     recordings.sort(function(a, b) {
                         // Compare year
                         var yearComparison = a.year - b.year;
@@ -670,7 +668,7 @@ $('#recordings-dropdown').change(function() {
 });
 
 
-function displayInstrumentLinks(data, clickedLink) {
+function displayMultiplePartLinks(data, clickedLink) {
     var linksContainer = $('<div class="instrument-links"></div>');
     data.forEach(function(item) {
         var instrumentLink = $('<a href="#" class="instrument-link"></a>')
