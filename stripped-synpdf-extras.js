@@ -429,8 +429,8 @@ function fetchRecordings(metricArrId) {
                     var container = $('#recordings-container');
 
                     recordingsDropdown.append('<option value="">Change Recording</option>');
+                    //DELETED THE MEASURES VERSION FEATURE MENTIONED BELOW
                     //This part is necessary for instrument dropdown change because we need to refresh the measures_version info for each recording.
-                    // Populate the links
                     recordings.sort(function(a, b) {
                         // Compare year
                         var yearComparison = a.year - b.year;
@@ -473,36 +473,36 @@ function fetchRecordings(metricArrId) {
 
 //This version updates the recordings dropdown with new info when the instrument is changed but without regenerating it.
 //NEED TO GET RID OF THIS IF ONLY USING ONE MEASURES VERSION. LOOKS LIKE NEEDLESSLY REFETCHING RECORDING DATA.
-function updateRecordingsData(metricArrId) {
-    return new Promise(function(resolve, reject) {
-        $.ajax({
-            url: 'fetchrecordings_data.php',
-            method: 'GET',
-            data: { metricArrId: metricArrId },
-            success: function(response) {
-                if (response === "No recordings found for the selected piece") {
-                    $('#recordings-container').html('<p>No recordings found for the selected piece</p>');
-                    reject("No recordings found");
-                } else {
-                    var recordings = JSON.parse(response);
-                    var recordingsDropdown = $('#recordings-dropdown');
-                    var options = recordingsDropdown.find('option');
-                    // Update the data for each option, skipping the first one
-                    options.each(function(index, option) {
-                        if (index !== 0 && index - 1 < recordings.length) { // Ensure there is a corresponding recording
-                            var recordingFullData = recordings[index - 1];
-                            $(option).data('recordingFullData', recordingFullData);
-                        }
-                    });
-                    resolve(recordings); // Resolve the Promise with the recordings data
-                }
-            },
-            error: function(error) {
-                reject(error); // Reject the Promise with the error message
-            }
-        });
-    });
-}
+// function updateRecordingsData(metricArrId) {
+//     return new Promise(function(resolve, reject) {
+//         $.ajax({
+//             url: 'fetchrecordings_data.php',
+//             method: 'GET',
+//             data: { metricArrId: metricArrId },
+//             success: function(response) {
+//                 if (response === "No recordings found for the selected piece") {
+//                     $('#recordings-container').html('<p>No recordings found for the selected piece</p>');
+//                     reject("No recordings found");
+//                 } else {
+//                     var recordings = JSON.parse(response);
+//                     var recordingsDropdown = $('#recordings-dropdown');
+//                     var options = recordingsDropdown.find('option');
+//                     // Update the data for each option, skipping the first one
+//                     options.each(function(index, option) {
+//                         if (index !== 0 && index - 1 < recordings.length) { // Ensure there is a corresponding recording
+//                             var recordingFullData = recordings[index - 1];
+//                             $(option).data('recordingFullData', recordingFullData);
+//                         }
+//                     });
+//                     resolve(recordings); // Resolve the Promise with the recordings data
+//                 }
+//             },
+//             error: function(error) {
+//                 reject(error); // Reject the Promise with the error message
+//             }
+//         });
+//     });
+// }
 
 
 let recordingCache = {};
@@ -591,22 +591,22 @@ function fetchNewInstrument(instrumentData) {
         xhr.send();
     });
 }
-
-function fetchNewRecording() {
-    return new Promise((resolve, reject) => {
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", "fetch_new_recording.php?recordingId=" + currentRecordingGlobal + "&InstrumentId=" + currentInstrumentGlobal, true);
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                let newRecordingData = JSON.parse(xhr.responseText);
-                resolve(newRecordingData);
-            } else if (xhr.readyState === 4) {
-                reject(xhr.status);
-            }
-        }
-        xhr.send();
-    });
-}
+// SHOULDN'T NEED BECAUSE WE LOAD ALL RECORDING DATA AT BEGINNING AND NO LONGER USE MEASURE VERSIONS
+// function fetchNewRecording() {
+//     return new Promise((resolve, reject) => {
+//         var xhr = new XMLHttpRequest();
+//         xhr.open("GET", "fetch_new_recording.php?recordingId=" + currentRecordingGlobal + "&InstrumentId=" + currentInstrumentGlobal, true);
+//         xhr.onreadystatechange = function() {
+//             if (xhr.readyState === 4 && xhr.status === 200) {
+//                 let newRecordingData = JSON.parse(xhr.responseText);
+//                 resolve(newRecordingData);
+//             } else if (xhr.readyState === 4) {
+//                 reject(xhr.status);
+//             }
+//         }
+//         xhr.send();
+//     });
+// }
 
 $('#instruments-dropdown').change(function() {
     resetShareLink();
@@ -617,7 +617,8 @@ $('#instruments-dropdown').change(function() {
 
     fetchNewInstrument(instrumentData)
         .then(recordingFullData => {
-            updateRecordingsData(instrumentData.metric_arr_id);
+            // Deleting this since there is no longer multiple measures versions for recordings
+            // updateRecordingsData(instrumentData.metric_arr_id);
             renderedCanvasesQueue = [];
             renderingTasks = [];
             renderedCanvasesQueue = new Set();
@@ -643,32 +644,29 @@ $('#instruments-dropdown').change(function() {
 $('#recordings-dropdown').change(function() {
     resetShareLink();
     const selectedOption = $(this).find('option:selected');
+    // Retrieve the recording data that was already attached when the dropdown was built.
     const recordingFullData = selectedOption.data('recordingFullData');
     currentRecordingGlobal = recordingFullData.recording_id;
     bypassTickFlag = 1;
 
-    fetchNewRecording()
-        .then(newRecordingData => {
-            deTijden$$module$synpdf = metric_arr$$module$synpdf = JSON.parse(newRecordingData.times_arr_data);
-            offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(newRecordingData.offset_js);
-            opt$$module$synpdf = { yubvid: newRecordingData.youtube_id };
-            //you need currentMeasureTime here and not just the detijden array measure match so that it's getting the first repeat if any.
-            findCurrentMeasureTime()
-                .then(() => {
-                    newPlayerCue = (currentMeasureTime + offset$$module$synpdf + TOFF$$module$synpdf);
-                })
-                .catch((error) => {
-                    newPlayerCue = 0;
-                    // Handle the rejection
-                    console.error(error);
-                });
-            //calling to set currentMeasureTime in case current measure was played to and not clicked.
+    // Instead of fetching new recording data from the server,
+    // use the preloaded data in recordingFullData.
+    deTijden$$module$synpdf = metric_arr$$module$synpdf = JSON.parse(recordingFullData.times_arr_data);
+    offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
+    opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
+
+    // Get the current measure time and update the start time accordingly.
+    findCurrentMeasureTime()
+        .then(() => {
+            newPlayerCue = (currentMeasureTime + offset$$module$synpdf + TOFF$$module$synpdf);
+            // Calling changeStartTime ensures the player cue is updated.
             changeStartTime(newPlayerCue);
         })
-        .catch(error => {
-            console.error(`Error fetching new recording: ${error}`);
+        .catch((error) => {
+            newPlayerCue = 0;
+            console.error(error);
+            changeStartTime(newPlayerCue);
         });
-
 });
 
 
