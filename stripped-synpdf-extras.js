@@ -15,6 +15,9 @@ let newInstrumentTime2xFlag = 0;
 let scrollFlag = 0;
 let globalHighlightColor = '#00d4ff';
 
+//So back button will go to homepage only if on a recording
+window.isRecordingState = false;
+
 let currentGlobalScaleAmount = 100;
 
 const sheetMusicSvg = ` 
@@ -700,6 +703,9 @@ function handleRecordingSelection(recordingFullData) {
         .then(function() {
             //Creating history so back button goes back to homepage
             history.pushState({ page: 'recording' }, '', window.location.pathname);
+            // Set a global flag to indicate we’re in the recording state
+            window.isRecordingState = true;
+
             msc_check_preload$$module$synpdf();
             $("#sidecontent").show();
             generateInstrumentsDropdown(recordingId)
@@ -715,6 +721,14 @@ function handleRecordingSelection(recordingFullData) {
             console.error("An error occurred while loading recording:", error);
         });
 }
+//Listener so back button goes to homepage but only if on recording page
+window.addEventListener('popstate', function() {
+    if (window.isRecordingState) {
+        // We were in recording state—reload the page to show the homepage
+        location.reload();
+    }
+    // Otherwise, do nothing (the browser will navigate as normal)
+});
 
 $('#recordings-container').on('click', '.recordings-link', function() {
     let recordingFullData = $(this).data('recordingFullData');
