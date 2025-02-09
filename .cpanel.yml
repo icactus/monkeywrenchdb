@@ -35,4 +35,4 @@ deployment:
     - /bin/cp synpdf_182/editmode/get_recordings_already_synced.php $DEPLOYPATH3
 
     - export DEPLOYPATH4=/home/monkcdmb/public_html/editmode-loadfiles/
-    - /bin/cp -r synpdf_182/editmode-loadfiles/ $DEPLOYPATH2
+    - /bin/cp -r synpdf_182/editmode-loadfiles/ $DEPLOYPATH4

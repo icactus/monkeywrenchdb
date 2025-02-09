@@ -676,6 +676,13 @@
                         <input type="submit" name="update" value="Update" />
                     </div>
                 </form>
+                <!-- add editmode js file -->
+                <form class="inputform" id="addeditmodejsfile" method="POST" enctype="multipart/form-data">
+                    <div style="display:flex;">
+                        <input type="file" id="editmodejsfile" name="editmodejsfile" accept=".js" tabindex="1" required />
+                        <input type="submit" name="upload" value="Upload" />
+                    </div>
+                </form>
                 <!-- add recording -->
                 <form class="inputform" id="loadScore" method="POST">
                     <div style="display:flex;">
