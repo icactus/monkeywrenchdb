@@ -723,10 +723,11 @@ function handleRecordingSelection(recordingFullData) {
 }
 //Listener so back button goes to homepage but only if on recording page
 window.addEventListener('popstate', function() {
-    if (window.isRecordingState) {
-        // We were in recording state—reload the page to show the homepage
-        location.reload();
-    }
+    console.log('popstate');
+    // if (window.isRecordingState) {
+    //     // We were in recording state—reload the page to show the homepage
+    //     location.reload();
+    // }
     // Otherwise, do nothing (the browser will navigate as normal)
 });
 
