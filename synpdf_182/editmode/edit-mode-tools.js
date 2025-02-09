@@ -604,47 +604,6 @@ addNewMetricForm.addEventListener("submit", function(event) {
         });
 });
 
-const addEditModeJsFile = document.getElementById("addeditmodejsfile");
-
-addEditModeJsFile.addEventListener("submit", function(event) {
-    event.preventDefault(); // Prevent the form from submitting normally
-
-    // Determine which button was clicked
-    const submitButton = event.submitter;
-    const buttonName = submitButton.name;
-    const buttonValue = submitButton.value;
-
-    // Create a new FormData object from the form
-    const formData = new FormData(addEditModeJsFile);
-    formData.append('action', 'add_editmodejs_file');
-    formData.append(buttonName, buttonValue); // Append the name and value of the button
-
-    fetch("./dispatcher.php", {
-        method: "POST",
-        body: formData
-    })
-        .then(response => response.text())
-        .then(data => {
-            // Handle the response from the server
-            console.log(data);
-
-            const isDataSuccess = data.includes("The data has been inserted.") || data.includes("The data has been updated.");
-            const isFileError = data.includes("Sorry, file already exists. File not uploaded.") || data.includes("Sorry, your file was not uploaded.");
-
-            if (isDataSuccess && !isFileError) {
-                alert("Form submitted successfully");
-            } else if (isDataSuccess && isFileError) {
-                alert("Data updated successfully");
-            } else {
-                alert("Form submission failed");
-            }
-        })
-        .catch(error => {
-            // Handle any errors that occur during the request
-            console.error(error);
-            alert("An error occurred during the form submission.");
-        });
-});
 
 //Allows user to manually mass correct timing across a range - adjustTimeValues(deTijden$$module$synpdf, 5, 10, 0.5);
 const adjT = (startIndex, endIndex, timeShift) => (startIndex < 0 || endIndex >= deTijden$$module$synpdf.length || startIndex > endIndex) ? console.error("Invalid indices") : deTijden$$module$synpdf.slice(startIndex, endIndex + 1).forEach(item => item.t += timeShift);

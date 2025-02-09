@@ -22,7 +22,6 @@ $actions = [
     'add_piece' => 'pieces-addnew.php',
     'add_metric_arr' => 'metric-arr-post.php',
     'add_recording' => 'submit_recording.php',
-    'add_editmodejs_file' => 'editmodejs-addnew.php',
 ];
 
 // Check if the requested action is allowed and the file exists
