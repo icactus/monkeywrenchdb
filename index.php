@@ -43,8 +43,8 @@
                     </div>
                 </div>
                 <div class="nav-menu">
-                    <a id="help-link" href="#" onclick="toggleHelpLinkMenu(); return false;">Help</a>
-                    <a id="about-link" href="#" onclick="toggleAboutLinkMenu(); return false;">About</a>
+                    <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;">Help</a>
+                    <a id="about-link" href="javascript:void(0)" onclick="toggleAboutLinkMenu(); return false;">About</a>
                 </div>
             </div>
 
@@ -223,7 +223,7 @@
         </div>
     </section3>
 
-    <script src="stripped-synpdf.js?v=62"></script>
+    <script src="stripped-synpdf.js?v=63"></script>
     <script src="stripped-synpdf-extras.js?v=50"></script>
 </body>
 
