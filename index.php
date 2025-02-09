@@ -224,7 +224,7 @@
     </section3>
 
     <script src="stripped-synpdf.js?v=63"></script>
-    <script src="stripped-synpdf-extras.js?v=50"></script>
+    <script src="stripped-synpdf-extras.js?v=51"></script>
 </body>
 
 </html>
