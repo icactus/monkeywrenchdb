@@ -615,8 +615,6 @@ $('#instruments-dropdown').change(function() {
 
     fetchNewInstrument(instrumentData)
         .then(recordingFullData => {
-            // Deleting this since there is no longer multiple measures versions for recordings
-            // updateRecordingsData(instrumentData.metric_arr_id);
             renderedCanvasesQueue = [];
             renderingTasks = [];
             renderedCanvasesQueue = new Set();
@@ -700,6 +698,8 @@ function handleRecordingSelection(recordingFullData) {
 
     loadRecording(recordingFullData)
         .then(function() {
+            //Creating history so back button goes back to homepage
+            history.pushState({ page: 'recording' }, '', window.location.pathname);
             msc_check_preload$$module$synpdf();
             $("#sidecontent").show();
             generateInstrumentsDropdown(recordingId)
