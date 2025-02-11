@@ -21,7 +21,7 @@
     <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=26" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <script src="jquery.min.js"></script>
-    <title>monkey wrench</title>
+    <title>monkey wrench database</title>
 </head>
 
 <body>
@@ -37,8 +37,8 @@
                     </a>
                     <div class="monkeywrench-logo-text">
                         <a href="/">
-                            <h2>MONKEY WRENCH</h2>
-                            <h2 id="logotext-database">DATABASE</h2>
+                            <h2>MONKEY WRENCH DATABASE</h2>
+                            <h3 id="logotext-line2">sheet music synced with youtube</h3>
                         </a>
                     </div>
                 </div>

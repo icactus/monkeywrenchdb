@@ -110,9 +110,8 @@ a {
     margin-right:10px;
 }
 .monkeywrench-logo-text  {
-    font-size:80%;
-    /*background: -webkit-linear-gradient(45deg, #09009f, #00ff95 80%);*/
-    background:-webkit-linear-gradient(45deg, #e0b6ff, #3500ff 80%);
+    font-size:1em;
+    background:-webkit-linear-gradient(45deg, #9300ff, #3500ff 150%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -124,11 +123,14 @@ a {
     align-items:end;
 }
 .monkeywrench-logo-text h2 {
-    font-family: 'PixelOperator8-Bold', sans-serif;
+    font-size:1.8em;
+    font-family: 'PixelOperator', sans-serif;
+    font-weight:800;
     margin:0;
 }
-#logotext-database {
+#logotext-line2{
     font-size:1em;
+    margin:0;
 }
 .monkeywrench-logo-text, .nav-menu > a:link,
 .monkeywrench-logo-text, .nav-menu > a:visited,
