@@ -220,7 +220,7 @@
         Copied to clipboard!
     </div>
     <script src="stripped-synpdf.js?v=67"></script>
-    <script src="stripped-synpdf-extras.js?v=60"></script>
+    <script src="stripped-synpdf-extras.js?v=61"></script>
 </body>
 
 </html>
