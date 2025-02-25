@@ -970,6 +970,57 @@ function resetShareLink() {
     document.getElementById('shareLink').value = '';
 }
 
+function addShareButtonListener() {
+    const shareButton = document.getElementById('share-button');
+    if (shareButton) {
+        shareButton.addEventListener('click', function() {
+            const metricArrId = currentMetricArrGlobal;
+            const recordingId = currentRecordingGlobal;
+
+            if (metricArrId && recordingId) {
+                // Dynamically construct the base URL using the current window location
+                const protocol = window.location.protocol;
+                const host = window.location.host;
+                const path = '/index.php';
+
+                const baseUrl = `${protocol}//${host}${path}`;
+
+                // Construct the query parameters
+                const queryParams = new URLSearchParams({
+                    metricArrId: metricArrId,
+                    recordingId: recordingId,
+                }).toString();
+
+                // Combine base URL with query parameters to form the full URL
+                const fullUrl = `${baseUrl}?${queryParams}`;
+
+                // Copy the URL to the clipboard
+                navigator.clipboard
+                    .writeText(fullUrl)
+                    .then(() => {
+                        console.log('Share link copied to clipboard:', fullUrl);
+
+                        // Show the notification
+                        const notification = document.getElementById('notification');
+                        notification.style.display = 'block';
+
+                        // Hide the notification after 2 seconds
+                        setTimeout(() => {
+                            notification.style.display = 'none';
+                        }, 2000);
+                    })
+                    .catch((err) => {
+                        console.error('Failed to copy link', err);
+                    });
+            } else {
+                console.error('Missing parameters. Unable to generate share link.');
+            }
+        });
+    } else {
+        console.error('Share button not found in the DOM.');
+    }
+}
+
 $(document).ready(function() {
     // Click handler for tab headers
     $('.tab-header').on('click', function() {
@@ -1016,50 +1067,6 @@ $(document).ready(function() {
             });
     }
 
-    //Share button
-    document.getElementById('share-button').addEventListener('click', function() {
-        const metricArrId = currentMetricArrGlobal;
-        const recordingId = currentRecordingGlobal;
-
-        if (metricArrId && recordingId) {
-            // Dynamically construct the base URL using the current window location
-            const protocol = window.location.protocol;
-            const host = window.location.host;
-            const path = '/index.php';
-
-            const baseUrl = `${protocol}//${host}${path}`;
-
-            // Construct the query parameters
-            const queryParams = new URLSearchParams({
-                metricArrId: metricArrId,
-                recordingId: recordingId,
-            }).toString();
-
-            // Combine base URL with query parameters to form the full URL
-            const fullUrl = `${baseUrl}?${queryParams}`;
-
-            // Copy the URL to the clipboard
-            navigator.clipboard
-                .writeText(fullUrl)
-                .then(() => {
-                    console.log('Share link copied to clipboard:', fullUrl);
-
-                    // Show the notification
-                    const notification = document.getElementById('notification');
-                    notification.style.display = 'block';
-
-                    // Hide the notification after 2 seconds
-                    setTimeout(() => {
-                        notification.style.display = 'none';
-                    }, 2000);
-                })
-                .catch((err) => {
-                    console.error('Failed to copy link', err);
-                });
-        } else {
-            console.error('Missing parameters. Unable to generate share link.');
-        }
-    });
     fetchSearchByInstrument();
     resizeCanvasTrigger();
 });

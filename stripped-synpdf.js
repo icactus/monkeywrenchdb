@@ -253,6 +253,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         <div id="rollijn" class="dashed"></div>`
     );
     $("#notation").append(b);
+    addShareButtonListener();
     initIntersectionObserver(); // Initialize observer for page rendering 
     setupPlayPauseButton();
     this.maatloper = $('<div class="demaat" style="background:' + globalHighlightColor + '; opacity:0.2; left:0px; top:0px; width:0px; height:0px; z-index:2"></div>');
