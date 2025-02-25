@@ -201,6 +201,7 @@ section2 {
 }
 sidecontentbar {
     margin-top:100px;
+    margin-bottom:30px;
     padding:1em;
     background-color:#f3f6fc;
     min-width:200px;
