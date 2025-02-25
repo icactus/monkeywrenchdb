@@ -1016,9 +1016,8 @@ $(document).ready(function() {
             });
     }
 
-    //SHARE BUTTON
-    document.getElementById('shareButton').addEventListener('click', function() {
-
+    //Share button
+    document.getElementById('share-button').addEventListener('click', function() {
         const metricArrId = currentMetricArrGlobal;
         const recordingId = currentRecordingGlobal;
 
@@ -1033,21 +1032,32 @@ $(document).ready(function() {
             // Construct the query parameters
             const queryParams = new URLSearchParams({
                 metricArrId: metricArrId,
-                recordingId: recordingId
+                recordingId: recordingId,
             }).toString();
 
             // Combine base URL with query parameters to form the full URL
             const fullUrl = `${baseUrl}?${queryParams}`;
 
-            // Set the generated URL in the text input for display and copying
-            document.getElementById('shareLink').value = fullUrl;
-            console.log('Share link generated:', fullUrl);
+            // Copy the URL to the clipboard
+            navigator.clipboard
+                .writeText(fullUrl)
+                .then(() => {
+                    console.log('Share link copied to clipboard:', fullUrl);
 
-            navigator.clipboard.writeText(fullUrl).catch(err => {
-                console.log('Failed to copy link', err);
-            });
+                    // Show the notification
+                    const notification = document.getElementById('notification');
+                    notification.style.display = 'block';
+
+                    // Hide the notification after 2 seconds
+                    setTimeout(() => {
+                        notification.style.display = 'none';
+                    }, 2000);
+                })
+                .catch((err) => {
+                    console.error('Failed to copy link', err);
+                });
         } else {
-            console.error("Missing parameters. Unable to generate share link.");
+            console.error('Missing parameters. Unable to generate share link.');
         }
     });
     fetchSearchByInstrument();
