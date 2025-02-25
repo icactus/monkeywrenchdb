@@ -268,6 +268,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         <div id="rollijn" class="dashed"></div>`
     );
     $("#notation").append(b);
+    addInvertButtonListener();
     addShareButtonListener();
     initIntersectionObserver(); // Initialize observer for page rendering 
     setupPlayPauseButton();
