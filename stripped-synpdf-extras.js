@@ -610,7 +610,6 @@ function fetchNewInstrument(instrumentData) {
 // }
 
 $('#instruments-dropdown').change(function() {
-    resetShareLink();
     const selectedOption = $(this).find('option:selected');
     const instrumentData = selectedOption.data('instrumentData');
     currentInstrumentGlobal = instrumentData.instrument_id;
@@ -641,7 +640,6 @@ $('#instruments-dropdown').change(function() {
 
 
 $('#recordings-dropdown').change(function() {
-    resetShareLink();
     const selectedOption = $(this).find('option:selected');
     // Retrieve the recording data that was already attached when the dropdown was built.
     const recordingFullData = selectedOption.data('recordingFullData');
@@ -966,9 +964,6 @@ function openTab(tabId) {
 //     }
 // }
 
-function resetShareLink() {
-    document.getElementById('shareLink').value = '';
-}
 
 function addShareButtonListener() {
     const shareButton = document.getElementById('share-button');
