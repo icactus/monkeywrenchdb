@@ -216,7 +216,7 @@
         </div>
     </section3>
     <!-- Notification Element -->
-    <div id="notification" style="display: none; position: fixed; bottom: 20px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+    <div id="notification" style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Copied to clipboard!
     </div>
     <script src="stripped-synpdf.js?v=67"></script>
