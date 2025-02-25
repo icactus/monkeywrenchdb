@@ -559,7 +559,7 @@ function sendVarToSynpdf(recordingFullData) {
 }
 
 
-document.getElementById('invertButton').addEventListener('click', function() {
+document.getElementById('invert-button').addEventListener('click', function() {
     document.body.classList.toggle('inverted');
     this.textContent = document.body.classList.contains('inverted') ? 'Light Mode' : 'Dark Mode';
 
