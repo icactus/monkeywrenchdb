@@ -559,13 +559,22 @@ function sendVarToSynpdf(recordingFullData) {
 }
 
 
-document.getElementById('invert-button').addEventListener('click', function() {
-    document.body.classList.toggle('inverted');
-    this.textContent = document.body.classList.contains('inverted') ? 'Light Mode' : 'Dark Mode';
+function addInvertButtonListener() {
+    const invertButton = document.getElementById('invert-button');
+    if (invertButton) {
+        invertButton.addEventListener('click', function() {
+            document.body.classList.toggle('inverted');
+            this.textContent = document.body.classList.contains('inverted') ? 'Light Mode' : 'Dark Mode';
 
-    var img = document.getElementById('monkey-logo');
-    img.src = document.body.classList.contains('inverted') ? 'monkeydark.png' : 'monkeywrench-monkey100x100.png';
-});
+            var img = document.getElementById('monkey-logo');
+            if (img) {
+                img.src = document.body.classList.contains('inverted') ? 'monkeydark.png' : 'monkeywrench-monkey100x100.png';
+            }
+        });
+    } else {
+        console.error('Invert button not found in the DOM.');
+    }
+}
 
 function fetchNewInstrument(instrumentData) {
     return new Promise((resolve, reject) => {
