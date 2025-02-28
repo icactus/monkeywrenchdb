@@ -1085,7 +1085,6 @@ function readPdf$$module$synpdf(a, b) {
             data: a,
             verbosity: 1,
             disableRange: true,
-            disableFontFace: true
         };
         console.debug("[PDF] PDF.js options:", pdfjsOptions);
 
