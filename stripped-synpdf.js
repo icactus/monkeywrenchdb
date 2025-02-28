@@ -682,49 +682,85 @@ function readPdfdoc$$module$synpdf() {
 function readPdf$$module$synpdf(pdfData, dataType) {
     initGlobals$$module$synpdf();
 
-    var pdfCopy = pdfData,
-        d;
+    let pdfCopy = pdfData;
+    let d;
 
-    // Check if the URL points to a JPEG image if the type is "url"
+    // Debugging: Log input parameters
+    console.debug("[PDF] Loading PDF with dataType:", dataType);
+    if (dataType === "pdfbin") console.debug("[PDF] PDF binary data length:", pdfData.length);
+
+    // Handle JPEG/Blob URLs
     if (dataType === "url") {
         d = /jpe?g$/i.test(pdfCopy);
+        console.debug("[PDF] Detected URL type (JPEG/Blob):", pdfCopy);
     }
 
-    // Convert to Uint8Array if the type is "pdfbin"
+    // Convert to Uint8Array for PDF binary data
     if (dataType === "pdfbin") {
-        pdfData = new Uint8Array(pdfData);
+        try {
+            pdfData = new Uint8Array(pdfData);
+            console.debug("[PDF] Converted to Uint8Array successfully");
+        } catch (error) {
+            console.error("[PDF] Failed to convert to Uint8Array:", error);
+            return;
+        }
     }
+
     // Handle JPEG binary data
     if (dataType === "jpgbin") {
-        jpgData = new Uint8Array(pdfData);
-        dataType = "url";
-        pdfCopy = new Blob([pdfData], { type: "image/jpeg" });
-        pdfCopy = URL.createObjectURL(pdfCopy);
+        try {
+            const jpgData = new Uint8Array(pdfData);
+            dataType = "url";
+            pdfCopy = new Blob([jpgData], { type: "image/jpeg" });
+            pdfCopy = URL.createObjectURL(pdfCopy);
+            console.debug("[PDF] Created Blob URL for JPEG:", pdfCopy);
+        } catch (error) {
+            console.error("[PDF] JPEG Blob creation failed:", error);
+            return;
+        }
     }
-    // Load the document as an Image if the type is "url" and it's a JPEG or Blob URL
+
+    // Load as Image (JPEG/Blob)
     if (dataType === "url" && (d || /^blob:/.test(pdfCopy))) {
+        console.debug("[PDF] Loading as image:", pdfCopy);
         pdfDoc$$module$synpdf = new Image();
         pdfDoc$$module$synpdf.crossOrigin = "anonymous";
         pdfDoc$$module$synpdf.src = pdfCopy;
         pdfDoc$$module$synpdf.onload = function() {
+            console.debug("[PDF] Image loaded successfully");
             readPdfdoc$$module$synpdf();
         };
+        pdfDoc$$module$synpdf.onerror = function(err) {
+            console.error("[PDF] Image load failed:", err);
+        };
     } else {
-        // Handle PDF binary data using pdfjsLib
+        // Load PDF with pdfjsLib (enhanced error handling)
         let shouldUpdate = true;
         const startTime = new Date().getTime();
 
-        const loadingTask = pdfjsLib.getDocument(pdfData);
+        // Debugging: Log PDF.js config
+        const pdfjsOptions = {
+            url: pdfData,
+            verbosity: 1, // Enable PDF.js internal logging
+            disableRange: true, // Disable range requests (troubleshoot server issues)
+            disableFontFace: true, // Bypass font issues
+            // Add other options as needed
+        };
+        console.debug("[PDF] PDF.js options:", pdfjsOptions);
+
+        const loadingTask = pdfjsLib.getDocument(pdfjsOptions);
+
+        // Progress handler
         loadingTask.onProgress = function(progressData) {
             if (shouldUpdate) {
                 const currentTime = new Date().getTime();
-                const elapsedTime = (currentTime - startTime) / 1000; // in seconds
+                const elapsedTime = (currentTime - startTime) / 1000;
                 const loadedMB = (progressData.loaded / (1024 * 1024)).toFixed(2);
                 const totalMB = (progressData.total / (1024 * 1024)).toFixed(2);
                 const speedMBps = (loadedMB / elapsedTime).toFixed(2);
                 const percentComplete = (progressData.loaded / progressData.total) * 100;
 
-                // Create and update progress elements dynamically
+                // Update UI elements
                 let notationDiv = $("#notation");
                 notationDiv.addClass("notation-max-height");
 
@@ -737,23 +773,37 @@ function readPdf$$module$synpdf(pdfData, dataType) {
                     `);
                 }
 
-                // Update progress bar
                 const progressBar = document.getElementById('progress-bar');
-                progressBar.value = percentComplete;
-
-                // Update progress info
                 const progressInfo = document.getElementById('progress-info');
-                progressInfo.textContent = `${loadedMB}MB/${totalMB}MB - ${speedMBps}MBps`;
+                if (progressBar && progressInfo) {
+                    progressBar.value = percentComplete;
+                    progressInfo.textContent = `${loadedMB}MB/${totalMB}MB - ${speedMBps}MBps`;
+                }
 
-                $("#loadingMessage2").hide(); // Remove in case part switched before done rendering
+                $("#loadingMessage2").hide();
             }
         };
-        loadingTask.promise.then(function(pdfData) {
-            pdfDoc$$module$synpdf = pdfData;
-            $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
-            shouldUpdate = false;
-            readPdfdoc$$module$synpdf();
-        });
+
+        // Handle PDF load
+        loadingTask.promise
+            .then(function(pdf) {
+                console.debug("[PDF] PDF.js loaded successfully");
+                pdfDoc$$module$synpdf = pdf;
+                $("#pagenum").attr("max", pdf.numPages);
+                shouldUpdate = false;
+                readPdfdoc$$module$synpdf();
+            })
+            .catch(function(error) {
+                console.error("[PDF] PDF.js load failed:", error);
+                // Add detailed error handling
+                if (error.name === "InvalidPDFException") {
+                    console.error("[PDF] Corrupted PDF structure:", error.message);
+                } else if (error.name === "MissingPDFException") {
+                    console.error("[PDF] PDF not found:", error.message);
+                } else {
+                    console.error("[PDF] Unknown error:", error);
+                }
+            });
     }
 }
 
