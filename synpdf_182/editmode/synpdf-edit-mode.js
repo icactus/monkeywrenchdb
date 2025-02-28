@@ -1028,37 +1028,83 @@ function readPdfdoc$$module$synpdf() {
 function readPdf$$module$synpdf(a, b) {
     initGlobals$$module$synpdf();
 
-    var c = a,
-        d;
+    let c = a;
+    let d;
 
+    // Debugging: Log input parameters
+    console.debug("[PDF] Loading PDF with dataType:", b);
+    if (b === "pdfbin") console.debug("[PDF] PDF binary data length:", a.length);
+
+    // Check URL type
     if (b === "url") {
         d = /jpe?g$/i.test(c);
+        console.debug("[PDF] Detected URL type (JPEG/Blob):", c);
     }
 
+    // Handle PDF binary data
     if (b === "pdfbin") {
-        a = new Uint8Array(a);
+        try {
+            a = new Uint8Array(a);
+            console.debug("[PDF] Converted to Uint8Array successfully");
+        } catch (error) {
+            console.error("[PDF] Failed to convert to Uint8Array:", error);
+            return;
+        }
     }
 
+    // Handle JPEG binary data
     if (b === "jpgbin") {
-        jpgData = new Uint8Array(a);
-        b = "url";
-        c = new Blob([a], { type: "image/jpeg" });
-        c = URL.createObjectURL(c);
+        try {
+            const jpgData = new Uint8Array(a);
+            b = "url";
+            c = new Blob([jpgData], { type: "image/jpeg" });
+            c = URL.createObjectURL(c);
+            console.debug("[PDF] Created Blob URL for JPEG:", c);
+        } catch (error) {
+            console.error("[PDF] JPEG Blob creation failed:", error);
+            return;
+        }
     }
 
+    // Load as Image (JPEG/Blob)
     if (b === "url" && (d || /^blob:/.test(c))) {
+        console.debug("[PDF] Loading as image:", c);
         pdfDoc$$module$synpdf = new Image();
         pdfDoc$$module$synpdf.crossOrigin = "anonymous";
         pdfDoc$$module$synpdf.src = c;
         pdfDoc$$module$synpdf.onload = function() {
+            console.debug("[PDF] Image loaded successfully");
             readPdfdoc$$module$synpdf();
         };
+        pdfDoc$$module$synpdf.onerror = function(err) {
+            console.error("[PDF] Image load failed:", err);
+        };
     } else {
-        pdfjsLib.getDocument(a).promise.then(function(a) {
-            pdfDoc$$module$synpdf = a;
-            $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
-            readPdfdoc$$module$synpdf();
-        });
+        // Configure PDF.js options
+        const pdfjsOptions = {
+            data: a,
+            verbosity: 1,
+            disableRange: true,
+            disableFontFace: true
+        };
+        console.debug("[PDF] PDF.js options:", pdfjsOptions);
+
+        // Load PDF with enhanced error handling
+        pdfjsLib.getDocument(pdfjsOptions).promise
+            .then(function(pdf) {
+                console.debug("[PDF] PDF.js loaded successfully");
+                pdfDoc$$module$synpdf = pdf;
+                $("#pagenum").attr("max", pdf.numPages);
+                readPdfdoc$$module$synpdf();
+            })
+            .catch(function(error) {
+                console.error("[PDF] PDF.js load failed:", error);
+                if (error.name === "InvalidPDFException") {
+                    console.error("[PDF] Corrupted PDF structure:", error.message);
+                } else if (error.name === "MissingPDFException") {
+                    console.error("[PDF] PDF not found:", error.message);
+                }
+            });
     }
 }
 
