@@ -391,19 +391,22 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
             // Vertical scrolling first
             if (distanceToScrollY !== 0) {
                 var scrollFlagValueY = Math.abs(distanceToScrollY) > 500 ? 1 : 0;
+                console.log("Vertical scroll:", { distanceToScrollY, targetY: measureY - this.tmargin });
                 doeRol$$module$synpdf(measureY - this.tmargin, scrollFlagValueY);
             }
 
-            // Horizontal scrolling, delayed slightly
             setTimeout(function() {
+                console.log("Before horizontal scroll:", { scrollLeft: notation.scrollLeft(), scrollTop: notation.scrollTop() });
                 if (measureX < currentScrollLeft + marginX) {
                     var targetScrollLeft = Math.max(0, measureX - marginX);
+                    console.log("Scroll left:", { measureX, currentScrollLeft, targetScrollLeft });
                     scrollHorizontally(targetScrollLeft, Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0);
                 } else if (measureRight > currentScrollLeft + viewportWidth - marginX) {
                     var targetScrollLeft = measureRight - viewportWidth + marginX;
+                    console.log("Scroll right:", { measureRight, currentScrollLeft, targetScrollLeft });
                     scrollHorizontally(targetScrollLeft, Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0);
                 }
-            }, 10); // 10ms delay to let vertical scroll settle
+            }, 10);
         }
     }
 };
