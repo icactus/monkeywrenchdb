@@ -1,4 +1,4 @@
-// Copyright (C) 2023-2024 Isaac Trapkus - All Rights Reserved.
+// Copyright (C) 2023-2025 Isaac Trapkus - All Rights Reserved.
 
 let currentInstrumentGlobal = 0;
 let currentRecordingGlobal = 0;
