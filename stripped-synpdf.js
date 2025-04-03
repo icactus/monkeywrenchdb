@@ -1079,12 +1079,9 @@ function kliklang$$module$synpdf(a) {
             if (!touch_moved$$module$synpdf) {
                 a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
                 var c = 500 < (new Date).getTime() - touch_tb$$module$synpdf || e;
-                // Compute X relative to canvas's left edge, accounting for scroll
-                var canvasLeft = msc_wz$$module$synpdf.$cvs.offset().left; // Document-relative canvas left
-                var notationLeft = $("#notation").offset().left; // Notation div's document-relative left
-                var scrollLeft = $("#notation").scrollLeft(); // Horizontal scroll amount
-                var d = a.clientX - canvasLeft + scrollLeft; // Canvas-relative X
-                var aY = a.clientY; // Rename to avoid overwriting 'a'
+                var canvasLeft = msc_wz$$module$synpdf.$cvs.offset().left;
+                var d = a.clientX - canvasLeft; // Canvas-relative X, no scrollLeft adjustment
+                var aY = a.clientY;
                 aY -= $("#notation").offset().top;
                 aY += $("#notation").scrollTop();
                 c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(d, aY) : msc_wz$$module$synpdf.x2time(d, aY, c);
