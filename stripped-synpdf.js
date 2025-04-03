@@ -324,6 +324,7 @@ Wijzer$$module$synpdf.prototype.setOffsetX = function() {
     0 <= this.cursorTime && this.time2x(this.cursorTime);
     this.drawRepTokens()
 };
+
 Wijzer$$module$synpdf.prototype.time2x = function(a) {
     var b, c;
     this.cursorTime = a;
@@ -387,18 +388,20 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
             var currentScrollLeft = notation.scrollLeft();
             var measureRight = measureX + measureWidth;
             var marginX = 50;
+            var self = this; // Preserve context
 
-            // Vertical scrolling with timeout
+            // Vertical scrolling
             if (distanceToScrollY !== 0) {
                 var scrollFlagValueY = Math.abs(distanceToScrollY) > 500 ? 1 : 0;
-                console.log("Vertical scroll:", { distanceToScrollY, targetY: measureY - this.tmargin });
+                var targetY = measureY - self.tmargin;
+                console.log("Vertical scroll:", { distanceToScrollY, targetY, tmargin: self.tmargin });
                 setTimeout(function() {
-                    doeRol$$module$synpdf(measureY - this.tmargin, scrollFlagValueY);
+                    doeRol$$module$synpdf(targetY, scrollFlagValueY);
                     console.log("After vertical scroll, scrollTop:", notation.scrollTop());
-                }, 0); // Immediate next tick
+                }, 0);
             }
 
-            // Horizontal scrolling, delayed longer
+            // Horizontal scrolling
             setTimeout(function() {
                 if (measureX < currentScrollLeft + marginX) {
                     var targetScrollLeft = Math.max(0, measureX - marginX);
@@ -409,7 +412,7 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                     console.log("Scroll right:", { measureRight, currentScrollLeft, targetScrollLeft });
                     scrollHorizontally(targetScrollLeft, Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0);
                 }
-            }, 20); // 20ms delay to follow vertical
+            }, 20);
         }
     }
 };
