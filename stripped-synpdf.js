@@ -369,6 +369,7 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
             }
 
             var distanceToScrollY = measureY - ycurprev$$module$synpdf;
+            var distanceToScrollX = measureX - xcurprev$$module$synpdf; // Track X change
             xcurprev$$module$synpdf = measureX;
             ycurprev$$module$synpdf = measureY;
 
@@ -388,41 +389,55 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
             var currentScrollLeft = notation.scrollLeft();
             var measureRight = measureX + measureWidth;
             var marginX = 50;
-            var self = this; // Preserve context
+            var self = this;
+
+            // Determine if we're at a line end and scrolled right
+            var isLineEndReset = currentScrollLeft > 0 && distanceToScrollX < -500; // Big leftward jump
+            var useInstantScroll = isLineEndReset;
 
             // Vertical scrolling
             if (distanceToScrollY !== 0) {
                 var scrollFlagValueY = Math.abs(distanceToScrollY) > 500 ? 1 : 0;
                 var targetY = measureY - self.tmargin;
-                console.log("Vertical scroll:", { distanceToScrollY, targetY, tmargin: self.tmargin });
-                setTimeout(function() {
-                    doeRol$$module$synpdf(targetY, scrollFlagValueY);
-                    console.log("After vertical scroll, scrollTop:", notation.scrollTop());
-                }, 0);
+                console.log("Vertical scroll:", { distanceToScrollY, targetY, useInstantScroll });
+                doeRol$$module$synpdf(targetY, useInstantScroll ? 1 : scrollFlagValueY); // Auto if line end
+                console.log("After vertical scroll, scrollTop:", notation.scrollTop());
             }
 
             // Horizontal scrolling
             setTimeout(function() {
                 if (measureX < currentScrollLeft + marginX) {
                     var targetScrollLeft = Math.max(0, measureX - marginX);
-                    console.log("Scroll left:", { measureX, currentScrollLeft, targetScrollLeft });
-                    scrollHorizontally(targetScrollLeft, Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0);
+                    console.log("Scroll left:", { measureX, currentScrollLeft, targetScrollLeft, useInstantScroll });
+                    scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0));
                 } else if (measureRight > currentScrollLeft + viewportWidth - marginX) {
                     var targetScrollLeft = measureRight - viewportWidth + marginX;
-                    console.log("Scroll right:", { measureRight, currentScrollLeft, targetScrollLeft });
-                    scrollHorizontally(targetScrollLeft, Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0);
+                    console.log("Scroll right:", { measureRight, currentScrollLeft, targetScrollLeft, useInstantScroll });
+                    scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0));
                 }
-            }, 20);
+            }, 50); // Delay for horizontal
         }
     }
 };
 
+// Vertical scroll function
+function doeRol$$module$synpdf(a, b) {
+    a = Math.round(a);
+    if (deNot$$module$synpdf.scrollTop !== a) {
+        deNot$$module$synpdf.style["scroll-behavior"] = b ? "auto" : "smooth"; // b=1 means auto
+        deNot$$module$synpdf.scrollTop = a;
+        console.log("doeRol set scrollTop to:", a);
+    }
+}
+
+// Horizontal scroll function
 function scrollHorizontally(targetX, instant) {
     var notation = deNot$$module$synpdf;
     targetX = Math.round(targetX);
     if (notation.scrollLeft !== targetX) {
-        notation.style["scroll-behavior"] = instant ? "auto" : "smooth";
+        notation.style["scroll-behavior"] = instant ? "auto" : "smooth"; // instant=1 means auto
         notation.scrollLeft = targetX;
+        console.log("scrollHorizontally set scrollLeft to:", targetX);
     }
 }
 
