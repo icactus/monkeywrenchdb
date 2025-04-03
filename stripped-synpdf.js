@@ -358,58 +358,58 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
 
         c = deMaten$$module$synpdf[demix$$module$synpdf];
         if (c) {
-            a = c.x;
-            d = c.w;
+            var measureX = c.x;
+            var measureWidth = c.w;
+            var measureY = c.y;
+            var measureHeight = c.h;
 
-            if (a === xcurprev$$module$synpdf && c.y === ycurprev$$module$synpdf) {
+            if (measureX === xcurprev$$module$synpdf && measureY === ycurprev$$module$synpdf) {
                 return;
             }
 
-            var distanceToScrollY = c.y - ycurprev$$module$synpdf;
-            xcurprev$$module$synpdf = a;
-            ycurprev$$module$synpdf = c.y;
+            var distanceToScrollY = measureY - ycurprev$$module$synpdf;
+            xcurprev$$module$synpdf = measureX;
+            ycurprev$$module$synpdf = measureY;
 
-            b = this.maatloper[0].style;
-            b.left = a + "px";
-            b.top = c.y + "px";
-            b.width = d + "px";
-            b.height = c.h + "px";
+            var maatlooperStyle = this.maatloper[0].style;
+            maatlooperStyle.left = measureX + "px";
+            maatlooperStyle.top = measureY + "px";
+            maatlooperStyle.width = measureWidth + "px";
+            maatlooperStyle.height = measureHeight + "px";
 
             $('.demaat').hide();
             if (canShowDemaat) {
                 $('.demaat').show();
             }
 
-            // Vertical scrolling (existing)
-            if (distanceToScrollY !== 0) {
-                var scrollFlagValue = Math.abs(distanceToScrollY) > 500 ? 1 : 0;
-                doeRol$$module$synpdf(c.y - this.tmargin, scrollFlagValue);
-            }
-
-            // Horizontal scrolling (new)
             var notation = $("#notation");
             var viewportWidth = notation.width();
             var currentScrollLeft = notation.scrollLeft();
-            var measureRight = c.x + c.w;
-            var marginX = 50; // Small buffer like tmargin, adjustable
+            var measureRight = measureX + measureWidth;
+            var marginX = 50;
 
-            // Check if measure is outside viewport
-            if (c.x < currentScrollLeft + marginX) {
-                // Measure is too far left
-                var targetScrollLeft = Math.max(0, c.x - marginX);
-                scrollHorizontally(targetScrollLeft, Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0);
-            } else if (measureRight > currentScrollLeft + viewportWidth - marginX) {
-                // Measure is too far right
-                var targetScrollLeft = measureRight - viewportWidth + marginX;
-                scrollHorizontally(targetScrollLeft, Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0);
+            // Vertical scrolling first
+            if (distanceToScrollY !== 0) {
+                var scrollFlagValueY = Math.abs(distanceToScrollY) > 500 ? 1 : 0;
+                doeRol$$module$synpdf(measureY - this.tmargin, scrollFlagValueY);
             }
+
+            // Horizontal scrolling, delayed slightly
+            setTimeout(function() {
+                if (measureX < currentScrollLeft + marginX) {
+                    var targetScrollLeft = Math.max(0, measureX - marginX);
+                    scrollHorizontally(targetScrollLeft, Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0);
+                } else if (measureRight > currentScrollLeft + viewportWidth - marginX) {
+                    var targetScrollLeft = measureRight - viewportWidth + marginX;
+                    scrollHorizontally(targetScrollLeft, Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0);
+                }
+            }, 10); // 10ms delay to let vertical scroll settle
         }
     }
 };
 
-// New function to handle horizontal scrolling
 function scrollHorizontally(targetX, instant) {
-    var notation = deNot$$module$synpdf; // Same as vertical: #notation element
+    var notation = deNot$$module$synpdf;
     targetX = Math.round(targetX);
     if (notation.scrollLeft !== targetX) {
         notation.style["scroll-behavior"] = instant ? "auto" : "smooth";
