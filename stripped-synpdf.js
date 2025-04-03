@@ -388,7 +388,7 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
             var viewportWidth = notation.width();
             var currentScrollLeft = notation.scrollLeft();
             var measureRight = measureX + measureWidth;
-            var marginX = 50;
+            var marginX = 200;
             var self = this;
 
             // Determine if we're at a line end and scrolled right
