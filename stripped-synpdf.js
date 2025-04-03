@@ -403,6 +403,8 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
 
 Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
     var d;
+    // Adjust X-coordinate for horizontal scroll
+    a += $("#notation").scrollLeft();
     for (d = 0; d < deMaten$$module$synpdf.length; ++d) {
         var e = deMaten$$module$synpdf[d];
         if (!(b > e.y + e.h || a > e.x + e.w)) {
@@ -410,38 +412,38 @@ Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
                 keyDown$$module$synpdf({
                     key: " "
                 });
-                break
+                break;
             }
             if (opt$$module$synpdf.synbox) {
                 if (c) {
                     this.setRepeat(d);
-                    break
+                    break;
                 }
                 if (!msc_wz$$module$synpdf.paused) {
                     this.keySync(0);
-                    break
+                    break;
                 }
             }
-            //Save measure globally for position restoration if recording or part is changed.
+            // Save measure globally for position restoration if recording or part is changed.
             currentMeasureIndex = d;
             for (b = 0; b < deTijden$$module$synpdf.length; ++b)
                 if (d == deTijden$$module$synpdf[b].mix) {
                     d = deTijden$$module$synpdf[b].t;
-                    //Get the time for the first repeat version of this measure otherwise other recordings can mess this up.
+                    // Get the time for the first repeat version of this measure otherwise other recordings can mess this up.
                     currentMeasureTime = d;
-                    var f = b < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[b +
-                        1].t : d + 2;
+                    var f = b < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[b + 1].t : d + 2;
                     b = d + (f - d) * (a - e.x) / e.w;
                     if (elmed$$module$synpdf.getPlayerState() === 5) {
                         elmed$$module$synpdf.seekTo(d + TOFF$$module$synpdf + offset$$module$synpdf);
-                        break
-                    };
+                        break;
+                    }
                     c ? opt$$module$synpdf.loop && this.doLoopTag(a, e.y, b, d, f, {
                         x1: e.x,
                         x2: e.x + e.w
                     }) : (b = (opt$$module$synpdf.lncsr ? b : d + TOFF$$module$synpdf) + offset$$module$synpdf, playPause2$$module$synpdf(!1, b));
-                    break
-                } break
+                    break;
+                }
+            break;
         }
     }
 };
@@ -1068,12 +1070,11 @@ function kliklang$$module$synpdf(a) {
             d = a.clientX;
         touch_tb$$module$synpdf = (new Date).getTime();
         var e = a.shiftKey;
-        b.on(touchDev$$module$synpdf ? "touchmove" :
-            "mousemove",
+        b.on(touchDev$$module$synpdf ? "touchmove" : "mousemove",
             function(a) {
                 a.stopPropagation();
                 a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
-                touch_moved$$module$synpdf = 10 < Math.abs(a.clientY - c) + Math.abs(a.clientX - d)
+                touch_moved$$module$synpdf = 10 < Math.abs(a.clientY - c) + Math.abs(a.clientX - d);
             });
         b.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function(a) {
             a.stopPropagation();
@@ -1083,13 +1084,15 @@ function kliklang$$module$synpdf(a) {
                 a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
                 var c = 500 < (new Date).getTime() - touch_tb$$module$synpdf || e;
                 var d = a.clientX;
-                d -= msc_wz$$module$synpdf.xoffset;
+                // Adjust X-coordinate for horizontal scroll
+                d -= msc_wz$$module$synpdf.xoffset; // Canvas offset from document
+                d += $("#notation").scrollLeft();   // Add scrollLeft to account for horizontal scroll
                 a = a.clientY;
                 a -= $("#notation").offset().top;
                 a += $("#notation").scrollTop();
-                c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(d, a) : msc_wz$$module$synpdf.x2time(d, a, c)
+                c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(d, a) : msc_wz$$module$synpdf.x2time(d, a, c);
             }
-        })
+        });
     }
 }
 
