@@ -328,78 +328,94 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
     var b, c;
     this.cursorTime = a;
 
-    // Initialize binary search boundaries
     var low = 0;
     var high = deTijden$$module$synpdf.length - 1;
     var mid;
     var foundIndex = -1;
 
-    // Perform binary search to find the last measure where d.t <= a
     while (low <= high) {
         mid = Math.floor((low + high) / 2);
         var currentMeasure = deTijden$$module$synpdf[mid];
-
         if (currentMeasure.t <= a) {
-            foundIndex = mid;       // Potential candidate found
-            low = mid + 1;          // Continue searching in the upper half
+            foundIndex = mid;
+            low = mid + 1;
         } else {
-            high = mid - 1;         // Continue searching in the lower half
+            high = mid - 1;
         }
     }
 
-    // If a valid measure is found
     if (foundIndex !== -1) {
         b = foundIndex;
         c = deTijden$$module$synpdf[b];
         demix$$module$synpdf = c.mix;
         detix$$module$synpdf = b;
 
-        // Handle special case: end of playback without a timer
         if (!opt$$module$synpdf.synbox && detix$$module$synpdf === deTijden$$module$synpdf.length - 1 && !m1_timer$$module$synpdf) {
             msc_wz$$module$synpdf.goMsre(1, {});
             pauseer$$module$synpdf();
-            return; // Exit the function after handling
+            return;
         }
 
-        // Retrieve corresponding 'maten' data
         c = deMaten$$module$synpdf[demix$$module$synpdf];
         if (c) {
             a = c.x;
             d = c.w;
 
-            // If the position hasn't changed, no need to update
             if (a === xcurprev$$module$synpdf && c.y === ycurprev$$module$synpdf) {
-                return; // Exit the function as no update is needed
+                return;
             }
 
-            // Calculate distance to scroll BEFORE updating ycurprev
-            var distanceToScroll = c.y - ycurprev$$module$synpdf;
-
-            // Update previous positions AFTER calculating distance
+            var distanceToScrollY = c.y - ycurprev$$module$synpdf;
             xcurprev$$module$synpdf = a;
             ycurprev$$module$synpdf = c.y;
 
-            // Update the style properties using CSS positioning
             b = this.maatloper[0].style;
             b.left = a + "px";
             b.top = c.y + "px";
             b.width = d + "px";
             b.height = c.h + "px";
 
-            // Toggle visibility of '.demaat' elements based on 'canShowDemaat'
             $('.demaat').hide();
             if (canShowDemaat) {
                 $('.demaat').show();
             }
 
-            // Handle scrolling logic
-            if (distanceToScroll !== 0) { // Check if there is a distance to scroll
-                var scrollFlagValue = Math.abs(distanceToScroll) > 500 ? 1 : 0;
+            // Vertical scrolling (existing)
+            if (distanceToScrollY !== 0) {
+                var scrollFlagValue = Math.abs(distanceToScrollY) > 500 ? 1 : 0;
                 doeRol$$module$synpdf(c.y - this.tmargin, scrollFlagValue);
+            }
+
+            // Horizontal scrolling (new)
+            var notation = $("#notation");
+            var viewportWidth = notation.width();
+            var currentScrollLeft = notation.scrollLeft();
+            var measureRight = c.x + c.w;
+            var marginX = 50; // Small buffer like tmargin, adjustable
+
+            // Check if measure is outside viewport
+            if (c.x < currentScrollLeft + marginX) {
+                // Measure is too far left
+                var targetScrollLeft = Math.max(0, c.x - marginX);
+                scrollHorizontally(targetScrollLeft, Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0);
+            } else if (measureRight > currentScrollLeft + viewportWidth - marginX) {
+                // Measure is too far right
+                var targetScrollLeft = measureRight - viewportWidth + marginX;
+                scrollHorizontally(targetScrollLeft, Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0);
             }
         }
     }
 };
+
+// New function to handle horizontal scrolling
+function scrollHorizontally(targetX, instant) {
+    var notation = deNot$$module$synpdf; // Same as vertical: #notation element
+    targetX = Math.round(targetX);
+    if (notation.scrollLeft !== targetX) {
+        notation.style["scroll-behavior"] = instant ? "auto" : "smooth";
+        notation.scrollLeft = targetX;
+    }
+}
 
 Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
     var d;
