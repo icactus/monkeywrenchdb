@@ -403,8 +403,6 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
 
 Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
     var d;
-    // Adjust X-coordinate for horizontal scroll
-    a += $("#notation").scrollLeft();
     for (d = 0; d < deMaten$$module$synpdf.length; ++d) {
         var e = deMaten$$module$synpdf[d];
         if (!(b > e.y + e.h || a > e.x + e.w)) {
@@ -424,12 +422,10 @@ Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
                     break;
                 }
             }
-            // Save measure globally for position restoration if recording or part is changed.
             currentMeasureIndex = d;
             for (b = 0; b < deTijden$$module$synpdf.length; ++b)
                 if (d == deTijden$$module$synpdf[b].mix) {
                     d = deTijden$$module$synpdf[b].t;
-                    // Get the time for the first repeat version of this measure otherwise other recordings can mess this up.
                     currentMeasureTime = d;
                     var f = b < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[b + 1].t : d + 2;
                     b = d + (f - d) * (a - e.x) / e.w;
@@ -1083,14 +1079,15 @@ function kliklang$$module$synpdf(a) {
             if (!touch_moved$$module$synpdf) {
                 a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
                 var c = 500 < (new Date).getTime() - touch_tb$$module$synpdf || e;
-                var d = a.clientX;
-                // Adjust X-coordinate for horizontal scroll
-                d -= msc_wz$$module$synpdf.xoffset; // Canvas offset from document
-                d += $("#notation").scrollLeft();   // Add scrollLeft to account for horizontal scroll
-                a = a.clientY;
-                a -= $("#notation").offset().top;
-                a += $("#notation").scrollTop();
-                c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(d, a) : msc_wz$$module$synpdf.x2time(d, a, c);
+                // Compute X relative to canvas's left edge, accounting for scroll
+                var canvasLeft = msc_wz$$module$synpdf.$cvs.offset().left; // Document-relative canvas left
+                var notationLeft = $("#notation").offset().left; // Notation div's document-relative left
+                var scrollLeft = $("#notation").scrollLeft(); // Horizontal scroll amount
+                var d = a.clientX - canvasLeft + scrollLeft; // Canvas-relative X
+                var aY = a.clientY; // Rename to avoid overwriting 'a'
+                aY -= $("#notation").offset().top;
+                aY += $("#notation").scrollTop();
+                c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(d, aY) : msc_wz$$module$synpdf.x2time(d, aY, c);
             }
         });
     }
