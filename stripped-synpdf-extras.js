@@ -1070,10 +1070,10 @@ $(document).ready(function() {
     }
 
     //Add show-hide toggle listener
-    $('#sidecontent-toggle').on('click', function() {
+    $('#sidecontent-toggle h3').on('click', function() {
         $('.change-recording-wrapper').toggle();
         $('#first-controls').toggle();
-        $(this).next('h3').text($(this).next('h3').text() === "show" ? "hide" : "show");
+        $(this).text($(this).text() === "[show]" ? "[hide]" : "[show]");
     });
 
     fetchSearchByInstrument();
