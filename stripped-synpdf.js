@@ -399,20 +399,16 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
             if (distanceToScrollY !== 0) {
                 var scrollFlagValueY = Math.abs(distanceToScrollY) > 500 ? 1 : 0;
                 var targetY = measureY - self.tmargin;
-                console.log("Vertical scroll:", { distanceToScrollY, targetY, useInstantScroll });
                 doeRol$$module$synpdf(targetY, useInstantScroll ? 1 : scrollFlagValueY); // Auto if line end
-                console.log("After vertical scroll, scrollTop:", notation.scrollTop());
             }
 
             // Horizontal scrolling
             setTimeout(function() {
                 if (measureX < currentScrollLeft + marginX) {
                     var targetScrollLeft = Math.max(0, measureX - marginX);
-                    console.log("Scroll left:", { measureX, currentScrollLeft, targetScrollLeft, useInstantScroll });
                     scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0));
                 } else if (measureRight > currentScrollLeft + viewportWidth - marginX) {
                     var targetScrollLeft = measureRight - viewportWidth + marginX;
-                    console.log("Scroll right:", { measureRight, currentScrollLeft, targetScrollLeft, useInstantScroll });
                     scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0));
                 }
             }, 50); // Delay for horizontal
@@ -426,7 +422,6 @@ function doeRol$$module$synpdf(a, b) {
     if (deNot$$module$synpdf.scrollTop !== a) {
         deNot$$module$synpdf.style["scroll-behavior"] = b ? "auto" : "smooth"; // b=1 means auto
         deNot$$module$synpdf.scrollTop = a;
-        console.log("doeRol set scrollTop to:", a);
     }
 }
 
@@ -437,7 +432,6 @@ function scrollHorizontally(targetX, instant) {
     if (notation.scrollLeft !== targetX) {
         notation.style["scroll-behavior"] = instant ? "auto" : "smooth"; // instant=1 means auto
         notation.scrollLeft = targetX;
-        console.log("scrollHorizontally set scrollLeft to:", targetX);
     }
 }
 
