@@ -208,6 +208,10 @@ sidecontentbar {
     max-width:350px;
 }
 
+#sidecontent-toggle {
+    display:none; /* hide if not tablet/mobile */
+}
+
 #speed-part-row {
     display:flex;
     flex-direction:row;
@@ -357,6 +361,9 @@ select {
         display:flex;
         flex-direction:row;
         justify-content:space-between;
+    }
+    #sidecontent-toggle {
+        display:block;
     }
     #sidecontent-toggle h3 {
         text-decoration: underline;
