@@ -501,6 +501,7 @@ select {
     margin: 0;
     padding: 0;
     list-style: none;
+    text-wrap:auto;
     box-shadow: inset 0px -5px 15px -10px rgba(0,0,0,0.6)
 }
 .tab-header{
