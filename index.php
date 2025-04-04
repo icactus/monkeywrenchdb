@@ -18,7 +18,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="fonts.css" />
-    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=29" />
+    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=30" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <script src="jquery.min.js"></script>
     <title>monkey wrench database</title>
@@ -112,7 +112,12 @@
 
         <sidecontentbar>
             <div id="sidecontent">
-                <div id="composer-piece-name"></div>
+                <div id="composer-toggle-wrapper">
+                    <div id="composer-piece-name"></div>
+                    <div id="sidecontent-toggle">
+                        <h3>hide</h3> 
+                    </div>
+                </div>
                 <div id="first-controls">
                     <div id="speed-part-row">
                         <!--                        <div id="highlight-control">
@@ -217,10 +222,10 @@
     </section3>
     <!-- Notification Element -->
     <div id="notification" style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
-        Copied to clipboard!
+        Link copied to clipboard!
     </div>
     <script src="stripped-synpdf.js?v=78"></script>
-    <script src="stripped-synpdf-extras.js?v=61"></script>
+    <script src="stripped-synpdf-extras.js?v=62"></script>
 </body>
 
 </html>

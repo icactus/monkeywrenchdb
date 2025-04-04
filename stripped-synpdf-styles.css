@@ -345,6 +345,7 @@ select {
 
     sidecontentbar {
         margin-top:0px;
+        max-width:none;
     }
     .sidecontenbar-min-height {
         min-height:25vh;
@@ -352,6 +353,15 @@ select {
     #sidecontent  h3 {
         margin-bottom:0;
     }
+    #composer-toggle-wrapper {
+        display:flex;
+        flex-direction:row;
+        justify-content:space-between;
+    }
+    #sidecontent-toggle h3 {
+        text-decoration: underline;
+    }
+
 }
 
 @media screen and (max-width: 767px) {
@@ -391,6 +401,8 @@ select {
         max-height:40vh;
     }
     #sidecontent {
+        display:flex;
+        flexdirection:row;
         margin-top:-24px;
     }
     #invertButton {
@@ -470,9 +482,6 @@ select {
 #sidecontent {
     display:none;
 }
-/* .sidecontentbar-hidden {
-    margin-left: -100%;
-} */
 
 .tabs {
     position:sticky;
