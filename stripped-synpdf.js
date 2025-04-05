@@ -776,54 +776,59 @@ function readPdf$$module$synpdf(pdfData, dataType) {
         // Load PDF with pdfjsLib (enhanced error handling)
         let shouldUpdate = true;
         const startTime = new Date().getTime();
+        let lastProgressUpdate = 0;
 
-        // Debugging: Log PDF.js config
+        // Initialize progress container
+        let notationDiv = $("#notation");
+        notationDiv.addClass("notation-max-height");
+
+        if ($("#progress-container").length === 0) {
+            notationDiv.html(`
+                <div id="progress-container" style="width: 100%; text-align: center; margin: 20px 0;">
+                    <progress id="progress-bar" value="0" max="100" style="width: 80%; height: 20px;"></progress>
+                    <div id="progress-info" style="margin-top: 10px; font-size: 20px;"></div>
+                </div>
+            `);
+        }
+
+        // PDF.js configuration for better progress tracking
         const pdfjsOptions = {
-            url: pdfData,
+            url: dataType === "pdfbin" ? null : pdfData,
+            data: dataType === "pdfbin" ? pdfData : null,
             verbosity: 1,
-            disableRange: false,
-            disableStream: false,
-            disableAutoFetch: false,
-            // Add other options as needed
+            disableRange: false,  // Disable range requests for smoother progress
+            disableStream: false, // Enable streaming
         };
+
         console.debug("[PDF] PDF.js options:", pdfjsOptions);
 
         const loadingTask = pdfjsLib.getDocument(pdfjsOptions);
         console.log("[PDF] Loading task created");
 
-        // Progress handler
+        // Progress handler with throttling
         loadingTask.onProgress = function(progressData) {
-            console.log("[PDF] Progress update:", progressData.loaded, "/", progressData.total);
-            if (shouldUpdate) {
-                const currentTime = new Date().getTime();
-                const elapsedTime = (currentTime - startTime) / 1000;
-                const loadedMB = (progressData.loaded / (1024 * 1024)).toFixed(2);
-                const totalMB = (progressData.total / (1024 * 1024)).toFixed(2);
-                const speedMBps = (loadedMB / elapsedTime).toFixed(2);
-                const percentComplete = (progressData.loaded / progressData.total) * 100;
+            const now = Date.now();
+            if (now - lastProgressUpdate < 100) return; // Throttle to 100ms
+            lastProgressUpdate = now;
 
-                // Update UI elements
-                let notationDiv = $("#notation");
-                notationDiv.addClass("notation-max-height");
+            const currentTime = new Date().getTime();
+            const elapsedTime = (currentTime - startTime) / 1000;
+            const loadedMB = (progressData.loaded / (1024 * 1024)).toFixed(2);
+            const totalMB = (progressData.total / (1024 * 1024)).toFixed(2);
+            const speedMBps = (loadedMB / elapsedTime).toFixed(2);
+            const percentComplete = Math.min(100, (progressData.loaded / progressData.total) * 100);
 
-                if ($("#progress-container").length === 0) {
-                    notationDiv.html(`
-                        <div id="progress-container" style="width: 100%; text-align: center; margin: 20px 0;">
-                            <progress id="progress-bar" value="0" max="100" style="width: 80%; height: 20px;"></progress>
-                            <div id="progress-info" style="margin-top: 10px; font-size: 20px;"></div>
-                        </div>
-                    `);
-                }
-
+            // Update UI elements using requestAnimationFrame for smoothness
+            requestAnimationFrame(() => {
                 const progressBar = document.getElementById('progress-bar');
                 const progressInfo = document.getElementById('progress-info');
                 if (progressBar && progressInfo) {
                     progressBar.value = percentComplete;
-                    progressInfo.textContent = `${loadedMB}MB/${totalMB}MB - ${speedMBps}MBps`;
+                    progressInfo.textContent = `${loadedMB}MB/${totalMB}MB (${Math.round(percentComplete)}%) - ${speedMBps}MB/s`;
                 }
+            });
 
-                $("#loadingMessage2").hide();
-            }
+            $("#loadingMessage2").hide();
         };
 
         // Handle PDF load
@@ -837,7 +842,14 @@ function readPdf$$module$synpdf(pdfData, dataType) {
             })
             .catch(function(error) {
                 console.error("[PDF] PDF.js load failed:", error);
-                // Add detailed error handling
+
+                // Update progress container to show error
+                const progressInfo = document.getElementById('progress-info');
+                if (progressInfo) {
+                    progressInfo.textContent = "Failed to load PDF";
+                    progressInfo.style.color = "red";
+                }
+
                 if (error.name === "InvalidPDFException") {
                     console.error("[PDF] Corrupted PDF structure:", error.message);
                 } else if (error.name === "MissingPDFException") {
