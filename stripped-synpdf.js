@@ -724,14 +724,35 @@ function readPdf$$module$synpdf(pdfData, dataType) {
     let pdfCopy = pdfData;
     let d;
 
-    // Initialize progress container immediately
+    // Initialize progress UI immediately with both progress bars
     let notationDiv = $("#notation");
     notationDiv.addClass("notation-max-height");
     notationDiv.html(`
         <div id="progress-container" style="width: 100%; text-align: center; margin: 20px 0;">
-            <progress id="progress-bar" value="0" max="100" style="width: 80%; height: 20px;"></progress>
-            <div id="progress-info" style="margin-top: 10px; font-size: 20px;">Initializing...</div>
-            <div id="progress-stage" style="margin-top: 5px; font-size: 14px; color: #666;"></div>
+            <!-- Download Phase -->
+            <div id="download-phase">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Downloading PDF...</span>
+                    <span id="download-percent">0%</span>
+                </div>
+                <progress id="download-bar" value="0" max="100" style="width: 100%; height: 10px;"></progress>
+                <div id="download-stats" style="font-size: 14px; color: #666; margin-top: 5px;">
+                    <span id="download-size">0MB/0MB</span>
+                    <span id="download-speed" style="margin-left: 15px;">0MB/s</span>
+                </div>
+            </div>
+            
+            <!-- Processing Phase (initially hidden) -->
+            <div id="process-phase" style="margin-top: 20px; display: none;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Processing PDF...</span>
+                    <span id="process-percent">0%</span>
+                </div>
+                <progress id="process-bar" value="0" max="100" style="width: 100%; height: 10px;"></progress>
+                <div id="process-stats" style="font-size: 14px; color: #666; margin-top: 5px;">
+                    <span id="process-speed">Starting...</span>
+                </div>
+            </div>
         </div>
     `);
     $("#loadingMessage2").hide();
@@ -766,12 +787,14 @@ function readPdf$$module$synpdf(pdfData, dataType) {
     // Handle binary data
     if (dataType === "pdfbin") {
         try {
-            pdfData = new Uint8Array(pdfData);
-            processPdfData(pdfData);
+            const pdfArray = new Uint8Array(pdfData);
+            // Skip download phase, go straight to processing
+            $("#download-phase").hide();
+            $("#process-phase").show();
+            return processPdfData(pdfArray);
         } catch (error) {
-            showError("Failed to process PDF data", error);
+            return showError("Invalid PDF data", error);
         }
-        return;
     }
 
     if (dataType === "jpgbin") {
@@ -805,16 +828,27 @@ function readPdf$$module$synpdf(pdfData, dataType) {
                 const loadedMB = (e.loaded / (1024 * 1024)).toFixed(2);
                 const totalMB = (e.total / (1024 * 1024)).toFixed(2);
                 const elapsed = (Date.now() - startTime) / 1000;
-                const speed = (e.loaded / elapsed / (1024 * 1024)).toFixed(2);
+                const speed = elapsed > 0 ? (e.loaded / elapsed / (1024 * 1024)).toFixed(2) : "0";
 
-                updateProgress(percent, `${loadedMB}MB/${totalMB}MB`,
-                    `Downloading @ ${speed}MB/s`, "Downloading PDF");
+                // Update download progress
+                $("#download-bar").val(percent);
+                $("#download-percent").text(percent + "%");
+                $("#download-size").text(`${loadedMB}MB/${totalMB}MB`);
+                $("#download-speed").text(`${speed}MB/s`);
             }
         };
 
         xhr.onload = function() {
             if (xhr.status === 200) {
-                updateProgress(100, "Download complete", "", "Processing PDF");
+                // Complete download phase
+                $("#download-bar").val(100);
+                $("#download-percent").text("100%");
+                $("#download-speed").text("Complete");
+
+                // Show processing phase
+                $("#process-phase").fadeIn(300);
+
+                // Start processing
                 processPdfData(new Uint8Array(xhr.response));
             } else {
                 showError(`Download failed: ${xhr.statusText}`);
@@ -825,7 +859,6 @@ function readPdf$$module$synpdf(pdfData, dataType) {
             showError("Network error during download");
         };
 
-        updateProgress(0, "Starting download", "", "Connecting to server");
         xhr.send();
     }
 
@@ -843,42 +876,36 @@ function readPdf$$module$synpdf(pdfData, dataType) {
 
         loadingTask.onProgress = function(progressData) {
             const now = Date.now();
-            if (now - lastUpdate < 100) return;
+            if (now - lastUpdate < 100) return; // Throttle updates
             lastUpdate = now;
 
-            const percent = 100 + Math.round((progressData.loaded / progressData.total) * 100);
+            const percent = Math.round((progressData.loaded / progressData.total) * 100);
             const loadedMB = (progressData.loaded / (1024 * 1024)).toFixed(2);
             const totalMB = (progressData.total / (1024 * 1024)).toFixed(2);
             const elapsed = (now - startTime) / 1000;
-            const speed = (progressData.loaded / elapsed / (1024 * 1024)).toFixed(2);
+            const speed = elapsed > 0 ? (progressData.loaded / elapsed / (1024 * 1024)).toFixed(2) : "0";
 
-            updateProgress(Math.min(percent, 200),
-                `${loadedMB}MB/${totalMB}MB`,
-                `Processing @ ${speed}MB/s`,
-                "Parsing PDF content");
+            // Update processing progress
+            $("#process-bar").val(percent);
+            $("#process-percent").text(percent + "%");
+            $("#process-stats").text(`Processed ${loadedMB}MB of ${totalMB}MB @ ${speed}MB/s`);
         };
 
         loadingTask.promise.then(function(pdf) {
-            updateProgress(200, "Complete", "", "Rendering");
+            // Complete processing
+            $("#process-bar").val(100);
+            $("#process-percent").text("100%");
+            $("#process-stats").text("Processing complete");
+
+            // Handle loaded PDF
             pdfDoc$$module$synpdf = pdf;
             $("#pagenum").attr("max", pdf.numPages);
-            readPdfdoc$$module$synpdf();
+            setTimeout(() => readPdfdoc$$module$synpdf(), 500); // Small delay for UI to update
         }).catch(function(error) {
             showError("PDF processing failed", error);
         });
     }
 
-    function updateProgress(percent, sizeInfo, speedInfo, stageInfo) {
-        requestAnimationFrame(() => {
-            const bar = document.getElementById('progress-bar');
-            const info = document.getElementById('progress-info');
-            const stage = document.getElementById('progress-stage');
-
-            if (bar) bar.value = percent % 101; // Keep within 0-100 range
-            if (info) info.textContent = `${sizeInfo} ${speedInfo}`;
-            if (stage) stage.textContent = stageInfo;
-        });
-    }
 
     function showError(message, error = null) {
         console.error(message, error);
