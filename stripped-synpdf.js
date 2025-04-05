@@ -1176,20 +1176,24 @@ function onPlayerReady() {
 
 
 async function onPlayerStateChange(event) {
-    console.log("Player state:", event.data);
+    console.log("Player state:", event.data, "Current time:", elmed$$module$synpdf.getCurrentTime());
 
     if (bypassTickFlag === 1 && event.data === YT.PlayerState.CUED) {
         try {
             console.log("Seeking to:", newPlayerCue);
             await seekToPromise(newPlayerCue);
-            bypassTickFlag = 0;
+            console.log("Seek completed. New time:", elmed$$module$synpdf.getCurrentTime());
 
-            // Resume playback if it was playing
             const wasPlaying = elmed$$module$synpdf.getPlayerState() === YT.PlayerState.PLAYING ||
                 (elmed$$module$synpdf.getCurrentTime() > 0 &&
                     elmed$$module$synpdf.getPlayerState() !== YT.PlayerState.PAUSED);
+            bypassTickFlag = 0;
+
             if (wasPlaying) {
+                console.log("Resuming playback.");
                 elmed$$module$synpdf.playVideo();
+            } else {
+                console.log("Player was paused; no auto-play.");
             }
         } catch (error) {
             console.error('Failed to seek video:', error);
@@ -1201,7 +1205,7 @@ async function onPlayerStateChange(event) {
         dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
         setPauseState$$module$synpdf(false);
 
-        // Show and update PDF only when playing
+        console.log("Playing started. Showing PDF overlay.");
         $('.demaat').show();
         scrollFlag = 0;
         msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
@@ -1210,6 +1214,7 @@ async function onPlayerStateChange(event) {
         dummyPlayer$$module$synpdf.clearKlok();
         setPauseState$$module$synpdf(true);
         scrollFlag = 1;
+        console.log("Player paused.");
     }
 
     setTimeout(updatePlayPauseButton, 250);

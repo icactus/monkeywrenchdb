@@ -657,10 +657,11 @@ $('#recordings-dropdown').change(function() {
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
 
-    // Hide the PDF overlay to prevent jumping
+    // Hide PDF overlay and log start of switch
     $('.demaat').hide();
+    console.log("Switch started. Hiding PDF overlay.");
 
-    // Get the current playback time
+    // Get current state and time
     const currentTime = elmed$$module$synpdf.getCurrentTime();
     const wasPlaying = elmed$$module$synpdf.getPlayerState() === YT.PlayerState.PLAYING;
     console.log("Current time:", currentTime, "Was playing:", wasPlaying);
@@ -675,8 +676,7 @@ $('#recordings-dropdown').change(function() {
                 videoId: recordingFullData.youtube_id,
                 startSeconds: newPlayerCue
             });
-
-            // Wait for seek to complete in onPlayerStateChange, not here
+            console.log("Cue command issued.");
         })
         .catch((error) => {
             console.error("Error finding measure time:", error);
@@ -685,6 +685,7 @@ $('#recordings-dropdown').change(function() {
                 videoId: recordingFullData.youtube_id,
                 startSeconds: newPlayerCue
             });
+            console.log("Cue command issued (fallback).");
         });
 });
 
