@@ -648,37 +648,28 @@ $('#instruments-dropdown').change(function() {
 
 $('#recordings-dropdown').change(function() {
     const selectedOption = $(this).find('option:selected');
+    // Retrieve the recording data that was already attached when the dropdown was built.
     const recordingFullData = selectedOption.data('recordingFullData');
     currentRecordingGlobal = recordingFullData.recording_id;
     bypassTickFlag = 1;
 
-    // Use preloaded data
+    // Instead of fetching new recording data from the server,
+    // use the preloaded data in recordingFullData.
     deTijden$$module$synpdf = metric_arr$$module$synpdf = JSON.parse(recordingFullData.times_arr_data);
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
 
-    // Get the current measure time and update the start time
+    // Get the current measure time and update the start time accordingly.
     findCurrentMeasureTime()
         .then(() => {
-            newPlayerCue = (currentMeasureTime.ConcurrentModificationException + offset$$module$synpdf + TOFF$$module$synpdf);
+            newPlayerCue = (currentMeasureTime + offset$$module$synpdf + TOFF$$module$synpdf);
+            // Calling changeStartTime ensures the player cue is updated.
             changeStartTime(newPlayerCue);
-
-            // Wait for the player to be ready before proceeding
-            setTimeout(() => {
-                elmed$$module$synpdf.loadVideoById({
-                    videoId: recordingFullData.youtube_id,
-                    startSeconds: newPlayerCue
-                });
-            }, 100); // Small delay to ensure player initialization
         })
         .catch((error) => {
             newPlayerCue = 0;
             console.error(error);
             changeStartTime(newPlayerCue);
-            elmed$$module$synpdf.loadVideoById({
-                videoId: recordingFullData.youtube_id,
-                startSeconds: newPlayerCue
-            });
         });
 });
 

@@ -1186,27 +1186,18 @@ async function onPlayerStateChange(event) {
             console.error('Failed to seek video:', error);
         }
     }
-
-    // Handle player state changes
-    if (event.data === YT.PlayerState.PLAYING) {
-        dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
-        setPauseState$$module$synpdf(false);
-
-        // Only update PDF position when playing to avoid flashing
+    event.data == YT.PlayerState.PLAYING ? (dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100), setPauseState$$module$synpdf(!1)) : (dummyPlayer$$module$synpdf.clearKlok(), setPauseState$$module$synpdf(!0));
+    //newPlayerCue needs to subtract offset because time2x uses teTijden time to find deMaten position, not video time
+    if (event.data == YT.PlayerState.CUED) {
         scrollFlag = 1;
         msc_wz$$module$synpdf.time2x(newPlayerCue - offset$$module$synpdf);
         setNotationHeight$$module$synpdf();
-    } else {
-        dummyPlayer$$module$synpdf.clearKlok();
-        setPauseState$$module$synpdf(true);
     }
-
-    // Remove CUED handling from here to prevent premature updates
-    if (event.data === YT.PlayerState.PAUSED) {
+    if (event.data == YT.PlayerState.PAUSED) {
         scrollFlag = 1;
     }
 
-    // Update play-pause button with delay
+    // Add a delay before updating the play-pause button icon
     setTimeout(updatePlayPauseButton, 250);
 }
 
