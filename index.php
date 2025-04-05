@@ -213,8 +213,8 @@
             <button id="closehelp">Close</button>
         </div>
         <div id="about">
-            <p><b>Monkey Wrench Database</b> is built on a modified fork of <a href="https://wim.vree.org/">Willem Vree's</a> SynPdf. Without his amazing open source project none of this would be possible.</p>
-            <p>This site is a solo project by Isaac Trapkus, bassist with the NY Phil. I am not a professional programmer (<a href="https://bassmentrosin.com">but I do make bass rosin</a>). Please forgive my many skill issues.</p>
+            <p><b>Monkey Wrench Database</b> is built on a modified fork of <a href="https://wim.vree.org/" target="_blank" rel="noopener noreferrer">Willem Vree's</a> SynPdf. Without his amazing open source project none of this would be possible.</p>
+            <p>This site is a solo project by Isaac Trapkus, bassist with the NY Phil. I am not a professional programmer (<a href="https://bassmentrosin.com" target="_blank" rel="noopener noreferrer">but I do make bass rosin</a>). Please forgive my many skill issues.</p>
             <p>Syncing is done by detecting staves and barlines algorithmically with manual correction. It takes 1-2 minutes per page of sheet music. AI is still not at the point where it can do this task. Recordings are manually synced by playing through the video and logging timestamps with keypresses (usually at 1.5-2x playback speed). Dynamic Time Warping makes it possible to automate adding additional recordings once a piece has a manual timestamp record. But the time to proof-read the recording is about the same as doing it manually.</p>
             <p>If you find this project important and have the programming skills to make meaningful contributions to its development, please be in touch! icactusmusic AT gmail DOT com.</p>
             <button id="closeabout">Close</button>
