@@ -14,6 +14,7 @@ let currentMeasureTime = 0;
 let newInstrumentTime2xFlag = 0;
 let scrollFlag = 0;
 let globalHighlightColor = '#00d4ff';
+let blockTime2x = false; // Flag to disable time2x during recording change
 
 //So back button will go to homepage only if on a recording
 window.isRecordingState = false;
@@ -651,16 +652,17 @@ $('#recordings-dropdown').change(function() {
     const recordingFullData = selectedOption.data('recordingFullData');
     currentRecordingGlobal = recordingFullData.recording_id;
     bypassTickFlag = 1; // Signal a recording change
+    blockTime2x = true; // Block time2x
 
     // Load preloaded data
     deTijden$$module$synpdf = metric_arr$$module$synpdf = JSON.parse(recordingFullData.times_arr_data);
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
 
-    // Hide PDF overlay and stop ticking
+    // Hide overlay and stop ticking
     $('.demaat').hide();
     dummyPlayer$$module$synpdf.clearKlok();
-    console.log("Switch started. Hiding PDF overlay, stopping tick.");
+    console.log("Switch started. Blocking time2x, hiding overlay, stopping tick.");
 
     // Get current state and time
     const currentTime = elmed$$module$synpdf.getCurrentTime();
@@ -673,22 +675,34 @@ $('#recordings-dropdown').change(function() {
             console.log("Target time for new video (newPlayerCue):", newPlayerCue);
 
             if (wasPlaying) {
-                elmed$$module$synpdf.loadVideoById(recordingFullData.youtube_id); // Load without startSeconds
-                console.log("Loading new video (playing).");
+                elmed$$module$synpdf.loadVideoById({
+                    videoId: recordingFullData.youtube_id,
+                    startSeconds: newPlayerCue
+                });
+                console.log("Loading new video with startSeconds (playing).");
             } else {
-                elmed$$module$synpdf.cueVideoById(recordingFullData.youtube_id); // Cue without startSeconds
-                console.log("Cueing new video (paused).");
+                elmed$$module$synpdf.cueVideoById({
+                    videoId: recordingFullData.youtube_id,
+                    startSeconds: newPlayerCue
+                });
+                console.log("Cueing new video with startSeconds (paused).");
             }
         })
         .catch((error) => {
             console.error("Error finding measure time:", error);
             newPlayerCue = currentTime;
             if (wasPlaying) {
-                elmed$$module$synpdf.loadVideoById(recordingFullData.youtube_id);
-                console.log("Loading new video (playing, fallback).");
+                elmed$$module$synpdf.loadVideoById({
+                    videoId: recordingFullData.youtube_id,
+                    startSeconds: newPlayerCue
+                });
+                console.log("Loading new video with startSeconds (playing, fallback).");
             } else {
-                elmed$$module$synpdf.cueVideoById(recordingFullData.youtube_id);
-                console.log("Cueing new video (paused, fallback).");
+                elmed$$module$synpdf.cueVideoById({
+                    videoId: recordingFullData.youtube_id,
+                    startSeconds: newPlayerCue
+                });
+                console.log("Cueing new video with startSeconds (paused, fallback).");
             }
         });
 });

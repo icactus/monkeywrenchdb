@@ -1081,9 +1081,13 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
 function tick$$module$synpdf(a) {
     if (elmed$$module$synpdf && msc_wz$$module$synpdf && (!yubchk$$module$synpdf || elmed$$module$synpdf == ybplayer$$module$synpdf)) {
         var b = (yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime) - offset$$module$synpdf;
-        !msc_wz$$module$synpdf || a && 0 != a % 10 || msc_wz$$module$synpdf.time2x(b);
+        if (blockTime2x) {
+            console.log("Tick blocked. Time:", b);
+        } else if (a && 0 != a % 10) {
+        } else {
+            msc_wz$$module$synpdf.time2x(b);
+        }
         scrollFlag = 0;
-
     }
 }
 
@@ -1178,7 +1182,7 @@ function onPlayerReady() {
 async function onPlayerStateChange(event) {
     console.log("Player state:", event.data, "Current time:", elmed$$module$synpdf.getCurrentTime());
 
-    if (bypassTickFlag === 1 && event.data === YT.PlayerState.CUED) {
+    if (bypassTickFlag === 1 && (event.data === YT.PlayerState.UNSTARTED || event.data === YT.PlayerState.BUFFERING)) {
         try {
             console.log("Seeking to:", newPlayerCue);
             await seekToPromise(newPlayerCue);
@@ -1189,21 +1193,28 @@ async function onPlayerStateChange(event) {
                     elmed$$module$synpdf.getPlayerState() !== YT.PlayerState.PAUSED);
             bypassTickFlag = 0;
 
-            if (wasPlaying) {
+            if (wasPlaying && event.data !== YT.PlayerState.PLAYING) {
                 console.log("Resuming playback after seek.");
                 elmed$$module$synpdf.playVideo();
-            } else {
-                console.log("Player was paused; no auto-play.");
             }
         } catch (error) {
             console.error('Failed to seek video:', error);
             bypassTickFlag = 0;
+            blockTime2x = false; // Unblock on error
         }
     }
 
     if (event.data === YT.PlayerState.PLAYING) {
-        dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100); // Restart ticking
+        const currentTime = elmed$$module$synpdf.getCurrentTime();
+        if (bypassTickFlag === 1 || Math.abs(currentTime - newPlayerCue) > 1) {
+            console.log("Failsafe seek to:", newPlayerCue, "from:", currentTime);
+            await seekToPromise(newPlayerCue);
+            bypassTickFlag = 0;
+        }
+
+        dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
         setPauseState$$module$synpdf(false);
+        blockTime2x = false; // Unblock time2x now
 
         console.log("Playing started. Showing PDF overlay.");
         $('.demaat').show();
