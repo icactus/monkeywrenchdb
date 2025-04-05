@@ -608,7 +608,7 @@ $('#instruments-dropdown').change(function() {
     document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
 
     // Start PDF loading immediately using the known PDF path pattern
-    const pdfFileName = `./pdfs/${instrumentData.piece_id}-${instrumentData.instrument_id}.pdf`;
+    const pdfFileName = `./pdfs/${currentRecordingGlobal.piece_id}-${instrumentData.instrument_id}.pdf`;
     pdf_file$$module$synpdf = pdfFileName;
 
     // Clear existing notation and start PDF loading
