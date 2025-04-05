@@ -1176,28 +1176,34 @@ function onPlayerReady() {
 
 
 async function onPlayerStateChange(event) {
-    if (bypassTickFlag === 1) {
+    console.log("Player state:", event.data);
+
+    if (bypassTickFlag === 1 && event.data === YT.PlayerState.CUED) {
         try {
-            console.log(newPlayerCue);
-            await seekToPromise(newPlayerCue); // Seek to newPlayerCue seconds
-            elmed$$module$synpdf.playVideo();
+            console.log("Seeking to:", newPlayerCue);
+            await seekToPromise(newPlayerCue);
             bypassTickFlag = 0;
+            // Playback is triggered from dropdown if needed, so no auto-play here
         } catch (error) {
             console.error('Failed to seek video:', error);
+            bypassTickFlag = 0;
         }
     }
-    event.data == YT.PlayerState.PLAYING ? (dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100), setPauseState$$module$synpdf(!1)) : (dummyPlayer$$module$synpdf.clearKlok(), setPauseState$$module$synpdf(!0));
-    //newPlayerCue needs to subtract offset because time2x uses teTijden time to find deMaten position, not video time
-    if (event.data == YT.PlayerState.CUED) {
-        scrollFlag = 1;
-        msc_wz$$module$synpdf.time2x(newPlayerCue - offset$$module$synpdf);
+
+    if (event.data === YT.PlayerState.PLAYING) {
+        dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
+        setPauseState$$module$synpdf(false);
+
+        // Update PDF only when playing, using current time
+        scrollFlag = 0;
+        msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
         setNotationHeight$$module$synpdf();
-    }
-    if (event.data == YT.PlayerState.PAUSED) {
+    } else if (event.data === YT.PlayerState.PAUSED) {
+        dummyPlayer$$module$synpdf.clearKlok();
+        setPauseState$$module$synpdf(true);
         scrollFlag = 1;
     }
 
-    // Add a delay before updating the play-pause button icon
     setTimeout(updatePlayPauseButton, 250);
 }
 

@@ -648,28 +648,60 @@ $('#instruments-dropdown').change(function() {
 
 $('#recordings-dropdown').change(function() {
     const selectedOption = $(this).find('option:selected');
-    // Retrieve the recording data that was already attached when the dropdown was built.
     const recordingFullData = selectedOption.data('recordingFullData');
     currentRecordingGlobal = recordingFullData.recording_id;
-    bypassTickFlag = 1;
+    bypassTickFlag = 1; // Signal a recording change
 
-    // Instead of fetching new recording data from the server,
-    // use the preloaded data in recordingFullData.
+    // Load preloaded data
     deTijden$$module$synpdf = metric_arr$$module$synpdf = JSON.parse(recordingFullData.times_arr_data);
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
 
-    // Get the current measure time and update the start time accordingly.
+    // Get the current playback time
+    const currentTime = elmed$$module$synpdf.getCurrentTime();
+    const wasPlaying = elmed$$module$synpdf.getPlayerState() === YT.PlayerState.PLAYING;
+    console.log("Current time:", currentTime, "Was playing:", wasPlaying);
+
     findCurrentMeasureTime()
         .then(() => {
-            newPlayerCue = (currentMeasureTime + offset$$module$synpdf + TOFF$$module$synpdf);
-            // Calling changeStartTime ensures the player cue is updated.
-            changeStartTime(newPlayerCue);
+            // Set newPlayerCue based on current measure or player time
+            newPlayerCue = (currentMeasureTime !== undefined ? currentMeasureTime : (currentTime - offset$$module$synpdf)) + offset$$module$synpdf + TOFF$$module$synpdf;
+            console.log("Cueing new video to:", newPlayerCue);
+
+            // Cue the new video
+            elmed$$module$synpdf.cueVideoById({
+                videoId: recordingFullData.youtube_id,
+                startSeconds: newPlayerCue
+            });
+
+            // Wait for the cue to be ready before proceeding
+            const checkCueInterval = setInterval(() => {
+                if (elmed$$module$synpdf.getPlayerState() === YT.PlayerState.CUED) {
+                    clearInterval(checkCueInterval);
+                    console.log("Video cued successfully");
+                    if (wasPlaying) {
+                        elmed$$module$synpdf.playVideo(); // Resume playback if it was playing
+                    }
+                }
+            }, 100);
         })
         .catch((error) => {
-            newPlayerCue = 0;
-            console.error(error);
-            changeStartTime(newPlayerCue);
+            console.error("Error finding measure time:", error);
+            newPlayerCue = currentTime; // Fallback to current time
+            elmed$$module$synpdf.cueVideoById({
+                videoId: recordingFullData.youtube_id,
+                startSeconds: newPlayerCue
+            });
+
+            const checkCueInterval = setInterval(() => {
+                if (elmed$$module$synpdf.getPlayerState() === YT.PlayerState.CUED) {
+                    clearInterval(checkCueInterval);
+                    console.log("Video cued successfully (fallback)");
+                    if (wasPlaying) {
+                        elmed$$module$synpdf.playVideo();
+                    }
+                }
+            }, 100);
         });
 });
 
