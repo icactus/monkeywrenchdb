@@ -657,35 +657,39 @@ $('#recordings-dropdown').change(function() {
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
 
-    // Hide PDF overlay and log start of switch
+    // Hide PDF overlay and stop ticking
     $('.demaat').hide();
-    console.log("Switch started. Hiding PDF overlay.");
+    dummyPlayer$$module$synpdf.clearKlok();
+    console.log("Switch started. Hiding PDF overlay, stopping tick.");
 
     // Get current state and time
     const currentTime = elmed$$module$synpdf.getCurrentTime();
     const wasPlaying = elmed$$module$synpdf.getPlayerState() === YT.PlayerState.PLAYING;
-    console.log("Current time:", currentTime, "Was playing:", wasPlaying);
+    console.log("Current time (old video):", currentTime, "Was playing:", wasPlaying);
 
     findCurrentMeasureTime()
         .then(() => {
             newPlayerCue = (currentMeasureTime !== undefined ? currentMeasureTime : (currentTime - offset$$module$synpdf)) + offset$$module$synpdf + TOFF$$module$synpdf;
-            console.log("Cueing new video to:", newPlayerCue);
+            console.log("Target time for new video (newPlayerCue):", newPlayerCue);
 
-            // Cue the new video
-            elmed$$module$synpdf.cueVideoById({
-                videoId: recordingFullData.youtube_id,
-                startSeconds: newPlayerCue
-            });
-            console.log("Cue command issued.");
+            if (wasPlaying) {
+                elmed$$module$synpdf.loadVideoById(recordingFullData.youtube_id); // Load without startSeconds
+                console.log("Loading new video (playing).");
+            } else {
+                elmed$$module$synpdf.cueVideoById(recordingFullData.youtube_id); // Cue without startSeconds
+                console.log("Cueing new video (paused).");
+            }
         })
         .catch((error) => {
             console.error("Error finding measure time:", error);
             newPlayerCue = currentTime;
-            elmed$$module$synpdf.cueVideoById({
-                videoId: recordingFullData.youtube_id,
-                startSeconds: newPlayerCue
-            });
-            console.log("Cue command issued (fallback).");
+            if (wasPlaying) {
+                elmed$$module$synpdf.loadVideoById(recordingFullData.youtube_id);
+                console.log("Loading new video (playing, fallback).");
+            } else {
+                elmed$$module$synpdf.cueVideoById(recordingFullData.youtube_id);
+                console.log("Cueing new video (paused, fallback).");
+            }
         });
 });
 

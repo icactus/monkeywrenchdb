@@ -1190,7 +1190,7 @@ async function onPlayerStateChange(event) {
             bypassTickFlag = 0;
 
             if (wasPlaying) {
-                console.log("Resuming playback.");
+                console.log("Resuming playback after seek.");
                 elmed$$module$synpdf.playVideo();
             } else {
                 console.log("Player was paused; no auto-play.");
@@ -1202,7 +1202,7 @@ async function onPlayerStateChange(event) {
     }
 
     if (event.data === YT.PlayerState.PLAYING) {
-        dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
+        dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100); // Restart ticking
         setPauseState$$module$synpdf(false);
 
         console.log("Playing started. Showing PDF overlay.");
