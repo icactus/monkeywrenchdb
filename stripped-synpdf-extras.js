@@ -657,6 +657,9 @@ $('#recordings-dropdown').change(function() {
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
 
+    // Hide the PDF overlay to prevent jumping
+    $('.demaat').hide();
+
     // Get the current playback time
     const currentTime = elmed$$module$synpdf.getCurrentTime();
     const wasPlaying = elmed$$module$synpdf.getPlayerState() === YT.PlayerState.PLAYING;
@@ -664,7 +667,6 @@ $('#recordings-dropdown').change(function() {
 
     findCurrentMeasureTime()
         .then(() => {
-            // Set newPlayerCue based on current measure or player time
             newPlayerCue = (currentMeasureTime !== undefined ? currentMeasureTime : (currentTime - offset$$module$synpdf)) + offset$$module$synpdf + TOFF$$module$synpdf;
             console.log("Cueing new video to:", newPlayerCue);
 
@@ -674,34 +676,15 @@ $('#recordings-dropdown').change(function() {
                 startSeconds: newPlayerCue
             });
 
-            // Wait for the cue to be ready before proceeding
-            const checkCueInterval = setInterval(() => {
-                if (elmed$$module$synpdf.getPlayerState() === YT.PlayerState.CUED) {
-                    clearInterval(checkCueInterval);
-                    console.log("Video cued successfully");
-                    if (wasPlaying) {
-                        elmed$$module$synpdf.playVideo(); // Resume playback if it was playing
-                    }
-                }
-            }, 100);
+            // Wait for seek to complete in onPlayerStateChange, not here
         })
         .catch((error) => {
             console.error("Error finding measure time:", error);
-            newPlayerCue = currentTime; // Fallback to current time
+            newPlayerCue = currentTime;
             elmed$$module$synpdf.cueVideoById({
                 videoId: recordingFullData.youtube_id,
                 startSeconds: newPlayerCue
             });
-
-            const checkCueInterval = setInterval(() => {
-                if (elmed$$module$synpdf.getPlayerState() === YT.PlayerState.CUED) {
-                    clearInterval(checkCueInterval);
-                    console.log("Video cued successfully (fallback)");
-                    if (wasPlaying) {
-                        elmed$$module$synpdf.playVideo();
-                    }
-                }
-            }, 100);
         });
 });
 

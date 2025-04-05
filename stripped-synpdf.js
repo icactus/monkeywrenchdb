@@ -1183,7 +1183,14 @@ async function onPlayerStateChange(event) {
             console.log("Seeking to:", newPlayerCue);
             await seekToPromise(newPlayerCue);
             bypassTickFlag = 0;
-            // Playback is triggered from dropdown if needed, so no auto-play here
+
+            // Resume playback if it was playing
+            const wasPlaying = elmed$$module$synpdf.getPlayerState() === YT.PlayerState.PLAYING ||
+                (elmed$$module$synpdf.getCurrentTime() > 0 &&
+                    elmed$$module$synpdf.getPlayerState() !== YT.PlayerState.PAUSED);
+            if (wasPlaying) {
+                elmed$$module$synpdf.playVideo();
+            }
         } catch (error) {
             console.error('Failed to seek video:', error);
             bypassTickFlag = 0;
@@ -1194,7 +1201,8 @@ async function onPlayerStateChange(event) {
         dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
         setPauseState$$module$synpdf(false);
 
-        // Update PDF only when playing, using current time
+        // Show and update PDF only when playing
+        $('.demaat').show();
         scrollFlag = 0;
         msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
         setNotationHeight$$module$synpdf();
