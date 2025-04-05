@@ -712,6 +712,7 @@ function readPdfdoc$$module$synpdf() {
 }
 
 function readPdf$$module$synpdf(pdfData, dataType) {
+    console.log("[PDF] Starting PDF load process");
     initGlobals$$module$synpdf();
 
     let pdfCopy = pdfData;
@@ -781,9 +782,11 @@ function readPdf$$module$synpdf(pdfData, dataType) {
         console.debug("[PDF] PDF.js options:", pdfjsOptions);
 
         const loadingTask = pdfjsLib.getDocument(pdfjsOptions);
+        console.log("[PDF] Loading task created");
 
         // Progress handler
         loadingTask.onProgress = function(progressData) {
+            console.log("[PDF] Progress update:", progressData.loaded, "/", progressData.total);
             if (shouldUpdate) {
                 const currentTime = new Date().getTime();
                 const elapsedTime = (currentTime - startTime) / 1000;
