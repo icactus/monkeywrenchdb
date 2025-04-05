@@ -779,9 +779,11 @@ function readPdf$$module$synpdf(pdfData, dataType) {
         // Debugging: Log PDF.js config
         const pdfjsOptions = {
             url: pdfData,
-            verbosity: 1, // Enable PDF.js internal logging
-            disableRange: true, // Disable range requests (troubleshoot server issues)
-            disableFontFace: true, // Bypass font issues
+            verbosity: 1,
+            disableRange: false,
+            disableStream: false,
+            disableAutoFetch: false,
+            workerPort: sharedWorker ? sharedWorker.port : null,
             // Add other options as needed
         };
         console.debug("[PDF] PDF.js options:", pdfjsOptions);
