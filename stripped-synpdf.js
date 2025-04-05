@@ -11,27 +11,25 @@
 //  This is a heavily modified and stripped version of Synpdf v.182. The original software
 //  can be found at https://wim.vree.org/js2/index.html.
 
-// Immediately Invoked Shared Worker via Async Function for Initialization
+// Immediately Invoked Async Function for Initialization
+// At the top of your JS file
 let sharedWorker = null;
 
 (async function initializePDFjs() {
     try {
+        console.log("[Init] Starting PDF.js initialization");
         const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.min.mjs');
+        console.log("[Init] PDF.js imported");
         window.pdfjsLib = pdfjsLib;
+        console.log("[Init] pdfjsLib assigned to window");
 
-        // Preload the worker script
-        const workerLink = document.createElement('link');
-        workerLink.rel = 'preload';
-        workerLink.as = 'worker';
-        workerLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs';
-        document.head.appendChild(workerLink);
+        // Check state before worker setup
+        console.log("[Init] workerSrc before set:", pdfjsLib.GlobalWorkerOptions.workerSrc);
 
-        // Initialize a single worker
-        sharedWorker = new pdfjsLib.PDFWorker({ name: 'shared-pdf-worker' });
-        pdfjsLib.GlobalWorkerOptions.workerPort = sharedWorker.port; // Use this worker's port
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs';
-        console.log('PDF.js initialized with shared worker.');
+        console.log("[Init] workerSrc set");
 
+        console.log('PDF.js has been successfully loaded and configured.');
     } catch (error) {
         console.error('Failed to load PDF.js:', error);
     }
@@ -784,8 +782,6 @@ function readPdf$$module$synpdf(pdfData, dataType) {
             verbosity: 1, // Enable PDF.js internal logging
             disableRange: true, // Disable range requests (troubleshoot server issues)
             disableFontFace: true, // Bypass font issues
-            disableAutoFetch: false,
-            workerPort: sharedWorker ? sharedWorker.port : null, // Reuse the worker
             // Add other options as needed
         };
         console.debug("[PDF] PDF.js options:", pdfjsOptions);
