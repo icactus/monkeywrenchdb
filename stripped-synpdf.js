@@ -12,9 +12,6 @@
 //  can be found at https://wim.vree.org/js2/index.html.
 
 // Immediately Invoked Async Function for Initialization
-// At the top of your JS file
-let sharedWorker = null;
-
 (async function initializePDFjs() {
     try {
         console.log("[Init] Starting PDF.js initialization");
@@ -23,11 +20,15 @@ let sharedWorker = null;
         window.pdfjsLib = pdfjsLib;
         console.log("[Init] pdfjsLib assigned to window");
 
-        // Check state before worker setup
-        console.log("[Init] workerSrc before set:", pdfjsLib.GlobalWorkerOptions.workerSrc);
-
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs';
         console.log("[Init] workerSrc set");
+
+        const workerLink = document.createElement('link');
+        workerLink.rel = 'preload';
+        workerLink.as = 'worker';
+        workerLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs';
+        document.head.appendChild(workerLink);
+        console.log("[Init] Worker preloaded");
 
         console.log('PDF.js has been successfully loaded and configured.');
     } catch (error) {
@@ -783,7 +784,6 @@ function readPdf$$module$synpdf(pdfData, dataType) {
             disableRange: false,
             disableStream: false,
             disableAutoFetch: false,
-            workerPort: sharedWorker ? sharedWorker.port : null,
             // Add other options as needed
         };
         console.debug("[PDF] PDF.js options:", pdfjsOptions);
