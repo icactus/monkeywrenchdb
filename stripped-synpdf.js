@@ -721,200 +721,175 @@ function readPdf$$module$synpdf(pdfData, dataType) {
     console.log("[PDF] Starting PDF load process");
     initGlobals$$module$synpdf();
 
-    let pdfCopy = pdfData;
-    let d;
-
-    // Initialize progress UI immediately with both progress bars
-    let notationDiv = $("#notation");
+    // UI Setup
+    const notationDiv = $("#notation");
     notationDiv.addClass("notation-max-height");
     notationDiv.html(`
         <div id="progress-container" style="width: 100%; text-align: center; margin: 20px 0;">
-            <!-- Download Phase -->
             <div id="download-phase">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                     <span>Downloading PDF...</span>
                     <span id="download-percent">0%</span>
                 </div>
                 <progress id="download-bar" value="0" max="100" style="width: 100%; height: 10px;"></progress>
-                <div id="download-stats" style="font-size: 14px; color: #666; margin-top: 5px;">
-                    <span id="download-size">0MB/0MB</span>
-                    <span id="download-speed" style="margin-left: 15px;">0MB/s</span>
-                </div>
+                <div id="download-stats" style="font-size: 14px; color: #666; margin-top: 5px;"></div>
             </div>
-            
-            <!-- Processing Phase (initially hidden) -->
             <div id="process-phase" style="margin-top: 20px; display: none;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                     <span>Processing PDF...</span>
                     <span id="process-percent">0%</span>
                 </div>
                 <progress id="process-bar" value="0" max="100" style="width: 100%; height: 10px;"></progress>
-                <div id="process-stats" style="font-size: 14px; color: #666; margin-top: 5px;">
-                    <span id="process-speed">Starting...</span>
-                </div>
+                <div id="process-stats" style="font-size: 14px; color: #666; margin-top: 5px;"></div>
             </div>
         </div>
     `);
     $("#loadingMessage2").hide();
 
-    // Handle different data types
-    if (dataType === "url") {
-        d = /jpe?g$/i.test(pdfCopy);
-        console.debug("[PDF] Detected URL type:", pdfCopy);
+    // Main processing logic
+    try {
+        switch (dataType) {
+            case "url":
+                return handleUrl(pdfData);
+            case "pdfbin":
+                return handlePdfBinary(pdfData);
+            case "jpgbin":
+                return handleJpgBinary(pdfData);
+            default:
+                throw new Error("Unsupported data type");
+        }
+    } catch (error) {
+        showError("Initialization failed", error);
+    }
 
-        // Handle image URLs separately
-        if (d || /^blob:/.test(pdfCopy)) {
+    function handleUrl(url) {
+        if (/jpe?g$/i.test(url) || /^blob:/.test(url)) {
             console.debug("[PDF] Loading as image");
-            pdfDoc$$module$synpdf = new Image();
-            pdfDoc$$module$synpdf.crossOrigin = "anonymous";
-            pdfDoc$$module$synpdf.src = pdfCopy;
-            pdfDoc$$module$synpdf.onload = function() {
-                updateProgressUI('download', 100, "Complete", "Image loaded");
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = url;
+            img.onload = () => {
+                pdfDoc$$module$synpdf = img;
+                updateProgressUI('download', 100, "Image loaded");
                 readPdfdoc$$module$synpdf();
             };
-            pdfDoc$$module$synpdf.onerror = function(err) {
-                showError("Image load failed", err);
-            };
+            img.onerror = (err) => showError("Image load failed", err);
             return;
         }
-
-        // For PDF URLs, use custom downloader
-        downloadPdfWithProgress(pdfCopy);
-        return;
+        downloadPdfWithProgress(url);
     }
 
-    // Handle binary data
-    if (dataType === "pdfbin") {
-        try {
-            const pdfArray = new Uint8Array(pdfData);
-            // Skip download phase, go straight to processing
-            $("#download-phase").hide();
-            $("#process-phase").show();
-            return processPdfData(pdfArray);
-        } catch (error) {
-            return showError("Invalid PDF data", error);
-        }
+    function handlePdfBinary(pdfData) {
+        const pdfArray = new Uint8Array(pdfData);
+        $("#download-phase").hide();
+        $("#process-phase").show();
+        processPdfData(pdfArray);
     }
 
-    if (dataType === "jpgbin") {
-        // Handle JPEG binary data
-        try {
-            const jpgData = new Uint8Array(pdfData);
-            const blob = new Blob([jpgData], { type: "image/jpeg" });
-            const url = URL.createObjectURL(blob);
-            pdfDoc$$module$synpdf = new Image();
-            pdfDoc$$module$synpdf.src = url;
-            pdfDoc$$module$synpdf.onload = function() {
-                updateProgressUI('download', 100, "Complete", "Image loaded");
-                readPdfdoc$$module$synpdf();
-            };
-        } catch (error) {
-            showError("JPEG processing failed", error);
-        }
-        return;
+    function handleJpgBinary(jpgData) {
+        const blob = new Blob([new Uint8Array(jpgData)], { type: "image/jpeg" });
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.src = url;
+        img.onload = () => {
+            pdfDoc$$module$synpdf = img;
+            updateProgressUI('download', 100, "Image loaded");
+            readPdfdoc$$module$synpdf();
+            URL.revokeObjectURL(url); // Clean up
+        };
+        img.onerror = (err) => showError("JPEG processing failed", err);
     }
 
-    // Custom PDF downloader with progress
     function downloadPdfWithProgress(url) {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
         xhr.responseType = 'arraybuffer';
         const startTime = Date.now();
 
-        xhr.onprogress = function(e) {
+        xhr.onprogress = throttle((e) => {
             if (e.lengthComputable) {
                 const percent = Math.round((e.loaded / e.total) * 100);
-                const loadedMB = (e.loaded / (1024 * 1024)).toFixed(2);
-                const totalMB = (e.total / (1024 * 1024)).toFixed(2);
-                const elapsed = (Date.now() - startTime) / 1000;
-                const speed = elapsed > 0 ? (e.loaded / elapsed / (1024 * 1024)).toFixed(2) : "0";
-
-                updateProgressUI('download', percent, `${loadedMB}MB/${totalMB}MB`, `${speed}MB/s`);
+                const stats = calculateStats(e.loaded, e.total, startTime);
+                updateProgressUI('download', percent, stats.size, stats.speed);
             }
-        };
+        }, 100);
 
-        xhr.onload = function() {
+        xhr.onload = () => {
             if (xhr.status === 200) {
-                updateProgressUI('download', 100, "Complete", "Download finished");
-                // Show processing phase
-                $("#process-phase").fadeIn(300);
-                // Start processing
+                updateProgressUI('download', 100, "Download complete");
+                $("#process-phase").show();
                 processPdfData(new Uint8Array(xhr.response));
             } else {
-                showError(`Download failed: ${xhr.statusText}`);
+                showError(`Download failed: ${xhr.status}`);
             }
         };
 
-        xhr.onerror = function() {
-            showError("Network error during download");
-        };
-
+        xhr.onerror = () => showError("Network error during download");
         xhr.send();
     }
 
-    // Process PDF data with PDF.js
     function processPdfData(data) {
-        const startTime = Date.now();
-        let lastUpdate = 0;
-
         const loadingTask = pdfjsLib.getDocument({
-            data: data,
-            disableRange: true,
+            data,
+            disableRange: false,  // Enable range requests for better performance
             disableStream: false,
             verbosity: 1
         });
 
-        loadingTask.onProgress = function(progressData) {
-            const now = Date.now();
-            if (now - lastUpdate < 100) return; // Throttle updates
-            lastUpdate = now;
+        loadingTask.onProgress = throttle((progress) => {
+            const percent = Math.round((progress.loaded / progress.total) * 100);
+            const stats = calculateStats(progress.loaded, progress.total);
+            updateProgressUI('process', percent, stats.size, stats.speed);
+        }, 100);
 
-            const percent = Math.round((progressData.loaded / progressData.total) * 100);
-            const loadedMB = (progressData.loaded / (1024 * 1024)).toFixed(2);
-            const totalMB = (progressData.total / (1024 * 1024)).toFixed(2);
-            const elapsed = (now - startTime) / 1000;
-            const speed = elapsed > 0 ? (progressData.loaded / elapsed / (1024 * 1024)).toFixed(2) : "0";
-
-            updateProgressUI('process', percent, `${loadedMB}MB/${totalMB}MB`, `${speed}MB/s`);
-        };
-
-        loadingTask.promise.then(function(pdf) {
-            updateProgressUI('process', 100, "Complete", "Processing finished");
-            // Handle loaded PDF
+        loadingTask.promise.then((pdf) => {
+            updateProgressUI('process', 100, "Processing complete");
             pdfDoc$$module$synpdf = pdf;
             $("#pagenum").attr("max", pdf.numPages);
-            setTimeout(() => readPdfdoc$$module$synpdf(), 500); // Small delay for UI to update
-        }).catch(function(error) {
-            showError("PDF processing failed", error);
-        });
+            setTimeout(() => readPdfdoc$$module$synpdf(), 100);
+        }).catch((error) => showError("PDF processing failed", error));
     }
 
-    // Unified progress update function
-    function updateProgressUI(phase, percent, sizeInfo, speedInfo) {
+    function calculateStats(loaded, total, startTime = Date.now()) {
+        const loadedMB = (loaded / (1024 * 1024)).toFixed(2);
+        const totalMB = (total / (1024 * 1024)).toFixed(2);
+        const elapsed = (Date.now() - startTime) / 1000;
+        const speed = elapsed > 0 ? (loaded / elapsed / (1024 * 1024)).toFixed(2) : "0";
+        return {
+            size: `${loadedMB}MB/${totalMB}MB`,
+            speed: `${speed}MB/s`
+        };
+    }
+
+    function updateProgressUI(phase, percent, sizeInfo, speedInfo = "") {
         requestAnimationFrame(() => {
-            if (phase === 'download') {
-                $("#download-bar").val(percent);
-                $("#download-percent").text(percent + "%");
-                $("#download-size").text(sizeInfo);
-                $("#download-speed").text(speedInfo);
-            } else if (phase === 'process') {
-                $("#process-bar").val(percent);
-                $("#process-percent").text(percent + "%");
-                $("#process-stats").html(`<span>${sizeInfo}</span> <span style="margin-left:15px">${speedInfo}</span>`);
-            }
+            const $bar = $(`#${phase}-bar`);
+            const $percent = $(`#${phase}-percent`);
+            const $stats = $(`#${phase}-stats`);
+
+            $bar.val(percent);
+            $percent.text(`${percent}%`);
+            $stats.text(speedInfo ? `${sizeInfo} - ${speedInfo}` : sizeInfo);
         });
     }
 
-    function showError(message, error = null) {
+    function showError(message, error) {
         console.error(message, error);
         requestAnimationFrame(() => {
-            // Update both phases to show error
             $("#download-phase, #process-phase").css("color", "red");
-            $("#download-stats, #process-stats").text(message);
-            if (error?.message) {
-                $("#process-stats").append(`: ${error.message}`);
-            }
+            $("#download-stats, #process-stats").text(`${message}${error?.message ? `: ${error.message}` : ""}`);
         });
+    }
+
+    function throttle(fn, ms) {
+        let lastCall = 0;
+        return (...args) => {
+            const now = Date.now();
+            if (now - lastCall >= ms) {
+                lastCall = now;
+                fn(...args);
+            }
+        };
     }
 }
 
