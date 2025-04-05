@@ -11,19 +11,26 @@
 //  This is a heavily modified and stripped version of Synpdf v.182. The original software
 //  can be found at https://wim.vree.org/js2/index.html.
 
-// Immediately Invoked Async Function for Initialization
+// Immediately Invoked Shared Worker via Async Function for Initialization
+let sharedWorker = null;
+
 (async function initializePDFjs() {
     try {
-        // Dynamically import the PDF.js module
         const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.min.mjs');
-
-        // Attach the imported module to the global window object
         window.pdfjsLib = pdfjsLib;
 
-        // Configure PDF.js Worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs';
+        // Preload the worker script
+        const workerLink = document.createElement('link');
+        workerLink.rel = 'preload';
+        workerLink.as = 'worker';
+        workerLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs';
+        document.head.appendChild(workerLink);
 
-        console.log('PDF.js has been successfully loaded and configured.');
+        // Initialize a single worker
+        sharedWorker = new pdfjsLib.PDFWorker({ name: 'shared-pdf-worker' });
+        pdfjsLib.GlobalWorkerOptions.workerPort = sharedWorker.port; // Use this worker's port
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs';
+        console.log('PDF.js initialized with shared worker.');
 
     } catch (error) {
         console.error('Failed to load PDF.js:', error);
@@ -777,6 +784,8 @@ function readPdf$$module$synpdf(pdfData, dataType) {
             verbosity: 1, // Enable PDF.js internal logging
             disableRange: true, // Disable range requests (troubleshoot server issues)
             disableFontFace: true, // Bypass font issues
+            disableAutoFetch: false,
+            workerPort: sharedWorker ? sharedWorker.port : null, // Reuse the worker
             // Add other options as needed
         };
         console.debug("[PDF] PDF.js options:", pdfjsOptions);
