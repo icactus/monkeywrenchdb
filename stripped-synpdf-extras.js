@@ -3,7 +3,6 @@
 let currentInstrumentGlobal = 0;
 let currentRecordingGlobal = 0;
 let currentMetricArrGlobal = 0;
-let currentRecordingFullData = {};
 let canvasesGlobal = [];
 let currentDeTijdenIndex = 0;
 let currentMeasureIndex = 0;
@@ -608,30 +607,19 @@ $('#instruments-dropdown').change(function() {
     currentInstrumentGlobal = instrumentData.instrument_id;
     document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
 
-    // Start PDF loading immediately using the known PDF path pattern
-    const pdfFileName = `./pdfs/${currentRecordingFullData.piece_id}-${instrumentData.instrument_id}.pdf`;
-    pdf_file$$module$synpdf = pdfFileName;
-
-    // Clear existing notation and start PDF loading
-    renderedCanvasesQueue = [];
-    renderingTasks = [];
-    renderedCanvasesQueue = new Set();
-    renderingQueue.clear();
-    canShowDemaat = false;
-    msc_wz$$module$synpdf = [];
-    newInstrumentTime2xFlag = 1;
-    readPdf$$module$synpdf(pdfFileName, "url");
-    scrollFlag = 1;
-
-    // Then fetch the metric data in the background
     fetchNewInstrument(instrumentData)
         .then(recordingFullData => {
+            renderedCanvasesQueue = [];
+            renderingTasks = [];
+            renderedCanvasesQueue = new Set();
+            renderingQueue.clear();
+            canShowDemaat = false; // hiding demaat until pdf renders again
             loadRecording(recordingFullData)
                 .then(function() {
-                    // Update with the complete data once it arrives
-                    sendVarToSynpdf(recordingFullData);
-                    // Re-render if needed
-                    msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
+                    msc_wz$$module$synpdf = [];
+                    newInstrumentTime2xFlag = 1;
+                    readPdf$$module$synpdf(pdf_file$$module$synpdf, "url");
+                    scrollFlag = 1;
                 })
                 .catch(error => {
                     console.error(`Error loading recording: ${error}`);
