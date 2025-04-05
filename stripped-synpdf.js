@@ -796,8 +796,8 @@ function readPdf$$module$synpdf(pdfData, dataType) {
             url: dataType === "pdfbin" ? null : pdfData,
             data: dataType === "pdfbin" ? pdfData : null,
             verbosity: 1,
-            disableRange: false,  // Disable range requests for smoother progress
-            disableStream: false, // Enable streaming
+            disableRange: true,  // Need this for accurate progress 
+            disableStream: true, // Download entire file at once
         };
 
         console.debug("[PDF] PDF.js options:", pdfjsOptions);
