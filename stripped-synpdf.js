@@ -769,12 +769,11 @@ function readPdf$$module$synpdf(pdfData, dataType) {
             pdfDoc$$module$synpdf.crossOrigin = "anonymous";
             pdfDoc$$module$synpdf.src = pdfCopy;
             pdfDoc$$module$synpdf.onload = function() {
-                document.getElementById('progress-info').textContent = "Image loaded";
+                updateProgressUI('download', 100, "Complete", "Image loaded");
                 readPdfdoc$$module$synpdf();
             };
             pdfDoc$$module$synpdf.onerror = function(err) {
-                document.getElementById('progress-info').textContent = "Image load failed";
-                console.error("[PDF] Image load failed:", err);
+                showError("Image load failed", err);
             };
             return;
         }
@@ -806,7 +805,7 @@ function readPdf$$module$synpdf(pdfData, dataType) {
             pdfDoc$$module$synpdf = new Image();
             pdfDoc$$module$synpdf.src = url;
             pdfDoc$$module$synpdf.onload = function() {
-                document.getElementById('progress-info').textContent = "Image loaded";
+                updateProgressUI('download', 100, "Complete", "Image loaded");
                 readPdfdoc$$module$synpdf();
             };
         } catch (error) {
@@ -830,24 +829,15 @@ function readPdf$$module$synpdf(pdfData, dataType) {
                 const elapsed = (Date.now() - startTime) / 1000;
                 const speed = elapsed > 0 ? (e.loaded / elapsed / (1024 * 1024)).toFixed(2) : "0";
 
-                // Update download progress
-                $("#download-bar").val(percent);
-                $("#download-percent").text(percent + "%");
-                $("#download-size").text(`${loadedMB}MB/${totalMB}MB`);
-                $("#download-speed").text(`${speed}MB/s`);
+                updateProgressUI('download', percent, `${loadedMB}MB/${totalMB}MB`, `${speed}MB/s`);
             }
         };
 
         xhr.onload = function() {
             if (xhr.status === 200) {
-                // Complete download phase
-                $("#download-bar").val(100);
-                $("#download-percent").text("100%");
-                $("#download-speed").text("Complete");
-
+                updateProgressUI('download', 100, "Complete", "Download finished");
                 // Show processing phase
                 $("#process-phase").fadeIn(300);
-
                 // Start processing
                 processPdfData(new Uint8Array(xhr.response));
             } else {
@@ -885,18 +875,11 @@ function readPdf$$module$synpdf(pdfData, dataType) {
             const elapsed = (now - startTime) / 1000;
             const speed = elapsed > 0 ? (progressData.loaded / elapsed / (1024 * 1024)).toFixed(2) : "0";
 
-            // Update processing progress
-            $("#process-bar").val(percent);
-            $("#process-percent").text(percent + "%");
-            $("#process-stats").text(`Processed ${loadedMB}MB of ${totalMB}MB @ ${speed}MB/s`);
+            updateProgressUI('process', percent, `${loadedMB}MB/${totalMB}MB`, `${speed}MB/s`);
         };
 
         loadingTask.promise.then(function(pdf) {
-            // Complete processing
-            $("#process-bar").val(100);
-            $("#process-percent").text("100%");
-            $("#process-stats").text("Processing complete");
-
+            updateProgressUI('process', 100, "Complete", "Processing finished");
             // Handle loaded PDF
             pdfDoc$$module$synpdf = pdf;
             $("#pagenum").attr("max", pdf.numPages);
@@ -906,17 +889,31 @@ function readPdf$$module$synpdf(pdfData, dataType) {
         });
     }
 
+    // Unified progress update function
+    function updateProgressUI(phase, percent, sizeInfo, speedInfo) {
+        requestAnimationFrame(() => {
+            if (phase === 'download') {
+                $("#download-bar").val(percent);
+                $("#download-percent").text(percent + "%");
+                $("#download-size").text(sizeInfo);
+                $("#download-speed").text(speedInfo);
+            } else if (phase === 'process') {
+                $("#process-bar").val(percent);
+                $("#process-percent").text(percent + "%");
+                $("#process-stats").html(`<span>${sizeInfo}</span> <span style="margin-left:15px">${speedInfo}</span>`);
+            }
+        });
+    }
 
     function showError(message, error = null) {
         console.error(message, error);
         requestAnimationFrame(() => {
-            const info = document.getElementById('progress-info');
-            const bar = document.getElementById('progress-bar');
-            if (info) {
-                info.textContent = message;
-                info.style.color = "red";
+            // Update both phases to show error
+            $("#download-phase, #process-phase").css("color", "red");
+            $("#download-stats, #process-stats").text(message);
+            if (error?.message) {
+                $("#process-stats").append(`: ${error.message}`);
             }
-            if (bar) bar.value = 0;
         });
     }
 }
