@@ -1180,37 +1180,39 @@ function onPlayerReady() {
 
 
 async function onPlayerStateChange(event) {
-
+    // Handle recording switch seek
     if (bypassTickFlag === 1 && (event.data === YT.PlayerState.UNSTARTED || event.data === YT.PlayerState.BUFFERING)) {
         try {
             await seekToPromise(newPlayerCue);
-
             const wasPlaying = elmed$$module$synpdf.getPlayerState() === YT.PlayerState.PLAYING ||
                 (elmed$$module$synpdf.getCurrentTime() > 0 &&
                     elmed$$module$synpdf.getPlayerState() !== YT.PlayerState.PAUSED);
             bypassTickFlag = 0;
-
             if (wasPlaying && event.data !== YT.PlayerState.PLAYING) {
                 elmed$$module$synpdf.playVideo();
             }
         } catch (error) {
             console.error('Failed to seek video:', error);
             bypassTickFlag = 0;
-            blockTime2x = false; // Unblock on error
+            blockTime2x = false;
         }
+        return; // Exit early to avoid interfering with manual jumps
     }
 
     if (event.data === YT.PlayerState.PLAYING) {
         const currentTime = elmed$$module$synpdf.getCurrentTime();
-        if (bypassTickFlag === 1 || Math.abs(currentTime - newPlayerCue) > 1) {
+        // Only trigger failsafe if explicitly restoring position from a switch
+        if (bypassTickFlag === 1 && Math.abs(currentTime - newPlayerCue) > 1) {
             console.log("Failsafe seek to:", newPlayerCue, "from:", currentTime);
             await seekToPromise(newPlayerCue);
             bypassTickFlag = 0;
+        } else {
+            bypassTickFlag = 0; // Reset to avoid lingering effects
         }
 
         dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
         setPauseState$$module$synpdf(false);
-        blockTime2x = false; // Unblock time2x now
+        blockTime2x = false;
 
         scrollFlag = 0;
         msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
