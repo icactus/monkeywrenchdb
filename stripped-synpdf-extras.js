@@ -3,6 +3,7 @@
 let currentInstrumentGlobal = 0;
 let currentRecordingGlobal = 0;
 let currentMetricArrGlobal = 0;
+let currentRecordingFullData = {};
 let canvasesGlobal = [];
 let currentDeTijdenIndex = 0;
 let currentMeasureIndex = 0;
@@ -608,7 +609,7 @@ $('#instruments-dropdown').change(function() {
     document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
 
     // Start PDF loading immediately using the known PDF path pattern
-    const pdfFileName = `./pdfs/${currentRecordingGlobal.piece_id}-${instrumentData.instrument_id}.pdf`;
+    const pdfFileName = `./pdfs/${currentRecordingFullData.piece_id}-${instrumentData.instrument_id}.pdf`;
     pdf_file$$module$synpdf = pdfFileName;
 
     // Clear existing notation and start PDF loading
