@@ -508,50 +508,6 @@ function fetchRecordings(metricArrId) {
 // }
 
 
-let recordingCache = {};
-function loadRecording(recordingFullData) {
-    return new Promise(function(resolve, reject) {
-        console.log(recordingFullData);
-
-        // Update the document title
-        let newTitle = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`;
-        document.title = newTitle;
-
-        // Add title to composer-piece-name Div
-        let targetDiv = document.getElementById('composer-piece-name');
-        targetDiv.innerHTML = `<h3>${newTitle}</h3>`;
-
-        // Create a unique ID for the recording
-        let metricId = recordingFullData.metric_arr_id;
-        let recordingId = recordingFullData.recording_id;
-        currentRecordingFullData = recordingFullData; // Global variable for testing
-        let storedId = metricId + '-' + recordingId;
-
-        // Check if the data is already stored in the cache
-        let storedData = recordingCache[storedId];
-        if (storedData) {
-            // If data exists in cache, resolve the promise with the cached data
-            sendVarToSynpdf(storedData); // Assign the variables if data is cached
-            resolve();
-        } else {
-            // If data does not exist in cache, fetch and store it
-            var pdfFileName = "./pdfs/" + recordingFullData.piece_id + "-" + recordingFullData.instrument_id + ".pdf";
-            recordingFullData.pdf_file_name = pdfFileName;
-            recordingFullData.timestamp = Date.now();
-            recordingCache[storedId] = recordingFullData;
-            sendVarToSynpdf(recordingFullData);
-            resolve();
-        }
-
-        // Send a page view event to Google Analytics with the updated title
-        gtag('event', 'page_view', {
-            'page_title': newTitle,
-            'page_path': window.location.pathname
-        });
-    });
-}
-
-
 function sendVarToSynpdf(recordingFullData) {
     pdf_file$$module$synpdf = recordingFullData.pdf_file_name;
     deMetriek$$module$synpdf = metric_arr$$module$synpdf = JSON.parse(recordingFullData.metric_arr_data);
@@ -606,13 +562,11 @@ $('#instruments-dropdown').change(function() {
     const selectedOption = $(this).find('option:selected');
     const instrumentData = selectedOption.data('instrumentData');
     currentInstrumentGlobal = instrumentData.instrument_id;
-    document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
+    document.getElementById("notation").innerHTML = "";
 
-    // Start PDF loading immediately using the known PDF path pattern
     const pdfFileName = `./pdfs/${currentRecordingFullData.piece_id}-${instrumentData.instrument_id}.pdf`;
     pdf_file$$module$synpdf = pdfFileName;
 
-    // Clear existing notation and start PDF loading
     renderedCanvasesQueue = [];
     renderingTasks = [];
     renderedCanvasesQueue = new Set();
@@ -623,19 +577,27 @@ $('#instruments-dropdown').change(function() {
     readPdf$$module$synpdf(pdfFileName, "url");
     scrollFlag = 1;
 
-    // Then fetch the metric data in the background
     fetchNewInstrument(instrumentData)
         .then(recordingFullData => {
-            loadRecording(recordingFullData)
-                .then(function() {
-                    // Update with the complete data once it arrives
-                    sendVarToSynpdf(recordingFullData);
-                    // Re-render if needed
-                    msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
-                })
-                .catch(error => {
-                    console.error(`Error loading recording: ${error}`);
-                });
+            // Moved from loadRecording
+            console.log(recordingFullData);
+            let newTitle = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`;
+            document.title = newTitle;
+            let targetDiv = document.getElementById('composer-piece-name');
+            targetDiv.innerHTML = `<h3>${newTitle}</h3>`;
+            var pdfFileName = "./pdfs/" + recordingFullData.piece_id + "-" + recordingFullData.instrument_id + ".pdf";
+            recordingFullData.pdf_file_name = pdfFileName;
+            recordingFullData.timestamp = Date.now();
+            currentRecordingFullData = recordingFullData;
+            sendVarToSynpdf(recordingFullData);
+
+            gtag('event', 'page_view', {
+                'page_title': newTitle,
+                'page_path': window.location.pathname
+            });
+
+            // Re-render if needed
+            msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
         })
         .catch(error => {
             console.error(`Error fetching new instrument: ${error}`);
@@ -722,38 +684,51 @@ function displayMultiplePartLinks(data, clickedLink) {
 }
 // FOR LOADING VIA CLICK IN RECORDINGS MENU OR FROM URL
 function handleRecordingSelection(recordingFullData) {
-    let sidecontentbar = document.querySelector('sidecontentbar'); // Size sidecontentbar for mobile
-    let section2 = document.querySelector('section2'); // same as above
+    let sidecontentbar = document.querySelector('sidecontentbar');
+    let section2 = document.querySelector('section2');
     sidecontentbar.classList.add('sidecontentbar-min-height');
     section2.classList.add('section2-margin-top');
 
     let recordingId = recordingFullData.recording_id;
-    // Setting the global instrument and recording values for dropdown use
     currentInstrumentGlobal = recordingFullData.instrument_id;
     currentRecordingGlobal = recordingFullData.recording_id;
-    document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
+    document.getElementById("notation").innerHTML = "";
 
-    loadRecording(recordingFullData)
-        .then(function() {
-            //Creating history so back button goes back to homepage
-            history.pushState({ page: 'recording' }, '', window.location.pathname);
-            // Set a global flag to indicate we’re in the recording state
-            window.isRecordingState = true;
-            msc_check_preload$$module$synpdf();
-            $("#sidecontent").show();
-            generateInstrumentsDropdown(recordingId)
-                .then(function() {
-                    $('#instruments-dropdown').val(currentInstrumentGlobal);
-                    $('#recordings-dropdown').val(currentRecordingGlobal);
-                    window.recordingFullyLoaded = true;
-                })
-                .catch(function(error) {
-                    console.error("An error occurred while generating instruments dropdown:", error);
-                });
-        })
-        .catch(function(error) {
-            console.error("An error occurred while loading recording:", error);
-        });
+    // Moved from loadRecording
+    console.log(recordingFullData);
+    let newTitle = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`;
+    document.title = newTitle;
+    let targetDiv = document.getElementById('composer-piece-name');
+    targetDiv.innerHTML = `<h3>${newTitle}</h3>`;
+    var pdfFileName = "./pdfs/" + recordingFullData.piece_id + "-" + recordingFullData.instrument_id + ".pdf";
+    recordingFullData.pdf_file_name = pdfFileName;
+    recordingFullData.timestamp = Date.now();
+    currentRecordingFullData = recordingFullData;
+    sendVarToSynpdf(recordingFullData);
+
+    gtag('event', 'page_view', {
+        'page_title': newTitle,
+        'page_path': window.location.pathname
+    });
+
+    // Original promise chain
+    return new Promise((resolve, reject) => {
+        history.pushState({ page: 'recording' }, '', window.location.pathname);
+        window.isRecordingState = true;
+        msc_check_preload$$module$synpdf();
+        $("#sidecontent").show();
+        generateInstrumentsDropdown(recordingId)
+            .then(function() {
+                $('#instruments-dropdown').val(currentInstrumentGlobal);
+                $('#recordings-dropdown').val(currentRecordingGlobal);
+                window.recordingFullyLoaded = true;
+                resolve();
+            })
+            .catch(function(error) {
+                console.error("An error occurred while generating instruments dropdown:", error);
+                reject(error);
+            });
+    });
 }
 //Listener so back button goes to homepage but only if on recording page
 window.addEventListener('popstate', function() {
