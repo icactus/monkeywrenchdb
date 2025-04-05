@@ -724,140 +724,173 @@ function readPdf$$module$synpdf(pdfData, dataType) {
     let pdfCopy = pdfData;
     let d;
 
-    // Debugging: Log input parameters
-    console.debug("[PDF] Loading PDF with dataType:", dataType);
-    if (dataType === "pdfbin") console.debug("[PDF] PDF binary data length:", pdfData.length);
+    // Initialize progress container immediately
+    let notationDiv = $("#notation");
+    notationDiv.addClass("notation-max-height");
+    notationDiv.html(`
+        <div id="progress-container" style="width: 100%; text-align: center; margin: 20px 0;">
+            <progress id="progress-bar" value="0" max="100" style="width: 80%; height: 20px;"></progress>
+            <div id="progress-info" style="margin-top: 10px; font-size: 20px;">Initializing...</div>
+            <div id="progress-stage" style="margin-top: 5px; font-size: 14px; color: #666;"></div>
+        </div>
+    `);
+    $("#loadingMessage2").hide();
 
-    // Handle JPEG/Blob URLs
+    // Handle different data types
     if (dataType === "url") {
         d = /jpe?g$/i.test(pdfCopy);
-        console.debug("[PDF] Detected URL type (JPEG/Blob):", pdfCopy);
+        console.debug("[PDF] Detected URL type:", pdfCopy);
+
+        // Handle image URLs separately
+        if (d || /^blob:/.test(pdfCopy)) {
+            console.debug("[PDF] Loading as image");
+            pdfDoc$$module$synpdf = new Image();
+            pdfDoc$$module$synpdf.crossOrigin = "anonymous";
+            pdfDoc$$module$synpdf.src = pdfCopy;
+            pdfDoc$$module$synpdf.onload = function() {
+                document.getElementById('progress-info').textContent = "Image loaded";
+                readPdfdoc$$module$synpdf();
+            };
+            pdfDoc$$module$synpdf.onerror = function(err) {
+                document.getElementById('progress-info').textContent = "Image load failed";
+                console.error("[PDF] Image load failed:", err);
+            };
+            return;
+        }
+
+        // For PDF URLs, use custom downloader
+        downloadPdfWithProgress(pdfCopy);
+        return;
     }
 
-    // Convert to Uint8Array for PDF binary data
+    // Handle binary data
     if (dataType === "pdfbin") {
         try {
             pdfData = new Uint8Array(pdfData);
-            console.debug("[PDF] Converted to Uint8Array successfully");
+            processPdfData(pdfData);
         } catch (error) {
-            console.error("[PDF] Failed to convert to Uint8Array:", error);
-            return;
+            showError("Failed to process PDF data", error);
         }
+        return;
     }
 
-    // Handle JPEG binary data
     if (dataType === "jpgbin") {
+        // Handle JPEG binary data
         try {
             const jpgData = new Uint8Array(pdfData);
-            dataType = "url";
-            pdfCopy = new Blob([jpgData], { type: "image/jpeg" });
-            pdfCopy = URL.createObjectURL(pdfCopy);
-            console.debug("[PDF] Created Blob URL for JPEG:", pdfCopy);
+            const blob = new Blob([jpgData], { type: "image/jpeg" });
+            const url = URL.createObjectURL(blob);
+            pdfDoc$$module$synpdf = new Image();
+            pdfDoc$$module$synpdf.src = url;
+            pdfDoc$$module$synpdf.onload = function() {
+                document.getElementById('progress-info').textContent = "Image loaded";
+                readPdfdoc$$module$synpdf();
+            };
         } catch (error) {
-            console.error("[PDF] JPEG Blob creation failed:", error);
-            return;
+            showError("JPEG processing failed", error);
         }
+        return;
     }
 
-    // Load as Image (JPEG/Blob)
-    if (dataType === "url" && (d || /^blob:/.test(pdfCopy))) {
-        console.debug("[PDF] Loading as image:", pdfCopy);
-        pdfDoc$$module$synpdf = new Image();
-        pdfDoc$$module$synpdf.crossOrigin = "anonymous";
-        pdfDoc$$module$synpdf.src = pdfCopy;
-        pdfDoc$$module$synpdf.onload = function() {
-            console.debug("[PDF] Image loaded successfully");
-            readPdfdoc$$module$synpdf();
-        };
-        pdfDoc$$module$synpdf.onerror = function(err) {
-            console.error("[PDF] Image load failed:", err);
-        };
-    } else {
-        // Load PDF with pdfjsLib (enhanced error handling)
-        let shouldUpdate = true;
-        const startTime = new Date().getTime();
-        let lastProgressUpdate = 0;
+    // Custom PDF downloader with progress
+    function downloadPdfWithProgress(url) {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'arraybuffer';
+        const startTime = Date.now();
 
-        // Initialize progress container
-        let notationDiv = $("#notation");
-        notationDiv.addClass("notation-max-height");
+        xhr.onprogress = function(e) {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                const loadedMB = (e.loaded / (1024 * 1024)).toFixed(2);
+                const totalMB = (e.total / (1024 * 1024)).toFixed(2);
+                const elapsed = (Date.now() - startTime) / 1000;
+                const speed = (e.loaded / elapsed / (1024 * 1024)).toFixed(2);
 
-        if ($("#progress-container").length === 0) {
-            notationDiv.html(`
-                <div id="progress-container" style="width: 100%; text-align: center; margin: 20px 0;">
-                    <progress id="progress-bar" value="0" max="100" style="width: 80%; height: 20px;"></progress>
-                    <div id="progress-info" style="margin-top: 10px; font-size: 20px;"></div>
-                </div>
-            `);
-        }
-
-        // PDF.js configuration for better progress tracking
-        const pdfjsOptions = {
-            url: dataType === "pdfbin" ? null : pdfData,
-            data: dataType === "pdfbin" ? pdfData : null,
-            verbosity: 1,
-            disableRange: true,  // Need this for accurate progress 
-            disableStream: true, // Download entire file at once
+                updateProgress(percent, `${loadedMB}MB/${totalMB}MB`,
+                    `Downloading @ ${speed}MB/s`, "Downloading PDF");
+            }
         };
 
-        console.debug("[PDF] PDF.js options:", pdfjsOptions);
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                updateProgress(100, "Download complete", "", "Processing PDF");
+                processPdfData(new Uint8Array(xhr.response));
+            } else {
+                showError(`Download failed: ${xhr.statusText}`);
+            }
+        };
 
-        const loadingTask = pdfjsLib.getDocument(pdfjsOptions);
-        console.log("[PDF] Loading task created");
+        xhr.onerror = function() {
+            showError("Network error during download");
+        };
 
-        // Progress handler with throttling
+        updateProgress(0, "Starting download", "", "Connecting to server");
+        xhr.send();
+    }
+
+    // Process PDF data with PDF.js
+    function processPdfData(data) {
+        const startTime = Date.now();
+        let lastUpdate = 0;
+
+        const loadingTask = pdfjsLib.getDocument({
+            data: data,
+            disableRange: true,
+            disableStream: false,
+            verbosity: 1
+        });
+
         loadingTask.onProgress = function(progressData) {
             const now = Date.now();
-            if (now - lastProgressUpdate < 100) return; // Throttle to 100ms
-            lastProgressUpdate = now;
+            if (now - lastUpdate < 100) return;
+            lastUpdate = now;
 
-            const currentTime = new Date().getTime();
-            const elapsedTime = (currentTime - startTime) / 1000;
+            const percent = 100 + Math.round((progressData.loaded / progressData.total) * 100);
             const loadedMB = (progressData.loaded / (1024 * 1024)).toFixed(2);
             const totalMB = (progressData.total / (1024 * 1024)).toFixed(2);
-            const speedMBps = (loadedMB / elapsedTime).toFixed(2);
-            const percentComplete = Math.min(100, (progressData.loaded / progressData.total) * 100);
+            const elapsed = (now - startTime) / 1000;
+            const speed = (progressData.loaded / elapsed / (1024 * 1024)).toFixed(2);
 
-            // Update UI elements using requestAnimationFrame for smoothness
-            requestAnimationFrame(() => {
-                const progressBar = document.getElementById('progress-bar');
-                const progressInfo = document.getElementById('progress-info');
-                if (progressBar && progressInfo) {
-                    progressBar.value = percentComplete;
-                    progressInfo.textContent = `${loadedMB}MB/${totalMB}MB (${Math.round(percentComplete)}%) - ${speedMBps}MB/s`;
-                }
-            });
-
-            $("#loadingMessage2").hide();
+            updateProgress(Math.min(percent, 200),
+                `${loadedMB}MB/${totalMB}MB`,
+                `Processing @ ${speed}MB/s`,
+                "Parsing PDF content");
         };
 
-        // Handle PDF load
-        loadingTask.promise
-            .then(function(pdf) {
-                console.debug("[PDF] PDF.js loaded successfully");
-                pdfDoc$$module$synpdf = pdf;
-                $("#pagenum").attr("max", pdf.numPages);
-                shouldUpdate = false;
-                readPdfdoc$$module$synpdf();
-            })
-            .catch(function(error) {
-                console.error("[PDF] PDF.js load failed:", error);
+        loadingTask.promise.then(function(pdf) {
+            updateProgress(200, "Complete", "", "Rendering");
+            pdfDoc$$module$synpdf = pdf;
+            $("#pagenum").attr("max", pdf.numPages);
+            readPdfdoc$$module$synpdf();
+        }).catch(function(error) {
+            showError("PDF processing failed", error);
+        });
+    }
 
-                // Update progress container to show error
-                const progressInfo = document.getElementById('progress-info');
-                if (progressInfo) {
-                    progressInfo.textContent = "Failed to load PDF";
-                    progressInfo.style.color = "red";
-                }
+    function updateProgress(percent, sizeInfo, speedInfo, stageInfo) {
+        requestAnimationFrame(() => {
+            const bar = document.getElementById('progress-bar');
+            const info = document.getElementById('progress-info');
+            const stage = document.getElementById('progress-stage');
 
-                if (error.name === "InvalidPDFException") {
-                    console.error("[PDF] Corrupted PDF structure:", error.message);
-                } else if (error.name === "MissingPDFException") {
-                    console.error("[PDF] PDF not found:", error.message);
-                } else {
-                    console.error("[PDF] Unknown error:", error);
-                }
-            });
+            if (bar) bar.value = percent % 101; // Keep within 0-100 range
+            if (info) info.textContent = `${sizeInfo} ${speedInfo}`;
+            if (stage) stage.textContent = stageInfo;
+        });
+    }
+
+    function showError(message, error = null) {
+        console.error(message, error);
+        requestAnimationFrame(() => {
+            const info = document.getElementById('progress-info');
+            const bar = document.getElementById('progress-bar');
+            if (info) {
+                info.textContent = message;
+                info.style.color = "red";
+            }
+            if (bar) bar.value = 0;
+        });
     }
 }
 
