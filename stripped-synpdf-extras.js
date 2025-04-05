@@ -659,8 +659,7 @@ $('#recordings-dropdown').change(function() {
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
 
-    // Hide overlay and stop ticking
-    $('.demaat').hide();
+    // stop ticking
     dummyPlayer$$module$synpdf.clearKlok();
     console.log("Switch started. Blocking time2x, hiding overlay, stopping tick.");
 

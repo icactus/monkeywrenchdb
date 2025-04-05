@@ -1180,13 +1180,10 @@ function onPlayerReady() {
 
 
 async function onPlayerStateChange(event) {
-    console.log("Player state:", event.data, "Current time:", elmed$$module$synpdf.getCurrentTime());
 
     if (bypassTickFlag === 1 && (event.data === YT.PlayerState.UNSTARTED || event.data === YT.PlayerState.BUFFERING)) {
         try {
-            console.log("Seeking to:", newPlayerCue);
             await seekToPromise(newPlayerCue);
-            console.log("Seek completed. New time:", elmed$$module$synpdf.getCurrentTime());
 
             const wasPlaying = elmed$$module$synpdf.getPlayerState() === YT.PlayerState.PLAYING ||
                 (elmed$$module$synpdf.getCurrentTime() > 0 &&
@@ -1194,7 +1191,6 @@ async function onPlayerStateChange(event) {
             bypassTickFlag = 0;
 
             if (wasPlaying && event.data !== YT.PlayerState.PLAYING) {
-                console.log("Resuming playback after seek.");
                 elmed$$module$synpdf.playVideo();
             }
         } catch (error) {
@@ -1216,8 +1212,6 @@ async function onPlayerStateChange(event) {
         setPauseState$$module$synpdf(false);
         blockTime2x = false; // Unblock time2x now
 
-        console.log("Playing started. Showing PDF overlay.");
-        $('.demaat').show();
         scrollFlag = 0;
         msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
         setNotationHeight$$module$synpdf();
@@ -1225,7 +1219,6 @@ async function onPlayerStateChange(event) {
         dummyPlayer$$module$synpdf.clearKlok();
         setPauseState$$module$synpdf(true);
         scrollFlag = 1;
-        console.log("Player paused.");
     }
 
     setTimeout(updatePlayPauseButton, 250);
