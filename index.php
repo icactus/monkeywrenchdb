@@ -225,7 +225,7 @@
         Link copied to clipboard!
     </div>
     <script src="stripped-synpdf.js?v=100"></script>
-    <script src="stripped-synpdf-extras.js?v=79"></script>
+    <script src="stripped-synpdf-extras.js?v=80"></script>
 </body>
 
 </html>

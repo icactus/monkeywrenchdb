@@ -598,6 +598,20 @@ $('#instruments-dropdown').change(function() {
     currentMetricArrGlobal = instrumentData.metric_arr_id;
     document.getElementById("notation").innerHTML = "";  // Clear notation section
 
+    // Ensure currentRecordingFullData exists; fallback to first recording if not
+    if (!currentRecordingFullData) {
+        const firstRecordingOption = $('#recordings-dropdown').find('option:not(:first)').first();
+        currentRecordingFullData = firstRecordingOption.data('recordingFullData') || {};
+        currentRecordingGlobal = currentRecordingFullData.recording_id || 0;
+    }
+
+    // Construct the PDF file path immediately using piece_id and instrument_id
+    const pdfFileName = `./pdfs/${currentRecordingFullData.piece_id}-${instrumentData.instrument_id}.pdf`;
+
+    // Start loading the PDF right away
+    readPdf$$module$synpdf(pdfFileName, "url");
+
+    // Proceed with fetching new instrument data and updating the recording
     fetchNewInstrument(instrumentData.metric_arr_id)
         .then(partData => {
             renderedCanvasesQueue = [];
@@ -606,13 +620,6 @@ $('#instruments-dropdown').change(function() {
             renderingQueue.clear();
             canShowDemaat = false;
 
-            // Ensure currentRecordingFullData exists; fallback to first recording if not
-            if (!currentRecordingFullData) {
-                const firstRecordingOption = $('#recordings-dropdown').find('option:not(:first)').first();
-                currentRecordingFullData = firstRecordingOption.data('recordingFullData') || {};
-                currentRecordingGlobal = currentRecordingFullData.recording_id || 0;
-            }
-
             // Update only part-specific data
             const updatedRecordingFullData = {
                 ...currentRecordingFullData,
@@ -620,14 +627,13 @@ $('#instruments-dropdown').change(function() {
                 metric_arr_data: partData.metric_arr_data,
                 instrument_id: instrumentData.instrument_id,
                 instrument_name: instrumentData.displayText,
-                pdf_file_name: `./pdfs/${currentRecordingFullData.piece_id}-${instrumentData.instrument_id}.pdf`
+                pdf_file_name: pdfFileName
             };
 
             loadRecording(updatedRecordingFullData)
                 .then(() => {
                     msc_wz$$module$synpdf = [];
                     newInstrumentTime2xFlag = 1;
-                    readPdf$$module$synpdf(pdf_file$$module$synpdf, "url");
                     scrollFlag = 1;
                 })
                 .catch(error => console.error(`Error loading recording: ${error}`));
