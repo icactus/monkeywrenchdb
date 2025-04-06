@@ -575,28 +575,18 @@ function addInvertButtonListener() {
     }
 }
 
-function fetchNewInstrument(instrumentData) {
+function fetchNewInstrument(metricArrId) {
     return new Promise((resolve, reject) => {
-        let recordingId;
-        if (currentRecordingGlobal) {
-            recordingId = currentRecordingGlobal;
-        } else {
-            console.log('no currentRecordingGlobal');
-            recordingId = instrumentData.recording_id;
-        }
-        let metricId = instrumentData.metric_arr_id;
-        currentMetricArrGlobal = metricId;
-        console.log('current metric arr ', currentMetricArrGlobal);
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", "get_new_instrument_data.php?recordingId=" + recordingId + "&metricId=" + metricId, true);
+        xhr.open("GET", "get_new_instrument_data.php?metricId=" + metricArrId, true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
-                let recordingFullData = JSON.parse(xhr.responseText);
-                resolve(recordingFullData);
+                let partData = JSON.parse(xhr.responseText);
+                resolve(partData);
             } else if (xhr.readyState === 4) {
                 reject(xhr.status);
             }
-        }
+        };
         xhr.send();
     });
 }
@@ -605,29 +595,44 @@ $('#instruments-dropdown').change(function() {
     const selectedOption = $(this).find('option:selected');
     const instrumentData = selectedOption.data('instrumentData');
     currentInstrumentGlobal = instrumentData.instrument_id;
-    document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
+    currentMetricArrGlobal = instrumentData.metric_arr_id;
+    document.getElementById("notation").innerHTML = "";  // Clear notation section
 
-    fetchNewInstrument(instrumentData)
-        .then(recordingFullData => {
+    fetchNewInstrument(instrumentData.metric_arr_id)
+        .then(partData => {
             renderedCanvasesQueue = [];
             renderingTasks = [];
             renderedCanvasesQueue = new Set();
             renderingQueue.clear();
-            canShowDemaat = false; // hiding demaat until pdf renders again
-            loadRecording(recordingFullData)
-                .then(function() {
+            canShowDemaat = false;
+
+            // Ensure currentRecordingFullData exists; fallback to first recording if not
+            if (!currentRecordingFullData) {
+                const firstRecordingOption = $('#recordings-dropdown').find('option:not(:first)').first();
+                currentRecordingFullData = firstRecordingOption.data('recordingFullData') || {};
+                currentRecordingGlobal = currentRecordingFullData.recording_id || 0;
+            }
+
+            // Update only part-specific data
+            const updatedRecordingFullData = {
+                ...currentRecordingFullData,
+                metric_arr_id: partData.metric_arr_id,
+                metric_arr_data: partData.metric_arr_data,
+                instrument_id: instrumentData.instrument_id,
+                instrument_name: instrumentData.displayText,
+                pdf_file_name: `./pdfs/${currentRecordingFullData.piece_id}-${instrumentData.instrument_id}.pdf`
+            };
+
+            loadRecording(updatedRecordingFullData)
+                .then(() => {
                     msc_wz$$module$synpdf = [];
                     newInstrumentTime2xFlag = 1;
                     readPdf$$module$synpdf(pdf_file$$module$synpdf, "url");
                     scrollFlag = 1;
                 })
-                .catch(error => {
-                    console.error(`Error loading recording: ${error}`);
-                });
+                .catch(error => console.error(`Error loading recording: ${error}`));
         })
-        .catch(error => {
-            console.error(`Error fetching new instrument: ${error}`);
-        });
+        .catch(error => console.error(`Error fetching new instrument: ${error}`));
 });
 
 
@@ -957,37 +962,6 @@ function openTab(tabId) {
     // Show the matching content
     $('#' + tabId).show();
 }
-//HOMEPAGE COLLAPSIBLES
-// function toggleCollapsible(collapsibleElement) {
-//     var currentContent = collapsibleElement.querySelector(".search-content");
-//
-//     // Close all collapsibles except the current one
-//     var collapsibles = document.getElementsByClassName("tab");
-//     for (var j = 0; j < collapsibles.length; j++) {
-//         var content = collapsibles[j].querySelector(".search-content");
-//         if (collapsibles[j] !== collapsibleElement) {
-//             collapsibles[j].classList.remove("active");
-//             content.style.display = "none";
-//         }
-//     }
-//
-//     // Toggle the current collapsible and show/hide its content
-//     collapsibleElement.classList.toggle("active");
-//     if (currentContent.style.display === "grid") {
-//         currentContent.style.display = "none";
-//     } else {
-//         currentContent.style.display = "grid";
-//     }
-//
-//     // Automatically toggle the next collapsible if it exists
-//     var nextCollapsible = collapsibleElement.nextElementSibling;
-//     if (nextCollapsible) {
-//         var nextContent = nextCollapsible.querySelector(".search-content");
-//         nextCollapsible.classList.add("active");
-//         nextContent.style.display = "grid";
-//     }
-// }
-
 
 function addShareButtonListener() {
     const shareButton = document.getElementById('share-button');
