@@ -502,7 +502,7 @@
 </head>
 
 <body>
-    <?php include "/../../phpfiles/get_pieces_and_composers.php"; ?>
+    <?php include "../../phpfiles/get_pieces_and_composers.php"; ?>
     <div id="tooltip"></div><section1>
         <div id="buttons">
             <div id="medbts">
