@@ -1,15 +1,14 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html>
-
 <head>
     <meta name="robots" content="noindex">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <title>Edit Mode - Simplified</title> <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+    <title>Edit Mode - Simplified</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
-
     <script src="synpdf-yubsync.js?v=41"></script>
     <style>
         html {
@@ -76,29 +75,23 @@
             z-index: 2;
         }
 
-        /*change height from 100% to 200px*/
-        #crediv { /* Container for credits and info - keep */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            font-size: small;
-            padding: 1em;
-        }
 
-        #medbts { /* Container for media buttons - keep to hold YouTube input, but hide other children */
-            position: absolute;
-            left: 5px;
-            font-size: small;
-            /* visibility: hidden; */ /* This will be hidden by JS for the full container */
+        #medbts { /* Container for media buttons */
+            position: static; /* Changed from absolute for better flow in flex container */
             z-index: 1;
+            display: flex; /* Use flexbox */
+            align-items: center; /* Align items vertically */
+            gap: 10px; /* Added gap */
         }
 
-        #buttons { /* Main top buttons container - keep */
-            flex: 0 0 auto;
+        #buttons { /* Main top buttons container */
             display: flex;
             justify-content: center;
             padding-top: 5px;
             overflow: auto;
+            width: 100%; /* Make it take full width */
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            gap: 10px; /* Added gap */
         }
 
         #knop { /* Play button - remove */
@@ -416,15 +409,10 @@
             position: absolute;
             width: auto;
             height: auto;
-            background-color: #f2f2f2AA;
-            padding: 10px;
+            /* background-color: #f2f2f2AA; */
+            /* padding: 10px; */
             pointer-events: none;
             /* Ensures tooltip doesn't interfere with mouse movements */
-        }
-
-        .inputform { /* Style for forms - keep */
-            display: flex;
-            margin: 1em;
         }
 
         section1 { /* Top section - keep */
@@ -481,66 +469,153 @@
             filter: invert(1);
         }
 
-        #database-menus-wrapper { /* Wrapper for database menus - keep */
-            display: flex; /* Keep flex for layout */
+        #database-menus-wrapper { /* Wrapper for database menus */
+            display: flex;
+            flex-direction:column;
+            width: 100%; /* Take full width */
+            align-items: center; /* Center items */
         }
 
-        #database-menu-top { /* Top part of database menus - keep container, remove children */
-            display: flex; /* Keep flex for layout */
-            /* Remove database controls heading */
-            /* Remove show/hide button */
+        #database-menu-top { /* Top part of database menus */
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping */
+            gap: 10px; /* Added gap */
+            align-items: center; /* Align items vertically */
+            width: 100%; /* Take full width */
+            justify-content: center; /* Center content */
         }
 
         #database-menu-top h3 { /* Database controls heading - remove */
             margin: 0;
         }
 
+        #database-menus { /* Container for database forms */
+             display: flex;
+             flex-direction: column;
+             width: 100%; /* Take full width */
+             align-items: start; /* Center items */
+        }
+
         .dropdown-menu { /* Style for dropdowns - keep */
             max-width: 200px;
         }
+        .inputform {
+             display: flex;
+             margin: 4px; 
+             flex-wrap: wrap;
+             gap: 10px;
+             align-items: flex-end;
+             justify-content: center;
+             padding: 10px;
+             border: 1px solid #ccc;
+             border-radius: 4px;
+             background-color: #f9f9f9;
+             width: 100%;
+             box-sizing: border-box;
+        }
+        .inputform div {
+            align-items:end;
+            gap:10px;
+        }
+        .inputform h2 {
+            margin:auto;
+            padding-right:1em;
+        }
     </style>
 </head>
-
 <body>
-    <?php include "../../phpfiles/get_pieces_and_composers.php"; ?>
-    <div id="tooltip"></div><section1>
-        <div id="buttons">
-            <div id="medbts">
-                <label id="yvdlbl">youtube id: <div id="yubfile">
-                        <input type="text" id="yubid" size="11" value="qx-ymShyfIk" title="11 characters" pattern="[A-Za-z0-9\-_]{11}" />
-                        <input type="button" id="yknp" value="load" />
-                    </div></label>
-                </div>
-            <audio id="aud" controls="controls" style="display: none;">Your browser does not support the audio element.</audio> <video id="vid" controls="controls" style="display: none;">Your browser does not support the video element.</video> <div id="vidyub"></div> <div id="crediv">
-                <div id="credits"></div> <div id="credits2"></div> </div>
+    <?php include "/../../phpfiles/get_pieces_and_composers.php"; ?>
+    <div id="tooltip"></div>
+    <section1>
+        <div id="sync">
+            <div id="mbar">Menu</div>
+            <form id="menu">
+                <label id="snclbl"><span>enable sync:</span> <input id="synbox" type="checkbox" /></label>
+                <label id="lm"><span>advanced:</span> <input id="advncd" type="checkbox" /></label>
+                <label class="mnrm" id="lp"><span>full screen:</span> <input id="fscr" type="checkbox" /></label>
+                <label class="mnrm" id="lv"><span>save preload:</span><button id="show" type="button">save</button></label>
+                <label class="mnrm" id="l2"><span>line cursor:</span> <input id="lncsr" type="checkbox" /></label>
+                <label class="mnrm" id="l3"><span>speed ctrl:</span> <input id="spdctl" type="checkbox" /></label>
+                <label class="mnrm" id="lg"><span>loop mode:</span> <input id="loop" type="checkbox" /></label>
+                <label class="mnrm" id="lo"><span>annotate:</span> <input id="annot" type="checkbox" /></label>
+                <label class="mnrm" id="l7"><span>hide player:</span> <input id="noplyr" type="checkbox" /></label>
+                <label class="mnrm" id="ld"><span>hide dashes:</span> <input id="nodash" type="checkbox" /></label>
+                <label class="mnrm" id="ln"><span>count in:</span> <input id="cntin" type="checkbox" /></label>
+                <label class="mexp" id="l8"><span>line threshold:</span> <input type="number" id="drmpl" min="0.1" step="0.1" max="1.0" title="0.1 <= float <= 1.0"></label>
+                <label class="mexp" id="lk"><span>cluster threshold:</span> <input type="number" id="drmpl2" min="0.0" step="0.1" max="4.0" title="0.1 <= float <= 4.0"></label>
+                <label class="mexp" id="le"><span>skip:</span> <input type="number" id="skipn" min="0" step="1" title="integer >= 0"></label>
+                <label class="mexp" id="ll"><span>select:</span> <input type="number" id="seln" min="0" step="1" title="integer >= 0"></label>
+                <label class="mexp" id="l9"><span>first quarter:</span> <input type="checkbox" id="eerst"></label>
+                <label class="mexp" id="lf"><span>prefer systems:</span> <input type="checkbox" id="sysprf"></label>
+                <label class="mexp" id="lh"><span>single staves:</span> <input id="onestf" type="checkbox"></label>
+                <label class="mexp" id="lq"><span>black threshold:</span> <input type="number" id="zwgrens" min="0" step="0.1" max="1"></input></label>
+                <label class="mexp" id="lr"><span>before / after threshold:</span> <input type="number" id="voorna" min="0" step="0.01" max="1"></input></label>
+                <label class="mexp" id="ls"><span>barline threshold:</span> <input type="number" id="mtdrmpl" min="0" step="0.01" max="1"></input></label>
+                <label class="mexp" id="lt"><span>dx:</span> <input type="number" id="dx" min="1" step="1" max="30"></input></label>
+                <label class="mexp" id="lu"><span>page number:</span> <input type="number" step="1" min="1" id="pagenum"></input></label>
+                <label class="mexp" id="l6"><span>page width:</span> <input type="number" step="10" min="1000" id="fixwd"></label>
+                <label class="mexp" id="lj"><span>no menu:</span> <input id="no_menu" type="checkbox"></label>
+                <label class="mexp" id="lc"><span>pdf data:</span> <input id="wpdf" type="checkbox"></label>
+                <label class="mnrm" id="helpm">help</label>
+            </form>
+            <div id="sync_out">
+                <div id="sync_info"></div>
+                <label><span><button id="reset">Backspace</button></span> one measure</label>
+            </div>
         </div>
-        <div id="sync"> <div id="mbar">Menu</div> <form id="menu"> <label id="snclbl"><span>enable sync:</span> <input id="synbox" type="checkbox" /></label> <label id="lm"><span>advanced:</span> <input id="advncd" type="checkbox" /></label> <label class="mnrm" id="lp"><span>full screen:</span> <input id="fscr" type="checkbox" /></label> <label class="mnrm" id="lv"><span>save preload:</span><button id="show" type="button">save</button></label> <label class="mnrm" id="l2"><span>line cursor:</span> <input id="lncsr" type="checkbox" /></label> <label class="mnrm" id="l3"><span>speed ctrl:</span> <input id="spdctl" type="checkbox" /></label> <label class="mnrm" id="lg"><span>loop mode:</span> <input id="loop" type="checkbox" /></label> <label class="mnrm" id="lo"><span>annotate:</span> <input id="annot" type="checkbox" /></label> <label class="mnrm" id="l7"><span>hide player:</span> <input id="noplyr" type="checkbox" /></label> <label class="mnrm" id="ld"><span>hide dashes:</span> <input id="nodash" type="checkbox" /></label> <label class="mnrm" id="ln"><span>count in:</span> <input id="cntin" type="checkbox" /></label> <label class="mexp" id="l8"><span>line threshold:</span> <input type="number" id="drmpl" min="0.1" step="0.1" max="1.0" title="0.1 <= float <= 1.0"></label> <label class="mexp" id="lk"><span>cluster threshold:</span> <input type="number" id="drmpl2" min="0.0" step="0.1" max="4.0" title="0.1 <= float <= 4.0"></label> <label class="mexp" id="le"><span>skip:</span> <input type="number" id="skipn" min="0" step="1" title="integer >= 0"></label> <label class="mexp" id="ll"><span>select:</span> <input type="number" id="seln" min="0" step="1" title="integer >= 0"></label> <label class="mexp" id="l9"><span>first quarter:</span> <input type="checkbox" id="eerst"></label> <label class="mexp" id="lf"><span>prefer systems:</span> <input type="checkbox" id="sysprf"></label> <label class="mexp" id="lh"><span>single staves:</span> <input id="onestf" type="checkbox"></label> <label class="mexp" id="lq"><span>black threshold:</span> <input type="number" id="zwgrens" min="0" step="0.1" max="1"></input></label> <label class="mexp" id="lr"><span>before / after threshold:</span> <input type="number" id="voorna" min="0" step="0.01" max="1"></input></label> <label class="mexp" id="ls"><span>barline threshold:</span> <input type="number" id="mtdrmpl" min="0" step="0.01" max="1"></input></label> <label class="mexp" id="lt"><span>dx:</span> <input type="number" id="dx" min="1" step="1" max="30"></input></label> <label class="mexp" id="lu"><span>page number:</span> <input type="number" step="1" min="1" id="pagenum"></input></label> <label class="mexp" id="l6"><span>page width:</span> <input type="number" step="10" min="1000" id="fixwd"></label> <label class="mexp" id="lj"><span>no menu:</span> <input id="no_menu" type="checkbox"></label> <label class="mexp" id="lc"><span>pdf data:</span> <input id="wpdf" type="checkbox"></label> <label class="mnrm" id="helpm">help</label> </form>
-            <div id="sync_out"> <div id="sync_info"></div>
-                <label><span><button id="reset">Backspace</button></span> one measure</label> </div>
-        </div>
-        <input id="knop" type="button" value="play" style="display: none;"> <div id="database-menus-wrapper"> <div id="database-menu-top"> <div style="display: flex; flex-wrap: wrap;"> <form class="inputform" id="loadScore" method="POST" style="display: flex; align-items: center; margin: 0 1em 0 0;"> <div style="display:flex;">
+        <input id="knop" type="button" value="play" style="display: none;">
+        <div id="database-menus-wrapper">
+            <div id="database-menu-top">
+            </div>
+            <div id="database-menus">
+                <div style="display:flex">
+                    <form class="inputform" id="loadScore" method="POST">
+                        <div style="display:flex;">
                             <div>
-                                <label for="piece_id1">Select Piece</label>
+                                <h2>Step 1</h2>
+                            </div>
+                            <div>
+                                <label for="piece_id1">Select Piece to Sync</label>
                                 <select class="dropdown-menu" id="piece_id1">
                                     <option value="">Select piece...</option>
                                     <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
                                         <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
                                     <?php endforeach; ?>
                                 </select>
-                            </div>
-                            <button type="button" id="loadBtn">Load</button>
-                            <button type="button" id="rewind">Rewind</button>
+                                </div>
                             <div>
-                                <label for="recordingsAlready">Select Existing Recording</label>
+                                <button type="button" id="loadBtn">Load</button>
+                                <button type="button" id="rewind">Rewind</button>
+                            </div>
+                            <div>
+                                <label for="recordingsAlready">Existing Recordings</label>
                                 <select class="dropdown-menu" id="recordingsAlready">
-                                    <option value="">-- Select Existing Recording --</option>
-                                    </select>
+                                    <option value="">-- Existing Recordings --</option>
+                                </select>
                             </div>
                         </div>
                     </form>
                 </div>
-            </div>
-            <div id="database-menus"> <div style="display:flex;"> <form class="inputform" id="addnewrecordingform" method="POST">
+                <div style="display:flex">
+                    <div id="buttons">
+                        <div class="inputform" id="medbts">
+                            <div>
+                                <h2>Step 2</h2>
+                            </div>
+                            <label id="yvdlbl">youtube id:
+                                <div id="yubfile">
+                                    <input type="text" id="yubid" size="11" value="qx-ymShyfIk" title="11 characters" pattern="[A-Za-z0-9\-_]{11}" />
+                                    <input type="button" id="yknp" value="load" />
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex;">
+                    <form class="inputform" id="addnewrecordingform" method="POST">
+                        <div>
+                            <h2>Step 3</h2>
+                        </div>
                         <div>
                             <label for="conductor_name">Conductor/Soloist</label>
                             <input type="text" name="conductor_name" placeholder="First Last" />
@@ -551,7 +626,7 @@
                         </div>
                         <div>
                             <label for="year">Year Performed</label>
-                            <input type="text" name="year" placeholder="Year as" />
+                            <input type="text" name="year" placeholder="Not Year Uploaded" />
                         </div>
                         <input type="hidden" name="piece_id" id="piece_id" />
                         <input type="hidden" name="offset_js" id="offset_js" />
@@ -563,20 +638,31 @@
             </div>
         </div>
     </section1>
-    <section2> <div id="notation"> </div>
+    <section2>
+        <div id="notation"> </div>
         <sidecontent> </sidecontent>
     </section2>
-    <div id="wait" class="dlog"></div> <div id="loadmsg" class="dlog"></div> <pre id="yubload" class="dlog">Youtube player loading, please wait ...</pre> <div id="countin" class="dlog"></div> <div id="saveDlg"> <div id="div1"></div>
+    <div id="wait" class="dlog"></div>
+    <div id="loadmsg" class="dlog"></div>
+    <pre id="yubload" class="dlog">Youtube player loading, please wait ...</pre>
+    <div id="countin" class="dlog"></div>
+    <div id="saveDlg">
+        <div id="div1"></div>
         <div id="div4"></div>
         <div id="div2">
             <pre></pre>
         </div>
         <div id="div3">
-            <button id="saveok">Close</button><button id="save">Save</button>
+            <button id="saveok">Close</button>
+            <button id="save">Save</button>
             <span>When the save button gives a (false) security error, select and save all text above as .js file.</span>
         </div>
     </div>
-    <div id="saveDiv" style="display:none;"></div> <div id="render" class="dlog" style="left:5%; padding:0.5em;"></div> <div id="noklik"></div> <div id="help"> The menu is explained in the <a href="readme.html#menu" target="_blank">usage instructions</a><br>
+    <div id="saveDiv" style="display:none;"></div>
+    <div id="render" class="dlog" style="left:5%; padding:0.5em;"></div>
+    <div id="noklik"></div>
+    <div id="help">
+        The menu is explained in the <a href="readme.html#menu" target="_blank">usage instructions</a><br>
         <span>You can use the following keys:</span>
         <table class="helptbl">
             <tr>
@@ -641,7 +727,8 @@
                 </td>
             </tr>
         </table>
-        synchronizing:<ul>
+        synchronizing:
+        <ul>
             <li>At the start of every new (unsynchronized) measure the program waits for a click/tap in the score
                 (or key press &apos;B&apos;)</li>
             <li>By clicking in the score (or typing key &apos;B&apos;) you synchronize the *first* beat of that measure to the audio.</li>
@@ -651,7 +738,5 @@
         <button id="closehelp">Close</button>
     </div>
     <script src="yubsync-tools.js?v=76"></script>
-
 </body>
-
 </html>
