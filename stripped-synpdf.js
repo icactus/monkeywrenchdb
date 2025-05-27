@@ -1,4 +1,4 @@
-//~ Copyright (C) 2015-2025stripped
+//~ Copyright (C) 2015-2025
 //~ Isaac Trapkus,
 //~ Willem Vree, contributions Stéphane David.
 //~ This program is free software; you can redistribute it and/or modify it under the terms of the
@@ -403,15 +403,13 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
             }
 
             // Horizontal scrolling
-            setTimeout(function() {
-                if (measureX < currentScrollLeft + marginX) {
-                    var targetScrollLeft = Math.max(0, measureX - marginX);
-                    scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0));
-                } else if (measureRight > currentScrollLeft + viewportWidth - marginX) {
-                    var targetScrollLeft = measureRight - viewportWidth + marginX;
-                    scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0));
-                }
-            }, 50); // Delay for horizontal
+            if (measureX < currentScrollLeft + marginX) {
+                var targetScrollLeft = Math.max(0, measureX - marginX);
+                scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0));
+            } else if (measureRight > currentScrollLeft + viewportWidth - marginX) {
+                var targetScrollLeft = measureRight - viewportWidth + marginX;
+                scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0));
+            }
         }
     }
 };

@@ -702,9 +702,9 @@ function copyTiming$$module$synpdf(a, b) {
         lastSynced$$module$synpdf = deTijden$$module$synpdf.length - 1;
         msc_wz$$module$synpdf && playPause2$$module$synpdf(!1, TOFF$$module$synpdf + offset$$module$synpdf);
         // Removed $("#impbox").click().change(); as import is removed
-        // $("#wait").css("display", "none"); // Keep wait hide
+        $("#wait").css("display", "none"); // Keep wait hide
         // Removed media_file$$module$synpdf check and setPlayer call
-        // opt$$module$synpdf.yubvid && setPlayer$$module$synpdf("", "") // Keep yubvid check and setPlayer call
+        opt$$module$synpdf.yubvid && setPlayer$$module$synpdf("", "") // Keep yubvid check and setPlayer call
     }
 }
 
@@ -1296,7 +1296,6 @@ function readLocalFile$$module$synpdf(file = null) {
 function readMediaYub$$module$synpdf() {
     const yubidField = document.getElementById('yubid');
     const enteredId = yubidField.value.trim();
-
     // Check if the entered ID exists in global Set
     if (youtubeIds.has(enteredId)) {
         alert('YouTube video is already synced and in the database. Please find a different video to sync.');
@@ -1351,16 +1350,13 @@ function yubload$$module$synpdf(a) {
 }
 
 function setPlayer$$module$synpdf(a, b) {
-    // Removed Dropbox link replacement as Dropbox is removed
-    // b = b.replace("www.dropbox", "dl.dropboxusercontent").split("?")[0];
+    b = b.replace("www.dropbox", "dl.dropboxusercontent").split("?")[0];
     mediaFnm$$module$synpdf = 0 == b.indexOf("http") ? b : a;
     a = a.split("?")[0];
     $("#vid, #aud").attr("src", "");
     ybplayer$$module$synpdf && ybplayer$$module$synpdf.stopVideo();
     dummyPlayer$$module$synpdf.pause();
     var c = 0 <= opt$$module$synpdf.btime ? opt$$module$synpdf.btime : offset$$module$synpdf;
-    // Removed logic for local media files (audio/video tags)
-    /*
     if (a) {
         yubchk$$module$synpdf = 0;
         if (/\.webm$|\.mp4$/i.test(a)) {
@@ -1399,19 +1395,18 @@ function setPlayer$$module$synpdf(a, b) {
             2, .05);
         setSpeed$$module$synpdf(0);
         setNotationHeight$$module$synpdf() // below media_height is changed from 30% to 200px
-    } else { // Keep only the YouTube logic
-    */
-    yubchk$$module$synpdf = 1, opt$$module$synpdf.media_height || (opt$$module$synpdf.media_height = "200px"), $("#vid, #aud").css("display", "none"), $("#vidyub").css("display", "inline-block"), yubload$$module$synpdf(function() {
-        elmed$$module$synpdf = ybplayer$$module$synpdf;
-        /// pbrates$$module$synpdf = elmed$$module$synpdf.getAvailablePlaybackRates();     ///COMMENTING OUT ALLOWS YOUTUBE RATES AT 0.05 SPEED INCREMENT
-        setSpeed$$module$synpdf(0);
-        setNotationHeight$$module$synpdf();
-        elmed$$module$synpdf.cueVideoById({
-            videoId: opt$$module$synpdf.yubvid,
-            startSeconds: c
+    } else {
+        yubchk$$module$synpdf = 1, opt$$module$synpdf.media_height || (opt$$module$synpdf.media_height = "200px"), $("#vid, #aud").css("display", "none"), $("#vidyub").css("display", "inline-block"), yubload$$module$synpdf(function() {
+            elmed$$module$synpdf = ybplayer$$module$synpdf;
+            /// pbrates$$module$synpdf = elmed$$module$synpdf.getAvailablePlaybackRates();     ///COMMENTING OUT ALLOWS YOUTUBE RATES AT 0.05 SPEED INCREMENT
+            setSpeed$$module$synpdf(0);
+            setNotationHeight$$module$synpdf();
+            elmed$$module$synpdf.cueVideoById({
+                videoId: opt$$module$synpdf.yubvid,
+                startSeconds: c
+            })
         })
-    })
-    // } // End of removed local media logic
+    }
 }
 
 function setNotationHeight$$module$synpdf() {
@@ -2281,7 +2276,7 @@ function loaddrop$$module$synpdf() {
     $("#pdffile").append(a);
     $("#mediafile").append(b)
 }
-
+ 
 function dropuse$$module$synpdf() {
     function a(a) {
         $("#drpuse").prop("checked", !a);
@@ -2398,7 +2393,9 @@ $(document).ready(function() {
     // $("#mknp").change(function() {
     //     readMedia$$module$synpdf("btn", [])
     // });
-    $("#yknp").click(readMediaYub$$module$synpdf);
+    $("#yknp").click(function() {
+        readMediaYub$$module$synpdf();
+    });
     $("#yubid").keydown(function(a) {
         a.stopPropagation()
     });
@@ -2406,6 +2403,9 @@ $(document).ready(function() {
         a.stopPropagation()
     });
     $("#yubuse").change(medbtnSwitch$$module$synpdf);
+    //hide yublbl but keep it checked for functionality since always use youtube
+    $("#yubuse").prop("checked", true);
+    $("#yublbl").hide();
     // Removed Dropbox click listener
     // $("#drpuse").click(dropuse$$module$synpdf);
     $("#notation").mousedown(function(a) {

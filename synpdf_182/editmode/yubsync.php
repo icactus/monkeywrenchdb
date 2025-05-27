@@ -606,6 +606,7 @@
                                 <div id="yubfile">
                                     <input type="text" id="yubid" size="11" value="qx-ymShyfIk" title="11 characters" pattern="[A-Za-z0-9\-_]{11}" />
                                     <input type="button" id="yknp" value="load" />
+                                    <label id="yublbl">use youtube:<input id="yubuse" type="checkbox" tabindex="4" /></label>
                                 </div>
                             </label>
                         </div>
