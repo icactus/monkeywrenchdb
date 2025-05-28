@@ -29,7 +29,7 @@
         console.error('Failed to load PDF.js:', error);
     }
 })();
-
+var manualSeekInProgress = false;
 var opt$$module$synpdf, times_arr$$module$synpdf, offset_js$$module$synpdf, pdf_file$$module$synpdf, pdf_data$$module$synpdf, jpg_data$$module$synpdf, media_dir$$module$synpdf, metric_arr$$module$synpdf, pdfDoc$$module$synpdf, pdfData$$module$synpdf, jpgData$$module$synpdf, nPage$$module$synpdf =
     1,
     Cs$$module$synpdf = [],
@@ -491,18 +491,47 @@ function findCurrentMeasureTime() {
     });
 }
 
-
-
 Wijzer$$module$synpdf.prototype.goMsre = function(a, b) {
-    0 == deTijden$$module$synpdf.length || b.altKey || b.ctrlKey || b
-        .shiftKey || b.metaKey || (b.preventDefault && b.preventDefault(),
-            detix$$module$synpdf += a ? 1 : -1, 0 > detix$$module$synpdf &&
-            (detix$$module$synpdf = deTijden$$module$synpdf.length - 1),
-            detix$$module$synpdf >= deTijden$$module$synpdf.length && (
-                detix$$module$synpdf = 0), playPause2$$module$synpdf(!1,
-                    deTijden$$module$synpdf[detix$$module$synpdf].t +
-                    TOFF$$module$synpdf + offset$$module$synpdf))
+    // Condition 1: Check if there are any times to navigate
+    if (deTijden$$module$synpdf.length === 0) {
+        return; // If no times, do nothing and exit the function
+    }
+
+    // Condition 2: Check for modifier keys
+    // If any of these special keys are pressed, do nothing and exit
+    if (b.altKey || b.ctrlKey || b.shiftKey || b.metaKey) {
+        return;
+    }
+
+    // If both conditions above are false (i.e., there are times AND no modifier keys are pressed)
+    // then proceed with the navigation logic
+    if (b.preventDefault) {
+        b.preventDefault(); // Prevent the default browser action (e.g., scrolling, form submission)
+    }
+
+    // Determine the new index for the current time
+    if (a) { // If 'a' is true, move forward
+        detix$$module$synpdf += 1;
+    } else { // If 'a' is false, move backward
+        detix$$module$synpdf -= 1;
+    }
+
+    // Handle wrapping around the list of times
+    if (detix$$module$synpdf < 0) {
+        // If we went before the start, loop to the end
+        detix$$module$synpdf = deTijden$$module$synpdf.length - 1;
+    } else if (detix$$module$synpdf >= deTijden$$module$synpdf.length) {
+        // If we went past the end, loop to the beginning
+        detix$$module$synpdf = 0;
+    }
+
+    // Play/seek to the calculated time
+    playPause2$$module$synpdf(
+        false, // Assuming 'false' means to seek without necessarily pausing/playing
+        deTijden$$module$synpdf[detix$$module$synpdf].t + TOFF$$module$synpdf + offset$$module$synpdf
+    );
 };
+
 Wijzer$$module$synpdf.prototype.goUpDown = function(a, b, c) {
     var d = {},
         e;
@@ -1178,7 +1207,7 @@ function onPlayerReady() {
 
 
 async function onPlayerStateChange(event) {
-    // Handle recording switch seek
+    // Handle recording switch seek (this logic seems specific and should be preserved)
     if (bypassTickFlag === 1 && (event.data === YT.PlayerState.UNSTARTED || event.data === YT.PlayerState.BUFFERING)) {
         try {
             await seekToPromise(newPlayerCue);
@@ -1186,39 +1215,86 @@ async function onPlayerStateChange(event) {
                 (elmed$$module$synpdf.getCurrentTime() > 0 &&
                     elmed$$module$synpdf.getPlayerState() !== YT.PlayerState.PAUSED);
             bypassTickFlag = 0;
+            // If playVideo() is called, the subsequent PLAYING event should not be treated as a manualSeek.
+            manualSeekInProgress = false; // Ensure flag is clear before playVideo might trigger new events
             if (wasPlaying && event.data !== YT.PlayerState.PLAYING) {
                 elmed$$module$synpdf.playVideo();
             }
         } catch (error) {
             console.error('Failed to seek video:', error);
             bypassTickFlag = 0;
-            blockTime2x = false;
+            blockTime2x = false; // Reset blockTime2x on error
+            manualSeekInProgress = false; // Reset flag on error
         }
-        return; // Exit early to avoid interfering with manual jumps
+        return; // Exit early as this is a special handling case
     }
 
     if (event.data === YT.PlayerState.PLAYING) {
         const currentTime = elmed$$module$synpdf.getCurrentTime();
-        // Only trigger failsafe if explicitly restoring position from a switch
-        if (bypassTickFlag === 1 && Math.abs(currentTime - newPlayerCue) > 1) {
-            console.log("Failsafe seek to:", newPlayerCue, "from:", currentTime);
-            await seekToPromise(newPlayerCue);
-            bypassTickFlag = 0;
+
+        if (manualSeekInProgress) {
+            // This PLAYING state is a result of a manual seek (arrow key, click).
+            // The time2x call (T1) was already made by playPause.
+            // Skip the redundant time2x call here to prevent flutter.
+            // console.log("onPlayerStateChange: PLAYING after manual seek, suppressing time2x.");
+            manualSeekInProgress = false; // Reset the flag
+
+            // Essential updates for PLAYING state:
+            dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
+            setPauseState$$module$synpdf(false);
+            blockTime2x = false; // Allow tick function to call time2x
+            scrollFlag = 0;      // Player is active
+            // setNotationHeight$$module$synpdf(); // Usually called with time2x, test if needed independently here.
+            // If T1 from playPause handles all visual updates sufficiently, this might not be needed.
         } else {
-            bypassTickFlag = 0; // Reset to avoid lingering effects
+            // This is a "natural" PLAYING state (initial play, resume from actual pause button)
+            // or a programmatic seek not part of UI navigation (e.g., from bypassTickFlag logic above if it didn't return).
+
+            // Failsafe seek for bypassTickFlag (specific to recording switch context)
+            if (bypassTickFlag === 1 && Math.abs(currentTime - newPlayerCue) > 1) {
+                console.log("Failsafe seek to:", newPlayerCue, "from:", currentTime);
+                await seekToPromise(newPlayerCue); // This might trigger another onPlayerStateChange cycle
+                bypassTickFlag = 0;                 // Make sure this doesn't lead to loops
+            } else {
+                bypassTickFlag = 0; // Reset to avoid lingering effects
+            }
+
+            dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
+            setPauseState$$module$synpdf(false);
+            blockTime2x = false;
+            scrollFlag = 0;
+            msc_wz$$module$synpdf.time2x(currentTime - offset$$module$synpdf); // Call time2x
+            setNotationHeight$$module$synpdf();
         }
-
-        dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
-        setPauseState$$module$synpdf(false);
-        blockTime2x = false;
-
-        scrollFlag = 0;
-        msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
-        setNotationHeight$$module$synpdf();
     } else if (event.data === YT.PlayerState.PAUSED) {
         dummyPlayer$$module$synpdf.clearKlok();
         setPauseState$$module$synpdf(true);
+        scrollFlag = 1; // For instant scroll in doeRol when paused
+        manualSeekInProgress = false; // Reset flag, as the seek operation has concluded (even if it ended in PAUSED)
+    } else if (event.data === YT.PlayerState.ENDED) {
+        // Handle video ended state
+        dummyPlayer$$module$synpdf.clearKlok();
+        setPauseState$$module$synpdf(true); // Treat as paused
         scrollFlag = 1;
+        manualSeekInProgress = false; // Reset flag
+        // Call your existing function for play-pause button update
+        if (typeof updatePlayPauseButton === "function") {
+            // updatePlayPauseButton(); // setTimeout below already handles this
+        }
+    } else if (event.data === YT.PlayerState.CUED) {
+        // If you re-introduce CUED logic similar to the older version:
+        scrollFlag = 1;
+        // if (typeof newPlayerCue !== 'undefined') { // Check if newPlayerCue is still used and valid
+        //    msc_wz$$module$synpdf.time2x(newPlayerCue - offset$$module$synpdf);
+        // }
+        // setNotationHeight$$module$synpdf();
+        manualSeekInProgress = false; // Reset flag
+    } else {
+        // For other states like BUFFERING, UNSTARTED (not caught by bypassTickFlag block),
+        // ensure the flag is cleared if necessary, though the timeout in playPause is a safety net.
+        // If a seek leads to BUFFERING then PLAYING, manualSeekInProgress should persist until PLAYING.
+        // If it goes BUFFERING then PAUSED, it will be cleared in PAUSED.
+        // So, explicit clearing here might not be needed unless specific states are problematic.
     }
 
     setTimeout(updatePlayPauseButton, 250);
@@ -1359,33 +1435,77 @@ function do_count_in$$module$synpdf(a, b) {
     }
 }
 
-function playPause$$module$synpdf(a, b) {
-    if (elmed$$module$synpdf) {
-        var c = a.split(":"),
-            d = "true" == c[0],
-            e = parseFloat(c[1]);
-        c = "true" == c[2];
-        var f = yubchk$$module$synpdf ? elmed$$module$synpdf.getPlayerState() : 0,
-            g = yubchk$$module$synpdf ? 1 != f : elmed$$module$synpdf.paused;
-        yubchk$$module$synpdf ? 5 != f && elmed$$module$synpdf.seekTo(e, !0) : elmed$$module$synpdf.currentTime = e;
-        msc_wz$$module$synpdf && msc_wz$$module$synpdf.time2x(e - offset$$module$synpdf);
-        if (d) {
-            if (g) {
-                if (c) {
-                    do_count_in$$module$synpdf(a,
-                        b);
-                    return
-                }
-                if (b) {
-                    setTimeout(function() {
-                        playPause$$module$synpdf(a, 0)
-                    }, b);
-                    return
-                }
-                yubchk$$module$synpdf ? elmed$$module$synpdf.playVideo() : elmed$$module$synpdf.play()
-            } else yubchk$$module$synpdf ? 5 != f && elmed$$module$synpdf.pauseVideo() : elmed$$module$synpdf.pause();
-            msc_wz$$module$synpdf && (msc_wz$$module$synpdf.paused = !g)
+function playPause$$module$synpdf(a, b) { // a is command string, b is delay (usually 0 from playPause2)
+    if (!elmed$$module$synpdf) { // If player isn't ready, do nothing
+        console.log("playPause: Player not ready.");
+        return;
+    }
+
+    var c = a.split(":"); // command:time:countInCheck
+    var d_isPlayCommand = "true" == c[0]; // True if it's a command to play, false for seek/pause
+    var e_targetTime = parseFloat(c[1]);
+    var f_countInChecked = "true" == c[2]; // For "continue playing after sync" logic
+
+    var g_playerState = yubchk$$module$synpdf ? elmed$$module$synpdf.getPlayerState() : 0; // Get current player state
+    var h_isPaused = yubchk$$module$synpdf ? (g_playerState !== YT.PlayerState.PLAYING && g_playerState !== YT.PlayerState.BUFFERING) : elmed$$module$synpdf.paused;
+
+    // --- Logic for manualSeekInProgress flag ---
+    if (!d_isPlayCommand) {
+        // This is a seek operation (e.g., from arrow keys, click, not starting playback)
+        manualSeekInProgress = true;
+        // Safety timeout to clear the flag in case onPlayerStateChange doesn't fire as expected
+        setTimeout(function() {
+            if (manualSeekInProgress) {
+                // console.log("playPause: manualSeekInProgress cleared by timeout.");
+                manualSeekInProgress = false;
+            }
+        }, 350); // A bit longer than the onPlayerStateChange timeout for button update
+    } else {
+        // This is a command to toggle play state (play or pause)
+        manualSeekInProgress = false;
+    }
+    // --- End of manualSeekInProgress flag logic ---
+
+    // Perform the seek operation
+    if (yubchk$$module$synpdf) {
+        // For YouTube player, don't seek if it's in an unstarted state (5) unless necessary
+        if (g_playerState !== YT.PlayerState.UNSTARTED || e_targetTime > 0) { // YT.PlayerState.UNSTARTED is 5
+            elmed$$module$synpdf.seekTo(e_targetTime, true); // true: allow seek ahead
         }
+    } else {
+        elmed$$module$synpdf.currentTime = e_targetTime;
+    }
+
+    // Update visuals immediately after issuing the seek command (This is T1)
+    if (msc_wz$$module$synpdf) {
+        msc_wz$$module$synpdf.time2x(e_targetTime - offset$$module$synpdf);
+    }
+
+    // Handle actual play/pause command
+    if (d_isPlayCommand) { // If the command was to play
+        manualSeekInProgress = false; // Ensure flag is false when explicitly starting play
+        if (h_isPaused) { // If currently paused, then play
+            yubchk$$module$synpdf ? elmed$$module$synpdf.playVideo() : elmed$$module$synpdf.play();
+            setPauseState$$module$synpdf(false); // Update your internal pause state
+            if (yubchk$$module$synpdf && adv_settings$$module$synpdf.nodash && elmed$$module$synpdf.getPlaybackRate() != pbrates$$module$synpdf[opt$$module$synpdf.speed]) {
+                elmed$$module$synpdf.setPlaybackRate(pbrates$$module$synpdf[opt$$module$synpdf.speed]);
+            }
+            dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100); // Start your tick timer
+        } else { // If currently playing, then pause
+            yubchk$$module$synpdf ? elmed$$module$synpdf.pauseVideo() : elmed$$module$synpdf.pause();
+            setPauseState$$module$synpdf(true);
+            dummyPlayer$$module$synpdf.clearKlok(); // Stop your tick timer
+        }
+    } else { // If it was not a play command (i.e., it was just a seek)
+        // If the player was playing and it's YouTube, seekTo might pause it briefly.
+        // onPlayerStateChange will handle resuming if needed.
+        // If not YouTube, setting currentTime usually doesn't stop playback.
+        // The 'manualSeekInProgress' flag will ensure onPlayerStateChange doesn't cause flutter.
+    }
+
+    // Update play/pause button icon (might be slightly delayed by onPlayerStateChange too)
+    if (typeof updatePlayPauseButton === "function") {
+        // updatePlayPauseButton(); // onPlayerStateChange has a setTimeout for this
     }
 }
 
