@@ -1487,7 +1487,7 @@ function playPause$$module$synpdf(a, b) { // a is command string, b is delay (us
         if (h_isPaused) { // If currently paused, then play
             yubchk$$module$synpdf ? elmed$$module$synpdf.playVideo() : elmed$$module$synpdf.play();
             setPauseState$$module$synpdf(false); // Update your internal pause state
-            if (yubchk$$module$synpdf && adv_settings$$module$synpdf.nodash && elmed$$module$synpdf.getPlaybackRate() != pbrates$$module$synpdf[opt$$module$synpdf.speed]) {
+            if (yubchk$$module$synpdf && opt$$module$synpdf.nodash && elmed$$module$synpdf.getPlaybackRate() != pbrates$$module$synpdf[opt$$module$synpdf.speed]) {
                 elmed$$module$synpdf.setPlaybackRate(pbrates$$module$synpdf[opt$$module$synpdf.speed]);
             }
             dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100); // Start your tick timer
