@@ -15,6 +15,7 @@ let newInstrumentTime2xFlag = 0;
 let scrollFlag = 0;
 let globalHighlightColor = '#00d4ff';
 let blockTime2x = false; // Flag to disable time2x during recording change
+let isSwitchingRecording = false;
 
 //So back button will go to homepage only if on a recording
 window.isRecordingState = false;
@@ -640,19 +641,17 @@ $('#recordings-dropdown').change(function() {
     const selectedOption = $(this).find('option:selected');
     const recordingFullData = selectedOption.data('recordingFullData');
     currentRecordingGlobal = recordingFullData.recording_id;
-    bypassTickFlag = 1; // Signal a recording change
-    blockTime2x = true; // Block time2x
+    bypassTickFlag = 1;
+    blockTime2x = true;
+    isSwitchingRecording = true; // Set flag during switch
 
-    // Load preloaded data
     deTijden$$module$synpdf = metric_arr$$module$synpdf = JSON.parse(recordingFullData.times_arr_data);
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
 
-    // stop ticking
     dummyPlayer$$module$synpdf.clearKlok();
     console.log("Switch started. Blocking time2x, hiding overlay, stopping tick.");
 
-    // Get current state and time
     const currentTime = elmed$$module$synpdf.getCurrentTime();
     const wasPlaying = elmed$$module$synpdf.getPlayerState() === YT.PlayerState.PLAYING;
     console.log("Current time (old video):", currentTime, "Was playing:", wasPlaying);
