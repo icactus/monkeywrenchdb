@@ -599,6 +599,10 @@ $('#instruments-dropdown').change(function() {
     currentMetricArrGlobal = instrumentData.metric_arr_id;
     document.getElementById("notation").innerHTML = "";  // Clear notation section
 
+    // Get current recording from dropdown to ensure preloaded data
+    const recordingOption = $('#recordings-dropdown').find('option:selected');
+    const recordingFullData = recordingOption.data('recordingFullData') || {};
+
     fetchNewInstrument(instrumentData.metric_arr_id)
         .then(partData => {
             renderedCanvasesQueue = [];
@@ -607,16 +611,9 @@ $('#instruments-dropdown').change(function() {
             renderingQueue.clear();
             canShowDemaat = false;
 
-            // Ensure currentRecordingFullData exists; fallback to first recording if not
-            if (!currentRecordingFullData) {
-                const firstRecordingOption = $('#recordings-dropdown').find('option:not(:first)').first();
-                currentRecordingFullData = firstRecordingOption.data('recordingFullData') || {};
-                currentRecordingGlobal = currentRecordingFullData.recording_id || 0;
-            }
-
             // Update only part-specific data
             const updatedRecordingFullData = {
-                ...currentRecordingFullData,
+                ...recordingFullData,
                 metric_arr_id: partData.metric_arr_id,
                 metric_arr_data: partData.metric_arr_data,
                 instrument_id: instrumentData.instrument_id,
