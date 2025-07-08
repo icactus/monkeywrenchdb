@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
-    <script src="synpdf-yubsync.js?v=41"></script>
+    <script src="synpdf-full-yubsync2.js?v=42"></script>
     <style>
         html {
             width: 100%;
@@ -282,6 +282,8 @@
             max-height: 90%;
             border: grey double 5px;
         }
+
+        .helptbl td:nth-child(3) { border-left: thin black solid } 
 
         #help.showhlp {
             display: block;
@@ -669,14 +671,8 @@
             <tr>
                 <td><b>spacebar</b> or tap<br>in left margin</td>
                 <td>pause / continue</td>
-                <td><b>f</b></td>
-                <td>toggle file buttons</td>
-            </tr>
-            <tr>
-                <td><b>right arrow</b></td>
-                <td>go to next measure</td>
-                <td><b>l</b></td>
-                <td>toggle line cursor</td>
+                <td><b>+</b>/<b>-</b></td>
+                <td>increase / decrease speed</td>
             </tr>
             <tr>
                 <td><b>left arrow</b></td>
@@ -685,8 +681,10 @@
                 <td>toggle help</td>
             </tr>
             <tr>
-                <td><b>+</b>/<b>-</b></td>
-                <td>increase / decrease speed</td>
+            </tr>
+            <tr>
+                <td><b>right arrow</b></td>
+                <td>go to next measure</td>
                 <td><b>m</b></td>
                 <td>toggle menu</td>
             </tr>
@@ -698,43 +696,42 @@
                 <td><b>b</b> or tap in score</td>
                 <td>record <a href="readme.html#sync" target="_blank">sync point</a>,
                     move to the next measure.</td>
-                <td><b>g</b></td>
-                <td>remove a pair of <a href="readme.html#repeats" target="_blank">repeat marks</a>.</td>
-            </tr>
-            <tr>
-                <td><b>backspace</b> or clear button</td>
-                <td>backup one measure: erase current sync point (and all following, if any)</td>
                 <td><b>long</b> click or <b>shift</b> click in measure</td>
                 <td>add a <a href="readme.html#repeats" target="_blank">repeat mark</a> to the measure</td>
             </tr>
             <tr>
+                <td><b>backspace</b> or clear button</td>
+                <td>backup one measure: erase current sync point (and all following, if any)</td>
+                <td><b>g</b></td>
+                <td>remove a pair of <a href="readme.html#repeats" target="_blank">repeat marks</a>.</td>
+            </tr>
+            <tr>
                 <td><b>,</b></td>
-                <td>shorten the duration of the current measure</td>
+                <td>shorten the duration of the current measure by 0.1 seconds.</td>
                 <td><b>ctrl-,</b></td>
-                <td>shorten the initial offset (play back time in the media file where
-                    the first measure starts).</td>
+                <td>shorten the initial offset by 0.1 seconds (playback time in the youtube video where the first measure starts).</td>
             </tr>
             <tr>
                 <td><b>.</b></td>
-                <td>lengthen the duration of the current measure.</td>
+                <td>lengthen the duration of the current measure by 0.1 seconds.</td>
                 <td><b>ctrl-.</b></td>
-                <td>lengthen the initial offset.</td>
+                <td>lengthen the initial offset by 0.1 seconds.</td>
             </tr>
-            <tr>
+            <!-- No save timing needed <tr>
                 <td><b>w</b> or<br />save&nbsp;button</td>
                 <td colspan="3">save timings, pdf data and other settings to a file (see
                     <a href="readme.html#preload" target="_blank">preload file</a>).\n
                     Also works with dropbox. You can load a preload file with the score file button.
                 </td>
-            </tr>
+            </tr> -->
         </table>
-        synchronizing:
+        Synchronizing:
         <ul>
-            <li>At the start of every new (unsynchronized) measure the program waits for a click/tap in the score
-                (or key press &apos;B&apos;)</li>
-            <li>By clicking in the score (or typing key &apos;B&apos;) you synchronize the *first* beat of that measure to the audio.</li>
-            <li>The duration of the current measure and the initial offset are shown in the top right corner of the display.\n
-                You can precisely adjust these numbers with the keyboard sync commands (preferably when media is paused).</li>
+            <li>This program requires you to manually sync the first beat of each measure to the youtube audio by pressing 'b'.</li>
+            <li>Each time you press 'b', the program advances to the next measure. </li>
+            <li>If you make a mistake you can press Backspace to try again or manually correct the length of the currently highlighted measure with the ',' and '.' keys. Manual correction is mostly useful between movements for adding an extra second before the downbeat. Otherwise syncing should always be right on the start of the measure.</li>
+            <li>The duration of the current measure and the initial offset are shown in the top right corner of the display. You can precisely adjust these numbers with the keyboard sync commands (preferably when media is paused).</li>
+            <li>**DO NOT sync while using wireless headphones as it will cause a delay. Wired headphones are fine.</li>
         </ul>
         <button id="closehelp">Close</button>
     </div>
