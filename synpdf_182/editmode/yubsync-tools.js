@@ -413,7 +413,7 @@ function populateRecordingsDropdown(recordings) {
 
     // Add a default option
     const defaultOption = document.createElement('option');
-    defaultOption.text = recordings.length === 0 ? 'No recordings available' : '-- Select Existing Recording --';
+    defaultOption.text = recordings.length === 0 ? 'No recordings available' : '-- Existing Recordings --';
     defaultOption.value = '';
     dropdown.add(defaultOption);
 

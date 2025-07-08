@@ -738,6 +738,6 @@
         </ul>
         <button id="closehelp">Close</button>
     </div>
-    <script src="yubsync-tools.js?v=77"></script>
+    <script src="yubsync-tools.js?v=78"></script>
 </body>
 </html>
