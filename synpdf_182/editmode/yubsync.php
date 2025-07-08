@@ -586,7 +586,7 @@
                                 <button type="button" id="rewind">Rewind</button>
                             </div>
                             <div>
-                                <label for="recordingsAlready">Existing Recordings</label>
+                                <label for="recordingsAlready">Check Existing Recordings</label>
                                 <select class="dropdown-menu" id="recordingsAlready">
                                     <option value="">-- Existing Recordings --</option>
                                 </select>
