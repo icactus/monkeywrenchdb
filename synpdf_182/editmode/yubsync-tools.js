@@ -520,39 +520,6 @@ document.addEventListener('DOMContentLoaded', function() {
         resetTiming$$module$synpdf();
     });
 
-    // Add event listener for the recordings dropdown
-    const recordingsDropdown = document.getElementById('recordingsAlready');
-    if (recordingsDropdown) { // Check if the element exists (it was removed in yubsync.php, but adding listener here for completeness)
-        recordingsDropdown.addEventListener('change', function() {
-            const selectedIndex = this.value;
-            if (selectedIndex !== '' && syncedRecordingsData[selectedIndex]) {
-                const selectedRecording = syncedRecordingsData[selectedIndex];
-                // Assuming setPlayer$$module$synpdf can handle loading a YouTube video by ID and offset
-                // You might need to adjust this call based on your setPlayer$$module$synpdf implementation
-                opt$$module$synpdf.yubvid = selectedRecording.youtube_id.trim();
-                offset$$module$synpdf = parseFloat(selectedRecording.offset_js);
-
-                // Update the YouTube ID input field
-                const yubidInput = document.getElementById('yubid');
-                if (yubidInput) {
-                    yubidInput.value = opt$$module$synpdf.yubvid;
-                }
-
-                // Load the video player
-                setPlayer$$module$synpdf("", ""); // Assuming setPlayer$$module$synpdf handles loading based on opt$$module$synpdf.yubvid
-
-                // You might also want to load the corresponding timing data here if it's stored separately
-                // For now, assuming the timing data is loaded with the score file via fetchAndLoadJsFile
-                // If timing data is stored per recording, you would need to fetch it here.
-                // Example: fetchTimingData(selectedRecording.id);
-
-                console.log("Loaded recording:", selectedRecording);
-                // Optionally hide the database menus after selection
-                $('#database-menus').hide();
-            }
-        });
-    }
-
 
     // Removed event listeners for other database forms (add composer, add piece, add metric)
     // const addNewComposerForm = document.getElementById('addnewcomposerform'); ...
