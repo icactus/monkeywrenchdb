@@ -70,8 +70,6 @@
         #vid,
         #vidyub {
             display: none; /* Hide default video and YouTube container initially */
-            margin-right: 5px;
-            height: 100%; /* Adjusted in JS to 200px for youtube */
             z-index: 2;
         }
 
@@ -439,15 +437,10 @@
         }
 
         sidecontent { /* Right sidebar - keep */
+            width:300px;
             margin-top: 100px;
             padding: 1em;
             background-color: #f3f6fc;
-        }
-
-        #spdlbl { /* Speed label - remove */
-            position: fixed;
-            top: 0;
-            right: 220px;
         }
 
         html { /* Color filter - keep */
@@ -458,10 +451,13 @@
             filter: invert(1);
         }
 
-        #vidyub { /* YouTube player container - keep */
-            position: fixed;
+        #player-wrapper {
+            position:fixed;
             top: 100px;
             right: 0;
+        }
+
+        #vidyub { /* YouTube player container - keep */
             width: 300px !important;
             height: 200px;
             filter: invert(1);
@@ -611,6 +607,12 @@
                                     <label id="yublbl">use youtube:<input id="yubuse" type="checkbox" tabindex="4" /></label>
                                 </div>
                             </label>
+                                <div id="player-wrapper">
+                                    <div id="vidyub"> </div>
+                                    <form id="spdlbl">speed:
+                                        <input id="speed" type="number" min="0.1" step="0.05" max="2.0" title="0.1 <= float <= 2.0">
+                                    </form>
+                                </div>
                         </div>
                     </div>
                 </div>
@@ -643,7 +645,8 @@
     </section1>
     <section2>
         <div id="notation"> </div>
-        <sidecontent> </sidecontent>
+            <sidecontent>
+            </sidecontent>
     </section2>
     <div id="wait" class="dlog"></div>
     <div id="loadmsg" class="dlog"></div>
