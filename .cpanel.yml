@@ -36,6 +36,7 @@ deployment:
     - /bin/cp synpdf_182/editmode/yubsync.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/yubsync-tools.js $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/synpdf-yubsync.js $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/synpdf-full-yubsync2.js $DEPLOYPATH3
 
     - export DEPLOYPATH4=/home/monkcdmb/public_html/editmode-loadfiles/
     - /bin/cp -ru synpdf_182/editmode-loadfiles/* $DEPLOYPATH4
