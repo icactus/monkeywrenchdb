@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
-    <script src="synpdf-full-yubsync2.js?v=42"></script>
+    <script src="synpdf-full-yubsync2.js?v=43"></script>
     <style>
         html {
             width: 100%;
@@ -519,6 +519,10 @@
             margin:auto;
             padding-right:1em;
         }
+        #lm, #lp, #lv, #l2, #l3, #lg, #lo, #l7, #ld, #ln {
+            display:none;
+        }
+
     </style>
 </head>
 <body>
@@ -528,7 +532,7 @@
         <div id="sync">
             <div id="mbar">Menu</div>
             <form id="menu">
-                <label id="snclbl"><span>enable sync:</span> <input id="synbox" type="checkbox" /></label>
+                <label id="snclbl"><span>start sync:</span> <input id="synbox" type="checkbox" /></label>
                 <label id="lm"><span>advanced:</span> <input id="advncd" type="checkbox" /></label>
                 <label class="mnrm" id="lp"><span>full screen:</span> <input id="fscr" type="checkbox" /></label>
                 <label class="mnrm" id="lv"><span>save preload:</span><button id="show" type="button">save</button></label>

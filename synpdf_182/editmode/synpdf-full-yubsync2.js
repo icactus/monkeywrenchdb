@@ -1925,9 +1925,9 @@ function keyDown$$module$synpdf(a) {
         // case "l":
         //     $("#lncsr").click();
         //     break;
-        case "m":
-            $("#menu").toggle();
-            break;
+        // case "m":
+        //     $("#menu").toggle();
+        //     break;
         case "+":
         case "=":
             setSpeed$$module$synpdf(1);
@@ -1935,19 +1935,19 @@ function keyDown$$module$synpdf(a) {
         case "-":
             setSpeed$$module$synpdf(-1);
             break;
-        case "Escape":
-            $("#menu, #saveDlg").toggle(!1);
-            $("#help").toggleClass("showhlp", !1);
-            break;
-        case "r":
-            disableScrollingCheck = 1;
-            initialScrollTop = window.scrollY;
-            element = document.getElementById('notation');
-            element.style.overflowY = 'visible';
-            element.style.overflowX = 'visible';
-            deMetriek$$module$synpdf = JSON.parse(localStorage.getItem('jsonString'));
-            setPagenum$$module$synpdf(opt$$module$synpdf.pagenum);
-            break;
+        // case "Escape":
+        //     $("#menu, #saveDlg").toggle(!1);
+        //     $("#help").toggleClass("showhlp", !1);
+        //     break;
+        // case "r":
+        //     disableScrollingCheck = 1;
+        //     initialScrollTop = window.scrollY;
+        //     element = document.getElementById('notation');
+        //     element.style.overflowY = 'visible';
+        //     element.style.overflowX = 'visible';
+        //     deMetriek$$module$synpdf = JSON.parse(localStorage.getItem('jsonString'));
+        //     setPagenum$$module$synpdf(opt$$module$synpdf.pagenum);
+        //     break;
 
 
         default:
@@ -2700,9 +2700,11 @@ $(document).ready(function() {
     $("#sync_out * input").change(checkMenu$$module$synpdf);
     $("#menu * input").change(checkMenu$$module$synpdf);
     $(".mexp").toggle(!1);
-    $("#mbar").click(function(a) {
-        "none" == $("#menu").css("display") ? (doReadPdf$$module$synpdf = 0, $("#menu").toggle(!0)) : hideMenu$$module$synpdf()
-    });
+    // $("#mbar").click(function(a) {
+    //     "none" == $("#menu").css("display") ? (doReadPdf$$module$synpdf = 0, $("#menu").toggle(!0)) : hideMenu$$module$synpdf()
+    // });
+    // adding this to show menu by default
+    $("#menu").show();
     $(window).resize(function() {
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin()
     });
