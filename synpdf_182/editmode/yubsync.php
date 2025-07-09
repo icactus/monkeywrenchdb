@@ -282,7 +282,10 @@
         }
 
         .helptbl td:nth-child(3) { border-left: thin black solid } 
-
+        .helptbl td:first-child,
+        .helptbl td:nth-child(3) {
+            text-align: center;
+        }
         #help.showhlp {
             display: block;
         }
@@ -692,8 +695,6 @@
             <tr>
                 <td><b>right arrow</b></td>
                 <td>go to next measure</td>
-                <td><b>m</b></td>
-                <td>toggle menu</td>
             </tr>
         </table>
 
@@ -702,7 +703,7 @@
             <tr>
                 <td><b>b</b> or tap in score</td>
                 <td>record <a href="readme.html#sync" target="_blank">sync point</a>,
-                    move to the next measure.</td>
+                    move to the next measure</td>
                 <td><b>long</b> click or <b>shift</b> click in measure</td>
                 <td>add a <a href="readme.html#repeats" target="_blank">repeat mark</a> to the measure</td>
             </tr>
@@ -710,19 +711,19 @@
                 <td><b>backspace</b> or clear button</td>
                 <td>backup one measure: erase current sync point (and all following, if any)</td>
                 <td><b>g</b></td>
-                <td>remove a pair of <a href="readme.html#repeats" target="_blank">repeat marks</a>.</td>
+                <td>remove a pair of <a href="readme.html#repeats" target="_blank">repeat marks</a></td>
             </tr>
             <tr>
                 <td><b>,</b></td>
-                <td>shorten the duration of the current measure by 0.1 seconds.</td>
+                <td>shorten the duration of the current measure by 0.1 seconds</td>
                 <td><b>ctrl-,</b></td>
-                <td>shorten the initial offset by 0.1 seconds (playback time in the youtube video where the first measure starts).</td>
+                <td>shorten the initial offset by 0.1 seconds (playback time in the youtube video where the first measure starts)</td>
             </tr>
             <tr>
                 <td><b>.</b></td>
-                <td>lengthen the duration of the current measure by 0.1 seconds.</td>
+                <td>lengthen the duration of the current measure by 0.1 seconds</td>
                 <td><b>ctrl-.</b></td>
-                <td>lengthen the initial offset by 0.1 seconds.</td>
+                <td>lengthen the initial offset by 0.1 seconds</td>
             </tr>
             <!-- No save timing needed <tr>
                 <td><b>w</b> or<br />save&nbsp;button</td>
