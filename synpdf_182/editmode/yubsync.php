@@ -333,6 +333,11 @@
             background-color: #eee;
         }
 
+        #closehelp {
+            display:block;
+            margin:auto;
+        }
+
         .noheight { /* Used by JS to hide buttons container - keep */
             display: none !important;
         }
