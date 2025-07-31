@@ -16,9 +16,6 @@
             height: 100%;
             margin: 0px;
             padding: 0px;
-            background: white
-                /*#e3f7fe*/
-            ;
         }
 
         body {
@@ -26,9 +23,6 @@
             height: 100%;
             margin: 0px;
             padding: 0px;
-            background: white
-                /*#e3f7fe*/
-            ;
             transition: filter 0.5s;
         }
 
