@@ -635,7 +635,7 @@
                             </div>
                             <label id="yvdlbl">youtube id to sync:
                                 <div id="yubfile">
-                                    <input type="text" id="yubid" size="11" placeholder="e.g., dQw4w9WgXcQ" title="11 characters" pattern="[A-Za-z0-9\-_]{11}" />
+                                    <input type="text" id="yubid" size="16" placeholder="e.g., dQw4w9WgXcQ" title="11 characters" pattern="[A-Za-z0-9\-_]{11}" />
                                         <div class="tooltip-container">
                                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 1em; width: auto; vertical-align: middle;">
                                                 <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
