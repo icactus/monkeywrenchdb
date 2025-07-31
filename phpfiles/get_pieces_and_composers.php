@@ -10,42 +10,33 @@ if ($mysqli->connect_error) {
     die("Connection failed: " . $mysqli->connect_error);
 }
 
-// Query to get list of pieces
-$piecesQuery = "SELECT p.piece_id, c.composer_id, c.composer_last, c.composer_first, p.piece_name 
-                FROM pieces p
-                LEFT JOIN composers c ON p.composer_id = c.composer_id
-                ORDER BY p.piece_name ASC";
-$piecesResult = $mysqli->query($piecesQuery);
+// ONE query to get all piece and related composer data
+$query = "SELECT p.piece_id, p.piece_name, c.composer_id, c.composer_first, c.composer_last
+          FROM pieces p
+          LEFT JOIN composers c ON p.composer_id = c.composer_id";
+$result = $mysqli->query($query);
+$allData = $result->fetch_all(MYSQLI_ASSOC);
 
+// Initialize both arrays
+$piecesArray = [];
+$composersArray = [];
 
-// Fetch all data from the result set into an array
-$piecesData = $piecesResult->fetch_all(MYSQLI_ASSOC);
+// Loop ONCE to build both arrays
+foreach ($allData as $row) {
+    // Populate the pieces array
+    $piecesArray[$row["piece_id"]] = $row["composer_last"] . ", " . $row["composer_first"] . " - " . $row["piece_name"] . " - (id# " . $row["piece_id"] . ")";
 
-// Build array of pieces for dropdown
-$piecesArray = array();
-foreach ($piecesData as $row) {
-    $piecesArray[$row["piece_id"]] = $row["composer_last"] . " #" . $row["piece_id"] . " - " . $row["piece_name"];
-}
-asort($piecesArray);
-
-// Query to get list of composers
-$composersQuery = "SELECT c.composer_id, c.composer_last, c.composer_first 
-                   FROM composers c
-                   LEFT JOIN pieces p ON p.composer_id = c.composer_id
-                   ORDER BY c.composer_last ASC";
-$composersResult = $mysqli->query($composersQuery);
-
-// Fetch all data from the result set into an array
-$composersData = $composersResult->fetch_all(MYSQLI_ASSOC);
-
-// Build array of composers for dropdown
-$composersArray = array();
-foreach ($composersData as $row) {
-    $composersArray[$row["composer_id"]] = $row["composer_last"] . ", " . $row["composer_first"];
+    // If composer exists, add them to the composers array (avoiding duplicates)
+    if (!is_null($row["composer_id"]) && !array_key_exists($row["composer_id"], $composersArray)) {
+        $composersArray[$row["composer_id"]] = $row["composer_last"] . ", " . $row["composer_first"];
+    }
 }
 
-// Sort the array in ascending order
+// Sort the arrays after they are built
+asort($piecesArray, SORT_NATURAL | SORT_FLAG_CASE);
 asort($composersArray);
+
+// The queries for instruments and categories remain the same...
 
 // Query to get list of instruments
 $instrumentsQuery = "SELECT instrument_id, instrument_name, part_number, instrument_key FROM instruments ORDER BY instrument_id ASC";
