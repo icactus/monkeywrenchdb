@@ -2492,7 +2492,8 @@ function syncChk$$module$synpdf() {
     if (msc_wz$$module$synpdf) {
         // Toggle visibility of elements based on the sync box state
         $("#sync_out, .reptkn").toggle(!!opt$$module$synpdf.synbox);
-        $("#lm").toggle(!opt$$module$synpdf.synbox);
+        // Commenting out toggle of advanced mode
+        // $("#lm").toggle(!opt$$module$synpdf.synbox);
 
         // // Commenting out these so at end of sync we don't display menu for no reason
         // if (opt$$module$synpdf.advncd) {
