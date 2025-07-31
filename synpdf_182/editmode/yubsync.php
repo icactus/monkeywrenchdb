@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
-    <script src="synpdf-full-yubsync2.js?v=43"></script>
+    <script src="synpdf-full-yubsync2.js?v=44"></script>
     <style>
         html {
             width: 100%;
