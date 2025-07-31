@@ -1150,7 +1150,8 @@ function kliklang$$module$synpdf(a) {
     void 0 == touchDev$$module$synpdf && (touchDev$$module$synpdf = "touchstart" == a.type);
     var b = touchDev$$module$synpdf ? $(this) : $("body");
     a.stopPropagation();
-    if (hideMenuHelp$$module$synpdf(0) || touchDev$$module$synpdf && "mousedown" == a.type) a.preventDefault();
+    hideMenuHelp$$module$synpdf(0);
+    if (touchDev$$module$synpdf && "mousedown" == a.type) a.preventDefault();
     else {
         touch_moved$$module$synpdf = 0;
         a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
