@@ -645,7 +645,7 @@
                                             </svg>
                                             <span class="tooltip-text">The YouTube ID is the string of characters found at the very end of the video's URL (e.g., `dQw4w9WgXcQ` in `youtube.com/watch?v=dQw4w9WgXcQ`).</span>
                                         </div>
-                                        <input type="button" id="yknp" value="load" />
+                                        <input type="button" id="yknp" value="Load" />
                                     <label id="yublbl">use youtube:<input id="yubuse" type="checkbox" tabindex="4" /></label>
                                 </div>
                             </label>
