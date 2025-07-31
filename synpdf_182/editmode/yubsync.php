@@ -128,7 +128,7 @@
 
         .tooltip-text {
             visibility: hidden;
-            width: 200px;
+            width: 300px;
             background-color: #555;
             color: #fff;
             text-align: center;
