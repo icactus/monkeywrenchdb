@@ -2494,13 +2494,13 @@ function syncChk$$module$synpdf() {
         $("#sync_out, .reptkn").toggle(!!opt$$module$synpdf.synbox);
         $("#lm").toggle(!opt$$module$synpdf.synbox);
 
-        // Toggle advanced or normal measure display based on settings
-        if (opt$$module$synpdf.advncd) {
-            $(".mexp").toggle(!opt$$module$synpdf.synbox);
-        } else {
-            $(".mnrm").toggle(!opt$$module$synpdf.synbox);
-        }
-
+        // // Commenting out these so at end of sync we don't display menu for no reason
+        // if (opt$$module$synpdf.advncd) {
+        //     $(".mexp").toggle(!opt$$module$synpdf.synbox);
+        // } else {
+        //     $(".mnrm").toggle(!opt$$module$synpdf.synbox);
+        // }
+        //
         // Determine action based on the sync box state
         if (opt$$module$synpdf.synbox) {
             // If sync is enabled:
