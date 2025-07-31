@@ -2615,7 +2615,8 @@ function addtips$$module$synpdf() {
 }
 
 function hideMenu$$module$synpdf() {
-    $("#menu").toggle(!1);
+    // Always keep menu open now that it is stripped
+    //$("#menu").toggle(!1);
 
     doReadPdf$$module$synpdf && (resizePdfSyn$$module$synpdf(), doReadPdf$$module$synpdf = 0)
 }
@@ -2643,9 +2644,6 @@ $(document).ready(function() {
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
     });
-    // NO Copyright notice
-    // var a = '<a href="http://wim.vree.org/js2/" target="_blank">synpdf</a> (version: ' + msc_VERSION$$module$synpdf + ")</br>\u00a9Willem Vree";
-    // $("#help").prepend('<div style="position: absolute; right: 5px;">' + a + "</div>");
     $("#closehelp").click(function() {
         $("#help").toggleClass("showhlp", 0)
     });
