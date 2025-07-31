@@ -122,7 +122,45 @@
         #yublbl { /* Label for "use youtube" checkbox - REMOVED */
             display: inline-block;
         }
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+        }
 
+        .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%; /* Position the tooltip above the icon */
+            left: 50%;
+            margin-left: -100px; /* Center the tooltip */
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%; /* At the bottom of the tooltip */
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #555 transparent transparent transparent;
+        }
+
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
         #rollijn { /* Score line cursor - keep */
             position: fixed;
             height: 0px;
@@ -411,17 +449,6 @@
             background-color: rgba(0, 0, 255, 0.3);
         }
 
-        #tooltip { /* Keep for tooltip */
-            z-index: 1000;
-            font-weight: bold;
-            position: absolute;
-            width: auto;
-            height: auto;
-            /* background-color: #f2f2f2AA; */
-            /* padding: 10px; */
-            pointer-events: none;
-            /* Ensures tooltip doesn't interfere with mouse movements */
-        }
 
         section1 { /* Top section - keep */
             background: -webkit-linear-gradient(42deg, rgba(255, 250, 0, 1) 0%, rgba(125, 255, 66, 1) 31%, rgba(0, 212, 255, 1) 100%);
@@ -468,10 +495,6 @@
         #vidyub { /* YouTube player container - keep */
             width: 300px !important;
             height: 200px;
-            filter: invert(1);
-        }
-
-        #tooltip { /* Color filter - keep */
             filter: invert(1);
         }
 
@@ -535,7 +558,6 @@
 </head>
 <body>
     <?php include "../../phpfiles/get_pieces_and_composers.php"; ?>
-    <div id="tooltip"></div>
     <section1>
         <div id="sync">
             <div id="mbar">Menu</div>
@@ -612,10 +634,19 @@
                             <div>
                                 <h2>Step 2</h2>
                             </div>
-                            <label id="yvdlbl">youtube id:
+                            <label id="yvdlbl">youtube id to sync:
                                 <div id="yubfile">
-                                    <input type="text" id="yubid" size="11" value="qx-ymShyfIk" title="11 characters" pattern="[A-Za-z0-9\-_]{11}" />
-                                    <input type="button" id="yknp" value="load" />
+                                    <input type="text" id="yubid" size="11" placeholder="e.g., dQw4w9WgXcQ" title="11 characters" pattern="[A-Za-z0-9\-_]{11}" />
+                                        <div class="tooltip-container">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 1em; width: auto; vertical-align: middle;">
+                                                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
+                                                <text x="12" y="14" font-family="Georgia, serif" font-size="14" font-weight="bold" fill="currentColor" text-anchor="middle" alignment-baseline="middle">
+                                                    i
+                                                </text>
+                                            </svg>
+                                            <span class="tooltip-text">The YouTube ID is the string of characters found at the very end of the video's URL (e.g., `dQw4w9WgXcQ` in `youtube.com/watch?v=dQw4w9WgXcQ`).</span>
+                                        </div>
+                                        <input type="button" id="yknp" value="load" />
                                     <label id="yublbl">use youtube:<input id="yubuse" type="checkbox" tabindex="4" /></label>
                                 </div>
                             </label>
