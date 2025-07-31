@@ -86,7 +86,6 @@
             display: flex;
             justify-content: center;
             padding-top: 5px;
-            overflow: auto;
             width: 100%; /* Make it take full width */
             flex-wrap: wrap; /* Allow wrapping on smaller screens */
             gap: 10px; /* Added gap */
@@ -114,7 +113,6 @@
 
         #yvdlbl { /* Label for YouTube ID - keep */
             /* Removed display: none; */ /* Now always visible */
-            display: block; /* Ensure it's a block element */
             margin-top: 5px;
             white-space: normal;
         }
