@@ -116,6 +116,7 @@
             /* Removed display: none; */ /* Now always visible */
             display: block; /* Ensure it's a block element */
             margin-top: 5px;
+            white-space: normal;
         }
 
         #drplbl, /* Label for Dropbox - remove */
