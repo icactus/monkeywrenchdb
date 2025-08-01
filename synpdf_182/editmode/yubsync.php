@@ -523,10 +523,10 @@
     <body>
         <div id="logo-div">
             <a href="/">
-                <img id="monkey-logo" src="/../monkeydark.png"></img>
+                <img id="monkey-logo" src="../monkeydark.png"></img>
             </a>
         </div>
-        <?php include "/../../phpfiles/get_pieces_and_composers.php"; ?>
+        <?php include "../../phpfiles/get_pieces_and_composers.php"; ?>
         <section1>
         <div id="sync">
                 <div id="mbar">
