@@ -419,7 +419,7 @@ async function bootFromDB(pieceId, partId) {
     const data = await r.json();
 
     // Set globals for synpdf boot:
-    window.pdf_file$$module$synpdf = data.pdf_file;      // e.g., "100-82.pdf"
+    window.pdf_file$$module$synpdf = '../pdfs/' + data.pdf_file;      // e.g., "100-82.pdf"
     window.metric_arr$$module$synpdf = data.metric_arr;    // array
     window.adv_settings$$module$synpdf = data.adv_settings || {};
     window.times_arr$$module$synpdf = undefined;          // new sync
