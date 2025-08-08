@@ -517,7 +517,7 @@
             display:flex;
             flex-direction:row;
         }
-        #yubfile-label-wrapper {
+        .label-wrapper {
             display:flex;
             flex-direction:row;
         }
@@ -598,7 +598,17 @@
                                 </select>
                             </div>
                             <div>
-                                <label for="sync-part">2) Select Part</label>
+                                    <div class="label-wrapper">2) Select Part
+                                    <div class="tooltip-container">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 1em; padding-bottom:4px; margin-left:4px; width: auto; vertical-align: middle;">
+                                            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
+                                            <text x="12" y="14" font-family="Georgia, serif" font-size="14" font-weight="bold" fill="currentColor" text-anchor="middle" alignment-baseline="middle">
+                                                i
+                                            </text>
+                                        </svg>
+                                        <span class="tooltip-text">Full score or piano score are best for syncing.</span>
+                                        </div>
+                                    </div>
                                 <select class="dropdown-menu" id="sync-part">
                                     <option value="">Select part...</option>
                                 </select>
@@ -615,7 +625,7 @@
                             </div>
                             <div id="yubfile">
                                 <label id="yvdlbl">
-                                    <div id="yubfile-label-wrapper">Youtube id to sync:
+                                    <div class="label-wrapper">Youtube id to sync:
                                     <div class="tooltip-container">
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 1em; padding-bottom:4px; margin-left:4px; width: auto; vertical-align: middle;">
                                             <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
