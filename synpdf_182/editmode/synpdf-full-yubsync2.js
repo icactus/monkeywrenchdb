@@ -2689,7 +2689,9 @@ function hideMenu$$module$synpdf() {
 }
 
 function hideMenuHelp$$module$synpdf(a) {
-    var b = "none" != $("#menu").css("display") || $("#help").hasClass("showhlp");
+    //changing below so menu can stay open - it was messing with kliklang
+    //var b = "none" != $("#menu").css("display") || $("#help").hasClass("showhlp");
+    var b = $("#help").hasClass("showhlp");
     b ? ($("#help").toggleClass("showhlp", !1), setTimeout(hideMenu$$module$synpdf, 0)) : a && keyDown$$module$synpdf({
         key: " "
     });
