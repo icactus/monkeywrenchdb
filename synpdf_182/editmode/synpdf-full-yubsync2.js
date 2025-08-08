@@ -756,7 +756,14 @@ Wijzer$$module$synpdf.prototype.setTmargin = function() {
     var d = $("#notation").height();
     b + 2 * dottedHeight$$module$synpdf > a + d && (b = a + d - 2 * dottedHeight$$module$synpdf, $("#rollijn").css("top", b + "px"));
     this.tmargin = dottedHeight$$module$synpdf + b - a;
-    doeRol$$module$synpdf(c.y - this.tmargin, 1)
+    // --- anti-recursion + stability at fractional zooms:
+    var target = Math.max(0, Math.round(c.y - this.tmargin));   // never negative
+    var cur = (deNot$$module$synpdf && deNot$$module$synpdf.scrollTop) || 0;
+    if (target === cur) return;                                  // no-op -> avoid loop
+    cancelAnimationFrame(this.__stm_raf || 0);
+    this.__stm_raf = requestAnimationFrame(function() {
+        doeRol$$module$synpdf(target, 1);                          // run after layout settles
+    });
 };
 
 Wijzer$$module$synpdf.prototype.compCountIn = function() {
