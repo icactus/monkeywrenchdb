@@ -1143,91 +1143,156 @@ function tick$$module$synpdf(a) {
     }
 }
 
-function kliklang$$module$synpdf(a) {
-    void 0 == touchDev$$module$synpdf && (touchDev$$module$synpdf = "touchstart" == a.type);
-    var b = touchDev$$module$synpdf ? $(this) : $("body");
-    a.stopPropagation();
-    if (hideMenuHelp$$module$synpdf(0) || touchDev$$module$synpdf && "mousedown" == a.type) a.preventDefault();
-    else {
+// This helper converts a pointer event into coordinates relative to the #notation content,
+// correctly handling both window scrolling and #notation internal scrolling.
+function getNotationRelativeCoords(evt) {
+    const touch = (typeof touchDev$$module$synpdf === 'undefined'
+        ? (evt.type && evt.type.startsWith('touch'))
+        : touchDev$$module$synpdf)
+        ? (evt.originalEvent ? evt.originalEvent.changedTouches[0] : evt.changedTouches[0])
+        : evt;
+
+    // Viewport coordinates
+    const clientX = touch.clientX;
+    const clientY = touch.clientY;
+
+    // Window scroll (page) offsets
+    const pageX = (window.pageXOffset !== undefined)
+        ? window.pageXOffset
+        : (document.documentElement.scrollLeft || 0);
+    const pageY = (window.pageYOffset !== undefined)
+        ? window.pageYOffset
+        : (document.documentElement.scrollTop || 0);
+
+    // #notation element metrics
+    const $notation = $("#notation");
+    const notationOffset = $notation.offset(); // document-based
+    const notationScrollTop = $notation.scrollTop() || 0; // internal scroll in the container
+
+    // Wijzer stores the canvas' document-left in xoffset
+    const xoffsetCanvasDocLeft = (msc_wz$$module$synpdf && msc_wz$$module$synpdf.xoffset) || (notationOffset ? notationOffset.left : 0);
+
+    // Convert to document-based click position, then to #notation content coords
+    const xDoc = clientX + pageX; // document X
+    const yDoc = clientY + pageY; // document Y
+
+    const xInNotation = xDoc - xoffsetCanvasDocLeft; // same logic as before, but pageX-aware
+    const yInNotation = yDoc - (notationOffset ? notationOffset.top : 0) + notationScrollTop;
+
+    return { xInNotation, yInNotation, clientX, clientY };
+}
+
+function kliklang$$module$synpdf(evt) {
+    void 0 == touchDev$$module$synpdf && (touchDev$$module$synpdf = "touchstart" == evt.type);
+    var $scope = touchDev$$module$synpdf ? $(this) : $("body");
+    evt.stopPropagation();
+    if (hideMenuHelp$$module$synpdf(0) || (touchDev$$module$synpdf && "mousedown" == evt.type)) {
+        evt.preventDefault();
+    } else {
         touch_moved$$module$synpdf = 0;
-        a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
-        var c = a.clientY,
-            d = a.clientX;
+        var start = touchDev$$module$synpdf ? evt.originalEvent.changedTouches[0] : evt;
+        var startClientY = start.clientY,
+            startClientX = start.clientX;
         touch_tb$$module$synpdf = (new Date).getTime();
-        var e = a.shiftKey;
-        b.on(touchDev$$module$synpdf ? "touchmove" :
-            "mousemove",
-            function(a) {
-                a.stopPropagation();
-                a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
-                touch_moved$$module$synpdf = 10 < Math.abs(a.clientY - c) + Math.abs(a.clientX - d)
-            });
-        b.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function(a) {
-            a.stopPropagation();
-            a.preventDefault();
-            b.off("mousemove touchmove mouseup touchend");
+        var isShift = start.shiftKey;
+
+        $scope.on(touchDev$$module$synpdf ? "touchmove" : "mousemove", function(moveEvt) {
+            moveEvt.stopPropagation();
+            var m = touchDev$$module$synpdf ? moveEvt.originalEvent.changedTouches[0] : moveEvt;
+            touch_moved$$module$synpdf = 10 < Math.abs(m.clientY - startClientY) + Math.abs(m.clientX - startClientX);
+        });
+
+        $scope.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function(endEvt) {
+            endEvt.stopPropagation();
+            endEvt.preventDefault();
+            $scope.off("mousemove touchmove mouseup touchend");
             if (!touch_moved$$module$synpdf) {
-                a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
-                var c = 500 < (new Date).getTime() - touch_tb$$module$synpdf || e;
-                var d = a.clientX;
-                d -= msc_wz$$module$synpdf.xoffset;
-                a = a.clientY;
-                a -= $("#notation").offset().top;
-                a += $("#notation").scrollTop();
-                c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(d, a) : msc_wz$$module$synpdf.x2time(d, a, c)
+                var endPoint = touchDev$$module$synpdf ? endEvt.originalEvent.changedTouches[0] : endEvt;
+                var longOrShift = 500 < (new Date).getTime() - touch_tb$$module$synpdf || isShift;
+
+                // *** FIXED: compute coords with window scroll + notation scroll ***
+                var coords = getNotationRelativeCoords(endEvt);
+                var x = coords.xInNotation;
+                var y = coords.yInNotation;
+
+                longOrShift && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(x, y)
+                    : msc_wz$$module$synpdf.x2time(x, y, longOrShift);
             }
-        })
+        });
     }
 }
 
-function annot_move$$module$synpdf(a) {
-    if (opt$$module$synpdf.annot) {
-        var b = $(this);
-        void 0 == touchDev$$module$synpdf && (touchDev$$module$synpdf = "touchstart" == a.type);
-        var c = touchDev$$module$synpdf ? b : $("body"),
-            d = parseInt(b.attr("id").replace("ant", ""));
-        a.stopPropagation();
-        a.preventDefault();
-        a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
-        var e = $("#notation").scrollTop() - $("#notation").offset().top,
-            f = $(this).offset(),
-            g = a.clientX - f.left,
-            p = a.clientY - f.top,
-            m = a.clientY,
-            n = a.clientX,
-            l = a.shiftKey;
-        touch_moved$$module$synpdf = 0;
-        touch_tb$$module$synpdf = (new Date).getTime();
-        c.on(touchDev$$module$synpdf ? "touchmove" : "mousemove", function(a) {
-            a.stopPropagation();
-            a.preventDefault();
-            a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
-            if (touch_moved$$module$synpdf = 10 < Math.abs(a.clientY - m) + Math.abs(a.clientX - n)) {
-                var c = a.clientY - p;
-                a = a.clientX - g;
-                b.css({
-                    top: e + c + "px",
-                    left: a - msc_wz$$module$synpdf.xoffset + "px"
-                });
-                var f = annots$$module$synpdf[d];
-                f.w = msc_wz$$module$synpdf.width;
-                f.c = opt$$module$synpdf.cropx;
-                f.x = Math.round(100 * (a - msc_wz$$module$synpdf.xoffset)) / 100;
-                f.y = Math.round(100 * (c + e)) / 100
+function annot_move$$module$synpdf(evt) {
+    if (!opt$$module$synpdf.annot) return;
+    var $el = $(this);
+    void 0 == touchDev$$module$synpdf && (touchDev$$module$synpdf = "touchstart" == evt.type);
+    var $scope = touchDev$$module$synpdf ? $el : $("body");
+    var idx = parseInt($el.attr("id").replace("ant", ""), 10);
+    evt.stopPropagation();
+    evt.preventDefault();
+
+    var start = touchDev$$module$synpdf ? evt.originalEvent.changedTouches[0] : evt;
+
+    // Document-based offsets at start
+    var $notation = $("#notation");
+    var notationOffset = $notation.offset();
+    var notationScrollTop = $notation.scrollTop() || 0;
+
+    var elStart = $el.offset(); // document-based
+    var grabDX = start.clientX + (window.pageXOffset || 0) - elStart.left;
+    var grabDY = start.clientY + (window.pageYOffset || 0) - elStart.top;
+
+    var startClientY = start.clientY, startClientX = start.clientX;
+    var isShift = start.shiftKey;
+    touch_moved$$module$synpdf = 0;
+    touch_tb$$module$synpdf = (new Date).getTime();
+
+    $scope.on(touchDev$$module$synpdf ? "touchmove" : "mousemove", function(moveEvt) {
+        moveEvt.stopPropagation();
+        moveEvt.preventDefault();
+        var m = touchDev$$module$synpdf ? moveEvt.originalEvent.changedTouches[0] : moveEvt;
+        if (touch_moved$$module$synpdf = 10 < Math.abs(m.clientY - startClientY) + Math.abs(m.clientX - startClientX)) {
+            var mDocX = m.clientX + (window.pageXOffset || 0);
+            var mDocY = m.clientY + (window.pageYOffset || 0);
+
+            var newLeftDoc = mDocX - grabDX; // document-based left of element
+            var newTopDoc = mDocY - grabDY; // document-based top of element
+
+            // Convert to notation content coordinates for saving
+            var xInNotation = newLeftDoc - ((msc_wz$$module$synpdf && msc_wz$$module$synpdf.xoffset) || (notationOffset ? notationOffset.left : 0));
+            var yInNotation = newTopDoc - (notationOffset ? notationOffset.top : 0) + notationScrollTop;
+
+            // Move element visually (absolute positioned inside #notation)
+            $el.css({ top: yInNotation + "px", left: xInNotation + "px" });
+
+            // Update model
+            var a = annots$$module$synpdf[idx];
+            a.w = msc_wz$$module$synpdf.width;
+            a.c = opt$$module$synpdf.cropx;
+            a.x = Math.round(100 * xInNotation) / 100;
+            a.y = Math.round(100 * yInNotation) / 100;
+        }
+    });
+
+    $scope.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function(upEvt) {
+        upEvt.stopPropagation();
+        upEvt.preventDefault();
+        if (!touch_moved$$module$synpdf) {
+            var dt = (new Date).getTime() - touch_tb$$module$synpdf;
+            var i = parseInt($el.attr("id").replace("ant", ""), 10);
+            if (dt < 500 && !isShift) {
+                var val = prompt("Edit the annotation", annots$$module$synpdf[i].t);
+                if (val != null) {
+                    annots$$module$synpdf[i].t = val.length ? val : "right click on annotation deletes!";
+                    msc_wz$$module$synpdf.draw_annots(1);
+                }
+            } else if (confirm("Do you really want to delete this annotation?")) {
+                annots$$module$synpdf[i].d = 1;
+                $el.remove();
             }
-        });
-        c.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function(a) {
-            a.stopPropagation();
-            a.preventDefault();
-            if (!touch_moved$$module$synpdf) {
-                var d = (new Date).getTime() - touch_tb$$module$synpdf;
-                a = parseInt(b.attr("id").replace("ant", ""));
-                500 > d && !l ? (d = prompt("Edit the annotation", annots$$module$synpdf[a].t), null != d && (annots$$module$synpdf[a].t = d.length ? d : "right click on annotation deletes!", msc_wz$$module$synpdf.draw_annots(1))) :
-                    confirm("Do you really want to delete this annotation?") && (annots$$module$synpdf[a].d = 1, b.remove())
-            }
-            c.off("mousemove touchmove mouseup touchend")
-        })
-    }
+        }
+        $scope.off("mousemove touchmove mouseup touchend");
+    });
 }
 
 function startIntf$$module$synpdf(a) {

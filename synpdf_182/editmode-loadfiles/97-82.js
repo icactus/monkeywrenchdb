@@ -14,7 +14,7 @@ opt = {"speed":1.2,"no_menu":0,"btns":1,"spdctl":1,"cropx":0,"drmpl":0.4,"pagewd
 "wpdf":0,"lncsr":0,"nomed":0,"noplyr":0,"nodash":0,"skipn":0,"drmpl2":0.1,"seln":0,"delay":0,
 "ipaddr":"","mstr":0,"bpmsr":"4-20-1","loop":false,"annot":0,"zwgrens":0.7,"voorna":0.75,
 "mtdrmpl":0.75,"dx":3,"fscr":0,"pagenum":66,"playbtn":0,"mmin":"","fixwd":1000,"lastSynced": -1,
-"eerst":0,"sysprf":0,"onestf":0,"advncd":false,"yubvid":"HAw4iDDWby8","media_height":"200px",
+"eerst":0,"sysprf":0,"onestf":0,"advncd":false,"yubvid":"gkzmvZImk4A","media_height":"200px",
 "offrol":"1.15%"};
 lpRec = {"loopBtn":1,"loopStart":0,"loopEnd":7200};
 times_arr = [];
