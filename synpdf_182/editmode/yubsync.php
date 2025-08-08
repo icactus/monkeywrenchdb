@@ -507,6 +507,9 @@
             flex-direction:column;
             align-items:stretch;
         }
+        #piece_id1 {
+            max-width:250px;
+        }
         #step3-container {
             display:flex;
             flex-direction:column;
@@ -588,7 +591,7 @@
                                 <button type="button" id="rewind">Rewind</button>
                             </div>
                             <div>
-                                <label for="recordingsAlready">Check Existing Recordings</label>
+                                <label for="recordingsAlready">Check Already Synced Recordings</label>
                                 <select class="dropdown-menu" id="recordingsAlready">
                                     <option value="">-- Existing Recordings --</option>
                                 </select>
