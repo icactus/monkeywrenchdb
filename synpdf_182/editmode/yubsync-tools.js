@@ -571,7 +571,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 
-    // Keep event listeners for loading piece and rewinding
+    // Keep event listeners for loading piece
     const loadBtn = document.getElementById('loadBtn');
     const pieceSelect = document.getElementById('piece_id1');
     const partSelect = document.getElementById('sync-part');
@@ -620,23 +620,6 @@ document.addEventListener('DOMContentLoaded', function() {
             alert(`Error loading score: ${err.message}`);
         }
     });
-
-    const rewindBtn = document.getElementById('rewind');
-    rewindBtn.addEventListener('click', function() {
-        lastSynced$$module$synpdf = -1;
-        detix$$module$synpdf = 0;
-        demix$$module$synpdf = 0;
-        opt$$module$synpdf.pagenum = 1;
-        msc_wz$$module$synpdf.time2x(0);
-        resetTiming$$module$synpdf();
-    });
-
-
-    // Removed event listeners for other database forms (add composer, add piece, add metric)
-    // const addNewComposerForm = document.getElementById('addnewcomposerform'); ...
-    // const addNewPieceForm = document.getElementById('addnewpieceform'); ...
-    // const addNewMetricForm = document.getElementById("addnewmetricform"); ...
-
 });
 
 // Keep event listener to stop propagation for text inputs

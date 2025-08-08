@@ -510,6 +510,9 @@
         #piece_id1 {
             max-width:250px;
         }
+        #sync-part {
+            width:100%;
+        }
         #yubfile {
             display:flex;
             flex-direction:row;
@@ -538,7 +541,7 @@
                 <img id="monkey-logo" src="../monkeydark.png"></img>
             </a>
         </div>
-        <?php include "../../phpfiles/get_pieces_and_composers.php"; ?>
+        <?php include "/../../phpfiles/get_pieces_and_composers.php"; ?>
         <section1>
         <div id="sync">
                 <div id="mbar">
@@ -602,7 +605,6 @@
                             </div>
                             <div>
                                 <button type="button" id="loadBtn">Load</button>
-                                <button type="button" id="rewind">Rewind</button>
                             </div>
                         </form>
                     </div>
@@ -779,6 +781,6 @@ Also works with dropbox. You can load a preload file with the score file button.
                 <br />
                 <button id="closehelp">Close</button>
         </div>
-        <script src="yubsync-tools.js?v=80"></script>
+        <script src="yubsync-tools.js?v=81"></script>
     </body>
 </html>
