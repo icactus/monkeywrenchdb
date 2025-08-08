@@ -478,7 +478,7 @@
             display:flex;
             flex:1;
             flex-direction: column;
-            align-items: center;
+            align-items: stretch;
             justify-content: flex-start;
             gap: 10px;
             margin: 8px 0 8px 12px;
@@ -507,7 +507,7 @@
             flex-direction:column;
             align-items:stretch;
         }
-        #piece_id1 {
+        #piece_id1, #recordingsAlready {
             max-width:250px;
         }
         #sync-part {
