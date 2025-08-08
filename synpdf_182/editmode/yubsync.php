@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
-    <script src="synpdf-full-yubsync2.js?v=48"></script>
+    <script src="synpdf-full-yubsync2.js?v=49"></script>
     <style>
         html {
             width: 100%;
@@ -452,12 +452,13 @@
 
         #player-wrapper {
             position:fixed;
-            top: 100px;
+            top: 200px;
             right: 0;
+            z-index:2;
         }
 
         #vidyub { /* YouTube player container - keep */
-            width: 300px !important;
+            width: 320px !important;
             height: 200px;
             filter: invert(1);
         }
