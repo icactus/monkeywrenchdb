@@ -779,6 +779,6 @@ Also works with dropbox. You can load a preload file with the score file button.
                 <br />
                 <button id="closehelp">Close</button>
         </div>
-        <script src="yubsync-tools.js?v=78"></script>
+        <script src="yubsync-tools.js?v=79"></script>
     </body>
 </html>
