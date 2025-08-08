@@ -319,11 +319,11 @@ function frontT(startIndex, endIndex) {
     }
 }
 
-
+// ** THIS IS REPLACED WITH THE DIRECT DB METRIC_ARR METHOD **
 // Keep function for fetching and loading files/recordings from the database
-// Function to fetch and load a .js file via load_js.php
+// Function to fetch and load a .js file via load_file.php
 function fetchAndLoadJsFile(pieceId) {
-    // Construct the URL to the load_js.php script with the piece_id parameter
+    // Construct the URL to the load_file.php script with the piece_id parameter
     const loadJsUrl = `./load_file.php?piece_id=${encodeURIComponent(pieceId)}`;
 
     fetch(loadJsUrl)
@@ -355,6 +355,82 @@ function fetchAndLoadJsFile(pieceId) {
             console.error('Error fetching or processing .js file:', error);
             $("#err").text(`Error loading file: ${error.message}`);
         });
+}
+
+// **NEW METHOD**
+async function fetchPartsForPiece(pieceId) {
+    const url = `./get_parts.php?piece_id=${encodeURIComponent(pieceId)}`;
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) {
+        const txt = await r.text();
+        throw new Error(txt || `Failed to fetch parts (${r.status})`);
+    }
+    return r.json(); // [{part_id,label,...}]
+}
+
+function populateSyncPartDropdown(parts, pieceId) {
+    const sel = document.getElementById('sync-part');
+    if (!sel) return;
+
+    // Clear + disable by default
+    sel.innerHTML = '';
+    sel.disabled = true;
+
+    if (!Array.isArray(parts) || parts.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'No parts found';
+        sel.appendChild(opt);
+        return;
+    }
+
+    // Fill options
+    parts.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = String(p.part_id);
+        opt.textContent = p.label;
+        sel.appendChild(opt);
+    });
+
+    // Restore last-used part for this piece, else default to first
+    const key = `ys:lastPart:${pieceId}`;
+    const last = localStorage.getItem(key);
+    if (last && [...sel.options].some(o => o.value === last)) {
+        sel.value = last;
+    } else {
+        sel.selectedIndex = 0;
+    }
+
+    sel.disabled = false;
+
+    // Remember choice
+    sel.addEventListener('change', () => {
+        localStorage.setItem(key, sel.value);
+    }, { once: true });
+}
+
+async function bootFromDB(pieceId, partId) {
+    const url = `./get_metric_arr.php?piece_id=${encodeURIComponent(pieceId)}&part=${encodeURIComponent(partId)}`;
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) {
+        const txt = await r.text();
+        throw new Error(txt || `Failed to load metric_arr (${r.status})`);
+    }
+    const data = await r.json();
+
+    // Set globals for synpdf boot:
+    window.pdf_file$$module$synpdf = data.pdf_file;      // e.g., "100-82.pdf"
+    window.metric_arr$$module$synpdf = data.metric_arr;    // array
+    window.adv_settings$$module$synpdf = data.adv_settings || {};
+    window.times_arr$$module$synpdf = undefined;          // new sync
+    window.offset_js$$module$synpdf = 0;
+
+    // Keep existing downstream code happy (add recording form expects this):
+    window.scoreFnm$$module$synpdf = data.pdf_file;
+
+    if (typeof window.msc_check_preload$$module$synpdf === 'function') {
+        window.msc_check_preload$$module$synpdf();
+    }
 }
 
 // Re-added function to load already synced recordings dropdown
@@ -498,18 +574,53 @@ document.addEventListener('DOMContentLoaded', function() {
     // Keep event listeners for loading piece and rewinding
     const loadBtn = document.getElementById('loadBtn');
     const pieceSelect = document.getElementById('piece_id1');
-    loadBtn.addEventListener('click', function() {
+    const partSelect = document.getElementById('sync-part');
+
+    // When piece changes: fetch parts and fill #sync-part
+    pieceSelect.addEventListener('change', async function() {
         const pieceId = pieceSelect.value.trim();
+        populateRecordingsDropdown([]); syncedRecordingsData = [];
 
         if (!pieceId) {
-            alert('Please select a piece.');
+            if (partSelect) {
+                partSelect.innerHTML = '<option value=\"\">— choose a piece —</option>';
+                partSelect.disabled = true;
+            }
             return;
         }
 
-        fetchAndLoadJsFile(pieceId);
-        // Add the call to load already synced recordings
-        loadAlreadySyncedRecordings(pieceId);
+        try {
+            const parts = await fetchPartsForPiece(pieceId);
+            populateSyncPartDropdown(parts, pieceId);
+        } catch (err) {
+            console.error(err);
+            if (partSelect) {
+                partSelect.innerHTML = '<option value=\"\">(Error loading parts)</option>';
+                partSelect.disabled = true;
+            }
+            document.getElementById('err')?.append?.(` ${err.message}`);
+        }
     });
+
+    // Load button kicks off bootFromDB (not the old js-file path)
+    loadBtn.addEventListener('click', async function() {
+        const pieceId = pieceSelect.value.trim();
+        const partId = partSelect?.value?.trim();
+
+        if (!pieceId) { alert('Please select a piece.'); return; }
+        if (!partId) { alert('Please select a part.'); return; }
+
+        try {
+            await bootFromDB(pieceId, partId);
+            // Now load already-synced recordings for this piece, same as before:
+            loadAlreadySyncedRecordings(pieceId); // you already have this function
+        } catch (err) {
+            console.error('Error booting from DB:', err);
+            document.getElementById('err')?.append?.(` ${err.message}`);
+            alert(`Error loading score: ${err.message}`);
+        }
+    });
+
     const rewindBtn = document.getElementById('rewind');
     rewindBtn.addEventListener('click', function() {
         lastSynced$$module$synpdf = -1;

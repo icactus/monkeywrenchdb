@@ -510,6 +510,14 @@
         #piece_id1 {
             max-width:250px;
         }
+        #yubfile {
+            display:flex;
+            flex-direction:row;
+        }
+        #yubfile-label-wrapper {
+            display:flex;
+            flex-direction:row;
+        }
         #step3-container {
             display:flex;
             flex-direction:column;
@@ -530,7 +538,7 @@
                 <img id="monkey-logo" src="../monkeydark.png"></img>
             </a>
         </div>
-        <?php include "../../phpfiles/get_pieces_and_composers.php"; ?>
+        <?php include "/../../phpfiles/get_pieces_and_composers.php"; ?>
         <section1>
         <div id="sync">
                 <div id="mbar">
@@ -575,10 +583,10 @@
                     <div class="step-wrapper">
                         <form class="inputform" id="loadScore" method="POST">
                             <div>
-                                <h2>Step 1</h2>
+                                <h2>1. Piece</h2>
                             </div>
                             <div>
-                                <label for="piece_id1">Select Piece to Sync</label>
+                                <label for="piece_id1">1) Select Piece to Sync</label>
                                 <select class="dropdown-menu" id="piece_id1">
                                     <option value="">Select piece...</option>
                                     <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
@@ -587,39 +595,47 @@
                                 </select>
                             </div>
                             <div>
-                                <button type="button" id="loadBtn">Load</button>
-                                <button type="button" id="rewind">Rewind</button>
+                                <label for="sync-part">2) Select Part</label>
+                                <select class="dropdown-menu" id="sync-part">
+                                    <option value="">Select part...</option>
+                                </select>
                             </div>
                             <div>
-                                <label for="recordingsAlready">Check Already Synced Recordings</label>
-                                <select class="dropdown-menu" id="recordingsAlready">
-                                    <option value="">-- Existing Recordings --</option>
-                                </select>
+                                <button type="button" id="loadBtn">Load</button>
+                                <button type="button" id="rewind">Rewind</button>
                             </div>
                         </form>
                     </div>
                     <div class="step-wrapper" id="buttons">
                         <div class="inputform" id="medbts">
                             <div>
-                                <h2>Step 2</h2>
+                                <h2>2. Recording</h2>
                             </div>
                             <div id="yubfile">
-                                <label id="yvdlbl">Youtube id to sync:
-                                    <div id="yubid-wrapper">
-                                        <input type="text" id="yubid" size="16" placeholder="e.g., dQw4w9WgXcQ" title="11 characters" pattern="[A-Za-z0-9\-_]{11}" />
-                                        <div class="tooltip-container">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 1em; width: auto; vertical-align: middle;">
-                                                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
-                                                <text x="12" y="14" font-family="Georgia, serif" font-size="14" font-weight="bold" fill="currentColor" text-anchor="middle" alignment-baseline="middle">
-                                                    i
-                                                </text>
-                                            </svg>
-                                            <span class="tooltip-text">The YouTube ID is the string of characters found at the very end of the video's URL.<br>For example, dQw4w9WgXcQ in https://youtube.com/watch?v=dQw4w9WgXcQ.</span>
+                                <label id="yvdlbl">
+                                    <div id="yubfile-label-wrapper">Youtube id to sync:
+                                    <div class="tooltip-container">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 1em; padding-bottom:4px; margin-left:4px; width: auto; vertical-align: middle;">
+                                            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
+                                            <text x="12" y="14" font-family="Georgia, serif" font-size="14" font-weight="bold" fill="currentColor" text-anchor="middle" alignment-baseline="middle">
+                                                i
+                                            </text>
+                                        </svg>
+                                        <span class="tooltip-text">The YouTube ID is the string of characters found at the very end of the video's URL.<br>For example, dQw4w9WgXcQ in https://youtube.com/watch?v=dQw4w9WgXcQ.</span>
                                         </div>
                                     </div>
-                                    <input type="button" id="yknp" value="Load" />
-                                    <label id="yublbl">use youtube:<input id="yubuse" type="checkbox" tabindex="4" /></label>
+                                    <div id="yubid-wrapper">
+                                        <input type="text" id="yubid" size="16" placeholder="e.g., dQw4w9WgXcQ" title="11 characters" pattern="[A-Za-z0-9\-_]{11}" />
+                                        <input type="button" id="yknp" value="Load" />
+                                        <label id="yublbl">use youtube:<input id="yubuse" type="checkbox" tabindex="4" /></label>
+                                    </div>
                                 </label>
+                            </div>
+                            <div>
+                                <label for="recordingsAlready">Check Already Synced Recordings</label>
+                                <select class="dropdown-menu" id="recordingsAlready">
+                                    <option value="">-- Existing Recordings --</option>
+                                </select>
                             </div>
                             <div>
                                 <p>Sync sheet music to audio (Press 'h' for full help info).</p>
@@ -635,7 +651,7 @@
                     <div class="step-wrapper">
                         <form class="inputform" id="addnewrecordingform" method="POST">
                             <div>
-                                <h2>Step 3</h2>
+                                <h2>3. Submit</h2>
                             </div>
                             <div id="step3-container">
                                 <div class="step3-row">
