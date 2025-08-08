@@ -135,9 +135,7 @@
             padding: 5px 8px;
             position: absolute;
             z-index: 1;
-            top: 120%; /* Position the tooltip above the icon */
-            left: 50%;
-            margin-left: -100px; /* Center the tooltip */
+            left: 100%;
             opacity: 0;
             transition: opacity 0.3s;
             font-size: 14px;
