@@ -1065,8 +1065,36 @@ function readPdfdoc$$module$synpdf() {
         100) : goPage$$module$synpdf(1, 0)
 }
 
+// --- load button spinner helpers -----------------
+function setBtnLoading(state, ids = ['loadBtn']) {
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (state) {
+            if (!el.dataset._label) {
+                el.dataset._label = el.tagName === 'BUTTON' ? el.textContent : el.value || '';
+            }
+            el.classList.add('button-loading');
+            el.disabled = true;
+            el.setAttribute('aria-busy', 'true');
+            if (el.tagName === 'BUTTON') el.textContent = 'Loading…';
+        } else {
+            el.classList.remove('button-loading');
+            el.disabled = false;
+            el.removeAttribute('aria-busy');
+            const label = el.dataset._label || (el.tagName === 'BUTTON' ? 'Load' : 'Load');
+            if (el.tagName === 'BUTTON') el.textContent = label;
+            else el.value = label;
+            delete el.dataset._label;
+        }
+    });
+}
+
 function readPdf$$module$synpdf(a, b) {
     initGlobals$$module$synpdf();
+
+    // TURN SPINNER ON immediately when we start fetching
+    setBtnLoading(true);  // <— add this
 
     var c = a, d;
     if (b === "url") d = /jpe?g$/i.test(c);
@@ -1086,6 +1114,7 @@ function readPdf$$module$synpdf(a, b) {
         pdfDoc$$module$synpdf.src = c;
         pdfDoc$$module$synpdf.onload = function() {
             hideNotationLoader();
+            setBtnLoading(false);             // <— turn spinner OFF
             readPdfdoc$$module$synpdf();
         };
     } else {
@@ -1106,11 +1135,13 @@ function readPdf$$module$synpdf(a, b) {
         task.promise.then(function(doc) {
             pdfDoc$$module$synpdf = doc;
             $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
-            hideNotationLoader();                    // hand off to render messages (#render)
+            hideNotationLoader();
+            setBtnLoading(false);             // <— turn spinner OFF
             readPdfdoc$$module$synpdf();
         }).catch(function(err) {
             updateNotationLoader(null, "Failed to load PDF");
             setTimeout(hideNotationLoader, 1200);
+            setBtnLoading(false);             // <— ensure OFF on error too
             throw err;
         });
     }

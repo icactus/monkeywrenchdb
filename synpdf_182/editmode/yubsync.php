@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
-    <script src="synpdf-full-yubsync2.js?v=51"></script>
+    <script src="synpdf-full-yubsync2.js?v=52"></script>
     <style>
         html {
             width: 100%;
@@ -68,6 +68,27 @@
         select,
         option {
           cursor: pointer;
+        }
+        .button-loading {
+          position: relative;
+          pointer-events: none; /* disable clicks */
+          opacity: 0.7;
+        }
+        .button-loading::after {
+          content: "";
+          position: absolute;
+          right: -22px;
+          top: 50%;
+          width: 16px;
+          height: 16px;
+          margin-top: -8px;
+          border: 2px solid #fff;
+          border-top: 2px solid #333;
+          border-radius: 50%;
+          animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
         audio {
             display: none; /* Hide default audio player */
