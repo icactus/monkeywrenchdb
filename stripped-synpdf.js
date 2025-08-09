@@ -705,10 +705,61 @@ function readPdfdoc$$module$synpdf() {
     msc_wz$$module$synpdf = null;
     skipn$$module$synpdf = parseInt(opt$$module$synpdf.skipn);
     rendering$$module$synpdf = 1;
-    // $("#render").html("rendering ...").toggle(!0);
-    return goPage$$module$synpdf(1, 0).then(function() {
-        return Promise.resolve(); // Resolve the promise after all pages are processed
+
+    // Reset caches and observer
+    pageCache = {}; pageView = {};
+    if (observer) observer.disconnect();
+    initIntersectionObserver();
+
+    // Build page shells up-front (no raster), render on demand
+    return buildAllPageShells$$module$synpdf().then(function() {
+        rendering$$module$synpdf = 0;
+        addDummySys$$module$synpdf();
+        $("#loadingMessage2").hide();
+        return Promise.resolve();
     });
+}
+
+async function buildAllPageShells$$module$synpdf() {
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    let cumulativeHeight = 0;
+
+    for (let pageNum = 1; pageNum <= pdfDoc$$module$synpdf.numPages; pageNum++) {
+        // Get (or cache) the page object just once
+        const page = await (pageCache[pageNum] || (pageCache[pageNum] = pdfDoc$$module$synpdf.getPage(pageNum)));
+
+        // Natural PDF size (no scaling)
+        const view = page._pageInfo.view; // [x0, y0, x1, y1]
+        const w = (view[2] - view[0]);
+        const h = (view[3] - view[1]);
+        pageView[pageNum] = { w: w, h: h, rotation: page.rotate || 0 };
+
+        // CSS layout size = target page width * aspect ratio
+        const cssW = deMetriek$$module$synpdf[0];
+        const cssH = cssW * (h / w);
+
+        // Create a tiny backing store; set visual size via CSS
+        let canvas = document.createElement("canvas");
+        canvas.id = `canvas${pageNum}`;
+        canvas.width = 1;  // minimal memory
+        canvas.height = 1; // minimal memory
+        canvas.style.width = cssW + "px";
+        canvas.style.height = cssH + "px";
+        canvas.classList.remove('rendered');
+
+        // Push through existing flow: builds deMaten, wiring, etc.
+        canvas = compPage$$module$synpdf(canvas, pageNum, cumulativeHeight);
+
+        // Start observing for on-demand raster
+        if (observer) observer.observe(canvas);
+
+        // For perceived performance, render the first page immediately
+        if (pageNum === 1) {
+            renderPageIfNotRendered(1);
+        }
+
+        cumulativeHeight += cssH;
+    }
 }
 
 function readPdf$$module$synpdf(pdfData, dataType) {
@@ -855,6 +906,8 @@ function isPhone() {
 
 // IntersectionObserver related variables and functions
 let observer;
+let pageCache = {};            // { [pageNum]: PDFPageProxy }
+let pageView = {};            // { [pageNum]: { w, h, rotation } }
 let renderedCanvasesQueue = new Set(); // Track rendered canvases
 const MAX_RENDERED_PAGES = phoneCheck ? 4 : 10; // Maximum number of pages to keep rendered
 var renderingStatus = {}; // Tracks the rendering status of each page
@@ -936,27 +989,42 @@ function handleIntersect(entries) {
 function renderPageIfNotRendered(pageIndex) {
     const canvasId = `canvas${pageIndex}`;
     const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
 
-    // Check if the canvas is being rendered or has already been rendered
-    if (canvas && renderingStatus[pageIndex] !== 'rendering' && !canvas.classList.contains('rendered')) {
-        renderingStatus[pageIndex] = 'rendering'; // Mark as rendering
+    // Already rendering or done
+    if (renderingStatus[pageIndex] === 'rendering' || canvas.classList.contains('rendered')) return;
+    renderingStatus[pageIndex] = 'rendering';
 
-        // Retrieve the rendering task
-        const renderTask = renderingTasks[pageIndex - 1];
-        if (typeof renderTask === 'function') {
-            // Enqueue the rendering task
-            renderingQueue.enqueue(() => {
-                return renderTask().then(() => {
-                    canvas.classList.add('rendered');
-                    renderingStatus[pageIndex] = 'rendered'; // Mark as rendered
-                    manageRenderedCanvases(canvasId); // Update the rendered canvases queue
-                }).catch(error => {
-                    console.error('Error rendering page', pageIndex, error);
-                    renderingStatus[pageIndex] = 'error'; // Mark as error if failed
-                });
-            });
-        }
-    }
+    // Enqueue the actual raster work (keeps concurrency under control)
+    renderingQueue.enqueue(() => {
+        const pagePromise = pageCache[pageIndex]
+            ? Promise.resolve(pageCache[pageIndex])
+            : pdfDoc$$module$synpdf.getPage(pageIndex).then(p => { pageCache[pageIndex] = p; return p; });
+
+        return pagePromise.then(function(page) {
+            const devicePixelRatio = window.devicePixelRatio || 1;
+            const pv = pageView[pageIndex] || { w: page._pageInfo.view[2], h: page._pageInfo.view[3], rotation: page.rotate || 0 };
+            const baseScale = deMetriek$$module$synpdf[0] / pv.w; // logical page width / natural width
+            const enhancedScale = baseScale * Math.min(devicePixelRatio, (phoneCheck ? 1.5 : 2));
+            const viewport = page.getViewport({ scale: enhancedScale, rotation: pv.rotation || 0 });
+
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = !phoneCheck;
+
+            canvas.width = Math.floor(viewport.width);
+            canvas.height = Math.floor(viewport.height);
+            // CSS size is already correct from shell build
+
+            return page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        }).then(() => {
+            canvas.classList.add('rendered');
+            renderingStatus[pageIndex] = 'rendered';
+            manageRenderedCanvases(canvasId);
+        }).catch(err => {
+            console.error(`[PDF] Render failed for page ${pageIndex}:`, err);
+            renderingStatus[pageIndex] = 'idle';
+        });
+    });
 }
 
 // Function to manage the rendered canvases queue
@@ -986,9 +1054,16 @@ function manageRenderedCanvases(canvasId) {
 
 // Function to clear a canvas
 function clearCanvas(canvas) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    canvas.classList.remove('rendered'); // Mark the canvas as not rendered
+    try {
+        // Shrink backing store to free memory while preserving layout
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, 1, 1);
+    } catch (e) {
+        // Fallback: no-op
+    }
+    canvas.classList.remove('rendered');
 }
 
 // Function to create and append a canvas, then observe it
