@@ -23,17 +23,18 @@ if (!$piece_id) {
 
 /*
   metric_arr: metric_arr_id, piece_id, instrument_id, metric_arr_data
-  instruments: instrument_id, instrument_name
+  instruments: instrument_id, instrument_name, part_number
   We only need distinct instruments that *have* metric_arr for this piece.
 */
 $sql = "
-  SELECT i.instrument_id AS part_id,
-         i.instrument_name AS label
+  SELECT DISTINCT
+         i.instrument_id AS part_id,
+         i.instrument_name,
+         i.part_number
   FROM metric_arr m
   JOIN instruments i ON i.instrument_id = m.instrument_id
   WHERE m.piece_id = ?
-  GROUP BY i.instrument_id, i.instrument_name
-  ORDER BY i.instrument_name ASC
+  ORDER BY i.instrument_name ASC, i.part_number ASC
 ";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param('i', $piece_id);
@@ -42,9 +43,20 @@ $res = $stmt->get_result();
 
 $parts = [];
 while ($row = $res->fetch_assoc()) {
-  $row['suggested_pdf'] = sprintf('%d-%d.pdf', $piece_id, $row['part_id']); // optional convenience
-  $row['has_metric'] = true; // by definition of this endpoint
-  $parts[] = $row;
+  $label = $row['instrument_name'];
+
+  // Append part_number only if non-null and not zero
+  $pn = $row['part_number'];
+  if ($pn !== null && $pn !== '' && (int)$pn !== 0) {
+    $label .= ' ' . $pn;
+  }
+
+  $parts[] = [
+    'part_id'       => (int)$row['part_id'],
+    'label'         => $label,
+    'suggested_pdf' => sprintf('%d-%d.pdf', $piece_id, $row['part_id']),
+    'has_metric'    => true
+  ];
 }
 $stmt->close();
 $conn->close();
@@ -54,5 +66,29 @@ if (!$parts) {
   echo json_encode(['error' => 'No parts with metric_arr found for this piece', 'parts' => []]);
   exit;
 }
+
+/**
+ * Reorder with priority IDs first: 39, 48, 50, 82, 81, 85 (in that order),
+ * then everything else by natural label order.
+ */
+$priorityOrder = [39, 48, 50, 82, 81, 85];
+$priorityIndex = array_flip($priorityOrder);
+
+usort($parts, function($a, $b) use ($priorityIndex) {
+  $aId = (int)$a['part_id'];
+  $bId = (int)$b['part_id'];
+
+  $aIn = array_key_exists($aId, $priorityIndex);
+  $bIn = array_key_exists($bId, $priorityIndex);
+
+  if ($aIn && $bIn) {
+    return $priorityIndex[$aId] <=> $priorityIndex[$bId];
+  }
+  if ($aIn) return -1;
+  if ($bIn) return 1;
+
+  // Fallback: natural, case-insensitive compare by label (handles numbers nicely)
+  return strnatcasecmp($a['label'], $b['label']);
+});
 
 echo json_encode($parts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
