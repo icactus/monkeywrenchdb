@@ -1054,16 +1054,9 @@ function manageRenderedCanvases(canvasId) {
 
 // Function to clear a canvas
 function clearCanvas(canvas) {
-    try {
-        // Shrink backing store to free memory while preserving layout
-        canvas.width = 1;
-        canvas.height = 1;
-        const ctx = canvas.getContext('2d');
-        if (ctx) ctx.clearRect(0, 0, 1, 1);
-    } catch (e) {
-        // Fallback: no-op
-    }
-    canvas.classList.remove('rendered');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.classList.remove('rendered'); // Mark the canvas as not rendered
 }
 
 // Function to create and append a canvas, then observe it
