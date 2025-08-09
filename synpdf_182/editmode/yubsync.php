@@ -69,6 +69,10 @@
         option {
           cursor: pointer;
         }
+        button:active {
+          filter: invert(1);      /* invert colors */
+          transition: filter 0.1s;
+        }
         .button-loading {
           position: relative;
           pointer-events: none; /* disable clicks */
