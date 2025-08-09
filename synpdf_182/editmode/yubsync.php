@@ -61,6 +61,14 @@
             border: 1px solid #ccc;
             padding: 5px;
         }
+        button,
+        input[type="button"],
+        input[type="submit"],
+        input[type="reset"],
+        select,
+        option {
+          cursor: pointer;
+        }
         audio {
             display: none; /* Hide default audio player */
             margin-right: 5px;
