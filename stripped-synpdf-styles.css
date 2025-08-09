@@ -572,6 +572,14 @@ body.inverted #vidyub {
     filter: invert(100%);
     transition: filter 0.5s ease;
 }
+body.inverted .demaat {
+    filter: none !important;
+}
+body.inverted select,
+body.inverted option {
+    background-color: #222; /* dark background */
+    color: #eee;            /* light text */
+}
 #instruments-dropdown {
     width:200px;
 }
