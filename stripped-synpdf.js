@@ -298,7 +298,8 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
         b = c[a] || 1;
         c[a] = b + 1;
         a = deMaten$$module$synpdf[a];
-        d = a.x + d * a.w + $("canvas").offset().left;
+        const canvasX = canvasXInNotation(msc_wz$$module$synpdf.$cvs);
+        d = a.x + d * a.w + canvasX;
         e = $('<div class="reptkn">' + e + n + "</div>");
         e.css({
             top: a.y - 25 * b,
@@ -319,10 +320,9 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
 };
 
 Wijzer$$module$synpdf.prototype.setOffsetX = function() {
-    var a = this.xoffset || 0;
-    this.xoffset = this.$cvs.offset().left;
-    0 <= this.cursorTime && this.time2x(this.cursorTime);
-    this.drawRepTokens()
+    this.xoffset = canvasXInNotation(this.$cvs);   // changed so can do centering of pdfs on zoom
+    if (this.cursorTime >= 0) this.time2x(this.cursorTime);
+    this.drawRepTokens();
 };
 
 Wijzer$$module$synpdf.prototype.time2x = function(a) {
@@ -374,7 +374,10 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
             ycurprev$$module$synpdf = measureY;
 
             var maatlooperStyle = this.maatloper[0].style;
-            maatlooperStyle.left = measureX + "px";
+            const canvasX = (this.xoffset ?? canvasXInNotation(this.$cvs));
+            const measureLeft = canvasX + measureX;
+            const measureRight = measureLeft + measureWidth;
+            maatlooperStyle.left = measureLeft + "px";
             maatlooperStyle.top = measureY + "px";
             maatlooperStyle.width = measureWidth + "px";
             maatlooperStyle.height = measureHeight + "px";
@@ -384,10 +387,9 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                 $('.demaat').show();
             }
 
-            var notation = $("#notation");
-            var viewportWidth = notation.width();
-            var currentScrollLeft = notation.scrollLeft();
-            var measureRight = measureX + measureWidth;
+            var notationEl = document.getElementById('notation');
+            var viewportWidth = notationEl.clientWidth;
+            var currentScrollLeft = notationEl.scrollLeft;
             var marginX = 200;
             var self = this;
 
@@ -403,8 +405,8 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
             }
 
             // Horizontal scrolling
-            if (measureX < currentScrollLeft + marginX) {
-                var targetScrollLeft = Math.max(0, measureX - marginX);
+            if (measureLeft < currentScrollLeft + marginX) {
+                var targetScrollLeft = Math.max(0, measureLeft - marginX);
                 scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0));
             } else if (measureRight > currentScrollLeft + viewportWidth - marginX) {
                 var targetScrollLeft = measureRight - viewportWidth + marginX;

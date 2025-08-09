@@ -13,7 +13,7 @@ audio     { display: none; margin-right:5px; vertical-align:middle; }
 #pdffile, #mediafile, #yubfile { display: inline-block;}
 #yubload  { top:10%; }
 #countin  { left:40%; font-size:10em; color:green; background:none; padding:0px; }
-canvas    { display: block; }
+canvas    { display: block; margin: 0 auto;}
 #menu     { background-color: #eee; display: none; }
 #menu label, #sync_out label { padding: 0.2em; padding-left: 0.5em; }
 #menu label input[type=number] { margin: 3px; width: 4em; margin-right: 1em; }

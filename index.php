@@ -18,7 +18,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="fonts.css" />
-    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=33" />
+    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=34" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <script src="jquery.min.js"></script>
     <title>monkey wrench database</title>
@@ -224,8 +224,8 @@
     <div id="notification" style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=104"></script>
-    <script src="stripped-synpdf-extras.js?v=82"></script>
+    <script src="stripped-synpdf.js?v=105"></script>
+    <script src="stripped-synpdf-extras.js?v=83"></script>
 </body>
 
 </html>

@@ -829,6 +829,14 @@ function toggleFullscreen(event) {
 let currentOffsetX = 0;
 let newOffsetX = 0;
 
+// Need this to get left edge of notation
+function canvasXInNotation($canvas) {
+    const notation = document.getElementById('notation');
+    const c = $canvas[0].getBoundingClientRect();
+    const n = notation.getBoundingClientRect();
+    // position of canvas-left measured in the scrollable content space of #notation
+    return (c.left - n.left) + notation.scrollLeft;
+}
 
 // RESIZE ALL CANVASES USING CSS
 function resizeDematenAndCanvas(scaleAmount) {
@@ -839,11 +847,11 @@ function resizeDematenAndCanvas(scaleAmount) {
         var notationDivRect = notationDiv.getBoundingClientRect();
         currentOffsetX = (canvasRect.left - notationDivRect.left);
         scaleCanvasElements(scaleAmount);
+        if (window.msc_wz$$module$synpdf) msc_wz$$module$synpdf.setOffsetX();
         var newCanvasRect = canvas.getBoundingClientRect();
         var newNotationDivRect = notationDiv.getBoundingClientRect();
         newOffsetX = (newCanvasRect.left - newNotationDivRect.left);
-        let offsetX = newOffsetX - currentOffsetX;
-        deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount, offsetX);
+        deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount);
         msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
     }
 }
