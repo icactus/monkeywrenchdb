@@ -841,19 +841,28 @@ function canvasXInNotation($canvas) {
 // RESIZE ALL CANVASES USING CSS
 function resizeDematenAndCanvas(scaleAmount) {
     var canvas = document.getElementsByTagName('canvas')[0];
-    if (canvas) {
-        var notationDiv = document.getElementById("notation");
-        var canvasRect = canvas.getBoundingClientRect();
-        var notationDivRect = notationDiv.getBoundingClientRect();
-        currentOffsetX = (canvasRect.left - notationDivRect.left);
-        scaleCanvasElements(scaleAmount);
-        if (window.msc_wz$$module$synpdf) msc_wz$$module$synpdf.setOffsetX();
-        var newCanvasRect = canvas.getBoundingClientRect();
-        var newNotationDivRect = notationDiv.getBoundingClientRect();
-        newOffsetX = (newCanvasRect.left - newNotationDivRect.left);
-        deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount);
-        msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
-    }
+    if (!canvas) return;
+
+    var notationDiv = document.getElementById("notation");
+    var canvasRect = canvas.getBoundingClientRect();
+    var notationDivRect = notationDiv.getBoundingClientRect();
+    currentOffsetX = (canvasRect.left - notationDivRect.left);
+
+    // ⟵ get the *actual* percent we applied after clamping
+    var usedPercent = scaleCanvasElements(scaleAmount);
+
+    if (window.msc_wz$$module$synpdf) msc_wz$$module$synpdf.setOffsetX();
+
+    var newCanvasRect = canvas.getBoundingClientRect();
+    var newNotationDivRect = notationDiv.getBoundingClientRect();
+    newOffsetX = (newCanvasRect.left - newNotationDivRect.left);
+
+    // Keep deMaten in sync with the *effective* percent
+    deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, usedPercent);
+
+    msc_wz$$module$synpdf.time2x(
+        elmed$$module$synpdf ? (elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf) : 0
+    );
 }
 
 // THIS WILL SCALE THE DEMATEN ARRAY - scaleAmount NEEDS TO BE PERCENT SO 100, 125, 150
@@ -881,18 +890,37 @@ function scaleNestedArray(arr, scaleAmount, offsetX) {
 }
 
 
-// THIS SCALES THE CANVAS
-function scaleCanvasElements(scaleAmount) {
+// RETURNS the effective percent actually applied (after clamping)
+function scaleCanvasElements(scalePercent) {
+    var notationW = document.getElementById('notation').clientWidth;
     var canvases = document.getElementsByTagName('canvas');
+    var effectivePercent = scalePercent; // will adjust on first canvas if needed
+
     for (var i = 0; i < canvases.length; i++) {
         var canvas = canvases[i];
-        var currentWidth = canvas.style.width;
-        var currentHeight = canvas.style.height;
-        canvas.style.width = (parseFloat(currentWidth) * (scaleAmount / 100)) + 'px';
-        canvas.style.height = (parseFloat(currentHeight) * (scaleAmount / 100)) + 'px';
-        // canvas.style.marginLeft = 'auto';
-        // canvas.style.marginRight = 'auto';
+
+        var curW = parseFloat(canvas.style.width);
+        var curH = parseFloat(canvas.style.height);
+        if (!curW || !curH) continue;
+
+        // Proposed new width
+        var targetW = curW * (scalePercent / 100);
+
+        // Clamp to container width
+        if (targetW > notationW) {
+            targetW = notationW;
+            // compute the *real* factor we applied
+            var factor = targetW / curW;
+            effectivePercent = factor * 100;
+        } else {
+            var factor = scalePercent / 100;
+        }
+
+        canvas.style.width = targetW + 'px';
+        canvas.style.height = (curH * factor) + 'px';
     }
+
+    return effectivePercent;
 }
 
 //DEBOUNCE FOR WINDOW RESIZE AND POSSIBLY OTHER PLACES

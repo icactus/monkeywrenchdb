@@ -78,7 +78,8 @@ a {
 #notation a:active {
     color:blue;
 }
-
+#notation { overflow-x: hidden; }
+#notation canvas, #notation svg { max-width: 100% !important; height: auto; display: block; }
 #header {
     height: 200px;
     display: flex;
