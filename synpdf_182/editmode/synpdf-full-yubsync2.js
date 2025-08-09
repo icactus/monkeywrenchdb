@@ -1018,6 +1018,36 @@ function addDummySys$$module$synpdf() {
     msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin()
 }
 
+function ensureNotationLoader() {
+    const notation = document.getElementById('notation');
+    if (!notation) return null;
+    let el = document.getElementById('notation-loader');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'notation-loader';
+        el.innerHTML = `
+      <div class="nl-wrap">
+        <div class="nl-line"></div>
+        <div class="nl-text">Loading PDF…</div>
+      </div>`;
+        notation.appendChild(el);
+    }
+    el.style.display = 'flex';
+    return el;
+}
+function updateNotationLoader(pct, text) {
+    const el = ensureNotationLoader();
+    if (!el) return;
+    const line = el.querySelector('.nl-line');
+    const txt = el.querySelector('.nl-text');
+    if (pct != null) line.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    if (text) txt.textContent = text;
+}
+function hideNotationLoader() {
+    const el = document.getElementById('notation-loader');
+    if (el) el.style.display = 'none';
+}
+
 function readPdfdoc$$module$synpdf() {
     opt$$module$synpdf.pagewd = opt$$module$synpdf.advncd ? opt$$module$synpdf.fixwd : deNot$$module$synpdf.clientWidth;
     schaalMetriek$$module$synpdf();
@@ -1038,17 +1068,9 @@ function readPdfdoc$$module$synpdf() {
 function readPdf$$module$synpdf(a, b) {
     initGlobals$$module$synpdf();
 
-    var c = a,
-        d;
-
-    if (b === "url") {
-        d = /jpe?g$/i.test(c);
-    }
-
-    if (b === "pdfbin") {
-        a = new Uint8Array(a);
-    }
-
+    var c = a, d;
+    if (b === "url") d = /jpe?g$/i.test(c);
+    if (b === "pdfbin") a = new Uint8Array(a);
     if (b === "jpgbin") {
         jpgData = new Uint8Array(a);
         b = "url";
@@ -1057,17 +1079,39 @@ function readPdf$$module$synpdf(a, b) {
     }
 
     if (b === "url" && (d || /^blob:/.test(c))) {
+        // JPEG path — no reliable progress, just show a generic loader
+        updateNotationLoader(null, "Loading image…");
         pdfDoc$$module$synpdf = new Image();
         pdfDoc$$module$synpdf.crossOrigin = "anonymous";
         pdfDoc$$module$synpdf.src = c;
         pdfDoc$$module$synpdf.onload = function() {
+            hideNotationLoader();
             readPdfdoc$$module$synpdf();
         };
     } else {
-        pdfjsLib.getDocument(a).promise.then(function(a) {
-            pdfDoc$$module$synpdf = a;
+        // PDF path (URL or binary) — use onProgress for a proper percentage
+        const task = pdfjsLib.getDocument(a);
+        updateNotationLoader(0, "Starting download…");
+
+        task.onProgress = function(p) {
+            const pct = p.total ? Math.round(100 * p.loaded / p.total) : null;
+            const loadedMB = (p.loaded / 1048576).toFixed(1);
+            const totalMB = p.total ? (p.total / 1048576).toFixed(1) : "?";
+            updateNotationLoader(
+                pct,
+                `Downloading PDF… ${loadedMB} / ${totalMB} MB${pct != null ? ` • ${pct}%` : ""}`
+            );
+        };
+
+        task.promise.then(function(doc) {
+            pdfDoc$$module$synpdf = doc;
             $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
+            hideNotationLoader();                    // hand off to render messages (#render)
             readPdfdoc$$module$synpdf();
+        }).catch(function(err) {
+            updateNotationLoader(null, "Failed to load PDF");
+            setTimeout(hideNotationLoader, 1200);
+            throw err;
         });
     }
 }

@@ -432,6 +432,34 @@
             position: relative;
             background: #f8f8f8;
         }
+        #notation-loader{
+          position: absolute;
+          inset: 0;
+          display: none;                /* JS toggles this */
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(
+            to bottom,
+            rgba(255,255,255,.85),
+            rgba(255,255,255,.65)
+          );
+          z-index: 50;
+          pointer-events: none;
+        }
+        #notation-loader .nl-wrap { width: min(420px, 90%); }
+        #notation-loader .nl-line {
+          height: 6px; width: 0%;
+          border-radius: 3px;
+          background: #00d4ff;
+          transition: width .2s;
+          box-shadow: 0 0 0 1px rgba(0,0,0,.06) inset;
+        }
+        #notation-loader .nl-text {
+          margin-top: .5rem;
+          font: 600 14px/1 system-ui, sans-serif;
+          color: #333;
+          text-align: center;
+        }
 
         sidecontent { /* Right sidebar - keep */
             width:300px;
