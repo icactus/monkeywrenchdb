@@ -152,11 +152,12 @@ a {
   
 #vid, #vidyub {
     display: none;
+    position:absolute;
+    top:0;
+    right:0;
     align-self:end;
-    margin-right:-3px;
-    max-width:350px;
-    min-height:200px;
-    height:100%;
+    width:350px;
+    height:200px;
     z-index:4;
 }
 
