@@ -13,7 +13,7 @@ audio     { display: none; margin-right:5px; vertical-align:middle; }
 #pdffile, #mediafile, #yubfile { display: inline-block;}
 #yubload  { top:10%; }
 #countin  { left:40%; font-size:10em; color:green; background:none; padding:0px; }
-canvas    { display: block; margin: 0 auto;}
+.notation canvas    { display: block; margin: 0 auto; max-width:none;}
 #menu     { background-color: #eee; display: none; }
 #menu label, #sync_out label { padding: 0.2em; padding-left: 0.5em; }
 #menu label input[type=number] { margin: 3px; width: 4em; margin-right: 1em; }
@@ -164,8 +164,11 @@ section1 {
     margin-bottom:-100px;
 }
 section2 {
+    width:100%;
+    min-width:0;
     height:100%;
     display: flex;
+    overflow-x:hidden;
     overflow-y:hidden;
     margin-top:10px;
     margin-left:16px;
@@ -465,13 +468,13 @@ select {
  }
 
 .notation {
-    max-width: 96vw;
+    min-width: 0;
+    width: auto;
     margin: 5px;
-    flex: 1 1 auto;
+    flex: 1 1 0;
     position: relative;
-    overflow-y: scroll;
-    overflow-x: auto; /* allow horizontal scrolling for zooming */
-    white-space: nowrap; /* prevent wrapping of canvases */
+    overflow: auto;
+    white-space: nowrap;
     background: #f8f8f8;
     box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
 }
