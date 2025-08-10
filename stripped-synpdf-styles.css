@@ -392,6 +392,7 @@ select {
         padding:0;
     }
     #vidyub {
+        position:relative;
         height:200px;
         align-self:center;
         margin-top:4px;
