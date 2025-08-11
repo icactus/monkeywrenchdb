@@ -419,6 +419,9 @@ select {
     #notation-max-height {
         max-height:40vh;
     }
+    #notation:fullscreen {
+      padding-bottom: var(--toolbar-h);
+    }
     #sidecontent {
         display:flex;
         flexdirection:row;
@@ -427,14 +430,21 @@ select {
     #invertButton {
         display:none;
     }
-    #control-buttons-row {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: env(safe-area-inset-bottom, 0);
-        height: var(--toolbar-h);
-        z-index: 3; 
-    }
+#control-buttons-row{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: env(safe-area-inset-bottom);
+  z-index: 3;
+  width: 100vw;             /* full viewport width */
+  display: flex;
+  flex-direction: row;
+  /* optional nice background/padding so it looks docked */
+  background: rgba(248,248,248,0.98);
+  backdrop-filter: blur(6px);
+  padding: 8px 10px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,.08);
+}
     .control-buttons {
         background-color:inherit;
         border:none;
