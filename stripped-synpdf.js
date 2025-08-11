@@ -123,10 +123,22 @@ function initGlobals$$module$synpdf() {
 function Wijzer$$module$synpdf(a, b, c, d) {
     this.width = b.width;
     this.$cvs = $(b);
-    $("#notation").empty();
-    //PDF SIZING / PLAY / SETTINGS BUTTONS
-    b = $(
-        `<div id="control-buttons-row">
+    const $notation = $("#notation");
+
+    // ensure the scroll container exists
+    let $scroll = $("#notation-scroll");
+    if (!$scroll.length) {
+        $scroll = $('<div id="notation-scroll"></div>').prependTo($notation);
+    }
+
+    // clear only the pages, not the controls
+    $scroll.empty();
+
+    // ensure the controls exist (create once, don’t re-create each time)
+    let $controls = $("#control-buttons-row");
+    if (!$controls.length) {
+        $controls = $(
+            `<div id="control-buttons-row">
             <button class="control-buttons" onclick="toggleFullscreen(event)">
                 <svg height="20pt" version="1.1" viewBox="0 0 14 14" width="20pt" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title/><desc/><defs/><g fill="none" fill-rule="evenodd" id="Page-1" stroke="none" stroke-width="1"><g fill="#000000" id="Core" transform="translate(-215.000000, -257.000000)"><g id="fullscreen" transform="translate(215.000000, 257.000000)"><path d="M2,9 L0,9 L0,14 L5,14 L5,12 L2,12 L2,9 L2,9 Z M0,5 L2,5 L2,2 L5,2 L5,0 L0,0 L0,5 L0,5 Z M12,12 L9,12 L9,14 L14,14 L14,9 L12,9 L12,12 L12,12 Z M9,0 L9,2 L12,2 L12,5 L14,5 L14,0 L9,0 L9,0 Z" id="Shape"/></g></g></g></svg>
             </button>
@@ -266,14 +278,14 @@ function Wijzer$$module$synpdf(a, b, c, d) {
             </button>
         </div>
         <div id="rollijn" class="dashed"></div>`
-    );
-    $("#notation").append(b);
+        ).appendTo($notation);
+    }
     addInvertButtonListener();
     addShareButtonListener();
     initIntersectionObserver(); // Initialize observer for page rendering 
     setupPlayPauseButton();
     this.maatloper = $('<div class="demaat" style="background:' + globalHighlightColor + '; opacity:0.2; left:0px; top:0px; width:0px; height:0px; z-index:2"></div>');
-    $("#notation").append(this.maatloper);
+    $("#notation-scroll").append(this.maatloper);
     this.times = a;
     this.tixlb = tixlb$$module$synpdf;
     this.cursorTime = 0;
@@ -307,7 +319,7 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
             position: "absolute",
             color: f
         });
-        $("#notation").append(e)
+        $("#notation-scroll").append(e)
     }
     var b = [],
         c = [];
@@ -547,12 +559,12 @@ Wijzer$$module$synpdf.prototype.changeOffset = function(a) {
 };
 
 Wijzer$$module$synpdf.prototype.setTmargin = function() {
-    var a = $("#notation").offset().top,
+    var a = $("#notation-scroll").offset().top,
         b = $("#rollijn").offset().top;
     b < a && (b = a + 15, $("#rollijn").css("top", b + "px"));
     var c = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
     b > c.y + a && (b = a + c.y - dottedHeight$$module$synpdf, $("#rollijn").css("top", b + "px"));
-    var d = $("#notation").height();
+    var d = $("#notation-scroll").height();
     b + 2 * dottedHeight$$module$synpdf > a + d && (b = a + d - 2 * dottedHeight$$module$synpdf, $("#rollijn").css("top", b + "px"));
     this.tmargin = dottedHeight$$module$synpdf + b - a;
     doeRol$$module$synpdf(c.y - this.tmargin, 1)
@@ -620,7 +632,7 @@ function doeRol$$module$synpdf(a, b) {
     if (0 > a) {
         a = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
         deNot$$module$synpdf.scrollTop = 0;
-        $("#rollijn").css("top", a.y + $("#notation").offset().top - dottedHeight$$module$synpdf - 1);
+        $("#rollijn").css("top", a.y + $("#notation-scroll").offset().top - dottedHeight$$module$synpdf - 1);
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin();
     } else {
         a = Math.round(a);
@@ -690,7 +702,7 @@ function addDummySys$$module$synpdf() {
         t: deTijden$$module$synpdf[a - 1].t + 2,
         mix: a
     });
-    $("#notation").append('<div id="leeg" style="height:' + bottomSpace$$module$synpdf +
+    $("#notation-scroll").append('<div id="leeg" style="height:' + bottomSpace$$module$synpdf +
         'px">&nbsp;</div>');
     msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin()
 }
@@ -844,7 +856,7 @@ function readPdf$$module$synpdf(pdfData, dataType) {
                 const percentComplete = (progressData.loaded / progressData.total) * 100;
 
                 // Update UI elements
-                let notationDiv = $("#notation");
+                let notationDiv = $("#notation-scroll");
 
                 if ($("#progress-container").length === 0) {
                     notationDiv.html(`
@@ -1132,7 +1144,7 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
     pageStfIx$$module$synpdf.push(Cs$$module$synpdf.length);
     Cs$$module$synpdf = Cs$$module$synpdf.concat(pageMetricArray.cxs);
     msc_wz$$module$synpdf || startIntf$$module$synpdf(canvas);
-    $("#notation").append(canvas);
+    $("#notation-scroll").append(canvas);
 
     // Start observing the canvas for visibility
     if (observer) {
@@ -1188,8 +1200,8 @@ function kliklang$$module$synpdf(a) {
                 var canvasLeft = msc_wz$$module$synpdf.$cvs.offset().left;
                 var d = a.clientX - canvasLeft; // Canvas-relative X, no scrollLeft adjustment
                 var aY = a.clientY;
-                aY -= $("#notation").offset().top;
-                aY += $("#notation").scrollTop();
+                aY -= $("#notation-scroll").offset().top;
+                aY += $("#notation-scroll").scrollTop();
                 c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(d, aY) : msc_wz$$module$synpdf.x2time(d, aY, c);
             }
         });
@@ -1387,7 +1399,7 @@ function lijn_shift$$module$synpdf(a) {
     $("#rollijn").toggleClass("rolgroen");
     var c = b ? $("#rollijn") : $("body");
     c.on(b ? "touchmove" : "mousemove", function(a) {
-        $("#notation").offset();
+        $("#notation-scroll").offset();
         opt$$module$synpdf.offrol = (100 * ((b ? a.originalEvent.touches[0].clientY : a.clientY) - dottedHeight$$module$synpdf / 2) / document.body.clientHeight).toFixed(2) + "%";
         $("#rollijn").css("top", opt$$module$synpdf.offrol);
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin()

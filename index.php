@@ -18,7 +18,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="fonts.css" />
-    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=46" />
+    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=47" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <script src="jquery.min.js"></script>
     <title>monkey wrench database</title>
@@ -80,31 +80,33 @@
         <div id="loadingMessage2">
         </div>
         <div class="notation" id="notation"><!--width needed for editmode pixel mapping -->
-            <!-- TAB HEADERS -->
-            <div class="tabs">
-                <ul class="tab-header-row">
-                    <li class="tab-header active" data-tab="tab-instruments">
-                        <h2 id="instruments-heading">1. Select Instrument</h2>
-                    </li>
-                    <li class="tab-header disabled" data-tab="tab-pieces">
-                        <h2 id="pieces-heading">2. Select Piece</h2>
-                    </li>
-                    <li class="tab-header disabled" data-tab="tab-recordings">
-                        <h2 id="recordings-heading">3. Select Recording</h2>
-                    </li>
-                </ul>
-            </div>
-            <div class="tab-contents">
-                <div id="tab-instruments" class="tab-content active" style="display:block;">
-                    <div class="search-content instrument-container" id="instrument-links">
-                    </div>
+            <div id="notation-scroll">
+                <!-- TAB HEADERS -->
+                <div class="tabs">
+                    <ul class="tab-header-row">
+                        <li class="tab-header active" data-tab="tab-instruments">
+                            <h2 id="instruments-heading">1. Select Instrument</h2>
+                        </li>
+                        <li class="tab-header disabled" data-tab="tab-pieces">
+                            <h2 id="pieces-heading">2. Select Piece</h2>
+                        </li>
+                        <li class="tab-header disabled" data-tab="tab-recordings">
+                            <h2 id="recordings-heading">3. Select Recording</h2>
+                        </li>
+                    </ul>
                 </div>
-                <div id="tab-pieces" class="tab-content" style="display:none;">
-                    <div class="search-content" id="pieces-container">
+                <div class="tab-contents">
+                    <div id="tab-instruments" class="tab-content active" style="display:block;">
+                        <div class="search-content instrument-container" id="instrument-links">
+                        </div>
                     </div>
-                </div>
-                <div id="tab-recordings" class="tab-content" style="display:none;">
-                    <div class="search-content" id="recordings-container">
+                    <div id="tab-pieces" class="tab-content" style="display:none;">
+                        <div class="search-content" id="pieces-container">
+                        </div>
+                    </div>
+                    <div id="tab-recordings" class="tab-content" style="display:none;">
+                        <div class="search-content" id="recordings-container">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -224,7 +226,7 @@
     <div id="notification" style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=108"></script>
+    <script src="stripped-synpdf.js?v=109"></script>
     <script src="stripped-synpdf-extras.js?v=86"></script>
 </body>
 
