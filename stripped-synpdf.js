@@ -1217,6 +1217,10 @@ function startIntf$$module$synpdf(a) {
     doresize$$module$synpdf = 0;
 }
 
+// Vars for restoring position after resizing/rotating
+let __restoreTime = null;
+let __restoreMix = null;
+
 function resizePdf$$module$synpdf(scrollType) {
     if (scrollType === 1) {
         doresize$$module$synpdf = 1;
@@ -1226,7 +1230,13 @@ function resizePdf$$module$synpdf(scrollType) {
         display: "block",
         background: "rgb(200,200,255)"
     }), readPdfdoc$$module$synpdf().then(function() {
-        msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
+        //Handles returning to position on resize/rotate
+        const t = (__restoreTime != null)
+            ? __restoreTime
+            : ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf);
+        msc_wz$$module$synpdf.time2x(t);
+        msc_wz$$module$synpdf.setTmargin();
+        __restoreTime = null;
     }))
 }
 
