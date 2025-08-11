@@ -869,6 +869,11 @@ function canvasXInNotation($canvas) {
     return (c.left - n.left) + notation.scrollLeft;
 }
 
+function pageLeftInNotation(pageNum) {
+    const $cv = $('#canvas' + pageNum);
+    return $cv.length ? canvasXInNotation($cv) : 0;
+}
+
 // RESIZE ALL CANVASES USING CSS
 function resizeDematenAndCanvas(scaleAmount) {
     var canvas = document.getElementsByTagName('canvas')[0];

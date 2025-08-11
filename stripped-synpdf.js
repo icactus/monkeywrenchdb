@@ -310,7 +310,7 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
         b = c[a] || 1;
         c[a] = b + 1;
         a = deMaten$$module$synpdf[a];
-        const canvasX = canvasXInNotation(msc_wz$$module$synpdf.$cvs);
+        const canvasX = pageLeftInNotation(a.page || 1);
         d = a.x + d * a.w + canvasX;
         e = $('<div class="reptkn">' + e + n + "</div>");
         e.css({
@@ -386,7 +386,7 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
             ycurprev$$module$synpdf = measureY;
 
             var maatlooperStyle = this.maatloper[0].style;
-            const canvasX = (this.xoffset ?? canvasXInNotation(this.$cvs));
+            const canvasX = pageLeftInNotation(c.page || 1);
             const measureLeft = canvasX + measureX;
             const measureRight = measureLeft + measureWidth;
             maatlooperStyle.left = measureLeft + "px";
@@ -451,8 +451,10 @@ Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
     var d;
     for (d = 0; d < deMaten$$module$synpdf.length; ++d) {
         var e = deMaten$$module$synpdf[d];
-        if (!(b > e.y + e.h || a > e.x + e.w)) {
-            if (a < e.x) {
+        const exLeft = (e.x + pageLeftInNotation(e.page || 1));
+        const exRight = exLeft + e.w;
+        if (!(b > e.y + e.h || a > exRight)) {
+            if (a < exLeft) {
                 keyDown$$module$synpdf({
                     key: " "
                 });
@@ -529,7 +531,7 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(a, b, c) {
             return a - b
         });
         var f = deMaten$$module$synpdf[demix$$module$synpdf];
-        c = f.x + f.w / 2;
+        var c = f.x + f.w / 2 + pageLeftInNotation(f.page || 1);
         for (e = 0; d[e] < f.y;) e += 1;
         if (b) {
             for (b =
@@ -650,7 +652,7 @@ function doeRol$$module$synpdf(a, b) {
 }
 
 
-function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight) {
+function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum) {
     let parsedPageMetricArr = JSON.parse(JSON.stringify(pageMetricArray.cxs));
     let pageBarlineArray = JSON.parse(JSON.stringify(pageMetricArray.bxs));
     parsedPageMetricArr.forEach(function(staffSystem) {
@@ -672,7 +674,8 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight) {
                 x: measureLeftBarline,
                 y: staffTopLine,
                 w: measureRightBarline - measureLeftBarline,
-                h: staffBottomLine - staffTopLine
+                h: staffBottomLine - staffTopLine,
+                page: pageNum
             })
         }
     }
@@ -1156,7 +1159,7 @@ function goPage$$module$synpdf(pageNum, cumulativeHeight) {
 function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
     var pageMetricArray = deMetriek$$module$synpdf[pageNum];
     pageNumChanged$$module$synpdf = 0;
-    canvas = knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight); // Generates measure boxes (deMaten)
+    canvas = knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum); // Generates measure boxes (deMaten)
     pageStfIx$$module$synpdf.push(Cs$$module$synpdf.length);
     Cs$$module$synpdf = Cs$$module$synpdf.concat(pageMetricArray.cxs);
     msc_wz$$module$synpdf || startIntf$$module$synpdf(canvas);
@@ -1213,12 +1216,12 @@ function kliklang$$module$synpdf(a) {
             if (!touch_moved$$module$synpdf) {
                 a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
                 var c = 500 < (new Date).getTime() - touch_tb$$module$synpdf || e;
-                var canvasLeft = msc_wz$$module$synpdf.$cvs.offset().left;
-                var d = a.clientX - canvasLeft; // Canvas-relative X, no scrollLeft adjustment
-                var aY = a.clientY;
-                aY -= $("#notation-scroll").offset().top;
-                aY += $("#notation-scroll").scrollTop();
-                c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(d, aY) : msc_wz$$module$synpdf.x2time(d, aY, c);
+                const $sc = $("#notation-scroll");
+                const aX = a.clientX - $sc.offset().left + $sc.scrollLeft(); // notation-space X
+                const aY = a.clientY - $sc.offset().top + $sc.scrollTop();   // notation-space Y
+                c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(aX, aY) : msc_wz$$module$synpdf.x2time(aX, aY, c);
+
+
             }
         });
     }
