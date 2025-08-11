@@ -1593,6 +1593,17 @@ function hideMenuHelp$$module$synpdf(a) {
     return b
 }
 
+// Re-render pages crisply after viewport changes (rotation/resize)
+let vpTimer;
+function reflowForViewportChange() {
+    // Re-evaluate phone heuristics (affects scale cap)
+    phoneCheck = isPhone(); // was only set on DOM ready
+    // Force fresh high-res draws at the new CSS width/DPR
+    renderingStatus = {};
+    renderedCanvasesQueue.clear();
+    resizePdfSyn$$module$synpdf(); // rebuild shells + re-render visible pages
+}
+
 $(document).ready(function() {
     deNot$$module$synpdf = document.getElementById("notation-scroll");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
@@ -1626,6 +1637,15 @@ $(document).ready(function() {
             (a = a.data.match(/^key=(.+)$/)) && keyDown$$module$synpdf({
                 key: a[1]
             })
-    })
+    });
 
+    window.addEventListener('resize', () => {
+        clearTimeout(vpTimer);
+        vpTimer = setTimeout(reflowForViewportChange, 150);
+    }, { passive: true });
+
+    window.addEventListener('orientationchange', () => {
+        // some devices fire resize before orientation settles
+        setTimeout(reflowForViewportChange, 75);
+    });
 });
