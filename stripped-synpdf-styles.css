@@ -78,7 +78,7 @@ a {
 #notation a:active {
     color:blue;
 }
-#notation-scroll { flex: 1; overflow: auto; }
+#notation-scroll { position:relative; flex: 1; overflow: auto; }
 #header {
     height: 200px;
     display: flex;
