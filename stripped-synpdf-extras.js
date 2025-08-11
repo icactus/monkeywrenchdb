@@ -798,6 +798,37 @@ function decrementSpeed() {
 incrementButton.addEventListener('click', incrementSpeed);
 decrementButton.addEventListener('click', decrementSpeed);
 
+// One handler for all vendor events
+function refreshAfterFullscreen() {
+    // run twice: once after the DOM flips, once after paint settles
+    const doRefresh = () => {
+        if (window.msc_wz$$module$synpdf) {
+            // Recompute canvas X offset inside the scroller
+            if (typeof msc_wz$$module$synpdf.setOffsetX === 'function') {
+                msc_wz$$module$synpdf.setOffsetX();
+            }
+            // Recompute vertical margins / anchors
+            if (typeof msc_wz$$module$synpdf.setTmargin === 'function') {
+                msc_wz$$module$synpdf.setTmargin();
+            }
+            // Reposition the dematen highlight at current time
+            const t = (window.elmed$$module$synpdf?.getCurrentTime?.() ?? 0) - (window.offset$$module$synpdf ?? 0);
+            if (typeof msc_wz$$module$synpdf.time2x === 'function') {
+                msc_wz$$module$synpdf.time2x(t);
+            }
+        }
+        // ensure keyboard scroll still works
+        const scroller = document.getElementById('notation-scroll');
+        if (scroller) { scroller.focus(); }
+    };
+    requestAnimationFrame(doRefresh);
+    setTimeout(doRefresh, 120); // WebKit/mobile settles a tick later
+}
+
+// Listen for all vendor fullscreen change events
+['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange']
+    .forEach(ev => document.addEventListener(ev, refreshAfterFullscreen));
+
 function toggleFullscreen(event) {
     // event.stopPropagation();
     const notationDiv = document.getElementById("notation");
@@ -831,7 +862,7 @@ let newOffsetX = 0;
 
 // Need this to get left edge of notation
 function canvasXInNotation($canvas) {
-    const notation = document.getElementById('notation');
+    const notation = document.getElementById('notation-scroll');
     const c = $canvas[0].getBoundingClientRect();
     const n = notation.getBoundingClientRect();
     // position of canvas-left measured in the scrollable content space of #notation
