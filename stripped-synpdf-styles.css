@@ -348,12 +348,7 @@ select {
         flex-direction:column;
         margin-top:0px;
         margin-left:0;
-    }
-    /*bumps up controls so not blocked by bottom browser buttons */
-    @supports (height: 100dvh) {
-      #control-buttons-row {
-        transform: translateY(calc(100vh - 100dvh));
-      }
+        height: calc(100dvh - 275px);
     }
 
     .section2-margin-top {
