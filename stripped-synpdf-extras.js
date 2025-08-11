@@ -1049,6 +1049,92 @@ function addShareButtonListener() {
     }
 }
 
+
+// --- 2-up state (persisted) ---
+window.twoUpMode = JSON.parse(localStorage.getItem('twoUpMode') || 'false');
+
+// we already use these for restore-before-reflow:
+window.__restoreTime = window.__restoreTime ?? null;
+window.__restoreMix = window.__restoreMix ?? null;
+
+// Toggle + reflow (uses your existing resizePdfSyn)
+function toggleTwoUpMode(on = !twoUpMode) {
+    twoUpMode = !!on;
+    localStorage.setItem('twoUpMode', JSON.stringify(twoUpMode));
+
+    // snapshot where we are so a rebuild won't jump
+    try {
+        __restoreTime = (window.msc_wz$$module$synpdf?.cursorTime)
+            ?? ((window.elmed$$module$synpdf?.getCurrentTime?.() ?? window.elmed$$module$synpdf?.currentTime ?? 0) - (window.offset$$module$synpdf || 0));
+        __restoreMix = (typeof window.demix$$module$synpdf === 'number') ? window.demix$$module$synpdf : null;
+    } catch (_) { }
+
+    // flip the layout class on the actual scroller
+    const scroller = document.getElementById('notation-scroll');
+    if (scroller) scroller.classList.toggle('two-up', twoUpMode);
+
+    // rebuild + re-render (your restore happens at the end of resizePdf path)
+    resizePdfSyn$$module$synpdf();
+
+    // reflect state on the button
+    const btn = document.getElementById('btn-two-up');
+    if (btn) {
+        btn.setAttribute('aria-pressed', twoUpMode ? 'true' : 'false');
+        btn.classList.toggle('active', twoUpMode);
+        btn.innerHTML = twoUpMode ? SVG_TWOUP_ON : SVG_TWOUP_OFF;
+    }
+}
+
+// --- Inline SVGs (simple “two pages” icon, on/off) ---
+const SVG_TWOUP_OFF =
+    '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' +
+    '<rect x="3" y="4" width="8" height="16" rx="1" fill="none" stroke="currentColor" />' +
+    '<rect x="13" y="4" width="8" height="16" rx="1" fill="none" stroke="currentColor" />' +
+    '</svg>';
+
+const SVG_TWOUP_ON =
+    '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' +
+    '<rect x="3" y="4" width="8" height="16" rx="1" fill="currentColor" />' +
+    '<rect x="13" y="4" width="8" height="16" rx="1" fill="currentColor" />' +
+    '</svg>';
+
+// Create the button in the control row (id: control-button-row)
+function ensureTwoUpButton() {
+    const row = document.getElementById('control-button-row');
+    if (!row || document.getElementById('btn-two-up')) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'btn-two-up';
+    btn.type = 'button';
+    btn.className = 'ctrl-btn two-up-toggle';
+    btn.title = 'Two-up view';
+    btn.setAttribute('aria-label', 'Toggle two-up view');
+    btn.setAttribute('aria-pressed', twoUpMode ? 'true' : 'false');
+    btn.classList.toggle('active', twoUpMode);
+    btn.innerHTML = twoUpMode ? SVG_TWOUP_ON : SVG_TWOUP_OFF;
+    btn.addEventListener('click', () => toggleTwoUpMode());
+
+    row.appendChild(btn);
+}
+
+// Make sure the button exists whenever the UI is (re)mounted
+document.addEventListener('DOMContentLoaded', () => {
+    // if user had two-up on last time, apply class immediately
+    if (twoUpMode) document.getElementById('notation-scroll')?.classList.add('two-up');
+    ensureTwoUpButton();
+});
+
+// If your row gets moved during fullscreen, re-ensure the button
+document.addEventListener('fullscreenchange', ensureTwoUpButton);
+
+// Optional keyboard shortcut: Alt+2 toggles two-up
+document.addEventListener('keydown', (e) => {
+    if (e.altKey && (e.key === '2' || e.code === 'Digit2')) {
+        toggleTwoUpMode();
+        e.preventDefault();
+    }
+});
+
 $(document).ready(function() {
     // Click handler for tab headers
     $('.tab-header').on('click', function() {

@@ -79,6 +79,21 @@ a {
     color:blue;
 }
 #notation-scroll { position:relative; flex: 1; overflow: auto; }
+
+#notation-scroll.two-up {
+  --page-gap: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--page-gap);
+  align-content: start;
+}
+#notation-scroll.two-up canvas { justify-self: center; }
+#control-button-row .two-up-toggle.active {
+  outline: 1px solid currentColor;
+}
+#control-button-row .two-up-toggle svg {
+  width: 20px; height: 20px;
+}
 #header {
     height: 200px;
     display: flex;

@@ -708,7 +708,14 @@ function addDummySys$$module$synpdf() {
 }
 
 function readPdfdoc$$module$synpdf() {
-    opt$$module$synpdf.pagewd = deNot$$module$synpdf.clientWidth;
+    const scroller = deNot$$module$synpdf;
+    if (scroller?.classList.contains('two-up')) {
+        const styles = getComputedStyle(scroller);
+        const gap = parseFloat(styles.getPropertyValue('--page-gap') || '24') || 24;
+        opt$$module$synpdf.pagewd = Math.max(100, Math.floor((scroller.clientWidth - gap) / 2));
+    } else {
+        opt$$module$synpdf.pagewd = scroller.clientWidth;
+    }
     schaalMetriek$$module$synpdf();
     Cs$$module$synpdf = [];
     pageStfIx$$module$synpdf = [];
@@ -733,44 +740,53 @@ function readPdfdoc$$module$synpdf() {
 }
 
 async function buildAllPageShells$$module$synpdf() {
-    const devicePixelRatio = window.devicePixelRatio || 1;
     let cumulativeHeight = 0;
+    const scroller = deNot$$module$synpdf;
+    const isTwoUp = scroller?.classList.contains('two-up');
+    const gap = isTwoUp ? (parseFloat(getComputedStyle(scroller).getPropertyValue('--page-gap') || '24') || 24) : 0;
 
-    for (let pageNum = 1; pageNum <= pdfDoc$$module$synpdf.numPages; pageNum++) {
-        // Get (or cache) the page object just once
-        const page = await (pageCache[pageNum] || (pageCache[pageNum] = pdfDoc$$module$synpdf.getPage(pageNum)));
-
-        // Natural PDF size (no scaling)
-        const view = page._pageInfo.view; // [x0, y0, x1, y1]
-        const w = (view[2] - view[0]);
-        const h = (view[3] - view[1]);
-        pageView[pageNum] = { w: w, h: h, rotation: page.rotate || 0 };
-
-        // CSS layout size = target page width * aspect ratio
+    for (let p = 1; p <= pdfDoc$$module$synpdf.numPages;) {
+        // LEFT PAGE
+        const pageL = await (pageCache[p] || (pageCache[p] = pdfDoc$$module$synpdf.getPage(p)));
+        const viewL = pageL._pageInfo.view; // [x0,y0,x1,y1]
         const cssW = deMetriek$$module$synpdf[0];
-        const cssH = cssW * (h / w);
+        const cssHL = cssW * ((viewL[3] - viewL[1]) / (viewL[2] - viewL[0]));
 
-        // Create a tiny backing store; set visual size via CSS
-        let canvas = document.createElement("canvas");
-        canvas.id = `canvas${pageNum}`;
-        canvas.width = 1;  // minimal memory
-        canvas.height = 1; // minimal memory
-        canvas.style.width = cssW + "px";
-        canvas.style.height = cssH + "px";
-        canvas.classList.remove('rendered');
+        let cnvL = document.createElement('canvas');
+        cnvL.id = `canvas${p}`;
+        cnvL.width = 1; cnvL.height = 1;
+        cnvL.style.width = cssW + 'px';
+        cnvL.style.height = cssHL + 'px';
+        cnvL.classList.remove('rendered');
+        cnvL = compPage$$module$synpdf(cnvL, p, cumulativeHeight); // same top for both pages in a spread
+        if (observer) observer.observe(cnvL);
+        if (p === 1) renderPageIfNotRendered(1);
 
-        // Push through existing flow: builds deMaten, wiring, etc.
-        canvas = compPage$$module$synpdf(canvas, pageNum, cumulativeHeight);
+        let rowMaxH = cssHL;
+        let step = 1;
 
-        // Start observing for on-demand raster
-        if (observer) observer.observe(canvas);
+        // RIGHT PAGE (if any)
+        if (isTwoUp && p + 1 <= pdfDoc$$module$synpdf.numPages) {
+            const r = p + 1;
+            const pageR = await (pageCache[r] || (pageCache[r] = pdfDoc$$module$synpdf.getPage(r)));
+            const viewR = pageR._pageInfo.view;
+            const cssHR = cssW * ((viewR[3] - viewR[1]) / (viewR[2] - viewR[0]));
 
-        // For perceived performance, render the first page immediately
-        if (pageNum === 1) {
-            renderPageIfNotRendered(1);
+            let cnvR = document.createElement('canvas');
+            cnvR.id = `canvas${r}`;
+            cnvR.width = 1; cnvR.height = 1;
+            cnvR.style.width = cssW + 'px';
+            cnvR.style.height = cssHR + 'px';
+            cnvR.classList.remove('rendered');
+            cnvR = compPage$$module$synpdf(cnvR, r, cumulativeHeight); // <-- same cumulativeHeight
+            if (observer) observer.observe(cnvR);
+
+            rowMaxH = Math.max(cssHL, cssHR);
+            step = 2;
         }
 
-        cumulativeHeight += cssH;
+        cumulativeHeight += isTwoUp ? (rowMaxH + gap) : rowMaxH;
+        p += step;
     }
 }
 
@@ -1612,6 +1628,21 @@ function reflowForViewportChange() {
     renderingStatus = {};
     renderedCanvasesQueue.clear();
     resizePdfSyn$$module$synpdf(); // rebuild shells + re-render visible pages
+}
+
+window.twoUpMode = false; // default off
+
+function toggleTwoUpMode(on = !twoUpMode) {
+    twoUpMode = !!on;
+
+    // remember where we are so a rebuild won't jump to the top
+    __restoreTime = (window.msc_wz$$module$synpdf?.cursorTime)
+        ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - (window.offset$$module$synpdf || 0));
+    __restoreMix = (typeof demix$$module$synpdf === 'number') ? demix$$module$synpdf : null;
+
+    // reflow/rebuild at the new layout
+    document.getElementById('notation-scroll').classList.toggle('two-up', twoUpMode);
+    resizePdfSyn$$module$synpdf(); // this calls readPdfdoc -> rebuild shells -> render visible
 }
 
 $(document).ready(function() {
