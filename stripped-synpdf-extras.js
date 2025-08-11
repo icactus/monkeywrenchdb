@@ -597,7 +597,7 @@ $('#instruments-dropdown').change(function() {
     const instrumentData = selectedOption.data('instrumentData');
     currentInstrumentGlobal = instrumentData.instrument_id;
     currentMetricArrGlobal = instrumentData.metric_arr_id;
-    document.getElementById("notation").innerHTML = "";  // Clear notation section
+    document.getElementById("notation-scroll").innerHTML = "";  // Clear notation section
 
     // Get current recording from dropdown to ensure preloaded data
     const recordingOption = $('#recordings-dropdown').find('option:selected');
@@ -720,7 +720,7 @@ function handleRecordingSelection(recordingFullData) {
     // Setting the global instrument and recording values for dropdown use
     currentInstrumentGlobal = recordingFullData.instrument_id;
     currentRecordingGlobal = recordingFullData.recording_id;
-    document.getElementById("notation").innerHTML = "";  // clear notation section so it looks responsive faster
+    document.getElementById("notation-scroll").innerHTML = "";  // clear notation section so it looks responsive faster
 
     loadRecording(recordingFullData)
         .then(function() {

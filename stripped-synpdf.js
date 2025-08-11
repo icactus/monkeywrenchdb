@@ -399,7 +399,7 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                 $('.demaat').show();
             }
 
-            var notationEl = document.getElementById('notation');
+            var notationEl = document.getElementById('notation-scroll');
             var viewportWidth = notationEl.clientWidth;
             var currentScrollLeft = notationEl.scrollLeft;
             var marginX = 200;
@@ -966,7 +966,7 @@ const renderingQueue = new RenderingQueue(2); // Example: 2 concurrent tasks
 // Initialize IntersectionObserver
 function initIntersectionObserver() {
     const options = {
-        root: document.getElementById('notation'), // The scrollable container
+        root: document.getElementById('notation-scroll'), // The scrollable container
         rootMargin: '200px 0px', // Preload when 200px before entering viewport vertically
         threshold: 0.1 // Trigger when 10% of the canvas is visible
     };
@@ -1594,7 +1594,7 @@ function hideMenuHelp$$module$synpdf(a) {
 }
 
 $(document).ready(function() {
-    deNot$$module$synpdf = document.getElementById("notation");
+    deNot$$module$synpdf = document.getElementById("notation-scroll");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
     phoneCheck = isPhone();
