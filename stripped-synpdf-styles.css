@@ -63,10 +63,6 @@ audio     { display: none; margin-right:5px; vertical-align:middle; }
     #menu label:hover, #sync_out label:hover { background: #aaa; cursor: pointer; }
 }
 
-:root {
-  --toolbar-h: 56px; /* control-buttons-row height */
-}
-
 a {
     text-decoration: none;
 }
@@ -348,7 +344,6 @@ select {
         flex-direction:column;
         margin-top:0px;
         margin-left:0;
-        height: calc(100dvh - 275px);
     }
 
     .section2-margin-top {
@@ -389,7 +384,6 @@ select {
 }
 
 @media screen and (max-width: 767px) and (orientation:portrait) {
-    html, body { min-height: 100dvh; }
     #header {
         flex-direction:column;
         justify-content: start;
@@ -414,14 +408,8 @@ select {
     .section2-margin-top {
         margin-top:30px;
     }
-    .notation {
-      padding-bottom: calc(var(--toolbar-h) + env(safe-area-inset-bottom, 0px));
-    }
     #notation-max-height {
         max-height:40vh;
-    }
-    #notation:fullscreen {
-      padding-bottom: var(--toolbar-h);
     }
     #sidecontent {
         display:flex;
@@ -431,26 +419,12 @@ select {
     #invertButton {
         display:none;
     }
-#control-buttons-row{
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: env(safe-area-inset-bottom);
-  z-index: 3;
-  width: 100vw;             /* full viewport width */
-  display: flex;
-  flex-direction: row;
-  /* optional nice background/padding so it looks docked */
-  background: rgba(248,248,248,0.98);
-  backdrop-filter: blur(6px);
-  padding: 8px 10px;
-  box-shadow: 0 -2px 10px rgba(0,0,0,.08);
-}
-    #notation:fullscreen #control-buttons-row,
-    #notation:-webkit-full-screen #control-buttons-row{
-        position:absolute;
-        left: 0; right: 0; bottom: 0;
-        z-index:4;
+    #control-buttons-row {
+        width:100%;
+        padding:4px 0;
+        left:0;
+        background-color:#f8f8f8;
+        border-top: solid 1px #cecece;
     }
     .control-buttons {
         background-color:inherit;
