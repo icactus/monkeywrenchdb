@@ -408,9 +408,6 @@ select {
     .section2-margin-top {
         margin-top:30px;
     }
-    #notation-max-height {
-        max-height:40vh;
-    }
     #sidecontent {
         display:flex;
         flexdirection:row;

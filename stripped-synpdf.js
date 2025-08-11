@@ -845,7 +845,6 @@ function readPdf$$module$synpdf(pdfData, dataType) {
 
                 // Update UI elements
                 let notationDiv = $("#notation");
-                notationDiv.addClass("notation-max-height");
 
                 if ($("#progress-container").length === 0) {
                     notationDiv.html(`
