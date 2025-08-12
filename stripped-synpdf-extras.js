@@ -975,18 +975,18 @@ function resizePageFitToHeight() {
     resizeDematenAndCanvas(scaleAmount);
 }
 function resizePageFitToWidth() {
-    // Get the current width of the #notation div
     var notationDiv = document.getElementById("notation");
     var currentWidth = notationDiv.clientWidth;
 
-    // Get the width of the first canvas element
     var canvases = document.getElementsByTagName('canvas');
+    if (!canvases.length) return;
+
     var firstCanvasWidth = canvases[0].clientWidth;
 
-    // Calculate the scale amount
-    var scaleAmount = (currentWidth / firstCanvasWidth) * 100;
+    // In 2-up, we fit TWO pages side-by-side as the "width".
+    var targetContentWidth = window.twoUpMode ? (firstCanvasWidth * 2) : firstCanvasWidth;
 
-    // Resize the canvas and dematen
+    var scaleAmount = (currentWidth / targetContentWidth) * 100;
     resizeDematenAndCanvas(scaleAmount);
 }
 

@@ -80,14 +80,21 @@ a {
 }
 #notation-scroll { position:relative; flex: 1; overflow: auto; }
 
+/* Two-up: pages touch each other; no row/column gap; size columns to the canvases */
 #notation-scroll.two-up {
-  --page-gap: 24px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--page-gap);
+  grid-template-columns: max-content max-content; /* columns shrink/grow with canvas width */
+  column-gap: 0;
+  row-gap: 0;
+  justify-content: center;  /* center the spread as a unit */
   align-content: start;
 }
-#notation-scroll.two-up canvas { justify-self: center; }
+
+/* Override centering/margins that cause drifting */
+#notation-scroll.two-up canvas {
+  justify-self: unset;
+  margin: 0;                /* kill the "auto" margins from .notation canvas */
+}
 #control-button-row .two-up-toggle.active {
   outline: 1px solid currentColor;
 }
