@@ -876,6 +876,7 @@ function pageLeftInNotation(pageNum) {
 
 // RESIZE ALL CANVASES USING CSS
 function resizeDematenAndCanvas(scaleAmount) {
+    if (window.twoUpMode) return; // zoom disabled in two-up
     var canvas = document.getElementsByTagName('canvas')[0];
     if (canvas) {
         var notationDiv = document.getElementById("notation");
@@ -959,6 +960,8 @@ function resizeCanvasTrigger() {
 }
 
 function resizePageFitToHeight() {
+    if (window.twoUpMode) return; // zoom disabled in two-up
+
     // Get the current displayed height of the #notation div
     var notationDiv = document.getElementById("notation");
     var rect = notationDiv.getBoundingClientRect();
@@ -975,6 +978,8 @@ function resizePageFitToHeight() {
     resizeDematenAndCanvas(scaleAmount);
 }
 function resizePageFitToWidth() {
+    if (window.twoUpMode) return; // zoom disabled in two-up
+
     var notationDiv = document.getElementById("notation");
     var currentWidth = notationDiv.clientWidth;
 
@@ -988,6 +993,25 @@ function resizePageFitToWidth() {
 
     var scaleAmount = (currentWidth / targetContentWidth) * 100;
     resizeDematenAndCanvas(scaleAmount);
+}
+
+function setZoomControlsEnabled(enabled) {
+    const row = document.getElementById('control-buttons-row');
+    if (!row) return;
+    const selectors = [
+        'button[onclick^="resizeDematenAndCanvas("]',
+        'button[onclick="resizePageFitToWidth()"]',
+        'button[onclick="resizePageFitToHeight()"]'
+    ];
+    selectors.forEach(sel =>
+        row.querySelectorAll(sel).forEach(btn => {
+            btn.disabled = !enabled;
+            btn.style.opacity = enabled ? '' : '0.45';
+            btn.style.pointerEvents = enabled ? '' : 'none';
+            if (!enabled && !btn.dataset.origTitle) btn.dataset.origTitle = btn.title || '';
+            btn.title = enabled ? (btn.dataset.origTitle || '') : 'Disabled in two-up';
+        })
+    );
 }
 
 function openTab(tabId) {
@@ -1078,6 +1102,7 @@ function toggleTwoUpMode(on = !twoUpMode) {
     const scroller = document.getElementById('notation-scroll');
     if (scroller) scroller.classList.toggle('two-up', twoUpMode);
 
+    setZoomControlsEnabled(!twoUpMode);
     // rebuild + re-render (your restore happens at the end of resizePdf path)
     resizePdfSyn$$module$synpdf();
 
@@ -1125,6 +1150,7 @@ function ensureTwoUpButton() {
 // Make sure the button exists whenever the UI is (re)mounted
 document.addEventListener('DOMContentLoaded', () => {
     // if user had two-up on last time, apply class immediately
+    if (twoUpMode) setZoomControlsEnabled(false);
     if (twoUpMode) document.getElementById('notation-scroll')?.classList.add('two-up');
     ensureTwoUpButton();
 });

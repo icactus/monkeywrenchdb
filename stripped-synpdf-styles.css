@@ -88,6 +88,7 @@ a {
   row-gap: 0;
   justify-content: center;  /* center the spread as a unit */
   align-content: start;
+  --page-gap: 0px; /* keep layout and positioning math in sync */
 }
 
 /* Override centering/margins that cause drifting */
