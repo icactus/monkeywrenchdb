@@ -332,10 +332,10 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
 };
 
 Wijzer$$module$synpdf.prototype.setOffsetX = function() {
-    var a = this.xoffset || 0;
-    this.xoffset = this.$cvs.offset().left;
-    0 <= this.cursorTime && this.time2x(this.cursorTime);
-    this.drawRepTokens()
+    // keep xoffset for compatibility, but compute in notation-space
+    this.xoffset = pageLeftInNotation(1); // left page in spread
+    const t = (this.cursorTime ?? (elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - (window.offset$$module$synpdf || 0));
+    this.time2x(t);
 };
 
 Wijzer$$module$synpdf.prototype.time2x = function(a) {
@@ -831,6 +831,8 @@ function addDummySys$$module$synpdf() {
 }
 
 function readPdfdoc$$module$synpdf() {
+    // make sure the first 2-up spread of each new doc refits/re-syncs
+    window.__didInitialTwoUpFit = false;
     const scroller = deNot$$module$synpdf;
     if (scroller?.classList.contains('two-up')) {
         const styles = getComputedStyle(scroller);
@@ -1311,6 +1313,16 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
     Cs$$module$synpdf = Cs$$module$synpdf.concat(pageMetricArray.cxs);
     msc_wz$$module$synpdf || startIntf$$module$synpdf(canvas);
     $("#notation-scroll").append(canvas);
+
+    //make sure time2x gets x position once the 2nd page has loaded for 2up mode
+    if (window.twoUpMode && pageNum === 2) {
+        requestAnimationFrame(() => {
+            const t = (msc_wz$$module$synpdf?.cursorTime)
+                ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
+                    - (window.offset$$module$synpdf || 0));
+            msc_wz$$module$synpdf?.time2x(t);
+        });
+    }
 
     // Start observing the canvas for visibility
     if (observer) {
