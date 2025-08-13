@@ -876,7 +876,11 @@ function pageLeftInNotation(pageNum) {
 
 // RESIZE ALL CANVASES USING CSS
 function resizeDematenAndCanvas(scaleAmount) {
-    if (window.twoUpMode) return; // zoom disabled in two-up
+    const sc = document.getElementById('notation-scroll');
+    if (sc?.classList.contains('two-up') && window.__twoUpLockZoom && !window.__TwoUpAllowScaleOnce) {
+        return; // ignore zoom in/out while 2-up
+    }
+    window.__TwoUpAllowScaleOnce = false; // consume the one-shot allowance
     var canvas = document.getElementsByTagName('canvas')[0];
     if (canvas) {
         var notationDiv = document.getElementById("notation");
@@ -1112,6 +1116,17 @@ function toggleTwoUpMode(on = !twoUpMode) {
         btn.setAttribute('aria-pressed', twoUpMode ? 'true' : 'false');
         btn.classList.toggle('active', twoUpMode);
         btn.innerHTML = twoUpMode ? SVG_TWOUP_ON : SVG_TWOUP_OFF;
+    }
+
+    // lock free zoom while two-up; still allow fit actions
+    window.__twoUpLockZoom = !!twoUpMode;
+
+    // after reflow, snap to fit height so the full spread is visible
+    if (twoUpMode) {
+        // temporarily allow a controlled scale change for the fit operation
+        const prev = window.__TwoUpAllowScaleOnce;
+        window.__TwoUpAllowScaleOnce = true;
+        try { resizePageFitToHeight(); } finally { window.__TwoUpAllowScaleOnce = prev; }
     }
 }
 

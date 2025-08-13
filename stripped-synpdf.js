@@ -409,11 +409,32 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
             var isLineEndReset = currentScrollLeft > 0 && distanceToScrollX < -500; // Big leftward jump
             var useInstantScroll = isLineEndReset;
 
-            // Vertical scrolling
-            if (distanceToScrollY !== 0) {
-                var scrollFlagValueY = Math.abs(distanceToScrollY) > 500 ? 1 : 0;
-                var targetY = measureY - self.tmargin;
-                doeRol$$module$synpdf(targetY, useInstantScroll ? 1 : scrollFlagValueY); // Auto if line end
+            // 2-up: only snap when moving from a RIGHT page to the NEXT LEFT page (or back)
+            const scroller = document.getElementById('notation-scroll');
+            const inTwoUp = !!scroller && scroller.classList.contains('two-up');
+
+            if (!inTwoUp) {
+                if (distanceToScrollY !== 0) {
+                    const scrollFlagValueY = Math.abs(distanceToScrollY) > 500 ? 1 : 0;
+                    const targetY = measureY - self.tmargin;
+                    doeRol$$module$synpdf(targetY, useInstantScroll ? 1 : scrollFlagValueY);
+                }
+            } else {
+                const prevPage = window.__twoUpPrevPage ?? (c.page || 1); // pages are 1-based here
+                const curPage = (c.page || 1);
+
+                // forward turn: 2->3, 4->5, ...
+                if ((prevPage % 2 === 0) && (curPage === prevPage + 1)) {
+                    const anchor = document.getElementById('canvas' + curPage); // left page of next spread
+                    if (anchor) doeRol$$module$synpdf(anchor.offsetTop, 1);
+                }
+                // backward turn: 3->2, 5->4, ...
+                else if ((prevPage % 2 === 1) && (curPage === prevPage - 1)) {
+                    const leftOfSpread = document.getElementById('canvas' + (curPage - 1));
+                    const anchor = leftOfSpread || document.getElementById('canvas' + curPage);
+                    if (anchor) doeRol$$module$synpdf(anchor.offsetTop, 1);
+                }
+                window.__twoUpPrevPage = curPage; // remember for next tick
             }
 
             // Horizontal scrolling
@@ -645,7 +666,10 @@ Wijzer$$module$synpdf.prototype.setTmargin = function() {
     var d = $("#notation-scroll").height();
     b + 2 * dottedHeight$$module$synpdf > a + d && (b = a + d - 2 * dottedHeight$$module$synpdf, $("#rollijn").css("top", b + "px"));
     this.tmargin = dottedHeight$$module$synpdf + b - a;
-    doeRol$$module$synpdf(c.y - this.tmargin, 1)
+    const sc = document.getElementById('notation-scroll');
+    if (!sc || !sc.classList.contains('two-up')) {
+        doeRol$$module$synpdf(c.y - this.tmargin, 1);
+    }
 };
 
 Wijzer$$module$synpdf.prototype.compCountIn = function() {
