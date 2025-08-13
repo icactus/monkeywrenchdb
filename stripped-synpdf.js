@@ -332,8 +332,18 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
 };
 
 Wijzer$$module$synpdf.prototype.setOffsetX = function() {
-    this.xoffset = canvasXInNotation(this.$cvs);   // changed so can do centering of pdfs on zoom
-    if (this.cursorTime >= 0) this.time2x(this.cursorTime);
+    var prev = this.xoffset || 0;
+
+    // Always measure from the left edge of the first page's canvas
+    var $cnv = $('#canvas1');
+    if (!$cnv.length) $cnv = this.$cvs; // fallback for editor mode
+
+    this.xoffset = canvasXInNotation($cnv);
+
+    if (this.cursorTime >= 0) {
+        this.time2x(this.cursorTime);
+    }
+
     this.drawRepTokens();
 };
 

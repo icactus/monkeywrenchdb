@@ -898,9 +898,8 @@ function resizeDematenAndCanvas(scaleAmount) {
 }
 
 // THIS WILL SCALE THE DEMATEN ARRAY - scaleAmount is percent (100, 125, 150)
-function scaleNestedArray(arr, scaleAmount, offsetX) {
+function scaleNestedArray(arr, scaleAmount) {
     const k = (scaleAmount / 100);
-    const dx = offsetX || 0;
 
     return arr.map(item => {
         if (Array.isArray(item)) {
