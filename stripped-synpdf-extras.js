@@ -868,16 +868,9 @@ function canvasXInNotation($canvas) {
 }
 
 function pageLeftInNotation(pageNum) {
-    // Canvases are 1-based: #canvas1, #canvas2, ...
-    const $cv = $('#canvas' + pageNum);
-    if ($cv.length) return canvasXInNotation($cv);
-
-    // If somebody accidentally passed 0, fall back to page 1 explicitly.
-    if (pageNum === 0) {
-        const $cv1 = $('#canvas1');
-        if ($cv1.length) return canvasXInNotation($cv1);
-    }
-    return 0;
+    // Model is 0-based; DOM #canvas is 1-based → always +1
+    const $cv = $('#canvas' + (pageNum + 1));
+    return $cv.length ? canvasXInNotation($cv) : 0;
 }
 
 // RESIZE ALL CANVASES USING CSS
