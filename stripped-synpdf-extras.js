@@ -868,8 +868,9 @@ function canvasXInNotation($canvas) {
 }
 
 function pageLeftInNotation(pageNum) {
-    // Model is 0-based; DOM #canvas is 1-based → always +1
-    const $cv = $('#canvas' + (pageNum + 1));
+    // deMaten.page is 1-based; DOM canvases are #canvas1, #canvas2, ...
+    const p = (pageNum != null ? pageNum : 1);
+    const $cv = $('#canvas' + p);
     return $cv.length ? canvasXInNotation($cv) : 0;
 }
 

@@ -542,15 +542,13 @@ Wijzer$$module$synpdf.prototype.goMsre = function(a, b) {
                     TOFF$$module$synpdf + offset$$module$synpdf))
 };
 
-// Linear wrap for 1-based pages (…1→2→3…; …3→2→1…)
-// Keeps the "safe X" pick so Up/Down never no-op on indents.
+// 1-based page index + linear wrap (…1→2→…→N→1)
 Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
     if (ev && (ev.altKey || ev.ctrlKey || ev.shiftKey || ev.metaKey)) return;
     ev && ev.preventDefault && ev.preventDefault();
     if (!deMaten$$module$synpdf || !deMaten$$module$synpdf.length) return;
 
-    function pageOf(m) { return (m && m.page != null) ? m.page : 1; } // 1-based default
-
+    function pageOf(m) { return (m && m.page != null) ? m.page : 1; } // 1-based
     function collectRows(pageIdx) {
         const set = Object.create(null);
         for (let i = 0; i < deMaten$$module$synpdf.length; i++) {
@@ -576,7 +574,7 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
     let targetRowBottom;
 
     if (isPageJump) {
-        // keep your existing PageUp/PageDown semantics on the current page
+        // keep your PageUp/PageDown semantics
         let b = 0;
         while (b <= pageStfIx$$module$synpdf.length && rowIdx >= pageStfIx$$module$synpdf[b]) ++b;
         if (isDown) { if (b == pageStfIx$$module$synpdf.length) b = 0; }
@@ -587,7 +585,6 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
             if (rowIdx < rows.length - 1) {
                 targetRowBottom = rows[rowIdx + 1];
             } else {
-                // wrap to next page (1-based)
                 targetPage = curPage + 1;
                 if (targetPage > pageCount) targetPage = 1;
                 rows = collectRows(targetPage);
@@ -598,7 +595,6 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
             if (rowIdx > 0) {
                 targetRowBottom = rows[rowIdx - 1];
             } else {
-                // wrap to previous page (1-based)
                 targetPage = curPage - 1;
                 if (targetPage < 1) targetPage = pageCount;
                 rows = collectRows(targetPage);
@@ -608,7 +604,7 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
         }
     }
 
-    // Choose a safe X inside a measure on the target row
+    // choose a safe X inside a measure on the target row (avoids indent no-ops)
     function pickSafeAbsX(targetPage, targetRowBottom, preferInnerX) {
         const candidates = [];
         for (let j = 0; j < deMaten$$module$synpdf.length; j++) {
@@ -616,7 +612,7 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
             if (pageOf(mm) !== targetPage) continue;
             if (Math.abs((mm.y + mm.h) - targetRowBottom) <= 2) candidates.push(mm);
         }
-        const pageLeft = pageLeftInNotation(targetPage);
+        const pageLeft = pageLeftInNotation(targetPage); // 1-based
         if (!candidates.length) {
             for (let j = 0; j < deMaten$$module$synpdf.length; j++) {
                 const mm2 = deMaten$$module$synpdf[j];
