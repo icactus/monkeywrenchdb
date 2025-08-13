@@ -897,27 +897,25 @@ function resizeDematenAndCanvas(scaleAmount) {
     }
 }
 
-// THIS WILL SCALE THE DEMATEN ARRAY - scaleAmount NEEDS TO BE PERCENT SO 100, 125, 150
-
+// THIS WILL SCALE THE DEMATEN ARRAY - scaleAmount is percent (100, 125, 150)
 function scaleNestedArray(arr, scaleAmount, offsetX) {
-    let counter = 0;
-    return arr.map(function(item) {
+    const k = (scaleAmount / 100);
+    const dx = offsetX || 0;
+
+    return arr.map(item => {
         if (Array.isArray(item)) {
-            return scaleNestedArray(item, scaleAmount, offsetX);
-        } else if (typeof item === 'object' && item !== null && ('x' in item || 'y' in item || 'w' in item || 'h' in item)) {
-            let xExample = ((item.x * (scaleAmount / 100)));
-            if (counter === 0) {
-                counter++;
-            }
-            return {
-                x: xExample,
-                y: (item.y * (scaleAmount / 100)),
-                w: (item.w * (scaleAmount / 100)),
-                h: (item.h * (scaleAmount / 100))
-            };
-        } else {
-            return item;
+            return scaleNestedArray(item, scaleAmount, dx);
         }
+        if (item && typeof item === 'object' && ('x' in item || 'y' in item || 'w' in item || 'h' in item)) {
+            // clone and preserve all extra fields like `page`
+            const out = { ...item };
+            if ('x' in out) out.x = (out.x * k) + 0;
+            if ('y' in out) out.y = (out.y * k);
+            if ('w' in out) out.w = (out.w * k);
+            if ('h' in out) out.h = (out.h * k);
+            return out;
+        }
+        return item;
     });
 }
 
