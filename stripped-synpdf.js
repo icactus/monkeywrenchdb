@@ -790,8 +790,8 @@ function readPdfdoc$$module$synpdf() {
     const scroller = deNot$$module$synpdf;
     if (scroller?.classList.contains('two-up')) {
         const styles = getComputedStyle(scroller);
-        const gap = parseFloat(styles.getPropertyValue('--page-gap') || '24') || 24;
-        opt$$module$synpdf.pagewd = Math.max(100, Math.floor((scroller.clientWidth - gap) / 2));
+        const colGap = parseFloat(styles.columnGap) || 0;
+        opt$$module$synpdf.pagewd = Math.max(100, Math.floor((scroller.clientWidth - colGap) / 2));
     } else {
         opt$$module$synpdf.pagewd = scroller.clientWidth;
     }
@@ -822,7 +822,7 @@ async function buildAllPageShells$$module$synpdf() {
     let cumulativeHeight = 0;
     const scroller = deNot$$module$synpdf;
     const isTwoUp = scroller?.classList.contains('two-up');
-    const gap = isTwoUp ? (parseFloat(getComputedStyle(scroller).getPropertyValue('--page-gap') || '24') || 24) : 0;
+    const rowGap = isTwoUp ? (parseFloat(getComputedStyle(scroller).rowGap) || 0) : 0;
 
     for (let p = 1; p <= pdfDoc$$module$synpdf.numPages;) {
         // LEFT PAGE
@@ -864,7 +864,7 @@ async function buildAllPageShells$$module$synpdf() {
             step = 2;
         }
 
-        cumulativeHeight += isTwoUp ? (rowMaxH + gap) : rowMaxH;
+        cumulativeHeight += isTwoUp ? (rowMaxH + rowGap) : rowMaxH;
         p += step;
     }
 }
