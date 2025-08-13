@@ -1193,6 +1193,21 @@ function manageRenderedCanvases(canvasId) {
     canShowDemaat = true;
     $('.demaat').show();
 
+    // One-time correction right after the first actual render
+    if (!window.__didInitialDemaatAlign && window.msc_wz$$module$synpdf) {
+        window.__didInitialDemaatAlign = true;
+        requestAnimationFrame(() => {
+            try {
+                msc_wz$$module$synpdf.setOffsetX();
+                const t = (msc_wz$$module$synpdf.cursorTime != null)
+                    ? msc_wz$$module$synpdf.cursorTime
+                    : ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
+                        - (window.offset$$module$synpdf || 0));
+                msc_wz$$module$synpdf.time2x(t);
+            } catch (_) { }
+        });
+    }
+
     // If the canvas is already in the set, remove it to re-add (to update its position)
     if (renderedCanvasesQueue.has(canvasId)) {
         renderedCanvasesQueue.delete(canvasId);
@@ -1833,6 +1848,15 @@ function toggleTwoUpMode(on = !window.twoUpMode) {
         .classList.toggle('two-up', window.twoUpMode);
 
     resizePdfSyn$$module$synpdf(); // this calls readPdfdoc -> rebuild shells -> render visible
+
+    if (window.twoUpMode && typeof resizePageFitToHeight === 'function') {
+        const prev = window.__TwoUpAllowScaleOnce;
+        window.__TwoUpAllowScaleOnce = true;
+        // wait a tick so the two-up layout has settled
+        requestAnimationFrame(() => {
+            try { resizePageFitToHeight(); } finally { window.__TwoUpAllowScaleOnce = prev; }
+        });
+    }
 }
 
 $(document).ready(function() {
