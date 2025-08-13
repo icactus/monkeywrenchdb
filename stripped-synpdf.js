@@ -118,7 +118,6 @@ function initGlobals$$module$synpdf() {
     lastSynced$$module$synpdf = -2 == opt$$module$synpdf.lastSynced ? deTijden$$module$synpdf.length - 1 : opt$$module$synpdf.lastSynced;
     doReadPdf$$module$synpdf = 0;
     repMaten$$module$synpdf = []
-    canShowDemaat = false; // ensure first-raster realign runs for every new part
 }
 
 function Wijzer$$module$synpdf(a, b, c, d) {
@@ -289,13 +288,12 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     $("#notation-scroll").append(this.maatloper);
     this.times = a;
     this.tixlb = tixlb$$module$synpdf;
+    this.cursorTime = 0;
     this.time_ix = d;
-    this.cursorTime =
-        (typeof window.__restoreTime === 'number')
-            ? window.__restoreTime
-            : ((window.elmed$$module$synpdf?.getCurrentTime?.() ?? 0) - (window.offset$$module$synpdf || 0));
-
-    requestAnimationFrame(() => this.setOffsetX());
+    var e = this;
+    setTimeout(function() {
+        e.setOffsetX.call(e)
+    }, 0);
     this.line = c;
     this.repcnt = this.msre = 1;
     this.tmargin = this.lastTix = this.lastSync = 0;
@@ -334,17 +332,7 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
 };
 
 Wijzer$$module$synpdf.prototype.setOffsetX = function() {
-    // Prefer the current measure’s page; fall back to first measure or constructor canvas
-    const cur = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
-    const $cv = cur ? $('#canvas' + ((cur.page != null ? cur.page : 1))) : this.$cvs;
-
-    if (!$cv || !$cv.length) {
-        // Canvas not in DOM yet — try again next frame
-        requestAnimationFrame(() => this.setOffsetX());
-        return;
-    }
-
-    this.xoffset = canvasXInNotation($cv);
+    this.xoffset = canvasXInNotation(this.$cvs);   // changed so can do centering of pdfs on zoom
     if (this.cursorTime >= 0) this.time2x(this.cursorTime);
     this.drawRepTokens();
 };
@@ -869,16 +857,6 @@ function readPdfdoc$$module$synpdf() {
         rendering$$module$synpdf = 0;
         addDummySys$$module$synpdf();
         $("#loadingMessage2").hide();
-
-        // Ensure dematen starts in the correct spot on initial load/part switch
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                if (window.msc_wz$$module$synpdf) {
-                    window.msc_wz$$module$synpdf.setOffsetX();
-                    window.msc_wz$$module$synpdf.time2x(window.msc_wz$$module$synpdf.cursorTime || 0);
-                }
-            });
-        });
         return Promise.resolve();
     });
 }
@@ -1203,15 +1181,6 @@ function renderPageIfNotRendered(pageIndex) {
             canvas.classList.add('rendered');
             renderingStatus[pageIndex] = 'rendered';
             manageRenderedCanvases(canvasId);
-            if (!canShowDemaat) {
-                canShowDemaat = true;
-                requestAnimationFrame(() => {
-                    if (window.msc_wz$$module$synpdf) {
-                        window.msc_wz$$module$synpdf.setOffsetX();
-                        window.msc_wz$$module$synpdf.time2x(window.msc_wz$$module$synpdf.cursorTime || 0);
-                    }
-                });
-            }
         }).catch(err => {
             console.error(`[PDF] Render failed for page ${pageIndex}:`, err);
             renderingStatus[pageIndex] = 'idle';
@@ -1354,8 +1323,8 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
     canvas = knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum); // Generates measure boxes (deMaten)
     pageStfIx$$module$synpdf.push(Cs$$module$synpdf.length);
     Cs$$module$synpdf = Cs$$module$synpdf.concat(pageMetricArray.cxs);
+    msc_wz$$module$synpdf || startIntf$$module$synpdf(canvas);
     $("#notation-scroll").append(canvas);
-    if (!msc_wz$$module$synpdf) startIntf$$module$synpdf(canvas);
 
     // Start observing the canvas for visibility
     if (observer) {
