@@ -955,6 +955,8 @@ function resizeCanvasTrigger() {
     var previousWidth = $("#notation").width();
 
     $(window).off("resize").on("resize", debounce(function() {
+        // In 2-up, ignore width-delta scaling. reflowForViewportChange + fit-to-height will handle it.
+        if (document.getElementById('notation-scroll')?.classList.contains('two-up')) return;
 
         var newWidth = $("#notation").width();
         var scaleAmount = (newWidth / previousWidth) * 100;
@@ -964,21 +966,26 @@ function resizeCanvasTrigger() {
 }
 
 function resizePageFitToHeight() {
-    if (window.twoUpMode) return; // zoom disabled in two-up
+    const scroller = document.getElementById('notation-scroll');
+    if (!scroller) return;
 
-    // Get the current displayed height of the #notation div
-    var notationDiv = document.getElementById("notation");
-    var rect = notationDiv.getBoundingClientRect();
-    var displayedHeight = rect.bottom - rect.top;
+    // If controls sit inside the scroller, subtract them from the viewport we can use.
+    const controls = document.getElementById('control-buttons-row');
+    const controlsH = controls && scroller.contains(controls) ? controls.offsetHeight : 0;
+    const viewportH = scroller.clientHeight - controlsH;
+    if (viewportH <= 0) return;
 
-    // Get the height of the first canvas element
-    var canvases = document.getElementsByTagName('canvas');
-    var firstCanvasHeight = canvases[0].clientHeight;
+    // Use computed CSS height(s) of the first spread (robust if one canvas hasn't painted yet).
+    const c1 = document.getElementById('canvas1');
+    const c2 = document.getElementById('canvas2');
+    const h1 = c1 ? parseFloat(getComputedStyle(c1).height) || c1.clientHeight || 1 : 1;
+    const h2 = c2 ? parseFloat(getComputedStyle(c2).height) || c2.clientHeight || 0 : 0;
+    const pageH = Math.max(h1, h2, 1);
 
-    // Calculate the scale amount
-    var scaleAmount = (displayedHeight / firstCanvasHeight) * 100;
+    const scaleAmount = (viewportH / pageH) * 100;
 
-    // Resize the canvas and dematen
+    // Allow this one controlled scale even with 2-up zoom locked
+    window.__TwoUpAllowScaleOnce = true;
     resizeDematenAndCanvas(scaleAmount);
 }
 function resizePageFitToWidth() {

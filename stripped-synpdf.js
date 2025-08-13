@@ -1731,6 +1731,18 @@ function reflowForViewportChange() {
     renderingStatus = {};
     renderedCanvasesQueue.clear();
     resizePdfSyn$$module$synpdf(); // rebuild shells + re-render visible pages
+
+    // NEW: in 2-up, immediately refit the spread to the visible height
+    const scroller = document.getElementById('notation-scroll');
+    if (scroller && scroller.classList.contains('two-up')) {
+        // allow a single scale change despite the 2-up zoom lock
+        window.__TwoUpAllowScaleOnce = true;
+        // wait a frame to ensure clientHeight is up-to-date after layout
+        requestAnimationFrame(() => {
+            window.__TwoUpAllowScaleOnce = true; // set again in case other work ran
+            resizePageFitToHeight();
+        });
+    }
 }
 
 window.twoUpMode = false; // default off
