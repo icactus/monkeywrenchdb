@@ -118,6 +118,7 @@ function initGlobals$$module$synpdf() {
     lastSynced$$module$synpdf = -2 == opt$$module$synpdf.lastSynced ? deTijden$$module$synpdf.length - 1 : opt$$module$synpdf.lastSynced;
     doReadPdf$$module$synpdf = 0;
     repMaten$$module$synpdf = []
+    canShowDemaat = false; // ensure first-raster realign runs for every new part
 }
 
 function Wijzer$$module$synpdf(a, b, c, d) {
@@ -332,7 +333,13 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
 };
 
 Wijzer$$module$synpdf.prototype.setOffsetX = function() {
-    this.xoffset = canvasXInNotation(this.$cvs);   // changed so can do centering of pdfs on zoom
+    // Prefer the canvas of the *current* measure’s page; fall back to the ctor canvas.
+    const cur = (deMaten$$module$synpdf && deMaten$$module$synpdf.length)
+        ? (deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0])
+        : null;
+    const $cv = (cur && cur.page) ? $('#canvas' + cur.page) : this.$cvs;
+
+    this.xoffset = canvasXInNotation($cv);
     if (this.cursorTime >= 0) this.time2x(this.cursorTime);
     this.drawRepTokens();
 };
@@ -857,6 +864,16 @@ function readPdfdoc$$module$synpdf() {
         rendering$$module$synpdf = 0;
         addDummySys$$module$synpdf();
         $("#loadingMessage2").hide();
+
+        // Ensure dematen starts in the correct spot on initial load/part switch
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                if (window.msc_wz$$module$synpdf) {
+                    window.msc_wz$$module$synpdf.setOffsetX();
+                    window.msc_wz$$module$synpdf.time2x(window.msc_wz$$module$synpdf.cursorTime || 0);
+                }
+            });
+        });
         return Promise.resolve();
     });
 }
@@ -1181,6 +1198,15 @@ function renderPageIfNotRendered(pageIndex) {
             canvas.classList.add('rendered');
             renderingStatus[pageIndex] = 'rendered';
             manageRenderedCanvases(canvasId);
+            if (!canShowDemaat) {
+                canShowDemaat = true;
+                requestAnimationFrame(() => {
+                    if (window.msc_wz$$module$synpdf) {
+                        window.msc_wz$$module$synpdf.setOffsetX();
+                        window.msc_wz$$module$synpdf.time2x(window.msc_wz$$module$synpdf.cursorTime || 0);
+                    }
+                });
+            }
         }).catch(err => {
             console.error(`[PDF] Render failed for page ${pageIndex}:`, err);
             renderingStatus[pageIndex] = 'idle';
