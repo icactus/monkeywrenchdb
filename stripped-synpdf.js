@@ -292,7 +292,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     this.time_ix = d;
     var e = this;
     setTimeout(function() {
-        e.setOffsetX.call(e)
+        e.setffsetX.call(e)
     }, 0);
     this.line = c;
     this.repcnt = this.msre = 1;
@@ -332,19 +332,10 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
 };
 
 Wijzer$$module$synpdf.prototype.setOffsetX = function() {
-    var prev = this.xoffset || 0;
-
-    // Always measure from the left edge of the first page's canvas
-    var $cnv = $('#canvas1');
-    if (!$cnv.length) $cnv = this.$cvs; // fallback for editor mode
-
-    this.xoffset = canvasXInNotation($cnv);
-
-    if (this.cursorTime >= 0) {
-        this.time2x(this.cursorTime);
-    }
-
-    this.drawRepTokens();
+    var a = this.xoffset || 0;
+    this.xoffset = this.$cvs.offset().left;
+    0 <= this.cursorTime && this.time2x(this.cursorTime);
+    this.drawRepTokens()
 };
 
 Wijzer$$module$synpdf.prototype.time2x = function(a) {
