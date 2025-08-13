@@ -310,7 +310,7 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
         b = c[a] || 1;
         c[a] = b + 1;
         a = deMaten$$module$synpdf[a];
-        const canvasX = pageLeftInNotation(a.page != null ? a.page : 0);
+        const canvasX = pageLeftInNotation(a.page ?? 1);
         d = a.x + d * a.w + canvasX;
         e = $('<div class="reptkn">' + e + n + "</div>");
         e.css({
@@ -386,7 +386,7 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
             ycurprev$$module$synpdf = measureY;
 
             var maatlooperStyle = this.maatloper[0].style;
-            const canvasX = pageLeftInNotation(c.page != null ? c.page : 0);
+            const canvasX = pageLeftInNotation(c.page ?? 1);
             const measureLeft = canvasX + measureX;
             const measureRight = measureLeft + measureWidth;
             maatlooperStyle.left = measureLeft + "px";
@@ -420,8 +420,8 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                     doeRol$$module$synpdf(targetY, useInstantScroll ? 1 : scrollFlagValueY);
                 }
             } else {
-                const prevPage = window.__twoUpPrevPage ?? (c.page ?? 0);
-                const curPage = c.page ?? 0;
+                const prevPage = window.__twoUpPrevPage ?? (c.page ?? 1);
+                const curPage = c.page ?? 1;
 
                 // forward turn: right->next left  (…1 -> 2, 3 -> 4…)
                 if ((prevPage % 2 === 1) && (curPage === prevPage + 1)) {
@@ -473,7 +473,7 @@ Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
     var d;
     for (d = 0; d < deMaten$$module$synpdf.length; ++d) {
         var e = deMaten$$module$synpdf[d];
-        const exLeft = (e.x + pageLeftInNotation(e.page != null ? e.page : 0));
+        const exLeft = (e.x + pageLeftInNotation(e.page ?? 1));
         const exRight = exLeft + e.w;
         if (!(b > e.y + e.h || a > exRight)) {
             if (a < exLeft) {
@@ -542,13 +542,15 @@ Wijzer$$module$synpdf.prototype.goMsre = function(a, b) {
                     TOFF$$module$synpdf + offset$$module$synpdf))
 };
 
-// 0-based page index fix + linear wrap (…0→1→2…)
+// Linear wrap for 1-based pages (…1→2→3…; …3→2→1…)
+// Keeps the "safe X" pick so Up/Down never no-op on indents.
 Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
     if (ev && (ev.altKey || ev.ctrlKey || ev.shiftKey || ev.metaKey)) return;
     ev && ev.preventDefault && ev.preventDefault();
     if (!deMaten$$module$synpdf || !deMaten$$module$synpdf.length) return;
 
-    function pageOf(m) { return (m && m.page != null) ? m.page : 0; } // <-- accept 0
+    function pageOf(m) { return (m && m.page != null) ? m.page : 1; } // 1-based default
+
     function collectRows(pageIdx) {
         const set = Object.create(null);
         for (let i = 0; i < deMaten$$module$synpdf.length; i++) {
@@ -569,7 +571,6 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
     while (rowIdx < rows.length && rows[rowIdx] < cur.y) rowIdx++;
 
     const pageCount = (pdfDoc$$module$synpdf && pdfDoc$$module$synpdf.numPages) || nPage$$module$synpdf || 1;
-    const lastPage = pageCount - 1;
 
     let targetPage = curPage;
     let targetRowBottom;
@@ -586,8 +587,9 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
             if (rowIdx < rows.length - 1) {
                 targetRowBottom = rows[rowIdx + 1];
             } else {
-                // wrap to next page (curPage+1, modulo pageCount)
-                targetPage = (curPage + 1) % pageCount;
+                // wrap to next page (1-based)
+                targetPage = curPage + 1;
+                if (targetPage > pageCount) targetPage = 1;
                 rows = collectRows(targetPage);
                 if (!rows.length) return;
                 targetRowBottom = rows[0];
@@ -596,8 +598,9 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
             if (rowIdx > 0) {
                 targetRowBottom = rows[rowIdx - 1];
             } else {
-                // wrap to previous page (curPage-1, modulo pageCount)
-                targetPage = (curPage - 1 + pageCount) % pageCount;
+                // wrap to previous page (1-based)
+                targetPage = curPage - 1;
+                if (targetPage < 1) targetPage = pageCount;
                 rows = collectRows(targetPage);
                 if (!rows.length) return;
                 targetRowBottom = rows[rows.length - 1];
@@ -605,7 +608,7 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
         }
     }
 
-    // pick a safe X inside a measure on the target row
+    // Choose a safe X inside a measure on the target row
     function pickSafeAbsX(targetPage, targetRowBottom, preferInnerX) {
         const candidates = [];
         for (let j = 0; j < deMaten$$module$synpdf.length; j++) {
@@ -613,7 +616,7 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
             if (pageOf(mm) !== targetPage) continue;
             if (Math.abs((mm.y + mm.h) - targetRowBottom) <= 2) candidates.push(mm);
         }
-        const pageLeft = pageLeftInNotation(targetPage); // uses 0-based ids: #canvas0, #canvas1, ...
+        const pageLeft = pageLeftInNotation(targetPage);
         if (!candidates.length) {
             for (let j = 0; j < deMaten$$module$synpdf.length; j++) {
                 const mm2 = deMaten$$module$synpdf[j];

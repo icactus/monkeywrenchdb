@@ -868,10 +868,15 @@ function canvasXInNotation($canvas) {
 }
 
 function pageLeftInNotation(pageNum) {
-    // Accept 0-based model index; DOM canvases are 1-based (#canvas1, #canvas2, …)
-    let $cv = $('#canvas' + pageNum);
-    if (!$cv.length) $cv = $('#canvas' + (pageNum + 1));  // try 1-based
+    // Canvases are 1-based: #canvas1, #canvas2, ...
+    const $cv = $('#canvas' + pageNum);
     if ($cv.length) return canvasXInNotation($cv);
+
+    // If somebody accidentally passed 0, fall back to page 1 explicitly.
+    if (pageNum === 0) {
+        const $cv1 = $('#canvas1');
+        if ($cv1.length) return canvasXInNotation($cv1);
+    }
     return 0;
 }
 
