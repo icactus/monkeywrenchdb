@@ -1328,13 +1328,18 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
     if (observer) {
         observer.observe(canvas);
     }
-    if (window.twoUpMode && pageNum === 2 && !window.__didInitialTwoUpFit) {
-        window.__didInitialTwoUpFit = true;
-        // Let layout settle, then fit once
+    if (window.twoUpMode) {
         requestAnimationFrame(() => {
+            // 2-up fit for the current viewport (height + spread width)
             const prev = window.__TwoUpAllowScaleOnce;
             window.__TwoUpAllowScaleOnce = true;
             try { resizePageFitToHeight(); } finally { window.__TwoUpAllowScaleOnce = prev; }
+
+            // Then re-position the shader now that pageLeftInNotation(pageNum) is valid
+            const t =
+                (msc_wz$$module$synpdf?.cursorTime) ??
+                ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - (window.offset$$module$synpdf || 0));
+            msc_wz$$module$synpdf?.time2x(t);
         });
     }
     $(canvas).on("mousedown touchstart", kliklang$$module$synpdf);
