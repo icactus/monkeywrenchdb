@@ -800,7 +800,7 @@ function addDummySys$$module$synpdf() {
         x: a.x + a.w,
         y: a.y,
         w: 2,
-        h: a.h
+        h: a.h,
         page: a.page   // <-- keep the dummy on the correct page
     });
     a = deTijden$$module$synpdf.length;
