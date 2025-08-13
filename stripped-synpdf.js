@@ -584,27 +584,43 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
     if (isPageJump) {
         let b = 0;
         while (b <= pageStfIx$$module$synpdf.length && rowIdx >= pageStfIx$$module$synpdf[b]) ++b;
-        if (isDown) { if (b == pageStfIx$$module$synpdf.length) b = 0; }
-        else { b -= 2; if (b < 0) b = pageStfIx$$module$synpdf.length - 1; }
+        if (isDown) {
+            if (b == pageStfIx$$module$synpdf.length) b = pageStfIx$$module$synpdf.length - 1;
+        } else {
+            b -= 2;
+            if (b < 0) b = 0;
+        }
         targetRowBottom = rows[pageStfIx$$module$synpdf[b]];
     } else {
         if (isDown) {
             if (rowIdx < rows.length - 1) {
                 targetRowBottom = rows[rowIdx + 1];
             } else {
-                targetPage = (curPage + 1 > pageCount) ? 1 : curPage + 1;
-                rows = collectRows(targetPage);
-                if (!rows.length) return;
-                targetRowBottom = rows[0];
+                if (curPage + 1 > pageCount) {
+                    // clamp at the last row of the last page
+                    targetPage = curPage;
+                    targetRowBottom = rows[rows.length - 1];
+                } else {
+                    targetPage = curPage + 1;
+                    rows = collectRows(targetPage);
+                    if (!rows.length) return;
+                    targetRowBottom = rows[0];
+                }
             }
         } else {
             if (rowIdx > 0) {
                 targetRowBottom = rows[rowIdx - 1];
             } else {
-                targetPage = (curPage - 1 < 1) ? pageCount : curPage - 1;
-                rows = collectRows(targetPage);
-                if (!rows.length) return;
-                targetRowBottom = rows[rows.length - 1];
+                if (curPage - 1 < 1) {
+                    // clamp at the first row of the first page
+                    targetPage = curPage;
+                    targetRowBottom = rows[0];
+                } else {
+                    targetPage = curPage - 1;
+                    rows = collectRows(targetPage);
+                    if (!rows.length) return;
+                    targetRowBottom = rows[rows.length - 1];
+                }
             }
         }
     }
@@ -1042,7 +1058,12 @@ let observer;
 let pageCache = {};            // { [pageNum]: PDFPageProxy }
 let pageView = {};            // { [pageNum]: { w, h, rotation } }
 let renderedCanvasesQueue = new Set(); // Track rendered canvases
-const MAX_RENDERED_PAGES = phoneCheck ? 4 : 10; // Maximum number of pages to keep rendered
+let MAX_RENDERED_PAGES = phoneCheck ? 6 : 12; // baseline
+function updateMaxRenderedPages() {
+    MAX_RENDERED_PAGES = twoUpMode ? (phoneCheck ? 8 : 16) : (phoneCheck ? 6 : 12);
+}
+updateMaxRenderedPages();
+let visiblePages = new Set();
 var renderingStatus = {}; // Tracks the rendering status of each page
 
 let canShowDemaat = false;
@@ -1087,12 +1108,12 @@ const renderingQueue = new RenderingQueue(2); // Example: 2 concurrent tasks
 
 // Initialize IntersectionObserver
 function initIntersectionObserver() {
+    const vMargin = Math.round(window.innerHeight * (twoUpMode ? 0.8 : 0.5));
     const options = {
-        root: document.getElementById('notation-scroll'), // The scrollable container
-        rootMargin: '200px 0px', // Preload when 200px before entering viewport vertically
-        threshold: 0.1 // Trigger when 10% of the canvas is visible
+        root: document.getElementById('notation-scroll'),
+        rootMargin: `${vMargin}px 0px`, // preload well before entering viewport
+        threshold: 0.01
     };
-
     observer = new IntersectionObserver(handleIntersect, options);
 }
 
@@ -1103,17 +1124,20 @@ function handleIntersect(entries) {
         const pageNumber = parseInt(canvas.id.replace('canvas', ''), 10);
 
         if (entry.isIntersecting) {
-            // Render the current page if not already rendered
+            visiblePages.add(pageNumber);
             renderPageIfNotRendered(pageNumber);
-
-            // Preload the next page
-            const nextPageNumber = pageNumber + 1;
-            if (nextPageNumber <= pdfDoc$$module$synpdf.numPages) {
-                renderPageIfNotRendered(nextPageNumber);
+            const max = pdfDoc$$module$synpdf.numPages || nPage$$module$synpdf || 1;
+            // preload ±2 vertically
+            [pageNumber - 2, pageNumber - 1, pageNumber + 1, pageNumber + 2]
+                .filter(p => p >= 1 && p <= max)
+                .forEach(renderPageIfNotRendered);
+            // in 2-up, also preload the buddy page of the spread
+            if (twoUpMode) {
+                const buddy = (pageNumber % 2 === 1) ? pageNumber + 1 : pageNumber - 1;
+                if (buddy >= 1 && buddy <= max) renderPageIfNotRendered(buddy);
             }
         } else {
-            // Optionally, unrender the page to save memory
-            // manageRenderedCanvases(canvas.id); // Uncomment if you want to unrender
+            visiblePages.delete(pageNumber);
         }
     });
 }
@@ -1175,12 +1199,27 @@ function manageRenderedCanvases(canvasId) {
 
     // If the number of rendered pages exceeds the maximum, remove the oldest
     if (renderedCanvasesQueue.size > MAX_RENDERED_PAGES) {
-        // Retrieve the first (oldest) canvasId
-        const oldestCanvasId = renderedCanvasesQueue.values().next().value;
-        renderedCanvasesQueue.delete(oldestCanvasId);
-        const oldestCanvas = document.getElementById(oldestCanvasId);
-        if (oldestCanvas) {
-            clearCanvas(oldestCanvas); // Clear the canvas
+        let toDrop = null;
+        for (const id of renderedCanvasesQueue) {
+            const p = parseInt(id.replace('canvas', ''), 10);
+            if (!visiblePages.has(p)) {
+                toDrop = id;
+                break;
+            }
+        }
+
+        if (!toDrop) {
+            // All loaded pages are marked visible
+            // If the count is much higher than max, trim down
+            if (renderedCanvasesQueue.size > MAX_RENDERED_PAGES * 1.5) {
+                toDrop = renderedCanvasesQueue.values().next().value; // drop oldest
+            }
+        }
+
+        if (toDrop) {
+            renderedCanvasesQueue.delete(toDrop);
+            const cnv = document.getElementById(toDrop);
+            if (cnv) clearCanvas(cnv);
         }
     }
 }
@@ -1741,6 +1780,7 @@ function reflowForViewportChange() {
     // Force fresh high-res draws at the new CSS width/DPR
     renderingStatus = {};
     renderedCanvasesQueue.clear();
+    visiblePages.clear();
     resizePdfSyn$$module$synpdf(); // rebuild shells + re-render visible pages
 
     // NEW: in 2-up, immediately refit the spread to the visible height
@@ -1760,7 +1800,9 @@ window.twoUpMode = false; // default off
 
 function toggleTwoUpMode(on = !twoUpMode) {
     twoUpMode = !!on;
-
+    updateMaxRenderedPages();
+    if (observer) { observer.disconnect(); }
+    initIntersectionObserver();
     // remember where we are so a rebuild won't jump to the top
     __restoreTime = (window.msc_wz$$module$synpdf?.cursorTime)
         ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - (window.offset$$module$synpdf || 0));
