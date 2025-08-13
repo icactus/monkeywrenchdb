@@ -1269,7 +1269,15 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
     if (observer) {
         observer.observe(canvas);
     }
-
+    if (window.twoUpMode && pageNum === 2 && !window.__didInitialTwoUpFit) {
+        window.__didInitialTwoUpFit = true;
+        // Let layout settle, then fit once
+        requestAnimationFrame(() => {
+            const prev = window.__TwoUpAllowScaleOnce;
+            window.__TwoUpAllowScaleOnce = true;
+            try { resizePageFitToHeight(); } finally { window.__TwoUpAllowScaleOnce = prev; }
+        });
+    }
     $(canvas).on("mousedown touchstart", kliklang$$module$synpdf);
     deMaten$$module$synpdf.length >= demix$$module$synpdf && msc_wz$$module$synpdf.cursorTime && msc_wz$$module$synpdf.time2x(msc_wz$$module$synpdf.cursorTime);
     return canvas;

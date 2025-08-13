@@ -800,26 +800,24 @@ decrementButton.addEventListener('click', decrementSpeed);
 
 // One handler for all vendor events
 function refreshAfterFullscreen() {
-    // run twice: once after the DOM flips, once after paint settles
     const doRefresh = () => {
-        if (window.msc_wz$$module$synpdf) {
-            // Recompute canvas X offset inside the scroller
-            if (typeof msc_wz$$module$synpdf.setOffsetX === 'function') {
-                msc_wz$$module$synpdf.setOffsetX();
-            }
-            // Recompute vertical margins / anchors
-            if (typeof msc_wz$$module$synpdf.setTmargin === 'function') {
-                msc_wz$$module$synpdf.setTmargin();
-            }
-            // Reposition the dematen highlight at current time
-            const t = (window.elmed$$module$synpdf?.getCurrentTime?.() ?? 0) - (window.offset$$module$synpdf ?? 0);
-            if (typeof msc_wz$$module$synpdf.time2x === 'function') {
-                msc_wz$$module$synpdf.time2x(t);
-            }
+        // Rebuild and re-render at the new viewport/DPR
+        if (typeof reflowForViewportChange === 'function') {
+            reflowForViewportChange(); // this calls resizePdfSyn inside
         }
-        // ensure keyboard scroll still works
-        const scroller = document.getElementById('notation-scroll');
-        if (scroller) { scroller.focus(); }
+        // Re-fit the 2-up spread if we are in two-up
+        if (window.twoUpMode && typeof resizePageFitToHeight === 'function') {
+            const prev = window.__TwoUpAllowScaleOnce;
+            window.__TwoUpAllowScaleOnce = true;
+            try { resizePageFitToHeight(); } finally { window.__TwoUpAllowScaleOnce = prev; }
+        }
+        // Restore where we were (cursor/time) if available
+        const t = (window.msc_wz$$module$synpdf?.cursorTime)
+            ?? ((window.elmed$$module$synpdf?.getCurrentTime?.() ?? 0) - (window.offset$$module$synpdf ?? 0));
+        if (typeof window.msc_wz$$module$synpdf?.time2x === 'function') window.msc_wz$$module$synpdf.time2x(t);
+
+        // Make sure the scroll container has focus for keyboard arrows
+        document.getElementById('notation-scroll')?.focus();
     };
     requestAnimationFrame(doRefresh);
     setTimeout(doRefresh, 120); // WebKit/mobile settles a tick later
@@ -965,28 +963,49 @@ function resizeCanvasTrigger() {
     }, 100)); // 100 ms debounce
 }
 
+// Replace existing function in stripped-synpdf-extras.js
 function resizePageFitToHeight() {
     const scroller = document.getElementById('notation-scroll');
     if (!scroller) return;
 
-    // If controls sit inside the scroller, subtract them from the viewport we can use.
+    // If the controls live inside the scroller, discount them from the usable height
     const controls = document.getElementById('control-buttons-row');
-    const controlsH = controls && scroller.contains(controls) ? controls.offsetHeight : 0;
-    const viewportH = scroller.clientHeight - controlsH;
-    if (viewportH <= 0) return;
+    const controlsH = (controls && scroller.contains(controls)) ? controls.offsetHeight : 0;
 
-    // Use computed CSS height(s) of the first spread (robust if one canvas hasn't painted yet).
-    const c1 = document.getElementById('canvas1');
-    const c2 = document.getElementById('canvas2');
-    const h1 = c1 ? parseFloat(getComputedStyle(c1).height) || c1.clientHeight || 1 : 1;
-    const h2 = c2 ? parseFloat(getComputedStyle(c2).height) || c2.clientHeight || 0 : 0;
-    const pageH = Math.max(h1, h2, 1);
+    // Viewport we can actually use
+    const viewportH = Math.max(0, scroller.clientHeight - controlsH);
+    const viewportW = scroller.clientWidth;
 
-    const scaleAmount = (viewportH / pageH) * 100;
+    // Use the first canvas in the scroller as the page size exemplar
+    const first = scroller.querySelector('canvas');
+    if (!first || viewportH <= 0 || viewportW <= 0) return;
 
-    // Allow this one controlled scale even with 2-up zoom locked
+    const pageW = first.clientWidth || 1;
+    const pageH = first.clientHeight || 1;
+
+    // Column gap between the two columns (from CSS)
+    const styles = getComputedStyle(scroller);
+    const colGap =
+        parseFloat(styles.columnGap) ||
+        parseFloat(styles.getPropertyValue('--page-gap')) || 0;
+
+    // Height fit always applies
+    const heightFit = viewportH / pageH;
+
+    // In 2-up we must also fit the whole spread width (two pages + the column gap)
+    const spreadW = window.twoUpMode ? (pageW * 2 + colGap) : pageW;
+    const widthFit = viewportW / spreadW;
+
+    // In 2-up pick the tighter scale; in 1-up the widthFit equals the single page width, so min() is also safe
+    let scale = Math.min(heightFit, widthFit);
+
+    // Clamp to something sane; convert to percent for resizeDematenAndCanvas
+    scale = Math.max(0.1, Math.min(scale, 4.0)) * 100;
+
+    // Allow this controlled scale even when 2-up zoom is otherwise locked
+    const prev = window.__TwoUpAllowScaleOnce;
     window.__TwoUpAllowScaleOnce = true;
-    resizeDematenAndCanvas(scaleAmount);
+    try { resizeDematenAndCanvas(scale); } finally { window.__TwoUpAllowScaleOnce = prev; }
 }
 function resizePageFitToWidth() {
     if (window.twoUpMode) return; // zoom disabled in two-up
