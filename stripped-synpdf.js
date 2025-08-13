@@ -289,12 +289,13 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     $("#notation-scroll").append(this.maatloper);
     this.times = a;
     this.tixlb = tixlb$$module$synpdf;
-    this.cursorTime = 0;
     this.time_ix = d;
-    var e = this;
-    setTimeout(function() {
-        e.setOffsetX.call(e)
-    }, 0);
+    this.cursorTime =
+        (typeof window.__restoreTime === 'number')
+            ? window.__restoreTime
+            : ((window.elmed$$module$synpdf?.getCurrentTime?.() ?? 0) - (window.offset$$module$synpdf || 0));
+
+    requestAnimationFrame(() => this.setOffsetX());
     this.line = c;
     this.repcnt = this.msre = 1;
     this.tmargin = this.lastTix = this.lastSync = 0;
@@ -333,11 +334,15 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
 };
 
 Wijzer$$module$synpdf.prototype.setOffsetX = function() {
-    // Prefer the canvas of the *current* measure’s page; fall back to the ctor canvas.
-    const cur = (deMaten$$module$synpdf && deMaten$$module$synpdf.length)
-        ? (deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0])
-        : null;
-    const $cv = (cur && cur.page) ? $('#canvas' + cur.page) : this.$cvs;
+    // Prefer the current measure’s page; fall back to first measure or constructor canvas
+    const cur = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
+    const $cv = cur ? $('#canvas' + ((cur.page != null ? cur.page : 1))) : this.$cvs;
+
+    if (!$cv || !$cv.length) {
+        // Canvas not in DOM yet — try again next frame
+        requestAnimationFrame(() => this.setOffsetX());
+        return;
+    }
 
     this.xoffset = canvasXInNotation($cv);
     if (this.cursorTime >= 0) this.time2x(this.cursorTime);
@@ -1349,8 +1354,8 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
     canvas = knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum); // Generates measure boxes (deMaten)
     pageStfIx$$module$synpdf.push(Cs$$module$synpdf.length);
     Cs$$module$synpdf = Cs$$module$synpdf.concat(pageMetricArray.cxs);
-    msc_wz$$module$synpdf || startIntf$$module$synpdf(canvas);
     $("#notation-scroll").append(canvas);
+    if (!msc_wz$$module$synpdf) startIntf$$module$synpdf(canvas);
 
     // Start observing the canvas for visibility
     if (observer) {
