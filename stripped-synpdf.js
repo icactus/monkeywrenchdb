@@ -1059,10 +1059,14 @@ let pageCache = {};            // { [pageNum]: PDFPageProxy }
 let pageView = {};            // { [pageNum]: { w, h, rotation } }
 let renderedCanvasesQueue = new Set(); // Track rendered canvases
 let MAX_RENDERED_PAGES = phoneCheck ? 6 : 12; // baseline
+
 function updateMaxRenderedPages() {
-    MAX_RENDERED_PAGES = twoUpMode ? (phoneCheck ? 8 : 16) : (phoneCheck ? 6 : 12);
+    MAX_RENDERED_PAGES = window.twoUpMode
+        ? (phoneCheck ? 8 : 16)
+        : (phoneCheck ? 6 : 12);
 }
-updateMaxRenderedPages();
+
+updateMaxRenderedPages(); // safe now that window.twoUpMode is set
 let visiblePages = new Set();
 var renderingStatus = {}; // Tracks the rendering status of each page
 
@@ -1796,20 +1800,38 @@ function reflowForViewportChange() {
     }
 }
 
-window.twoUpMode = false; // default off
+function loadTwoUpMode() {
+    try {
+        const saved = localStorage.getItem('twoUpMode');
+        return saved ? JSON.parse(saved) : false;
+    } catch (_) {
+        return false;
+    }
+}
+window.twoUpMode = loadTwoUpMode();
 
-function toggleTwoUpMode(on = !twoUpMode) {
-    twoUpMode = !!on;
+function toggleTwoUpMode(on = !window.twoUpMode) {
+    // flip + persist
+    window.twoUpMode = !!on;
+    try { localStorage.setItem('twoUpMode', JSON.stringify(window.twoUpMode)); } catch (_) { }
+
+    // update render budget and observer
     updateMaxRenderedPages();
-    if (observer) { observer.disconnect(); }
+    if (observer) observer.disconnect();
     initIntersectionObserver();
+
     // remember where we are so a rebuild won't jump to the top
-    __restoreTime = (window.msc_wz$$module$synpdf?.cursorTime)
-        ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - (window.offset$$module$synpdf || 0));
+    __restoreTime =
+        (window.msc_wz$$module$synpdf?.cursorTime)
+        ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
+            - (window.offset$$module$synpdf || 0));
+
     __restoreMix = (typeof demix$$module$synpdf === 'number') ? demix$$module$synpdf : null;
 
-    // reflow/rebuild at the new layout
-    document.getElementById('notation-scroll').classList.toggle('two-up', twoUpMode);
+    // apply layout class and rebuild/rescale
+    document.getElementById('notation-scroll')
+        .classList.toggle('two-up', window.twoUpMode);
+
     resizePdfSyn$$module$synpdf(); // this calls readPdfdoc -> rebuild shells -> render visible
 }
 
