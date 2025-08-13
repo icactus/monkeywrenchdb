@@ -292,7 +292,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     this.time_ix = d;
     var e = this;
     setTimeout(function() {
-        e.setffsetX.call(e)
+        e.setOffsetX.call(e)
     }, 0);
     this.line = c;
     this.repcnt = this.msre = 1;
@@ -1071,7 +1071,7 @@ updateMaxRenderedPages(); // safe now that window.twoUpMode is set
 let visiblePages = new Set();
 var renderingStatus = {}; // Tracks the rendering status of each page
 
-let canShowDemaat = false;
+let Demaat = false;
 
 // RenderingQueue Class for Controlled Concurrency
 class RenderingQueue {
@@ -1193,21 +1193,6 @@ function renderPageIfNotRendered(pageIndex) {
 function manageRenderedCanvases(canvasId) {
     canShowDemaat = true;
     $('.demaat').show();
-
-    // One-time correction right after the first actual render
-    if (!window.__didInitialDemaatAlign && window.msc_wz$$module$synpdf) {
-        window.__didInitialDemaatAlign = true;
-        requestAnimationFrame(() => {
-            try {
-                msc_wz$$module$synpdf.setOffsetX();
-                const t = (msc_wz$$module$synpdf.cursorTime != null)
-                    ? msc_wz$$module$synpdf.cursorTime
-                    : ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
-                        - (window.offset$$module$synpdf || 0));
-                msc_wz$$module$synpdf.time2x(t);
-            } catch (_) { }
-        });
-    }
 
     // If the canvas is already in the set, remove it to re-add (to update its position)
     if (renderedCanvasesQueue.has(canvasId)) {
