@@ -310,7 +310,7 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
         b = c[a] || 1;
         c[a] = b + 1;
         a = deMaten$$module$synpdf[a];
-        const canvasX = pageLeftInNotation(a.page || 1);
+        const canvasX = pageLeftInNotation(a.page ?? 0);
         d = a.x + d * a.w + canvasX;
         e = $('<div class="reptkn">' + e + n + "</div>");
         e.css({
@@ -386,7 +386,7 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
             ycurprev$$module$synpdf = measureY;
 
             var maatlooperStyle = this.maatloper[0].style;
-            const canvasX = pageLeftInNotation(c.page || 1);
+            const canvasX = pageLeftInNotation(c.page ?? 0);
             const measureLeft = canvasX + measureX;
             const measureRight = measureLeft + measureWidth;
             maatlooperStyle.left = measureLeft + "px";
@@ -420,21 +420,22 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                     doeRol$$module$synpdf(targetY, useInstantScroll ? 1 : scrollFlagValueY);
                 }
             } else {
-                const prevPage = window.__twoUpPrevPage ?? (c.page || 1); // pages are 1-based here
-                const curPage = (c.page || 1);
+                const prevPage = window.__twoUpPrevPage ?? (c.page ?? 0);
+                const curPage = c.page ?? 0;
 
-                // forward turn: 2->3, 4->5, ...
-                if ((prevPage % 2 === 0) && (curPage === prevPage + 1)) {
-                    const anchor = document.getElementById('canvas' + curPage); // left page of next spread
+                // forward turn: right->next left  (…1 -> 2, 3 -> 4…)
+                if ((prevPage % 2 === 1) && (curPage === prevPage + 1)) {
+                    const anchor = document.getElementById('canvas' + (curPage + 1))  // DOM is 1-based
+                        || document.getElementById('canvas' + curPage);
                     if (anchor) doeRol$$module$synpdf(anchor.offsetTop, 1);
                 }
-                // backward turn: 3->2, 5->4, ...
-                else if ((prevPage % 2 === 1) && (curPage === prevPage - 1)) {
-                    const leftOfSpread = document.getElementById('canvas' + (curPage - 1));
-                    const anchor = leftOfSpread || document.getElementById('canvas' + curPage);
+                // backward turn: left->previous right (…2 -> 1, 4 -> 3…)
+                else if ((prevPage % 2 === 0) && (curPage === prevPage - 1)) {
+                    const anchor = document.getElementById('canvas' + (curPage + 1))
+                        || document.getElementById('canvas' + curPage);
                     if (anchor) doeRol$$module$synpdf(anchor.offsetTop, 1);
                 }
-                window.__twoUpPrevPage = curPage; // remember for next tick
+                window.__twoUpPrevPage = curPage;
             }
 
             // Horizontal scrolling
@@ -472,7 +473,7 @@ Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
     var d;
     for (d = 0; d < deMaten$$module$synpdf.length; ++d) {
         var e = deMaten$$module$synpdf[d];
-        const exLeft = (e.x + pageLeftInNotation(e.page || 1));
+        const exLeft = (e.x + pageLeftInNotation(e.page ?? 0));
         const exRight = exLeft + e.w;
         if (!(b > e.y + e.h || a > exRight)) {
             if (a < exLeft) {

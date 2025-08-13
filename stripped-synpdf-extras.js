@@ -868,8 +868,23 @@ function canvasXInNotation($canvas) {
 }
 
 function pageLeftInNotation(pageNum) {
-    const $cv = $('#canvas' + pageNum);
-    return $cv.length ? canvasXInNotation($cv) : 0;
+    // Accept 0-based model index; DOM canvases are 1-based (#canvas1, #canvas2, …)
+    let $cv = $('#canvas' + pageNum);
+    if (!$cv.length) $cv = $('#canvas' + (pageNum + 1));  // try 1-based
+    if ($cv.length) return canvasXInNotation($cv);
+
+    // Fallback: estimate by spread when in 2-up
+    const scroller = document.getElementById('notation-scroll');
+    if (scroller && scroller.classList.contains('two-up')) {
+        const leftIdx = pageNum - (pageNum % 2); // 0-based left of spread
+        let $left = $('#canvas' + leftIdx);
+        if (!$left.length) $left = $('#canvas' + (leftIdx + 1)); // try 1-based
+        if ($left.length) {
+            const leftX = canvasXInNotation($left);
+            return (pageNum % 2 === 1) ? (leftX + $left[0].clientWidth) : leftX;
+        }
+    }
+    return 0;
 }
 
 // RESIZE ALL CANVASES USING CSS
