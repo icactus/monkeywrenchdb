@@ -102,29 +102,6 @@ function updatePlayPauseButton() {
 }
 
 
-function addTwoUpButtonListener() {
-    const btn = document.getElementById('two-up-button');
-    if (!btn) return;
-
-    const update = () => {
-        const on = !!window.twoUpMode;
-        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-        btn.classList.toggle('active', on);
-    };
-
-    btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        toggleTwoUpMode();   // flips + reflows
-        update();            // reflect the new state
-    });
-
-    // keep in sync with Alt+2 and any programmatic toggles
-    window.addEventListener('twoUpModeChanged', update);
-
-    // initial paint from saved state
-    update();
-}
-
 function toggleSettingsMenu() {
     $("#help").toggleClass("showhlp");
     $("#about").toggleClass("showabout", !1);
@@ -1138,6 +1115,14 @@ window.twoUpMode = JSON.parse(localStorage.getItem('twoUpMode') || 'false');
 // we already use these for restore-before-reflow:
 window.__restoreTime = window.__restoreTime ?? null;
 window.__restoreMix = window.__restoreMix ?? null;
+
+
+// Make sure the button exists whenever the UI is (re)mounted
+document.addEventListener('DOMContentLoaded', () => {
+    // if user had two-up on last time, apply class immediately
+    if (twoUpMode) setZoomControlsEnabled(false);
+    if (twoUpMode) document.getElementById('notation-scroll')?.classList.add('two-up');
+});
 
 
 // Optional keyboard shortcut: Alt+2 toggles two-up

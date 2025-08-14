@@ -162,7 +162,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 </g>
                 </svg>
             </button>
-            <button class="control-buttons" id="two-up-button" title="Two-up view (Alt+2)" aria-pressed="false">
+            <button class="control-buttons" onclick="toggleTwoUpMode()" id="two-up-button" title="Two-up view">
               <svg viewBox="0 0 24 24" width="24" height="24" fill="none"
                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <!-- two pages side-by-side -->
@@ -292,7 +292,6 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     addShareButtonListener();
     initIntersectionObserver(); // Initialize observer for page rendering 
     setupPlayPauseButton();
-    addTwoUpButtonListener();
     this.maatloper = $('<div class="demaat" style="background:' + globalHighlightColor + '; opacity:0.2; left:0px; top:0px; width:0px; height:0px; z-index:2"></div>');
     $("#notation-scroll").append(this.maatloper);
     this.times = a;
