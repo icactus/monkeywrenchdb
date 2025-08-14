@@ -298,6 +298,9 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         <div id="rollijn" class="dashed"></div>`
         ).appendTo($notation);
     }
+    if (typeof setZoomControlsEnabled === 'function') {
+        setZoomControlsEnabled(!window.twoUpMode);
+    }
     addInvertButtonListener();
     addShareButtonListener();
     initIntersectionObserver(); // Initialize observer for page rendering 
@@ -1978,6 +1981,9 @@ function toggleTwoUpMode(on = !window.twoUpMode) {
     window.twoUpMode = !!on;
     try { localStorage.setItem('twoUpMode', JSON.stringify(window.twoUpMode)); } catch (_) { }
 
+    if (typeof setZoomControlsEnabled === 'function') {
+        setZoomControlsEnabled(!window.twoUpMode); // disable in 2-up, enable in 1-up
+    }
     // update render budget and observer
     updateMaxRenderedPages();
     if (observer) observer.disconnect();

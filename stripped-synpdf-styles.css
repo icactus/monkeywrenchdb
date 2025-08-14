@@ -102,7 +102,6 @@ a {
 #control-button-row .two-up-toggle svg {
   width: 20px; height: 20px;
 }
-#two-up-button.active { outline: 2px solid currentColor; }
 #header {
     height: 200px;
     display: flex;
