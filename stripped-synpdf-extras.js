@@ -626,7 +626,7 @@ $('#instruments-dropdown').change(function() {
 
             loadRecording(updatedRecordingFullData)
                 .then(() => {
-                    msc_wz$$module$synpdf = [];
+                    msc_wz$$module$synpdf = null;
                     newInstrumentTime2xFlag = 1;
                     readPdf$$module$synpdf(pdf_file$$module$synpdf, "url");
                     scrollFlag = 1;
