@@ -861,6 +861,11 @@ function readPdfdoc$$module$synpdf() {
         rendering$$module$synpdf = 0;
         addDummySys$$module$synpdf();
         $("#loadingMessage2").hide();
+        if (scroller && scroller.classList.contains('two-up')) {
+            const prev = window.__TwoUpAllowScaleOnce;
+            window.__TwoUpAllowScaleOnce = true;
+            try { resizePageFitToHeight(); } finally { window.__TwoUpAllowScaleOnce = prev; }
+        }
         return Promise.resolve();
     });
 }
