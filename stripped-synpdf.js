@@ -1239,71 +1239,71 @@ function clearCanvas(canvas) {
     canvas.classList.remove('rendered'); // Mark the canvas as not rendered
 }
 
-// Function to create and append a canvas, then observe it
-function goPage$$module$synpdf(pageNum, cumulativeHeight) {
-    return pdfDoc$$module$synpdf.getPage(pageNum).then(function(page) {
-        const devicePixelRatio = window.devicePixelRatio || 1; // For high-resolution displays
-        const scale = deMetriek$$module$synpdf[0] / page._pageInfo.view[2]; // Base scale factor
-        const enhancedScale = scale * devicePixelRatio * 2; // Double resolution
-
-        // Viewport for high-resolution rendering
-        let viewport = page.getViewport({ scale: enhancedScale });
-
-        // Create canvas element
-        let canvas = document.createElement("canvas"); // Use let for reassignability
-        let ctx = canvas.getContext("2d");
-        ctx.imageSmoothingEnabled = true;
-        if (phoneCheck) {
-            ctx.imageSmoothingEnabled = false; // Less work for mobile
-        }
-
-        canvas.id = `canvas${pageNum}`;
-        canvas.width = Math.floor(viewport.width); // Full resolution width
-        canvas.height = Math.floor(viewport.height); // Full resolution height
-
-        // Set CSS size for default zoom (logical size for display)
-        canvas.style.width = `${viewport.width / (devicePixelRatio * 2)}px`; // Downscale visually
-        canvas.style.height = `${viewport.height / (devicePixelRatio * 2)}px`;
-
-        // Queue rendering task
-        renderingTasks.push(() => {
-            return page.render({
-                canvasContext: ctx,
-                viewport: viewport,
-            }).promise;
-        });
-
-        // Reassign canvas after processing
-        canvas = compPage$$module$synpdf(canvas, pageNum, cumulativeHeight);
-
-        // Handle first page timing for new instruments
-        if (pageNum === 1 && newInstrumentTime2xFlag === 1) {
-            msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
-            newInstrumentTime2xFlag = 0;
-        }
-
-        // Handle resizing or recursive rendering of subsequent pages
-        if (doresize$$module$synpdf) {
-            resizePdf$$module$synpdf();
-        } else {
-            if (pageNum < pdfDoc$$module$synpdf.numPages) {
-                if (pageNum === 1) renderedPages = 1; // Start rendering counter
-                $("#loadingMessage2").show();
-                return goPage$$module$synpdf(pageNum + 1, cumulativeHeight + viewport.height / (devicePixelRatio * 2));
-            } else {
-                // Finalize rendering
-                rendering$$module$synpdf = 0;
-                addDummySys$$module$synpdf();
-                renderedPages = 1;
-                $("#loadingMessage2").hide();
-
-            }
-        }
-    }).catch(function(error) {
-        console.error(`Failed to render page ${pageNum}:`, error);
-        $("#loadingMessage2").hide();
-    });
-}
+// // Function to create and append a canvas, then observe it
+// function goPage$$module$synpdf(pageNum, cumulativeHeight) {
+//     return pdfDoc$$module$synpdf.getPage(pageNum).then(function(page) {
+//         const devicePixelRatio = window.devicePixelRatio || 1; // For high-resolution displays
+//         const scale = deMetriek$$module$synpdf[0] / page._pageInfo.view[2]; // Base scale factor
+//         const enhancedScale = scale * devicePixelRatio * 2; // Double resolution
+//
+//         // Viewport for high-resolution rendering
+//         let viewport = page.getViewport({ scale: enhancedScale });
+//
+//         // Create canvas element
+//         let canvas = document.createElement("canvas"); // Use let for reassignability
+//         let ctx = canvas.getContext("2d");
+//         ctx.imageSmoothingEnabled = true;
+//         if (phoneCheck) {
+//             ctx.imageSmoothingEnabled = false; // Less work for mobile
+//         }
+//
+//         canvas.id = `canvas${pageNum}`;
+//         canvas.width = Math.floor(viewport.width); // Full resolution width
+//         canvas.height = Math.floor(viewport.height); // Full resolution height
+//
+//         // Set CSS size for default zoom (logical size for display)
+//         canvas.style.width = `${viewport.width / (devicePixelRatio * 2)}px`; // Downscale visually
+//         canvas.style.height = `${viewport.height / (devicePixelRatio * 2)}px`;
+//
+//         // Queue rendering task
+//         renderingTasks.push(() => {
+//             return page.render({
+//                 canvasContext: ctx,
+//                 viewport: viewport,
+//             }).promise;
+//         });
+//
+//         // Reassign canvas after processing
+//         canvas = compPage$$module$synpdf(canvas, pageNum, cumulativeHeight);
+//
+//         // Handle first page timing for new instruments
+//         if (pageNum === 1 && newInstrumentTime2xFlag === 1) {
+//             msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
+//             newInstrumentTime2xFlag = 0;
+//         }
+//
+//         // Handle resizing or recursive rendering of subsequent pages
+//         if (doresize$$module$synpdf) {
+//             resizePdf$$module$synpdf();
+//         } else {
+//             if (pageNum < pdfDoc$$module$synpdf.numPages) {
+//                 if (pageNum === 1) renderedPages = 1; // Start rendering counter
+//                 $("#loadingMessage2").show();
+//                 return goPage$$module$synpdf(pageNum + 1, cumulativeHeight + viewport.height / (devicePixelRatio * 2));
+//             } else {
+//                 // Finalize rendering
+//                 rendering$$module$synpdf = 0;
+//                 addDummySys$$module$synpdf();
+//                 renderedPages = 1;
+//                 $("#loadingMessage2").hide();
+//
+//             }
+//         }
+//     }).catch(function(error) {
+//         console.error(`Failed to render page ${pageNum}:`, error);
+//         $("#loadingMessage2").hide();
+//     });
+// }
 
 
 function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
