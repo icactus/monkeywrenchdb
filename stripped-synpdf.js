@@ -568,15 +568,38 @@ function findCurrentMeasureTime() {
 
 
 
-Wijzer$$module$synpdf.prototype.goMsre = function(a, b) {
-    0 == deTijden$$module$synpdf.length || b.altKey || b.ctrlKey || b
-        .shiftKey || b.metaKey || (b.preventDefault && b.preventDefault(),
-            detix$$module$synpdf += a ? 1 : -1, 0 > detix$$module$synpdf &&
-            (detix$$module$synpdf = deTijden$$module$synpdf.length - 1),
-            detix$$module$synpdf >= deTijden$$module$synpdf.length && (
-                detix$$module$synpdf = 0), playPause2$$module$synpdf(!1,
-                    deTijden$$module$synpdf[detix$$module$synpdf].t +
-                    TOFF$$module$synpdf + offset$$module$synpdf))
+// No wrap-around on measure navigation
+Wijzer$$module$synpdf.prototype.goMsre = function(next, ev) {
+    if (0 == deTijden$$module$synpdf.length) return;
+    if (ev && (ev.altKey || ev.ctrlKey || ev.shiftKey || ev.metaKey)) return;
+    ev && ev.preventDefault && ev.preventDefault();
+
+    // normalize current index
+    if (typeof detix$$module$synpdf !== "number" || isNaN(detix$$module$synpdf))
+        detix$$module$synpdf = 0;
+
+    const lastIx = deTijden$$module$synpdf.length - 1;
+
+    if (next) {
+        // Right arrow → clamp at last
+        if (detix$$module$synpdf >= lastIx) {
+            detix$$module$synpdf = lastIx;  // stay on last measure
+            return;
+        }
+        detix$$module$synpdf++;
+    } else {
+        // Left arrow → clamp at first
+        if (detix$$module$synpdf <= 0) {
+            detix$$module$synpdf = 0;       // stay on first measure
+            return;
+        }
+        detix$$module$synpdf--;
+    }
+
+    playPause2$$module$synpdf(
+        !1,
+        deTijden$$module$synpdf[detix$$module$synpdf].t + TOFF$$module$synpdf + offset$$module$synpdf
+    );
 };
 
 // 1-based page index + linear wrap (…1→2→3→…)
