@@ -1328,32 +1328,25 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
         canvas.style.height = (baseH * window.__cssScale) + 'px';
     }
 
-    //make sure time2x gets x position once the 2nd page has loaded for 2up mode
-    if (window.twoUpMode && pageNum === 2) {
-        requestAnimationFrame(() => {
-            const t = (msc_wz$$module$synpdf?.cursorTime)
-                ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
-                    - (window.offset$$module$synpdf || 0));
-            msc_wz$$module$synpdf?.time2x(t);
-        });
-    }
-
     // Start observing the canvas for visibility
     if (observer) {
         observer.observe(canvas);
     }
-    if (window.twoUpMode) {
+    if (window.twoUpMode && !window.__didInitialTwoUpFit && pageNum === 2) {
         requestAnimationFrame(() => {
             // 2-up fit for the current viewport (height + spread width)
             const prev = window.__TwoUpAllowScaleOnce;
             window.__TwoUpAllowScaleOnce = true;
             try { resizePageFitToHeight(); } finally { window.__TwoUpAllowScaleOnce = prev; }
 
-            // Then re-position the shader now that pageLeftInNotation(pageNum) is valid
-            const t =
-                (msc_wz$$module$synpdf?.cursorTime) ??
-                ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - (window.offset$$module$synpdf || 0));
-            msc_wz$$module$synpdf?.time2x(t);
+            // Wait an extra frame so layout settles before positioning the shader
+            requestAnimationFrame(() => {
+                window.__didInitialTwoUpFit = true;
+                const t = (msc_wz$$module$synpdf?.cursorTime)
+                    ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
+                        - (window.offset$$module$synpdf || 0));
+                msc_wz$$module$synpdf?.time2x(t);
+            });
         });
     }
     $(canvas).on("mousedown touchstart", kliklang$$module$synpdf);
