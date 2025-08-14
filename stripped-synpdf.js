@@ -142,7 +142,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
             <button class="control-buttons" onclick="toggleFullscreen(event)">
                 <svg height="20pt" version="1.1" viewBox="0 0 14 14" width="20pt" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title/><desc/><defs/><g fill="none" fill-rule="evenodd" id="Page-1" stroke="none" stroke-width="1"><g fill="#000000" id="Core" transform="translate(-215.000000, -257.000000)"><g id="fullscreen" transform="translate(215.000000, 257.000000)"><path d="M2,9 L0,9 L0,14 L5,14 L5,12 L2,12 L2,9 L2,9 Z M0,5 L2,5 L2,2 L5,2 L5,0 L0,0 L0,5 L0,5 Z M12,12 L9,12 L9,14 L14,14 L14,9 L12,9 L12,12 L12,12 Z M9,0 L9,2 L12,2 L12,5 L14,5 L14,0 L9,0 L9,0 Z" id="Shape"/></g></g></g></svg>
             </button>
-            <button class="control-buttons" onclick="resizePageFitToWidth()">
+            <button class="control-buttons" onclick="resizePageFitToWidth()" title="Fit to Width">
                 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
                 <svg width="20pt" height="20pt" viewBox="0 0 512 172" version="1.1" xmlns="http://www.w3.org/2000/svg">
                 <g id="fitToWidthButtonSVG">
@@ -152,7 +152,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 </g>
                 </svg>
             </button>
-            <button class="control-buttons" onclick="resizePageFitToHeight()">
+            <button class="control-buttons" onclick="resizePageFitToHeight()" title="Fit to Height">
                 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
                 <svg width="20pt" height="20pt" viewBox="0 0 172 512" version="1.1" xmlns="http://www.w3.org/2000/svg">
                 <g id="fitToHeightButtonSVG">
@@ -162,7 +162,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 </g>
                 </svg>
             </button>
-            <button class="control-buttons" onclick="toggleTwoUpMode()" id="two-up-button" title="Two-up view">
+            <button class="control-buttons" onclick="toggleTwoUpMode()" id="two-up-button" title="Two-Page view">
             <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
             <svg fill="#000000" width="20pt" height="20pt" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
                      width="20px" height="20px" viewBox="0 0 93.1 93.1" xml:space="preserve">
@@ -180,7 +180,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
             </g>
             </svg>
             </button>
-            <button class="control-buttons" onclick="resizeDematenAndCanvas(90)">
+            <button class="control-buttons" onclick="resizeDematenAndCanvas(90)" title="Zoom Out">
                 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
                 <svg fill="#000000" height="20pt" width="20pt" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
                     viewBox="0 0 192.904 192.904" xml:space="preserve">
@@ -195,7 +195,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 </g>
                 </svg>
             </button>
-            <button class="control-buttons" onclick="resizeDematenAndCanvas(110)">
+            <button class="control-buttons" onclick="resizeDematenAndCanvas(110)" title="Zoom In">
                     <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
                     <svg fill="#000000" height="20pt" width="20pt" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
                         viewBox="0 0 192.904 192.904" xml:space="preserve">

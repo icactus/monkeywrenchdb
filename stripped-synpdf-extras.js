@@ -1039,7 +1039,6 @@ function setZoomControlsEnabled(enabled) {
             btn.style.opacity = enabled ? '' : '0.45';
             btn.style.pointerEvents = enabled ? '' : 'none';
             if (!enabled && !btn.dataset.origTitle) btn.dataset.origTitle = btn.title || '';
-            btn.title = enabled ? (btn.dataset.origTitle || '') : 'Disabled in two-up';
         })
     );
 }
