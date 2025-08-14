@@ -332,10 +332,10 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
 };
 
 Wijzer$$module$synpdf.prototype.setOffsetX = function() {
-    // Left edge of the left page in the notation scroller’s coordinate system
-    this.xoffset = (typeof pageLeftInNotation === 'function') ? pageLeftInNotation(1) : 0;
-    if (this.cursorTime >= 0) this.time2x(this.cursorTime);
-    this.drawRepTokens();
+    // keep xoffset for compatibility, but compute in notation-space
+    this.xoffset = pageLeftInNotation(1); // left page in spread
+    const t = (this.cursorTime ?? (elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - (window.offset$$module$synpdf || 0));
+    this.time2x(t);
 };
 
 Wijzer$$module$synpdf.prototype.time2x = function(a) {
