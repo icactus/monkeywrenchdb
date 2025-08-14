@@ -332,10 +332,10 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
 };
 
 Wijzer$$module$synpdf.prototype.setOffsetX = function() {
-    // keep xoffset for compatibility, but compute in notation-space
-    this.xoffset = pageLeftInNotation(1); // left page in spread
-    const t = (this.cursorTime ?? (elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - (window.offset$$module$synpdf || 0));
-    this.time2x(t);
+    // Left edge of the left page in the notation scroller’s coordinate system
+    this.xoffset = (typeof pageLeftInNotation === 'function') ? pageLeftInNotation(1) : 0;
+    if (this.cursorTime >= 0) this.time2x(this.cursorTime);
+    this.drawRepTokens();
 };
 
 Wijzer$$module$synpdf.prototype.time2x = function(a) {
@@ -789,13 +789,14 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
         for (let j = 0; j < staffBarlineArr.length - 1; ++j) {
             var measureLeftBarline = staffBarlineArr[j];
             var measureRightBarline = staffBarlineArr[j + 1];
+            const k = (window.__deMScale || 1);
             deMaten$$module$synpdf.push({
-                x: measureLeftBarline,
-                y: staffTopLine,
-                w: measureRightBarline - measureLeftBarline,
-                h: staffBottomLine - staffTopLine,
+                x: (measureLeftBarline * k),
+                y: (staffTopLine * k),
+                w: ((measureRightBarline - measureLeftBarline) * k),
+                h: ((staffBottomLine - staffTopLine) * k),
                 page: pageNum
-            })
+            });
         }
     }
     return canvas
@@ -1313,6 +1314,14 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
     Cs$$module$synpdf = Cs$$module$synpdf.concat(pageMetricArray.cxs);
     msc_wz$$module$synpdf || startIntf$$module$synpdf(canvas);
     $("#notation-scroll").append(canvas);
+
+    // If user already zoomed / we already fit a spread, bring newly appended canvas to that scale
+    if (window.__cssScale && window.__cssScale !== 1) {
+        const baseW = parseFloat(canvas.style.width) || canvas.clientWidth || 0;
+        const baseH = parseFloat(canvas.style.height) || canvas.clientHeight || 0;
+        canvas.style.width = (baseW * window.__cssScale) + 'px';
+        canvas.style.height = (baseH * window.__cssScale) + 'px';
+    }
 
     //make sure time2x gets x position once the 2nd page has loaded for 2up mode
     if (window.twoUpMode && pageNum === 2) {

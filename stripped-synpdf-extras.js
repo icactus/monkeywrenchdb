@@ -21,6 +21,9 @@ let isSwitchingRecording = false;
 window.isRecordingState = false;
 window.recordingFullyLoaded = false;
 let currentGlobalScaleAmount = 100;
+// Cumulative CSS scale for canvases and the same factor for deMaten coordinates
+window.__cssScale = window.__cssScale || 1;    // multiplies canvas.style width/height
+window.__deMScale = window.__deMScale || 1;    // multiplies x,y,w,h in deMaten
 
 const sheetMusicSvg = ` 
 <span class="sheet-music-icon">
@@ -880,7 +883,12 @@ function resizeDematenAndCanvas(scaleAmount) {
     if (sc?.classList.contains('two-up') && window.__twoUpLockZoom && !window.__TwoUpAllowScaleOnce) {
         return; // ignore zoom in/out while 2-up
     }
-    window.__TwoUpAllowScaleOnce = false; // consume the one-shot allowance
+    window.__TwoUpAllowScaleOnce = false;
+
+    const k = (scaleAmount / 100);      // multiply factor this call
+    window.__cssScale *= k;             // remember the cumulative canvas CSS scale
+    window.__deMScale *= k;             // remember the cumulative deMaten scale
+
     var canvas = document.getElementsByTagName('canvas')[0];
     if (canvas) {
         var notationDiv = document.getElementById("notation");
