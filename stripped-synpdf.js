@@ -421,9 +421,21 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                     doeRol$$module$synpdf(targetY, useInstantScroll ? 1 : scrollFlagValueY);
                 }
             } else {
-                // 1-based pages; in 2-up a "spread" is (1|2), (3|4), ...
-                const prevPage = window.__twoUpPrevPage ?? (c.page ?? 1);
                 const curPage = c.page ?? 1;
+
+                if (twoUpInitialScrollPending) {
+                    const spreadStart = (curPage % 2 === 0) ? curPage - 1 : curPage;
+                    const anchor = document.getElementById('canvas' + spreadStart);
+                    if (anchor) doeRol$$module$synpdf(anchor.offsetTop, 1);
+                    const spreadLeft = pageLeftInNotation(spreadStart);
+                    scrollHorizontally(spreadLeft, 1);
+                    window.__twoUpPrevPage = curPage;
+                    twoUpInitialScrollPending = false;
+                    return;
+                }
+
+                // 1-based pages; in 2-up a "spread" is (1|2), (3|4), ...
+                const prevPage = window.__twoUpPrevPage ?? curPage;
 
                 const spreadOf = p => Math.floor((p - 1) / 2);
                 const sameSpread = spreadOf(prevPage) === spreadOf(curPage);

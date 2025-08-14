@@ -13,6 +13,7 @@ let bypassTickFlag = 0;
 let currentMeasureTime = 0;
 let newInstrumentTime2xFlag = 0;
 let scrollFlag = 0;
+let twoUpInitialScrollPending = false;
 let globalHighlightColor = '#00d4ff';
 let blockTime2x = false; // Flag to disable time2x during recording change
 let isSwitchingRecording = false;
@@ -628,6 +629,8 @@ $('#instruments-dropdown').change(function() {
                 .then(() => {
                     msc_wz$$module$synpdf = null;
                     newInstrumentTime2xFlag = 1;
+                    twoUpInitialScrollPending = window.twoUpMode ? true : false;
+                    window.__twoUpPrevPage = undefined;
                     readPdf$$module$synpdf(pdf_file$$module$synpdf, "url");
                     scrollFlag = 1;
                 })
