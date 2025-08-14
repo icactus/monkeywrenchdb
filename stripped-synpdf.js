@@ -1446,18 +1446,40 @@ function resizePdf$$module$synpdf(scrollType) {
         doresize$$module$synpdf = 1;
         deNot$$module$synpdf.style["scroll-behavior"] = "auto";
     }
-    pdfDoc$$module$synpdf && ($("#wait").text("Recomputing systems ..."), $("#wait").css({
-        display: "block",
-        background: "rgb(200,200,255)"
-    }), readPdfdoc$$module$synpdf().then(function() {
-        //Handles returning to position on resize/rotate
-        const t = (__restoreTime != null)
-            ? __restoreTime
-            : ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf);
+    if (!pdfDoc$$module$synpdf) return;
+
+    $("#wait").text("Recomputing systems ...").css({ display: "block", background: "rgb(200,200,255)" });
+
+    readPdfdoc$$module$synpdf().then(function() {
+        // Decide how to restore position
+        const scroller = document.getElementById('notation-scroll');
+        const inTwoUp = !!scroller && scroller.classList.contains('two-up');
+
+        let t;
+        if (inTwoUp && typeof __restoreMix === 'number' &&
+            Array.isArray(deTijden$$module$synpdf) &&
+            deTijden$$module$synpdf[__restoreMix]) {
+            // Anchor to the same measure to keep the same spread
+            t = deTijden$$module$synpdf[__restoreMix].t;
+            // ensure time2x() executes the 2-up spread snap branch
+            window.twoUpInitialScrollPending = true;
+        } else {
+            // fall back to time-based restore
+            const now = (elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0);
+            t = (__restoreTime != null) ? __restoreTime : (now - offset$$module$synpdf);
+        }
+
+        // force a reposition even if measure coords match cached previous
+        xcurprev$$module$synpdf = -1;
+        ycurprev$$module$synpdf = -1;
+
         msc_wz$$module$synpdf.time2x(t);
         msc_wz$$module$synpdf.setTmargin();
+
+        // clear restore hints
         __restoreTime = null;
-    }))
+        __restoreMix = null;
+    });
 }
 
 function resizePdfSyn$$module$synpdf() {
