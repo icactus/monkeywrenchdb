@@ -421,9 +421,21 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                     doeRol$$module$synpdf(targetY, useInstantScroll ? 1 : scrollFlagValueY);
                 }
             } else {
-                // 1-based pages; in 2-up a "spread" is (1|2), (3|4), ...
-                const prevPage = window.__twoUpPrevPage ?? (c.page ?? 1);
                 const curPage = c.page ?? 1;
+
+                if (twoUpInitialScrollPending) {
+                    const spreadStart = (curPage % 2 === 0) ? curPage - 1 : curPage;
+                    const anchor = document.getElementById('canvas' + spreadStart);
+                    if (anchor) doeRol$$module$synpdf(anchor.offsetTop, 1);
+                    const spreadLeft = pageLeftInNotation(spreadStart);
+                    scrollHorizontally(spreadLeft, 1);
+                    window.__twoUpPrevPage = curPage;
+                    twoUpInitialScrollPending = false;
+                    return;
+                }
+
+                // 1-based pages; in 2-up a "spread" is (1|2), (3|4), ...
+                const prevPage = window.__twoUpPrevPage ?? curPage;
 
                 const spreadOf = p => Math.floor((p - 1) / 2);
                 const sameSpread = spreadOf(prevPage) === spreadOf(curPage);
@@ -1817,11 +1829,26 @@ function reflowForViewportChange() {
     renderingStatus = {};
     renderedCanvasesQueue.clear();
     visiblePages.clear();
+
+    const scroller = document.getElementById('notation-scroll');
+    const inTwoUp = scroller && scroller.classList.contains('two-up');
+    if (inTwoUp) {
+        // ensure time2x will snap to the current spread after rebuild
+        twoUpInitialScrollPending = true;
+        window.__twoUpPrevPage = undefined;
+    }
+
+    // remember location so rebuild doesn't jump to top or lose highlight
+    __restoreTime =
+        (window.msc_wz$$module$synpdf?.cursorTime)
+        ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
+            - (window.offset$$module$synpdf || 0));
+    __restoreMix = (typeof demix$$module$synpdf === 'number') ? demix$$module$synpdf : null;
+
     resizePdfSyn$$module$synpdf(); // rebuild shells + re-render visible pages
 
     // NEW: in 2-up, immediately refit the spread to the visible height
-    const scroller = document.getElementById('notation-scroll');
-    if (scroller && scroller.classList.contains('two-up')) {
+    if (inTwoUp) {
         // allow a single scale change despite the 2-up zoom lock
         window.__TwoUpAllowScaleOnce = true;
         // wait a frame to ensure clientHeight is up-to-date after layout
