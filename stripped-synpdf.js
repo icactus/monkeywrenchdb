@@ -1345,6 +1345,8 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
                 const t = (msc_wz$$module$synpdf?.cursorTime)
                     ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
                         - (window.offset$$module$synpdf || 0));
+                xcurprev$$module$synpdf = -1;
+                ycurprev$$module$synpdf = -1;
                 msc_wz$$module$synpdf?.time2x(t);
             });
         });
