@@ -457,6 +457,20 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                     }
                 }
 
+                // Ensure the current spread is actually in view even if it wasn't a formal "turn"
+                // (covers direct seeks within the same spread or when previousPage is unknown)
+                const spreadStart = (curPage % 2 === 0) ? curPage - 1 : curPage;
+                const desiredLeft = pageLeftInNotation(spreadStart);
+                const needHorizSnap = Math.abs(scroller.scrollLeft - desiredLeft) > 8;
+
+                const anchor = document.getElementById('canvas' + spreadStart);
+                const needVertSnap = !!anchor && Math.abs(anchor.offsetTop - notationEl.scrollTop) > 8;
+
+                if (twoUpInitialScrollPending || needHorizSnap || needVertSnap) {
+                    if (anchor) doeRol$$module$synpdf(anchor.offsetTop, 1);
+                    scrollHorizontally(desiredLeft, 1);
+                    twoUpInitialScrollPending = false;
+                }
                 // Remember where we were to detect turns next time
                 window.__twoUpPrevPage = curPage;
             }
@@ -1529,6 +1543,11 @@ async function onPlayerStateChange(event) {
 
     if (event.data == YT.PlayerState.CUED) {
         scrollFlag = 1;
+
+        if (document.getElementById('notation-scroll')?.classList.contains('two-up')) {
+            window.twoUpInitialScrollPending = true;
+            window.__twoUpPrevPage = undefined;
+        }
         msc_wz$$module$synpdf.time2x(newPlayerCue - offset$$module$synpdf);
         setNotationHeight$$module$synpdf();
         isSwitchingRecording = false; // Reset flag after cueing
@@ -1693,6 +1712,11 @@ function playPause$$module$synpdf(a, b) {
         var f = yubchk$$module$synpdf ? elmed$$module$synpdf.getPlayerState() : 0,
             g = yubchk$$module$synpdf ? 1 != f : elmed$$module$synpdf.paused;
         yubchk$$module$synpdf ? 5 != f && elmed$$module$synpdf.seekTo(e, !0) : elmed$$module$synpdf.currentTime = e;
+        // make 2-up snap on this seek/cue
+        if (document.getElementById('notation-scroll')?.classList.contains('two-up')) {
+            window.twoUpInitialScrollPending = true;
+            window.__twoUpPrevPage = undefined;
+        }
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.time2x(e - offset$$module$synpdf);
         if (d) {
             if (g) {
@@ -1880,9 +1904,19 @@ function reflowForViewportChange() {
         requestAnimationFrame(() => {
             window.__TwoUpAllowScaleOnce = true; // set again in case other work ran
             resizePageFitToHeight();
-            const t = (window.msc_wz$$module$synpdf?.cursorTime)
-                ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
-                    - (window.offset$$module$synpdf || 0));
+            let t;
+            if (inTwoUp && typeof __restoreMix === 'number' && Array.isArray(deTijden$$module$synpdf) && deTijden$$module$synpdf[__restoreMix]) {
+                t = deTijden$$module$synpdf[__restoreMix].t;  // prefer the exact measure we were on
+            } else {
+                t = (window.msc_wz$$module$synpdf?.cursorTime)
+                    ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
+                        - (window.offset$$module$synpdf || 0));
+            }
+            // ensure a one-shot snap to this spread after rebuild
+            if (inTwoUp) {
+                twoUpInitialScrollPending = true;
+                window.__twoUpPrevPage = undefined;
+            }
             try { window.msc_wz$$module$synpdf?.time2x(t); } catch (_) { }
         });
     }
