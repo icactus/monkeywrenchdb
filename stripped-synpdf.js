@@ -164,8 +164,8 @@ function Wijzer$$module$synpdf(a, b, c, d) {
             </button>
             <button class="control-buttons" onclick="toggleTwoUpMode()" id="two-up-button" title="Two-up view">
             <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-            <svg fill="#000000" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
-                     width="800px" height="800px" viewBox="0 0 93.1 93.1" xml:space="preserve">
+            <svg fill="#000000" width="20pt" height="20pt" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+                     width="20px" height="20px" viewBox="0 0 93.1 93.1" xml:space="preserve">
             <g>
                     <g>
                             <path d="M93.1,13.658H50.943l-4.394,4.393l-4.394-4.394H0v65.784h42.156l4.394-4.392l4.394,4.394H93.1V13.658z M43.828,74.401
