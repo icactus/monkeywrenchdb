@@ -334,8 +334,11 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
 Wijzer$$module$synpdf.prototype.setOffsetX = function() {
     // keep xoffset for compatibility, but compute in notation-space
     this.xoffset = pageLeftInNotation(1); // left page in spread
-    const t = (this.cursorTime ?? (elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - (window.offset$$module$synpdf || 0));
+    const t = (window.__restoreTime != null)
+        ? window.__restoreTime
+        : (this.cursorTime ?? (elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - (window.offset$$module$synpdf || 0));
     this.time2x(t);
+    if (window.__restoreTime != null) window.__restoreTime = null;
 };
 
 Wijzer$$module$synpdf.prototype.time2x = function(a) {
@@ -1341,19 +1344,19 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
     }
 
     // Start observing the canvas for visibility
-      if (observer) {
-          observer.observe(canvas);
-      }
-      if (pageNum === 1 && newInstrumentTime2xFlag === 1) {
-          const t = (elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf;
-          msc_wz$$module$synpdf.time2x(t);
-          newInstrumentTime2xFlag = 0;
-      }
-      if (window.twoUpMode && !window.__didInitialTwoUpFit && pageNum === 2) {
-          requestAnimationFrame(() => {
-              // 2-up fit for the current viewport (height + spread width)
-              const prev = window.__TwoUpAllowScaleOnce;
-              window.__TwoUpAllowScaleOnce = true;
+    if (observer) {
+        observer.observe(canvas);
+    }
+    if (pageNum === 1 && newInstrumentTime2xFlag === 1) {
+        const t = (elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf;
+        msc_wz$$module$synpdf.time2x(t);
+        newInstrumentTime2xFlag = 0;
+    }
+    if (window.twoUpMode && !window.__didInitialTwoUpFit && pageNum === 2) {
+        requestAnimationFrame(() => {
+            // 2-up fit for the current viewport (height + spread width)
+            const prev = window.__TwoUpAllowScaleOnce;
+            window.__TwoUpAllowScaleOnce = true;
             try { resizePageFitToHeight(); } finally { window.__TwoUpAllowScaleOnce = prev; }
 
             // Wait an extra frame so layout settles before positioning the shader
