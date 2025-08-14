@@ -807,21 +807,10 @@ decrementButton.addEventListener('click', decrementSpeed);
 // One handler for all vendor events
 function refreshAfterFullscreen() {
     const doRefresh = () => {
-        // Rebuild and re-render at the new viewport/DPR
+        // Rebuild and re-render at the new viewport/DPR; this also refits 2-up spreads
         if (typeof reflowForViewportChange === 'function') {
-            reflowForViewportChange(); // this calls resizePdfSyn inside
+            reflowForViewportChange();
         }
-        // Re-fit the 2-up spread if we are in two-up
-        if (window.twoUpMode && typeof resizePageFitToHeight === 'function') {
-            const prev = window.__TwoUpAllowScaleOnce;
-            window.__TwoUpAllowScaleOnce = true;
-            try { resizePageFitToHeight(); } finally { window.__TwoUpAllowScaleOnce = prev; }
-        }
-        // Restore where we were (cursor/time) if available
-        const t = (window.msc_wz$$module$synpdf?.cursorTime)
-            ?? ((window.elmed$$module$synpdf?.getCurrentTime?.() ?? 0) - (window.offset$$module$synpdf ?? 0));
-        if (typeof window.msc_wz$$module$synpdf?.time2x === 'function') window.msc_wz$$module$synpdf.time2x(t);
-
         // Make sure the scroll container has focus for keyboard arrows
         document.getElementById('notation-scroll')?.focus();
     };
