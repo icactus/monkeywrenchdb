@@ -1858,6 +1858,10 @@ function reflowForViewportChange() {
         requestAnimationFrame(() => {
             window.__TwoUpAllowScaleOnce = true; // set again in case other work ran
             resizePageFitToHeight();
+            const t = (window.msc_wz$$module$synpdf?.cursorTime)
+                ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
+                    - (window.offset$$module$synpdf || 0));
+            try { window.msc_wz$$module$synpdf?.time2x(t); } catch (_) { }
         });
     }
 }
