@@ -101,6 +101,30 @@ function updatePlayPauseButton() {
     }
 }
 
+
+function addTwoUpButtonListener() {
+    const btn = document.getElementById('two-up-button');
+    if (!btn) return;
+
+    const update = () => {
+        const on = !!window.twoUpMode;
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        btn.classList.toggle('active', on);
+    };
+
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleTwoUpMode();   // flips + reflows
+        update();            // reflect the new state
+    });
+
+    // keep in sync with Alt+2 and any programmatic toggles
+    window.addEventListener('twoUpModeChanged', update);
+
+    // initial paint from saved state
+    update();
+}
+
 function toggleSettingsMenu() {
     $("#help").toggleClass("showhlp");
     $("#about").toggleClass("showabout", !1);
@@ -1153,6 +1177,10 @@ function toggleTwoUpMode(on = !twoUpMode) {
         window.__TwoUpAllowScaleOnce = true;
         try { resizePageFitToHeight(); } finally { window.__TwoUpAllowScaleOnce = prev; }
     }
+
+    try {
+        window.dispatchEvent(new CustomEvent('twoUpModeChanged', { detail: { on: window.twoUpMode } }));
+    } catch (_) { }
 }
 
 // --- Inline SVGs (simple “two pages” icon, on/off) ---
