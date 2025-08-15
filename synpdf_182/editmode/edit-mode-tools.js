@@ -220,11 +220,33 @@ document.addEventListener('keydown', function(event) {
         case 'o':
             resizePdfSyn$$module$synpdf();
             break;
-        case 'p': // Puts current shaded measures into memory
+        case 'p': { // lock current page (metrics + advanced settings)
+            // 1) Save the current metrics
             var jsonString = deMetriek$$module$synpdf;
             roundValuesInArray(jsonString);
             localStorage.setItem('jsonString', JSON.stringify(jsonString));
+
+            // 2) Save & LOCK the page’s advanced settings snapshot
+            const pg = opt$$module$synpdf.pagenum;
+            adv_parms$$module$synpdf[pg] = adv_parms$$module$synpdf[pg] || {};
+            for (const k in adv_names$$module$synpdf) {
+                adv_parms$$module$synpdf[pg][k] = opt$$module$synpdf[k];
+            }
+            adv_parms$$module$synpdf[pg].__locked = 1;
+            console.log(`Locked page ${pg} advanced settings.`);
             break;
+        }
+
+        case 'P': { // Shift+P: apply current advanced settings to all future pages (as default)
+            adv_parms$$module$synpdf.__forward = {};
+            for (const k in adv_names$$module$synpdf) {
+                adv_parms$$module$synpdf.__forward[k] = opt$$module$synpdf[k];
+            }
+            // ensure the very next page recomputes with the template
+            pageNumChanged$$module$synpdf = 1;
+            console.log('Forward template set from current options; future pages will use it unless locked.');
+            break;
+        }
 
         case 'j':
             let jsonCode = localStorage.getItem('jsonString');
