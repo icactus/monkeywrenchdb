@@ -50,7 +50,7 @@ $sqlPieces = "
     JOIN piece_categories pc ON pc.category_id    = p.category_id
     JOIN metric_arr       m  ON m.piece_id        = p.piece_id
     JOIN instruments      i  ON i.instrument_id   = m.instrument_id
-    LEFT JOIN recordings  r  ON r.metric_arr_id   = m.metric_arr_id
+    LEFT JOIN recordings r ON r.piece_id = p.piece_id
     WHERE i.instrument_id IN ($placeholders)
     GROUP BY p.piece_id, p.piece_name, pc.category_name, c.composer_last
     ORDER BY c.composer_last, p.piece_name
