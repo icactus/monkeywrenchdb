@@ -25,6 +25,8 @@ let currentGlobalScaleAmount = 100;
 // Cumulative CSS scale for canvases and the same factor for deMaten coordinates
 window.__cssScale = window.__cssScale || 1;    // multiplies canvas.style width/height
 window.__deMScale = window.__deMScale || 1;    // multiplies x,y,w,h in deMaten
+window.__isTogglingFullscreen = false;   // suppress auto-zoom during FS transitions
+window.__preFS = null;                   // stash zoom + position before toggling
 
 const sheetMusicSvg = ` 
 <span class="sheet-music-icon">
@@ -806,17 +808,50 @@ incrementButton.addEventListener('click', incrementSpeed);
 decrementButton.addEventListener('click', decrementSpeed);
 
 // One handler for all vendor events
+// One handler for all vendor events
 function refreshAfterFullscreen() {
     const doRefresh = () => {
-        // Rebuild and re-render at the new viewport/DPR; this also refits 2-up spreads
+        // Rebuild and re-render at the new viewport/DPR (keeps pages crisp)
         if (typeof reflowForViewportChange === 'function') {
             reflowForViewportChange();
         }
-        // Make sure the scroll container has focus for keyboard arrows
-        document.getElementById('notation-scroll')?.focus();
+
+        const scroller = document.getElementById('notation-scroll');
+
+        // After layout settles, put zoom/position back
+        const snapBack = () => {
+            const pre = window.__preFS || {};
+
+            // Only restore zoom in 1-up (2-up uses fit-to-height logic)
+            if (!pre.inTwoUp && pre.scale && window.__cssScale) {
+                // resizeDematenAndCanvas takes a *multiplier* percent
+                const ratio = pre.scale / window.__cssScale; // desired/current
+                if (Math.abs(ratio - 1) > 1e-3) {
+                    resizeDematenAndCanvas(ratio * 100);
+                }
+            }
+
+            // Prefer musical time anchor; fallback to proportional scroll
+            if (typeof pre.cursorTime === 'number') {
+                try { window.msc_wz$$module$synpdf?.time2x(pre.cursorTime); } catch (_) { }
+            } else if (scroller && typeof pre.scrollTopRatio === 'number') {
+                scroller.scrollTop = Math.round(
+                    pre.scrollTopRatio * Math.max(0, scroller.scrollHeight - scroller.clientHeight)
+                );
+            }
+
+            scroller?.focus();
+            window.__isTogglingFullscreen = false;
+            window.__preFS = null;
+        };
+
+        // Give layout a tick to settle (handles WebKit/mobile too)
+        requestAnimationFrame(() => requestAnimationFrame(snapBack));
+        setTimeout(snapBack, 140);
     };
+
     requestAnimationFrame(doRefresh);
-    setTimeout(doRefresh, 120); // WebKit/mobile settles a tick later
+    setTimeout(doRefresh, 60);
 }
 
 // Listen for all vendor fullscreen change events
@@ -824,35 +859,34 @@ function refreshAfterFullscreen() {
     .forEach(ev => document.addEventListener(ev, refreshAfterFullscreen));
 
 function toggleFullscreen(event) {
-    // event.stopPropagation();
+    const scroller = document.getElementById('notation-scroll');
+
+    // Save current zoom + position so we can restore after the FS swap
+    window.__preFS = {
+        scale: window.__cssScale || 1,
+        inTwoUp: !!scroller?.classList.contains('two-up'),
+        cursorTime: window.msc_wz$$module$synpdf?.cursorTime ?? null,
+        scrollTopRatio: scroller
+            ? (scroller.scrollTop / Math.max(1, scroller.scrollHeight - scroller.clientHeight))
+            : null
+    };
+    window.__isTogglingFullscreen = true;
+
     const notationDiv = document.getElementById("notation");
 
-    if (!document.fullscreenElement) { // If not in fullscreen
-        if (notationDiv.requestFullscreen) {
-            notationDiv.requestFullscreen(); // Standard syntax
-        } else if (notationDiv.mozRequestFullScreen) { // Firefox
-            notationDiv.mozRequestFullScreen();
-        } else if (notationDiv.webkitRequestFullscreen) { // Chrome, Safari, and Opera
-            notationDiv.webkitRequestFullscreen();
-        } else if (notationDiv.msRequestFullscreen) { // IE/Edge
-            notationDiv.msRequestFullscreen();
-        }
-
-    } else { // If already in fullscreen
-        if (document.exitFullscreen) {
-            document.exitFullscreen(); // Standard syntax
-        } else if (document.mozCancelFullScreen) { // Firefox
-            document.mozCancelFullScreen();
-        } else if (document.webkitExitFullscreen) { // Chrome, Safari, and Opera
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) { // IE/Edge
-            document.msExitFullscreen();
-        }
+    if (!document.fullscreenElement) {
+        if (notationDiv.requestFullscreen) notationDiv.requestFullscreen();
+        else if (notationDiv.mozRequestFullScreen) notationDiv.mozRequestFullScreen();
+        else if (notationDiv.webkitRequestFullscreen) notationDiv.webkitRequestFullscreen();
+        else if (notationDiv.msRequestFullscreen) notationDiv.msRequestFullscreen();
+    } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else if (document.msExitFullscreen) document.msExitFullscreen();
     }
 }
 
-let currentOffsetX = 0;
-let newOffsetX = 0;
 
 // Need this to get left edge of notation
 function canvasXInNotation($canvas) {
@@ -887,12 +921,10 @@ function resizeDematenAndCanvas(scaleAmount) {
         var notationDiv = document.getElementById("notation");
         var canvasRect = canvas.getBoundingClientRect();
         var notationDivRect = notationDiv.getBoundingClientRect();
-        currentOffsetX = (canvasRect.left - notationDivRect.left);
         scaleCanvasElements(scaleAmount);
         if (window.msc_wz$$module$synpdf) msc_wz$$module$synpdf.setOffsetX();
         var newCanvasRect = canvas.getBoundingClientRect();
         var newNotationDivRect = notationDiv.getBoundingClientRect();
-        newOffsetX = (newCanvasRect.left - newNotationDivRect.left);
         deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount);
         msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
     }
@@ -953,6 +985,7 @@ function resizeCanvasTrigger() {
     var previousWidth = $("#notation").width();
 
     $(window).off("resize").on("resize", debounce(function() {
+        if (window.__isTogglingFullscreen) return;
         // In 2-up, ignore width-delta scaling. reflowForViewportChange + fit-to-height will handle it.
         if (document.getElementById('notation-scroll')?.classList.contains('two-up')) return;
 
