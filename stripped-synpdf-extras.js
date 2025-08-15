@@ -17,7 +17,7 @@ let twoUpInitialScrollPending = false;
 let globalHighlightColor = '#00d4ff';
 let blockTime2x = false; // Flag to disable time2x during recording change
 let isSwitchingRecording = false;
-
+let canShowDemaat = false;
 //So back button will go to homepage only if on a recording
 window.isRecordingState = false;
 window.recordingFullyLoaded = false;
