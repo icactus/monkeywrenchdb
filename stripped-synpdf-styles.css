@@ -132,20 +132,18 @@ a {
     transition: filter 0.5s ease;
     margin-right:10px;
 }
-.monkeywrench-logo-text  {
+#monkeywrench-logo-text  {
     font-size:1em;
     background:-webkit-linear-gradient(45deg, #9300ff, #3500ff 150%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin: 0;
-}
-.monkeywrench-logo-text a {
     display:flex;
     flex-direction:column;
     align-items:end;
 }
-.monkeywrench-logo-text h2 {
+#monkeywrench-logo-text h2 {
     font-size:1.8em;
     font-family: 'PixelOperator', sans-serif;
     font-weight:800;
@@ -155,10 +153,10 @@ a {
     font-size:1em;
     margin:0;
 }
-.monkeywrench-logo-text, .nav-menu > a:link,
-.monkeywrench-logo-text, .nav-menu > a:visited,
-.monkeywrench-logo-text, .nav-menu > a:hover,
-.monkeywrench-logo-text, .nav-menu > a:active {
+#monkeywrench-logo-text, .nav-menu > a:link,
+#monkeywrench-logo-text, .nav-menu > a:visited,
+#monkeywrench-logo-text, .nav-menu > a:hover,
+#monkeywrench-logo-text, .nav-menu > a:active {
   text-decoration: none !important;
 }
 .nav-menu a{

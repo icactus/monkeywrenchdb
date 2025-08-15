@@ -1148,15 +1148,6 @@ function addShareButtonListener() {
 window.__restoreTime = window.__restoreTime ?? null;
 window.__restoreMix = window.__restoreMix ?? null;
 
-
-// Make sure the button exists whenever the UI is (re)mounted
-document.addEventListener('DOMContentLoaded', () => {
-    // if user had two-up on last time, apply class immediately
-    if (twoUpMode) setZoomControlsEnabled(false);
-    if (twoUpMode) document.getElementById('notation-scroll')?.classList.add('two-up');
-});
-
-
 // Optional keyboard shortcut: Alt+2 toggles two-up
 document.addEventListener('keydown', (e) => {
     if (e.altKey && (e.key === '2' || e.code === 'Digit2')) {
@@ -1166,6 +1157,13 @@ document.addEventListener('keydown', (e) => {
 });
 
 $(document).ready(function() {
+
+    $('#monkey-logo, #monkeywrench-logo-text').on('click', 'a[href="/"]', function() {
+        // Kill two-up for the homepage so the tab UI isn't laid out as a grid
+        window.twoUpMode = false;
+        const sc = document.getElementById('notation-scroll');
+        if (sc) sc.classList.remove('two-up');
+    });
     // Click handler for tab headers
     $('.tab-header').on('click', function() {
         // If tab is disabled, ignore
