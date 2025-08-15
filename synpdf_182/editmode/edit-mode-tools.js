@@ -218,6 +218,8 @@ document.addEventListener('keydown', function(event) {
             });
             break;
         case 'o':
+
+            deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
             resizePdfSyn$$module$synpdf();
             break;
         case 'p': { // lock current page (metrics + advanced settings)
@@ -265,6 +267,8 @@ document.addEventListener('keydown', function(event) {
                 break;
             };
             opt$$module$synpdf.drmpl = ((Math.round(opt$$module$synpdf.drmpl * 10) - 1) / 10);
+
+            deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
             resizePdfSyn$$module$synpdf();
             break;
         // Now, whenever you update opt$$module$synpdf.drmpl, it also updates the input field:
@@ -273,6 +277,8 @@ document.addEventListener('keydown', function(event) {
                 break
             };
             opt$$module$synpdf.drmpl = ((Math.round(opt$$module$synpdf.drmpl * 10) + 1) / 10);
+
+            deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
             resizePdfSyn$$module$synpdf();
             break;
         case ';':
@@ -280,6 +286,8 @@ document.addEventListener('keydown', function(event) {
                 break;
             };
             opt$$module$synpdf.drmpl2 = ((Math.round(opt$$module$synpdf.drmpl2 * 10) - 1) / 10);
+
+            deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
             resizePdfSyn$$module$synpdf();
             break;
         // Now, whenever you update opt$$module$synpdf.drmpl, it also updates the input field:
@@ -288,6 +296,8 @@ document.addEventListener('keydown', function(event) {
                 break
             };
             opt$$module$synpdf.drmpl2 = ((Math.round(opt$$module$synpdf.drmpl2 * 10) + 1) / 10);
+
+            deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
             resizePdfSyn$$module$synpdf();
             break;
         //        case ',':
@@ -312,6 +322,8 @@ document.addEventListener('keydown', function(event) {
             else {
                 opt$$module$synpdf.eerst = 1;
             }
+
+            deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
             resizePdfSyn$$module$synpdf();
             break;
         case 'M':

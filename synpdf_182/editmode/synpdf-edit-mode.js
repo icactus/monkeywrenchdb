@@ -2483,18 +2483,34 @@ function checkMenu$$module$synpdf(a) {
                 break;
             case "drmpl":
                 opt$$module$synpdf.drmpl = parseFloat(opt$$module$synpdf.drmpl);
+
+                // If an advanced measure-detection control changed, invalidate current page metrics
+                if (adv_names$$module$synpdf[b]) {
+                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
+                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "drmpl2":
                 opt$$module$synpdf.drmpl2 = parseFloat(opt$$module$synpdf.drmpl2);
+                if (adv_names$$module$synpdf[b]) {
+                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
+                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "eerst":
             case "sysprf":
+
+                if (adv_names$$module$synpdf[b]) {
+                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
+                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "skipn":
             case "seln":
+
+                if (adv_names$$module$synpdf[b]) {
+                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
+                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "synbox":
@@ -2512,6 +2528,10 @@ function checkMenu$$module$synpdf(a) {
                 toggleScoreBtn$$module$synpdf();
                 break;
             case "onestf":
+
+                if (adv_names$$module$synpdf[b]) {
+                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
+                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "advncd":
@@ -2536,12 +2556,20 @@ function checkMenu$$module$synpdf(a) {
             case "voorna":
             case "mtdrmpl":
             case "dx":
+
+                if (adv_names$$module$synpdf[b]) {
+                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
+                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "fscr":
                 setFullscreen$$module$synpdf();
                 break;
             case "fixwd":
+
+                if (adv_names$$module$synpdf[b]) {
+                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
+                }
                 resizePdfSyn$$module$synpdf()
         }
     }
