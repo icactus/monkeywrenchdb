@@ -135,5 +135,9 @@ while ($row = $res->fetch_assoc()) {
 $stmt->close();
 
 /** Done */
-echo json_encode($pieces, JSON_UNESCAPED_UNICODE);
+$response = [
+    'pieces' => $pieces,
+    'instrumentName' => $_GET['instrumentName'] ?? '' // if you can send this from JS
+];
+echo json_encode($response, JSON_UNESCAPED_UNICODE);
 $conn->close();
