@@ -1919,7 +1919,6 @@ window.twoUpMode = loadTwoUpMode();
 function toggleTwoUpMode(on = !window.twoUpMode) {
     // flip + persist
     window.twoUpMode = !!on;
-    try { localStorage.setItem('twoUpMode', JSON.stringify(window.twoUpMode)); } catch (_) { }
 
     if (typeof setZoomControlsEnabled === 'function') {
         setZoomControlsEnabled(!window.twoUpMode); // disable in 2-up, enable in 1-up

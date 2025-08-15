@@ -1144,9 +1144,6 @@ function addShareButtonListener() {
 }
 
 
-// --- 2-up state (persisted) ---
-window.twoUpMode = JSON.parse(localStorage.getItem('twoUpMode') || 'false');
-
 // we already use these for restore-before-reflow:
 window.__restoreTime = window.__restoreTime ?? null;
 window.__restoreMix = window.__restoreMix ?? null;
