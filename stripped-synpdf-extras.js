@@ -1163,6 +1163,7 @@ $(document).ready(function() {
         window.twoUpMode = false;
         const sc = document.getElementById('notation-scroll');
         if (sc) sc.classList.remove('two-up');
+        sc.innerHTML = '';
     });
     // Click handler for tab headers
     $('.tab-header').on('click', function() {
