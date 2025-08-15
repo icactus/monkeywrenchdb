@@ -1906,15 +1906,6 @@ function reflowForViewportChange() {
     }
 }
 
-function loadTwoUpMode() {
-    try {
-        const saved = localStorage.getItem('twoUpMode');
-        return saved ? JSON.parse(saved) : false;
-    } catch (_) {
-        return false;
-    }
-}
-window.twoUpMode = loadTwoUpMode();
 
 function toggleTwoUpMode(on = !window.twoUpMode) {
     // flip + persist
@@ -1968,6 +1959,7 @@ $(document).ready(function() {
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
     phoneCheck = isPhone();
+    window.twoUpMode = false;
     $("body").keydown(keyDown$$module$synpdf);
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
