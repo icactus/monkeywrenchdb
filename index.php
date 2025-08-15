@@ -18,7 +18,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="fonts.css" />
-    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=61" />
+    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=62" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <script src="jquery.min.js"></script>
     <title>monkey wrench database</title>
@@ -32,10 +32,14 @@
             <video id="vid" controls="controls">Your browser does not support the video element.</video>
             <div id="logo-bar-wrapper">
                 <div id="logo-bar">
-                    <img id="monkey-logo" src="monkeywrench-monkey100x100.png"></img>
+                    <a href="/">
+                        <img id="monkey-logo" src="monkeywrench-monkey100x100.png"></img>
+                    </a>
                     <div id="monkeywrench-logo-text">
-                        <h2>MONKEY WRENCH DATABASE</h2>
-                        <h3 id="logotext-line2">sheet music synced with youtube</h3>
+                        <a href="/">
+                            <h2>MONKEY WRENCH DATABASE</h2>
+                            <h3 id="logotext-line2">sheet music synced with youtube</h3>
+                        </a>
                     </div>
                 </div>
                 <div class="nav-menu">
@@ -222,8 +226,8 @@
     <div id="notification" style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=169"></script>
-    <script src="stripped-synpdf-extras.js?v=128"></script>
+    <script src="stripped-synpdf.js?v=170"></script>
+    <script src="stripped-synpdf-extras.js?v=130"></script>
 </body>
 
 </html>

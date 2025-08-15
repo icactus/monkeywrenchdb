@@ -139,6 +139,8 @@ a {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin: 0;
+}
+#monkeywrench-logo-text a {
     display:flex;
     flex-direction:column;
     align-items:end;
