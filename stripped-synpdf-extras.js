@@ -302,18 +302,19 @@ function fetchPieces(instrumentIds) {
 
                     // Populate the links dynamically
                     orderedGroupedPieces[categoryName].forEach(function(piece) {
-                        const pieceLink = `
-                            <p>
-                                <a href="#" 
-                                   class="pieces-link" 
-                                   data-id="${piece.metric_arr_id}" 
-                                   data-piece-id="${piece.piece_id}" 
-                                   data-instrument-id="${instrumentIds}">
-                                    <b>${piece.composer_last}</b> - ${piece.piece_name}
-                                </a> 
-                                (${piece.total_recordings_value})♫
-                            </p>`;
-                        container.append(pieceLink);
+                        const $row = $('<p></p>');
+                        const $a = $(`
+                          <a href="#" 
+                             class="pieces-link" 
+                             data-id="${piece.metric_arr_id}" 
+                             data-piece-id="${piece.piece_id}" 
+                             data-instrument-id="${instrumentIds}">
+                            <b>${piece.composer_last}</b> - ${piece.piece_name}
+                          </a>
+                        `);
+                        $a.data('parts', piece.parts || []);
+                        $row.append($a).append(` (${piece.total_recordings_value})♫`);
+                        container.append($row);
                     });
                 });
             }
@@ -330,60 +331,38 @@ function fetchPieces(instrumentIds) {
 $('#pieces-container').on('click', '.pieces-link', function(event) {
     event.preventDefault();
 
-    // Clear out old recordings
+    // Clear out old recordings (unchanged)
     $('#recordings-container').empty();
     $('#recordings-container').append($('<h2>').text($(this).text()));
     $('#recordings-container').append($('<h3>').text('Recordings'));
-    const pieceId = $(this).data('piece-id');
-    const instrumentIds = $(this).data('instrument-id').toString();
+
     const clickedLink = $(this);
+    const parts = clickedLink.data('parts') || [];
 
-    // Callback after we check multiple parts
-    const handleData = function(data) {
-        if (data.length === 1) {
-            // EXACTLY ONE sub-part
-            fetchRecordings(data[0].metric_arr_id);
-            currentMetricArrGlobal = data[0].metric_arr_id;
-
-            // Switch to Recordings tab
-            openTab("tab-recordings");
-        } else if (data.length > 1) {
-            // MULTIPLE sub-parts
-            displayMultiplePartLinks(data, clickedLink);
-        }
-    };
-
-    // Check if we already inserted a sub-instrument-links container
+    // Toggle if already open
     const existingContainer = clickedLink.next('.instrument-links');
     if (existingContainer.length > 0) {
         existingContainer.toggle();
-    } else {
-        // if not, fetch the sub-instrument parts
-        checkMultipleParts(pieceId, instrumentIds, handleData);
+        return;
     }
-});
 
-// Function to handle the click event on the link
-function checkMultipleParts(pieceId, instrumentIds, callback) {
-    if (instrumentIds.split(',').length > 0) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', `check_multiple_parts.php?piece_id=${pieceId}&instrumentIds=${instrumentIds}`, true);
-        xhr.onload = function() {
-            if (xhr.status >= 200 && xhr.status < 400) {
-                var response = JSON.parse(xhr.responseText);
-                if (typeof callback === "function") {
-                    callback(response); // Call the callback function with the response data
-                }
-            } else {
-                console.error('Error from the server');
-            }
-        };
-        xhr.onerror = function() {
-            console.error('Request failed');
-        };
-        xhr.send();
+    if (parts.length === 1) {
+        // EXACTLY ONE sub-part → go straight to recordings
+        fetchRecordings(parts[0].metric_arr_id);
+        currentMetricArrGlobal = parts[0].metric_arr_id;
+        openTab("tab-recordings");
+        return;
     }
-}
+
+    if (parts.length > 1) {
+        // MULTIPLE sub-parts → render chips under this row
+        displayMultiplePartLinks(parts, clickedLink);
+        return;
+    }
+
+    // No parts (edge case)
+    $('#recordings-container').append('<p>No parts found for this selection.</p>');
+});
 
 function generateInstrumentsDropdown(recordingId) {
     return new Promise(function(resolve, reject) {

@@ -4,104 +4,136 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 require_once '../phpfiles/read_only_user_config.php';
+header('Content-Type: application/json; charset=utf-8');
 
-// Establish the database connection
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+if ($conn->connect_error) {
+    http_response_code(500);
+    echo json_encode(["error" => "DB connection failed"]);
+    exit;
+}
 mysqli_set_charset($conn, 'utf8');
 
-// Check the connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
-// Get the selected instrument IDs from the AJAX request parameter
-$instrumentIds = isset($_GET['instrumentIds']) ? $_GET['instrumentIds'] : '';
-
-// Convert the comma-separated list of instrument IDs to an array
-$instrumentIdArray = explode(',', $instrumentIds);
-
-// Ensure there is at least one instrument ID
-if (empty($instrumentIdArray) || !is_array($instrumentIdArray)) {
-    echo json_encode(['message' => 'No instrument IDs provided']);
+/** Parse and sanitize ?instrumentIds=11,12,13 */
+$instrumentIdsParam = $_GET['instrumentIds'] ?? '';
+$instrumentIds = array_values(array_filter(array_map('intval', preg_split('/[,\s]+/', $instrumentIdsParam)), fn($v) => $v > 0));
+if (empty($instrumentIds)) {
+    echo json_encode([]); // nothing selected
+    $conn->close();
     exit;
 }
 
-// Since bind_param() does not accept arrays directly, dynamically construct the query placeholders
-$placeholders = implode(',', array_fill(0, count($instrumentIdArray), '?'));
+/** Helper to bind ...IN(?) lists with mysqli */
+function bindInList(mysqli_stmt $stmt, array $values, string $typeChar = 'i')
+{
+    $types = str_repeat($typeChar, count($values));
+    $args = [];
+    $args[] = &$types;
+    foreach ($values as $k => $v) {
+        $args[] = &$values[$k];
+    }
+    return $stmt->bind_param(...$args);
+}
 
-// The SQL query with special handling for category names, adjusted for handling multiple instrument IDs
-$sql = "
+/** 1) Get pieces (filtered to selected instruments), plus a stable metric_arr_id and total recordings */
+$placeholders = implode(',', array_fill(0, count($instrumentIds), '?'));
+$sqlPieces = "
     SELECT
       p.piece_id,
       p.piece_name,
-      CASE 
-        WHEN pc.category_id = 5 AND EXISTS (
-          SELECT 1
-          FROM instruments solo
-          JOIN pieces pp ON pp.solo_instrument_id = solo.instrument_id
-          WHERE pp.piece_id = p.piece_id
-          AND solo.instrument_name != main.instrument_name
-        ) THEN 'Orchestra'
-        ELSE pc.category_name 
-      END AS category_name,
-      p.composer_id AS composer_id,
-      c.composer_last AS composer_last,
-      MAX(m.metric_arr_id) AS metric_arr_id,
-      MAX(i.instrument_name) AS instrument_name,
-      COUNT(DISTINCT r.recording_id) AS total_recordings_value
-    FROM
-      pieces p
-    JOIN composers c ON p.composer_id = c.composer_id
-    JOIN metric_arr m ON p.piece_id = m.piece_id
-    JOIN piece_categories pc ON p.category_id = pc.category_id
-    JOIN instruments i ON m.instrument_id = i.instrument_id
-    LEFT JOIN recordings r ON p.piece_id = r.piece_id
-    LEFT JOIN instruments main ON main.instrument_id = ?
-    WHERE
-      i.instrument_id IN ($placeholders)
-    GROUP BY
-      p.piece_id
+      pc.category_name,
+      c.composer_last,
+      MIN(m.metric_arr_id)                          AS metric_arr_id,          -- stable id to keep your existing data-id
+      COUNT(DISTINCT r.recording_id)                AS total_recordings_value  -- count recordings across selected instruments
+    FROM pieces p
+    JOIN composers        c  ON c.composer_id     = p.composer_id
+    JOIN piece_categories pc ON pc.category_id    = p.category_id
+    JOIN metric_arr       m  ON m.piece_id        = p.piece_id
+    JOIN instruments      i  ON i.instrument_id   = m.instrument_id
+    LEFT JOIN recordings  r  ON r.metric_arr_id   = m.metric_arr_id
+    WHERE i.instrument_id IN ($placeholders)
+    GROUP BY p.piece_id, p.piece_name, pc.category_name, c.composer_last
+    ORDER BY c.composer_last, p.piece_name
 ";
+$stmt = $conn->prepare($sqlPieces);
+bindInList($stmt, $instrumentIds);
+if (!$stmt->execute()) {
+    http_response_code(500);
+    echo json_encode(["error" => "Error executing pieces query: " . $stmt->error]);
+    $stmt->close();
+    $conn->close();
+    exit;
+}
+$res = $stmt->get_result();
+$pieces = [];
+$piecesById = [];
+while ($row = $res->fetch_assoc()) {
+    $row['metric_arr_id'] = (int)$row['metric_arr_id'];
+    $row['total_recordings_value'] = (int)$row['total_recordings_value'];
+    $row['parts'] = []; // to be filled next
+    $pieces[] = $row;
+    $piecesById[(int)$row['piece_id']] = &$pieces[array_key_last($pieces)];
+}
+$stmt->close();
 
-$stmt = $conn->prepare($sql);
-
-// Add the first instrument ID for the JOIN with `main` instrument and then append the rest for the IN clause
-$allIds = array_merge([$instrumentIdArray[0]], $instrumentIdArray);
-
-// Dynamically bind the instrumentIdArray values to the prepared statement
-$types = str_repeat('i', count($allIds));
-$params = array_merge([$types], $allIds);
-call_user_func_array([$stmt, 'bind_param'], refValues($params));
-
-$stmt->execute();
-
-// Get the result
-$result = $stmt->get_result();
-
-// Check if the query was successful
-$data = [];
-if ($result) {
-    $pieces = $result->fetch_all(MYSQLI_ASSOC);
-    if (count($pieces) > 0) {
-        // Adjust category names based on the special condition already handled in SQL
-        $data['pieces'] = $pieces;
-        $data['instrumentName'] = $pieces[0]['instrument_name']; // This might need adjustment based on actual needs
-        echo json_encode($data); // return data with pieces and instrument name
-    } else {
-        echo json_encode(['message' => "No pieces found for the selected instrument"]); 
-    }
-} else {
-    echo "Error executing query: " . $stmt->error;
+if (empty($pieces)) {
+    echo json_encode([]); // no pieces for these instruments
+    $conn->close();
+    exit;
 }
 
-// Close the database connection
+/** 2) Bulk-load all PARTS for the returned pieces (still filtered to the same instruments) */
+$pieceIds = array_map('intval', array_column($pieces, 'piece_id'));
+$phPieces = implode(',', array_fill(0, count($pieceIds), '?'));
+$phInstrs = implode(',', array_fill(0, count($instrumentIds), '?'));
+
+$sqlParts = "
+    SELECT
+      m.piece_id,
+      m.metric_arr_id,
+      i.instrument_id,
+      i.instrument_name,
+      i.part_number
+    FROM metric_arr m
+    JOIN instruments i ON i.instrument_id = m.instrument_id
+    WHERE m.piece_id IN ($phPieces)
+      AND i.instrument_id IN ($phInstrs)
+    ORDER BY i.instrument_name, i.part_number
+";
+$stmt = $conn->prepare($sqlParts);
+
+/** bind pieceIds + instrumentIds (all integers) */
+$types = str_repeat('i', count($pieceIds) + count($instrumentIds));
+$params = [];
+$params[] = &$types;
+foreach ($pieceIds as $k => $v) {
+    $params[] = &$pieceIds[$k];
+}
+foreach ($instrumentIds as $k => $v) {
+    $params[] = &$instrumentIds[$k];
+}
+call_user_func_array([$stmt, 'bind_param'], $params);
+
+if (!$stmt->execute()) {
+    http_response_code(500);
+    echo json_encode(["error" => "Error executing parts query: " . $stmt->error]);
+    $stmt->close();
+    $conn->close();
+    exit;
+}
+$res = $stmt->get_result();
+while ($row = $res->fetch_assoc()) {
+    $pid = (int)$row['piece_id'];
+    if (!isset($piecesById[$pid])) continue;
+    $piecesById[$pid]['parts'][] = [
+        'metric_arr_id'   => (int)$row['metric_arr_id'],
+        'instrument_id'   => (int)$row['instrument_id'],
+        'instrument_name' => $row['instrument_name'],
+        'part_number'     => $row['part_number'],
+    ];
+}
+$stmt->close();
+
+/** Done */
+echo json_encode($pieces, JSON_UNESCAPED_UNICODE);
 $conn->close();
-
-function refValues($arr) {
-    $refs = [];
-    foreach ($arr as $key => $value) {
-        $refs[$key] = &$arr[$key];
-    }
-    return $refs;
-}
-?>

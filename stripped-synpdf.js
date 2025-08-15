@@ -23,7 +23,6 @@
         // Configure PDF.js Worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs';
 
-        console.log('PDF.js has been successfully loaded and configured.');
 
     } catch (error) {
         console.error('Failed to load PDF.js:', error);
