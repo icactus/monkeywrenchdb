@@ -7,169 +7,159 @@ require_once '../phpfiles/read_only_user_config.php';
 header('Content-Type: application/json; charset=utf-8');
 
 /** --------------------------
- *  SIMPLE FILE-BASED CACHE
- *  --------------------------
- */
+ *  FILE CACHE (5 minutes)
+ *  -------------------------- */
 $cacheDir = __DIR__ . '/cache';
-$cacheTTL = 300; // seconds (5 min)
+$cacheTTL = 300; // seconds
 
-// Make sure cache folder exists
 if (!is_dir($cacheDir)) {
-    mkdir($cacheDir, 0755, true);
+    @mkdir($cacheDir, 0755, true);
 }
-
-// Clean up expired cache files (optional)
-foreach (glob("$cacheDir/*.json") as $file) {
-    if (time() - filemtime($file) > $cacheTTL) {
-        @unlink($file);
+// remove expired cache files (best-effort, silent)
+foreach (glob($cacheDir . '/*.json') as $f) {
+    if (time() - @filemtime($f) > $cacheTTL) {
+        @unlink($f);
     }
 }
 
-// Cache key based on instrumentIds
+// raw param (keep exactly as received for logging if you want)
 $instrumentIdsParam = $_GET['instrumentIds'] ?? '';
-$cacheKey = 'fetch_pieces_' . md5($instrumentIdsParam);
-$cacheFile = "$cacheDir/$cacheKey.json";
 
-// Serve from cache if fresh
+// normalize ids for both SQL and cache key (unique + sorted)
+$instrumentIds = array_values(array_filter(array_map('intval', preg_split('/[,\s]+/', $instrumentIdsParam)), fn($v) => $v > 0));
+sort($instrumentIds);
+$instrumentIds = array_values(array_unique($instrumentIds));
+$normalizedKeyPart = implode(',', $instrumentIds);
+
+// build cache key from normalized ids only (so different orders still HIT)
+$cacheKey  = 'v2_fetch_pieces_' . md5($normalizedKeyPart);
+$cacheFile = $cacheDir . '/' . $cacheKey . '.json';
+
 if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTTL)) {
-    readfile($cacheFile);
+    header('X-Cache-Status: HIT');
+    $json = file_get_contents($cacheFile);
+    // add a visible flag so you can see it in the Response body too
+    $data = json_decode($json, true);
+    if (is_array($data)) {
+        $data['cache_status'] = 'HIT';
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    } else {
+        // fallback if cache file somehow corrupted
+        echo $json;
+    }
+    exit;
+}
+
+// from here on it's a MISS
+header('X-Cache-Status: MISS');
+
+if (empty($instrumentIds)) {
+    echo json_encode(['pieces' => [], 'instrumentName' => ($_GET['instrumentName'] ?? ''), 'cache_status' => 'MISS'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 /** --------------------------
  *  DB CONNECTION
- *  --------------------------
- */
+ *  -------------------------- */
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 if ($conn->connect_error) {
     http_response_code(500);
-    echo json_encode(["error" => "DB connection failed"]);
+    echo json_encode(["error" => "DB connection failed", "cache_status" => "MISS"]);
     exit;
 }
 mysqli_set_charset($conn, 'utf8');
 
-// Parse and sanitize ?instrumentIds=11,12,13
-$instrumentIds = array_values(array_filter(array_map('intval', preg_split('/[,\s]+/', $instrumentIdsParam)), fn($v) => $v > 0));
-if (empty($instrumentIds)) {
-    echo json_encode([]);
-    $conn->close();
-    exit;
-}
-
-// Helper to bind ...IN(?) lists with mysqli
-function bindInList(mysqli_stmt $stmt, array $values, string $typeChar = 'i')
-{
-    $types = str_repeat($typeChar, count($values));
-    $args = [];
-    $args[] = &$types;
-    foreach ($values as $k => $v) {
-        $args[] = &$values[$k];
-    }
-    return $stmt->bind_param(...$args);
-}
-
 /** --------------------------
- *  QUERY 1: PIECES
- *  --------------------------
- */
+ *  SINGLE MERGED QUERY
+ *  (no window funcs; works on MariaDB)
+ *  -------------------------- */
 $placeholders = implode(',', array_fill(0, count($instrumentIds), '?'));
-$sqlPieces = "
-    SELECT
-      p.piece_id,
-      p.piece_name,
-      pc.category_name,
-      c.composer_last,
-      MIN(m.metric_arr_id)                          AS metric_arr_id,
-      COUNT(DISTINCT r.recording_id)                AS total_recordings_value
-    FROM pieces p
-    JOIN composers        c  ON c.composer_id     = p.composer_id
-    JOIN piece_categories pc ON pc.category_id    = p.category_id
-    JOIN metric_arr       m  ON m.piece_id        = p.piece_id
-    JOIN instruments      i  ON i.instrument_id   = m.instrument_id
-    LEFT JOIN recordings r   ON r.piece_id = p.piece_id
-    WHERE i.instrument_id IN ($placeholders)
-    GROUP BY p.piece_id, p.piece_name, pc.category_name, c.composer_last
-    ORDER BY c.composer_last, p.piece_name
+
+$sql = "
+SELECT
+    p.piece_id,
+    p.piece_name,
+    pc.category_name,
+    c.composer_last,
+    m.metric_arr_id,
+    i.instrument_id,
+    i.instrument_name,
+    i.part_number,
+    COALESCE(rc.total_recordings_value, 0) AS total_recordings_value
+FROM pieces p
+JOIN composers        c  ON c.composer_id   = p.composer_id
+JOIN piece_categories pc ON pc.category_id  = p.category_id
+JOIN metric_arr       m  ON m.piece_id      = p.piece_id
+JOIN instruments      i  ON i.instrument_id = m.instrument_id
+LEFT JOIN (
+    SELECT piece_id, COUNT(DISTINCT recording_id) AS total_recordings_value
+    FROM recordings
+    GROUP BY piece_id
+) rc ON rc.piece_id = p.piece_id
+WHERE i.instrument_id IN ($placeholders)
+ORDER BY c.composer_last, p.piece_name, i.instrument_name, i.part_number
 ";
-$stmt = $conn->prepare($sqlPieces);
-bindInList($stmt, $instrumentIds);
-$stmt->execute();
-$res = $stmt->get_result();
 
-$pieces = [];
-$piecesById = [];
-while ($row = $res->fetch_assoc()) {
-    $row['metric_arr_id'] = (int)$row['metric_arr_id'];
-    $row['total_recordings_value'] = (int)$row['total_recordings_value'];
-    $row['parts'] = [];
-    $pieces[] = $row;
-    $piecesById[(int)$row['piece_id']] = &$pieces[array_key_last($pieces)];
-}
-$stmt->close();
+$stmt = $conn->prepare($sql);
+$types = str_repeat('i', count($instrumentIds));
+$stmt->bind_param($types, ...$instrumentIds);
 
-if (empty($pieces)) {
-    echo json_encode([]);
+if (!$stmt->execute()) {
+    http_response_code(500);
+    echo json_encode(["error" => "Error executing query: " . $stmt->error, "cache_status" => "MISS"]);
+    $stmt->close();
     $conn->close();
     exit;
 }
 
-/** --------------------------
- *  QUERY 2: PARTS
- *  --------------------------
- */
-$pieceIds = array_map('intval', array_column($pieces, 'piece_id'));
-$phPieces = implode(',', array_fill(0, count($pieceIds), '?'));
-$phInstrs = implode(',', array_fill(0, count($instrumentIds), '?'));
-
-$sqlParts = "
-    SELECT
-      m.piece_id,
-      m.metric_arr_id,
-      i.instrument_id,
-      i.instrument_name,
-      i.part_number
-    FROM metric_arr m
-    JOIN instruments i ON i.instrument_id = m.instrument_id
-    WHERE m.piece_id IN ($phPieces)
-      AND i.instrument_id IN ($phInstrs)
-    ORDER BY i.instrument_name, i.part_number
-";
-$stmt = $conn->prepare($sqlParts);
-$types = str_repeat('i', count($pieceIds) + count($instrumentIds));
-$params = [];
-$params[] = &$types;
-foreach ($pieceIds as $k => $v) {
-    $params[] = &$pieceIds[$k];
-}
-foreach ($instrumentIds as $k => $v) {
-    $params[] = &$instrumentIds[$k];
-}
-call_user_func_array([$stmt, 'bind_param'], $params);
-
-$stmt->execute();
 $res = $stmt->get_result();
+
+/** --------------------------
+ *  ASSEMBLE RESULT
+ *  -------------------------- */
+$pieces = [];
 while ($row = $res->fetch_assoc()) {
     $pid = (int)$row['piece_id'];
-    if (!isset($piecesById[$pid])) continue;
-    $piecesById[$pid]['parts'][] = [
+
+    if (!isset($pieces[$pid])) {
+        $pieces[$pid] = [
+            'piece_id'               => $pid,
+            'piece_name'             => $row['piece_name'],
+            'category_name'          => $row['category_name'],
+            'composer_last'          => $row['composer_last'],
+            'metric_arr_id'          => (int)$row['metric_arr_id'], // init with first; keep min below
+            'total_recordings_value' => (int)$row['total_recordings_value'],
+            'parts'                  => []
+        ];
+    } else {
+        // keep a stable/min metric_arr_id across parts
+        if ((int)$row['metric_arr_id'] < $pieces[$pid]['metric_arr_id']) {
+            $pieces[$pid]['metric_arr_id'] = (int)$row['metric_arr_id'];
+        }
+    }
+
+    $pieces[$pid]['parts'][] = [
         'metric_arr_id'   => (int)$row['metric_arr_id'],
         'instrument_id'   => (int)$row['instrument_id'],
         'instrument_name' => $row['instrument_name'],
-        'part_number'     => $row['part_number'],
+        'part_number'     => $row['part_number']
     ];
 }
+
 $stmt->close();
 $conn->close();
 
 /** --------------------------
  *  OUTPUT + SAVE TO CACHE
- *  --------------------------
- */
+ *  -------------------------- */
 $response = [
-    'pieces' => $pieces,
-    'instrumentName' => $_GET['instrumentName'] ?? ''
+    'pieces' => array_values($pieces),
+    'instrumentName' => $_GET['instrumentName'] ?? '',
+    'cache_status' => 'MISS'
 ];
 
 $json = json_encode($response, JSON_UNESCAPED_UNICODE);
-file_put_contents($cacheFile, $json);
+// LOCK_EX to avoid race conditions if two requests miss simultaneously
+@file_put_contents($cacheFile, $json, LOCK_EX);
+
 echo $json;
