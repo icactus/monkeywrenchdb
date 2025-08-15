@@ -907,7 +907,6 @@ function addDummySys$$module$synpdf() {
 function readPdfdoc$$module$synpdf() {
     // make sure the first 2-up spread of each new doc refits/re-syncs
     window.__didInitialTwoUpFit = false;
-    window.__didInitialOneUpFit = false;
     const scroller = deNot$$module$synpdf;
     if (scroller?.classList.contains('two-up')) {
         const styles = getComputedStyle(scroller);
