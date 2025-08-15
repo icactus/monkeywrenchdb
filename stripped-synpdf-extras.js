@@ -195,18 +195,11 @@ function fetchPieces(instrumentIds) {
         url: 'fetch_pieces.php',
         method: 'GET',
         data: { instrumentIds: instrumentIds },
-        success: function(response) {
+        dataType: 'json',
+        success: function(data) {
+
             var container = $('#pieces-container');
             container.empty();
-
-            // First, attempt to parse the JSON response
-            var data;
-            try {
-                data = JSON.parse(response);
-            } catch (e) {
-                console.error('Error parsing JSON response:', e);
-                return;
-            }
 
             // Now, check if the 'message' key exists in the parsed object
             if (data.message && data.message === "No pieces found for the selected instrument") {
