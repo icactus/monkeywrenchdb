@@ -23,10 +23,8 @@ if (empty($instrumentIds)) {
     exit;
 }
 
-// Build placeholders for IN clause
 $placeholders = implode(',', array_fill(0, count($instrumentIds), '?'));
 
-// Single merged query
 $sql = "
 SELECT
     p.piece_id,
@@ -37,13 +35,17 @@ SELECT
     i.instrument_id,
     i.instrument_name,
     i.part_number,
-    COUNT(DISTINCT r.recording_id) OVER (PARTITION BY p.piece_id) AS total_recordings_value
+    COALESCE(rc.total_recordings_value, 0) AS total_recordings_value
 FROM pieces p
 JOIN composers        c  ON c.composer_id   = p.composer_id
 JOIN piece_categories pc ON pc.category_id  = p.category_id
 JOIN metric_arr       m  ON m.piece_id      = p.piece_id
 JOIN instruments      i  ON i.instrument_id = m.instrument_id
-LEFT JOIN recordings  r  ON r.piece_id      = p.piece_id
+LEFT JOIN (
+    SELECT piece_id, COUNT(DISTINCT recording_id) AS total_recordings_value
+    FROM recordings
+    GROUP BY piece_id
+) rc ON rc.piece_id = p.piece_id
 WHERE i.instrument_id IN ($placeholders)
 ORDER BY c.composer_last, p.piece_name, i.instrument_name, i.part_number
 ";
@@ -66,17 +68,24 @@ $res = $stmt->get_result();
 $pieces = [];
 while ($row = $res->fetch_assoc()) {
     $pid = (int)$row['piece_id'];
+
     if (!isset($pieces[$pid])) {
         $pieces[$pid] = [
             'piece_id'               => $pid,
             'piece_name'             => $row['piece_name'],
             'category_name'          => $row['category_name'],
             'composer_last'          => $row['composer_last'],
-            'metric_arr_id'          => (int)$row['metric_arr_id'], // min ID could be picked if needed
+            'metric_arr_id'          => (int)$row['metric_arr_id'], // init
             'total_recordings_value' => (int)$row['total_recordings_value'],
             'parts'                  => []
         ];
+    } else {
+        // keep a stable/min metric_arr_id across parts
+        if ((int)$row['metric_arr_id'] < $pieces[$pid]['metric_arr_id']) {
+            $pieces[$pid]['metric_arr_id'] = (int)$row['metric_arr_id'];
+        }
     }
+
     $pieces[$pid]['parts'][] = [
         'metric_arr_id'   => (int)$row['metric_arr_id'],
         'instrument_id'   => (int)$row['instrument_id'],
