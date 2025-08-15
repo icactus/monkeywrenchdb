@@ -1007,21 +1007,24 @@ function resizePageFitToHeight() {
     window.__TwoUpAllowScaleOnce = true;
     try { resizeDematenAndCanvas(scale); } finally { window.__TwoUpAllowScaleOnce = prev; }
 }
+// stripped-synpdf-extras.js
 function resizePageFitToWidth() {
-    if (window.twoUpMode) return; // zoom disabled in two-up
+    const scroller = document.getElementById('notation-scroll');
+    if (!scroller) return;
 
-    var notationDiv = document.getElementById("notation");
-    var currentWidth = notationDiv.clientWidth;
+    const viewportW = scroller.clientWidth;          // excludes scrollbar width ✅
+    const first = scroller.querySelector('canvas');
+    if (!first) return;
 
-    var canvases = document.getElementsByTagName('canvas');
-    if (!canvases.length) return;
+    // If 2-up, include the column gap. (No harm in 1-up.)
+    const styles = getComputedStyle(scroller);
+    const colGap =
+        parseFloat(styles.columnGap) ||
+        parseFloat(styles.getPropertyValue('--page-gap')) || 0;
 
-    var firstCanvasWidth = canvases[0].clientWidth;
+    const contentW = window.twoUpMode ? (first.clientWidth * 2 + colGap) : first.clientWidth;
+    const scaleAmount = Math.max(0.1, Math.min(4.0, viewportW / contentW)) * 100;
 
-    // In 2-up, we fit TWO pages side-by-side as the "width".
-    var targetContentWidth = window.twoUpMode ? (firstCanvasWidth * 2) : firstCanvasWidth;
-
-    var scaleAmount = (currentWidth / targetContentWidth) * 100;
     resizeDematenAndCanvas(scaleAmount);
 }
 

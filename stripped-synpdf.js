@@ -907,6 +907,7 @@ function addDummySys$$module$synpdf() {
 function readPdfdoc$$module$synpdf() {
     // make sure the first 2-up spread of each new doc refits/re-syncs
     window.__didInitialTwoUpFit = false;
+    window.__didInitialOneUpFit = false;
     const scroller = deNot$$module$synpdf;
     if (scroller?.classList.contains('two-up')) {
         const styles = getComputedStyle(scroller);
@@ -1326,6 +1327,12 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
     msc_wz$$module$synpdf || startIntf$$module$synpdf(canvas);
     $("#notation-scroll").append(canvas);
 
+    if (!window.twoUpMode && pageNum === 1 && !window.__didInitialOneUpFit) {
+        requestAnimationFrame(() => {
+            resizePageFitToWidth();         // now measures scroller.clientWidth
+            window.__didInitialOneUpFit = true;
+        });
+    }
     // If user already zoomed / we already fit a spread, bring newly appended canvas to that scale
     if (window.__cssScale && window.__cssScale !== 1) {
         const baseW = parseFloat(canvas.style.width) || canvas.clientWidth || 0;
