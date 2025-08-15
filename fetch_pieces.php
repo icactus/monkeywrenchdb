@@ -6,73 +6,23 @@ error_reporting(E_ALL);
 require_once '../phpfiles/read_only_user_config.php';
 header('Content-Type: application/json; charset=utf-8');
 
-/** --------------------------
- *  FILE CACHE (5 minutes)
- *  -------------------------- */
-$cacheDir = __DIR__ . '/cache';
-$cacheTTL = 300; // seconds
-
-if (!is_dir($cacheDir)) {
-    @mkdir($cacheDir, 0755, true);
-}
-// remove expired cache files (best-effort, silent)
-foreach (glob($cacheDir . '/*.json') as $f) {
-    if (time() - @filemtime($f) > $cacheTTL) {
-        @unlink($f);
-    }
-}
-
-// raw param (keep exactly as received for logging if you want)
-$instrumentIdsParam = $_GET['instrumentIds'] ?? '';
-
-// normalize ids for both SQL and cache key (unique + sorted)
-$instrumentIds = array_values(array_filter(array_map('intval', preg_split('/[,\s]+/', $instrumentIdsParam)), fn($v) => $v > 0));
-sort($instrumentIds);
-$instrumentIds = array_values(array_unique($instrumentIds));
-$normalizedKeyPart = implode(',', $instrumentIds);
-
-// build cache key from normalized ids only (so different orders still HIT)
-$cacheKey  = 'v2_fetch_pieces_' . md5($normalizedKeyPart);
-$cacheFile = $cacheDir . '/' . $cacheKey . '.json';
-
-if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTTL)) {
-    header('X-Cache-Status: HIT');
-    $json = file_get_contents($cacheFile);
-    // add a visible flag so you can see it in the Response body too
-    $data = json_decode($json, true);
-    if (is_array($data)) {
-        $data['cache_status'] = 'HIT';
-        echo json_encode($data, JSON_UNESCAPED_UNICODE);
-    } else {
-        // fallback if cache file somehow corrupted
-        echo $json;
-    }
-    exit;
-}
-
-// from here on it's a MISS
-header('X-Cache-Status: MISS');
-
-if (empty($instrumentIds)) {
-    echo json_encode(['pieces' => [], 'instrumentName' => ($_GET['instrumentName'] ?? ''), 'cache_status' => 'MISS'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-/** --------------------------
- *  DB CONNECTION
- *  -------------------------- */
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 if ($conn->connect_error) {
     http_response_code(500);
-    echo json_encode(["error" => "DB connection failed", "cache_status" => "MISS"]);
+    echo json_encode(["error" => "DB connection failed"]);
     exit;
 }
 mysqli_set_charset($conn, 'utf8');
 
-/** --------------------------
- *  SINGLE MERGED QUERY
- *  (no window funcs; works on MariaDB)
- *  -------------------------- */
+// Parse and sanitize ?instrumentIds=11,12,13
+$instrumentIdsParam = $_GET['instrumentIds'] ?? '';
+$instrumentIds = array_values(array_filter(array_map('intval', preg_split('/[,\s]+/', $instrumentIdsParam)), fn($v) => $v > 0));
+if (empty($instrumentIds)) {
+    echo json_encode([]);
+    $conn->close();
+    exit;
+}
+
 $placeholders = implode(',', array_fill(0, count($instrumentIds), '?'));
 
 $sql = "
@@ -106,7 +56,7 @@ $stmt->bind_param($types, ...$instrumentIds);
 
 if (!$stmt->execute()) {
     http_response_code(500);
-    echo json_encode(["error" => "Error executing query: " . $stmt->error, "cache_status" => "MISS"]);
+    echo json_encode(["error" => "Error executing query: " . $stmt->error]);
     $stmt->close();
     $conn->close();
     exit;
@@ -114,9 +64,7 @@ if (!$stmt->execute()) {
 
 $res = $stmt->get_result();
 
-/** --------------------------
- *  ASSEMBLE RESULT
- *  -------------------------- */
+// Assemble pieces array
 $pieces = [];
 while ($row = $res->fetch_assoc()) {
     $pid = (int)$row['piece_id'];
@@ -127,7 +75,7 @@ while ($row = $res->fetch_assoc()) {
             'piece_name'             => $row['piece_name'],
             'category_name'          => $row['category_name'],
             'composer_last'          => $row['composer_last'],
-            'metric_arr_id'          => (int)$row['metric_arr_id'], // init with first; keep min below
+            'metric_arr_id'          => (int)$row['metric_arr_id'], // init
             'total_recordings_value' => (int)$row['total_recordings_value'],
             'parts'                  => []
         ];
@@ -149,17 +97,9 @@ while ($row = $res->fetch_assoc()) {
 $stmt->close();
 $conn->close();
 
-/** --------------------------
- *  OUTPUT + SAVE TO CACHE
- *  -------------------------- */
+// Return in same shape as before
 $response = [
-    'pieces' => array_values($pieces),
-    'instrumentName' => $_GET['instrumentName'] ?? '',
-    'cache_status' => 'MISS'
+    'pieces' => array_values($pieces), // reset keys
+    'instrumentName' => $_GET['instrumentName'] ?? ''
 ];
-
-$json = json_encode($response, JSON_UNESCAPED_UNICODE);
-// LOCK_EX to avoid race conditions if two requests miss simultaneously
-@file_put_contents($cacheFile, $json, LOCK_EX);
-
-echo $json;
+echo json_encode($response, JSON_UNESCAPED_UNICODE);
