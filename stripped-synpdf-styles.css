@@ -227,8 +227,7 @@ sidecontentbar {
     margin-top:100px;
     padding:1em;
     background-color:#f3f6fc;
-    min-width:200px;
-    max-width:350px;
+    width:350px;
 }
 
 #sidecontent-toggle {
