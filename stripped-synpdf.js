@@ -298,6 +298,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         <div id="rollijn" class="dashed"></div>`
         ).appendTo($notation);
     }
+    setRollijnVisible(!window.twoUpMode);
     if (typeof setZoomControlsEnabled === 'function') {
         setZoomControlsEnabled(!window.twoUpMode);
     }
@@ -1923,6 +1924,9 @@ function toggleTwoUpMode(on = !window.twoUpMode) {
     if (typeof setZoomControlsEnabled === 'function') {
         setZoomControlsEnabled(!window.twoUpMode); // disable in 2-up, enable in 1-up
     }
+
+    setRollijnVisible(!window.twoUpMode);
+
     // update render budget and observer
     updateMaxRenderedPages();
     if (observer) observer.disconnect();
@@ -1950,6 +1954,14 @@ function toggleTwoUpMode(on = !window.twoUpMode) {
             try { resizePageFitToHeight(); } finally { window.__TwoUpAllowScaleOnce = prev; }
         });
     }
+}
+
+function setRollijnVisible(show) {
+    const r = document.getElementById('rollijn');
+    if (!r) return;
+    // Keep it laid out so .offset() calls don’t break
+    r.style.visibility = show ? 'visible' : 'hidden';
+    r.style.pointerEvents = show ? '' : 'none';
 }
 
 $(document).ready(function() {
