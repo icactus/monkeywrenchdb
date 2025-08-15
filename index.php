@@ -117,7 +117,7 @@
                 <div id="composer-toggle-wrapper">
                     <div id="composer-piece-name"></div>
                     <div id="sidecontent-toggle">
-                        <h3>[hide]</h3> 
+                        <h3>[hide]</h3>
                     </div>
                 </div>
                 <div id="first-controls">
@@ -226,8 +226,8 @@
     <div id="notification" style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=160"></script>
-    <script src="stripped-synpdf-extras.js?v=122"></script>
+    <script src="stripped-synpdf.js?v=161"></script>
+    <script src="stripped-synpdf-extras.js?v=123"></script>
 </body>
 
 </html>

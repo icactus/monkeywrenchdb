@@ -305,6 +305,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     addShareButtonListener();
     initIntersectionObserver(); // Initialize observer for page rendering 
     setupPlayPauseButton();
+    setupScrollArrivalFastPath();
     this.maatloper = $('<div class="demaat" style="background:' + globalHighlightColor + '; opacity:0.2; left:0px; top:0px; width:0px; height:0px; z-index:2"></div>');
     $("#notation-scroll").append(this.maatloper);
     this.times = a;
@@ -1141,6 +1142,7 @@ let pageCache = {};            // { [pageNum]: PDFPageProxy }
 let pageView = {};            // { [pageNum]: { w, h, rotation } }
 let renderedCanvasesQueue = new Set(); // Track rendered canvases
 let MAX_RENDERED_PAGES = phoneCheck ? 6 : 12; // baseline
+const inflightTasks = new Map(); // pageIndex -> PDF.js RenderTask
 
 function updateMaxRenderedPages() {
     MAX_RENDERED_PAGES = window.twoUpMode
@@ -1156,37 +1158,34 @@ let Demaat = false;
 
 // RenderingQueue Class for Controlled Concurrency
 class RenderingQueue {
-    constructor(concurrency = 2) { // Adjust concurrency as needed
+    constructor(concurrency = 2) {
         this.queue = [];
         this.running = 0;
         this.concurrency = concurrency;
     }
-
     enqueue(task) {
         this.queue.push(task);
         this.runNext();
     }
-
+    // NEW: put a job at the front
+    enqueueFront(task) {
+        this.queue.unshift(task);
+        this.runNext();
+    }
     runNext() {
-        if (this.running >= this.concurrency || this.queue.length === 0) {
-            return;
-        }
-
+        if (this.running >= this.concurrency || this.queue.length === 0) return;
         const task = this.queue.shift();
         this.running++;
         task().then(() => {
             this.running--;
             this.runNext();
-        }).catch(error => {
-            console.error('Rendering task failed:', error);
+        }).catch(err => {
+            console.error('Rendering task failed:', err);
             this.running--;
             this.runNext();
         });
     }
-
-    clear() {
-        this.queue = [];
-    }
+    clear() { this.queue = []; }
 }
 
 // Initialize the rendering queue with desired concurrency
@@ -1228,6 +1227,106 @@ function handleIntersect(entries) {
     });
 }
 
+
+function getVisiblePagesNow() {
+    const scroller = document.getElementById('notation-scroll');
+    if (!scroller) return [];
+
+    const st = scroller.scrollTop;
+    const vh = scroller.clientHeight;
+    const canvases = scroller.querySelectorAll('canvas[id^="canvas"]');
+
+    const vis = [];
+    canvases.forEach(cnv => {
+        const top = cnv.offsetTop;
+        const h = cnv.clientHeight || cnv.height || 1;
+        const bottom = top + h;
+        const overlap = Math.max(0, Math.min(bottom, st + vh) - Math.max(top, st));
+        if (overlap > 0) {
+            vis.push({
+                page: parseInt(cnv.id.replace('canvas', ''), 10),
+                frac: overlap / h
+            });
+        }
+    });
+
+    // most visible first
+    vis.sort((a, b) => b.frac - a.frac);
+    return vis.map(v => v.page);
+}
+
+function renderViewportNow() {
+    const pages = getVisiblePagesNow();
+    if (!pages.length) return;
+
+    // Include 2-up buddies so spreads come in together
+    const wanted = new Set(pages);
+    if (window.twoUpMode) {
+        for (const p of pages) {
+            const buddy = (p % 2 === 1) ? p + 1 : p - 1;
+            if (buddy >= 1 && buddy <= (pdfDoc$$module$synpdf?.numPages || nPage$$module$synpdf || 1)) {
+                wanted.add(buddy);
+            }
+        }
+    }
+
+    // 1) Drop queued-but-not-started work
+    renderingQueue.clear();
+
+    // 2) Optionally cancel offscreen in-flight renders (keeps max latency tiny)
+    for (const [p, task] of inflightTasks.entries()) {
+        if (!wanted.has(p)) {
+            try { task.cancel(); } catch (_) { }
+            inflightTasks.delete(p);
+            renderingStatus[p] = 'idle';
+        }
+    }
+
+    // 3) Put arrival pages at the very front
+    // Limit how many we force to front to avoid starving everything else
+    const firstWave = Array.from(wanted).slice(0, window.twoUpMode ? 2 : 1);
+    for (const p of firstWave) {
+        // call the same function but ask it to enqueue at front
+        renderPageIfNotRendered_priority(p);
+    }
+}
+
+// Tiny wrapper that enqueues at the front
+function renderPageIfNotRendered_priority(pageIndex) {
+    const canvas = document.getElementById(`canvas${pageIndex}`);
+    if (!canvas) return;
+    if (renderingStatus[pageIndex] === 'rendering' || canvas.classList.contains('rendered')) return;
+
+    renderingStatus[pageIndex] = 'rendering';
+
+    const job = () => {
+        const pagePromise = pageCache[pageIndex]
+            ? Promise.resolve(pageCache[pageIndex])
+            : pdfDoc$$module$synpdf.getPage(pageIndex).then(p => (pageCache[pageIndex] = p, p));
+
+        return pagePromise.then(page => {
+            // ... compute viewport, size canvas, etc. (same as main path)
+            const ctx = canvas.getContext('2d');
+            const renderTask = page.render({ canvasContext: ctx, viewport });
+            inflightTasks.set(pageIndex, renderTask);
+            return renderTask.promise;
+        }).then(() => {
+            canvas.classList.add('rendered');
+            renderingStatus[pageIndex] = 'rendered';
+            manageRenderedCanvases(`canvas${pageIndex}`);
+        }).catch(err => {
+            if (!err || err.name !== 'RenderingCancelledException') {
+                console.error(`[PDF] Render failed for page ${pageIndex}:`, err);
+            }
+            renderingStatus[pageIndex] = 'idle';
+        }).finally(() => {
+            inflightTasks.delete(pageIndex);
+        });
+    };
+
+    renderingQueue.enqueueFront(job);
+}
+
 // Function to render a page if it hasn't been rendered yet
 function renderPageIfNotRendered(pageIndex) {
     const canvasId = `canvas${pageIndex}`;
@@ -1239,35 +1338,52 @@ function renderPageIfNotRendered(pageIndex) {
     renderingStatus[pageIndex] = 'rendering';
 
     // Enqueue the actual raster work (keeps concurrency under control)
-    renderingQueue.enqueue(() => {
+    const job = () => {
         const pagePromise = pageCache[pageIndex]
             ? Promise.resolve(pageCache[pageIndex])
-            : pdfDoc$$module$synpdf.getPage(pageIndex).then(p => { pageCache[pageIndex] = p; return p; });
+            : pdfDoc$$module$synpdf.getPage(pageIndex).then(p => (pageCache[pageIndex] = p, p));
 
-        return pagePromise.then(function(page) {
-            const devicePixelRatio = window.devicePixelRatio || 1;
-            const pv = pageView[pageIndex] || { w: page._pageInfo.view[2], h: page._pageInfo.view[3], rotation: page.rotate || 0 };
-            const baseScale = deMetriek$$module$synpdf[0] / pv.w; // logical page width / natural width
-            const enhancedScale = baseScale * Math.min(devicePixelRatio, (phoneCheck ? 1.5 : 2));
-            const viewport = page.getViewport({ scale: enhancedScale, rotation: pv.rotation || 0 });
-
+        return pagePromise.then(page => {
+            // ... compute viewport, size canvas, etc.
             const ctx = canvas.getContext('2d');
-            ctx.imageSmoothingEnabled = !phoneCheck;
-
-            canvas.width = Math.floor(viewport.width);
-            canvas.height = Math.floor(viewport.height);
-            // CSS size is already correct from shell build
-
-            return page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            const renderTask = page.render({ canvasContext: ctx, viewport });
+            inflightTasks.set(pageIndex, renderTask);
+            return renderTask.promise;
         }).then(() => {
             canvas.classList.add('rendered');
             renderingStatus[pageIndex] = 'rendered';
             manageRenderedCanvases(canvasId);
         }).catch(err => {
-            console.error(`[PDF] Render failed for page ${pageIndex}:`, err);
+            if (!err || err.name !== 'RenderingCancelledException') {
+                console.error(`[PDF] Render failed for page ${pageIndex}:`, err);
+            }
             renderingStatus[pageIndex] = 'idle';
+        }).finally(() => {
+            inflightTasks.delete(pageIndex);
         });
-    });
+    };
+
+    // Default path (called by IntersectionObserver)
+    renderingQueue.enqueue(job);
+}
+
+function setupScrollArrivalFastPath() {
+    const scroller = document.getElementById('notation-scroll');
+    if (!scroller) return;
+
+    let t = null;
+    const kick = () => {
+        if (t) clearTimeout(t);
+        // small delay so we fire once the user “lets go”
+        t = setTimeout(renderViewportNow, 80);
+    };
+
+    // Modern Chrome/Edge/Firefox have 'scrollend', but we’ll debounce 'scroll' for reliability
+    scroller.addEventListener('scroll', kick, { passive: true });
+
+    // Fallbacks to catch mouse/touch releases from the scrollbar/thumb
+    window.addEventListener('mouseup', kick, { passive: true });
+    window.addEventListener('touchend', kick, { passive: true });
 }
 
 // Function to manage the rendered canvases queue
@@ -1316,73 +1432,6 @@ function clearCanvas(canvas) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     canvas.classList.remove('rendered'); // Mark the canvas as not rendered
 }
-
-// // Function to create and append a canvas, then observe it
-// function goPage$$module$synpdf(pageNum, cumulativeHeight) {
-//     return pdfDoc$$module$synpdf.getPage(pageNum).then(function(page) {
-//         const devicePixelRatio = window.devicePixelRatio || 1; // For high-resolution displays
-//         const scale = deMetriek$$module$synpdf[0] / page._pageInfo.view[2]; // Base scale factor
-//         const enhancedScale = scale * devicePixelRatio * 2; // Double resolution
-//
-//         // Viewport for high-resolution rendering
-//         let viewport = page.getViewport({ scale: enhancedScale });
-//
-//         // Create canvas element
-//         let canvas = document.createElement("canvas"); // Use let for reassignability
-//         let ctx = canvas.getContext("2d");
-//         ctx.imageSmoothingEnabled = true;
-//         if (phoneCheck) {
-//             ctx.imageSmoothingEnabled = false; // Less work for mobile
-//         }
-//
-//         canvas.id = `canvas${pageNum}`;
-//         canvas.width = Math.floor(viewport.width); // Full resolution width
-//         canvas.height = Math.floor(viewport.height); // Full resolution height
-//
-//         // Set CSS size for default zoom (logical size for display)
-//         canvas.style.width = `${viewport.width / (devicePixelRatio * 2)}px`; // Downscale visually
-//         canvas.style.height = `${viewport.height / (devicePixelRatio * 2)}px`;
-//
-//         // Queue rendering task
-//         renderingTasks.push(() => {
-//             return page.render({
-//                 canvasContext: ctx,
-//                 viewport: viewport,
-//             }).promise;
-//         });
-//
-//         // Reassign canvas after processing
-//         canvas = compPage$$module$synpdf(canvas, pageNum, cumulativeHeight);
-//
-//         // Handle first page timing for new instruments
-//         if (pageNum === 1 && newInstrumentTime2xFlag === 1) {
-//             msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf);
-//             newInstrumentTime2xFlag = 0;
-//         }
-//
-//         // Handle resizing or recursive rendering of subsequent pages
-//         if (doresize$$module$synpdf) {
-//             resizePdf$$module$synpdf();
-//         } else {
-//             if (pageNum < pdfDoc$$module$synpdf.numPages) {
-//                 if (pageNum === 1) renderedPages = 1; // Start rendering counter
-//                 $("#loadingMessage2").show();
-//                 return goPage$$module$synpdf(pageNum + 1, cumulativeHeight + viewport.height / (devicePixelRatio * 2));
-//             } else {
-//                 // Finalize rendering
-//                 rendering$$module$synpdf = 0;
-//                 addDummySys$$module$synpdf();
-//                 renderedPages = 1;
-//                 $("#loadingMessage2").hide();
-//
-//             }
-//         }
-//     }).catch(function(error) {
-//         console.error(`Failed to render page ${pageNum}:`, error);
-//         $("#loadingMessage2").hide();
-//     });
-// }
-
 
 function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
     var pageMetricArray = deMetriek$$module$synpdf[pageNum];
