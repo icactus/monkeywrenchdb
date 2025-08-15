@@ -1960,6 +1960,8 @@ $(document).ready(function() {
     initPreload$$module$synpdf()
     phoneCheck = isPhone();
     window.twoUpMode = false;
+    const sc = document.getElementById('notation-scroll');
+    if (sc) sc.classList.remove('two-up');
     $("body").keydown(keyDown$$module$synpdf);
     $("#buttons, #sync").keydown(function(a) {
         " " == a.key && a.stopPropagation()
