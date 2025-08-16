@@ -523,106 +523,40 @@ Wijzer$$module$synpdf.prototype.setOffsetX = function() {
     this.draw_annots(opt$$module$synpdf.annot);
     this.drawRepTokens()
 };
-
 Wijzer$$module$synpdf.prototype.time2x = function(a) {
     var b, c;
     this.cursorTime = a;
-
     for (b = deTijden$$module$synpdf.length - 1; 0 <= b; --b) {
         var d = deTijden$$module$synpdf[b];
-        if (d.t > a) continue;
-
-        demix$$module$synpdf = d.mix;
-        detix$$module$synpdf = b;
-
-        // normal end-of-play logic stays the same
-        if (!opt$$module$synpdf.synbox && detix$$module$synpdf == deTijden$$module$synpdf.length - 1 && !m1_timer$$module$synpdf) {
-            pauseer$$module$synpdf();
-            msc_wz$$module$synpdf.goMsre(1, {});
-            $("body").trigger("play_end");
-            break;
+        if (!(d.t > a)) {
+            demix$$module$synpdf = d.mix;
+            detix$$module$synpdf = b;
+            if (!opt$$module$synpdf.synbox && detix$$module$synpdf == deTijden$$module$synpdf.length - 1 && !m1_timer$$module$synpdf) {
+                pauseer$$module$synpdf();
+                msc_wz$$module$synpdf.goMsre(1, {});
+                $("body").trigger("play_end");
+                break
+            }
+            if (c = deMaten$$module$synpdf[demix$$module$synpdf]) {
+                opt$$module$synpdf.lncsr &&
+                    b < deTijden$$module$synpdf.length - 1 ? (b = deTijden$$module$synpdf[b + 1], a = c.x + c.w * (a - d.t) / (b.t - d.t), d = 6) : (a = c.x, d = c.w);
+                if (a == xcurprev$$module$synpdf && c.y == ycurprev$$module$synpdf) break;
+                xcurprev$$module$synpdf = a;
+                document.getElementById('detix-box').innerHTML = `<h3>detix: ${detix$$module$synpdf}</h3>`;
+                document.getElementById('demix-box').innerHTML = `<h3>demix: ${demix$$module$synpdf}</h3>`;
+                b = this.maatloper[0].style;
+                b.left = a + "px";
+                b.top = c.y + "px";
+                b.width = d + "px";
+                b.height = c.h + "px";
+                c.y != ycurprev$$module$synpdf && doeRol$$module$synpdf(c.y - this.tmargin, 0);
+                ycurprev$$module$synpdf = c.y;
+                opt$$module$synpdf.synbox && this.showSyncInfo();
+                break
+            }
         }
-
-        c = deMaten$$module$synpdf[demix$$module$synpdf];
-        if (!c) break;
-
-        // ---- segmented measures (backward compatible) ----
-        var segs = c.segs ? c.segs : [c];
-        var c0 = segs[0];
-
-        // legacy linear-cursor math anchored to the first segment
-        var width;
-        if (opt$$module$synpdf.lncsr && b < deTijden$$module$synpdf.length - 1) {
-            var next = deTijden$$module$synpdf[b + 1];
-            a = c0.x + c0.w * (a - d.t) / (next.t - d.t);
-            width = 6;
-        } else {
-            a = c0.x;
-            width = c0.w;
-        }
-
-        // use the topmost Y across all segments to decide if we need to scroll
-        var topY = c0.y;
-        for (var si = 1; si < segs.length; si++) if (segs[si].y < topY) topY = segs[si].y;
-
-        if (a == xcurprev$$module$synpdf && topY == ycurprev$$module$synpdf) break;
-        xcurprev$$module$synpdf = a;
-
-        // debug panels (kept)
-        var detixEl = document.getElementById('detix-box');
-        if (detixEl) detixEl.innerHTML = `<h3>detix: ${detix$$module$synpdf}</h3>`;
-        var demixEl = document.getElementById('demix-box');
-        if (demixEl) demixEl.innerHTML = `<h3>demix: ${demix$$module$synpdf}</h3>`;
-
-        // main (legacy) highlight uses the first segment box
-        var s = this.maatloper[0].style;
-        s.left = a + "px";
-        s.top = c0.y + "px";
-        s.width = width + "px";
-        s.height = c0.h + "px";
-
-        // make sure extra overlays exist and draw them for segs[1..]
-        this._ensureMaatlopers(segs.length - 1);
-        for (var i = 1; i < segs.length; i++) {
-            var siBox = segs[i];
-            var el = this.extraMaatlopers[i - 1];
-            var st = el.style;
-            st.display = "block";
-            st.left = siBox.x + "px";
-            st.top = siBox.y + "px";
-            st.width = siBox.w + "px";
-            st.height = siBox.h + "px";
-        }
-        // hide unused extras if any
-        this._hideExtraMaatlopers(segs.length - 1);
-
-        // scroll logic uses the topmost Y
-        if (topY != ycurprev$$module$synpdf) doeRol$$module$synpdf(topY - this.tmargin, 0);
-        ycurprev$$module$synpdf = topY;
-
-        if (opt$$module$synpdf.synbox) this.showSyncInfo();
-        break;
     }
 };
-
-// helpers (define once)
-Wijzer$$module$synpdf.prototype._ensureMaatlopers = function(n) {
-    if (!this.extraMaatlopers) this.extraMaatlopers = [];
-    for (var i = this.extraMaatlopers.length; i < n; i++) {
-        var e = document.createElement("div");
-        e.className = "demaat dematen-seg";
-        e.style.cssText = "position:absolute;background:#00d4ff;opacity:0.2;left:0;top:0;width:0;height:0;display:none;";
-        document.getElementById("notation").appendChild(e);
-        this.extraMaatlopers.push(e);
-    }
-};
-Wijzer$$module$synpdf.prototype._hideExtraMaatlopers = function(from) {
-    if (!this.extraMaatlopers) return;
-    for (var i = from; i < this.extraMaatlopers.length; i++) {
-        this.extraMaatlopers[i].style.display = "none";
-    }
-};
-
 Wijzer$$module$synpdf.prototype.drawTags = function() {
     var a = this.width;
     var b = opt$$module$synpdf.cropx;
@@ -1014,60 +948,36 @@ function copyTiming$$module$synpdf(a, b) {
 }
 
 function knip$$module$synpdf(a, b, c) {
-    // clone inputs as you already do
     var d = JSON.parse(JSON.stringify(b.cxs));
-    var bx = JSON.parse(JSON.stringify(b.bxs));
-
-    // NEW: joins metadata (editor writes this)
-    const joinAfter = b.joinAfter || {};   // { [systemIndex]: true }
-    const skipFirst = {};                  // { [systemIndex]: true }
-
-    // Offset the cs by 'c' (your code already does this)
-    d.forEach(function(sys) { sys.cs = sys.cs.map(v => 1 * v + c); });
-
-    // Build rectangles
-    for (let e = 0; e < d.length; ++e) {
-        const cs = d[e].cs;
-        const y1 = cs[0], y2 = cs[cs.length - 1];
-        const bars = bx[e];
-
-        for (let i = 0; i < bars.length - 1; ++i) {
-            if (skipFirst[e] && i === 0) continue;
-
-            const x1 = bars[i], x2 = bars[i + 1];
-
-            // If the LAST rect on this system is marked to join with NEXT system's FIRST rect:
-            if (joinAfter[e] && i === bars.length - 2 && e < d.length - 1) {
-                const nextCs = d[e + 1].cs;
-                const ny1 = nextCs[0], ny2 = nextCs[nextCs.length - 1];
-                const nbars = bx[e + 1];
-                if (nbars && nbars.length >= 2) {
-                    const nx1 = nbars[0], nx2 = nbars[1];
-
-                    deMaten$$module$synpdf.push({
-                        segs: [
-                            { x: x1, y: y1, w: x2 - x1, h: y2 - y1 },
-                            { x: nx1, y: ny1, w: nx2 - nx1, h: ny2 - ny1 }
-                        ]
-                    });
-
-                    // Ensure we don't also push the next system's first rect
-                    skipFirst[e + 1] = true;
-                    continue;
-                }
-            }
-
-            // Normal, unsplit measure
-            deMaten$$module$synpdf.push({ x: x1, y: y1, w: x2 - x1, h: y2 - y1 });
+    b = JSON.parse(JSON.stringify(b.bxs));
+    d.forEach(function(a) {
+        a.cs = a.cs.map(function(a) {
+            return 1 * a + c;
+        })
+    });
+    var e;
+    for (e = 0; e < d.length; ++e) {
+        var f = d[e].cs;
+        var g = f[0];
+        var p = f[f.length - 1];
+        var m = b[e];
+        for (f = 0; f < m.length - 1; ++f) {
+            var n = m[f];
+            var l = m[f + 1];
+            deMaten$$module$synpdf.push({
+                x: n,
+                y: g,
+                w: l - n,
+                h: p - g
+            })
         }
     }
-
-    // keep your existing deTijden fill-up logic untouched
-    for (let e = deTijden$$module$synpdf.length; e < deMaten$$module$synpdf.length; ++e) {
-        deTijden$$module$synpdf.push({ t: e > 0 ? deTijden$$module$synpdf[e - 1].t + 2 : 0, mix: e });
-    }
-
-    return a;
+    for (e = deTijden$$module$synpdf.length; e < deMaten$$module$synpdf.length; ++e) deTijden$$module$synpdf.push({
+        t: 0 < e ? deTijden$$module$synpdf[e - 1].t +
+            2 : 0,
+        mix: e
+    });
+    return a
 }
 
 function addDummySys$$module$synpdf() {
@@ -1191,7 +1101,7 @@ function disableScrolling() {
 }
 function compPage$$module$synpdf(a, b, c) {
     var d = deMetriek$$module$synpdf[b];
-    if (!d || (opt$$module$synpdf.advncd && pageNumChanged$$module$synpdf)) {
+    if (!d || opt$$module$synpdf.advncd && !pageNumChanged$$module$synpdf) {
         d = countPix$$module$synpdf(a, parseInt(opt$$module$synpdf.seln));
         if (0 == d.cxs.length) return {
             height: 0
@@ -1664,29 +1574,18 @@ function findBarLines$$module$synpdf(a, b, c) {
 
 function maatStrepen$$module$synpdf() {
     $(".maten").remove();
-    if (!opt$$module$synpdf.advncd) return;
-
-    for (var i = 0; i < deMaten$$module$synpdf.length; ++i) {
-        var m = deMaten$$module$synpdf[i];
-        var segs = (m.segs && m.segs.length) ? m.segs : [m];
-
-        for (var s = 0; s < segs.length; s++) {
-            var r = segs[s];
-
-            // Light blue for split measures (both segments the same shade)
-            var bg = (m.segs && m.segs.length > 1)
-                ? "rgba(0,212,255,0.25)"
-                : (i & 1 ? "rgba(0,255,0,0.2)" : "rgba(0,0,255,0.2)");
-
-            $('<div class="maten"/>').css({
-                background: bg,
-                left: r.x,
-                top: r.y,
-                width: r.w,
-                height: r.h
-            }).appendTo("#notation");
+    if (opt$$module$synpdf.advncd)
+        for (var a = 0; a < deMaten$$module$synpdf.length; ++a) {
+            var b = deMaten$$module$synpdf[a];
+            b = $('<div class="maten"/>').css({
+                background: a & 1 ? "rgba(0,255,0,0.2)" : "rgba(0,0,255,0.2)",
+                left: b.x,
+                top: b.y,
+                width: b.w,
+                height: b.h
+            });
+            $("#notation").append(b)
         }
-    }
 }
 
 function readDbxFile$$module$synpdf(a) {
@@ -2567,34 +2466,18 @@ function checkMenu$$module$synpdf(a) {
                 break;
             case "drmpl":
                 opt$$module$synpdf.drmpl = parseFloat(opt$$module$synpdf.drmpl);
-
-                // If an advanced measure-detection control changed, invalidate current page metrics
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "drmpl2":
                 opt$$module$synpdf.drmpl2 = parseFloat(opt$$module$synpdf.drmpl2);
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "eerst":
             case "sysprf":
-
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "skipn":
             case "seln":
-
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "synbox":
@@ -2612,10 +2495,6 @@ function checkMenu$$module$synpdf(a) {
                 toggleScoreBtn$$module$synpdf();
                 break;
             case "onestf":
-
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "advncd":
@@ -2640,20 +2519,12 @@ function checkMenu$$module$synpdf(a) {
             case "voorna":
             case "mtdrmpl":
             case "dx":
-
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "fscr":
                 setFullscreen$$module$synpdf();
                 break;
             case "fixwd":
-
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf()
         }
     }
