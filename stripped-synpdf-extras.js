@@ -183,18 +183,18 @@ $('#instrument-links').on('click', '.instrument-link-a', function(event) {
     $('#pieces-container').html('<h2 class="loading">Loading<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></h2>');
 
     // Fetch pieces for this instrument
-    fetchPieces(instrumentId);
+    fetchPieces(instrumentId, instrumentText);
 });
 // Make sure the click event propagates to the link when clicking the SVG
 $('#instrument-links').on('click', '.svg-icon', function() {
     $(this).closest('.instrument-link').trigger('click');
 });
 
-function fetchPieces(instrumentIds) {
+function fetchPieces(instrumentIds, instrumentNameArg) {
     $.ajax({
         url: 'fetch_pieces.php',
         method: 'GET',
-        data: { instrumentIds: instrumentIds },
+        data: { instrumentIds: instrumentIds, instrumentName: instrumentNameArg || '' },
         dataType: 'json',
         success: function(data) {
 
@@ -208,7 +208,7 @@ function fetchPieces(instrumentIds) {
             } else {
                 // Your existing logic for handling the pieces data
                 var pieces = data.pieces || [];
-                var instrumentName = (data.instrumentName || "").trim();
+                var instrumentName = (instrumentNameArg || data.instrumentName || "").trim();
                 const instHeading = instrumentName.endsWith("Score")
                     ? `${instrumentName}s`
                     : `${instrumentName} Parts`;
@@ -676,8 +676,10 @@ $('#recordings-dropdown').change(function() {
 function displayMultiplePartLinks(data, clickedLink) {
     var linksContainer = $('<div class="instrument-links"></div>');
     data.forEach(function(item) {
+
+        var label = item.instrument_name + (item.part_number ? (' ' + item.part_number) : '');
         var instrumentLink = $('<a href="#" class="instrument-link"></a>')
-            .text(item.instrument_name + ' ' + item.part_number)
+            .text(label)
             .data('metric-arr-id', item.metric_arr_id)
             .on('click', function(e) {
                 e.preventDefault();
