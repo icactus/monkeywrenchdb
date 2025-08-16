@@ -255,7 +255,6 @@ function handleJoinAfterX(event) {
 
         // 7) persist and refresh so maatStrepen + deMaten rebuild (blue split shown)
         localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
-        deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
         resizePdfSyn$$module$synpdf();
 
         return true; // handled
@@ -322,8 +321,6 @@ document.addEventListener('keydown', function(event) {
             });
             break;
         case 'o':
-
-            deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
             resizePdfSyn$$module$synpdf();
             break;
         case 'p': { // lock current page (metrics + advanced settings)
@@ -342,18 +339,6 @@ document.addEventListener('keydown', function(event) {
             console.log(`Locked page ${pg} advanced settings.`);
             break;
         }
-
-        case 'P': { // Shift+P: apply current advanced settings to all future pages (as default)
-            adv_parms$$module$synpdf.__forward = {};
-            for (const k in adv_names$$module$synpdf) {
-                adv_parms$$module$synpdf.__forward[k] = opt$$module$synpdf[k];
-            }
-            // ensure the very next page recomputes with the template
-            pageNumChanged$$module$synpdf = 1;
-            console.log('Forward template set from current options; future pages will use it unless locked.');
-            break;
-        }
-
         case 'j':
             let jsonCode = localStorage.getItem('jsonString');
             let formattedCode = formatCode(jsonCode);
@@ -371,8 +356,6 @@ document.addEventListener('keydown', function(event) {
                 break;
             };
             opt$$module$synpdf.drmpl = ((Math.round(opt$$module$synpdf.drmpl * 10) - 1) / 10);
-
-            deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
             resizePdfSyn$$module$synpdf();
             break;
         // Now, whenever you update opt$$module$synpdf.drmpl, it also updates the input field:
@@ -381,8 +364,6 @@ document.addEventListener('keydown', function(event) {
                 break
             };
             opt$$module$synpdf.drmpl = ((Math.round(opt$$module$synpdf.drmpl * 10) + 1) / 10);
-
-            deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
             resizePdfSyn$$module$synpdf();
             break;
         case ';':
@@ -390,8 +371,6 @@ document.addEventListener('keydown', function(event) {
                 break;
             };
             opt$$module$synpdf.drmpl2 = ((Math.round(opt$$module$synpdf.drmpl2 * 10) - 1) / 10);
-
-            deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
             resizePdfSyn$$module$synpdf();
             break;
         // Now, whenever you update opt$$module$synpdf.drmpl, it also updates the input field:
@@ -400,8 +379,6 @@ document.addEventListener('keydown', function(event) {
                 break
             };
             opt$$module$synpdf.drmpl2 = ((Math.round(opt$$module$synpdf.drmpl2 * 10) + 1) / 10);
-
-            deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
             resizePdfSyn$$module$synpdf();
             break;
         //        case ',':
@@ -426,8 +403,6 @@ document.addEventListener('keydown', function(event) {
             else {
                 opt$$module$synpdf.eerst = 1;
             }
-
-            deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
             resizePdfSyn$$module$synpdf();
             break;
         case 'M':

@@ -946,32 +946,15 @@ function page2msr$$module$synpdf(a) {
 }
 
 function schakelParms$$module$synpdf(a, b) {
-    // a = page you’re leaving; b = page you’re going to (or -1 for “just save”)
-
-    // 1) Snapshot current options into the page you're leaving, but keep its lock flag.
-    var wasLocked = adv_parms$$module$synpdf[a] && adv_parms$$module$synpdf[a].__locked ? 1 : 0;
-    adv_parms$$module$synpdf[a] = adv_parms$$module$synpdf[a] || {};
-    for (var c in adv_names$$module$synpdf) {
-        adv_parms$$module$synpdf[a][c] = opt$$module$synpdf[c];
-    }
-    if (wasLocked) adv_parms$$module$synpdf[a].__locked = 1;
-
-    // 2) If we're switching to a real page, apply either that page’s locked settings,
-    //    or (if not locked) the forward template, if one exists.
-    if (b > 0) {
-        var src = adv_parms$$module$synpdf[b];
-        var apply = (src && src.__locked) ? src : adv_parms$$module$synpdf.__forward;
-        if (apply) {
-            for (var k in adv_names$$module$synpdf) {
-                opt$$module$synpdf[k] = apply[k];
-                var el = document.getElementById(k);
-                if (el) {
-                    if (el.type === "checkbox") el.checked = opt$$module$synpdf[k];
-                    if (el.type === "number") el.value = opt$$module$synpdf[k];
-                }
-            }
+    adv_parms$$module$synpdf[a] = {};
+    b = adv_parms$$module$synpdf[b];
+    for (var c in adv_names$$module$synpdf)
+        if (adv_parms$$module$synpdf[a][c] = opt$$module$synpdf[c], b) {
+            opt$$module$synpdf[c] = b[c];
+            var d = document.getElementById(c);
+            "checkbox" == d.type && (d.checked = opt$$module$synpdf[c]);
+            "number" == d.type && (d.value = opt$$module$synpdf[c])
         }
-    }
 }
 
 function setPagenum$$module$synpdf(a) {
@@ -1221,7 +1204,7 @@ function disableScrolling() {
 }
 function compPage$$module$synpdf(a, b, c) {
     var d = deMetriek$$module$synpdf[b];
-    if (!d || (opt$$module$synpdf.advncd && pageNumChanged$$module$synpdf)) {
+    if (!d || (opt$$module$synpdf.advncd && !pageNumChanged$$module$synpdf)) {
         d = countPix$$module$synpdf(a, parseInt(opt$$module$synpdf.seln));
         if (0 == d.cxs.length) return {
             height: 0
@@ -2597,34 +2580,18 @@ function checkMenu$$module$synpdf(a) {
                 break;
             case "drmpl":
                 opt$$module$synpdf.drmpl = parseFloat(opt$$module$synpdf.drmpl);
-
-                // If an advanced measure-detection control changed, invalidate current page metrics
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "drmpl2":
                 opt$$module$synpdf.drmpl2 = parseFloat(opt$$module$synpdf.drmpl2);
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "eerst":
             case "sysprf":
-
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "skipn":
             case "seln":
-
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "synbox":
@@ -2642,10 +2609,6 @@ function checkMenu$$module$synpdf(a) {
                 toggleScoreBtn$$module$synpdf();
                 break;
             case "onestf":
-
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "advncd":
@@ -2670,20 +2633,12 @@ function checkMenu$$module$synpdf(a) {
             case "voorna":
             case "mtdrmpl":
             case "dx":
-
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "fscr":
                 setFullscreen$$module$synpdf();
                 break;
             case "fixwd":
-
-                if (adv_names$$module$synpdf[b]) {
-                    deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
-                }
                 resizePdfSyn$$module$synpdf()
         }
     }
