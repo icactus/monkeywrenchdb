@@ -160,7 +160,19 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     $("#notation").append(b);
     this.maatloper = $('<div class="demaat" style="background:#00d4ff; opacity:0.2; left:0px; top:0px; width:0px; height:0px"></div>');
     $("#notation").append(this.maatloper);
-    this.times = a;
+    // Pool: first is the original .demaat, extras are added on demand
+    this.mlopers = [this.maatloper];
+    this.ensureMaatlopers = function(n) {
+        while (this.mlopers.length < n) {
+            var extra = $('<div class="demaat" style="background:#00d4ff; position:absolute; opacity:0.2; left:0; top:0; width:0; height:0; display:none;"></div>');
+            $("#notation").append(extra);
+            this.mlopers.push(extra);
+        }
+        // hide any surplus overlays
+        for (var i = n; i < this.mlopers.length; i++) {
+            this.mlopers[i].css({ display: 'none', width: 0, height: 0 });
+        }
+    }; this.times = a;
     this.tixlb = tixlb$$module$synpdf;
     this.cursorTime = 0;
     this.time_ix = d;
@@ -243,13 +255,40 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                 xcurprev$$module$synpdf = a;
                 document.getElementById('detix-box').innerHTML = `<h3>detix: ${detix$$module$synpdf}</h3>`;
                 document.getElementById('demix-box').innerHTML = `<h3>demix: ${demix$$module$synpdf}</h3>`;
-                b = this.maatloper[0].style;
-                b.left = a + "px";
-                b.top = c.y + "px";
-                b.width = d + "px";
-                b.height = c.h + "px";
-                c.y != ycurprev$$module$synpdf && doeRol$$module$synpdf(c.y - this.tmargin, 0);
-                ycurprev$$module$synpdf = c.y;
+                // Draw first (possibly partial) segment + any extra full segments
+                var __rects = dmRects$$module$synpdf(demix$$module$synpdf);
+                this.ensureMaatlopers(__rects.length || 1);
+
+                // FIRST segment — keep your existing lncsr math via a/d
+                var __R0 = (__rects.length ? __rects[0] : c);
+                var __s0 = this.maatloper[0].style;
+                __s0.left = (typeof a !== "undefined" ? a : __R0.x) + "px";
+                __s0.top = __R0.y + "px";
+                __s0.width = (typeof d !== "undefined" ? d : __R0.w) + "px";
+                __s0.height = __R0.h + "px";
+                this.maatloper.show();
+
+                // OTHER segments — full-block highlight (no lncsr slicing)
+                for (var __i = 1; __i < __rects.length; __i++) {
+                    var __Ri = __rects[__i];
+                    var __el = this.mlopers[__i];
+                    var __st = __el[0].style;
+                    __st.left = __Ri.x + "px";
+                    __st.top = __Ri.y + "px";
+                    __st.width = __Ri.w + "px";
+                    __st.height = __Ri.h + "px";
+                    __el.show();
+                }
+
+                // Scroll: use the top of the first segment (or the minimum if there are extras)
+                var __scrollY = __R0.y;
+                for (var __j = 1; __j < __rects.length; __j++) {
+                    if (__rects[__j].y < __scrollY) __scrollY = __rects[__j].y;
+                }
+                if (__scrollY != ycurprev$$module$synpdf) {
+                    doeRol$$module$synpdf(__scrollY - this.tmargin, 0);
+                    ycurprev$$module$synpdf = __scrollY;
+                }
                 opt$$module$synpdf.synbox && this.showSyncInfo();
                 break
             }
@@ -643,6 +682,24 @@ function copyTiming$$module$synpdf(a, b) {
         media_file$$module$synpdf && setPlayer$$module$synpdf(media_file$$module$synpdf, media_file$$module$synpdf);
         opt$$module$synpdf.yubvid && setPlayer$$module$synpdf("", "")
     }
+}
+
+// --- Split-measure inlined in deMaten ---
+// A measure entry supports:
+//  - legacy: {x,y,w,h}
+//  - split : {x,y,w,h, segs:[{x,y,w,h}, ...]}
+//  - (tolerated) array-of-rects: [{x,y,w,h}, ...]  (we normalize it)
+
+function dmRects$$module$synpdf(ix) {
+    var e = deMaten$$module$synpdf[ix];
+    if (!e) return [];
+    if (Array.isArray(e)) return e.filter(Boolean);
+    if (e.segs && Array.isArray(e.segs)) return [e].concat(e.segs.filter(Boolean));
+    return [e];
+}
+
+function cloneRect$$module$synpdf(r) {
+    return r ? { x: r.x, y: r.y, w: r.w, h: r.h } : null;
 }
 
 function knip$$module$synpdf(a, b, c) {

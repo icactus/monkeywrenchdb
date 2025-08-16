@@ -5,7 +5,21 @@ let SplitclickY = 0;
 let QisActive = false;
 let SisActive = false;
 let WisActive = false;
+let XisActive = false;
 
+function toggleXActivity() {
+    XisActive = !XisActive;
+    // Make X mutually exclusive with Q/S/W
+    if (XisActive) {
+        if (QisActive) toggleQActivity();
+        if (SisActive) toggleSActivity();
+        if (WisActive) toggleWActivity();
+    }
+    if (indicatorElement) {
+        indicatorElement.textContent = XisActive ? 'X' : '';
+    }
+    document.body.style.cursor = XisActive ? 'crosshair' : 'default';
+}
 
 const indicatorElement = document.getElementById('indicator');
 const notation = document.getElementById('notation');
@@ -174,6 +188,75 @@ function roundValuesInArray(obj) {
     }
 }
 
+function pointInRect(px, py, r) {
+    return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
+}
+function dmRectsLocal(ix) { // local view of deMaten (same schema as renderer)
+    const e = window.deMaten$$module$synpdf?.[ix];
+    if (!e) return [];
+    if (Array.isArray(e)) return e;
+    return e.segs ? [e].concat(e.segs) : [e];
+}
+function measureIndexAtPoint(px, py) {
+    const arr = window.deMaten$$module$synpdf || [];
+    for (let i = 0; i < arr.length; i++) {
+        const rs = dmRectsLocal(i);
+        for (let k = 0; k < rs.length; k++) {
+            if (pointInRect(px, py, rs[k])) return i;
+        }
+    }
+    return -1;
+}
+
+function handleSplitToggleClick(event) {
+    if (!XisActive) return false;
+    if (!(document.querySelector('#menu input#advncd')?.checked || opt$$module$synpdf.advncd)) return false;
+
+    // Map click to #notation coordinates (match your existing math)
+    const rect = notation.getBoundingClientRect();
+    const x = Math.round(event.clientX - rect.left + notation.scrollLeft);
+    const y = Math.round(event.clientY - rect.top + notation.scrollTop);
+
+    const i = measureIndexAtPoint(x, y);
+    if (i < 0) { toggleXActivity(); return true; } // swallow one click anyway
+
+    const cur = window.deMaten$$module$synpdf[i];
+    const next = window.deMaten$$module$synpdf[i + 1]; // connect to NEXT measure
+    if (!cur) { toggleXActivity(); return true; }
+
+    // Normalize "cur" to object shape if needed
+    if (Array.isArray(cur)) {
+        window.deMaten$$module$synpdf[i] = Object.assign({}, cur[0], { segs: cur.slice(1) });
+    }
+    const entry = window.deMaten$$module$synpdf[i];
+
+    // Toggle: if it already has segs, remove them (disassociate).
+    if (entry.segs && entry.segs.length) {
+        delete entry.segs;
+    } else {
+        if (!next) { toggleXActivity(); return true; }
+        // Take the *base* rect of next (ignore its own segs if any)
+        const baseNext = Array.isArray(next) ? next[0] : (next.segs ? next : next);
+        if (baseNext && typeof baseNext.x === 'number') {
+            entry.segs = [{ x: baseNext.x, y: baseNext.y, w: baseNext.w, h: baseNext.h }];
+        }
+    }
+
+    // Visual feedback: force a quick redraw
+    try {
+        if (window.msc_wz$$module$synpdf && typeof window.msc_wz$$module$synpdf.time2x === 'function') {
+            const t = window.msc_wz$$module$synpdf.cursorTime || 0;
+            window.msc_wz$$module$synpdf.time2x(t);
+        } else {
+            resizePdfSyn$$module$synpdf();
+        }
+    } catch (_) { }
+
+    // One-shot UX
+    toggleXActivity();
+    return true;
+}
+
 document.addEventListener('keydown', function(event) {
     if (document.querySelector('#synbox').checked) {
         return;
@@ -206,6 +289,13 @@ document.addEventListener('keydown', function(event) {
             break;
         case 'w':
             toggleWActivity();
+            break;
+        case 'x':
+        case 'X':
+            // Only allow in Advanced mode
+            if (document.querySelector('#menu input#advncd')?.checked || opt$$module$synpdf.advncd) {
+                toggleXActivity();
+            }
             break;
         case '/':
             keyDown$$module$synpdf({
@@ -368,7 +458,8 @@ function formatCode(s) {
         .replace(/,{"cxs":/g, ',\n{"cxs":');
 }
 
-notation.addEventListener('click', function handleClick(event) {
+addEventListener('click', function handleClick(event) {
+    if (handleSplitToggleClick(event)) return; // NEW: X mode
     if (handleSplit(event)) return;
     if (handleWCxs(event)) return;
     else if (!QisActive) return;
@@ -393,6 +484,9 @@ notation.addEventListener('mousemove', function(e) {
     }
     if (WisActive) {
         tooltip.innerHTML = "W";
+    }
+    if (XisActive) {
+        tooltip.innerHTML = "X";
     }
     tooltip.style.display = "block";
 });
