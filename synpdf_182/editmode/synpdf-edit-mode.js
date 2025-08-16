@@ -531,32 +531,111 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
         if (!(d.t > a)) {
             demix$$module$synpdf = d.mix;
             detix$$module$synpdf = b;
+
+            // end-of-play handling (unchanged)
             if (!opt$$module$synpdf.synbox && detix$$module$synpdf == deTijden$$module$synpdf.length - 1 && !m1_timer$$module$synpdf) {
                 pauseer$$module$synpdf();
                 msc_wz$$module$synpdf.goMsre(1, {});
                 $("body").trigger("play_end");
-                break
+                break;
             }
+
             if (c = deMaten$$module$synpdf[demix$$module$synpdf]) {
-                opt$$module$synpdf.lncsr &&
-                    b < deTijden$$module$synpdf.length - 1 ? (b = deTijden$$module$synpdf[b + 1], a = c.x + c.w * (a - d.t) / (b.t - d.t), d = 6) : (a = c.x, d = c.w);
-                if (a == xcurprev$$module$synpdf && c.y == ycurprev$$module$synpdf) break;
+                // ==== NEW: support segmented measures ====
+                var segs = c.segs ? c.segs : [c];     // backward compatible
+                var c0 = segs[0];                     // first segment (legacy anchor)
+                // topmost Y among all segments (for scrolling/equality)
+                var scrollY = c0.y;
+                for (var si = 1; si < segs.length; si++) if (segs[si].y < scrollY) scrollY = segs[si].y;
+
+                // legacy linear-cursor math but anchored to first segment
+                if (opt$$module$synpdf.lncsr && b < deTijden$$module$synpdf.length - 1) {
+                    b = deTijden$$module$synpdf[b + 1];
+                    a = c0.x + c0.w * (a - d.t) / (b.t - d.t);
+                    d = 6;
+                } else {
+                    a = c0.x;
+                    d = c0.w;
+                }
+
+                // short-circuit if nothing visually changed (use topmost y)
+                if (a == xcurprev$$module$synpdf && scrollY == ycurprev$$module$synpdf) break;
                 xcurprev$$module$synpdf = a;
-                document.getElementById('detix-box').innerHTML = `<h3>detix: ${detix$$module$synpdf}</h3>`;
-                document.getElementById('demix-box').innerHTML = `<h3>demix: ${demix$$module$synpdf}</h3>`;
+
+                // debug panels (unchanged)
+                var detixEl = document.getElementById('detix-box');
+                if (detixEl) detixEl.innerHTML = `<h3>detix: ${detix$$module$synpdf}</h3>`;
+                var demixEl = document.getElementById('demix-box');
+                if (demixEl) demixEl.innerHTML = `<h3>demix: ${demix$$module$synpdf}</h3>`;
+
+                // primary overlay (your original)
                 b = this.maatloper[0].style;
                 b.left = a + "px";
-                b.top = c.y + "px";
+                b.top = c0.y + "px";
                 b.width = d + "px";
-                b.height = c.h + "px";
-                c.y != ycurprev$$module$synpdf && doeRol$$module$synpdf(c.y - this.tmargin, 0);
-                ycurprev$$module$synpdf = c.y;
+                b.height = c0.h + "px";
+
+                // ==== NEW: draw extra overlays for additional segments (block mode only) ====
+                // Keep legacy behavior in lncsr: only one thin cursor on first segment.
+                if (!opt$$module$synpdf.lncsr && segs.length > 1) {
+                    // allocate a pool once; reuse it
+                    if (!this.extraMaatlopers) this.extraMaatlopers = [];
+                    var parent = this.maatloper[0].parentNode || document.getElementById("notation") || document.body;
+
+                    // create/position needed extras for segments [1..n-1]
+                    for (var i = 1; i < segs.length; i++) {
+                        var el = this.extraMaatlopers[i - 1];
+                        if (!el) {
+                            el = document.createElement("div");
+                            el.className = "demaat";
+                            el.style.position = "absolute";
+                            parent.appendChild(el);
+                            this.extraMaatlopers[i - 1] = el;
+                        }
+                        var r = segs[i];
+                        var st = el.style;
+                        st.left = r.x + "px";
+                        st.top = r.y + "px";
+                        st.width = r.w + "px";
+                        st.height = r.h + "px";
+                    }
+                    // hide any unused extras
+                    for (var k = segs.length - 1; k < (this.extraMaatlopers ? this.extraMaatlopers.length : 0); k++) {
+                        var ex = this.extraMaatlopers[k];
+                        if (ex) { ex.style.width = "0px"; ex.style.height = "0px"; }
+                    }
+                } else if (this.extraMaatlopers && this.extraMaatlopers.length) {
+                    // lncsr or single-rect: hide all extras
+                    for (var h = 0; h < this.extraMaatlopers.length; h++) {
+                        var ex2 = this.extraMaatlopers[h];
+                        if (ex2) { ex2.style.width = "0px"; ex2.style.height = "0px"; }
+                    }
+                }
+
+                // scrolling (use topmost segment)
+                if (scrollY != ycurprev$$module$synpdf) doeRol$$module$synpdf(scrollY - this.tmargin, 0);
+                ycurprev$$module$synpdf = scrollY;
+
+                // legacy sync overlay info (unchanged)
                 opt$$module$synpdf.synbox && this.showSyncInfo();
-                break
+                break;
             }
         }
     }
 };
+
+Wijzer$$module$synpdf.prototype._ensureMaatlopers = function(n) {
+    while (this.maatlopers.length < n) {
+        const el = $('<div class="demaat" style="background:#00d4ff; opacity:0.2; left:0; top:0; width:0; height:0"></div>');
+        $("#notation").append(el);
+        this.maatlopers.push(el);
+    }
+    // hide any extras
+    for (let i = n; i < this.maatlopers.length; i++) {
+        this.maatlopers[i][0].style.width = "0px";
+    }
+};
+
 Wijzer$$module$synpdf.prototype.drawTags = function() {
     var a = this.width;
     var b = opt$$module$synpdf.cropx;
@@ -965,36 +1044,60 @@ function copyTiming$$module$synpdf(a, b) {
 }
 
 function knip$$module$synpdf(a, b, c) {
+    // clone inputs as you already do
     var d = JSON.parse(JSON.stringify(b.cxs));
-    b = JSON.parse(JSON.stringify(b.bxs));
-    d.forEach(function(a) {
-        a.cs = a.cs.map(function(a) {
-            return 1 * a + c;
-        })
-    });
-    var e;
-    for (e = 0; e < d.length; ++e) {
-        var f = d[e].cs;
-        var g = f[0];
-        var p = f[f.length - 1];
-        var m = b[e];
-        for (f = 0; f < m.length - 1; ++f) {
-            var n = m[f];
-            var l = m[f + 1];
-            deMaten$$module$synpdf.push({
-                x: n,
-                y: g,
-                w: l - n,
-                h: p - g
-            })
+    var bx = JSON.parse(JSON.stringify(b.bxs));
+
+    // NEW: joins metadata (editor writes this)
+    const joinAfter = b.joinAfter || {};   // { [systemIndex]: true }
+    const skipFirst = {};                  // { [systemIndex]: true }
+
+    // Offset the cs by 'c' (your code already does this)
+    d.forEach(function(sys) { sys.cs = sys.cs.map(v => 1 * v + c); });
+
+    // Build rectangles
+    for (let e = 0; e < d.length; ++e) {
+        const cs = d[e].cs;
+        const y1 = cs[0], y2 = cs[cs.length - 1];
+        const bars = bx[e];
+
+        for (let i = 0; i < bars.length - 1; ++i) {
+            if (skipFirst[e] && i === 0) continue;
+
+            const x1 = bars[i], x2 = bars[i + 1];
+
+            // If the LAST rect on this system is marked to join with NEXT system's FIRST rect:
+            if (joinAfter[e] && i === bars.length - 2 && e < d.length - 1) {
+                const nextCs = d[e + 1].cs;
+                const ny1 = nextCs[0], ny2 = nextCs[nextCs.length - 1];
+                const nbars = bx[e + 1];
+                if (nbars && nbars.length >= 2) {
+                    const nx1 = nbars[0], nx2 = nbars[1];
+
+                    deMaten$$module$synpdf.push({
+                        segs: [
+                            { x: x1, y: y1, w: x2 - x1, h: y2 - y1 },
+                            { x: nx1, y: ny1, w: nx2 - nx1, h: ny2 - ny1 }
+                        ]
+                    });
+
+                    // Ensure we don't also push the next system's first rect
+                    skipFirst[e + 1] = true;
+                    continue;
+                }
+            }
+
+            // Normal, unsplit measure
+            deMaten$$module$synpdf.push({ x: x1, y: y1, w: x2 - x1, h: y2 - y1 });
         }
     }
-    for (e = deTijden$$module$synpdf.length; e < deMaten$$module$synpdf.length; ++e) deTijden$$module$synpdf.push({
-        t: 0 < e ? deTijden$$module$synpdf[e - 1].t +
-            2 : 0,
-        mix: e
-    });
-    return a
+
+    // keep your existing deTijden fill-up logic untouched
+    for (let e = deTijden$$module$synpdf.length; e < deMaten$$module$synpdf.length; ++e) {
+        deTijden$$module$synpdf.push({ t: e > 0 ? deTijden$$module$synpdf[e - 1].t + 2 : 0, mix: e });
+    }
+
+    return a;
 }
 
 function addDummySys$$module$synpdf() {
@@ -1591,18 +1694,29 @@ function findBarLines$$module$synpdf(a, b, c) {
 
 function maatStrepen$$module$synpdf() {
     $(".maten").remove();
-    if (opt$$module$synpdf.advncd)
-        for (var a = 0; a < deMaten$$module$synpdf.length; ++a) {
-            var b = deMaten$$module$synpdf[a];
-            b = $('<div class="maten"/>').css({
-                background: a & 1 ? "rgba(0,255,0,0.2)" : "rgba(0,0,255,0.2)",
-                left: b.x,
-                top: b.y,
-                width: b.w,
-                height: b.h
-            });
-            $("#notation").append(b)
+    if (!opt$$module$synpdf.advncd) return;
+
+    for (var i = 0; i < deMaten$$module$synpdf.length; ++i) {
+        var m = deMaten$$module$synpdf[i];
+        var segs = (m.segs && m.segs.length) ? m.segs : [m];
+
+        for (var s = 0; s < segs.length; s++) {
+            var r = segs[s];
+
+            // Light blue for split measures (both segments the same shade)
+            var bg = (m.segs && m.segs.length > 1)
+                ? "rgba(0,212,255,0.25)"
+                : (i & 1 ? "rgba(0,255,0,0.2)" : "rgba(0,0,255,0.2)");
+
+            $('<div class="maten"/>').css({
+                background: bg,
+                left: r.x,
+                top: r.y,
+                width: r.w,
+                height: r.h
+            }).appendTo("#notation");
         }
+    }
 }
 
 function readDbxFile$$module$synpdf(a) {

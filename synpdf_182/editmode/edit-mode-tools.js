@@ -5,7 +5,7 @@ let SplitclickY = 0;
 let QisActive = false;
 let SisActive = false;
 let WisActive = false;
-
+let XisActive = false;
 
 const indicatorElement = document.getElementById('indicator');
 const notation = document.getElementById('notation');
@@ -163,6 +163,107 @@ function toggleWActivity() {
     }
 }
 
+function toggleXActivity() {
+    XisActive = !XisActive;
+    if (XisActive) {
+        console.log('join-after mode (X) is ON');
+        indicatorElement.classList.add('crosshair-cursor');
+        document.body.style.cursor = 'crosshair';
+        if (QisActive) toggleQActivity();
+        if (SisActive) toggleSActivity();
+        if (WisActive) toggleWActivity();
+    } else {
+        console.log('join-after mode (X) is OFF');
+        if (!QisActive && !SisActive && !WisActive) {
+            indicatorElement.classList.remove('crosshair-cursor');
+            document.body.style.cursor = 'default';
+        }
+    }
+}
+
+function handleJoinAfterX(event) {
+    if (!XisActive) return false;
+
+    // 1) load metrics
+    const cxsBxsData = JSON.parse(localStorage.getItem('jsonString') || '[]');
+    const pagenum = parseInt(document.getElementById('pagenum').value, 10);
+
+    if (!Array.isArray(cxsBxsData) || pagenum < 1 || pagenum >= cxsBxsData.length) {
+        alert('Invalid page number');
+        return true; // swallow click
+    }
+
+    const page = cxsBxsData[pagenum];
+    if (!page || !page.cxs || !page.bxs) return true;
+
+    // 2) local coords
+    const rect = notation.getBoundingClientRect();
+    const x = event.clientX - rect.left; // keep consistent with your bxs editor
+    const y = Math.round(event.clientY - rect.top + notation.scrollTop);
+
+    // 3) find the system (row) by y ∈ [min(cs), max(cs)]
+    for (let j = 0; j < page.cxs.length; j++) {
+        const cs = page.cxs[j].cs;
+        const yMin = Math.min.apply(null, cs);
+        const yMax = Math.max.apply(null, cs);
+        if (y < yMin || y > yMax) continue;
+
+        const bars = page.bxs[j];
+        if (!bars || bars.length < 2) {
+            console.log('X-mode: not enough barlines in this system to determine measures');
+            return true;
+        }
+
+        // 4) determine which measure interval we clicked: bars[i] .. bars[i+1]
+        let idx = -1;
+        for (let i = 0; i < bars.length - 1; i++) {
+            if (x >= bars[i] && x < bars[i + 1]) { idx = i; break; }
+        }
+        if (idx === -1) {
+            console.log('X-mode: click was not inside any measure span');
+            return true;
+        }
+
+        // 5) only allow if it is the LAST measure in this system
+        const lastIdx = bars.length - 2;
+        if (idx !== lastIdx) {
+            console.log('X-mode: only the last measure in a system can be joined; ignoring');
+            return true;
+        }
+
+        // also ensure there IS a next system to join to
+        if (j >= page.cxs.length - 1) {
+            console.log('X-mode: cannot join last system on page');
+            return true;
+        }
+        // and the next system must have at least 2 bars to form its first measure
+        const nextBars = page.bxs[j + 1];
+        if (!nextBars || nextBars.length < 2) {
+            console.log('X-mode: next system lacks a first measure (needs ≥2 barlines)');
+            return true;
+        }
+
+        // 6) toggle joinAfter[j]
+        page.joinAfter = page.joinAfter || {};
+        if (page.joinAfter[j]) {
+            delete page.joinAfter[j];         // un-join
+            console.log(`X-mode: un-joined system ${j} → ${j + 1}`);
+        } else {
+            page.joinAfter[j] = true;         // join
+            console.log(`X-mode: joined system ${j} → ${j + 1}`);
+        }
+
+        // 7) persist and refresh so maatStrepen + deMaten rebuild (blue split shown)
+        localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
+        deMetriek$$module$synpdf[opt$$module$synpdf.pagenum] = undefined;
+        resizePdfSyn$$module$synpdf();
+
+        return true; // handled
+    }
+
+    return true; // swallow click even if no system matched
+}
+
 //Makes sure deMetriek is only saving integers when using P
 function roundValuesInArray(obj) {
     for (var k in obj) {
@@ -190,6 +291,9 @@ document.addEventListener('keydown', function(event) {
             break;
         case 'T':
             $("#menu input#onestf").click();
+            break;
+        case 'x':
+            toggleXActivity();
             break;
         case 'q':
             toggleQActivity();
@@ -403,13 +507,12 @@ function formatCode(s) {
 }
 
 notation.addEventListener('click', function handleClick(event) {
+    if (handleJoinAfterX(event)) return;   // <— NEW: must be first
     if (handleSplit(event)) return;
     if (handleWCxs(event)) return;
     else if (!QisActive) return;
     if (addRemoveBxs$$module$synpdf(event)) return;
 });
-
-
 
 notation.addEventListener('mousemove', function(e) {
     var rect = notation.getBoundingClientRect();
@@ -427,6 +530,9 @@ notation.addEventListener('mousemove', function(e) {
     }
     if (WisActive) {
         tooltip.innerHTML = "W";
+    }
+    if (XisActive) {
+        tooltip.innerHTML = "X";
     }
     tooltip.style.display = "block";
 });
