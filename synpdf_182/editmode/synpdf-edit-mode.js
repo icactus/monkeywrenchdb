@@ -2201,6 +2201,11 @@ function checkMenu$$module$synpdf(a) {
                 $(".mnrm").toggle(!opt$$module$synpdf[b]);
                 $("#snclbl").toggle(!opt$$module$synpdf[b]);
                 if (!opt$$module$synpdf.advncd) {
+                    try {
+                        if (typeof QisActive !== "undefined" && QisActive) { toggleQActivity(); }
+                        if (typeof SisActive !== "undefined" && SisActive) { toggleSActivity(); }
+                        if (typeof WisActive !== "undefined" && WisActive) { toggleWActivity(); }
+                    } catch (e) { /* edit-mode-tools may not be loaded yet; ignore */ }
                     schakelParms$$module$synpdf(opt$$module$synpdf.pagenum, -1);
                     elmed$$module$synpdf.currentTime = deTijden$$module$synpdf[page2msr$$module$synpdf(opt$$module$synpdf.pagenum)].t;
                     resizePdfSyn$$module$synpdf();
