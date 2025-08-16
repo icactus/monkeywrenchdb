@@ -255,16 +255,29 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                 xcurprev$$module$synpdf = a;
                 document.getElementById('detix-box').innerHTML = `<h3>detix: ${detix$$module$synpdf}</h3>`;
                 document.getElementById('demix-box').innerHTML = `<h3>demix: ${demix$$module$synpdf}</h3>`;
-                // Draw first (possibly partial) segment + any extra full segments
-                var __rects = dmRects$$module$synpdf(demix$$module$synpdf);
-                this.ensureMaatlopers(__rects.length || 1);
+                // Support split measures stored inline in deMaten
+                // If the CURRENT entry is marked as continuation (join with previous),
+                // we draw using the previous measure's rects so the highlight doesn't "advance".
+                var __isGhost = !!(deMaten$$module$synpdf[demix$$module$synpdf] && deMaten$$module$synpdf[demix$$module$synpdf].joinPrev);
+                var __drawMix = __isGhost ? (demix$$module$synpdf - 1) : demix$$module$synpdf;
 
-                // FIRST segment — keep your existing lncsr math via a/d
-                var __R0 = (__rects.length ? __rects[0] : c);
+                var __rects = dmRects$$module$synpdf(__drawMix);
+                if (!__rects.length) {
+                    // Fallback to legacy single-rect 'c'
+                    __rects = [c];
+                }
+                this.ensureMaatlopers(__rects.length);
+
+                // FIRST segment — keep your existing lncsr math on the "base" rect,
+                // but if we're on a ghost (continuation), draw the base rect as a full block.
+                var __R0 = __rects[0];
+                var __left = __isGhost ? __R0.x : (typeof a !== "undefined" ? a : __R0.x);
+                var __width = __isGhost ? __R0.w : (typeof d !== "undefined" ? d : __R0.w);
+
                 var __s0 = this.maatloper[0].style;
-                __s0.left = (typeof a !== "undefined" ? a : __R0.x) + "px";
+                __s0.left = __left + "px";
                 __s0.top = __R0.y + "px";
-                __s0.width = (typeof d !== "undefined" ? d : __R0.w) + "px";
+                __s0.width = __width + "px";
                 __s0.height = __R0.h + "px";
                 this.maatloper.show();
 
@@ -280,7 +293,8 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
                     __el.show();
                 }
 
-                // Scroll: use the top of the first segment (or the minimum if there are extras)
+                // Scroll to the top of the first segment we used for drawing.
+                // (If there are multiple segments above, scroll to the minimum y.)
                 var __scrollY = __R0.y;
                 for (var __j = 1; __j < __rects.length; __j++) {
                     if (__rects[__j].y < __scrollY) __scrollY = __rects[__j].y;
@@ -2262,6 +2276,7 @@ function checkMenu$$module$synpdf(a) {
                         if (typeof QisActive !== "undefined" && QisActive) { toggleQActivity(); }
                         if (typeof SisActive !== "undefined" && SisActive) { toggleSActivity(); }
                         if (typeof WisActive !== "undefined" && WisActive) { toggleWActivity(); }
+                        if (typeof XisActive !== "undefined" && XisActive) { toggleXActivity(); }
                     } catch (e) { /* edit-mode-tools may not be loaded yet; ignore */ }
                     schakelParms$$module$synpdf(opt$$module$synpdf.pagenum, -1);
                     elmed$$module$synpdf.currentTime = deTijden$$module$synpdf[page2msr$$module$synpdf(opt$$module$synpdf.pagenum)].t;
