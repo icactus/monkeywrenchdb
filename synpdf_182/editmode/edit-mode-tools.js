@@ -294,6 +294,9 @@ document.addEventListener('keydown', function(event) {
         case 'w':
             toggleWActivity();
             break;
+        case 'x':
+            toggleXActivity();
+            break;
         case '/':
             keyDown$$module$synpdf({
                 key: "PageDown"
