@@ -160,8 +160,6 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     $("#notation").append(b);
     this.maatloper = $('<div class="demaat" style="background:#00d4ff; opacity:0.2; left:0px; top:0px; width:0px; height:0px"></div>');
     $("#notation").append(this.maatloper);
-    this.maatloper2 = $('<div class="demaat" style="background:#00d4ff; opacity:0.2; left:0px; top:0px; width:0px; height:0px"></div>');
-    $("#notation").append(this.maatloper2);
     this.times = a;
     this.tixlb = tixlb$$module$synpdf;
     this.cursorTime = 0;
@@ -227,164 +225,35 @@ Wijzer$$module$synpdf.prototype.setOffsetX = function() {
 Wijzer$$module$synpdf.prototype.time2x = function(a) {
     var b, c;
     this.cursorTime = a;
-
     for (b = deTijden$$module$synpdf.length - 1; 0 <= b; --b) {
         var d = deTijden$$module$synpdf[b];
-        if (d.t > a) continue;
-
-        // NOTE: d.mix now points to a *groupId* (logical measure)
-        var groupId = d.mix;
-        detix$$module$synpdf = b;
-        demix$$module$synpdf = groupId; // for debug display (logical measure id)
-
-        // End-of-play behaviour unchanged
-        if (!opt$$module$synpdf.synbox &&
-            detix$$module$synpdf == deTijden$$module$synpdf.length - 1 &&
-            !m1_timer$$module$synpdf) {
-            pauseer$$module$synpdf();
-            msc_wz$$module$synpdf.goMsre(1, {});
-            $("body").trigger("play_end");
-            break;
-        }
-
-        // ---- Group-aware path (preferred) ----
-        var hasGroups = (typeof groups$$module$synpdf !== "undefined") &&
-            groups$$module$synpdf &&
-            groups$$module$synpdf[groupId] &&
-            Array.isArray(groups$$module$synpdf[groupId].rects) &&
-            groups$$module$synpdf[groupId].rects.length > 0;
-
-        // Ensure a second overlay exists (used when two segments need shading)
-        if (!this.maatloper2) {
-            this.maatloper2 = $('<div class="demaat" style="background:#00d4ff; opacity:0.2; left:0px; top:0px; width:0px; height:0px"></div>');
-            $("#notation").append(this.maatloper2);
-        }
-
-        if (hasGroups) {
-            var rectIdxs = groups$$module$synpdf[groupId].rects;
-            var r1 = deMaten$$module$synpdf[rectIdxs[0]];
-            var r2 = rectIdxs.length > 1 ? deMaten$$module$synpdf[rectIdxs[1]] : null;
-
-            // Debug boxes: show logical group and its physical rects
-            var detixEl = document.getElementById('detix-box');
-            var demixEl = document.getElementById('demix-box');
-            if (detixEl) detixEl.innerHTML = `<h3>detix: ${detix$$module$synpdf}</h3>`;
-            if (demixEl) demixEl.innerHTML = `<h3>group: ${groupId} (${rectIdxs.join('+')})</h3>`;
-
-            if (opt$$module$synpdf.lncsr && b < deTijden$$module$synpdf.length - 1) {
-                // ---- Moving line cursor across the logical measure ----
-                // Split the time proportion across r1 and r2 by visual width
-                var dnext = deTijden$$module$synpdf[b + 1];
-                var p = (a - d.t) / (dnext.t - d.t);
-                if (p < 0) p = 0; if (p > 1) p = 1;
-
-                var w1 = r1 ? r1.w : 0, w2 = r2 ? r2.w : 0, W = (w1 + w2) || 1;
-                var onSecond = (!!r2) && (p > (w1 / W));
-                c = onSecond ? r2 : r1;
-
-                // local proportion within chosen rect
-                var startFrac = onSecond ? (w1 / W) : 0;
-                var spanFrac = onSecond ? (w2 / W) : (w1 / W || 1);
-                var pLocal = spanFrac > 0 ? (p - startFrac) / spanFrac : 0;
-
-                var lineX = c.x + c.w * pLocal;
-
-                var s = this.maatloper[0].style;
-                s.left = lineX + "px";
-                s.top = c.y + "px";
-                s.width = "6px";
-                s.height = c.h + "px";
-
-                // Hide the second overlay in line-cursor mode
-                var s2 = this.maatloper2[0].style;
-                s2.width = "0px";
-                s2.height = "0px";
-
-                // Scroll to the active segment if needed
-                if (c.y != ycurprev$$module$synpdf) {
-                    doeRol$$module$synpdf(c.y - this.tmargin, 0);
-                    ycurprev$$module$synpdf = c.y;
-                }
-            } else {
-                // ---- Block shading: show BOTH segments as one logical measure ----
-                var s1 = this.maatloper[0].style;
-                s1.left = r1.x + "px";
-                s1.top = r1.y + "px";
-                s1.width = r1.w + "px";
-                s1.height = r1.h + "px";
-
-                var s2 = this.maatloper2[0].style;
-                if (r2) {
-                    s2.left = r2.x + "px";
-                    s2.top = r2.y + "px";
-                    s2.width = r2.w + "px";
-                    s2.height = r2.h + "px";
-                } else {
-                    // No second segment in this logical measure
-                    s2.width = "0px";
-                    s2.height = "0px";
-                }
-
-                // Scroll anchor: use last clicked segment if it belongs to this group, else r1
-                var anchorRect =
-                    (this.lastClickRectIdx != null && rectIdxs.indexOf(this.lastClickRectIdx) >= 0)
-                        ? deMaten$$module$synpdf[this.lastClickRectIdx]
-                        : r1;
-
-                if (anchorRect && anchorRect.y != ycurprev$$module$synpdf) {
-                    doeRol$$module$synpdf(anchorRect.y - this.tmargin, 0);
-                    ycurprev$$module$synpdf = anchorRect.y;
-                }
+        if (!(d.t > a)) {
+            demix$$module$synpdf = d.mix;
+            detix$$module$synpdf = b;
+            if (!opt$$module$synpdf.synbox && detix$$module$synpdf == deTijden$$module$synpdf.length - 1 && !m1_timer$$module$synpdf) {
+                pauseer$$module$synpdf();
+                msc_wz$$module$synpdf.goMsre(1, {});
+                $("body").trigger("play_end");
+                break
             }
-
-            if (opt$$module$synpdf.synbox) this.showSyncInfo();
-            break;
+            if (c = deMaten$$module$synpdf[demix$$module$synpdf]) {
+                opt$$module$synpdf.lncsr &&
+                    b < deTijden$$module$synpdf.length - 1 ? (b = deTijden$$module$synpdf[b + 1], a = c.x + c.w * (a - d.t) / (b.t - d.t), d = 6) : (a = c.x, d = c.w);
+                if (a == xcurprev$$module$synpdf && c.y == ycurprev$$module$synpdf) break;
+                xcurprev$$module$synpdf = a;
+                document.getElementById('detix-box').innerHTML = `<h3>detix: ${detix$$module$synpdf}</h3>`;
+                document.getElementById('demix-box').innerHTML = `<h3>demix: ${demix$$module$synpdf}</h3>`;
+                b = this.maatloper[0].style;
+                b.left = a + "px";
+                b.top = c.y + "px";
+                b.width = d + "px";
+                b.height = c.h + "px";
+                c.y != ycurprev$$module$synpdf && doeRol$$module$synpdf(c.y - this.tmargin, 0);
+                ycurprev$$module$synpdf = c.y;
+                opt$$module$synpdf.synbox && this.showSyncInfo();
+                break
+            }
         }
-
-        // ---- Fallback: legacy single-rectangle behaviour (no groups present) ----
-        demix$$module$synpdf = d.mix;
-        c = deMaten$$module$synpdf[demix$$module$synpdf];
-        if (!c) break;
-
-        var detixEl2 = document.getElementById('detix-box');
-        var demixEl2 = document.getElementById('demix-box');
-        if (detixEl2) detixEl2.innerHTML = `<h3>detix: ${detix$$module$synpdf}</h3>`;
-        if (demixEl2) demixEl2.innerHTML = `<h3>demix: ${demix$$module$synpdf}</h3>`;
-
-        var w;
-        if (opt$$module$synpdf.lncsr && b < deTijden$$module$synpdf.length - 1) {
-            var b2 = deTijden$$module$synpdf[b + 1];
-            a = c.x + c.w * (a - d.t) / (b2.t - d.t);
-            w = 6;
-        } else {
-            a = c.x;
-            w = c.w;
-        }
-
-        // Early-out if nothing changed horizontally *and* vertically
-        if (a == xcurprev$$module$synpdf && c.y == ycurprev$$module$synpdf) break;
-
-        xcurprev$$module$synpdf = a;
-
-        var st = this.maatloper[0].style;
-        st.left = a + "px";
-        st.top = c.y + "px";
-        st.width = w + "px";
-        st.height = c.h + "px";
-
-        // Hide secondary overlay if it exists
-        if (this.maatloper2) {
-            var st2 = this.maatloper2[0].style;
-            st2.width = "0px"; st2.height = "0px";
-        }
-
-        if (c.y != ycurprev$$module$synpdf) {
-            doeRol$$module$synpdf(c.y - this.tmargin, 0);
-        }
-        ycurprev$$module$synpdf = c.y;
-
-        if (opt$$module$synpdf.synbox) this.showSyncInfo();
-        break;
     }
 };
 Wijzer$$module$synpdf.prototype.drawTags = function() {
@@ -436,92 +305,34 @@ Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
     for (d = 0; d < deMaten$$module$synpdf.length; ++d) {
         var e = deMaten$$module$synpdf[d];
         if (!(b > e.y + e.h || a > e.x + e.w)) {
-
-            // Clicked to the left: spacebar behavior unchanged
             if (a < e.x) {
-                keyDown$$module$synpdf({ key: " " });
-                break;
+                keyDown$$module$synpdf({
+                    key: " "
+                });
+                break
             }
-
-            // Remember which physical rect was clicked (for scroll anchoring elsewhere)
-            this.lastClickRectIdx = d;
-
-            // Sync box behaviors unchanged
             if (opt$$module$synpdf.synbox) {
-                if (c) {             // shift-click (set repeat)
+                if (c) {
                     this.setRepeat(d);
-                    break;
+                    break
                 }
                 if (!msc_wz$$module$synpdf.paused) {
                     this.keySync(0);
-                    break;
+                    break
                 }
             }
-
-            // --- Map clicked physical rect -> logical group (split-aware) ---
-            var groupId = (typeof rect2group$$module$synpdf !== "undefined" &&
-                rect2group$$module$synpdf &&
-                rect2group$$module$synpdf[d] != null)
-                ? rect2group$$module$synpdf[d]
-                : d; // fallback: 1:1
-
-            // Find the time entry for this logical measure (group)
-            var ti, t0, t1;
-            for (ti = 0; ti < deTijden$$module$synpdf.length; ++ti) {
-                if (deTijden$$module$synpdf[ti].mix === groupId) {
-                    t0 = deTijden$$module$synpdf[ti].t;
-                    t1 = (ti < deTijden$$module$synpdf.length - 1
-                        ? deTijden$$module$synpdf[ti + 1].t
-                        : t0 + 2);
-                    break;
-                }
-            }
-            if (ti >= deTijden$$module$synpdf.length) break; // no matching time entry
-
-            // Compute seek time
-            var seek;
-            if (opt$$module$synpdf.lncsr) {
-                // Proportion within the *logical* measure (sum of both segments if split)
-                var frac = (a - e.x) / e.w; // default (single-rect)
-                if (typeof groups$$module$synpdf !== "undefined" &&
-                    groups$$module$synpdf &&
-                    groups$$module$synpdf[groupId] &&
-                    Array.isArray(groups$$module$synpdf[groupId].rects)) {
-
-                    var rectIdxs = groups$$module$synpdf[groupId].rects;
-                    if (rectIdxs.length === 2) {
-                        var r1 = deMaten$$module$synpdf[rectIdxs[0]];
-                        var r2 = deMaten$$module$synpdf[rectIdxs[1]];
-                        var w1 = r1.w, w2 = r2.w, W = (w1 + w2) || 1;
-
-                        if (d === rectIdxs[0]) {
-                            // Clicked first segment
-                            frac = (a - r1.x) / W;
-                        } else if (d === rectIdxs[1]) {
-                            // Clicked second segment
-                            frac = (w1 + (a - r2.x)) / W;
-                        } // else: unexpected; leave default
-
-                        if (frac < 0) frac = 0;
-                        if (frac > 1) frac = 1;
-                    }
-                }
-                seek = t0 + (t1 - t0) * frac;
-            } else {
-                // Jump to start of measure (plus TOFF), ignoring click position
-                seek = t0 + TOFF$$module$synpdf;
-            }
-
-            // Loop-tag vs normal seek behavior unchanged
-            if (c) {
-                if (opt$$module$synpdf.loop) {
-                    this.doLoopTag(a, e.y, seek, t0, t1, { x1: e.x, x2: e.x + e.w });
-                }
-            } else {
-                seek = seek + offset$$module$synpdf;
-                playPause2$$module$synpdf(!1, seek);
-            }
-            break;
+            for (b = 0; b < deTijden$$module$synpdf.length; ++b)
+                if (d == deTijden$$module$synpdf[b].mix) {
+                    d = deTijden$$module$synpdf[b].t;
+                    var f = b < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[b +
+                        1].t : d + 2;
+                    b = d + (f - d) * (a - e.x) / e.w;
+                    c ? opt$$module$synpdf.loop && this.doLoopTag(a, e.y, b, d, f, {
+                        x1: e.x,
+                        x2: e.x + e.w
+                    }) : (b = (opt$$module$synpdf.lncsr ? b : d + TOFF$$module$synpdf) + offset$$module$synpdf, playPause2$$module$synpdf(!1, b));
+                    break
+                } break
         }
     }
 };
@@ -737,26 +548,20 @@ DummyPlayer$$module$synpdf.prototype.clearKlok = function() {
     tick$$module$synpdf()
 };
 
-function logicalMsrsOnPage(pg) {
-    const m = deMetriek$$module$synpdf[pg]; if (!m) return 0;
-    let cnt = m.bxs.reduce((s, row) => s + Math.max(0, row.length - 1), 0);
-    const within = (m.joins || []).filter(j => !j.to.page).length;
-    const fromPrev = m.joinFromPrev ? 1 : 0;
-    return Math.max(0, cnt - within - fromPrev);
+function getPage$$module$synpdf(a) {
+    for (var b = 1, c = 0; c <= a && b < deMetriek$$module$synpdf.length;) c += deMetriek$$module$synpdf[b].bxs.reduce(function(a, b) {
+        return a + b.length - 1
+    }, 0), b += 1;
+    return b - 1
 }
 
-function getPage$$module$synpdf(ix) {
-    for (var p = 1, acc = 0; p < deMetriek$$module$synpdf.length; ++p) {
-        acc += logicalMsrsOnPage(p);
-        if (ix < acc) return p;
-    }
-    return deMetriek$$module$synpdf.length - 1;
-}
+function page2msr$$module$synpdf(a) {
+    var b, c = 0;
+    for (b = 1; b < a; ++b) c += deMetriek$$module$synpdf[b].bxs.reduce(function(a, b) {
+        return a + b.length - 1
+    }, 0);
+    return c
 
-function page2msr$$module$synpdf(pg) {
-    let c = 0;
-    for (var p = 1; p < pg; ++p) c += logicalMsrsOnPage(p);
-    return c;
 }
 
 function schakelParms$$module$synpdf(a, b) {
@@ -842,123 +647,35 @@ function copyTiming$$module$synpdf(a, b) {
 
 function knip$$module$synpdf(a, b, c) {
     var d = JSON.parse(JSON.stringify(b.cxs));
-    var bx = JSON.parse(JSON.stringify(b.bxs));
-    d.forEach(function(row) { row.cs = row.cs.map(function(v) { return 1 * v + c; }); });
-
-    // Normalize joins
-    const joins = (b.joins || []).slice();
-    const joinKey = (stf, seg, toStf, toSeg) => `${stf}:${seg}->${toStf}:${toSeg}`;
-    const joinMap = new Map();
-    for (const j of joins) {
-        const fromSeg = (j.from.seg === -1 && bx[j.from.stf]) ? (bx[j.from.stf].length - 2) : j.from.seg;
-        const toStf = j.to.stf;
-        const toSeg = j.to.seg;
-        if (Number.isInteger(fromSeg) && Number.isInteger(toStf) && Number.isInteger(toSeg)) {
-            joinMap.set(joinKey(j.from.stf, fromSeg, toStf, toSeg), true);
-        }
-    }
-    const joinFromPrev = !!b.joinFromPrev;
-
-    // helpers
-    const newGroup = () => { groups$$module$synpdf.push({ rects: [] }); return groups$$module$synpdf.length - 1; };
-    const assignRectToGroup = (rectIdx, gid) => { rect2group$$module$synpdf[rectIdx] = gid; groups$$module$synpdf[gid].rects.push(rectIdx); };
-
-    var e, firstRectOfPage = true, carryThisPageUsed = false;
-
+    b = JSON.parse(JSON.stringify(b.bxs));
+    d.forEach(function(a) {
+        a.cs = a.cs.map(function(a) {
+            return 1 * a + c;
+        })
+    });
+    var e;
     for (e = 0; e < d.length; ++e) {
-        var cs = d[e].cs;
-        var y1 = cs[0], y2 = cs[cs.length - 1];
-        var rowB = bx[e];
-
-        for (var seg = 0; seg < rowB.length - 1; ++seg) {
-            var x1 = rowB[seg], x2 = rowB[seg + 1];
-
-            // push the physical rectangle
-            var rect = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
-            deMaten$$module$synpdf.push(rect);
-            var rectIdx = deMaten$$module$synpdf.length - 1;
-
-            // Determine its group
-            if (firstRectOfPage && joinFromPrev && pendingJoinGroupId$$module$synpdf != null) {
-                // This page begins with continuation from previous page
-                assignRectToGroup(rectIdx, pendingJoinGroupId$$module$synpdf);
-                pendingJoinGroupId$$module$synpdf = null;
-                carryThisPageUsed = true;
-            } else {
-                // Check if this rect is the "from" side of a within-page join (last seg -> next line first seg)
-                const isLastSegInRow = (seg === rowB.length - 2);
-                const withinJoin = isLastSegInRow && joinMap.get(joinKey(e, seg, e + 1, 0));
-
-                if (withinJoin) {
-                    const gid = newGroup();
-                    assignRectToGroup(rectIdx, gid);
-                    // The "to" rect (first seg of next row) will be assigned to the same group when we encounter it
-                    // We'll mark this fact via a simple flag:
-                    rect._awaitsNextRowFirstSeg = gid;
-                } else {
-                    // If previous rect flagged "awaits first seg", and this is that first seg, assign to same gid
-                    // NB: we don't have direct access to the previous rect here, so we just check for the key (e-1 last seg -> e 0)
-                    if (seg === 0 && joinMap.get(joinKey(e - 1, bx[e - 1]?.length - 2, e, 0))) {
-                        // previous row last seg is already assigned and created group; find it:
-                        // The previous physical rect is exactly the last rect pushed before this one.
-                        const prevRectIdx = rectIdx - 1;
-                        const gid = rect2group$$module$synpdf[prevRectIdx] ?? newGroup();
-                        assignRectToGroup(rectIdx, gid);
-                    } else {
-                        // standalone measure => its own group
-                        const gid = newGroup();
-                        assignRectToGroup(rectIdx, gid);
-                    }
-                }
-            }
-
-            firstRectOfPage = false;
+        var f = d[e].cs;
+        var g = f[0];
+        var p = f[f.length - 1];
+        var m = b[e];
+        for (f = 0; f < m.length - 1; ++f) {
+            var n = m[f];
+            var l = m[f + 1];
+            deMaten$$module$synpdf.push({
+                x: n,
+                y: g,
+                w: l - n,
+                h: p - g
+            })
         }
     }
-
-    // If last rect of this page is joined to next page, create/remember a pending group id
-    if ((b.joins || []).some(j => j.to && j.to.page === "+1")) {
-        const lastRectIdx = deMaten$$module$synpdf.length - 1;
-        // If it already has a group, reuse; otherwise make one:
-        pendingJoinGroupId$$module$synpdf = rect2group$$module$synpdf[lastRectIdx] ?? (assignRectToGroup(lastRectIdx, newGroup()), rect2group$$module$synpdf[lastRectIdx]);
-    }
-
-    // Now build logical-timeline length = number of groups (not number of physical rects)
-    const logicalCount = groups$$module$synpdf.length;
-    for (var i = deTijden$$module$synpdf.length; i < logicalCount; ++i) {
-        deTijden$$module$synpdf.push({ t: i > 0 ? deTijden$$module$synpdf[i - 1].t + 2 : 0, mix: i /* groupId */ });
-    }
-    return a;
-}
-
-function placeHighlightsForGroup(groupId, anchorRectIdx) {
-    const rects = (groups$$module$synpdf[groupId] || { rects: [] }).rects;
-    const a = rects[0] != null ? deMaten$$module$synpdf[rects[0]] : null;
-    const b = rects[1] != null ? deMaten$$module$synpdf[rects[1]] : null;
-
-    const setDiv = (div, r) => {
-        const s = div[0].style;
-        if (!r) { s.width = "0px"; s.height = "0px"; return; }
-        s.left = r.x + "px";
-        s.top = r.y + "px";
-        s.width = r.w + "px";
-        s.height = r.h + "px";
-    };
-
-    // Always show first rect; show second only if exists
-    setDiv(msc_wz$$module$synpdf.maatloper, a);
-    setDiv(msc_wz$$module$synpdf.maatloper2, b);
-
-    // Scroll anchor: prefer the rect containing the last click if provided
-    const anchor = (anchorRectIdx != null && rects.includes(anchorRectIdx))
-        ? deMaten$$module$synpdf[anchorRectIdx]
-        : (a || b);
-    if (anchor) {
-        if (anchor.y != ycurprev$$module$synpdf) {
-            doeRol$$module$synpdf(anchor.y - msc_wz$$module$synpdf.tmargin, 0);
-            ycurprev$$module$synpdf = anchor.y;
-        }
-    }
+    for (e = deTijden$$module$synpdf.length; e < deMaten$$module$synpdf.length; ++e) deTijden$$module$synpdf.push({
+        t: 0 < e ? deTijden$$module$synpdf[e - 1].t +
+            2 : 0,
+        mix: e
+    });
+    return a
 }
 
 function addDummySys$$module$synpdf() {
@@ -1555,16 +1272,18 @@ function findBarLines$$module$synpdf(a, b, c) {
 
 function maatStrepen$$module$synpdf() {
     $(".maten").remove();
-    if (opt$$module$synpdf.advncd) {
+    if (opt$$module$synpdf.advncd)
         for (var a = 0; a < deMaten$$module$synpdf.length; ++a) {
-            var r = deMaten$$module$synpdf[a];
-            var gid = rect2group$$module$synpdf[a];
-            var isSplitPair = gid != null && (groups$$module$synpdf[gid]?.rects?.length > 1);
-            var bg = isSplitPair ? "rgba(0,212,255,0.20)" : (a & 1 ? "rgba(0,255,0,0.2)" : "rgba(0,0,255,0.2)");
-            var el = $('<div class="maten"/>').css({ background: bg, left: r.x, top: r.y, width: r.w, height: r.h });
-            $("#notation").append(el);
+            var b = deMaten$$module$synpdf[a];
+            b = $('<div class="maten"/>').css({
+                background: a & 1 ? "rgba(0,255,0,0.2)" : "rgba(0,0,255,0.2)",
+                left: b.x,
+                top: b.y,
+                width: b.w,
+                height: b.h
+            });
+            $("#notation").append(b)
         }
-    }
 }
 
 function readDbxFile$$module$synpdf(a) {

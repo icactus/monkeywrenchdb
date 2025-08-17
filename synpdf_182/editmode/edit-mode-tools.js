@@ -5,12 +5,6 @@ let SplitclickY = 0;
 let QisActive = false;
 let SisActive = false;
 let WisActive = false;
-let XisActive = false;
-
-// Grouping for split measures
-var rect2group$$module$synpdf = [];        // rect index -> groupId
-var groups$$module$synpdf = [];            // groupId -> { rects:[rectIdx1, rectIdx2] }
-var pendingJoinGroupId$$module$synpdf = null;  // cross-page carry
 
 const indicatorElement = document.getElementById('indicator');
 const notation = document.getElementById('notation');
@@ -99,71 +93,7 @@ function SplitgenerateCoordinates(clickCoords) {
     }
 }
 
-function handleJoinAcrossLines(evt) {
-    if (!XisActive) return false;
 
-    let data = JSON.parse(localStorage.getItem('jsonString') || '[]');
-    let pagenum = parseInt(document.getElementById('pagenum').value);
-    if (pagenum < 1 || pagenum >= data.length) return false;
-
-    const rect = notation.getBoundingClientRect();
-    const x = evt.clientX - rect.left;
-    const y = Math.round(evt.clientY - rect.top + notation.scrollTop);
-
-    const page = data[pagenum];
-    page.joins ||= [];
-
-    // Find which system (stf) y falls into
-    let stf = -1;
-    for (let j = 0; j < page.cxs.length; j++) {
-        const cs = page.cxs[j].cs;
-        if (y >= Math.min(...cs) && y <= Math.max(...cs)) { stf = j; break; }
-    }
-    if (stf < 0) return true;
-
-    // Find which segment within that system x falls into
-    const b = page.bxs[stf];
-    if (!b || b.length < 2) return true;
-
-    let seg = -1;
-    for (let i = 0; i < b.length - 1; i++) {
-        if (x >= b[i] && x <= b[i + 1]) { seg = i; break; }
-    }
-    if (seg < 0) return true;
-
-    // Only legal if it's the last segment in the line
-    if (seg !== b.length - 2) {
-        alert("X-join: click the LAST measure on a line.");
-        return true;
-    }
-
-    // If there's a next system on this page -> within-page join
-    if (stf + 1 < page.cxs.length) {
-        // toggle behavior: remove existing if present
-        const key = (j) => j.from.stf === stf && j.from.seg === seg && j.to.stf === stf + 1 && j.to.seg === 0;
-        const ix = page.joins.findIndex(key);
-        if (ix >= 0) page.joins.splice(ix, 1);
-        else page.joins.push({ from: { stf, seg }, to: { stf: stf + 1, seg: 0 } });
-    } else {
-        // Cross-page: last system on page -> next page first system
-        // Mark outgoing on this page by convention (from last seg).
-        // Also mark the next page as starting with a join-from-previous.
-        const nextPage = data[pagenum + 1];
-        if (!nextPage) { alert("No next page to join to."); return true; }
-
-        // Toggle cross-page flag
-        nextPage.joinFromPrev = !nextPage.joinFromPrev;
-        // Keep an outgoing record here only for clarity (optional):
-        page.joins = page.joins.filter(j => !(j.from.stf === stf && j.from.seg === seg && j.to && j.to.page === "+1"));
-        if (nextPage.joinFromPrev) {
-            page.joins.push({ from: { stf, seg }, to: { stf: 0, seg: 0, page: "+1" } });
-        }
-    }
-
-    localStorage.setItem('jsonString', JSON.stringify(data));
-    resizePdfSyn$$module$synpdf(); // quick refresh
-    return true;
-}
 
 function toggleQActivity() {
     QisActive = !QisActive;
@@ -232,24 +162,6 @@ function toggleWActivity() {
     }
 }
 
-function toggleXActivity() {
-    XisActive = !XisActive;
-    console.log('join (X) is ' + (XisActive ? 'ON' : 'OFF'));
-    if (XisActive) {
-        // make cursor a crosshair and turn others off
-        indicatorElement.classList.add('crosshair-cursor');
-        document.body.style.cursor = 'crosshair';
-        if (QisActive) toggleQActivity();
-        if (SisActive) toggleSActivity();
-        if (WisActive) toggleWActivity();
-    } else {
-        if (!QisActive && !SisActive && !WisActive) {
-            indicatorElement.classList.remove('crosshair-cursor');
-            document.body.style.cursor = 'default';
-        }
-    }
-}
-
 //Makes sure deMetriek is only saving integers when using P
 function roundValuesInArray(obj) {
     for (var k in obj) {
@@ -293,9 +205,6 @@ document.addEventListener('keydown', function(event) {
             break;
         case 'w':
             toggleWActivity();
-            break;
-        case 'x':
-            toggleXActivity();
             break;
         case '/':
             keyDown$$module$synpdf({
@@ -459,7 +368,6 @@ function formatCode(s) {
 }
 
 notation.addEventListener('click', function handleClick(event) {
-    if (handleJoinAcrossLines(event)) return;
     if (handleSplit(event)) return;
     if (handleWCxs(event)) return;
     else if (!QisActive) return;
@@ -476,10 +384,15 @@ notation.addEventListener('mousemove', function(e) {
 
     tooltip.style.left = (x - 100) + 'px';
     tooltip.style.top = Math.round((y - (-50 + notation.scrollTop))) + 'px';
-    if (QisActive) tooltip.innerHTML = "Q";
-    if (SisActive) tooltip.innerHTML = "S";
-    if (WisActive) tooltip.innerHTML = "W";
-    if (XisActive) tooltip.innerHTML = "X";
+    if (QisActive) {
+        tooltip.innerHTML = "Q";
+    }
+    if (SisActive) {
+        tooltip.innerHTML = "S";
+    }
+    if (WisActive) {
+        tooltip.innerHTML = "W";
+    }
     tooltip.style.display = "block";
 });
 
