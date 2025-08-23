@@ -28,6 +28,12 @@ window.__deMScale = window.__deMScale || 1;    // multiplies x,y,w,h in deMaten
 window.__isTogglingFullscreen = false;   // suppress auto-zoom during FS transitions
 window.__preFS = null;                   // stash zoom + position before toggling
 
+// --- Hi-Res PDFs toggle ---
+window.hiResPdfsEnabled = false;
+function getPdfBaseDir() {
+    return window.hiResPdfsEnabled ? './hd-pdfs/' : './pdfs/';
+}
+
 const sheetMusicSvg = ` 
 <span class="sheet-music-icon">
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -508,13 +514,14 @@ function loadRecording(recordingFullData) {
 
         // Check if the data is already stored in the cache
         let storedData = recordingCache[storedId];
+        // If data exists in cache, refresh its pdf path to match current mode
         if (storedData) {
-            // If data exists in cache, resolve the promise with the cached data
-            sendVarToSynpdf(storedData); // Assign the variables if data is cached
+            storedData.pdf_file_name = `${getPdfBaseDir()}${storedData.piece_id}-${storedData.instrument_id}.pdf`;
+            sendVarToSynpdf(storedData);
             resolve();
         } else {
-            // If data does not exist in cache, fetch and store it
-            var pdfFileName = "./pdfs/" + recordingFullData.piece_id + "-" + recordingFullData.instrument_id + ".pdf";
+            // If data does not exist in cache, create it with the correct base dir
+            const pdfFileName = `${getPdfBaseDir()}${recordingFullData.piece_id}-${recordingFullData.instrument_id}.pdf`;
             recordingFullData.pdf_file_name = pdfFileName;
             recordingFullData.timestamp = Date.now();
             recordingCache[storedId] = recordingFullData;
@@ -597,7 +604,7 @@ $('#instruments-dropdown').change(function() {
                 metric_arr_data: partData.metric_arr_data,
                 instrument_id: instrumentData.instrument_id,
                 instrument_name: instrumentData.displayText,
-                pdf_file_name: `./pdfs/${currentRecordingFullData.piece_id}-${instrumentData.instrument_id}.pdf`
+                pdf_file_name: `${getPdfBaseDir()}${currentRecordingFullData.piece_id}-${instrumentData.instrument_id}.pdf`
             };
 
             loadRecording(updatedRecordingFullData)
@@ -1117,6 +1124,50 @@ function addShareButtonListener() {
     }
 }
 
+function toggleHiResPdfs() {
+    window.hiResPdfsEnabled = !window.hiResPdfsEnabled;
+
+    // Recompute the current score's path
+    const piece = (window.currentRecordingFullData?.piece_id);
+    const inst = (window.currentInstrumentGlobal ?? window.currentRecordingFullData?.instrument_id);
+    if (!piece || !inst) {
+        toast(`Hi-res PDFs ${window.hiResPdfsEnabled ? 'ON' : 'OFF'}`);
+        return;
+    }
+
+    const newPath = `${getPdfBaseDir()}${piece}-${inst}.pdf`;
+
+    // Remember where we are (musical time) so rebuild doesn’t jump
+    window.__restoreTime =
+        (window.msc_wz$$module$synpdf?.cursorTime)
+        ?? ((window.elmed$$module$synpdf?.getCurrentTime?.() ?? window.elmed$$module$synpdf?.currentTime ?? 0)
+            - (window.offset$$module$synpdf || 0));
+    window.__restoreMix = (typeof window.demix$$module$synpdf === 'number') ? window.demix$$module$synpdf : null;
+
+    // In two-up, make the next time2x snap to the current spread
+    const scroller = document.getElementById('notation-scroll');
+    if (scroller?.classList.contains('two-up')) {
+        window.twoUpInitialScrollPending = true;
+        window.__twoUpPrevPage = undefined;
+    }
+
+    // Update globals + reload pages
+    window.currentRecordingFullData.pdf_file_name = newPath; // keep cache entry aligned
+    window.pdf_file$$module$synpdf = newPath;
+    readPdf$$module$synpdf(window.pdf_file$$module$synpdf, 'url');
+
+    toast(`Hi-res PDFs ${window.hiResPdfsEnabled ? 'ON' : 'OFF'}`);
+}
+
+// Tiny toast using the existing #notification element in index.php
+function toast(msg) {
+    const n = document.getElementById('notification');
+    if (!n) return;
+    n.textContent = msg;
+    n.style.display = 'block';
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(() => (n.style.display = 'none'), 1600);
+}
 
 // we already use these for restore-before-reflow:
 window.__restoreTime = window.__restoreTime ?? null;
@@ -1126,6 +1177,14 @@ window.__restoreMix = window.__restoreMix ?? null;
 document.addEventListener('keydown', (e) => {
     if (e.altKey && (e.key === '2' || e.code === 'Digit2')) {
         toggleTwoUpMode();
+        e.preventDefault();
+    }
+});
+
+// Alt+H toggles Hi-Res PDFs 
+document.addEventListener('keydown', (e) => {
+    if ((e.altKey || e.metaKey) && e.key.toLowerCase() === 'h') {
+        toggleHiResPdfs();
         e.preventDefault();
     }
 });
