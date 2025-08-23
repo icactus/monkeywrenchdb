@@ -1248,7 +1248,7 @@ function renderPageIfNotRendered(pageIndex) {
             const devicePixelRatio = window.devicePixelRatio || 1;
             const pv = pageView[pageIndex] || { w: page._pageInfo.view[2], h: page._pageInfo.view[3], rotation: page.rotate || 0 };
             const baseScale = deMetriek$$module$synpdf[0] / pv.w; // logical page width / natural width
-            const enhancedScale = baseScale * Math.min(devicePixelRatio, (phoneCheck ? 1.5 : 2));
+            const enhancedScale = baseScale * Math.min(devicePixelRatio, (phoneCheck ? 1.5 : 3));
             const viewport = page.getViewport({ scale: enhancedScale, rotation: pv.rotation || 0 });
 
             const ctx = canvas.getContext('2d');
