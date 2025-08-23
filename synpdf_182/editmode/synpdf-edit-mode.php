@@ -496,7 +496,7 @@
 </head>
 
 <body>
-    <?php include "../../phpfiles/get_pieces_and_composers.php"; ?>
+    <?php include "/../../phpfiles/get_pieces_and_composers.php"; ?>
     <div id="tooltip"></div><!--for mouse x position element-->
 
     <!-- <div class="main-container"> -->
@@ -671,7 +671,14 @@
                         <input type="hidden" name="measures_version" value="1" />
 
                         <textarea name="metric_arr_data" placeholder="Paste metric arr data here..."></textarea>
-                        <input type="file" id="fknp2" name="file" accept=".pdf" tabindex="1" required />
+                        <div>
+                            <label for="fknp2">SD pdf</label>
+                            <input type="file" id="fknp2" name="file" accept=".pdf" tabindex="1" required />
+                        </div>
+                        <div>
+                            <label for="fknp2_hd">HD pdf</label>
+                            <input type="file" id="fknp2_hd" name="file_hd" accept=".pdf" required />
+                        </div>
                         <input type="submit" name="submit" value="Submit" />
                         <input type="submit" name="update" value="Update" />
                     </div>
