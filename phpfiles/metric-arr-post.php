@@ -131,8 +131,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif ($action === 'submit') {
         // --- SUBMIT: require SD + HD file uploads ---
         $baseName = "{$piece_id}-{$instrument_id}.pdf";
-        $stdDir = __DIR__ . "../pdfs/";
-        $hdDir  = __DIR__ . "../hd-pdfs/";
+        // Always under the webroot, regardless of where PHP files live
+        $webroot = rtrim($_SERVER['DOCUMENT_ROOT'], '/');   // e.g., /home/username/public_html
+        $stdDir  = $webroot . "/pdfs/";
+        $hdDir   = $webroot . "/hd-pdfs/";
         if (!is_dir($stdDir)) mkdir($stdDir, 0755, true);
         if (!is_dir($hdDir))  mkdir($hdDir,  0755, true);
 
