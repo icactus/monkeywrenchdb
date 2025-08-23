@@ -496,7 +496,7 @@
 </head>
 
 <body>
-    <?php include "/../../phpfiles/get_pieces_and_composers.php"; ?>
+    <?php include "../../phpfiles/get_pieces_and_composers.php"; ?>
     <div id="tooltip"></div><!--for mouse x position element-->
 
     <!-- <div class="main-container"> -->
