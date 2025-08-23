@@ -1181,13 +1181,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Alt+H toggles Hi-Res PDFs 
-document.addEventListener('keydown', (e) => {
-    if ((e.altKey || e.metaKey) && e.key.toLowerCase() === 'h') {
-        toggleHiResPdfs();
-        e.preventDefault();
-    }
-});
 
 $(document).ready(function() {
 

@@ -1779,6 +1779,10 @@ function keyDown$$module$synpdf(a) {
             $("#help").toggleClass("showhlp");
             $("#about").toggleClass("showabout", !1);
             break;
+        case 'H':
+            toggleHiResPdfs();
+            e.preventDefault();
+            break;
         case "l":
             $("#lncsr").click();
             break;
