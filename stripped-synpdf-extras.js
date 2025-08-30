@@ -1116,17 +1116,13 @@ let __piecesSearchState = {
     instrumentIds: ''
 };
 
-function safe(str) {
-    return (typeof str === 'string') ? str : '';
-}
-
 function __preparePiecesSearch(pieces, instrumentName, instrumentIds) {
     __piecesSearchState.all = pieces.map(p => ({
         ...p,
         _searchKey: (
-            (safe(p.composer_last) + ' ' +
-                safe(p.piece_name) + ' ' +
-                safe(p.category_name)
+            ((p.composer_last || '') + ' ' +
+                (p.piece_name || '') + ' ' +
+                (p.category_name || '')
             ).toLowerCase()
         )
     }));
@@ -1134,37 +1130,54 @@ function __preparePiecesSearch(pieces, instrumentName, instrumentIds) {
     __piecesSearchState.instrumentIds = instrumentIds;
 }
 
-function __injectPiecesSearchBar($container, onFilter) {
+function __injectPiecesSearchBar($container, instrumentNameArg) {
     const $bar = $(`
-    <div id="pieces-searchbar" class="pieces-searchbar" style="margin: 8px 0 14px; display:flex; gap:8px; align-items:center;">
-      <input id="pieces-search" type="text" placeholder="Search pieces… (fuzzy)"
-             autocomplete="off" style="flex:1; padding:8px 10px; font-size:14px;">
-      <button id="pieces-search-clear" type="button" aria-label="Clear" title="Clear"
-              style="padding:6px 10px; font-size:16px; line-height:1">×</button>
+    <div id="pieces-searchbar">
+      <input id="pieces-search" type="search" placeholder="Search pieces…"
+             autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+      <button id="pieces-search-clear" title="Clear">×</button>
     </div>
   `);
     $container.append($bar);
+
+    const onFilter = (q) => {
+        const query = (q || '').toLowerCase().trim();
+
+        if (!query) {
+            __renderPiecesList(__piecesSearchState.all, instrumentNameArg);
+            return;
+        }
+
+        const ranked = __piecesSearchState.all
+            .map(p => ({ p, s: __fuzzyScore(p._searchKey, query) }))
+            .filter(x => Number.isFinite(x.s))  // <-- instead of !== -Infinity
+            .sort((a, b) => b.s - a.s)
+            .map(x => x.p);
+
+        __renderPiecesList(ranked, instrumentNameArg);
+    };
 
     const debounce = (fn, ms = 80) => {
         let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
     };
 
-    $('#pieces-search-clear').on('click', () => {
-        const $i = $('#pieces-search');
-        $i.val('');
-        onFilter('');
-        $i.trigger('focus');
-    });
-
-    $('#pieces-search').on('input', debounce(function() {
+    // delegated bindings so they survive re-renders
+    $container.off('input.piecesSearch click.piecesSearch');
+    $container.on('input.piecesSearch', '#pieces-search', debounce(function() {
         onFilter(this.value);
     }, 80));
+    $container.on('click.piecesSearch', '#pieces-search-clear', function() {
+        const $input = $('#pieces-search');
+        $input.val('');
+        $input.trigger('input');
+    });
 }
 
 // lightweight fuzzy: subsequence match with adjacency/start bonuses
 function __fuzzyScore(hay, needle) {
     const q = (needle || '').toLowerCase().trim();
-    if (!q) return Number.NEGATIVE_INFINITY + 1; // special "empty" marker
+    if (!q) return NaN;                 // <-- was Number.NEGATIVE_INFINITY + 1 (bug)
+
     let score = 0, last = -1, run = 0;
     for (let i = 0; i < q.length; i++) {
         const ch = q[i];
@@ -1172,13 +1185,14 @@ function __fuzzyScore(hay, needle) {
         if (pos < 0) return Number.NEGATIVE_INFINITY; // no match
         const startOfWord = (pos === 0) || /\s|[-_/.,]/.test(hay[pos - 1]);
         run = (pos === last + 1) ? (run + 1) : 0;
-        score += 1;              // base hit
-        if (run) score += 4;  // adjacency bonus
-        if (startOfWord) score += 2;  // word start bonus
-        score += Math.max(0, 60 - pos) * 0.01; // earlier is slightly better
+
+        score += 1;
+        if (run) score += 4;
+        if (startOfWord) score += 2;
+        score += Math.max(0, 60 - pos) * 0.01;
+
         last = pos;
     }
-    // prefer longer queries a smidge
     score += q.length * 0.25;
     return score;
 }
