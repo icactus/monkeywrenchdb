@@ -1223,6 +1223,9 @@ function initPiecesSearchUI() {
 
     const $input = $container.find('#pieces-search');
 
+    // Always refocus the box when Select Piece is shown
+    $input.focus();
+
     const doFilter = () => {
         const q = $input.val().trim().toLowerCase();
         const $rows = $container.find('.piece-row');
