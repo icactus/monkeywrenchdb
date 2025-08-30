@@ -203,122 +203,50 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
         data: { instrumentIds: instrumentIds, instrumentName: instrumentNameArg || '' },
         dataType: 'json',
         success: function(data) {
+            const $container = $('#pieces-container');
+            $container.empty();
 
-            var container = $('#pieces-container');
-            container.empty();
-
-            // Now, check if the 'message' key exists in the parsed object
             if (data.message && data.message === "No pieces found for the selected instrument") {
                 console.log(data.message);
-                container.html('<p>' + data.message + '</p>');
-            } else {
-                // Your existing logic for handling the pieces data
-                var pieces = data.pieces || [];
-                var instrumentName = (instrumentNameArg || data.instrumentName || "").trim();
-                const instHeading = instrumentName.endsWith("Score")
-                    ? `${instrumentName}s`
-                    : `${instrumentName} Parts`;
-                console.log(instHeading);
-                container.append(`<h2>${instHeading}</h2>`);
-                // Group pieces by 'piece_category.category_name'
-                var groupedPieces = pieces.reduce(function(acc, piece) {
-                    var categoryName = piece.category_name;
-                    if (!acc[categoryName]) {
-                        acc[categoryName] = [];
-                    }
-                    acc[categoryName].push(piece);
-                    return acc;
-                }, {});
+                $container.html('<p>' + data.message + '</p>');
+                return;
+            }
 
-                // Handle grouping and renaming based on instrumentName
-                var soloOrchestraKey = instrumentName + ' + Orchestra';
-                // When instrumentName is "Piano", group "Piano Accompaniment" and "Solo + Piano" together
-                var soloPianoKey = "Solo + Piano";
+            const pieces = data.pieces || [];
+            const instrumentName = (instrumentNameArg || data.instrumentName || "").trim();
 
-                if (instrumentName === "Piano") {
-                    // Group "Orchestra" (renamed to "Piano Accompaniment") with "Solo + Piano"
-                    if (groupedPieces['Orchestra']) {
-                        if (!groupedPieces[soloPianoKey]) {
-                            groupedPieces[soloPianoKey] = [];
-                        }
-                        // Combine "Orchestra" pieces into "Solo + Piano"
-                        groupedPieces[soloPianoKey] = groupedPieces[soloPianoKey].concat(groupedPieces['Orchestra']);
-                        delete groupedPieces['Orchestra'];
-                    }
+            // Heading text like your original code
+            const instHeading = instrumentName.endsWith("Score")
+                ? `${instrumentName}s`
+                : `${instrumentName} Parts`;
 
-                    // Ensure "Solo + Orchestra" is also appropriately handled, if necessary
-                    if (groupedPieces['Solo + Orchestra']) {
-                        groupedPieces[soloOrchestraKey] = groupedPieces['Solo + Orchestra'];
-                        delete groupedPieces['Solo + Orchestra'];
-                    }
-                } else {
-                    // For other instruments, handle renaming of "Solo + Orchestra" dynamically
-                    if (groupedPieces['Solo + Orchestra']) {
-                        groupedPieces[soloOrchestraKey] = groupedPieces['Solo + Orchestra'];
-                        delete groupedPieces['Solo + Orchestra'];
-                    }
+            // Prepare search state from full results
+            __preparePiecesSearch(pieces, instrumentName, instrumentIds);
 
-                    // Handle "Solo + Piano" dynamically for instruments other than Piano
-                    if (groupedPieces['Solo + Piano']) {
-                        groupedPieces[instrumentName + ' + Piano'] = groupedPieces['Solo + Piano'];
-                        delete groupedPieces['Solo + Piano'];
-                    }
+            // Build header + search bar
+            $container.append(`<h2>${instHeading}</h2>`);
+            __injectPiecesSearchBar($container, function onFilter(q) {
+                const query = (q || '').toLowerCase().trim();
+
+                // Empty query = full list
+                if (!query) {
+                    __renderPiecesList(__piecesSearchState.all, instrumentName, instrumentIds, $container);
+                    return;
                 }
 
-                // Desired order of categories by name, adjusting based on instrumentName
-                var desiredOrder = instrumentName === "Piano" ?
-                    ['Solo', soloOrchestraKey, soloPianoKey, 'Opera', 'Chamber', 'Choral Works'] :
-                    ['Orchestra', soloOrchestraKey, instrumentName + ' + Piano', 'Solo', 'Opera', 'Chamber', 'Choral Works'];
+                // Score & sort fuzzy matches against prebuilt _searchKey
+                const ranked = __piecesSearchState.all
+                    .map(p => ({ p, s: __fuzzyScore(p._searchKey, query) }))
+                    .filter(x => x.s !== Number.NEGATIVE_INFINITY)
+                    .sort((a, b) => b.s - a.s)
+                    .map(x => x.p);
 
-                // Reorder groupedPieces according to desiredOrder
-                var orderedGroupedPieces = desiredOrder.reduce(function(ordered, categoryName) {
-                    if (groupedPieces[categoryName]) {
-                        ordered[categoryName] = groupedPieces[categoryName];
-                    }
-                    return ordered;
-                }, {});
+                __renderPiecesList(ranked, instrumentName, instrumentIds, $container);
+            });
 
-                // Iterate over each category in orderedGroupedPieces
-                Object.keys(orderedGroupedPieces).forEach(function(categoryName) {
-                    // Sort pieces within each category by 'composer_last' and then by 'piece_name'
-                    orderedGroupedPieces[categoryName].sort(function(a, b) {
-                        var composerA = a.composer_last.toUpperCase();
-                        var composerB = b.composer_last.toUpperCase();
-                        var result = composerA.localeCompare(composerB);
-
-                        // If composers are the same, sort by 'piece_name'
-                        if (result === 0) {
-                            var pieceA = a.piece_name.toUpperCase();
-                            var pieceB = b.piece_name.toUpperCase();
-                            result = pieceA.localeCompare(pieceB);
-                        }
-
-                        return result;
-                    });
-
-                    // Create a heading for the category
-                    container.append('<h3>' + categoryName + '</h3>');
-
-                    // Populate the links dynamically
-                    orderedGroupedPieces[categoryName].forEach(function(piece) {
-                        const $row = $('<p></p>');
-                        const $a = $(`
-                          <a href="#" 
-                             class="pieces-link" 
-                             data-id="${piece.metric_arr_id}" 
-                             data-piece-id="${piece.piece_id}" 
-                             data-instrument-id="${instrumentIds}">
-                            <b>${piece.composer_last}</b> - ${piece.piece_name}
-                          </a>
-                        `);
-                        $a.data('parts', piece.parts || []);
-                        $row.append($a).append(` (${piece.total_recordings_value})♫`);
-                        container.append($row);
-                    });
-                });
-            }
+            // Initial full render
+            __renderPiecesList(__piecesSearchState.all, instrumentName, instrumentIds, $container);
         },
-        //what is this jqXHR? looks like a typo
         error: function(jqXHR, textStatus, errorThrown) {
             console.log("AJAX error: " + textStatus + ' : ' + errorThrown);
             console.log("Status code: " + jqXHR.status);
@@ -1181,6 +1109,154 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// --- Client-side fuzzy search of pieces (no extra server queries) ---
+let __piecesSearchState = {
+    all: [],                // full list for the active instrument
+    instrumentName: '',
+    instrumentIds: ''
+};
+
+function __preparePiecesSearch(pieces, instrumentName, instrumentIds) {
+    __piecesSearchState.all = pieces.map(p => ({
+        ...p,
+        _searchKey: (
+            ((p.composer_last || '') + ' ' +
+                (p.piece_name || '') + ' ' +
+                (p.category_name || '')
+            ).toLowerCase()
+        )
+    }));
+    __piecesSearchState.instrumentName = instrumentName;
+    __piecesSearchState.instrumentIds = instrumentIds;
+}
+
+function __injectPiecesSearchBar($container, onFilter) {
+    const $bar = $(`
+    <div id="pieces-searchbar" class="pieces-searchbar" style="margin: 8px 0 14px; display:flex; gap:8px; align-items:center;">
+      <input id="pieces-search" type="text" placeholder="Search pieces… (fuzzy)"
+             autocomplete="off" style="flex:1; padding:8px 10px; font-size:14px;">
+      <button id="pieces-search-clear" type="button" aria-label="Clear" title="Clear"
+              style="padding:6px 10px; font-size:16px; line-height:1">×</button>
+    </div>
+  `);
+    $container.append($bar);
+
+    const debounce = (fn, ms = 80) => {
+        let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+    };
+
+    $('#pieces-search-clear').on('click', () => {
+        const $i = $('#pieces-search');
+        $i.val('');
+        onFilter('');
+        $i.trigger('focus');
+    });
+
+    $('#pieces-search').on('input', debounce(function() {
+        onFilter(this.value);
+    }, 80));
+}
+
+// lightweight fuzzy: subsequence match with adjacency/start bonuses
+function __fuzzyScore(hay, needle) {
+    const q = (needle || '').toLowerCase().trim();
+    if (!q) return Number.NEGATIVE_INFINITY + 1; // special "empty" marker
+    let score = 0, last = -1, run = 0;
+    for (let i = 0; i < q.length; i++) {
+        const ch = q[i];
+        const pos = hay.indexOf(ch, last + 1);
+        if (pos < 0) return Number.NEGATIVE_INFINITY; // no match
+        const startOfWord = (pos === 0) || /\s|[-_/.,]/.test(hay[pos - 1]);
+        run = (pos === last + 1) ? (run + 1) : 0;
+        score += 1;              // base hit
+        if (run) score += 4;  // adjacency bonus
+        if (startOfWord) score += 2;  // word start bonus
+        score += Math.max(0, 60 - pos) * 0.01; // earlier is slightly better
+        last = pos;
+    }
+    // prefer longer queries a smidge
+    score += q.length * 0.25;
+    return score;
+}
+
+function __sortPiecesByComposerThenTitle(a, b) {
+    const ca = (a.composer_last || '').toUpperCase();
+    const cb = (b.composer_last || '').toUpperCase();
+    const cmpC = ca.localeCompare(cb);
+    if (cmpC !== 0) return cmpC;
+    const pa = (a.piece_name || '').toUpperCase();
+    const pb = (b.piece_name || '').toUpperCase();
+    return pa.localeCompare(pb);
+}
+
+// Render a list of pieces into #pieces-container, grouped like your original code
+function __renderPiecesList(pieces, instrumentName, instrumentIds, $container) {
+    // wipe previous results block only (keep H2 + searchbar)
+    $container.find('.pieces-results').remove();
+    const $wrap = $('<div class="pieces-results"></div>');
+
+    // group by category
+    const grouped = pieces.reduce((acc, p) => {
+        const k = p.category_name || 'Other';
+        (acc[k] ||= []).push(p);
+        return acc;
+    }, {});
+
+    // dynamic renaming/grouping (mirrors your existing logic)
+    const soloOrchKey = `${instrumentName} + Orchestra`;
+    if (instrumentName === 'Piano') {
+        if (grouped['Orchestra']) {
+            grouped['Solo + Piano'] = (grouped['Solo + Piano'] || []).concat(grouped['Orchestra']);
+            delete grouped['Orchestra'];
+        }
+        if (grouped['Solo + Orchestra']) {
+            grouped[soloOrchKey] = grouped['Solo + Orchestra'];
+            delete grouped['Solo + Orchestra'];
+        }
+    } else {
+        if (grouped['Solo + Orchestra']) {
+            grouped[soloOrchKey] = grouped['Solo + Orchestra'];
+            delete grouped['Solo + Orchestra'];
+        }
+        if (grouped['Solo + Piano']) {
+            grouped[`${instrumentName} + Piano`] = grouped['Solo + Piano'];
+            delete grouped['Solo + Piano'];
+        }
+    }
+
+    const desired = (instrumentName === 'Piano')
+        ? ['Solo', soloOrchKey, 'Solo + Piano', 'Opera', 'Chamber', 'Choral Works']
+        : ['Orchestra', soloOrchKey, `${instrumentName} + Piano`, 'Solo', 'Opera', 'Chamber', 'Choral Works'];
+
+    const orderedKeys = desired.filter(k => grouped[k]);
+
+    if (orderedKeys.length === 0) {
+        $wrap.append('<p>No matches.</p>');
+        $container.append($wrap);
+        return;
+    }
+
+    orderedKeys.forEach(cat => {
+        const list = grouped[cat].slice().sort(__sortPiecesByComposerThenTitle);
+        $wrap.append(`<h3>${cat}</h3>`);
+        list.forEach(piece => {
+            const $row = $('<p></p>');
+            const $a = $(`
+        <a href="#" class="pieces-link"
+           data-id="${piece.metric_arr_id}"
+           data-piece-id="${piece.piece_id}"
+           data-instrument-id="${instrumentIds}">
+          <b>${piece.composer_last || ''}</b> - ${piece.piece_name || ''}
+        </a>
+      `);
+            $a.data('parts', piece.parts || []);
+            $row.append($a).append(` (${piece.total_recordings_value || 0})♫`);
+            $wrap.append($row);
+        });
+    });
+
+    $container.append($wrap);
+}
 
 $(document).ready(function() {
 
