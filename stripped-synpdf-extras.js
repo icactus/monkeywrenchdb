@@ -510,7 +510,7 @@ function loadRecording(recordingFullData) {
 
         // Add title to composer-piece-name Div
         let targetDiv = document.getElementById('composer-piece-name');
-        targetDiv.innerHTML = `< h3 > ${newTitle}</h3 > `;
+        targetDiv.innerHTML = `<h3> ${newTitle}</h3> `;
 
         // Create a unique ID for the recording
         let metricId = recordingFullData.metric_arr_id;
@@ -610,7 +610,7 @@ $('#instruments-dropdown').change(function() {
                 metric_arr_data: partData.metric_arr_data,
                 instrument_id: instrumentData.instrument_id,
                 instrument_name: instrumentData.displayText,
-                pdf_file_name: `${getPdfBaseDir()}${currentRecordingFullData.piece_id} - ${instrumentData.instrument_id}.pdf`
+                pdf_file_name: `${getPdfBaseDir()}${currentRecordingFullData.piece_id}-${instrumentData.instrument_id}.pdf`
             };
 
             loadRecording(updatedRecordingFullData)
