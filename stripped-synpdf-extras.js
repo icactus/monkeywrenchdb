@@ -237,7 +237,7 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
                 // Score & sort fuzzy matches against prebuilt _searchKey
                 const ranked = __piecesSearchState.all
                     .map(p => ({ p, s: __fuzzyScore(p._searchKey, query) }))
-                    .filter(x => x.s !== Number.NEGATIVE_INFINITY)
+                    .filter(x => Number.isFinite(x.s))
                     .sort((a, b) => b.s - a.s)
                     .map(x => x.p);
 
@@ -1130,7 +1130,7 @@ function __preparePiecesSearch(pieces, instrumentName, instrumentIds) {
     __piecesSearchState.instrumentIds = instrumentIds;
 }
 
-function __injectPiecesSearchBar($container, instrumentNameArg) {
+function __injectPiecesSearchBar($container, onFilter) {
     const $bar = $(`
     <div id="pieces-searchbar">
       <input id="pieces-search" type="search" placeholder="Search pieces…"
@@ -1140,32 +1140,15 @@ function __injectPiecesSearchBar($container, instrumentNameArg) {
   `);
     $container.append($bar);
 
-    const onFilter = (q) => {
-        const query = (q || '').toLowerCase().trim();
-
-        if (!query) {
-            __renderPiecesList(__piecesSearchState.all, instrumentNameArg);
-            return;
-        }
-
-        const ranked = __piecesSearchState.all
-            .map(p => ({ p, s: __fuzzyScore(p._searchKey, query) }))
-            .filter(x => Number.isFinite(x.s))  // <-- instead of !== -Infinity
-            .sort((a, b) => b.s - a.s)
-            .map(x => x.p);
-
-        __renderPiecesList(ranked, instrumentNameArg);
-    };
-
     const debounce = (fn, ms = 80) => {
         let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
     };
 
-    // delegated bindings so they survive re-renders
     $container.off('input.piecesSearch click.piecesSearch');
     $container.on('input.piecesSearch', '#pieces-search', debounce(function() {
-        onFilter(this.value);
+        onFilter(this.value);   // <- just delegate to callback
     }, 80));
+
     $container.on('click.piecesSearch', '#pieces-search-clear', function() {
         const $input = $('#pieces-search');
         $input.val('');
