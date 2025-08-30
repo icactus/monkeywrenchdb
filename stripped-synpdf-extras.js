@@ -310,6 +310,8 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
                             piece.piece_name || ''
                         ].join(' ').toLowerCase();
 
+                        const normalizedSearch = stripDiacritics(searchText);
+
                         const $a = $(`
                             <a href="#"
                                class="pieces-link"
@@ -321,7 +323,7 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
                           `);
 
                         $a.data('parts', piece.parts || []);
-                        $row.addClass('piece-row').attr('data-search', searchText);
+                        $row.addClass('piece-row').attr('data-search', normalizedSearch);
                         $row.append($a).append(` (${piece.total_recordings_value})♫`);
                         container.append($row);
                     });
@@ -1183,6 +1185,10 @@ function toast(msg) {
 window.__restoreTime = window.__restoreTime ?? null;
 window.__restoreMix = window.__restoreMix ?? null;
 
+
+function stripDiacritics(str) {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
 // --- Simple fuzzy filter for the Pieces list ---
 function fuzzyMatch(haystack, needle) {
     haystack = (haystack || '').toLowerCase();
