@@ -1140,19 +1140,22 @@ function __injectPiecesSearchBar($container, onFilter) {
   `);
     $container.append($bar);
 
+    const $input = $bar.find('#pieces-search');
+    const $clear = $bar.find('#pieces-search-clear');
+
     const debounce = (fn, ms = 80) => {
         let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
     };
 
-    $container.off('input.piecesSearch click.piecesSearch');
-    $container.on('input.piecesSearch', '#pieces-search', debounce(function() {
-        onFilter(this.value);   // <- just delegate to callback
-    }, 80));
+    // Bind directly to the input; include keyup/search fallbacks
+    $input.off('.piecesSearch')
+        .on('input.piecesSearch keyup.piecesSearch search.piecesSearch change.piecesSearch',
+            debounce(function() { onFilter(this.value); }, 80));
 
-    $container.on('click.piecesSearch', '#pieces-search-clear', function() {
-        const $input = $('#pieces-search');
+    // Explicitly call the callback on clear (don’t rely on 'input' firing)
+    $clear.off('.piecesSearch').on('click.piecesSearch', function() {
         $input.val('');
-        $input.trigger('input');
+        onFilter('');
     });
 }
 
