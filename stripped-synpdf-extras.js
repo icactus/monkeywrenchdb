@@ -1188,14 +1188,7 @@ function fuzzyMatch(haystack, needle) {
     haystack = (haystack || '').toLowerCase();
     needle = (needle || '').toLowerCase();
     if (!needle) return true;
-    if (haystack.indexOf(needle) !== -1) return true; // fast path: substring
-
-    // very simple "letters in order" fuzzy check
-    let h = 0, n = 0;
-    while (h < haystack.length && n < needle.length) {
-        if (haystack[h++] === needle[n]) n++;
-    }
-    return n === needle.length;
+    return haystack.includes(needle);   // only literal substring
 }
 
 function refreshCategoryHeadings() {
