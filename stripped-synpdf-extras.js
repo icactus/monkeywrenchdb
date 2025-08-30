@@ -1116,13 +1116,17 @@ let __piecesSearchState = {
     instrumentIds: ''
 };
 
+function safe(str) {
+    return (typeof str === 'string') ? str : '';
+}
+
 function __preparePiecesSearch(pieces, instrumentName, instrumentIds) {
     __piecesSearchState.all = pieces.map(p => ({
         ...p,
         _searchKey: (
-            ((p.composer_last || '') + ' ' +
-                (p.piece_name || '') + ' ' +
-                (p.category_name || '')
+            (safe(p.composer_last) + ' ' +
+                safe(p.piece_name) + ' ' +
+                safe(p.category_name)
             ).toLowerCase()
         )
     }));
