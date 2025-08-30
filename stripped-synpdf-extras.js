@@ -1188,7 +1188,12 @@ function fuzzyMatch(haystack, needle) {
     haystack = (haystack || '').toLowerCase();
     needle = (needle || '').toLowerCase();
     if (!needle) return true;
-    return haystack.includes(needle);   // only literal substring
+
+    // split the search into separate words
+    const terms = needle.split(/\s+/).filter(Boolean);
+
+    // each term must be found somewhere in haystack
+    return terms.every(term => haystack.includes(term));
 }
 
 function refreshCategoryHeadings() {
