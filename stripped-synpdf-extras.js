@@ -306,21 +306,19 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
                         const $row = $('<p></p>');
                         // build a lowercase search text: composer + title + category + instrument
                         const searchText = [
-                            piece.composer_last,
-                            piece.piece_name,
-                            categoryName,
-                            instrumentName
+                            piece.composer_last || '',
+                            piece.piece_name || ''
                         ].join(' ').toLowerCase();
 
                         const $a = $(`
-                          <a href="#" 
-                             class="pieces-link" 
-                             data-id="${piece.metric_arr_id}" 
-                             data-piece-id="${piece.piece_id}" 
-                             data-instrument-id="${instrumentIds}">
-                            <b>${piece.composer_last}</b> - ${piece.piece_name}
-                          </a>
-                        `);
+                            <a href="#"
+                               class="pieces-link"
+                               data-id="${piece.metric_arr_id}"
+                               data-piece-id="${piece.piece_id}"
+                               data-instrument-id="${instrumentIds}">
+                              <b>${piece.composer_last}</b> - ${piece.piece_name}
+                            </a>
+                          `);
 
                         $a.data('parts', piece.parts || []);
                         $row.addClass('piece-row').attr('data-search', searchText);
