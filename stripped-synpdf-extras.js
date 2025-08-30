@@ -522,12 +522,12 @@ function loadRecording(recordingFullData) {
         let storedData = recordingCache[storedId];
         // If data exists in cache, refresh its pdf path to match current mode
         if (storedData) {
-            storedData.pdf_file_name = `${getPdfBaseDir()}${storedData.piece_id} - ${storedData.instrument_id}.pdf`;
+            storedData.pdf_file_name = `${getPdfBaseDir()}${storedData.piece_id}-${storedData.instrument_id}.pdf`;
             sendVarToSynpdf(storedData);
             resolve();
         } else {
             // If data does not exist in cache, create it with the correct base dir
-            const pdfFileName = `${getPdfBaseDir()}${recordingFullData.piece_id} - ${recordingFullData.instrument_id}.pdf`;
+            const pdfFileName = `${getPdfBaseDir()}${recordingFullData.piece_id}-${recordingFullData.instrument_id}.pdf`;
             recordingFullData.pdf_file_name = pdfFileName;
             recordingFullData.timestamp = Date.now();
             recordingCache[storedId] = recordingFullData;
