@@ -318,6 +318,23 @@ invertButton {
     cursor:pointer;
 }
 
+#pieces-search-wrap {
+  margin: .5rem 0 1rem;
+}
+
+#pieces-search {
+  width: 100%;
+  max-width:600px;
+  padding: .5rem .6rem;
+  border: 1px solid #ccc;
+  border-radius: .5rem;
+}
+
+#pieces-search-empty {
+  display: none;
+  font-style: italic;
+  color: #888;
+}
 
 select {
   /* Reset */

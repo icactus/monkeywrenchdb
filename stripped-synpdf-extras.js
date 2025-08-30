@@ -1210,22 +1210,18 @@ function initPiecesSearchUI() {
     const $container = $('#pieces-container');
     if (!$container.length) return;
 
-    // Insert UI only once per render
+    // Insert UI only once
     if (!$container.find('#pieces-search-wrap').length) {
         $container.append(`
-      <div id="pieces-search-wrap" class="pieces-search-wrap" 
-           style="margin:.5rem 0 1rem; display:flex; gap:.5rem; align-items:center;">
-        <input id="pieces-search" type="search" placeholder="Type to filter pieces…" autocomplete="off"
-               style="flex:1; padding:.5rem .6rem; border:1px solid #ccc; border-radius:.5rem;">
-        <button id="pieces-clear" type="button"
-                style="padding:.45rem .7rem; border:1px solid #ccc; border-radius:.5rem; background:#f5f5f5;">✕</button>
+      <div id="pieces-search-wrap">
+        <input id="pieces-search" type="search" 
+               placeholder="Type to filter pieces…" autocomplete="off">
       </div>
-      <p id="pieces-search-empty" style="display:none; font-style:italic; color:#888;">No matches.</p>
+      <p id="pieces-search-empty">No matches.</p>
     `);
     }
 
     const $input = $container.find('#pieces-search');
-    const $clear = $container.find('#pieces-clear');
 
     const doFilter = () => {
         const q = $input.val().trim().toLowerCase();
@@ -1246,10 +1242,8 @@ function initPiecesSearchUI() {
         $container.find('#pieces-search-empty').toggle(!any);
     };
 
-    // light debounce
     const debounced = (fn, ms = 50) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
     $input.off('input.pieces').on('input.pieces', debounced(doFilter, 50));
-    $clear.off('click.pieces').on('click.pieces', () => { $input.val(''); $input.trigger('input'); $input.focus(); });
 }
 
 // Optional keyboard shortcut: Alt+2 toggles two-up
