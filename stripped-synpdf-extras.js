@@ -234,6 +234,12 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
 
                 // Handle grouping and renaming based on instrumentName
                 var soloOrchestraKey = instrumentName + ' + Orchestra';
+                if (instrumentName === "Orchestra Full Score") {
+                    // Special case: force "Solo + Orchestra"
+                    soloOrchestraKey = "Solo + Orchestra";
+                } else {
+                    soloOrchestraKey = instrumentName + " + Orchestra";
+                }
                 // When instrumentName is "Piano", group "Piano Accompaniment" and "Solo + Piano" together
                 var soloPianoKey = "Solo + Piano";
 
