@@ -1131,11 +1131,15 @@ function __preparePiecesSearch(pieces, instrumentName, instrumentIds) {
 }
 
 function __injectPiecesSearchBar($container, onFilter) {
+    // Remove any prior bar inside this container to avoid duplicate IDs
+    $container.find('#pieces-searchbar').remove();
+
     const $bar = $(`
-    <div id="pieces-searchbar">
-      <input id="pieces-search" type="search" placeholder="Search pieces…"
-             autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
-      <button id="pieces-search-clear" title="Clear">×</button>
+    <div id="pieces-searchbar" class="pieces-searchbar" style="margin: 8px 0 14px; display:flex; gap:8px; align-items:center;">
+      <input id="pieces-search" type="text" placeholder="Search pieces… (fuzzy)"
+             autocomplete="off" style="flex:1; padding:8px 10px; font-size:14px;">
+      <button id="pieces-search-clear" type="button" aria-label="Clear" title="Clear"
+              style="padding:6px 10px; font-size:16px; line-height:1">×</button>
     </div>
   `);
     $container.append($bar);
@@ -1147,16 +1151,23 @@ function __injectPiecesSearchBar($container, onFilter) {
         let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
     };
 
-    // Bind directly to the input; include keyup/search fallbacks
+    // Bind directly to THIS bar’s input
     $input.off('.piecesSearch')
-        .on('input.piecesSearch keyup.piecesSearch search.piecesSearch change.piecesSearch',
+        .on('input.piecesSearch keyup.piecesSearch change.piecesSearch search.piecesSearch',
             debounce(function() { onFilter(this.value); }, 80));
 
-    // Explicitly call the callback on clear (don’t rely on 'input' firing)
+    // Explicit clear → reset list
     $clear.off('.piecesSearch').on('click.piecesSearch', function() {
         $input.val('');
         onFilter('');
+        $input.trigger('focus');
     });
+
+    // Defensive: also add a delegated fallback on the container
+    $container.off('.piecesSearchDeleg')
+        .on('input.piecesSearchDeleg', '#pieces-search', debounce(function() {
+            onFilter(this.value);
+        }, 80));
 }
 
 // lightweight fuzzy: subsequence match with adjacency/start bonuses
