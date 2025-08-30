@@ -220,6 +220,8 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
                     : `${instrumentName} Parts`;
                 console.log(instHeading);
                 container.append(`<h2>${instHeading}</h2>`);
+                // ADD: inject search UI just under the heading
+                initPiecesSearchUI();
                 // Group pieces by 'piece_category.category_name'
                 var groupedPieces = pieces.reduce(function(acc, piece) {
                     var categoryName = piece.category_name;
@@ -302,6 +304,14 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
                     // Populate the links dynamically
                     orderedGroupedPieces[categoryName].forEach(function(piece) {
                         const $row = $('<p></p>');
+                        // build a lowercase search text: composer + title + category + instrument
+                        const searchText = [
+                            piece.composer_last,
+                            piece.piece_name,
+                            categoryName,
+                            instrumentName
+                        ].join(' ').toLowerCase();
+
                         const $a = $(`
                           <a href="#" 
                              class="pieces-link" 
@@ -311,7 +321,9 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
                             <b>${piece.composer_last}</b> - ${piece.piece_name}
                           </a>
                         `);
+
                         $a.data('parts', piece.parts || []);
+                        $row.addClass('piece-row').attr('data-search', searchText);
                         $row.append($a).append(` (${piece.total_recordings_value})♫`);
                         container.append($row);
                     });
@@ -504,7 +516,7 @@ function loadRecording(recordingFullData) {
 
         // Add title to composer-piece-name Div
         let targetDiv = document.getElementById('composer-piece-name');
-        targetDiv.innerHTML = `<h3>${newTitle}</h3>`;
+        targetDiv.innerHTML = `< h3 > ${newTitle}</h3 > `;
 
         // Create a unique ID for the recording
         let metricId = recordingFullData.metric_arr_id;
@@ -516,12 +528,12 @@ function loadRecording(recordingFullData) {
         let storedData = recordingCache[storedId];
         // If data exists in cache, refresh its pdf path to match current mode
         if (storedData) {
-            storedData.pdf_file_name = `${getPdfBaseDir()}${storedData.piece_id}-${storedData.instrument_id}.pdf`;
+            storedData.pdf_file_name = `${getPdfBaseDir()}${storedData.piece_id} - ${storedData.instrument_id}.pdf`;
             sendVarToSynpdf(storedData);
             resolve();
         } else {
             // If data does not exist in cache, create it with the correct base dir
-            const pdfFileName = `${getPdfBaseDir()}${recordingFullData.piece_id}-${recordingFullData.instrument_id}.pdf`;
+            const pdfFileName = `${getPdfBaseDir()}${recordingFullData.piece_id} - ${recordingFullData.instrument_id}.pdf`;
             recordingFullData.pdf_file_name = pdfFileName;
             recordingFullData.timestamp = Date.now();
             recordingCache[storedId] = recordingFullData;
@@ -604,7 +616,7 @@ $('#instruments-dropdown').change(function() {
                 metric_arr_data: partData.metric_arr_data,
                 instrument_id: instrumentData.instrument_id,
                 instrument_name: instrumentData.displayText,
-                pdf_file_name: `${getPdfBaseDir()}${currentRecordingFullData.piece_id}-${instrumentData.instrument_id}.pdf`
+                pdf_file_name: `${getPdfBaseDir()}${currentRecordingFullData.piece_id} - ${instrumentData.instrument_id}.pdf`
             };
 
             loadRecording(updatedRecordingFullData)
@@ -1172,6 +1184,82 @@ function toast(msg) {
 // we already use these for restore-before-reflow:
 window.__restoreTime = window.__restoreTime ?? null;
 window.__restoreMix = window.__restoreMix ?? null;
+
+// --- Simple fuzzy filter for the Pieces list ---
+function fuzzyMatch(haystack, needle) {
+    haystack = (haystack || '').toLowerCase();
+    needle = (needle || '').toLowerCase();
+    if (!needle) return true;
+    if (haystack.indexOf(needle) !== -1) return true; // fast path: substring
+
+    // very simple "letters in order" fuzzy check
+    let h = 0, n = 0;
+    while (h < haystack.length && n < needle.length) {
+        if (haystack[h++] === needle[n]) n++;
+    }
+    return n === needle.length;
+}
+
+function refreshCategoryHeadings() {
+    const container = document.getElementById('pieces-container');
+    if (!container) return;
+    const h3s = container.querySelectorAll('h3');
+    h3s.forEach(h => {
+        let any = false;
+        let el = h.nextElementSibling;
+        while (el && el.tagName !== 'H3') {
+            if (el.classList && el.classList.contains('piece-row') && el.style.display !== 'none') { any = true; break; }
+            el = el.nextElementSibling;
+        }
+        h.style.display = any ? '' : 'none';
+    });
+}
+
+function initPiecesSearchUI() {
+    const $container = $('#pieces-container');
+    if (!$container.length) return;
+
+    // Insert UI only once per render
+    if (!$container.find('#pieces-search-wrap').length) {
+        $container.append(`
+      <div id="pieces-search-wrap" class="pieces-search-wrap" 
+           style="margin:.5rem 0 1rem; display:flex; gap:.5rem; align-items:center;">
+        <input id="pieces-search" type="search" placeholder="Type to filter pieces…" autocomplete="off"
+               style="flex:1; padding:.5rem .6rem; border:1px solid #ccc; border-radius:.5rem;">
+        <button id="pieces-clear" type="button"
+                style="padding:.45rem .7rem; border:1px solid #ccc; border-radius:.5rem; background:#f5f5f5;">✕</button>
+      </div>
+      <p id="pieces-search-empty" style="display:none; font-style:italic; color:#888;">No matches.</p>
+    `);
+    }
+
+    const $input = $container.find('#pieces-search');
+    const $clear = $container.find('#pieces-clear');
+
+    const doFilter = () => {
+        const q = $input.val().trim().toLowerCase();
+        const $rows = $container.find('.piece-row');
+        if (!q) {
+            $rows.show();
+            refreshCategoryHeadings();
+            $container.find('#pieces-search-empty').hide();
+            return;
+        }
+        let any = false;
+        $rows.each(function() {
+            const hay = this.dataset.search || $(this).text();
+            const ok = fuzzyMatch(hay, q);
+            if (ok) { $(this).show(); any = true; } else { $(this).hide(); }
+        });
+        refreshCategoryHeadings();
+        $container.find('#pieces-search-empty').toggle(!any);
+    };
+
+    // light debounce
+    const debounced = (fn, ms = 50) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+    $input.off('input.pieces').on('input.pieces', debounced(doFilter, 50));
+    $clear.off('click.pieces').on('click.pieces', () => { $input.val(''); $input.trigger('input'); $input.focus(); });
+}
 
 // Optional keyboard shortcut: Alt+2 toggles two-up
 document.addEventListener('keydown', (e) => {
