@@ -576,6 +576,11 @@ addNewMetricForm.addEventListener("submit", function(event) {
     formData.append('action', 'add_metric_arr');
     formData.append(buttonName, buttonValue); // Append the name and value of the button
 
+    if (buttonName === 'update') {
+        formData.delete('file');
+        formData.delete('file_hd');
+    }
+
     fetch("./dispatcher.php", {
         method: "POST",
         body: formData

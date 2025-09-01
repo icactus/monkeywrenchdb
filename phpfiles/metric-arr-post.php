@@ -96,6 +96,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $mysqli->begin_transaction();
 
+
     if ($action === 'update') {
         // --- UPDATE: DB only, skip file handling ---
         $checkQuery = "SELECT * FROM metric_arr WHERE piece_id = ? AND instrument_id = ?";
@@ -105,10 +106,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt->execute();
             $result = $stmt->get_result();
             if ($result->num_rows > 0) {
-                $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? WHERE piece_id = ? AND instrument_id = ?";
+                $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? 
+                            WHERE piece_id = ? AND instrument_id = ?";
                 $stmt_update = $mysqli->prepare($updateQuery);
                 if ($stmt_update) {
-                    $stmt_update->bind_param("isii", $measures_version, $metric_arr_data_processed, $piece_id, $instrument_id);
+                    $stmt_update->bind_param(
+                        "isii",
+                        $measures_version,
+                        $metric_arr_data_processed,
+                        $piece_id,
+                        $instrument_id
+                    );
                     $stmt_update->execute();
                     if ($stmt_update->affected_rows === 0) {
                         $response .= "Error: No matching record found to update.<br>";
@@ -128,6 +136,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             $response .= 'Error preparing check statement: ' . $mysqli->error . "<br>";
         }
+
+        // Stop here so we never fall through to file handling
+        echo $response;
+        exit;
     } elseif ($action === 'submit') {
         // --- SUBMIT: require SD + HD file uploads ---
         $baseName = "{$piece_id}-{$instrument_id}.pdf";
