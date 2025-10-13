@@ -35,7 +35,8 @@ SELECT
     i.instrument_id,
     i.instrument_name,
     i.part_number,
-    COALESCE(rc.total_recordings_value, 0) AS total_recordings_value
+    COALESCE(rc.total_recordings_value, 0) AS total_recordings_value,
+    p.solo_instrument_id
 FROM pieces p
 JOIN composers        c  ON c.composer_id   = p.composer_id
 JOIN piece_categories pc ON pc.category_id  = p.category_id
@@ -47,6 +48,7 @@ LEFT JOIN (
     GROUP BY piece_id
 ) rc ON rc.piece_id = p.piece_id
 WHERE i.instrument_id IN ($placeholders)
+  AND (p.solo_instrument_id IS NULL OR p.solo_instrument_id IN ($placeholders))
 ORDER BY c.composer_last, p.piece_name, i.instrument_name, i.part_number
 ";
 
