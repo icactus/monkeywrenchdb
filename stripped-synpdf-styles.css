@@ -107,7 +107,11 @@ a {
     display: flex;
     justify-content: center;
     overflow-x: hidden;
-    background: linear-gradient(145deg, #f4c542, #4b8f94);
+    background: linear-gradient(145deg,
+  #f7d155 0%,
+  #e4c262 30%,
+  #5ba2a8 70%,
+  #376a73 100%);
 }
 #logo-bar-wrapper {
     width:100%;
