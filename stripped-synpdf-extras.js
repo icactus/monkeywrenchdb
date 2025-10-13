@@ -133,14 +133,12 @@ function fetchSearchByInstrument() {
             var container = $('#instrument-links');
             container.empty();
 
-            // Groups to exclude
             var excludedGroups = ['Voice', 'Percussion', 'Brass'];
 
             Object.keys(groups).forEach(function(groupId) {
                 var instruments = groups[groupId];
                 var groupNameText = instruments[0].instrument_group_name;
 
-                // Skip excluded groups
                 if (excludedGroups.includes(groupNameText)) return;
 
                 instruments.sort(function(a, b) {
@@ -163,6 +161,9 @@ function fetchSearchByInstrument() {
 
                 container.append(groupDiv);
             });
+
+            // Add final message
+            container.append('<h3 class="coming-soon">More instruments coming soon!</h3>');
         }
     });
 }
