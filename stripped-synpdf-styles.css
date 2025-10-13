@@ -107,10 +107,7 @@ a {
     display: flex;
     justify-content: center;
     overflow-x: hidden;
-    background: url(yellow-bg-gradient.png);
-    background: rgb(255,250,0);
-    background: -webkit-linear-gradient(42deg, rgba(255,250,0,1) 0%, rgba(125,255,66,1) 31%, rgba(0,212,255,1) 100%);
-    background-position-y: -20px;
+    background: linear-gradient(90deg,rgba(244, 197, 66, 1) 0%, rgba(75, 143, 148, 1) 100%);
 }
 #logo-bar-wrapper {
     width:100%;
