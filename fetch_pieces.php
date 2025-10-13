@@ -14,15 +14,19 @@ if ($conn->connect_error) {
 }
 mysqli_set_charset($conn, 'utf8');
 
-// Parse and sanitize ?instrumentIds=11,12,13
+// === Parse and sanitize input ===
 $instrumentIdsParam = $_GET['instrumentIds'] ?? '';
-$instrumentIds = array_values(array_filter(array_map('intval', preg_split('/[,\s]+/', $instrumentIdsParam)), fn($v) => $v > 0));
+$instrumentIds = array_values(array_filter(
+    array_map('intval', preg_split('/[,\s]+/', $instrumentIdsParam)),
+    fn($v) => $v > 0
+));
 if (empty($instrumentIds)) {
     echo json_encode([]);
     $conn->close();
     exit;
 }
 
+// === Build query ===
 $placeholders = implode(',', array_fill(0, count($instrumentIds), '?'));
 
 $sql = "
@@ -53,9 +57,13 @@ ORDER BY c.composer_last, p.piece_name, i.instrument_name, i.part_number
 ";
 
 $stmt = $conn->prepare($sql);
-$types = str_repeat('i', count($instrumentIds));
-$stmt->bind_param($types, ...$instrumentIds);
 
+// === Bind parameters for both IN clauses ===
+$types = str_repeat('i', count($instrumentIds) * 2);
+$params = array_merge($instrumentIds, $instrumentIds);
+$stmt->bind_param($types, ...$params);
+
+// === Execute and handle results ===
 if (!$stmt->execute()) {
     http_response_code(500);
     echo json_encode(["error" => "Error executing query: " . $stmt->error]);
@@ -66,7 +74,7 @@ if (!$stmt->execute()) {
 
 $res = $stmt->get_result();
 
-// Assemble pieces array
+// === Build structured response ===
 $pieces = [];
 while ($row = $res->fetch_assoc()) {
     $pid = (int)$row['piece_id'];
@@ -77,15 +85,12 @@ while ($row = $res->fetch_assoc()) {
             'piece_name'             => $row['piece_name'],
             'category_name'          => $row['category_name'],
             'composer_last'          => $row['composer_last'],
-            'metric_arr_id'          => (int)$row['metric_arr_id'], // init
+            'metric_arr_id'          => (int)$row['metric_arr_id'],
             'total_recordings_value' => (int)$row['total_recordings_value'],
             'parts'                  => []
         ];
-    } else {
-        // keep a stable/min metric_arr_id across parts
-        if ((int)$row['metric_arr_id'] < $pieces[$pid]['metric_arr_id']) {
-            $pieces[$pid]['metric_arr_id'] = (int)$row['metric_arr_id'];
-        }
+    } elseif ((int)$row['metric_arr_id'] < $pieces[$pid]['metric_arr_id']) {
+        $pieces[$pid]['metric_arr_id'] = (int)$row['metric_arr_id'];
     }
 
     $pieces[$pid]['parts'][] = [
@@ -99,9 +104,8 @@ while ($row = $res->fetch_assoc()) {
 $stmt->close();
 $conn->close();
 
-// Return in same shape as before
-$response = [
-    'pieces' => array_values($pieces), // reset keys
+// === Return JSON ===
+echo json_encode([
+    'pieces' => array_values($pieces),
     'instrumentName' => $_GET['instrumentName'] ?? ''
-];
-echo json_encode($response, JSON_UNESCAPED_UNICODE);
+], JSON_UNESCAPED_UNICODE);
