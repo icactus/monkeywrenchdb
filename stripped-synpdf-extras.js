@@ -150,6 +150,10 @@ function fetchSearchByInstrument() {
                 var groupNameText = instruments[0].instrument_group_name;
                 if (excludedGroups.includes(groupNameText)) return;
 
+                // Filter out instruments with fewer than 5 pieces
+                instruments = instruments.filter(inst => inst.total_metric_value >= 5);
+                if (!instruments.length) return;
+
                 instruments.sort(function(a, b) {
                     return a.instrument_ids[0] - b.instrument_ids[0];
                 });
@@ -169,8 +173,11 @@ function fetchSearchByInstrument() {
                 addedSomething = true;
             });
 
-            // Always append the message
-            container.append('<h3 class="coming-soon" style="margin-top:1.5em;">More instruments coming soon!</h3>');
+            if (!addedSomething) {
+                container.append('<h3 class="coming-soon" style="margin-top:1.5em;">More instruments coming soon!</h3>');
+            } else {
+                container.append('<h3 class="coming-soon" style="margin-top:1.5em;">More instruments coming soon!</h3>');
+            }
         },
         error: function(xhr, status, error) {
             console.error('Fetch failed:', error);
