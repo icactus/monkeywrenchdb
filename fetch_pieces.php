@@ -14,7 +14,7 @@ if ($conn->connect_error) {
 }
 mysqli_set_charset($conn, 'utf8');
 
-// === Parse and sanitize input ===
+// === Parse instrumentIds ===
 $instrumentIdsParam = $_GET['instrumentIds'] ?? '';
 $instrumentIds = array_values(array_filter(
     array_map('intval', preg_split('/[,\s]+/', $instrumentIdsParam)),
@@ -26,44 +26,86 @@ if (empty($instrumentIds)) {
     exit;
 }
 
-// === Build query ===
+// === Determine if the selection includes Piano ===
+$pianoId = 11; // your actual piano instrument_id
+$isPiano = in_array($pianoId, $instrumentIds, true);
+
+// === Placeholders ===
 $placeholders = implode(',', array_fill(0, count($instrumentIds), '?'));
 
-$sql = "
-SELECT
-    p.piece_id,
-    p.piece_name,
-    pc.category_name,
-    c.composer_last,
-    m.metric_arr_id,
-    i.instrument_id,
-    i.instrument_name,
-    i.part_number,
-    COALESCE(rc.total_recordings_value, 0) AS total_recordings_value,
-    p.solo_instrument_id
-FROM pieces p
-JOIN composers        c  ON c.composer_id   = p.composer_id
-JOIN piece_categories pc ON pc.category_id  = p.category_id
-JOIN metric_arr       m  ON m.piece_id      = p.piece_id
-JOIN instruments      i  ON i.instrument_id = m.instrument_id
-LEFT JOIN (
-    SELECT piece_id, COUNT(DISTINCT recording_id) AS total_recordings_value
-    FROM recordings
-    GROUP BY piece_id
-) rc ON rc.piece_id = p.piece_id
-WHERE i.instrument_id IN ($placeholders)
-  AND (p.solo_instrument_id IS NULL OR p.solo_instrument_id IN ($placeholders))
-ORDER BY c.composer_last, p.piece_name, i.instrument_name, i.part_number
-";
+// === SQL ===
+if ($isPiano) {
+    // Piano: show piano solos and accompaniments, but do NOT exclude orchestra works
+    $sql = "
+        SELECT
+            p.piece_id,
+            p.piece_name,
+            pc.category_name,
+            c.composer_last,
+            m.metric_arr_id,
+            i.instrument_id,
+            i.instrument_name,
+            i.part_number,
+            COALESCE(rc.total_recordings_value, 0) AS total_recordings_value,
+            p.solo_instrument_id
+        FROM pieces p
+        JOIN composers        c  ON c.composer_id   = p.composer_id
+        JOIN piece_categories pc ON pc.category_id  = p.category_id
+        JOIN metric_arr       m  ON m.piece_id      = p.piece_id
+        JOIN instruments      i  ON i.instrument_id = m.instrument_id
+        LEFT JOIN (
+            SELECT piece_id, COUNT(DISTINCT recording_id) AS total_recordings_value
+            FROM recordings
+            GROUP BY piece_id
+        ) rc ON rc.piece_id = p.piece_id
+        WHERE
+            (
+                -- Piano solo works
+                p.solo_instrument_id IN ($placeholders)
+                OR
+                -- Other solo works that include a piano part
+                (i.instrument_id IN ($placeholders) AND p.solo_instrument_id IS NOT NULL)
+            )
+        ORDER BY c.composer_last, p.piece_name, i.instrument_name, i.part_number
+    ";
+    $types  = str_repeat('i', count($instrumentIds) * 2);
+    $params = array_merge($instrumentIds, $instrumentIds);
+} else {
+    // All other instruments
+    $sql = "
+        SELECT
+            p.piece_id,
+            p.piece_name,
+            pc.category_name,
+            c.composer_last,
+            m.metric_arr_id,
+            i.instrument_id,
+            i.instrument_name,
+            i.part_number,
+            COALESCE(rc.total_recordings_value, 0) AS total_recordings_value,
+            p.solo_instrument_id
+        FROM pieces p
+        JOIN composers        c  ON c.composer_id   = p.composer_id
+        JOIN piece_categories pc ON pc.category_id  = p.category_id
+        JOIN metric_arr       m  ON m.piece_id      = p.piece_id
+        JOIN instruments      i  ON i.instrument_id = m.instrument_id
+        LEFT JOIN (
+            SELECT piece_id, COUNT(DISTINCT recording_id) AS total_recordings_value
+            FROM recordings
+            GROUP BY piece_id
+        ) rc ON rc.piece_id = p.piece_id
+        WHERE i.instrument_id IN ($placeholders)
+          AND (p.solo_instrument_id IS NULL OR p.solo_instrument_id IN ($placeholders))
+        ORDER BY c.composer_last, p.piece_name, i.instrument_name, i.part_number
+    ";
+    $types  = str_repeat('i', count($instrumentIds) * 2);
+    $params = array_merge($instrumentIds, $instrumentIds);
+}
 
+// === Execute ===
 $stmt = $conn->prepare($sql);
-
-// === Bind parameters for both IN clauses ===
-$types = str_repeat('i', count($instrumentIds) * 2);
-$params = array_merge($instrumentIds, $instrumentIds);
 $stmt->bind_param($types, ...$params);
 
-// === Execute and handle results ===
 if (!$stmt->execute()) {
     http_response_code(500);
     echo json_encode(["error" => "Error executing query: " . $stmt->error]);
@@ -74,7 +116,7 @@ if (!$stmt->execute()) {
 
 $res = $stmt->get_result();
 
-// === Build structured response ===
+// === Build response ===
 $pieces = [];
 while ($row = $res->fetch_assoc()) {
     $pid = (int)$row['piece_id'];
@@ -104,7 +146,6 @@ while ($row = $res->fetch_assoc()) {
 $stmt->close();
 $conn->close();
 
-// === Return JSON ===
 echo json_encode([
     'pieces' => array_values($pieces),
     'instrumentName' => $_GET['instrumentName'] ?? ''
