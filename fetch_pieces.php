@@ -14,7 +14,7 @@ if ($conn->connect_error) {
 }
 mysqli_set_charset($conn, 'utf8');
 
-// === Parse and sanitize ?instrumentIds=11,12,13 ===
+// === Parse ?instrumentIds=11,12,13 ===
 $instrumentIdsParam = $_GET['instrumentIds'] ?? '';
 $instrumentIds = array_values(array_filter(
     array_map('intval', preg_split('/[,\s]+/', $instrumentIdsParam)),
@@ -27,17 +27,18 @@ if (empty($instrumentIds)) {
 }
 
 // === Identify if Piano is selected ===
-// Replace 11 with your piano instrument_id
-$pianoId = 11;
+$pianoId = 11; // your actual piano instrument_id
 $isPiano = in_array($pianoId, $instrumentIds, true);
 
-// === Build placeholders ===
+// === Placeholders ===
 $placeholders = implode(',', array_fill(0, count($instrumentIds), '?'));
 
-// === Build SQL ===
+// === SQL ===
 if ($isPiano) {
-    // Piano: include *all* pieces that have a piano part
-    // (no solo_instrument filtering at all)
+    // Piano: show
+    // 1. Piano solos
+    // 2. Works where another instrument is solo but Piano has a part
+    // 3. Works with no solo instrument (e.g., orchestra)
     $sql = "
         SELECT
             p.piece_id,
@@ -60,13 +61,24 @@ if ($isPiano) {
             FROM recordings
             GROUP BY piece_id
         ) rc ON rc.piece_id = p.piece_id
-        WHERE i.instrument_id IN ($placeholders)
+        WHERE
+            (
+                -- Piano solo works
+                p.solo_instrument_id IN ($placeholders)
+                OR
+                -- Other solo works that include a piano part
+                (i.instrument_id IN ($placeholders) AND p.solo_instrument_id IS NOT NULL AND p.solo_instrument_id NOT IN ($placeholders))
+                OR
+                -- Works with no solo instrument (symphonies etc.)
+                (i.instrument_id IN ($placeholders) AND p.solo_instrument_id IS NULL)
+            )
         ORDER BY c.composer_last, p.piece_name, i.instrument_name, i.part_number
     ";
-    $types  = str_repeat('i', count($instrumentIds));
-    $params = $instrumentIds;
+    // total of 3 placeholder sets for piano query
+    $types  = str_repeat('i', count($instrumentIds) * 3);
+    $params = array_merge($instrumentIds, $instrumentIds, $instrumentIds);
 } else {
-    // All other instruments: solo/ensemble logic as before
+    // Non-piano: solos or ensemble works
     $sql = "
         SELECT
             p.piece_id,
