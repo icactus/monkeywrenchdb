@@ -130,39 +130,36 @@ function fetchSearchByInstrument() {
         method: 'GET',
         success: function(response) {
             var groups = JSON.parse(response);
-
-            // Get the container element where the links will be populated
             var container = $('#instrument-links');
-
-            // Clear any existing links
             container.empty();
 
-            // Populate the links dynamically
             Object.keys(groups).forEach(function(groupId) {
                 var instruments = groups[groupId];
+                var groupNameText = instruments[0].instrument_group_name;
+
+                // Skip Voice and Percussion groups
+                if (groupNameText === 'Voice' || groupNameText === 'Percussion') return;
 
                 instruments.sort(function(a, b) {
                     var aIds = a.instrument_ids.map(Number);
                     var bIds = b.instrument_ids.map(Number);
-
                     return aIds[0] - bIds[0];
                 });
-                // Create a new div for each group
-                var groupDiv = $('<div class="instrument-group"></div>');
 
-                // Create a new element for the group name and append it to the group div
-                var groupName = $('<h3></h3>').text(instruments[0].instrument_group_name);
+                var groupDiv = $('<div class="instrument-group"></div>');
+                var groupName = $('<h3></h3>').text(groupNameText);
                 groupDiv.append(groupName);
 
                 instruments.forEach(function(instrument) {
-                    // Append the instrument link with the total metric value in parentheses
-                    groupDiv.append('<div class="instrument-link"><a href="#" class="instrument-link-a" data-id="' + instrument.instrument_ids + '">' + instrument.instrument_name + '</a> (' + instrument.total_metric_value + ')' + sheetMusicSvg + '</div>');
+                    groupDiv.append(
+                        '<div class="instrument-link"><a href="#" class="instrument-link-a" data-id="' +
+                        instrument.instrument_ids + '">' + instrument.instrument_name +
+                        '</a> (' + instrument.total_metric_value + ')' + sheetMusicSvg + '</div>'
+                    );
                 });
 
-                // Append the group div to the container
                 container.append(groupDiv);
             });
-
         }
     });
 }
