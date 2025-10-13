@@ -252,7 +252,6 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
             const soloPianoKey = "Solo + Piano";
 
             if (instrumentName === "Orchestra Full Score") {
-                // Special case: keep "Solo + Orchestra" untouched
                 soloOrchestraKey = "Solo + Orchestra";
             } else {
                 soloOrchestraKey = instrumentName + " + Orchestra";
@@ -265,31 +264,37 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
             }
 
             if (instrumentName === "Piano") {
-                if (groupedPieces['Orchestra']) {
-                    const orchestraPieces = groupedPieces['Orchestra'];
+                // 1️⃣ Fix: pull concertos (Solo + Orchestra) into Solo + Piano if solo instrument isn't piano
+                if (groupedPieces['Solo + Orchestra']) {
+                    const concertos = groupedPieces['Solo + Orchestra'].filter(
+                        p => p.solo_instrument_id && p.solo_instrument_id !== 50 // 50 = Piano instrument_id
+                    );
+                    const pianoConcertos = groupedPieces['Solo + Orchestra'].filter(
+                        p => p.solo_instrument_id === 50
+                    );
 
-                    // Split orchestra pieces: concertos (solo instrument defined) vs. true orchestral works
-                    const concertos = orchestraPieces.filter(p => p.solo_instrument_id && p.solo_instrument_id !== null);
-                    const pureOrchestra = orchestraPieces.filter(p => !p.solo_instrument_id);
-
-                    // Concertos → Solo + Piano
+                    // Move violin/cello/etc. concertos → Solo + Piano
                     if (concertos.length) {
                         if (!groupedPieces[soloPianoKey]) groupedPieces[soloPianoKey] = [];
                         groupedPieces[soloPianoKey] = groupedPieces[soloPianoKey].concat(concertos);
                     }
 
-                    // Keep true orchestral works under Orchestra
+                    // Keep true piano concertos under Piano + Orchestra
+                    if (pianoConcertos.length) {
+                        groupedPieces[soloOrchestraKey] = pianoConcertos;
+                    } else {
+                        delete groupedPieces['Solo + Orchestra'];
+                    }
+                }
+
+                // 2️⃣ Keep Orchestra grouping (for symphonies with piano part)
+                if (groupedPieces['Orchestra']) {
+                    const pureOrchestra = groupedPieces['Orchestra'].filter(p => !p.solo_instrument_id);
                     if (pureOrchestra.length) {
                         groupedPieces['Orchestra'] = pureOrchestra;
                     } else {
                         delete groupedPieces['Orchestra'];
                     }
-                }
-
-                // Rename "Solo + Orchestra" to "Piano + Orchestra" if it exists
-                if (groupedPieces['Solo + Orchestra'] && soloOrchestraKey !== "Solo + Orchestra") {
-                    groupedPieces[soloOrchestraKey] = groupedPieces['Solo + Orchestra'];
-                    delete groupedPieces['Solo + Orchestra'];
                 }
             } else {
                 // For non-Piano, rename "Solo + Piano" to "<Instrument> + Piano"
