@@ -107,7 +107,7 @@ a {
     display: flex;
     justify-content: center;
     overflow-x: hidden;
-    background: linear-gradient(90deg,rgba(244, 197, 66, 1) 0%, rgba(75, 143, 148, 1) 100%);
+    background: linear-gradient(145deg, #f4c542, #4b8f94);
 }
 #logo-bar-wrapper {
     width:100%;
