@@ -14,7 +14,7 @@ if ($conn->connect_error) {
 }
 mysqli_set_charset($conn, 'utf8');
 
-// === Parse instrumentIds ===
+// === Parse and sanitize ?instrumentIds=11,12,13 ===
 $instrumentIdsParam = $_GET['instrumentIds'] ?? '';
 $instrumentIds = array_values(array_filter(
     array_map('intval', preg_split('/[,\s]+/', $instrumentIdsParam)),
@@ -26,16 +26,18 @@ if (empty($instrumentIds)) {
     exit;
 }
 
-// === Determine if the selection includes Piano ===
-$pianoId = 11; // your actual piano instrument_id
+// === Identify if Piano is selected ===
+// Replace 11 with your piano instrument_id
+$pianoId = 11;
 $isPiano = in_array($pianoId, $instrumentIds, true);
 
-// === Placeholders ===
+// === Build placeholders ===
 $placeholders = implode(',', array_fill(0, count($instrumentIds), '?'));
 
-// === SQL ===
+// === Build SQL ===
 if ($isPiano) {
-    // Piano: show piano solos and accompaniments, but do NOT exclude orchestra works
+    // Piano: include *all* pieces that have a piano part
+    // (no solo_instrument filtering at all)
     $sql = "
         SELECT
             p.piece_id,
@@ -58,20 +60,13 @@ if ($isPiano) {
             FROM recordings
             GROUP BY piece_id
         ) rc ON rc.piece_id = p.piece_id
-        WHERE
-            (
-                -- Piano solo works
-                p.solo_instrument_id IN ($placeholders)
-                OR
-                -- Other solo works that include a piano part
-                (i.instrument_id IN ($placeholders) AND p.solo_instrument_id IS NOT NULL)
-            )
+        WHERE i.instrument_id IN ($placeholders)
         ORDER BY c.composer_last, p.piece_name, i.instrument_name, i.part_number
     ";
-    $types  = str_repeat('i', count($instrumentIds) * 2);
-    $params = array_merge($instrumentIds, $instrumentIds);
+    $types  = str_repeat('i', count($instrumentIds));
+    $params = $instrumentIds;
 } else {
-    // All other instruments
+    // All other instruments: solo/ensemble logic as before
     $sql = "
         SELECT
             p.piece_id,
