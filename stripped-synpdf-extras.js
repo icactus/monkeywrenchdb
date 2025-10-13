@@ -265,26 +265,39 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
             }
 
             if (instrumentName === "Piano") {
-                // Group "Orchestra" into "Solo + Piano"
                 if (groupedPieces['Orchestra']) {
-                    if (!groupedPieces[soloPianoKey]) groupedPieces[soloPianoKey] = [];
-                    groupedPieces[soloPianoKey] = groupedPieces[soloPianoKey].concat(groupedPieces['Orchestra']);
-                    delete groupedPieces['Orchestra'];
+                    const orchestraPieces = groupedPieces['Orchestra'];
+
+                    // Split orchestra pieces: concertos (solo instrument defined) vs. true orchestral works
+                    const concertos = orchestraPieces.filter(p => p.solo_instrument_id && p.solo_instrument_id !== null);
+                    const pureOrchestra = orchestraPieces.filter(p => !p.solo_instrument_id);
+
+                    // Concertos → Solo + Piano
+                    if (concertos.length) {
+                        if (!groupedPieces[soloPianoKey]) groupedPieces[soloPianoKey] = [];
+                        groupedPieces[soloPianoKey] = groupedPieces[soloPianoKey].concat(concertos);
+                    }
+
+                    // Keep true orchestral works under Orchestra
+                    if (pureOrchestra.length) {
+                        groupedPieces['Orchestra'] = pureOrchestra;
+                    } else {
+                        delete groupedPieces['Orchestra'];
+                    }
                 }
 
-                // Make sure Solo + Orchestra still maps correctly
+                // Rename "Solo + Orchestra" to "Piano + Orchestra" if it exists
                 if (groupedPieces['Solo + Orchestra'] && soloOrchestraKey !== "Solo + Orchestra") {
                     groupedPieces[soloOrchestraKey] = groupedPieces['Solo + Orchestra'];
                     delete groupedPieces['Solo + Orchestra'];
                 }
             } else {
-                // For non-Piano, rename "Solo + Piano"
+                // For non-Piano, rename "Solo + Piano" to "<Instrument> + Piano"
                 if (groupedPieces['Solo + Piano']) {
                     groupedPieces[instrumentName + ' + Piano'] = groupedPieces['Solo + Piano'];
                     delete groupedPieces['Solo + Piano'];
                 }
             }
-
             // Desired order of categories
             var desiredOrder = instrumentName === "Piano"
                 ? ['Solo', soloOrchestraKey, soloPianoKey, 'Opera', 'Chamber', 'Choral Works']
