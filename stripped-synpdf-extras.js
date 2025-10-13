@@ -133,12 +133,15 @@ function fetchSearchByInstrument() {
             var container = $('#instrument-links');
             container.empty();
 
+            // Groups to exclude
+            var excludedGroups = ['Voice', 'Percussion', 'Brass'];
+
             Object.keys(groups).forEach(function(groupId) {
                 var instruments = groups[groupId];
                 var groupNameText = instruments[0].instrument_group_name;
 
-                // Skip Voice and Percussion groups
-                if (groupNameText === 'Voice' || groupNameText === 'Percussion') return;
+                // Skip excluded groups
+                if (excludedGroups.includes(groupNameText)) return;
 
                 instruments.sort(function(a, b) {
                     var aIds = a.instrument_ids.map(Number);
