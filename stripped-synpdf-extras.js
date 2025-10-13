@@ -250,54 +250,55 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
             // Define category keys
             let soloOrchestraKey;
             const soloPianoKey = "Solo + Piano";
+            const pianoId = 50; // Piano instrument_id
 
+            // Stash original "Solo + Orchestra" before any rename
+            const originalSO = groupedPieces['Solo + Orchestra'] ? groupedPieces['Solo + Orchestra'].slice() : null;
+
+            // Compute target SO key
             if (instrumentName === "Orchestra Full Score") {
                 soloOrchestraKey = "Solo + Orchestra";
             } else {
                 soloOrchestraKey = instrumentName + " + Orchestra";
-
-                // Rename "Solo + Orchestra" to "<Instrument> + Orchestra"
-                if (groupedPieces['Solo + Orchestra']) {
-                    groupedPieces[soloOrchestraKey] = groupedPieces['Solo + Orchestra'];
-                    delete groupedPieces['Solo + Orchestra'];
-                }
             }
 
+            // Handle Piano first, using the stashed list
             if (instrumentName === "Piano") {
-                // 1️⃣ Fix: pull concertos (Solo + Orchestra) into Solo + Piano if solo instrument isn't piano
-                if (groupedPieces['Solo + Orchestra']) {
-                    const concertos = groupedPieces['Solo + Orchestra'].filter(
-                        p => p.solo_instrument_id && p.solo_instrument_id !== 50 // 50 = Piano instrument_id
-                    );
-                    const pianoConcertos = groupedPieces['Solo + Orchestra'].filter(
-                        p => p.solo_instrument_id === 50
-                    );
+                // Split concertos: piano concertos vs. other-instrument concertos (with piano accomp.)
+                if (originalSO && originalSO.length) {
+                    const pianoConcertos = originalSO.filter(p => p.solo_instrument_id === pianoId);
+                    const otherConcertos = originalSO.filter(p => p.solo_instrument_id && p.solo_instrument_id !== pianoId);
 
-                    // Move violin/cello/etc. concertos → Solo + Piano
-                    if (concertos.length) {
+                    if (otherConcertos.length) {
                         if (!groupedPieces[soloPianoKey]) groupedPieces[soloPianoKey] = [];
-                        groupedPieces[soloPianoKey] = groupedPieces[soloPianoKey].concat(concertos);
+                        groupedPieces[soloPianoKey] = groupedPieces[soloPianoKey].concat(otherConcertos);
                     }
 
-                    // Keep true piano concertos under Piano + Orchestra
                     if (pianoConcertos.length) {
                         groupedPieces[soloOrchestraKey] = pianoConcertos;
-                    } else {
-                        delete groupedPieces['Solo + Orchestra'];
                     }
                 }
 
-                // 2️⃣ Keep Orchestra grouping (for symphonies with piano part)
+                // Keep true orchestral works (no solo) under Orchestra
                 if (groupedPieces['Orchestra']) {
                     const pureOrchestra = groupedPieces['Orchestra'].filter(p => !p.solo_instrument_id);
-                    if (pureOrchestra.length) {
-                        groupedPieces['Orchestra'] = pureOrchestra;
-                    } else {
-                        delete groupedPieces['Orchestra'];
-                    }
+                    if (pureOrchestra.length) groupedPieces['Orchestra'] = pureOrchestra;
+                    else delete groupedPieces['Orchestra'];
                 }
+
+                // Remove the original bucket now that we’ve redistributed it
+                delete groupedPieces['Solo + Orchestra'];
+
             } else {
-                // For non-Piano, rename "Solo + Piano" to "<Instrument> + Piano"
+                // Non-Piano: standard renames
+
+                // Rename "Solo + Orchestra" to "<Instrument> + Orchestra"
+                if (originalSO && originalSO.length) {
+                    groupedPieces[soloOrchestraKey] = originalSO;
+                    delete groupedPieces['Solo + Orchestra'];
+                }
+
+                // Rename "Solo + Piano" to "<Instrument> + Piano"
                 if (groupedPieces['Solo + Piano']) {
                     groupedPieces[instrumentName + ' + Piano'] = groupedPieces['Solo + Piano'];
                     delete groupedPieces['Solo + Piano'];
