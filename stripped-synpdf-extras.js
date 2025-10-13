@@ -129,27 +129,33 @@ function fetchSearchByInstrument() {
         url: 'fetchinstruments_data.php',
         method: 'GET',
         success: function(response) {
-            var groups = JSON.parse(response);
             var container = $('#instrument-links');
             container.empty();
 
+            try {
+                var groups = JSON.parse(response);
+            } catch (e) {
+                console.error('Invalid JSON:', response);
+                container.append('<h3 class="coming-soon">More instruments coming soon!</h3>');
+                return;
+            }
+
             var excludedGroups = ['Voice', 'Percussion', 'Brass'];
+            var addedSomething = false;
 
             Object.keys(groups).forEach(function(groupId) {
                 var instruments = groups[groupId];
-                var groupNameText = instruments[0].instrument_group_name;
+                if (!instruments || !instruments.length) return;
 
+                var groupNameText = instruments[0].instrument_group_name;
                 if (excludedGroups.includes(groupNameText)) return;
 
                 instruments.sort(function(a, b) {
-                    var aIds = a.instrument_ids.map(Number);
-                    var bIds = b.instrument_ids.map(Number);
-                    return aIds[0] - bIds[0];
+                    return a.instrument_ids[0] - b.instrument_ids[0];
                 });
 
                 var groupDiv = $('<div class="instrument-group"></div>');
-                var groupName = $('<h3></h3>').text(groupNameText);
-                groupDiv.append(groupName);
+                groupDiv.append($('<h3></h3>').text(groupNameText));
 
                 instruments.forEach(function(instrument) {
                     groupDiv.append(
@@ -160,10 +166,15 @@ function fetchSearchByInstrument() {
                 });
 
                 container.append(groupDiv);
+                addedSomething = true;
             });
 
-            // Add final message
-            container.append('<h3 class="coming-soon">More instruments coming soon!</h3>');
+            // Always append the message
+            container.append('<h3 class="coming-soon" style="margin-top:1.5em;">More instruments coming soon!</h3>');
+        },
+        error: function(xhr, status, error) {
+            console.error('Fetch failed:', error);
+            $('#instrument-links').html('<h3 class="coming-soon">More instruments coming soon!</h3>');
         }
     });
 }
