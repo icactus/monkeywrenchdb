@@ -581,6 +581,7 @@ select {
     background-color:#f1f1f1;
 }
 .search-content {
+    line-height:1.5em;
     overflow-x:auto;
     white-space:nowrap;
     padding: 8px;
