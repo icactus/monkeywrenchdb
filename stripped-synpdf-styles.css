@@ -582,7 +582,6 @@ select {
     overflow-x:auto;
     white-space:nowrap;
     padding: 8px;
-    font-size:125% ;
 }
 .search-content h2 {
     white-space:normal; /* piece title should wrap*/
