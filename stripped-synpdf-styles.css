@@ -147,10 +147,11 @@ a {
 }
 #monkeywrench-logo-text h2 {
     font-size:1.8em;
-    font-family: 'PixelOperator', sans-serif;
+    font-family: 'PixelOperator';
     margin:0;
 }
 #logotext-line2{
+    font-family: 'PixelOperator';
     font-size:1em;
     margin:0;
 }
@@ -547,6 +548,7 @@ select {
     cursor: pointer;
 }
 .tab-header h2{
+    font-family:'PixelOperator';
     margin: 0;
     color:#444;
 }
