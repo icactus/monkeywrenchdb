@@ -18,7 +18,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="fonts.css?v=3" />
-    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=70" />
+    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=71" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
