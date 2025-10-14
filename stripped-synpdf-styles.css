@@ -67,16 +67,16 @@ a {
     text-decoration: none;
 }
 #notation a:link {
-    color:blue;
+    color:#003954;
 }
 #notation a:hover {
-    background-color:#00d4ff33;
+    background-color:#7fd5d666;
 }
 #notation a:visited {
-    color:blue;
+    color:#003954;
 }
 #notation a:active {
-    color:blue;
+    color:#003954;
 }
 #notation-scroll { position:relative; flex: 1; overflow: auto; }
 
