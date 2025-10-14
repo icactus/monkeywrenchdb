@@ -20,6 +20,9 @@
     <link rel="stylesheet" href="fonts.css" />
     <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=65" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
     <script src="jquery.min.js"></script>
     <title>monkey wrench database</title>
 </head>
