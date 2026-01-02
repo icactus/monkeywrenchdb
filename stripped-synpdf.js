@@ -1151,6 +1151,7 @@ function updateMaxRenderedPages() {
 updateMaxRenderedPages(); // safe now that window.twoUpMode is set
 let visiblePages = new Set();
 var renderingStatus = {}; // Tracks the rendering status of each page
+let activeRenderTasks = {}; // Tracks active PDF RenderTasks for cancellation
 
 let Demaat = false;
 
@@ -1258,12 +1259,28 @@ function renderPageIfNotRendered(pageIndex) {
             canvas.height = Math.floor(viewport.height);
             // CSS size is already correct from shell build
 
-            return page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            // Cancel any pending render task for this page
+            if (activeRenderTasks[pageIndex]) {
+                activeRenderTasks[pageIndex].cancel();
+                delete activeRenderTasks[pageIndex];
+            }
+
+            // Start new render task
+            const renderTask = page.render({ canvasContext: ctx, viewport: viewport });
+            activeRenderTasks[pageIndex] = renderTask;
+
+            return renderTask.promise;
         }).then(() => {
+            delete activeRenderTasks[pageIndex];
             canvas.classList.add('rendered');
             renderingStatus[pageIndex] = 'rendered';
             manageRenderedCanvases(canvasId);
         }).catch(err => {
+            delete activeRenderTasks[pageIndex];
+            if (err.name === 'RenderingCancelledException') {
+                // Ignore cancellation errors
+                return;
+            }
             console.error(`[PDF] Render failed for page ${pageIndex}:`, err);
             renderingStatus[pageIndex] = 'idle';
         });
