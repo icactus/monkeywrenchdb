@@ -15,14 +15,16 @@
         gtag('config', 'G-YG4R4TFWVX');
     </script>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="fonts.css?v=3" />
     <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=73" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap"
+        rel="stylesheet">
     <script src="jquery.min.js"></script>
     <title>monkey wrench database</title>
 </head>
@@ -47,7 +49,8 @@
                 </div>
                 <div class="nav-menu">
                     <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;">Help</a>
-                    <a id="about-link" href="javascript:void(0)" onclick="toggleAboutLinkMenu(); return false;">About</a>
+                    <a id="about-link" href="javascript:void(0)"
+                        onclick="toggleAboutLinkMenu(); return false;">About</a>
                 </div>
             </div>
 
@@ -57,7 +60,8 @@
 
         <div id="sync">
             <div id="mbar">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24px" height="24px">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24px"
+                    height="24px">
                     <path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" />
                 </svg>
             </div>
@@ -68,7 +72,8 @@
                 <label class="mnrm" id="l7"><span>hide player:</span> <input id="noplyr" type="checkbox" /></label>
                 <label class="mnrm" id="ld"><span>hide dashes:</span> <input id="nodash" type="checkbox" /></label>
                 <label class="mnrm" id="ln"><span>count in:</span> <input id="cntin" type="checkbox" /></label>
-                <label class="mexp" id="lu"><span>page number:</span> <input type="number" step="1" min="1" id="pagenum"></input></label>
+                <label class="mexp" id="lu"><span>page number:</span> <input type="number" step="1" min="1"
+                        id="pagenum"></input></label>
                 <label class="mnrm" id="helpm">help</label>
             </form>
             <div id="sync_out">
@@ -177,7 +182,8 @@
             <div id="div1"></div>
             <div id="div3">
                 <button id="saveok">Close</button><button id="save">Save</button>
-                <span>When the save button gives a (false) security error, select and save all text above as .js file.</span>
+                <span>When the save button gives a (false) security error, select and save all text above as .js
+                    file.</span>
             </div>
         </div>
         <div id="saveDiv" style="display:none;"></div>
@@ -218,18 +224,29 @@
             <button id="closehelp">Close</button>
         </div>
         <div id="about">
-            <p><b>Monkey Wrench Database</b> is built on a modified fork of <a href="https://wim.vree.org/" target="_blank" rel="noopener noreferrer">Willem Vree's</a> SynPdf. Without his amazing open source project none of this would be possible.</p>
-            <p>This site is a solo project by Isaac Trapkus, bassist with the NY Phil. I am not a professional programmer (<a href="https://bassmentrosin.com" target="_blank" rel="noopener noreferrer">but I do make bass rosin</a>). Please forgive my many skill issues.</p>
-            <p>Syncing is done by detecting staves and barlines algorithmically with manual correction. It takes 1-2 minutes per page of sheet music. AI is still not at the point where it can do this task. Recordings are manually synced by playing through the video and logging timestamps with keypresses (usually at 1.5-2x playback speed). Dynamic Time Warping makes it possible to automate adding additional recordings once a piece has a manual timestamp record. But the time to proof-read the recording is about the same as doing it manually.</p>
-            <p>If you find this project important and have the programming skills to make meaningful contributions to its development, please be in touch! icactusmusic AT gmail DOT com.</p>
+            <p><b>Monkey Wrench Database</b> is built on a modified fork of <a href="https://wim.vree.org/"
+                    target="_blank" rel="noopener noreferrer">Willem Vree's</a> SynPdf. Without his amazing open source
+                project none of this would be possible.</p>
+            <p>This site is a solo project by Isaac Trapkus, bassist with the NY Phil. I am not a professional
+                programmer (<a href="https://bassmentrosin.com" target="_blank" rel="noopener noreferrer">but I do make
+                    bass rosin</a>). Please forgive my many skill issues.</p>
+            <p>Syncing is done by detecting staves and barlines algorithmically with manual correction. It takes 1-2
+                minutes per page of sheet music. AI is still not at the point where it can do this task. Recordings are
+                manually synced by playing through the video and logging timestamps with keypresses (usually at 1.5-2x
+                playback speed). Dynamic Time Warping makes it possible to automate adding additional recordings once a
+                piece has a manual timestamp record. But the time to proof-read the recording is about the same as doing
+                it manually.</p>
+            <p>If you find this project important and have the programming skills to make meaningful contributions to
+                its development, please be in touch! icactusmusic AT gmail DOT com.</p>
             <button id="closeabout">Close</button>
         </div>
     </section3>
     <!-- Notification Element -->
-    <div id="notification" style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+    <div id="notification"
+        style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=175"></script>
+    <script src="stripped-synpdf.js?v=176"></script>
     <script src="stripped-synpdf-extras.js?v=162"></script>
 </body>
 
