@@ -11,3 +11,7 @@ strip-cs-file
 /sync-test/
 fast-dtw.ipynb
 /ImageMagick-7.1.1-39/
+/hd-pdfs/
+.env
+missing_ids.txt
+youtube_ids.txt

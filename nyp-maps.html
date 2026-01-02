@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Drive Times & People Map</title>
+    <style>
+:root {
+  --bg: #0b0f14;
+  --card: #121923;
+  --muted: #93a1b1;
+  --text: #e6edf3;
+  --accent: #4ea1ff;
+  --ok: #2ecc71; 
+  --warn: #f1c40f; 
+  --bad: #e74c3c; 
+}
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif; }
+    .wrap { display: flex; flex-direction: column; height: 100%; }
+    header { padding: 12px 16px; border-bottom: 1px solid #1f2a36; background: #0f1620; position: sticky; top: 0; z-index: 2; }
+    header h1 { margin: 0; font-size: 18px; letter-spacing: 0.2px; }
+
+    .content { flex: 1; display: grid; grid-template-columns: 360px 1fr; grid-template-rows: 1fr auto; gap: 12px; padding: 12px; }
+    .panel { background: var(--card); border: 1px solid #1f2a36; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+    .panel label { font-size: 13px; color: var(--muted); font-weight: 500; margin-bottom: 2px; }
+    input[type="text"], textarea, select { width: 100%; box-sizing: border-box; background: #0f1620; color: var(--text); border: 1px solid #223142; border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+    textarea { min-height: 160px; resize: vertical; }
+    button { background: var(--accent); color: #001022; border: 0; padding: 10px 12px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: background 0.2s ease; }
+    button:hover { background: #73b9ff; }
+    #map { border-radius: 14px; border: 1px solid #1f2a36; width: 100%; height: 80vh; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+
+    #results { grid-column: 1 / -1; background: var(--card); border: 1px solid #1f2a36; border-radius: 14px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; cursor: default; }
+    th, td { padding: 8px 10px; border-bottom: 1px dashed #243246; }
+    th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; cursor: pointer; }
+    th.sort-asc::after { content: " ▲"; }
+    th.sort-desc::after { content: " ▼"; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-weight: 700; }
+    .pill.ok { background: color-mix(in oklab, var(--ok) 25%, transparent); color: var(--ok); }
+    .pill.warn { background: color-mix(in oklab, var(--warn) 25%, transparent); color: var(--warn); }
+    .pill.bad { background: color-mix(in oklab, var(--bad) 25%, transparent); color: var(--bad); }
+    tr.highlight-baseline { background: rgba(255, 255, 255, 0.1); font-weight: bold; }
+    #spinner {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+    }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 5px solid #4ea1ff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* --- Mobile layout adjustments --- */
+    @media (max-width: 900px) {
+      .content {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+      }
+
+      .panel {
+        order: 1;
+      }
+
+      #map {
+        height: 50vh;
+        order: 2;
+      }
+
+      #results {
+        order: 3;
+        overflow-x: auto;
+      }
+
+      table {
+        font-size: 12px;
+      }
+
+      th, td {
+        padding: 6px;
+      }
+
+      header h1 {
+        font-size: 16px;
+      }
+
+      input[type="text"],
+      textarea,
+      select,
+      button {
+        font-size: 14px;
+      }
+    }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header><h1>NYC/NJ Driving Times & People Map</h1></header>
+      <div class="content">
+        <section class="panel">
+          <label>Destination</label>
+          <input id="destination" type="text" value="Pendry Natirar, 400 Natirar Dr, Peapack, NJ 07977" readonly>
+          <label>Departure Time</label>
+          <input id="departAt" type="datetime-local">
+          <label>Origins (paste addresses below)</label>
+          <textarea id="origins" rows="8">
+            126 Highmount Avenue; Upper Nyack, NY 10960
+            45 Pondfield Road W, #1C; Bronxville, NY 10708
+            30 Surrey Lane; Livingston, NJ 07039
+            31 Ireland Brook Drive; North Brunswick, NJ 08902
+            447 W 18th Street, #4E; New York, NY 10011
+            94 Willetts Road; Mount Kisco, NY 10549
+            150 W 79th Street, #9E; New York, NY 10024
+            120 Cabrini Blvd, #106; New York, NY 10033
+            801 Amsterdam Avenue, #4I; New York, NY 10025
+            333 W 76th Street, #2B; New York, NY 10024
+            54 Riverside Drive, #10C; New York, NY 10024
+            875 W 181st Street, #1M; New York, NY 10033
+            1520 York Avenue, #8H; New York, NY 10028
+            780 Riverside Drive, #8C; New York, NY 10032
+            230 W 105th Street, #5D; New York, NY 10025
+            210 W 101st Street, #16K; New York, NY 10025
+            150 W 84th Street, #5D; New York, NY 10024
+            600 W 58th Street, #5G; New York, NY 10019
+            215 W 91st Street, #131; New York, NY 10024
+            165 W 66th Street, #5M; New York, NY 10023
+            615 Fort Washington Avenue, #4D; New York, NY 10040
+            80 Villa Drive; Pearl River, NY 10965
+            44 Pyle Street; Oradell, NJ 07649
+            83 Bryant Trail; Carmel, NY 10512
+            67 Riverside Drive, #8A; New York, NY 10024
+            804 W 180th Street, #56; New York, NY 10033
+            44 Lynwood Road; Scarsdale, NY 10583
+            230 W 55th Street, #4C; New York, NY 10019
+            74 W 68th Street; New York, NY 10023
+            505 W 43rd Street, #7K; New York, NY 10036
+            276 Grand Avenue; Leonia, NJ 07605
+            245 W 107th Street, #4D; New York, NY 10025
+            309 Weatherfield Place; Lancaster, PA 17603
+            100 Winston Drive, #16E North; Cliffside Park, NJ 07010
+            25 Hillcrest Avenue; Yonkers, NY 10705
+            182 Pascack Avenue; Emerson, NJ 07630
+            9 Broad Street; Demarest, NJ 07627
+            201 W 74th Street, #14C; New York, NY 10023
+            603 W 146th Street, #2W; New York, NY 10031
+            80 Riverside Blvd, #8C; New York, NY 10069
+            653 Berkley Street; New Milford, NJ 07646
+            314 Fairmount Avenue; Hackensack, NJ 07601
+            69 Tiemann Place, #37; New York, NY 10027
+            295 Myrtle Street; Haworth, NJ 07641
+            323 W 96th Street, #914; New York, NY 10025
+            465 West End Avenue, #1B; New York, NY 10024
+            470 West End Avenue, #4G; New York, NY 10024
+            500 E 77th Street, #3215; New York, NY 10162
+            147 W 132nd Street, #2; New York, NY 10027
+            345 W 88th Street, #8B; New York, NY 10024
+            628 W 238th Street, PH B; Riverdale, NY 10463
+            101 West End Avenue, #10N; New York, NY 10023
+            1133 Warburton Avenue, #PH9N; Yonkers, NY 10701
+            4 D'Anton Court; Kendall Park, NJ 08824
+            200 Riverside Blvd, #16L; New York, NY 10069
+            505 W 43rd Street, #14A; New York, NY 10036
+            2600 Netherland Avenue, #915; Riverdale, NY 10463
+            371 Fort Washington Avenue, #6C; New York, NY 10033
+            318 W 77th Street, #1B; New York, NY 10024
+            200 W 86th Street, #15G; New York, NY 10024
+            49 Cheever Place; Brooklyn, NY 11231
+            300 Riverside Drive, #11F; New York, NY 10025
+            PO Box 584; Alpine, NJ 07620
+            309 W 104th Street, #4B; New York, NY 10025
+            4516 Boston Post Road; Pelham, NY 10803
+            3 Court Square, #4508; Long Island City, NY 11101
+            318 W 100th Street, #3B; New York, NY 10025
+            586 Beech Street; Haworth, NJ 07641
+            17 Carson Road; Princeton, NJ 08540
+            33 W 67th Street, #1RW; New York, NY 10023
+            160 West End Avenue, #21M; New York, NY 10023
+            PO Box 91; Mineola, NY 11501
+            112 S 2nd Avenue; Highland Park, NJ 08904
+            1403 Windsor Park Court; Englewood, NJ 07631
+            530 West End Avenue, #10-3; New York, NY 10024
+            21-45 44th Drive, #PH H; Long island City, NY 11101
+            371 Howland Avenue; River Edge, NJ 07661
+            244 W 72nd Street, #16B; New York, NY 10023
+            205 West End Avenue, #17B; New York, NY 10023
+            137 Tappan Road; Norwood, NJ 07648
+            255 West End Avenue, #4A; New York, NY 10023
+            174 W Hudson Avenue; Englewood, NJ 07631
+            200 W 67th Street, #25D; New York, NY 10023
+            322 W 72nd Street, #1B; New York, NY 10023
+            812 Riverside Drive, #44; New York, NY 10032
+            30 River Road, #18C; New York, NY 10044
+            557 Cypress Avenue; Saddle Brook, NJ 07663
+            6 Woodcrest Lane; Old Tappan, NJ 07675
+          </textarea>
+          <button id="runBtn">Compute & Plot</button>
+        </section>
+        <section id="map"></section>
+        <section id="results">
+          <h2>Results</h2>
+          <table id="resultsTable">
+            <thead><tr><th>#</th><th>Origin</th><th id="distanceCol">Distance</th><th id="durationCol">Duration</th><th>ETD</th><th>ETA</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+
+
+    <div id="spinner"><div class="spinner"></div></div>
+
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+    <script>
+      let map, geocoder, clusterer;
+      const baselineAddress = "10 Lincoln Center Plaza, New York, NY 10023";
+
+      // Initialize map
+      window.initApp = function() {
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: { lat: 40.7128, lng: -74.0060 },
+          zoom: 10
+        });
+        geocoder = new google.maps.Geocoder();
+        document.getElementById("runBtn").addEventListener("click", run);
+        document.getElementById("distanceCol").addEventListener("click", () => sortTable(2, false));
+        document.getElementById("durationCol").addEventListener("click", () => sortTable(3, true));
+      };
+
+      // --- Helpers ---
+      function showSpinner(show) {
+        document.getElementById("spinner").style.display = show ? "flex" : "none";
+      }
+      function parseDuration(text) {
+        if (!text) return Infinity;
+        const h = text.match(/(\d+)\s*h/);
+        const m = text.match(/(\d+)\s*m/);
+        return (h ? parseInt(h[1]) * 60 : 0) + (m ? parseInt(m[1]) : 0);
+      }
+      async function geocodeOne(address) {
+        return new Promise((resolve) => {
+          geocoder.geocode({ address }, (results, status) => {
+            if (status === "OK" && results[0]) resolve(results[0].geometry.location);
+            else resolve(null);
+          });
+        });
+      }
+      async function geocodeMany(addresses) {
+        const results = [];
+        for (const addr of addresses) results.push(await geocodeOne(addr));
+        return results;
+      }
+      async function distanceMatrixBatched(origins, destination, departureTime) {
+        const svc = new google.maps.DistanceMatrixService();
+        const results = [];
+        for (let i = 0; i < origins.length; i += 25) {
+          const chunk = origins.slice(i, i + 25);
+          const req = {
+            origins: chunk,
+            destinations: [destination],
+            travelMode: google.maps.TravelMode.DRIVING,
+            unitSystem: google.maps.UnitSystem.IMPERIAL
+          };
+          if (departureTime) req.departureTime = departureTime;
+          const resp = await new Promise((res, rej) => {
+            svc.getDistanceMatrix(req, (response, status) => {
+              if (status === "OK") res(response);
+              else rej(status);
+            });
+          });
+          for (const row of resp.rows) results.push(row.elements[0]);
+        }
+        return results;
+      }
+      function renderTable(origins, dmResults) {
+        const tbody = document.querySelector("#resultsTable tbody");
+        tbody.innerHTML = "";
+        const allOrigins = [baselineAddress, ...origins];
+        allOrigins.forEach((origin, i) => {
+          const dm = dmResults[i];
+          const minutes = parseDuration(dm?.duration?.text);
+          let badgeClass = "bad";
+          if (minutes <= 30) badgeClass = "ok";
+          else if (minutes <= 60) badgeClass = "warn";
+          const tr = document.createElement("tr");
+          if (origin === baselineAddress) tr.classList.add("highlight-baseline");
+          tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${origin}</td>
+      <td>${dm?.distance?.text || "—"}</td>
+      <td data-minutes="${minutes}">
+        <span class="pill ${badgeClass}">${dm?.duration?.text || "—"}</span>
+      </td>
+      <td>—</td><td>—</td>
+    `;
+          tbody.appendChild(tr);
+        });
+      }
+      function plotMarkers(originLocs, destLoc) {
+        if (clusterer) clusterer.clearMarkers();
+
+        const markers = [];
+        const bounds = new google.maps.LatLngBounds();
+
+        // Add origin markers
+        originLocs.forEach((loc) => {
+          if (!loc) return;
+          markers.push(
+            new google.maps.Marker({
+              position: loc,
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 6,
+                fillColor: "#4ea1ff",
+                fillOpacity: 0.9,
+                strokeColor: "#0b0f14",
+                strokeWeight: 1
+              }
+            })
+          );
+          bounds.extend(loc);
+        });
+
+        // Add destination marker
+        const destMarker = new google.maps.Marker({
+          position: destLoc,
+          map,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: "#ff5555",
+            fillOpacity: 1,
+            strokeColor: "#fff",
+            strokeWeight: 2
+          },
+          title: "Destination"
+        });
+        bounds.extend(destLoc);
+
+        // Add all origin markers to clusterer
+        clusterer = new markerClusterer.MarkerClusterer({ map, markers });
+
+        // Fit map to show all points
+        if (!bounds.isEmpty()) {
+          map.fitBounds(bounds, { top: 50, bottom: 50, left: 50, right: 50 });
+        }
+      }
+      // --- Main ---
+      async function run() {
+        showSpinner(true);
+        try {
+          const destination = document.getElementById("destination").value.trim() || baselineAddress;
+          const rawOrigins = document.getElementById("origins").value.trim();
+          if (!rawOrigins) return alert("Paste some addresses");
+
+          const departField = document.getElementById("departAt").value;
+          const departureTime = departField ? new Date(departField) : null;
+          const origins = rawOrigins.split(/\n+/).map(line => line.replace(/;/g, ", ").trim()).filter(Boolean);
+
+      const destLoc = await geocodeOne(destination);
+      if (!destLoc) return alert("Could not geocode destination");
+
+      const allOrigins = [baselineAddress, ...origins];
+      const originLocs = await geocodeMany(allOrigins);
+
+      map.setCenter(destLoc);
+      map.setZoom(11);
+      plotMarkers(originLocs, destLoc);
+
+      const dmResults = await distanceMatrixBatched(originLocs, destLoc, departureTime);
+      renderTable(origins, dmResults);
+} catch (err) {
+  console.error(err);
+  alert("Error during calculation. Check console for details.");
+} finally {
+  showSpinner(false);
+}
+}
+
+      // --- Sorting ---
+      let currentSort = { column: null, direction: 1 };
+      function sortTable(colIndex, isDuration) {
+        const tbody = document.querySelector("#resultsTable tbody");
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        currentSort.direction = currentSort.column === colIndex ? -currentSort.direction : 1;
+        currentSort.column = colIndex;
+        rows.sort((a, b) => {
+          const aVal = isDuration
+            ? parseFloat(a.children[colIndex].dataset.minutes)
+            : parseFloat(a.children[colIndex].innerText.replace(/[^0-9.]/g, ""));
+          const bVal = isDuration
+            ? parseFloat(b.children[colIndex].dataset.minutes)
+            : parseFloat(b.children[colIndex].innerText.replace(/[^0-9.]/g, ""));
+          return (aVal - bVal) * currentSort.direction;
+        });
+        tbody.innerHTML = "";
+        rows.forEach((r) => tbody.appendChild(r));
+      }
+    </script>
+    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCZAohk2w8jY9vYnFJdMwQF0Y2aKW5sovs&libraries=places&v=weekly&callback=initApp"></script>
+  </body>
+</html>
