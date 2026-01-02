@@ -1,9 +1,0 @@
-Handling measures divided across staves
-Flag the measure (need to be number or can use other symbols?) (855+ or 855000 and detect value greater than if has to be number)
-	But needs to be only one mix so can't do something like 855+], [90...
-	Maybe store in separate dictionary and when encountering 855+ the separate dictionary generates a second demaat to shade the continuing part.
-		So when editing something like press d for divide and then click the barline where it should continue from (right barline will automatically happen unless continuing part takes up whole line.
-			Is it worth it to allow chaining of divided measures across multiple lines? Proably not?
-		But how will the 855+ be stored in a unique way to be looked up in case there is another measure with 855+?
-	Just need the barline coordinate for the continuing part and then can get rest of info from some kind of look forward.
-	That way barline is shaded but doesn't require any special change to the demetriek array.

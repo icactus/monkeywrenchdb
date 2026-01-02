@@ -13,7 +13,7 @@ deployment:
     - /bin/cp index.php $DEPLOYPATH
     - /bin/cp mysql-metric-arr-submit.php $DEPLOYPATH
     - /bin/cp phpinfo.php $DEPLOYPATH
-    - /bin/cp removetime.py $DEPLOYPATH
+    - /bin/cp scripts/removetime.py $DEPLOYPATH
     - /bin/cp stripped-synpdf-extras.js $DEPLOYPATH
     - /bin/cp stripped-synpdf-styles.css $DEPLOYPATH
     - /bin/cp stripped-synpdf.js $DEPLOYPATH
