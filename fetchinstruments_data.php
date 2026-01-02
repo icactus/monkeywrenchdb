@@ -3,7 +3,12 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-require_once '../phpfiles/read_only_user_config.php';
+// Check for production config path first, then local
+if (file_exists(__DIR__ . '/../phpfiles/read_only_user_config.php')) {
+    require_once __DIR__ . '/../phpfiles/read_only_user_config.php';
+} else {
+    require_once __DIR__ . '/phpfiles/read_only_user_config.php';
+}
 
 // Establish the database connection
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);

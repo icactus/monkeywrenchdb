@@ -312,7 +312,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     this.cursorTime = 0;
     this.time_ix = d;
     var e = this;
-    setTimeout(function() {
+    setTimeout(function () {
         e.setOffsetX.call(e)
     }, 0);
     this.line = c;
@@ -322,7 +322,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     this.sinfo = $("#sync_info");
     this.paused = !0
 }
-Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
+Wijzer$$module$synpdf.prototype.drawRepTokens = function () {
     function a(a, b, c) {
         var d = b[0],
             f = b[1],
@@ -345,14 +345,14 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
     var b = [],
         c = [];
     $(".reptkn").remove();
-    repMaten$$module$synpdf.forEach(function(d) {
+    repMaten$$module$synpdf.forEach(function (d) {
         a(d.jmp, d.tkj, b);
         void 0 != d.dst && a(d.dst, d.tkd, c)
     });
     $(".reptkn").toggle(!!opt$$module$synpdf.synbox)
 };
 
-Wijzer$$module$synpdf.prototype.setOffsetX = function() {
+Wijzer$$module$synpdf.prototype.setOffsetX = function () {
     // keep xoffset for compatibility, but compute in notation-space
     this.xoffset = pageLeftInNotation(1); // left page in spread
     const t = (window.__restoreTime != null)
@@ -362,7 +362,7 @@ Wijzer$$module$synpdf.prototype.setOffsetX = function() {
     if (window.__restoreTime != null) window.__restoreTime = null;
 };
 
-Wijzer$$module$synpdf.prototype.time2x = function(a) {
+Wijzer$$module$synpdf.prototype.time2x = function (a) {
     var b, c;
     this.cursorTime = a;
 
@@ -527,7 +527,7 @@ function scrollHorizontally(targetX, instant) {
     }
 }
 
-Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
+Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
     var d;
     for (d = 0; d < deMaten$$module$synpdf.length; ++d) {
         var e = deMaten$$module$synpdf[d];
@@ -590,7 +590,7 @@ function findCurrentMeasureTime() {
 
 
 // No wrap-around on measure navigation
-Wijzer$$module$synpdf.prototype.goMsre = function(next, ev) {
+Wijzer$$module$synpdf.prototype.goMsre = function (next, ev) {
     if (0 == deTijden$$module$synpdf.length) return;
     if (ev && (ev.altKey || ev.ctrlKey || ev.shiftKey || ev.metaKey)) return;
     ev && ev.preventDefault && ev.preventDefault();
@@ -624,7 +624,7 @@ Wijzer$$module$synpdf.prototype.goMsre = function(next, ev) {
 };
 
 // 1-based page index + linear wrap (…1→2→3→…)
-Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
+Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
     if (ev && (ev.altKey || ev.ctrlKey || ev.shiftKey || ev.metaKey)) return;
     ev && ev.preventDefault && ev.preventDefault();
     if (!deMaten$$module$synpdf || !deMaten$$module$synpdf.length) return;
@@ -732,14 +732,14 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(isDown, isPageJump, ev) {
     this.x2time(absX, targetY, !1);
 };
 
-Wijzer$$module$synpdf.prototype.changeTimesKeyb = function(a) {
+Wijzer$$module$synpdf.prototype.changeTimesKeyb = function (a) {
     if (!(detix$$module$synpdf >= deTijden$$module$synpdf.length - 1)) {
         var b = deTijden$$module$synpdf[detix$$module$synpdf + 1];
         b.t += a;
         b.t = Math.round(1E3 * b.t) / 1E3
     }
 };
-Wijzer$$module$synpdf.prototype.changeOffset = function(a) {
+Wijzer$$module$synpdf.prototype.changeOffset = function (a) {
     offset$$module$synpdf += a;
     offset$$module$synpdf = Math.round(1E3 * offset$$module$synpdf) / 1E3;
     for (var b = 1; b < deTijden$$module$synpdf.length; ++b) {
@@ -749,7 +749,7 @@ Wijzer$$module$synpdf.prototype.changeOffset = function(a) {
     }
 };
 
-Wijzer$$module$synpdf.prototype.setTmargin = function() {
+Wijzer$$module$synpdf.prototype.setTmargin = function () {
     var a = $("#notation-scroll").offset().top,
         b = $("#rollijn").offset().top;
     b < a && (b = a + 15, $("#rollijn").css("top", b + "px"));
@@ -764,12 +764,12 @@ Wijzer$$module$synpdf.prototype.setTmargin = function() {
     }
 };
 
-Wijzer$$module$synpdf.prototype.compCountIn = function() {
+Wijzer$$module$synpdf.prototype.compCountIn = function () {
     var a = {
         time: 2.5,
         num: 4
     },
-        b = opt$$module$synpdf.bpmsr.split("-").map(function(a) {
+        b = opt$$module$synpdf.bpmsr.split("-").map(function (a) {
             return parseInt(a)
         });
     a.time = (deTijden$$module$synpdf[detix$$module$synpdf + 1].t - deTijden$$module$synpdf[detix$$module$synpdf].t) / b[0];
@@ -785,28 +785,28 @@ function DummyPlayer$$module$synpdf() {
     this.step = 200;
     this.playing = 0;
 }
-DummyPlayer$$module$synpdf.prototype.pause = function() {
+DummyPlayer$$module$synpdf.prototype.pause = function () {
     this.clearKlok();
     this.paused = !0;
     this.klok = -1;
 };
-DummyPlayer$$module$synpdf.prototype.play = function() {
+DummyPlayer$$module$synpdf.prototype.play = function () {
     this.paused = !1;
     if (-1 == this.klok) {
         var a = this;
-        this.setKlok(function() {
+        this.setKlok(function () {
             a.currentTime += a.step / 1E3;
             tick$$module$synpdf()
         }, this.step)
     }
 };
 
-DummyPlayer$$module$synpdf.prototype.setKlok = function(a, b) {
+DummyPlayer$$module$synpdf.prototype.setKlok = function (a, b) {
     -1 != this.klok && clearInterval(this.klok);
     this.klok = a ? setInterval(a, b) : -1;
     this.paused = !1
 };
-DummyPlayer$$module$synpdf.prototype.clearKlok = function() {
+DummyPlayer$$module$synpdf.prototype.clearKlok = function () {
     -1 != this.klok && clearInterval(this.klok);
     this.klok = -1;
     this.paused = !0;
@@ -847,9 +847,9 @@ function doeRol$$module$synpdf(a, b) {
 function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum) {
     let parsedPageMetricArr = JSON.parse(JSON.stringify(pageMetricArray.cxs));
     let pageBarlineArray = JSON.parse(JSON.stringify(pageMetricArray.bxs));
-    parsedPageMetricArr.forEach(function(staffSystem) {
+    parsedPageMetricArr.forEach(function (staffSystem) {
         //convert each page's staff line pixel coordinates so they are relative to total pdf height
-        staffSystem.cs = staffSystem.cs.map(function(staffLineLoc) {
+        staffSystem.cs = staffSystem.cs.map(function (staffLineLoc) {
             return 1 * staffLineLoc + cumulativeHeight;
         })
     });
@@ -930,7 +930,7 @@ function readPdfdoc$$module$synpdf() {
     initIntersectionObserver();
 
     // Build page shells up-front (no raster), render on demand
-    return buildAllPageShells$$module$synpdf().then(function() {
+    return buildAllPageShells$$module$synpdf().then(function () {
         rendering$$module$synpdf = 0;
         addDummySys$$module$synpdf();
         $("#loadingMessage2").hide();
@@ -1041,11 +1041,11 @@ function readPdf$$module$synpdf(pdfData, dataType) {
         pdfDoc$$module$synpdf = new Image();
         pdfDoc$$module$synpdf.crossOrigin = "anonymous";
         pdfDoc$$module$synpdf.src = pdfCopy;
-        pdfDoc$$module$synpdf.onload = function() {
+        pdfDoc$$module$synpdf.onload = function () {
             console.debug("[PDF] Image loaded successfully");
             readPdfdoc$$module$synpdf();
         };
-        pdfDoc$$module$synpdf.onerror = function(err) {
+        pdfDoc$$module$synpdf.onerror = function (err) {
             console.error("[PDF] Image load failed:", err);
         };
     } else {
@@ -1066,7 +1066,7 @@ function readPdf$$module$synpdf(pdfData, dataType) {
         const loadingTask = pdfjsLib.getDocument(pdfjsOptions);
 
         // Progress handler
-        loadingTask.onProgress = function(progressData) {
+        loadingTask.onProgress = function (progressData) {
             if (shouldUpdate) {
                 const currentTime = new Date().getTime();
                 const elapsedTime = (currentTime - startTime) / 1000;
@@ -1100,14 +1100,14 @@ function readPdf$$module$synpdf(pdfData, dataType) {
 
         // Handle PDF load
         loadingTask.promise
-            .then(function(pdf) {
+            .then(function (pdf) {
                 console.debug("[PDF] PDF.js loaded successfully");
                 pdfDoc$$module$synpdf = pdf;
                 $("#pagenum").attr("max", pdf.numPages);
                 shouldUpdate = false;
                 readPdfdoc$$module$synpdf();
             })
-            .catch(function(error) {
+            .catch(function (error) {
                 console.error("[PDF] PDF.js load failed:", error);
                 // Add detailed error handling
                 if (error.name === "InvalidPDFException") {
@@ -1244,7 +1244,7 @@ function renderPageIfNotRendered(pageIndex) {
             ? Promise.resolve(pageCache[pageIndex])
             : pdfDoc$$module$synpdf.getPage(pageIndex).then(p => { pageCache[pageIndex] = p; return p; });
 
-        return pagePromise.then(function(page) {
+        return pagePromise.then(function (page) {
             const devicePixelRatio = window.devicePixelRatio || 1;
             const pv = pageView[pageIndex] || { w: page._pageInfo.view[2], h: page._pageInfo.view[3], rotation: page.rotate || 0 };
             const baseScale = deMetriek$$module$synpdf[0] / pv.w; // logical page width / natural width
@@ -1402,12 +1402,12 @@ function kliklang$$module$synpdf(a) {
         touch_tb$$module$synpdf = (new Date).getTime();
         var e = a.shiftKey;
         b.on(touchDev$$module$synpdf ? "touchmove" : "mousemove",
-            function(a) {
+            function (a) {
                 a.stopPropagation();
                 a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
                 touch_moved$$module$synpdf = 10 < Math.abs(a.clientY - c) + Math.abs(a.clientX - d);
             });
-        b.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function(a) {
+        b.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function (a) {
             a.stopPropagation();
             a.preventDefault();
             b.off("mousemove touchmove mouseup touchend");
@@ -1447,7 +1447,7 @@ function resizePdf$$module$synpdf(scrollType) {
 
     $("#wait").text("Recomputing systems ...").css({ display: "block", background: "rgb(200,200,255)" });
 
-    readPdfdoc$$module$synpdf().then(function() {
+    readPdfdoc$$module$synpdf().then(function () {
         // Decide how to restore position
         const scroller = document.getElementById('notation-scroll');
         const inTwoUp = !!scroller && scroller.classList.contains('two-up');
@@ -1492,7 +1492,7 @@ function yubApiReady$$module$synpdf() {
             disablekb: 1 // keyboard controls mess up measure nav
         },
         events: {
-            'onReady': function() {
+            'onReady': function () {
                 $("#yubuse").prop("checked", !0);
                 yubload$$module$synpdf();
                 setupPlayPauseButton();
@@ -1518,8 +1518,13 @@ async function onPlayerStateChange(event) {
             isSwitchingRecording = false; // Reset flag after successful seek
             blockTime2x = false;
         } catch (error) {
+            if (error.message === 'Cancelled') {
+                console.log('Seek cancelled (new request started).');
+                // Do NOT reset flags; let the new request handle it.
+                return;
+            }
             console.error('Failed to seek video:', error);
-            isSwitchingRecording = false; // Reset even on error
+            isSwitchingRecording = false; // Reset even on error (real error)
             bypassTickFlag = 0;
         }
     }
@@ -1553,22 +1558,40 @@ async function onPlayerStateChange(event) {
 
 
 
+// Global variable to track the latest seek request
+let latestSeekId = 0;
+
 function seekToPromise(time) {
+    const seekId = ++latestSeekId; // Increment ID for this new request
     return new Promise((resolve, reject) => {
         elmed$$module$synpdf.seekTo(time, true);
 
         // Listen for the video time to update
         const interval = setInterval(() => {
-            if (elmed$$module$synpdf.getCurrentTime() === time) {
+            // Check if a newer seek has started
+            if (seekId !== latestSeekId) {
+                clearInterval(interval);
+                reject(new Error('Cancelled'));
+                return;
+            }
+
+            // Use a small tolerance for time comparison (0.5s)
+            if (Math.abs(elmed$$module$synpdf.getCurrentTime() - time) < 0.5) {
                 clearInterval(interval);
                 resolve();
             }
         }, 100);
 
-        // Optionally, add a timeout to reject the promise after a certain period
+        // Add a timeout
         setTimeout(() => {
             clearInterval(interval);
-            reject(new Error('Timeout after trying to seek to the desired time'));
+            if (seekId === latestSeekId) {
+                // Only reject if we are still the active seek
+                reject(new Error('Timeout after trying to seek to the desired time'));
+            } else {
+                // If superseded, reject as cancelled
+                reject(new Error('Cancelled'));
+            }
         }, 10000);  // 10 seconds timeout
     });
 }
@@ -1608,21 +1631,21 @@ function setPlayer$$module$synpdf(a, b) {
         /\.ogg$/i.test(b) && (elmed$$module$synpdf.canPlayType("audio/ogg") || (b = b.replace(/\.ogg$/i, ".mp3")));
         /\.webm$/i.test(b) && (elmed$$module$synpdf.canPlayType("video/webm") || (b = b.replace(/\.webm$/i, ".mp4")));
         a.attr("src", b);
-        a.on("playing", function() {
+        a.on("playing", function () {
             dummyPlayer$$module$synpdf.setKlok(null, 0);
             setPauseState$$module$synpdf(!1)
         });
-        a.on("pause", function() {
+        a.on("pause", function () {
             dummyPlayer$$module$synpdf.clearKlok();
             setPauseState$$module$synpdf(!0)
         });
-        a.on("loadedmetadata", function() {
+        a.on("loadedmetadata", function () {
             setNotationHeight$$module$synpdf();
             elmed$$module$synpdf.currentTime = c
         });
         setNotationHeight$$module$synpdf()
         // below media_height is changed from 30% to 200px
-    } else yubchk$$module$synpdf = 1, opt$$module$synpdf.media_height || (opt$$module$synpdf.media_height = "200px"), $("#vid, #aud").css("display", "none"), $("#vidyub").css("display", "inline-block"), yubload$$module$synpdf(function() {
+    } else yubchk$$module$synpdf = 1, opt$$module$synpdf.media_height || (opt$$module$synpdf.media_height = "200px"), $("#vid, #aud").css("display", "none"), $("#vidyub").css("display", "inline-block"), yubload$$module$synpdf(function () {
         elmed$$module$synpdf = ybplayer$$module$synpdf;
         elmed$$module$synpdf.cueVideoById({
             videoId: opt$$module$synpdf.yubvid,
@@ -1652,13 +1675,13 @@ function lijn_shift$$module$synpdf(a) {
     var b = "touchstart" == a.type;
     $("#rollijn").toggleClass("rolgroen");
     var c = b ? $("#rollijn") : $("body");
-    c.on(b ? "touchmove" : "mousemove", function(a) {
+    c.on(b ? "touchmove" : "mousemove", function (a) {
         $("#notation-scroll").offset();
         opt$$module$synpdf.offrol = (100 * ((b ? a.originalEvent.touches[0].clientY : a.clientY) - dottedHeight$$module$synpdf / 2) / document.body.clientHeight).toFixed(2) + "%";
         $("#rollijn").css("top", opt$$module$synpdf.offrol);
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin()
     });
-    c.on(b ? "touchend" : "mouseup", function(a) {
+    c.on(b ? "touchend" : "mouseup", function (a) {
         c.off("mousemove touchmove mouseup touchend");
         $("#rollijn").toggleClass("rolgroen")
     })
@@ -1709,7 +1732,7 @@ function playPause$$module$synpdf(a, b) {
                     return
                 }
                 if (b) {
-                    setTimeout(function() {
+                    setTimeout(function () {
                         playPause$$module$synpdf(a, 0)
                     }, b);
                     return
@@ -1820,7 +1843,7 @@ function msc_check_preload$$module$synpdf() {
     pdf_file$$module$synpdf && readPdf$$module$synpdf(pdf_file$$module$synpdf, "url");
     offset_js$$module$synpdf && (offset$$module$synpdf = offset_js$$module$synpdf);
     opt$$module$synpdf.yubvid && !opt$$module$synpdf.nomed && setPlayer$$module$synpdf("", "");
-    opt$$module$synpdf.no_menu && !fullmenu$$module$synpdf && ($("#sync").css("display", "none"), opt$$module$synpdf.btns = 0, $("body").on("contextmenu", function(a) {
+    opt$$module$synpdf.no_menu && !fullmenu$$module$synpdf && ($("#sync").css("display", "none"), opt$$module$synpdf.btns = 0, $("body").on("contextmenu", function (a) {
         a.preventDefault()
     }));
 }
@@ -1830,15 +1853,15 @@ function schaalMetriek$$module$synpdf() {
         b = 1;
     null == a ? (a = opt$$module$synpdf.pagewd, b = a / 1E3) : deMetriek$$module$synpdf[0] != opt$$module$synpdf.pagewd && (a = opt$$module$synpdf.pagewd, b = a / deMetriek$$module$synpdf[0]);
     deMetriek$$module$synpdf[0] = a;
-    1 != b && deMetriek$$module$synpdf.forEach(function(a, d) {
-        0 != d && (a.cxs.forEach(function(a) {
-            a.cs.forEach(function(c, d) {
+    1 != b && deMetriek$$module$synpdf.forEach(function (a, d) {
+        0 != d && (a.cxs.forEach(function (a) {
+            a.cs.forEach(function (c, d) {
                 return a.cs[d] = c * b
             });
             a.xs.x1 *= b;
             a.xs.x2 *= b
-        }), a.bxs.forEach(function(a) {
-            a.forEach(function(c, d) {
+        }), a.bxs.forEach(function (a) {
+            a.forEach(function (c, d) {
                 return a[d] = c * b
             })
         }))
@@ -1847,7 +1870,7 @@ function schaalMetriek$$module$synpdf() {
 
 function doResize$$module$synpdf() {
     var a = $("body").prop("clientWidth");
-    a == bodyWidth$$module$synpdf ? msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin() : (bodyWidth$$module$synpdf = a, clearTimeout(resizeTimer$$module$synpdf), resizeTimer$$module$synpdf = setTimeout(function() {
+    a == bodyWidth$$module$synpdf ? msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin() : (bodyWidth$$module$synpdf = a, clearTimeout(resizeTimer$$module$synpdf), resizeTimer$$module$synpdf = setTimeout(function () {
         resizePdfSyn$$module$synpdf()
     }, 100))
 }
@@ -1961,7 +1984,7 @@ function setRollijnVisible(show) {
     r.style.pointerEvents = show ? '' : 'none';
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
     deNot$$module$synpdf = document.getElementById("notation-scroll");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     initPreload$$module$synpdf()
@@ -1970,26 +1993,26 @@ $(document).ready(function() {
     const sc = document.getElementById('notation-scroll');
     if (sc) sc.classList.remove('two-up');
     $("body").keydown(keyDown$$module$synpdf);
-    $("#buttons, #sync").keydown(function(a) {
+    $("#buttons, #sync").keydown(function (a) {
         " " == a.key && a.stopPropagation()
     });
 
-    $("#closehelp").click(function() {
+    $("#closehelp").click(function () {
         $("#help").toggleClass("showhlp", 0)
     });
-    $("#closeabout").click(function() {
+    $("#closeabout").click(function () {
         $("#about").toggleClass("showabout", 0)
     });
-    $("#helpm").click(function() {
+    $("#helpm").click(function () {
         $("#help").toggleClass("showhlp")
     });
-    $("input[type=number]").keydown(function(a) {
+    $("input[type=number]").keydown(function (a) {
         a.stopPropagation()
     });
-    $(window).resize(function() {
+    $(window).resize(function () {
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin();
     });
-    window.addEventListener("message", function(a) {
+    window.addEventListener("message", function (a) {
         "play" == a.data && keyDown$$module$synpdf({
             key: " "
         });

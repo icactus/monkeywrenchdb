@@ -3,7 +3,11 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-require_once '../phpfiles/read_only_user_config.php';
+if (file_exists(__DIR__ . '/../phpfiles/read_only_user_config.php')) {
+    require_once __DIR__ . '/../phpfiles/read_only_user_config.php';
+} else {
+    require_once __DIR__ . '/phpfiles/read_only_user_config.php';
+}
 header('Content-Type: application/json; charset=utf-8');
 
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
@@ -71,30 +75,30 @@ $res = $stmt->get_result();
 // Assemble pieces
 $pieces = [];
 while ($row = $res->fetch_assoc()) {
-    $pid = (int)$row['piece_id'];
+    $pid = (int) $row['piece_id'];
 
     if (!isset($pieces[$pid])) {
         $pieces[$pid] = [
-            'piece_id'               => $pid,
-            'piece_name'             => $row['piece_name'],
-            'category_name'          => $row['category_name'],
-            'composer_last'          => $row['composer_last'],
-            'metric_arr_id'          => (int)$row['metric_arr_id'],
-            'total_recordings_value' => (int)$row['total_recordings_value'],
-            'solo_instrument_id'     => isset($row['solo_instrument_id']) ? (int)$row['solo_instrument_id'] : null,
-            'parts'                  => []
+            'piece_id' => $pid,
+            'piece_name' => $row['piece_name'],
+            'category_name' => $row['category_name'],
+            'composer_last' => $row['composer_last'],
+            'metric_arr_id' => (int) $row['metric_arr_id'],
+            'total_recordings_value' => (int) $row['total_recordings_value'],
+            'solo_instrument_id' => isset($row['solo_instrument_id']) ? (int) $row['solo_instrument_id'] : null,
+            'parts' => []
         ];
     } else {
-        if ((int)$row['metric_arr_id'] < $pieces[$pid]['metric_arr_id']) {
-            $pieces[$pid]['metric_arr_id'] = (int)$row['metric_arr_id'];
+        if ((int) $row['metric_arr_id'] < $pieces[$pid]['metric_arr_id']) {
+            $pieces[$pid]['metric_arr_id'] = (int) $row['metric_arr_id'];
         }
     }
 
     $pieces[$pid]['parts'][] = [
-        'metric_arr_id'   => (int)$row['metric_arr_id'],
-        'instrument_id'   => (int)$row['instrument_id'],
+        'metric_arr_id' => (int) $row['metric_arr_id'],
+        'instrument_id' => (int) $row['instrument_id'],
         'instrument_name' => $row['instrument_name'],
-        'part_number'     => $row['part_number']
+        'part_number' => $row['part_number']
     ];
 }
 

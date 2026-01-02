@@ -1,5 +1,9 @@
 <?php
-require_once '../phpfiles/read_only_user_config.php';
+if (file_exists(__DIR__ . '/../phpfiles/read_only_user_config.php')) {
+    require_once __DIR__ . '/../phpfiles/read_only_user_config.php';
+} else {
+    require_once __DIR__ . '/phpfiles/read_only_user_config.php';
+}
 
 // Establish the database connection
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
@@ -9,8 +13,8 @@ if ($conn->connect_error) {
 }
 
 $instrumentId = isset($_GET['instrumentId']) ? $_GET['instrumentId'] : null;
-$pieceId      = isset($_GET['pieceId'])      ? $_GET['pieceId']      : null;
-$recordingId  = isset($_GET['recordingId'])  ? $_GET['recordingId']  : null;
+$pieceId = isset($_GET['pieceId']) ? $_GET['pieceId'] : null;
+$recordingId = isset($_GET['recordingId']) ? $_GET['recordingId'] : null;
 
 // Prepare the SQL query
 // Note the JOIN on instrument_groups (ig), and the CASE handling for the solo_instrument_id
@@ -51,10 +55,10 @@ $result = $stmt->get_result();
 if ($result) {
     $metricArrIds = array();
     while ($row = mysqli_fetch_assoc($result)) {
-        $instrumentId   = $row['instrument_id'];
-        $partNumber     = $row['part_number'];
-        $instrumentKey  = $row['instrument_key'];
-        $displayText    = $row['instrument_name'];
+        $instrumentId = $row['instrument_id'];
+        $partNumber = $row['part_number'];
+        $instrumentKey = $row['instrument_key'];
+        $displayText = $row['instrument_name'];
 
         // Construct the display text
         if ($partNumber && ($partNumber != 0)) {
@@ -65,10 +69,10 @@ if ($result) {
         }
 
         $metricArrIds[] = array(
-            'recording_id'   => $recordingId,
-            'instrument_id'  => $instrumentId,
-            'metric_arr_id'  => $row['metric_arr_id'],
-            'displayText'    => $displayText
+            'recording_id' => $recordingId,
+            'instrument_id' => $instrumentId,
+            'metric_arr_id' => $row['metric_arr_id'],
+            'displayText' => $displayText
         );
     }
 
