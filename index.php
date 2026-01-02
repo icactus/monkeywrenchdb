@@ -236,7 +236,7 @@
                 playback speed). Dynamic Time Warping makes it possible to automate adding additional recordings once a
                 piece has a manual timestamp record. But the time to proof-read the recording is about the same as doing
                 it manually.</p>
-            <p>If you find this project important and have the programming skills to make meaningful contributions to
+            <p>If you find this project important and would like to make meaningful contributions to
                 its development, please be in touch! icactusmusic AT gmail DOT com.</p>
             <button id="closeabout">Close</button>
         </div>
