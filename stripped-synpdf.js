@@ -1805,12 +1805,13 @@ function keyDown$$module$synpdf(a) {
             $("#btns").click();
             break;
         case "h":
-            $("#help").toggleClass("showhlp");
-            $("#about").toggleClass("showabout", !1);
-            break;
-        case 'H':
-            toggleHiResPdfs();
-            e.preventDefault();
+            if (a.altKey) {
+                toggleHiResPdfs();
+                a.preventDefault();
+            } else {
+                $("#help").toggleClass("showhlp");
+                $("#about").toggleClass("showabout", !1);
+            }
             break;
         case "l":
             $("#lncsr").click();
