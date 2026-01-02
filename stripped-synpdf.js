@@ -1536,7 +1536,9 @@ async function onPlayerStateChange(event) {
             window.twoUpInitialScrollPending = true;
             window.__twoUpPrevPage = undefined;
         }
-        msc_wz$$module$synpdf.time2x(newPlayerCue - offset$$module$synpdf);
+        if (msc_wz$$module$synpdf) {
+            msc_wz$$module$synpdf.time2x(newPlayerCue - offset$$module$synpdf);
+        }
         setNotationHeight$$module$synpdf();
         isSwitchingRecording = false; // Reset flag after cueing
     }

@@ -54,13 +54,13 @@ const sheetMusicSvg = `
 </span>`
 
 //Color change for measure highlighting
-$("#favcolor").on("input", function() {
+$("#favcolor").on("input", function () {
     $(".demaat").css("background", $(this).val());
     globalHighlightColor = this.value;
 });
 
 //color change reset button
-$("#reset-button").on("click", function() {
+$("#reset-button").on("click", function () {
     console.log('clicked');
     $(".demaat").css("background", globalHighlightColor);
     $("#favcolor").val(globalHighlightColor);
@@ -84,7 +84,8 @@ function setupPlayPauseButton() {
         return;
     }
     var playPauseButton = document.getElementById("play-pause-button");
-    playPauseButton.addEventListener("click", function() {
+    if (!playPauseButton) return; // Exit if button doesn't exist yet
+    playPauseButton.addEventListener("click", function () {
         if (ybplayer$$module$synpdf.getPlayerState() == YT.PlayerState.PLAYING) {
             ybplayer$$module$synpdf.pauseVideo();
         } else {
@@ -99,7 +100,9 @@ function setupPlayPauseButton() {
 
 function updatePlayPauseButton() {
     var playIcon = document.getElementById("play-icon");
+    var playIcon = document.getElementById("play-icon");
     var pauseIcon = document.getElementById("pause-icon");
+    if (!playIcon || !pauseIcon) return; // Exit if icons don't exist yet
     if (ybplayer$$module$synpdf.getPlayerState() == YT.PlayerState.PLAYING) {
         playIcon.style.display = "none";
         pauseIcon.style.display = "flex";
@@ -128,7 +131,7 @@ function fetchSearchByInstrument() {
     $.ajax({
         url: 'fetchinstruments_data.php',
         method: 'GET',
-        success: function(response) {
+        success: function (response) {
             var container = $('#instrument-links');
             container.empty();
 
@@ -143,7 +146,7 @@ function fetchSearchByInstrument() {
             var excludedGroups = ['Voice', 'Percussion', 'Brass'];
             var addedSomething = false;
 
-            Object.keys(groups).forEach(function(groupId) {
+            Object.keys(groups).forEach(function (groupId) {
                 var instruments = groups[groupId];
                 if (!instruments || !instruments.length) return;
 
@@ -154,14 +157,14 @@ function fetchSearchByInstrument() {
                 instruments = instruments.filter(inst => inst.total_metric_value >= 5);
                 if (!instruments.length) return;
 
-                instruments.sort(function(a, b) {
+                instruments.sort(function (a, b) {
                     return a.instrument_ids[0] - b.instrument_ids[0];
                 });
 
                 var groupDiv = $('<div class="instrument-group"></div>');
                 groupDiv.append($('<h3></h3>').text(groupNameText));
 
-                instruments.forEach(function(instrument) {
+                instruments.forEach(function (instrument) {
                     groupDiv.append(
                         '<div class="instrument-link"><a href="#" class="instrument-link-a" data-id="' +
                         instrument.instrument_ids + '">' + instrument.instrument_name +
@@ -179,14 +182,14 @@ function fetchSearchByInstrument() {
                 container.append('<h3 class="coming-soon" style="margin-top:1.5em;">More instruments coming soon!</h3>');
             }
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             console.error('Fetch failed:', error);
             $('#instrument-links').html('<h3 class="coming-soon">More instruments coming soon!</h3>');
         }
     });
 }
 //Handle Click on Instrument Link from Instruments tab
-$('#instrument-links').on('click', '.instrument-link-a', function(event) {
+$('#instrument-links').on('click', '.instrument-link-a', function (event) {
     event.preventDefault();
     var instrumentId = $(this).data('id');
 
@@ -211,7 +214,7 @@ $('#instrument-links').on('click', '.instrument-link-a', function(event) {
     fetchPieces(instrumentId, instrumentText);
 });
 // Make sure the click event propagates to the link when clicking the SVG
-$('#instrument-links').on('click', '.svg-icon', function() {
+$('#instrument-links').on('click', '.svg-icon', function () {
     $(this).closest('.instrument-link').trigger('click');
 });
 
@@ -221,7 +224,7 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
         method: 'GET',
         data: { instrumentIds: instrumentIds, instrumentName: instrumentNameArg || '' },
         dataType: 'json',
-        success: function(data) {
+        success: function (data) {
 
             var container = $('#pieces-container');
             container.empty();
@@ -247,7 +250,7 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
             initPiecesSearchUI();
 
             // Group pieces by category
-            var groupedPieces = pieces.reduce(function(acc, piece) {
+            var groupedPieces = pieces.reduce(function (acc, piece) {
                 var categoryName = piece.category_name;
                 if (!acc[categoryName]) acc[categoryName] = [];
                 acc[categoryName].push(piece);
@@ -317,14 +320,14 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
                 : ['Orchestra', soloOrchestraKey, instrumentName + ' + Piano', 'Solo', 'Opera', 'Chamber', 'Choral Works'];
 
             // Reorder groupedPieces
-            var orderedGroupedPieces = desiredOrder.reduce(function(ordered, categoryName) {
+            var orderedGroupedPieces = desiredOrder.reduce(function (ordered, categoryName) {
                 if (groupedPieces[categoryName]) ordered[categoryName] = groupedPieces[categoryName];
                 return ordered;
             }, {});
 
             // Render categories + pieces
-            Object.keys(orderedGroupedPieces).forEach(function(categoryName) {
-                orderedGroupedPieces[categoryName].sort(function(a, b) {
+            Object.keys(orderedGroupedPieces).forEach(function (categoryName) {
+                orderedGroupedPieces[categoryName].sort(function (a, b) {
                     var composerA = a.composer_last.toUpperCase();
                     var composerB = b.composer_last.toUpperCase();
                     var result = composerA.localeCompare(composerB);
@@ -338,7 +341,7 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
 
                 container.append('<h3>' + categoryName + '</h3>');
 
-                orderedGroupedPieces[categoryName].forEach(function(piece) {
+                orderedGroupedPieces[categoryName].forEach(function (piece) {
                     const $row = $('<p></p>');
                     const searchText = [
                         piece.composer_last || '',
@@ -363,7 +366,7 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
                 });
             });
         },
-        error: function(jqXHR, textStatus, errorThrown) {
+        error: function (jqXHR, textStatus, errorThrown) {
             console.log("AJAX error: " + textStatus + ' : ' + errorThrown);
             console.log("Status code: " + jqXHR.status);
             console.log("Response text: " + jqXHR.responseText);
@@ -371,7 +374,7 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
     });
 }
 
-$('#pieces-container').on('click', '.pieces-link', function(event) {
+$('#pieces-container').on('click', '.pieces-link', function (event) {
     event.preventDefault();
 
     // Clear out old recordings (unchanged)
@@ -408,7 +411,7 @@ $('#pieces-container').on('click', '.pieces-link', function(event) {
 });
 
 function generateInstrumentsDropdown(recordingId) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         var dropdown = document.getElementById("instruments-dropdown");
         // Clear the menu but keep the default
         dropdown.innerHTML = "";
@@ -418,7 +421,7 @@ function generateInstrumentsDropdown(recordingId) {
 
         var xhr = new XMLHttpRequest();
         xhr.open("GET", "get_recording_instruments.php?recordingId=" + recordingId, true);
-        xhr.onreadystatechange = function() {
+        xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
                 if (xhr.status === 200) {
                     var data = JSON.parse(xhr.responseText);
@@ -437,7 +440,7 @@ function generateInstrumentsDropdown(recordingId) {
                 }
             }
         };
-        xhr.onerror = function() {
+        xhr.onerror = function () {
             reject("Error: Request failed");
         };
         xhr.send();
@@ -446,12 +449,12 @@ function generateInstrumentsDropdown(recordingId) {
 
 
 function fetchRecordings(metricArrId) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         $.ajax({
             url: 'fetchrecordings_data.php',
             method: 'GET',
             data: { metricArrId: metricArrId },
-            success: function(response) {
+            success: function (response) {
                 var recordingsDropdown = $('#recordings-dropdown');
                 recordingsDropdown.empty();
                 if (response === "No recordings found for the selected piece") {
@@ -463,7 +466,7 @@ function fetchRecordings(metricArrId) {
                     var container = $('#recordings-container');
 
                     recordingsDropdown.append('<option value="">Change Recording</option>');
-                    recordings.sort(function(a, b) {
+                    recordings.sort(function (a, b) {
                         // Compare year
                         var yearComparison = a.year - b.year;
                         if (yearComparison !== 0) return yearComparison;
@@ -475,7 +478,7 @@ function fetchRecordings(metricArrId) {
                         // Compare ensemble_name
                         return (a.ensemble_name || '').localeCompare(b.ensemble_name || '');
                     });
-                    recordings.forEach(function(recordingFullData) {
+                    recordings.forEach(function (recordingFullData) {
                         var conductorName = recordingFullData.conductor_name;
                         var ensembleName = recordingFullData.ensemble_name;
                         var year = recordingFullData.year;
@@ -496,7 +499,7 @@ function fetchRecordings(metricArrId) {
                     resolve(recordings); // Resolve the Promise with the recordings data
                 }
             },
-            error: function(error) {
+            error: function (error) {
                 reject(error); // Reject the Promise with the error message
             }
         });
@@ -539,7 +542,7 @@ function fetchRecordings(metricArrId) {
 
 let recordingCache = {};
 function loadRecording(recordingFullData) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         console.log(recordingFullData);
 
         // Update the document title
@@ -594,7 +597,7 @@ function sendVarToSynpdf(recordingFullData) {
 function addInvertButtonListener() {
     const invertButton = document.getElementById('invert-button');
     if (invertButton) {
-        invertButton.addEventListener('click', function() {
+        invertButton.addEventListener('click', function () {
             document.body.classList.toggle('inverted');
             var img = document.getElementById('monkey-logo');
             if (img) {
@@ -610,7 +613,7 @@ function fetchNewInstrument(metricArrId) {
     return new Promise((resolve, reject) => {
         var xhr = new XMLHttpRequest();
         xhr.open("GET", "get_new_instrument_data.php?metricId=" + metricArrId, true);
-        xhr.onreadystatechange = function() {
+        xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 let partData = JSON.parse(xhr.responseText);
                 resolve(partData);
@@ -622,7 +625,7 @@ function fetchNewInstrument(metricArrId) {
     });
 }
 
-$('#instruments-dropdown').change(function() {
+$('#instruments-dropdown').change(function () {
     const selectedOption = $(this).find('option:selected');
     const instrumentData = selectedOption.data('instrumentData');
     currentInstrumentGlobal = instrumentData.instrument_id;
@@ -666,7 +669,7 @@ $('#instruments-dropdown').change(function() {
 });
 
 
-$('#recordings-dropdown').change(function() {
+$('#recordings-dropdown').change(function () {
     const selectedOption = $(this).find('option:selected');
     const recordingFullData = selectedOption.data('recordingFullData');
     currentRecordingGlobal = recordingFullData.recording_id;
@@ -726,13 +729,13 @@ $('#recordings-dropdown').change(function() {
 
 function displayMultiplePartLinks(data, clickedLink) {
     var linksContainer = $('<div class="instrument-links"></div>');
-    data.forEach(function(item) {
+    data.forEach(function (item) {
 
         var label = item.instrument_name + (item.part_number ? (' ' + item.part_number) : '');
         var instrumentLink = $('<a href="#" class="instrument-link"></a>')
             .text(label)
             .data('metric-arr-id', item.metric_arr_id)
-            .on('click', function(e) {
+            .on('click', function (e) {
                 e.preventDefault();
                 fetchRecordings($(this).data('metric-arr-id'));
                 currentMetricArrGlobal = ($(this).data('metric-arr-id'));
@@ -757,7 +760,7 @@ function handleRecordingSelection(recordingFullData) {
     document.getElementById("notation-scroll").innerHTML = "";  // clear notation section so it looks responsive faster
 
     loadRecording(recordingFullData)
-        .then(function() {
+        .then(function () {
             //Creating history so back button goes back to homepage
             history.pushState({ page: 'recording' }, '', window.location.pathname);
             // Set a global flag to indicate we’re in the recording state
@@ -765,21 +768,21 @@ function handleRecordingSelection(recordingFullData) {
             msc_check_preload$$module$synpdf();
             $("#sidecontent").show();
             generateInstrumentsDropdown(recordingId)
-                .then(function() {
+                .then(function () {
                     $('#instruments-dropdown').val(currentInstrumentGlobal);
                     $('#recordings-dropdown').val(currentRecordingGlobal);
                     window.recordingFullyLoaded = true;
                 })
-                .catch(function(error) {
+                .catch(function (error) {
                     console.error("An error occurred while generating instruments dropdown:", error);
                 });
         })
-        .catch(function(error) {
+        .catch(function (error) {
             console.error("An error occurred while loading recording:", error);
         });
 }
 //Listener so back button goes to homepage but only if on recording page
-window.addEventListener('popstate', function() {
+window.addEventListener('popstate', function () {
     console.log('popstate');
     // Only reload if we are in the recording state and the recording has fully loaded.
     if (window.isRecordingState) {
@@ -791,7 +794,7 @@ window.addEventListener('popstate', function() {
     // Otherwise, do nothing (the browser will navigate as normal)
 });
 
-$('#recordings-container').on('click', '.recordings-link', function() {
+$('#recordings-container').on('click', '.recordings-link', function () {
     let recordingFullData = $(this).data('recordingFullData');
     handleRecordingSelection(recordingFullData);
 });
@@ -994,9 +997,9 @@ function scaleCanvasElements(scaleAmount) {
 //DEBOUNCE FOR WINDOW RESIZE AND POSSIBLY OTHER PLACES
 function debounce(func, wait) {
     var timeout;
-    return function() {
+    return function () {
         var context = this, args = arguments;
-        var later = function() {
+        var later = function () {
             timeout = null;
             func.apply(context, args);
         };
@@ -1009,7 +1012,7 @@ function debounce(func, wait) {
 function resizeCanvasTrigger() {
     var previousWidth = $("#notation").width();
 
-    $(window).off("resize").on("resize", debounce(function() {
+    $(window).off("resize").on("resize", debounce(function () {
         if (window.__isTogglingFullscreen) return;
         // In 2-up, ignore width-delta scaling. reflowForViewportChange + fit-to-height will handle it.
         if (document.getElementById('notation-scroll')?.classList.contains('two-up')) return;
@@ -1120,7 +1123,7 @@ function openTab(tabId) {
 function addShareButtonListener() {
     const shareButton = document.getElementById('share-button');
     if (shareButton) {
-        shareButton.addEventListener('click', function() {
+        shareButton.addEventListener('click', function () {
             const metricArrId = currentMetricArrGlobal;
             const recordingId = currentRecordingGlobal;
 
@@ -1279,7 +1282,7 @@ function initPiecesSearchUI() {
             return;
         }
         let any = false;
-        $rows.each(function() {
+        $rows.each(function () {
             const hay = this.dataset.search || $(this).text();
             const ok = fuzzyMatch(hay, q);
             if (ok) { $(this).show(); any = true; } else { $(this).hide(); }
@@ -1308,9 +1311,9 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-$(document).ready(function() {
+$(document).ready(function () {
 
-    $('#monkey-logo, #monkeywrench-logo-text').on('click', 'a[href="/"]', function() {
+    $('#monkey-logo, #monkeywrench-logo-text').on('click', 'a[href="/"]', function () {
         // Kill two-up for the homepage so the tab UI isn't laid out as a grid
         window.twoUpMode = false;
         const sc = document.getElementById('notation-scroll');
@@ -1318,7 +1321,7 @@ $(document).ready(function() {
         sc.innerHTML = '';
     });
     // Click handler for tab headers
-    $('.tab-header').on('click', function() {
+    $('.tab-header').on('click', function () {
         // If tab is disabled, ignore
         if ($(this).hasClass('disabled')) return;
 
@@ -1363,7 +1366,7 @@ $(document).ready(function() {
     }
 
     //Add show-hide toggle listener
-    $('#sidecontent-toggle h3').on('click', function() {
+    $('#sidecontent-toggle h3').on('click', function () {
         $('.change-recording-wrapper').toggle();
         $('#first-controls').toggle();
         $(this).text($(this).text() === "[show]" ? "[hide]" : "[show]");
