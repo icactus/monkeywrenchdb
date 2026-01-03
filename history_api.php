@@ -53,14 +53,18 @@ if ($action === 'check_db') {
 // 3. Info for pieces (helper to format output)
 function fetchHistory($mysqli, $user_id)
 {
-    $stmt = $mysqli->prepare("
+    $sql = "
         SELECT uh.id, uh.piece_id, uh.metric_arr_id, uh.recording_id, uh.viewed_at, p.piece_name, c.composer_last as composer_name 
         FROM user_history uh
         JOIN pieces p ON uh.piece_id = p.piece_id
         JOIN composers c ON p.composer_id = c.composer_id
         WHERE uh.user_id = ?
         ORDER BY uh.viewed_at DESC
-    ");
+    ";
+    $stmt = $mysqli->prepare($sql);
+    if (!$stmt) {
+        throw new Exception("Prepare failed: " . $mysqli->error);
+    }
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
