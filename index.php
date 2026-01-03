@@ -26,7 +26,7 @@ if (file_exists('session_config.php')) {
         content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=3" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=74" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=75" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,7 +76,14 @@ if (file_exists('session_config.php')) {
             <!-- History Modal -->
             <div id="history-modal" class="history-modal">
                 <div class="history-header">
-                    <h3>🕐 Recent History</h3>
+                    <h3>
+                        <svg style="width:16px; height:16px; vertical-align:middle; margin-right:6px;"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        Recent History
+                    </h3>
                     <button class="history-close" onclick="toggleHistoryMenu()"
                         aria-label="Close history">&times;</button>
                 </div>
