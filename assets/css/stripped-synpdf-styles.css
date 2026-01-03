@@ -1099,7 +1099,6 @@ body.inverted select option {
     cursor: pointer;
     text-decoration: none;
     color: #333;
-    font-family: 'PixelOperator', monospace;
 }
 
 .history-composer {
