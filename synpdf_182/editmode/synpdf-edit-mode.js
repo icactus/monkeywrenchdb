@@ -1430,6 +1430,13 @@ function countPix$$module$synpdf(image, sliceIndex) {
     var g = 4 * imageWidth;  // Multiply width by 4 for later calculations
     var imageHeight = image.height;  // Get the height of the image
     var imagePixelData = image.getContext("2d").getImageData(0, 0, imageWidth, imageHeight).data;  // Extract the image data (RGBA values for each pixel)
+
+    // Save for manual detection tools
+    window.synpdfLastPageData = {
+        pixelData: imagePixelData,
+        stride: g,
+        width: imageWidth
+    };
     var currentPixelOffset = 0;  // Initialize variables for the upcoming loop
     var colorIntensityArray = [];
     var loopStartOffset = 3 * g / 4, loopEndOffset = g;  // Some calculations for the loop parameters
@@ -1595,6 +1602,7 @@ function findBarLines$$module$synpdf(a, b, c) {
         // This scans the staff to find the "best" whitespace markers (v = left max, w = right max)
         // to serve as a baseline for what a clear barline looks like.
         for (f = q; f < u; f++) q = y[f], q > k * p && (t[f - n] > v && (v = t[f - n]), t[f + n] > w && (w = t[f + n]));
+        // Initialize barlines array with start of system
         e = [r.x1];
         u = e[0];
         for (f = 5; f < t.length - 5; f++) q = y[f], q > k * p && t[f - n] > v * m && t[f + n] > w * m && f - u > 3 * spatium$$module$synpdf && (e.push(f), u = f);
@@ -2895,3 +2903,140 @@ var module$synpdf = {
 module$synpdf.keyDown = keyDown$$module$synpdf;
 module$synpdf.tick = tick$$module$synpdf;
 
+// Helper for manual barline detection (W mode)
+window.detectBarlinesInRect = function (y1, y2, x1, x2) {
+    if (!window.synpdfLastPageData) {
+        console.error("synpdfLastPageData is MISSING (probably lost on refresh/render).");
+        return [];
+    }
+
+    var d = window.synpdfLastPageData;
+    var pixelData = d.pixelData;
+    var b = d.stride; // stride
+    var spatium = (y2 - y1) / 4;
+
+    // Create interpolated 5 lines
+    var cs = [];
+    for (var i = 0; i < 5; i++) cs.push(y1 + i * spatium);
+
+    // --- SNAP TO LINES (Optimization) ---
+    // Helper to score a configuration
+    function getScore(lines) {
+        var score = 0;
+        var count = 0;
+        var width = d.width;
+        var stride = d.stride;
+        // Sample 20 points across the width to be fast
+        var step = Math.floor(width / 20);
+        for (var x = step; x < width; x += step) {
+            var colOffset = x * 4;
+            for (var i = 0; i < lines.length; i++) {
+                var y = Math.round(lines[i]);
+                if (y < 0 || y >= pixelData.length / stride) continue;
+
+                // Check 3 vertical pixels for max blackness (robustness)
+                var maxBlack = 0;
+                for (var dy = -1; dy <= 1; dy++) {
+                    var idx = (y + dy) * stride + colOffset;
+                    if (idx < 0 || idx >= pixelData.length - 4) continue;
+                    // Invert: 255 is white, 0 is black. We want high score for BLACK.
+                    // So score = 255 - brightness
+                    var val = 255 - (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+                    if (val > maxBlack) maxBlack = val;
+                }
+                score += maxBlack;
+                count++;
+            }
+        }
+        return count > 0 ? score / count : 0;
+    }
+
+    var bestConfig = cs.slice();
+    var bestScore = getScore(cs);
+
+    // 1. Shift vertical position (+/- 3px)
+    for (var offset = -3; offset <= 3; offset++) {
+        if (offset === 0) continue;
+        var shifted = cs.map(function (y) { return y + offset; });
+        var s = getScore(shifted);
+        if (s > bestScore) {
+            bestScore = s;
+            bestConfig = shifted;
+        }
+    }
+
+    // 2. Adjust spatium slightly (+/- 5%)? 
+    // User requested "snap 5 lines like normally". Normal logic does spatium adjustment.
+    var currentSpatium = (bestConfig[4] - bestConfig[0]) / 4;
+    var startY = bestConfig[0];
+    for (var adj = -0.1; adj <= 0.1; adj += 0.05) {
+        if (Math.abs(adj) < 0.01) continue;
+        var newSpatium = currentSpatium * (1 + adj);
+        var adjusted = [];
+        for (var k = 0; k < 5; k++) adjusted.push(startY + k * newSpatium);
+        var s = getScore(adjusted);
+        if (s > bestScore) {
+            bestScore = s;
+            bestConfig = adjusted;
+        }
+    }
+
+    // Update system to use optimized lines
+    var sys = {
+        cs: bestConfig,
+        xs: { x1: x1, x2: x2 }
+    };
+
+    // Update spatium for detection
+    spatium = (bestConfig[4] - bestConfig[0]) / 4;
+
+    // Calculate whiteness threshold for this system (logic from countVsys)
+    var n = Math.round(bestConfig[0]);
+    var l = Math.round(bestConfig[4]);
+    var h = [];
+    var c = pixelData;
+
+    // Sample vertical columns to find max whiteness
+    // Only sample within the user-selected X range to avoid margin artifacts!
+    var startX = Math.max(0, Math.floor(x1)) * 4;
+    var endX = Math.min(d.width, Math.ceil(x2)) * 4;
+
+    for (var dx = startX; dx < endX; dx += 4) {
+        var k = 0;
+        // Sum pixel values in column between top and bottom lines
+        for (var e = n * b + dx; e < l * b + dx; e += b) {
+            k += c[e] + c[e + 1] + c[e + 2];
+        }
+        h.push(k / (3 * (l - n)));
+    }
+
+    var maxWit = 0;
+    for (var i = 0; i < h.length; ++i) if (h[i] > maxWit) maxWit = h[i];
+
+    // Temporarily hijack witArr[0] for findBarLines
+    // Note: This is safe because JS is single-threaded and we restore it immediately (or don't care if it's transient)
+    // But to be safe vs async rendering, we should be careful. 
+    // Since this is triggered by user click, rendering is likely done.
+
+    var oldWit0 = witArr$$module$synpdf[0];
+    witArr$$module$synpdf[0] = maxWit * opt$$module$synpdf.zwgrens;
+
+    // Override global spatium with local spatium for this system
+    var oldSpatium = spatium$$module$synpdf;
+    spatium$$module$synpdf = spatium;
+
+    // Call finding logic
+    var barlines = findBarLines$$module$synpdf([sys], b, pixelData);
+
+    // Restore globals
+    if (oldWit0 !== undefined) witArr$$module$synpdf[0] = oldWit0;
+    spatium$$module$synpdf = oldSpatium;
+
+    // Return barlines AND new coordinates
+    // We return an object if we can, but the tool expects array? 
+    // Let's return a special object that the tool can parse.
+    return {
+        barlines: barlines[0] || [],
+        cs: bestConfig
+    };
+};

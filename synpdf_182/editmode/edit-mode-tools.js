@@ -3,7 +3,6 @@
 let SplitclickCoordinates = [];
 let SplitclickY = 0;
 let QisActive = false;
-let SisActive = false;
 let WisActive = false;
 
 const indicatorElement = document.getElementById('indicator');
@@ -11,7 +10,7 @@ const notation = document.getElementById('notation');
 
 
 function handleSplit(event) {
-    if (SisActive) {
+    if (QisActive && event.shiftKey) {
         SplitclickCoordinates = [event.clientX];
         SplitclickY = event.clientY;
 
@@ -88,6 +87,7 @@ function SplitgenerateCoordinates(clickCoords) {
             cxsBxsData[pagenum].bxs[j].sort((a, b) => a - b);
 
             localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
+            requestRefresh();
             return;
         }
     }
@@ -105,9 +105,6 @@ function toggleQActivity() {
         indicatorElement.classList.add('active-indicator');
         indicatorElement.classList.add('crosshair-cursor');
         document.body.style.cursor = 'crosshair';
-        if (SisActive) {
-            toggleSActivity();
-        }
         if (WisActive) {
             toggleWActivity();
         }
@@ -116,33 +113,14 @@ function toggleQActivity() {
         indicatorElement.innerText = 'OFF';
         indicatorElement.classList.remove('active-indicator');
         indicatorElement.classList.add('inactive-indicator');
-        if (!SisActive) {
-            indicatorElement.classList.remove('crosshair-cursor');
-            document.body.style.cursor = 'default';
-        }
+        // if (!SisActive) { // Removed check
+        indicatorElement.classList.remove('crosshair-cursor');
+        document.body.style.cursor = 'default';
+        // }
     }
 }
 
-function toggleSActivity() {
-    SisActive = !SisActive;
-    if (SisActive) {
-        console.log('split is ON');
-        indicatorElement.classList.add('crosshair-cursor');
-        document.body.style.cursor = 'crosshair';
-        if (QisActive) {
-            toggleQActivity();
-        }
-        if (WisActive) {
-            toggleWActivity();
-        }
-    } else {
-        console.log('split is OFF');
-        if (!QisActive) {
-            indicatorElement.classList.remove('crosshair-cursor');
-            document.body.style.cursor = 'default';
-        }
-    }
-}
+// function toggleSActivity() { ... } Removed
 
 function toggleWActivity() {
     WisActive = !WisActive;
@@ -151,9 +129,6 @@ function toggleWActivity() {
         console.log('insertCxsGroups is ON');
         // Add any visual indicator or behavior for 'W' being active
 
-        if (SisActive) {
-            toggleSActivity();
-        }
         if (QisActive) {
             toggleQActivity();
         }
@@ -173,7 +148,7 @@ function roundValuesInArray(obj) {
     }
 }
 
-document.addEventListener('keydown', function(event) {
+document.addEventListener('keydown', function (event) {
     if (document.querySelector('#synbox').checked) {
         return;
     }
@@ -195,9 +170,6 @@ document.addEventListener('keydown', function(event) {
             break;
         case 'S':
             saveTiming$$module$synpdf();
-            break;
-        case 's':
-            toggleSActivity();
             break;
         case 'W':
             startPoint = null;
@@ -300,9 +272,9 @@ document.addEventListener('keydown', function(event) {
 
 
 function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(function() {
+    navigator.clipboard.writeText(text).then(function () {
         console.log('Copying to clipboard was successful!');
-    }, function(err) {
+    }, function (err) {
         console.error('Could not copy text: ', err);
     });
 }
@@ -352,6 +324,7 @@ function addRemoveBxs$$module$synpdf(event) {
             localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
             //deMetriek$$module$synpdf = JSON.parse(localStorage.getItem('jsonString'));  /*this works but scrolls page on refresh*/
             //setPagenum$$module$synpdf(opt$$module$synpdf.pagenum);
+            requestRefresh();
             return true;
         }
     }
@@ -376,7 +349,7 @@ notation.addEventListener('click', function handleClick(event) {
 
 
 
-notation.addEventListener('mousemove', function(e) {
+notation.addEventListener('mousemove', function (e) {
     var rect = notation.getBoundingClientRect();
 
     var x = e.clientX - rect.left;
@@ -386,9 +359,6 @@ notation.addEventListener('mousemove', function(e) {
     tooltip.style.top = Math.round((y - (-50 + notation.scrollTop))) + 'px';
     if (QisActive) {
         tooltip.innerHTML = "Q";
-    }
-    if (SisActive) {
-        tooltip.innerHTML = "S";
     }
     if (WisActive) {
         tooltip.innerHTML = "W";
@@ -454,9 +424,49 @@ function editCxsGroups$$module$synpdf(event) {
             cxsBxsData[pagenum].bxs.splice(index, 1);
         }
 
-        // Add the new cxs and bxs group
-        cxsBxsData[pagenum].cxs.push({ cs: [startPoint.y, endPoint.y], xs: { x1: startPoint.x, x2: endPoint.x } });
-        cxsBxsData[pagenum].bxs.push([startPoint.x, endPoint.x]);
+        // Auto-detect barlines for the new system
+        var newBarlines = [];
+        var optimizedCs = null;
+
+        try {
+            if (window.detectBarlinesInRect) {
+                console.log("Auto-detecting barlines for w-mode...");
+                var res = window.detectBarlinesInRect(startPoint.y, endPoint.y, startPoint.x, endPoint.x);
+
+                // Handle new return format (Object) vs old (Array)
+                if (res && res.barlines) {
+                    newBarlines = res.barlines;
+                    optimizedCs = res.cs;
+                    console.log("Auto-detection finished. Found: " + newBarlines.length);
+                    console.log("Optimized CS: " + JSON.stringify(optimizedCs));
+                } else if (Array.isArray(res)) {
+                    newBarlines = res; // Fallback for safety
+                }
+            } else {
+                console.log("window.detectBarlinesInRect not found.");
+            }
+        } catch (e) {
+            console.error("Auto-detection failed:", e);
+        }
+
+        var finalCs = [startPoint.y, endPoint.y]; // Default (2 points? No, cxs expects 2 points [top, bottom])
+
+
+        if (optimizedCs && optimizedCs.length === 5) {
+            finalCs = optimizedCs;
+        } else {
+            // Just top/bottom
+            finalCs = [startPoint.y, endPoint.y];
+        }
+
+        cxsBxsData[pagenum].cxs.push({ cs: finalCs, xs: { x1: startPoint.x, x2: endPoint.x } });
+
+        // If detection returned lines, use them. Otherwise fallback to start/end.
+        if (newBarlines && newBarlines.length > 0) {
+            cxsBxsData[pagenum].bxs.push(newBarlines);
+        } else {
+            cxsBxsData[pagenum].bxs.push([startPoint.x, endPoint.x]);
+        }
 
         let oldCxsOrder = [...cxsBxsData[pagenum].cxs];
         cxsBxsData[pagenum].cxs.sort((a, b) => a.cs[0] - b.cs[0]);
@@ -468,16 +478,40 @@ function editCxsGroups$$module$synpdf(event) {
         cxsBxsData[pagenum].bxs = newBxsOrder;
 
         localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
+        console.log("System saved to localStorage.");
 
         // Reset the start and end points
         startPoint = null;
         endPoint = null;
+
+        // Auto-refresh execution
+        requestRefresh();
     }
+}
+
+function requestRefresh() {
+
+    setTimeout(function () {
+        if (typeof disableScrollingCheck !== 'undefined') disableScrollingCheck = 1;
+        if (typeof initialScrollTop !== 'undefined') initialScrollTop = window.scrollY;
+
+        var element = document.getElementById('notation');
+        if (element) {
+            element.style.overflowY = 'visible';
+            element.style.overflowX = 'visible';
+        }
+
+        // Reload data and refresh page
+        deMetriek$$module$synpdf = JSON.parse(localStorage.getItem('jsonString'));
+        if (typeof setPagenum$$module$synpdf === 'function') {
+            setPagenum$$module$synpdf(opt$$module$synpdf.pagenum);
+        }
+    }, 50);
 }
 
 // Example: Submitting the "Add Composer" form
 const addNewComposerForm = document.getElementById('addnewcomposerform');
-addNewComposerForm.addEventListener('submit', function(event) {
+addNewComposerForm.addEventListener('submit', function (event) {
     event.preventDefault();
 
     const formData = new FormData(this);
@@ -519,7 +553,7 @@ addNewComposerForm.addEventListener('submit', function(event) {
 });
 
 const addNewPieceForm = document.getElementById('addnewpieceform');
-addNewPieceForm.addEventListener('submit', function(event) {
+addNewPieceForm.addEventListener('submit', function (event) {
     event.preventDefault();
 
     const formData = new FormData(this);
@@ -563,7 +597,7 @@ addNewPieceForm.addEventListener('submit', function(event) {
 
 const addNewMetricForm = document.getElementById("addnewmetricform");
 
-addNewMetricForm.addEventListener("submit", function(event) {
+addNewMetricForm.addEventListener("submit", function (event) {
     event.preventDefault(); // Prevent the form from submitting normally
 
     // Determine which button was clicked
@@ -872,8 +906,8 @@ function populateRecordingsDropdown(recordings) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('goto-measure-form').addEventListener('submit', function(event) {
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('goto-measure-form').addEventListener('submit', function (event) {
         event.preventDefault();
         return gotoMeasure();
     });
@@ -882,7 +916,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('refresh-btn').addEventListener('click', refreshMatches);
     var form = document.getElementById('addnewrecordingform');
 
-    form.addEventListener('submit', function(event) {
+    form.addEventListener('submit', function (event) {
         event.preventDefault(); // Prevent the default form submission
 
         // Update form data with dynamically modified values
@@ -936,7 +970,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadBtn = document.getElementById('loadBtn');
     const pieceSelect = document.getElementById('piece_id1');
 
-    loadBtn.addEventListener('click', function() {
+    loadBtn.addEventListener('click', function () {
         const pieceId = pieceSelect.value.trim();
 
         if (!pieceId) {
@@ -948,7 +982,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadAlreadySyncedRecordings(pieceId);
     });
     const rewindBtn = document.getElementById('rewind');
-    rewindBtn.addEventListener('click', function() {
+    rewindBtn.addEventListener('click', function () {
         lastSynced$$module$synpdf = -1;
         detix$$module$synpdf = 0;
         demix$$module$synpdf = 0;
@@ -958,8 +992,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-document.querySelectorAll('input[type="text"], textarea').forEach(function(input) {
-    input.addEventListener('keydown', function(e) {
+document.querySelectorAll('input[type="text"], textarea').forEach(function (input) {
+    input.addEventListener('keydown', function (e) {
         e.stopPropagation();
     });
 });
