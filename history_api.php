@@ -20,7 +20,7 @@ $user_id = $_SESSION['user_id'];
 $action = $_GET['action'] ?? '';
 
 if ($action === 'test') {
-    echo json_encode(['status' => 'test_ok', 'user' => $user_id]);
+    echo json_encode(['status' => 'test_ok', 'user' => $user_id, 'version' => 'v2']);
     exit;
 }
 
