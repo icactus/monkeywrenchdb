@@ -56,9 +56,18 @@ if (file_exists('session_config.php')) {
                 </div>
                 <div class="nav-menu">
                     <?php if (isset($_SESSION['user_id'])): ?>
-                        <span class="user-greeting" style="color: #666; font-size: 0.9em; margin-right: 10px;">
-                            <?= htmlspecialchars(explode(' ', $_SESSION['user_name'])[0]) ?>
-                        </span>
+                        <div
+                            style="display: inline-flex; flex-direction: column; align-items: flex-end; margin-right: 15px; vertical-align: middle;">
+                            <span class="user-greeting" style="color: #666; font-size: 0.9em; font-weight: bold;">
+                                <?= htmlspecialchars(explode(' ', $_SESSION['user_name'])[0]) ?>
+                            </span>
+                            <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+                                <span style="font-size: 0.7em; color: black; font-weight: bold;">
+                                    ADMIN <a href="synpdf_182/editmode/synpdf-edit-mode.php"
+                                        style="color: #337ab7; text-decoration: underline; margin-left: 3px;">[Edit]</a>
+                                </span>
+                            <?php endif; ?>
+                        </div>
                         <a href="javascript:void(0)" id="history-toggle-btn" onclick="toggleHistoryMenu(); return false;"
                             style="margin-right: 10px;">History</a>
                         <a href="auth_logout.php">Logout</a>

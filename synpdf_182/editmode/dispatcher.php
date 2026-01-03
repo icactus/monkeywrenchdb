@@ -4,6 +4,22 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+// Session handling & Security
+if (file_exists('session_config.php')) {
+    require_once 'session_config.php';
+} elseif (file_exists('../../session_config.php')) {
+    require_once '../../session_config.php';
+} else {
+    session_start();
+}
+
+if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+    http_response_code(403);
+    die("Access Denied");
+}
+
+
+
 // Prevent direct script access via the dispatcher
 if (!isset($_POST['action'])) {
     echo 'No action specified';

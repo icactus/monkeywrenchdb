@@ -8,6 +8,20 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+    <?php
+    if (file_exists('session_config.php')) {
+        require_once 'session_config.php';
+    } elseif (file_exists('../../session_config.php')) {
+        require_once '../../session_config.php';
+    } else {
+        session_start();
+    }
+
+    // ADMIN CHECK
+    if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+        die("<h1>Access Denied</h1><p>You must be an Administrator to access this page.</p><p><a href='/'>Go Home</a></p>");
+    }
+    ?>
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 

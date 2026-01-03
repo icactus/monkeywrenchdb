@@ -110,12 +110,19 @@ if ($provider === 'google') {
         if ($user_id == 0) {
             // If UPDATE happened, insert_id might be 0, fetch ID manually if needed or query based on unique key
             // For session, we usually rely on the DB ID
-            $res = $mysqli->query("SELECT id FROM users WHERE oauth_provider = '$providerName' AND oauth_uid = '$oauth_uid'");
+            $res = $mysqli->query("SELECT id, role FROM users WHERE oauth_provider = '$providerName' AND oauth_uid = '$oauth_uid'");
             $row = $res->fetch_assoc();
             $user_id = $row['id'];
+            $user_role = $row['role'];
+        } else {
+            // Update happened, but we need the role (it might have changed manually)
+            $res = $mysqli->query("SELECT role FROM users WHERE id = $user_id");
+            $row = $res->fetch_assoc();
+            $user_role = $row['role'];
         }
 
         $_SESSION['user_id'] = $user_id;
+        $_SESSION['user_role'] = $user_role;
         $_SESSION['user_name'] = $name;
         $_SESSION['user_email'] = $email;
         $_SESSION['user_picture'] = $picture;
