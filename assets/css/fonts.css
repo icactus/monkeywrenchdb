@@ -1,0 +1,42 @@
+/* font.css */
+
+/* @font-face {
+    font-family: 'EarlyGameBoy';
+    src: url('./fonts/EarlyGameBoy.ttf') format('truetype');
+  }
+  
+  body h1,h2,h3,h4,h5,h6 {
+    font-family: 'EarlyGameBoy', sans-serif;
+    font-weight:normal;
+} */
+@font-face {
+  font-family: 'PixelOperator';
+  src: url('../fonts/PixelOperator.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'PixelOperator-Bold';
+  src: url('../fonts/PixelOperator-Bold.ttf') format('truetype');
+  font-weight: normal;
+}
+
+@font-face {
+  font-family: 'PixelOperator8-Bold';
+  src: url('../fonts/PixelOperator8-Bold.ttf') format('truetype');
+  font-weight: normal;
+}
+
+body h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: normal;
+}
+
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: normal;
+}
