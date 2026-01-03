@@ -90,7 +90,8 @@ try {
     }
 
     // 4. Handle Actions
-    if ($action === 'add') {
+    try {
+        if ($action === 'add') {
         $piece_id = intval($_POST['piece_id'] ?? 0);
         $metric_arr_id = intval($_POST['metric_arr_id'] ?? 0);
         $recording_id = intval($_POST['recording_id'] ?? 0);
@@ -98,34 +99,46 @@ try {
         if ($piece_id <= 0)
             throw new Exception("Invalid piece_id");
 
-        // A. Remove existing entry for this piece (so it moves to top)
+        // A. Remove existing entry for this piece
         $del = $mysqli->prepare("DELETE FROM user_history WHERE user_id = ? AND piece_id = ?");
         $del->bind_param("ii", $user_id, $piece_id);
         $del->execute();
         $del->close();
 
         // B. Insert new
+        $ins = $mysqli->prepare("INSERT INTO user_history (user_id, piece_id, metric_arr_id, recording_id, viewed_at) VALUES (?, ?, ?, ?, NOW())");
+        // Note: Added viewed_at explicit set to NOW() to be safe, though DB default usually handles it.
+        // Wait, original schema might not have viewed_at in INSERT?
+        // Original code: INSERT INTO user_history (user_id, piece_id, metric_arr_id, recording_id) VALUES (?, ?, ?, ?)
+        // If viewed_at is auto-timestamp, it updates on INSERT.
+        // I will stick to original columns to avoid schema mismatch error.
         $ins = $mysqli->prepare("INSERT INTO user_history (user_id, piece_id, metric_arr_id, recording_id) VALUES (?, ?, ?, ?)");
         $ins->bind_param("iiii", $user_id, $piece_id, $metric_arr_id, $recording_id);
-        $ins->execute();
+        if (!$ins->execute()) {
+             throw new Exception("Insert failed: " . $ins->error);
+        }
         $ins->close();
 
         // C. Prune (Keep only last 15)
-        // Count
-        $res = $mysqli->query("SELECT COUNT(*) as cnt FROM user_history WHERE user_id = $user_id");
-        $row = $res->fetch_assoc();
-        $count = $row['cnt'];
+        $pruned_count = 0;
+        try {
+            $res = $mysqli->query("SELECT COUNT(*) as cnt FROM user_history WHERE user_id = $user_id");
+            $row = $res->fetch_assoc();
+            $count = $row['cnt'];
 
-        if ($count > 15) {
-            // Delete oldest (lowest ID assuming auto-inc, or by viewed_at)
-            // safer to delete by viewed_at ASC limit N
-            $limit = $count - 15;
-            $prune = $mysqli->prepare("DELETE FROM user_history WHERE user_id = ? ORDER BY viewed_at ASC LIMIT ?");
-            $prune->bind_param("ii", $user_id, $limit);
-            $prune->execute();
+            if ($count > 15) {
+                $limit = $count - 15;
+                // Delete oldest
+                $prune = $mysqli->prepare("DELETE FROM user_history WHERE user_id = ? ORDER BY viewed_at ASC LIMIT ?");
+                $prune->bind_param("ii", $user_id, $limit);
+                $prune->execute();
+                $pruned_count = $limit;
+            }
+        } catch (Throwable $ex) {
+            // Ignore prune errors, don't fail the request
         }
 
-        echo json_encode(['status' => 'success']);
+        echo json_encode(['status' => 'success', 'debug_count' => $count ?? '?', 'pruned' => $pruned_count]);
 
     } elseif ($action === 'get') {
         $history = fetchHistory($mysqli, $user_id);
