@@ -41,7 +41,12 @@ if (file_exists('phpfiles/config.php')) {
 $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 if ($mysqli->connect_error) {
     http_response_code(500);
-    echo json_encode(['error' => 'DB Connection failed']);
+    echo json_encode(['error' => 'DB Connection failed: ' . $mysqli->connect_error]);
+    exit;
+}
+
+if ($action === 'check_db') {
+    echo json_encode(['status' => 'db_ok', 'db_host' => DB_HOST]);
     exit;
 }
 
