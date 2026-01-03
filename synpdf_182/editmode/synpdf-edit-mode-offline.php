@@ -11,6 +11,8 @@
     <?php
     if (file_exists('session_config.php')) {
         require_once 'session_config.php';
+    } elseif (file_exists('../session_config.php')) {
+        require_once '../session_config.php';
     } elseif (file_exists('../../session_config.php')) {
         require_once '../../session_config.php';
     } else {
