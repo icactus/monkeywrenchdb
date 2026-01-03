@@ -1,6 +1,6 @@
 <?php
 // history_api.php
-session_start();
+require_once 'session_config.php';
 header('Content-Type: application/json');
 
 // 1. Auth Check

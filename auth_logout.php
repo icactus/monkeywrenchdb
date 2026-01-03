@@ -1,7 +1,7 @@
 <?php
 // auth_logout.php
-session_start();
-session_destroy();
+require_once 'session_config.php';
+require_once 'session_config.php';
 header('Location: index.php');
 exit;
 ?>
