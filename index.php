@@ -74,12 +74,14 @@ if (file_exists('session_config.php')) {
             <div id="vidyub">
             </div>
             <!-- History Modal -->
-            <div id="history-modal"
-                style="display:none; position:fixed; top:50px; right:20px; width:300px; background:white; border:1px solid #ccc; box-shadow:0 2px 10px rgba(0,0,0,0.2); z-index:1000; padding:10px;">
-                <h3 style="margin-top:0;">Recent History</h3>
-                <ul id="history-list" style="list-style:none; padding:0; max-height:300px; overflow-y:auto;"></ul>
-                <button onclick="clearHistory()" style="width:100%; margin-top:10px;">Clear All</button>
-                <button onclick="toggleHistoryMenu()" style="width:100%; margin-top:5px;">Close</button>
+            <div id="history-modal" class="history-modal">
+                <div class="history-header">
+                    <h3>🕐 Recent History</h3>
+                    <button class="history-close" onclick="toggleHistoryMenu()"
+                        aria-label="Close history">&times;</button>
+                </div>
+                <ul id="history-list" class="history-list"></ul>
+                <button onclick="clearHistory()" class="history-clear-btn">Clear All History</button>
             </div>
         </div>
 

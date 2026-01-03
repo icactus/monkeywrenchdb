@@ -32,12 +32,38 @@
 // History Logic
 function toggleHistoryMenu() {
     const modal = document.getElementById('history-modal');
-    if (modal.style.display === 'none') {
+    const isVisible = modal.classList.contains('visible');
+
+    if (!isVisible) {
+        // Smart positioning: left in player mode, right on homepage
+        const isPlayerMode = window.location.hash || window.location.search.includes('metricArrId');
+        if (isPlayerMode) {
+            modal.style.left = '20px';
+            modal.style.right = 'auto';
+        } else {
+            modal.style.left = 'auto';
+            modal.style.right = '20px';
+        }
+
         fetchHistory();
-        modal.style.display = 'block';
+        modal.classList.add('visible');
     } else {
-        modal.style.display = 'none';
+        modal.classList.remove('visible');
     }
+}
+
+// Helper function: format relative time
+function getRelativeTime(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    if (seconds < 172800) return 'Yesterday';
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    return date.toLocaleDateString();
 }
 
 function fetchHistory() {
@@ -50,25 +76,30 @@ function fetchHistory() {
             // Error check
             if (!Array.isArray(data)) {
                 console.error("History API Error:", data);
-                list.innerHTML = '<li>Error loading history.</li>';
+                list.innerHTML = '<li style="padding:16px; color:#999;">Error loading history.</li>';
                 return;
             }
 
             if (data.length === 0) {
-                list.innerHTML = '<li>No history yet.</li>';
+                list.innerHTML = '<li style="padding:16px; color:#999;">No history yet.</li>';
                 return;
             }
+
             data.forEach(item => {
                 const li = document.createElement('li');
-                li.style.borderBottom = '1px solid #eee';
-                li.style.padding = '5px 0';
-                li.style.display = 'flex';
-                li.style.justifyContent = 'space-between';
+                const timestamp = getRelativeTime(item.viewed_at);
+
                 li.innerHTML = `
-                    <a href="javascript:void(0)" onclick="loadPieceFromHistory(${item.metric_arr_id}, ${item.recording_id}); toggleHistoryMenu();" style="text-decoration:none; color:#333; flex-grow:1;">
-                        <b>${item.composer_name}</b><br>${item.piece_name}
+                    <a href="javascript:void(0)" 
+                       onclick="loadPieceFromHistory(${item.metric_arr_id}, ${item.recording_id}); toggleHistoryMenu();" 
+                       class="history-entry-content">
+                        <p class="history-composer">${item.composer_name}</p>
+                        <p class="history-piece">${item.piece_name}</p>
+                        <p class="history-timestamp">${timestamp}</p>
                     </a>
-                    <a href="javascript:void(0)" onclick="deleteHistoryItem(${item.id})" style="color:red; font-weight:bold; margin-left:10px;">&times;</a>
+                    <button onclick="deleteHistoryItem(${item.id})" 
+                            class="history-delete" 
+                            aria-label="Delete">&times;</button>
                 `;
                 list.appendChild(li);
             });
@@ -95,7 +126,7 @@ function addToHistory(pieceId, metricArrId, recordingId) {
     }).then(() => {
         // If the history menu is open, refresh it
         const modal = document.getElementById('history-modal');
-        if (modal && modal.style.display !== 'none') {
+        if (modal && modal.classList.contains('visible')) {
             fetchHistory();
         }
     });
