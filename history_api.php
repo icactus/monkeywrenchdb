@@ -1,5 +1,11 @@
 <?php
 // history_api.php
+if (isset($_GET['action']) && $_GET['action'] === 'debug_probe') {
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'alive', 'php_version' => phpversion()]);
+    exit;
+}
+
 ini_set('display_errors', 0); // Prevent PHP warnings from breaking JSON
 ini_set('log_errors', 1);
 header('Content-Type: application/json');
