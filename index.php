@@ -26,7 +26,7 @@ if (file_exists('session_config.php')) {
         content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=3" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=76" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=79" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -123,17 +123,35 @@ if (file_exists('session_config.php')) {
         </div>
         <div class="notation" id="notation"><!--width needed for editmode pixel mapping -->
             <div id="notation-scroll">
-                <!-- TAB HEADERS -->
+                <!-- STEPPER HEADERS -->
                 <div class="tabs">
                     <ul class="tab-header-row">
                         <li class="tab-header active" data-tab="tab-instruments">
-                            <h2 id="instruments-heading">1. Select Instrument</h2>
+                            <div class="stepper-step">
+                                <div class="stepper-circle">
+                                    <span class="stepper-number">1</span>
+                                    <span class="stepper-check">✓</span>
+                                </div>
+                                <h2 id="instruments-heading">Select Instrument</h2>
+                            </div>
                         </li>
                         <li class="tab-header disabled" data-tab="tab-pieces">
-                            <h2 id="pieces-heading">2. Select Piece</h2>
+                            <div class="stepper-step">
+                                <div class="stepper-circle">
+                                    <span class="stepper-number">2</span>
+                                    <span class="stepper-check">✓</span>
+                                </div>
+                                <h2 id="pieces-heading">Select Piece</h2>
+                            </div>
                         </li>
                         <li class="tab-header disabled" data-tab="tab-recordings">
-                            <h2 id="recordings-heading">3. Select Recording</h2>
+                            <div class="stepper-step">
+                                <div class="stepper-circle">
+                                    <span class="stepper-number">3</span>
+                                    <span class="stepper-check">✓</span>
+                                </div>
+                                <h2 id="recordings-heading">Select Recording</h2>
+                            </div>
                         </li>
                     </ul>
                 </div>

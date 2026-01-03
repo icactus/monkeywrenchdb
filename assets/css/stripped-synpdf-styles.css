@@ -896,51 +896,137 @@ select {
 .tabs {
     position: sticky;
     top: -1px;
-    /* hides 1px strip at top when scrolling */
-    padding-top: 8px;
-    background-color: #ddd;
+    padding: 20px 8px 8px 8px;
+    background-color: #f8f8f8;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .tab-header-row {
     display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     margin: 0;
     padding: 0;
     list-style: none;
-    text-wrap: auto;
-    box-shadow: inset 0px -5px 15px -10px rgba(0, 0, 0, 0.6)
+    position: relative;
+}
+
+/* Connecting line between steps */
+.tab-header-row::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 15%;
+    right: 15%;
+    height: 2px;
+    background: #e0e0e0;
+    z-index: 0;
 }
 
 .tab-header {
     width: 33%;
-    padding: 8px;
-    border-radius: 5px 5px 0 0;
     cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+    position: relative;
+    z-index: 1;
+    transition: none;
+}
+
+.tab-header:hover {
+    background: transparent;
+}
+
+.stepper-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.stepper-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    border: 3px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 16px;
+    color: #999;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.stepper-number {
+    display: block;
+}
+
+.stepper-check {
+    display: none;
+    font-size: 20px;
 }
 
 .tab-header h2 {
     font-family: 'PixelOperator';
     margin: 0;
-    color: #444;
+    color: #999;
+    font-size: 1em;
+    text-align: center;
+    letter-spacing: 0.5px;
+    transition: color 0.3s ease;
 }
 
-.tab-header.active {
-    background: #f8f8f8;
-    border: 0;
-    box-shadow: -5px 0 10px -5px rgba(0, 0, 0, 0.5);
-    cursor: default;
-}
-
-.tab-header.active:hover {
-    background-color: #f8f8f8;
+/* Active state */
+.tab-header.active .stepper-circle {
+    background: #5ba2a8;
+    border-color: #5ba2a8;
+    color: white;
+    box-shadow: 0 0 0 4px rgba(91, 162, 168, 0.2);
 }
 
 .tab-header.active h2 {
-    color: #000;
+    color: #222;
+    font-weight: 600;
 }
 
+/* Completed state (not disabled and not active) */
+.tab-header:not(.disabled):not(.active) .stepper-circle {
+    background: #5ba2a8;
+    border-color: #5ba2a8;
+    color: white;
+}
+
+.tab-header:not(.disabled):not(.active) .stepper-number {
+    display: none;
+}
+
+.tab-header:not(.disabled):not(.active) .stepper-check {
+    display: block;
+    color: white;
+}
+
+.tab-header:not(.disabled):not(.active) h2 {
+    color: #5ba2a8;
+}
+
+/* Disabled state */
 .tab-header.disabled {
     pointer-events: none;
-    /* prevent clicking if disabled */
+    cursor: default;
+}
+
+.tab-header.disabled .stepper-circle {
+    background: #f8f8f8;
+    border-color: #bbb;
+    color: #bbb;
+}
+
+.tab-header.disabled h2 {
+    color: #888;
 }
 
 .tab-header.disabled h2 {
