@@ -1,6 +1,10 @@
 <?php
 // history_api.php
-require_once 'session_config.php';
+if (file_exists(__DIR__ . '/session_config.php')) {
+    require_once __DIR__ . '/session_config.php';
+} else {
+    session_start();
+}
 header('Content-Type: application/json');
 
 // 1. Auth Check

@@ -1,6 +1,10 @@
 <?php
 // auth_login.php
-require_once 'session_config.php';
+if (file_exists('session_config.php')) {
+    require_once 'session_config.php';
+} else {
+    session_start();
+}
 
 // Include Auth Config (Local/Prod Bridge)
 if (file_exists('phpfiles/auth_config.php')) {

@@ -1,6 +1,10 @@
 <?php
 // auth_callback.php
-require_once 'session_config.php';
+if (file_exists('session_config.php')) {
+    require_once 'session_config.php';
+} else {
+    session_start();
+}
 
 // 1. Load Config (Bridge)
 if (file_exists('phpfiles/auth_config.php')) {
