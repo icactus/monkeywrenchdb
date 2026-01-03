@@ -64,7 +64,7 @@ if (file_exists('session_config.php')) {
                         <a href="auth_logout.php">Logout</a>
                     <?php else: ?>
                         <a href="auth_login.php?provider=google">Login</a>
-                    <?php require_once 'session_config.php'; ?>
+                    <?php endif; ?>
                     <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;">Help</a>
                     <a id="about-link" href="javascript:void(0)"
                         onclick="toggleAboutLinkMenu(); return false;">About</a>
