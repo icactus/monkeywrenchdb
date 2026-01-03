@@ -11,7 +11,7 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 
-    <script src="synpdf-edit-mode.js?v=56"></script>
+    <script src="synpdf-edit-mode.js?v=62"></script>
     <style>
         html {
             width: 100%;
@@ -506,11 +506,14 @@
         <div id="buttons">
             <div id="medbts">
                 <label><span id="pdflbl">pdf file: </span>
-                    <div id="pdffile"><input type="file" id="fknp" name="file" accept=".pdf,.js,.jpg" tabindex="1" /></div>
+                    <div id="pdffile"><input type="file" id="fknp" name="file" accept=".pdf,.js,.jpg" tabindex="1" />
+                    </div>
                 </label>
-                <label id="medlbl">media file: <div id="mediafile"><input type="file" id="mknp" accept="audio/*, video/*" tabindex="2" /></div></label>
+                <label id="medlbl">media file: <div id="mediafile"><input type="file" id="mknp"
+                            accept="audio/*, video/*" tabindex="2" /></div></label>
                 <label id="yvdlbl">youtube id: <div id="yubfile">
-                        <input type="text" id="yubid" size="11" value="qx-ymShyfIk" title="11 characters" pattern="[A-Za-z0-9\-_]{11}" />
+                        <input type="text" id="yubid" size="11" value="qx-ymShyfIk" title="11 characters"
+                            pattern="[A-Za-z0-9\-_]{11}" />
                         <input type="button" id="yknp" value="load" />
                     </div></label>
                 <label id="yublbl">use youtube:<input id="yubuse" type="checkbox" tabindex="4" /></label>
@@ -524,7 +527,10 @@
             <div id="crediv">
                 <div id="credits"></div>
                 <div id="credits2"></div>
-                <p><!-- page coordinate editing section info -->Coordinate logging: <span id="indicator" class="inactive-indicator">OFF</span> Q is for adding or removing barlines, S is for setting multimeasure rests,<br> W will draw a new staff area when you click the top left and bottom right corner of new area</p>
+                <p><!-- page coordinate editing section info -->Coordinate logging: <span id="indicator"
+                        class="inactive-indicator">OFF</span> Q is for adding or removing barlines, S is for setting
+                    multimeasure rests,<br> W will draw a new staff area when you click the top left and bottom right
+                    corner of new area</p>
             </div>
         </div>
         <div id="sync">
@@ -534,7 +540,8 @@
                 <label id="lm"><span>advanced:</span> <input id="advncd" type="checkbox" /></label>
                 <label class="mnrm" id="lp"><span>full screen:</span> <input id="fscr" type="checkbox" /></label>
                 <label class="mnrm" id="l1"><span>file buttons:</span> <input id="btns" type="checkbox" /></label>
-                <label class="mnrm" id="lv"><span>save preload:</span><button id="show" type="button">save</button></label>
+                <label class="mnrm" id="lv"><span>save preload:</span><button id="show"
+                        type="button">save</button></label>
                 <label class="mnrm" id="l2"><span>line cursor:</span> <input id="lncsr" type="checkbox" /></label>
                 <label class="mnrm" id="l3"><span>speed ctrl:</span> <input id="spdctl" type="checkbox" /></label>
                 <label class="mnrm" id="lg"><span>loop mode:</span> <input id="loop" type="checkbox" /></label>
@@ -542,19 +549,29 @@
                 <label class="mnrm" id="l7"><span>hide player:</span> <input id="noplyr" type="checkbox" /></label>
                 <label class="mnrm" id="ld"><span>hide dashes:</span> <input id="nodash" type="checkbox" /></label>
                 <label class="mnrm" id="ln"><span>count in:</span> <input id="cntin" type="checkbox" /></label>
-                <label class="mexp" id="l8"><span>line threshold:</span> <input type="number" id="drmpl" min="0.1" step="0.1" max="1.0" title="0.1 <= float <= 1.0"></label>
-                <label class="mexp" id="lk"><span>cluster threshold:</span> <input type="number" id="drmpl2" min="0.0" step="0.1" max="4.0" title="0.1 <= float <= 4.0"></label>
-                <label class="mexp" id="le"><span>skip:</span> <input type="number" id="skipn" min="0" step="1" title="integer >= 0"></label>
-                <label class="mexp" id="ll"><span>select:</span> <input type="number" id="seln" min="0" step="1" title="integer >= 0"></label>
+                <label class="mexp" id="l8"><span>line threshold:</span> <input type="number" id="drmpl" min="0.1"
+                        step="0.1" max="1.0" title="0.1 <= float <= 1.0"></label>
+                <label class="mexp" id="lk"><span>cluster threshold:</span> <input type="number" id="drmpl2" min="0.0"
+                        step="0.1" max="4.0" title="0.1 <= float <= 4.0"></label>
+                <label class="mexp" id="le"><span>skip:</span> <input type="number" id="skipn" min="0" step="1"
+                        title="integer >= 0"></label>
+                <label class="mexp" id="ll"><span>select:</span> <input type="number" id="seln" min="0" step="1"
+                        title="integer >= 0"></label>
                 <label class="mexp" id="l9"><span>first quarter:</span> <input type="checkbox" id="eerst"></label>
                 <label class="mexp" id="lf"><span>prefer systems:</span> <input type="checkbox" id="sysprf"></label>
                 <label class="mexp" id="lh"><span>single staves:</span> <input type="checkbox" id="onestf"></label>
-                <label class="mexp" id="lq"><span>black threshold:</span> <input type="number" id="zwgrens" min="0" step="0.1" max="1"></input></label>
-                <label class="mexp" id="lr"><span>before / after threshold:</span> <input type="number" id="voorna" min="0" step="0.01" max="1"></input></label>
-                <label class="mexp" id="ls"><span>barline threshold:</span> <input type="number" id="mtdrmpl" min="0" step="0.01" max="1"></input></label>
-                <label class="mexp" id="lt"><span>dx:</span> <input type="number" id="dx" min="1" step="1" max="30"></input></label>
-                <label class="mexp" id="lu"><span>page number:</span> <input type="number" step="1" min="1" id="pagenum"></input></label>
-                <label class="mexp" id="l6"><span>page width:</span> <input type="number" step="10" min="1000" id="fixwd"></label>
+                <label class="mexp" id="lq"><span>black threshold:</span> <input type="number" id="zwgrens" min="0"
+                        step="0.1" max="1"></input></label>
+                <label class="mexp" id="lr"><span>before / after threshold:</span> <input type="number" id="voorna"
+                        min="0" step="0.01" max="1"></input></label>
+                <label class="mexp" id="ls"><span>barline threshold:</span> <input type="number" id="mtdrmpl" min="0"
+                        step="0.01" max="1"></input></label>
+                <label class="mexp" id="lt"><span>dx:</span> <input type="number" id="dx" min="1" step="1"
+                        max="30"></input></label>
+                <label class="mexp" id="lu"><span>page number:</span> <input type="number" step="1" min="1"
+                        id="pagenum"></input></label>
+                <label class="mexp" id="l6"><span>page width:</span> <input type="number" step="10" min="1000"
+                        id="fixwd"></label>
                 <label class="mexp" id="lj"><span>no menu:</span> <input id="no_menu" type="checkbox"></label>
                 <label class="mexp" id="implbl"><span>import:</span> <input id="impbox" type="checkbox"></label>
                 <label class="mexp" id="lc"><span>pdf data:</span> <input id="wpdf" type="checkbox"></label>
@@ -570,14 +587,16 @@
         <div id="database-menus-wrapper">
             <div id="database-menu-top">
                 <h3>Database Controls</h3>
-                <button id="database-menu-toggle" onclick="$('#database-menus').toggle(); return false;">Show/Hide</button>
+                <button id="database-menu-toggle"
+                    onclick="$('#database-menus').toggle(); return false;">Show/Hide</button>
                 <div>
                     <div id="detix-box"></div>
                     <div id="demix-box"></div>
                 </div>
                 <form id="goto-measure-form">
                     <label for="detix-box">Goto detix</label>
-                    <input id="detix-input" type="number" name="detix-input" placeholder="0" min="0" max="9999" size="4" oninput="limitInputLength(this)" />
+                    <input id="detix-input" type="number" name="detix-input" placeholder="0" min="0" max="9999" size="4"
+                        oninput="limitInputLength(this)" />
                     <input type="submit" value="Go">
                 </form>
                 <label for="threshold-input">
@@ -750,7 +769,8 @@
         </div>
         <div id="div3">
             <button id="saveok">Close</button><button id="save">Save</button>
-            <span>When the save button gives a (false) security error, select and save all text above as .js file.</span>
+            <span>When the save button gives a (false) security error, select and save all text above as .js
+                file.</span>
         </div>
     </div>
     <div id="saveDiv" style="display:none;"></div>
@@ -825,9 +845,12 @@
         synchronizing:<ul>
             <li>At the start of every new (unsynchronized) measure the program waits for a click/tap in the score
                 (or key press &apos;B&apos;)</li>
-            <li>By clicking in the score (or typing key &apos;B&apos;) you synchronize the *first* beat of that measure to the audio.</li>
-            <li>The duration of the current measure and the initial offset are shown in the top right corner of the display.
-                You can precisely adjust these numbers with the keyboard sync commands (preferably when media is paused).</li>
+            <li>By clicking in the score (or typing key &apos;B&apos;) you synchronize the *first* beat of that measure
+                to the audio.</li>
+            <li>The duration of the current measure and the initial offset are shown in the top right corner of the
+                display.
+                You can precisely adjust these numbers with the keyboard sync commands (preferably when media is
+                paused).</li>
         </ul>
         <button id="closehelp">Close</button>
     </div>
