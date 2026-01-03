@@ -26,7 +26,7 @@ if (file_exists('session_config.php')) {
         content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=3" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=79" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=80" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,7 +63,7 @@ if (file_exists('session_config.php')) {
                             </span>
                             <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
                                 <span style="font-size: 0.7em; color: black; font-weight: bold;">
-                                    ADMIN <a href="synpdf_182/editmode/synpdf-edit-mode.php"
+                                    ADMIN <a href="/editmode/synpdf-edit-mode.php"
                                         style="color: #337ab7; text-decoration: underline; margin-left: 3px;">[Edit]</a>
                                 </span>
                             <?php endif; ?>

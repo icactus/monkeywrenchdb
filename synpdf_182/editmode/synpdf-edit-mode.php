@@ -25,7 +25,8 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 
-    <script src="synpdf-edit-mode.js?v=72"></script>
+    <script src="synpdf-edit-mode.js?v=73"></script>
+    <script src="edit-mode-tools.js?v=89"></script>
     <style>
         html {
             width: 100%;
