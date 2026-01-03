@@ -41,7 +41,7 @@ function toggleHistoryMenu() {
 }
 
 function fetchHistory() {
-    fetch('phpfiles/history_api.php?action=get')
+    fetch('history_api.php?action=get')
         .then(res => res.json())
         .then(data => {
             const list = document.getElementById('history-list');
@@ -89,7 +89,7 @@ function addToHistory(pieceId, metricArrId, recordingId) {
     formData.append('piece_id', pieceId);
     formData.append('metric_arr_id', metricArrId);
     formData.append('recording_id', recordingId);
-    fetch('phpfiles/history_api.php?action=add', {
+    fetch('history_api.php?action=add', {
         method: 'POST',
         body: formData
     });
@@ -98,7 +98,7 @@ function addToHistory(pieceId, metricArrId, recordingId) {
 function deleteHistoryItem(id) {
     const formData = new FormData();
     formData.append('history_id', id);
-    fetch('phpfiles/history_api.php?action=delete', {
+    fetch('history_api.php?action=delete', {
         method: 'POST',
         body: formData
     }).then(() => fetchHistory()); // Refresh
@@ -107,7 +107,7 @@ function deleteHistoryItem(id) {
 function clearHistory() {
     const formData = new FormData();
     formData.append('clear_all', 'true');
-    fetch('phpfiles/history_api.php?action=delete', {
+    fetch('history_api.php?action=delete', {
         method: 'POST',
         body: formData
     }).then(() => fetchHistory());

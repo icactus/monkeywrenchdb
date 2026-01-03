@@ -14,21 +14,17 @@ $user_id = $_SESSION['user_id'];
 $action = $_GET['action'] ?? '';
 
 // 2. Load Config
-if (file_exists(__DIR__ . '/config.php')) {
-    require_once __DIR__ . '/config.php';
-} elseif (file_exists(__DIR__ . '/../phpfiles/config.php')) {
-    require_once __DIR__ . '/../phpfiles/config.php';
+if (file_exists('phpfiles/config.php')) {
+    // Local: ./phpfiles/config.php
+    require_once 'phpfiles/config.php';
+} elseif (file_exists('../phpfiles/config.php')) {
+    // Prod: ../phpfiles/config.php
+    require_once '../phpfiles/config.php';
 } else {
-    // Fallback for different CWDs
-    if (file_exists('phpfiles/config.php')) {
-        require_once 'phpfiles/config.php';
-    } elseif (file_exists('../phpfiles/config.php')) {
-        require_once '../phpfiles/config.php';
-    } else {
-        http_response_code(500);
-        echo json_encode(['error' => 'Config missing']);
-        exit;
-    }
+    // Fallback or Error
+    http_response_code(500);
+    echo json_encode(['error' => 'Config missing']);
+    exit;
 }
 
 $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);

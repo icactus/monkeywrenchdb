@@ -21,6 +21,7 @@ deployment:
     - /bin/cp auth_logout.php $DEPLOYPATH
     - /bin/cp get_recording_from_url.php $DEPLOYPATH
     - /bin/cp get_youtube_ids.php $DEPLOYPATH
+    - /bin/cp history_api.php $DEPLOYPATH
     - /bin/cp -R assets $DEPLOYPATH
 
     - export DEPLOYPATH2=/home/monkcdmb/phpfiles/
@@ -29,7 +30,6 @@ deployment:
     - /bin/cp phpfiles/metric-arr-post.php $DEPLOYPATH2
     - /bin/cp phpfiles/pieces-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/submit_recording.php $DEPLOYPATH2
-    - /bin/cp phpfiles/history_api.php $DEPLOYPATH2
     - /bin/cp phpfiles/auth_config.example.php $DEPLOYPATH2
 
     - export DEPLOYPATH3=/home/monkcdmb/public_html/editmode/
