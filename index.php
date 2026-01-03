@@ -59,7 +59,7 @@ if (file_exists('session_config.php')) {
                         <span class="user-greeting" style="color: #666; font-size: 0.9em; margin-right: 10px;">
                             <?= htmlspecialchars(explode(' ', $_SESSION['user_name'])[0]) ?>
                         </span>
-                        <a href="javascript:void(0)" onclick="toggleHistoryMenu(); return false;"
+                        <a href="javascript:void(0)" id="history-toggle-btn" onclick="toggleHistoryMenu(); return false;"
                             style="margin-right: 10px;">History</a>
                         <a href="auth_logout.php">Logout</a>
                     <?php else: ?>
@@ -280,7 +280,7 @@ if (file_exists('session_config.php')) {
         style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=183"></script>
+    <script src="stripped-synpdf.js?v=184"></script>
     <script src="stripped-synpdf-extras.js?v=165"></script>
 </body>
 

@@ -52,6 +52,21 @@ function toggleHistoryMenu() {
     }
 }
 
+// Close history modal when clicking outside
+document.addEventListener('click', function (event) {
+    const modal = document.getElementById('history-modal');
+    const toggleBtn = document.getElementById('history-toggle-btn');
+
+    // If modal is visible and click is NOT on modal AND NOT on toggle button
+    if (modal &&
+        modal.classList.contains('visible') &&
+        !modal.contains(event.target) &&
+        (!toggleBtn || !toggleBtn.contains(event.target))) {
+
+        modal.classList.remove('visible');
+    }
+});
+
 // Helper function: format relative time
 function getRelativeTime(dateString) {
     const date = new Date(dateString);
