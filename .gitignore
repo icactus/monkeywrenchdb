@@ -9,6 +9,7 @@
 /monkeywrenchdb.code-workspace
 /phpfiles/config.php
 /phpfiles/auth_config.php
+sessions/
 /sync-test/
 /ImageMagick-7.1.1-39/
 .env
