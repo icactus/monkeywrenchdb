@@ -24,24 +24,25 @@ if ($action === 'test') {
     exit;
 }
 
-// 2. Load Config
-if (file_exists('phpfiles/config.php')) {
-    // Local: ./phpfiles/config.php
-    require_once 'phpfiles/config.php';
-} elseif (file_exists('../phpfiles/config.php')) {
-    // Prod: ../phpfiles/config.php
-    require_once '../phpfiles/config.php';
-} else {
-    // Fallback or Error
-    http_response_code(500);
-    echo json_encode(['error' => 'Config missing']);
-    exit;
-}
+// 2. Load Config & Connect DB
+try {
+    if (file_exists('phpfiles/config.php')) {
+        // Local: ./phpfiles/config.php
+        require_once 'phpfiles/config.php';
+    } elseif (file_exists('../phpfiles/config.php')) {
+        // Prod: ../phpfiles/config.php
+        require_once '../phpfiles/config.php';
+    } else {
+        throw new Exception("Config missing");
+    }
 
-$mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-if ($mysqli->connect_error) {
+    // Ensure mysqli throws exceptions so we can catch them (PHP 8.1+ default, but explicit is good)
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+    $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+} catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'DB Connection failed: ' . $mysqli->connect_error]);
+    echo json_encode(['error' => 'Server Error: ' . $e->getMessage()]);
     exit;
 }
 

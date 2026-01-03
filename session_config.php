@@ -11,7 +11,7 @@ if ($_SERVER['REMOTE_ADDR'] == '127.0.0.1' || $_SERVER['HTTP_HOST'] == 'localhos
     $sessionPath = __DIR__ . '/sessions';
 } else {
     // PROD: Store in folder parallel to public_html (../sessions)
-    $sessionPath = '/home/monkcdmb/sessions';
+    $sessionPath = dirname(__DIR__) . '/sessions';
 }
 
 if (!file_exists($sessionPath)) {
