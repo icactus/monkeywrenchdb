@@ -92,6 +92,12 @@ function addToHistory(pieceId, metricArrId, recordingId) {
     fetch('history_api.php?action=add', {
         method: 'POST',
         body: formData
+    }).then(() => {
+        // If the history menu is open, refresh it
+        const modal = document.getElementById('history-modal');
+        if (modal && modal.style.display !== 'none') {
+            fetchHistory();
+        }
     });
 }
 
