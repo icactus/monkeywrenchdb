@@ -29,6 +29,90 @@
     }
 })();
 
+// History Logic
+function toggleHistoryMenu() {
+    const modal = document.getElementById('history-modal');
+    if (modal.style.display === 'none') {
+        fetchHistory();
+        modal.style.display = 'block';
+    } else {
+        modal.style.display = 'none';
+    }
+}
+
+function fetchHistory() {
+    fetch('phpfiles/history_api.php?action=get')
+        .then(res => res.json())
+        .then(data => {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+
+            // Error check
+            if (!Array.isArray(data)) {
+                console.error("History API Error:", data);
+                list.innerHTML = '<li>Error loading history.</li>';
+                return;
+            }
+
+            if (data.length === 0) {
+                list.innerHTML = '<li>No history yet.</li>';
+                return;
+            }
+            data.forEach(item => {
+                const li = document.createElement('li');
+                li.style.borderBottom = '1px solid #eee';
+                li.style.padding = '5px 0';
+                li.style.display = 'flex';
+                li.style.justifyContent = 'space-between';
+                li.innerHTML = `
+                    <a href="javascript:void(0)" onclick="loadPieceFromHistory(${item.metric_arr_id}, ${item.recording_id}); toggleHistoryMenu();" style="text-decoration:none; color:#333; flex-grow:1;">
+                        <b>${item.composer_name}</b><br>${item.piece_name}
+                    </a>
+                    <a href="javascript:void(0)" onclick="deleteHistoryItem(${item.id})" style="color:red; font-weight:bold; margin-left:10px;">&times;</a>
+                `;
+                list.appendChild(li);
+            });
+        });
+}
+
+function loadPieceFromHistory(metricArrId, recordingId) {
+    if (!metricArrId || !recordingId) {
+        alert("This history item is missing context data.");
+        return;
+    }
+    // Reload page with specific recording context
+    window.location.search = `?metricArrId=${metricArrId}&recordingId=${recordingId}`;
+}
+
+function addToHistory(pieceId, metricArrId, recordingId) {
+    const formData = new FormData();
+    formData.append('piece_id', pieceId);
+    formData.append('metric_arr_id', metricArrId);
+    formData.append('recording_id', recordingId);
+    fetch('phpfiles/history_api.php?action=add', {
+        method: 'POST',
+        body: formData
+    });
+}
+
+function deleteHistoryItem(id) {
+    const formData = new FormData();
+    formData.append('history_id', id);
+    fetch('phpfiles/history_api.php?action=delete', {
+        method: 'POST',
+        body: formData
+    }).then(() => fetchHistory()); // Refresh
+}
+
+function clearHistory() {
+    const formData = new FormData();
+    formData.append('clear_all', 'true');
+    fetch('phpfiles/history_api.php?action=delete', {
+        method: 'POST',
+        body: formData
+    }).then(() => fetchHistory());
+}
+
 var opt$$module$synpdf, times_arr$$module$synpdf, offset_js$$module$synpdf, pdf_file$$module$synpdf, pdf_data$$module$synpdf, jpg_data$$module$synpdf, media_dir$$module$synpdf, metric_arr$$module$synpdf, pdfDoc$$module$synpdf, pdfData$$module$synpdf, jpgData$$module$synpdf, nPage$$module$synpdf =
     1,
     Cs$$module$synpdf = [],

@@ -553,6 +553,11 @@ function loadRecording(recordingFullData) {
         let targetDiv = document.getElementById('composer-piece-name');
         targetDiv.innerHTML = `<h3> ${newTitle}</h3> `;
 
+        // Track History
+        if (typeof addToHistory === 'function') {
+            addToHistory(recordingFullData.piece_id, recordingFullData.metric_arr_id, recordingFullData.recording_id);
+        }
+
         // Create a unique ID for the recording
         let metricId = recordingFullData.metric_arr_id;
         let recordingId = recordingFullData.recording_id;
@@ -1346,8 +1351,17 @@ $(document).ready(function () {
                 // Find the specific recording data from the list of recordings
                 const recordingFullData = recordings.find(rec => rec.recording_id.toString() === urlRecordingId);
                 if (recordingFullData) {
-                    // Handle the selection of a specific recording
-                    handleRecordingSelection(recordingFullData);
+
+                    // Polling function to wait for PDF.js
+                    const waitForPDF = () => {
+                        if (window.pdfjsLib) {
+                            handleRecordingSelection(recordingFullData);
+                        } else {
+                            setTimeout(waitForPDF, 50);
+                        }
+                    };
+                    waitForPDF();
+
                 } else {
                     console.error('Recording not found with the provided ID:', urlRecordingId);
                 }

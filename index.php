@@ -1,3 +1,4 @@
+<?php session_start(); ?>
 <!DOCTYPE HTML>
 <html>
 
@@ -18,9 +19,9 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <link rel="stylesheet" href="fonts.css?v=3" />
-    <link rel="stylesheet" type="text/css" href="stripped-synpdf-styles.css?v=73" />
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="stylesheet" href="assets/css/fonts.css?v=3" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=73" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap"
@@ -38,7 +39,7 @@
             <div id="logo-bar-wrapper">
                 <div id="logo-bar">
                     <a href="/">
-                        <img id="monkey-logo" src="monkeywrench-monkey100x100.png"></img>
+                        <img id="monkey-logo" src="assets/img/monkeywrench-monkey100x100.png"></img>
                     </a>
                     <div id="monkeywrench-logo-text">
                         <a href="/">
@@ -48,6 +49,16 @@
                     </div>
                 </div>
                 <div class="nav-menu">
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <span class="user-greeting" style="color: #666; font-size: 0.9em; margin-right: 10px;">
+                            <?= htmlspecialchars(explode(' ', $_SESSION['user_name'])[0]) ?>
+                        </span>
+                        <a href="javascript:void(0)" onclick="toggleHistoryMenu(); return false;"
+                            style="margin-right: 10px;">History</a>
+                        <a href="auth_logout.php">Logout</a>
+                    <?php else: ?>
+                        <a href="auth_login.php?provider=google">Login</a>
+                    <?php endif; ?>
                     <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;">Help</a>
                     <a id="about-link" href="javascript:void(0)"
                         onclick="toggleAboutLinkMenu(); return false;">About</a>
@@ -55,6 +66,14 @@
             </div>
 
             <div id="vidyub">
+            </div>
+            <!-- History Modal -->
+            <div id="history-modal"
+                style="display:none; position:fixed; top:50px; right:20px; width:300px; background:white; border:1px solid #ccc; box-shadow:0 2px 10px rgba(0,0,0,0.2); z-index:1000; padding:10px;">
+                <h3 style="margin-top:0;">Recent History</h3>
+                <ul id="history-list" style="list-style:none; padding:0; max-height:300px; overflow-y:auto;"></ul>
+                <button onclick="clearHistory()" style="width:100%; margin-top:10px;">Clear All</button>
+                <button onclick="toggleHistoryMenu()" style="width:100%; margin-top:5px;">Close</button>
             </div>
         </div>
 

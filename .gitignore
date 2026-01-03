@@ -8,6 +8,7 @@
 /fonts/
 /monkeywrenchdb.code-workspace
 /phpfiles/config.php
+/phpfiles/auth_config.php
 /sync-test/
 /ImageMagick-7.1.1-39/
 .env
@@ -16,3 +17,5 @@ youtube_ids.txt
 fast-dtw.ipynb
 strip-cs-file
 cs-stripped-output.txt
+client_secret_1092592565682-h7sd76u9qt69629fob6r2u8u8mul8g50.apps.googleusercontent.com.json
+
