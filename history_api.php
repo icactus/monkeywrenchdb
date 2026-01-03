@@ -2,30 +2,32 @@
 // history_api.php
 ini_set('display_errors', 0); // Prevent PHP warnings from breaking JSON
 ini_set('log_errors', 1);
-if (file_exists(__DIR__ . '/session_config.php')) {
-    require_once __DIR__ . '/session_config.php';
-} else {
-    session_start();
-}
 header('Content-Type: application/json');
 
-// 1. Auth Check
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Unauthorized']);
-    exit;
-}
-
-$user_id = $_SESSION['user_id'];
-$action = $_GET['action'] ?? '';
-
-if ($action === 'test') {
-    echo json_encode(['status' => 'test_ok', 'user' => $user_id, 'version' => 'v2']);
-    exit;
-}
-
-// 2. Load Config & Connect DB
 try {
+    if (file_exists(__DIR__ . '/session_config.php')) {
+        require_once __DIR__ . '/session_config.php';
+    } else {
+        session_start();
+    }
+
+    // 1. Auth Check
+    if (!isset($_SESSION['user_id'])) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized']);
+        exit;
+    }
+
+    $user_id = $_SESSION['user_id'];
+    $action = $_GET['action'] ?? '';
+
+    if ($action === 'test') {
+        echo json_encode(['status' => 'test_ok', 'user' => $user_id, 'version' => 'v2']);
+        exit;
+    }
+
+    // 2. Load Config & Connect DB
+    // (Note: inner try-catch removed to let global catch handle it, or we can keep it for specific handling)
     if (file_exists('phpfiles/config.php')) {
         // Local: ./phpfiles/config.php
         require_once 'phpfiles/config.php';
@@ -36,48 +38,42 @@ try {
         throw new Exception("Config missing");
     }
 
-    // Ensure mysqli throws exceptions so we can catch them (PHP 8.1+ default, but explicit is good)
+    // Ensure mysqli throws exceptions so we can catch them
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
     $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Server Error: ' . $e->getMessage()]);
-    exit;
-}
 
-if ($action === 'check_db') {
-    echo json_encode(['status' => 'db_ok', 'db_host' => DB_HOST]);
-    exit;
-}
-
-// 3. Info for pieces (helper to format output)
-function fetchHistory($mysqli, $user_id)
-{
-    $sql = "
-        SELECT uh.id, uh.piece_id, uh.metric_arr_id, uh.recording_id, uh.viewed_at, p.piece_name, c.composer_last as composer_name 
-        FROM user_history uh
-        JOIN pieces p ON uh.piece_id = p.piece_id
-        JOIN composers c ON p.composer_id = c.composer_id
-        WHERE uh.user_id = ?
-        ORDER BY uh.viewed_at DESC
-    ";
-    $stmt = $mysqli->prepare($sql);
-    if (!$stmt) {
-        throw new Exception("Prepare failed: " . $mysqli->error);
+    if ($action === 'check_db') {
+        echo json_encode(['status' => 'db_ok', 'db_host' => DB_HOST]);
+        exit;
     }
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $data = [];
-    while ($row = $result->fetch_assoc()) {
-        $data[] = $row;
-    }
-    return $data;
-}
 
-// 4. Handle Actions
-try {
+    // 3. Info for pieces (helper to format output)
+    function fetchHistory($mysqli, $user_id)
+    {
+        $sql = "
+            SELECT uh.id, uh.piece_id, uh.metric_arr_id, uh.recording_id, uh.viewed_at, p.piece_name, c.composer_last as composer_name 
+            FROM user_history uh
+            JOIN pieces p ON uh.piece_id = p.piece_id
+            JOIN composers c ON p.composer_id = c.composer_id
+            WHERE uh.user_id = ?
+            ORDER BY uh.viewed_at DESC
+        ";
+        $stmt = $mysqli->prepare($sql);
+        if (!$stmt) {
+            throw new Exception("Prepare failed: " . $mysqli->error);
+        }
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+        return $data;
+    }
+
+    // 4. Handle Actions
     if ($action === 'add') {
         $piece_id = intval($_POST['piece_id'] ?? 0);
         $metric_arr_id = intval($_POST['metric_arr_id'] ?? 0);
@@ -137,10 +133,11 @@ try {
     } else {
         throw new Exception("Invalid action");
     }
-} catch (Exception $e) {
-    http_response_code(400);
-    echo json_encode(['error' => $e->getMessage()]);
-}
 
-$mysqli->close();
+    $mysqli->close();
+
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Critical Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine()]);
+}
 ?>
