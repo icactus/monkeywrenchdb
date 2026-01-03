@@ -1,5 +1,7 @@
 <?php
 // history_api.php
+ini_set('display_errors', 0); // Prevent PHP warnings from breaking JSON
+ini_set('log_errors', 1);
 if (file_exists(__DIR__ . '/session_config.php')) {
     require_once __DIR__ . '/session_config.php';
 } else {
