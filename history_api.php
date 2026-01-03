@@ -19,6 +19,11 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $action = $_GET['action'] ?? '';
 
+if ($action === 'test') {
+    echo json_encode(['status' => 'test_ok', 'user' => $user_id]);
+    exit;
+}
+
 // 2. Load Config
 if (file_exists('phpfiles/config.php')) {
     // Local: ./phpfiles/config.php
