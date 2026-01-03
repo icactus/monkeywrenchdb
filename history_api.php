@@ -90,8 +90,7 @@ try {
     }
 
     // 4. Handle Actions
-    try {
-        if ($action === 'add') {
+    if ($action === 'add') {
         $piece_id = intval($_POST['piece_id'] ?? 0);
         $metric_arr_id = intval($_POST['metric_arr_id'] ?? 0);
         $recording_id = intval($_POST['recording_id'] ?? 0);
@@ -115,7 +114,7 @@ try {
         $ins = $mysqli->prepare("INSERT INTO user_history (user_id, piece_id, metric_arr_id, recording_id) VALUES (?, ?, ?, ?)");
         $ins->bind_param("iiii", $user_id, $piece_id, $metric_arr_id, $recording_id);
         if (!$ins->execute()) {
-             throw new Exception("Insert failed: " . $ins->error);
+            throw new Exception("Insert failed: " . $ins->error);
         }
         $ins->close();
 
