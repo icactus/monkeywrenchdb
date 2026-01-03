@@ -6,7 +6,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'debug_probe') {
     exit;
 }
 
-ini_set('display_errors', 0); // Prevent PHP warnings from breaking JSON
+ini_set('display_errors', 1); // ENABLE ERRORS FOR DEBUGGING
 ini_set('log_errors', 1);
 header('Content-Type: application/json');
 
@@ -15,6 +15,11 @@ try {
         require_once __DIR__ . '/session_config.php';
     } else {
         session_start();
+    }
+
+    if (isset($_GET['action']) && $_GET['action'] === 'debug_probe_2') {
+        echo json_encode(['status' => 'alive_after_session', 'session_id' => session_id()]);
+        exit;
     }
 
     // 1. Auth Check
@@ -48,6 +53,11 @@ try {
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
     $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+
+    if (isset($_GET['action']) && $_GET['action'] === 'debug_probe_3') {
+        echo json_encode(['status' => 'alive_after_db_connect', 'db_host' => DB_HOST]);
+        exit;
+    }
 
     if ($action === 'check_db') {
         echo json_encode(['status' => 'db_ok', 'db_host' => DB_HOST]);
