@@ -11,6 +11,34 @@ let notation;
 document.addEventListener("DOMContentLoaded", function () {
     indicatorElement = document.getElementById('indicator');
     notation = document.getElementById('notation');
+
+    if (notation) {
+        notation.addEventListener('click', function handleClick(event) {
+            if (handleSplit(event)) return;
+            if (handleWCxs(event)) return;
+            else if (!QisActive) return;
+            if (addRemoveBxs$$module$synpdf(event)) return;
+        });
+
+        notation.addEventListener('mousemove', function (e) {
+            var rect = notation.getBoundingClientRect();
+            var x = e.clientX - rect.left;
+            var y = Math.round(e.clientY - rect.top + notation.scrollTop);
+
+            var tooltip = document.getElementById('tooltip');
+            if (tooltip) {
+                tooltip.style.left = (x - 100) + 'px';
+                tooltip.style.top = Math.round((y - (-50 + notation.scrollTop))) + 'px';
+                if (QisActive) {
+                    tooltip.innerHTML = "Q";
+                }
+                if (WisActive) {
+                    tooltip.innerHTML = "W";
+                }
+                tooltip.style.display = "block";
+            }
+        });
+    }
 });
 
 
@@ -345,31 +373,11 @@ function formatCode(s) {
         .replace(/,{"cxs":/g, ',\n{"cxs":');
 }
 
-notation.addEventListener('click', function handleClick(event) {
-    if (handleSplit(event)) return;
-    if (handleWCxs(event)) return;
-    else if (!QisActive) return;
-    if (addRemoveBxs$$module$synpdf(event)) return;
-});
 
 
 
-notation.addEventListener('mousemove', function (e) {
-    var rect = notation.getBoundingClientRect();
 
-    var x = e.clientX - rect.left;
-    var y = Math.round(e.clientY - rect.top + notation.scrollTop);
 
-    tooltip.style.left = (x - 100) + 'px';
-    tooltip.style.top = Math.round((y - (-50 + notation.scrollTop))) + 'px';
-    if (QisActive) {
-        tooltip.innerHTML = "Q";
-    }
-    if (WisActive) {
-        tooltip.innerHTML = "W";
-    }
-    tooltip.style.display = "block";
-});
 
 function handleWCxs(event) {
     if (WisActive) {
