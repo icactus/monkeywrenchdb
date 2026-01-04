@@ -35,8 +35,104 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (WisActive) {
                     tooltip.innerHTML = "W";
                 }
-                tooltip.style.display = "block";
             }
+        });
+    }
+
+
+    // Initialize Form Listeners
+    const addNewComposerForm = document.getElementById('addnewcomposerform');
+    if (addNewComposerForm) {
+        addNewComposerForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            formData.append('action', 'add_composer');
+            fetch('./dispatcher.php', { method: 'POST', body: formData })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message || 'Composer added successfully!');
+                        const composerDropdowns = document.querySelectorAll('select[name="composer_id"], select[name="composers_list"]');
+                        if (composerDropdowns.length > 0 && data.composers) {
+                            composerDropdowns.forEach(dropdown => {
+                                dropdown.innerHTML = '';
+                                data.composers.forEach(composer => {
+                                    const opt = document.createElement('option');
+                                    opt.value = composer.id;
+                                    opt.textContent = composer.name;
+                                    dropdown.appendChild(opt);
+                                });
+                            });
+                        }
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => { console.error('Error adding composer:', error); alert('An error occurred.'); });
+        });
+    }
+
+    const addNewPieceForm = document.getElementById('addnewpieceform');
+    if (addNewPieceForm) {
+        addNewPieceForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            formData.append('action', 'add_piece');
+            fetch('./dispatcher.php', { method: 'POST', body: formData })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message || 'Piece added successfully!');
+                        if (data.pieces) {
+                            const pieceDropdowns = document.querySelectorAll("select[name='piece_id']");
+                            const sortedPieces = data.pieces.sort((a, b) => a.name.localeCompare(b.name));
+                            pieceDropdowns.forEach(dropdown => {
+                                dropdown.innerHTML = "";
+                                sortedPieces.forEach(piece => {
+                                    const option = document.createElement("option");
+                                    option.value = piece.id;
+                                    option.textContent = piece.name;
+                                    dropdown.appendChild(option);
+                                });
+                            });
+                        }
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => { console.error('Error adding piece:', error); alert('An error occurred.'); });
+        });
+    }
+
+    const addNewMetricForm = document.getElementById("addnewmetricform");
+    if (addNewMetricForm) {
+        addNewMetricForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            const submitButton = event.submitter;
+            const buttonName = submitButton.name;
+            const buttonValue = submitButton.value;
+            const formData = new FormData(addNewMetricForm);
+            formData.append('action', 'add_metric_arr');
+            formData.append(buttonName, buttonValue);
+            if (buttonName === 'update') {
+                formData.delete('file');
+                formData.delete('file_hd');
+            }
+            fetch("./dispatcher.php", { method: "POST", body: formData })
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                    const isDataSuccess = data.includes("The data has been inserted.") || data.includes("The data has been updated.");
+                    const isFileError = data.includes("Sorry, file already exists. File not uploaded.") || data.includes("Sorry, your file was not uploaded.");
+                    if (isDataSuccess && !isFileError) {
+                        alert("Form submitted successfully");
+                    } else if (isDataSuccess && isFileError) {
+                        alert("Data updated successfully");
+                    } else {
+                        alert("Form submission failed");
+                    }
+                })
+                .catch(error => { console.error(error); alert("An error occurred during the form submission."); });
         });
     }
 });
@@ -523,137 +619,7 @@ function requestRefresh() {
 }
 
 // Example: Submitting the "Add Composer" form
-const addNewComposerForm = document.getElementById('addnewcomposerform');
-addNewComposerForm.addEventListener('submit', function (event) {
-    event.preventDefault();
 
-    const formData = new FormData(this);
-    formData.append('action', 'add_composer');  // so dispatcher knows what to include
-
-    fetch('./dispatcher.php', {
-        method: 'POST',
-        body: formData
-    })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Dispatcher response:', data);
-            if (data.success) {
-                alert(data.message || 'Composer added successfully!');
-
-                //select composer dropdowns
-                const composerDropdowns = document.querySelectorAll('select[name="composer_id"], select[name="composers_list"]');
-                if (composerDropdowns.length > 0 && data.composers) {
-                    composerDropdowns.forEach(dropdown => {
-                        dropdown.innerHTML = ''; // Clear existing options
-
-                        // Add new options from the updated composer list
-                        data.composers.forEach(composer => {
-                            const opt = document.createElement('option');
-                            opt.value = composer.id;
-                            opt.textContent = composer.name;
-                            dropdown.appendChild(opt);
-                        });
-                    });
-                }
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error adding composer:', error);
-            alert('An error occurred.');
-        });
-});
-
-const addNewPieceForm = document.getElementById('addnewpieceform');
-addNewPieceForm.addEventListener('submit', function (event) {
-    event.preventDefault();
-
-    const formData = new FormData(this);
-    formData.append('action', 'add_piece');  // so dispatcher knows what to include
-
-    fetch('./dispatcher.php', {
-        method: 'POST',
-        body: formData
-    })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Dispatcher response:', data);
-            if (data.success) {
-                alert(data.message || 'Piece added successfully!');
-                // e.g., update piece dropdown
-                if (data.pieces) {
-                    const pieceDropdowns = document.querySelectorAll("select[name='piece_id']");
-
-                    // Sort the pieces array by the 'name' field
-                    const sortedPieces = data.pieces.sort((a, b) => a.name.localeCompare(b.name));
-
-                    pieceDropdowns.forEach(dropdown => {
-                        dropdown.innerHTML = ""; // Clear existing options
-                        sortedPieces.forEach(piece => {
-                            const option = document.createElement("option");
-                            option.value = piece.id;
-                            option.textContent = piece.name;
-                            dropdown.appendChild(option);
-                        });
-                    });
-                }
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error adding piece:', error);
-            alert('An error occurred.');
-        });
-});
-
-const addNewMetricForm = document.getElementById("addnewmetricform");
-
-addNewMetricForm.addEventListener("submit", function (event) {
-    event.preventDefault(); // Prevent the form from submitting normally
-
-    // Determine which button was clicked
-    const submitButton = event.submitter;
-    const buttonName = submitButton.name;
-    const buttonValue = submitButton.value;
-
-    // Create a new FormData object from the form
-    const formData = new FormData(addNewMetricForm);
-    formData.append('action', 'add_metric_arr');
-    formData.append(buttonName, buttonValue); // Append the name and value of the button
-
-    if (buttonName === 'update') {
-        formData.delete('file');
-        formData.delete('file_hd');
-    }
-
-    fetch("./dispatcher.php", {
-        method: "POST",
-        body: formData
-    })
-        .then(response => response.text())
-        .then(data => {
-            // Handle the response from the server
-            console.log(data);
-
-            const isDataSuccess = data.includes("The data has been inserted.") || data.includes("The data has been updated.");
-            const isFileError = data.includes("Sorry, file already exists. File not uploaded.") || data.includes("Sorry, your file was not uploaded.");
-
-            if (isDataSuccess && !isFileError) {
-                alert("Form submitted successfully");
-            } else if (isDataSuccess && isFileError) {
-                alert("Data updated successfully");
-            } else {
-                alert("Form submission failed");
-            }
-        })
-        .catch(error => {
-            // Handle any errors that occur during the request
-            console.error(error);
-            alert("An error occurred during the form submission.");
-        });
-});
 
 
 //Allows user to manually mass correct timing across a range - adjustTimeValues(deTijden$$module$synpdf, 5, 10, 0.5);
