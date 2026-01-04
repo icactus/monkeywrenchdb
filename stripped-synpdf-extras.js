@@ -417,6 +417,9 @@ function generateInstrumentsDropdown(recordingId) {
         dropdown.innerHTML = "";
         var defaultOption = document.createElement("option");
         defaultOption.textContent = "Change Part";
+        defaultOption.disabled = true;
+        defaultOption.hidden = true;
+        defaultOption.selected = true;
         dropdown.appendChild(defaultOption);
 
         var xhr = new XMLHttpRequest();
@@ -465,7 +468,7 @@ function fetchRecordings(metricArrId) {
                     currentMetricArrGlobal = metricArrId;
                     var container = $('#recordings-container');
 
-                    recordingsDropdown.append('<option value="">Change Recording</option>');
+                    recordingsDropdown.append('<option value="" disabled hidden selected>Change Recording</option>');
                     recordings.sort(function (a, b) {
                         // Compare year
                         var yearComparison = a.year - b.year;
@@ -839,52 +842,60 @@ function decrementSpeed() {
 
 incrementButton.addEventListener('click', incrementSpeed);
 decrementButton.addEventListener('click', decrementSpeed);
-
 // One handler for all vendor events
-// One handler for all vendor events
+let __fsRefreshPending = false;
 function refreshAfterFullscreen() {
-    const doRefresh = () => {
+    // Debounce: only run once per fullscreen change
+    if (__fsRefreshPending) return;
+    __fsRefreshPending = true;
+
+    const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+
+    // Wait for layout to settle before adjusting
+    setTimeout(() => {
+        __fsRefreshPending = false;
+
         // Rebuild and re-render at the new viewport/DPR (keeps pages crisp)
         if (typeof reflowForViewportChange === 'function') {
             reflowForViewportChange();
         }
 
         const scroller = document.getElementById('notation-scroll');
+        const pre = window.__preFS || {};
 
-        // After layout settles, put zoom/position back
-        const snapBack = () => {
-            const pre = window.__preFS || {};
-
-            // Only restore zoom in 1-up (2-up uses fit-to-height logic)
-            if (!pre.inTwoUp && pre.scale && window.__cssScale) {
-                // resizeDematenAndCanvas takes a *multiplier* percent
-                const ratio = pre.scale / window.__cssScale; // desired/current
-                if (Math.abs(ratio - 1) > 1e-3) {
-                    resizeDematenAndCanvas(ratio * 100);
+        // Delay zoom adjustment until after reflowForViewportChange's async logic completes
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                if (isFullscreen) {
+                    // Entering fullscreen: fit to width to prevent overflow
+                    if (typeof resizePageFitToWidth === 'function') {
+                        resizePageFitToWidth();
+                    }
+                } else {
+                    // Exiting fullscreen: restore previous zoom in 1-up (2-up uses fit-to-height logic)
+                    if (!pre.inTwoUp && pre.scale && window.__cssScale) {
+                        const ratio = pre.scale / window.__cssScale;
+                        if (Math.abs(ratio - 1) > 1e-3) {
+                            resizeDematenAndCanvas(ratio * 100);
+                        }
+                    }
                 }
-            }
 
-            // Prefer musical time anchor; fallback to proportional scroll
-            if (typeof pre.cursorTime === 'number') {
-                try { window.msc_wz$$module$synpdf?.time2x(pre.cursorTime); } catch (_) { }
-            } else if (scroller && typeof pre.scrollTopRatio === 'number') {
-                scroller.scrollTop = Math.round(
-                    pre.scrollTopRatio * Math.max(0, scroller.scrollHeight - scroller.clientHeight)
-                );
-            }
+                // Prefer musical time anchor; fallback to proportional scroll
+                if (typeof pre.cursorTime === 'number') {
+                    try { window.msc_wz$$module$synpdf?.time2x(pre.cursorTime); } catch (_) { }
+                } else if (scroller && typeof pre.scrollTopRatio === 'number') {
+                    scroller.scrollTop = Math.round(
+                        pre.scrollTopRatio * Math.max(0, scroller.scrollHeight - scroller.clientHeight)
+                    );
+                }
 
-            scroller?.focus();
-            window.__isTogglingFullscreen = false;
-            window.__preFS = null;
-        };
-
-        // Give layout a tick to settle (handles WebKit/mobile too)
-        requestAnimationFrame(() => requestAnimationFrame(snapBack));
-        setTimeout(snapBack, 140);
-    };
-
-    requestAnimationFrame(doRefresh);
-    setTimeout(doRefresh, 60);
+                scroller?.focus();
+                window.__isTogglingFullscreen = false;
+                window.__preFS = null;
+            });
+        });
+    }, 100);
 }
 
 // Listen for all vendor fullscreen change events

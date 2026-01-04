@@ -130,7 +130,7 @@ if (file_exists('session_config.php')) {
                 <label class="mnrm" id="l7"><span>hide player:</span> <input id="noplyr" type="checkbox" /></label>
                 <label class="mnrm" id="ld"><span>hide dashes:</span> <input id="nodash" type="checkbox" /></label>
                 <label class="mnrm" id="ln"><span>count in:</span> <input id="cntin" type="checkbox" /></label>
-                <label class="mexp" id="lu"><span>page number:</span> <input type="number" step="1" min="1"
+                <label class="mnrm" id="lu"><span>page number:</span> <input type="number" step="1" min="1"
                         id="pagenum"></input></label>
                 <label class="mnrm" id="helpm">help</label>
             </form>
@@ -219,7 +219,7 @@ if (file_exists('session_config.php')) {
                         <div id="change-part-wrapper">
                             <h3>Change Part</h3>
                             <select id="instruments-dropdown">
-                                <option value="">Change Part</option>
+                                <option value="" disabled hidden selected>Change Part</option>
                             </select>
                         </div>
                         <div id="speed-control">
@@ -237,7 +237,7 @@ if (file_exists('session_config.php')) {
                 <div class="change-recording-wrapper">
                     <h3>Change Recording</h3>
                     <select id="recordings-dropdown">
-                        <option value="">Change Recording</optionfrom part to score>
+                        <option value="" disabled hidden selected>Change Recording</option>
                     </select>
                 </div>
             </div>
@@ -302,18 +302,16 @@ if (file_exists('session_config.php')) {
         <div id="about">
             <p><b>Monkey Wrench Database</b> is built on a modified fork of <a href="https://wim.vree.org/"
                     target="_blank" rel="noopener noreferrer">Willem Vree's</a> SynPdf. Without his amazing open source
-                project none of this would be possible.</p>
-            <p>This site is a solo project by Isaac Trapkus, bassist with the NY Phil. I am not a professional
-                programmer (<a href="https://bassmentrosin.com" target="_blank" rel="noopener noreferrer">but I do make
-                    bass rosin</a>). Please forgive my many skill issues.</p>
-            <p>Syncing is done by detecting staves and barlines algorithmically with manual correction. It takes 1-2
-                minutes per page of sheet music. AI is still not at the point where it can do this task. Recordings are
-                manually synced by playing through the video and logging timestamps with keypresses (usually at 1.5-2x
-                playback speed). Dynamic Time Warping makes it possible to automate adding additional recordings once a
-                piece has a manual timestamp record. But the time to proof-read the recording is about the same as doing
-                it manually.</p>
-            <p>If you find this project important and would like to make meaningful contributions to
-                its development, please be in touch! icactusmusic AT gmail DOT com.</p>
+                project, none of this would be possible.</p>
+            <p>This is a passion project by Isaac Trapkus, bassist with the New York Philharmonic. I'm not a software
+                developer by trade, so please bear with my many skill issues.</p>
+            <p>Every page of sheet music is synced by algorithmically detecting staves and barlines, with manual
+                correction (about 1 minute per page). Recordings are synced by logging timestamps while playing
+                through at 1–2x speed. I have looked into other ways to add recordings like Dynamic Time Warping, but
+                checking the work takes just as long as doing it manually.</p>
+            <p>Without the help of volunteers, this database will not be able to scale. If you find this project
+                valuable and want to contribute, I'd love to hear from you: <b>icactusmusic AT
+                    gmail DOT com</b></p>
             <button id="closeabout">Close</button>
         </div>
     </section3>
@@ -322,8 +320,8 @@ if (file_exists('session_config.php')) {
         style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=184"></script>
-    <script src="stripped-synpdf-extras.js?v=165"></script>
+    <script src="stripped-synpdf.js?v=189"></script>
+    <script src="stripped-synpdf-extras.js?v=173"></script>
 </body>
 
 </html>

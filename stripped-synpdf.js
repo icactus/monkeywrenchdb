@@ -273,172 +273,195 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     let $controls = $("#control-buttons-row");
     if (!$controls.length) {
         $controls = $(
-            `<div id="control-buttons-row">
-            <button class="control-buttons" onclick="toggleFullscreen(event)">
-                <svg height="20pt" version="1.1" viewBox="0 0 14 14" width="20pt" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title/><desc/><defs/><g fill="none" fill-rule="evenodd" id="Page-1" stroke="none" stroke-width="1"><g fill="#000000" id="Core" transform="translate(-215.000000, -257.000000)"><g id="fullscreen" transform="translate(215.000000, 257.000000)"><path d="M2,9 L0,9 L0,14 L5,14 L5,12 L2,12 L2,9 L2,9 Z M0,5 L2,5 L2,2 L5,2 L5,0 L0,0 L0,5 L0,5 Z M12,12 L9,12 L9,14 L14,14 L14,9 L12,9 L12,12 L12,12 Z M9,0 L9,2 L12,2 L12,5 L14,5 L14,0 L9,0 L9,0 Z" id="Shape"/></g></g></g></svg>
-            </button>
-            <button class="control-buttons" onclick="resizePageFitToWidth()" title="Fit to Width">
-                <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-                <svg width="20pt" height="20pt" viewBox="0 0 512 172" version="1.1" xmlns="http://www.w3.org/2000/svg">
-                <g id="fitToWidthButtonSVG">
-                <path fill="#000000" opacity="1.00" d=" M 122.17 1.15 C 130.67 -1.40 140.28 5.27 141.23 14.02 C 141.81 18.19 140.61 22.51 137.92 25.76 C 127.91 38.15 117.92 50.55 107.90 62.93 C 105.85 65.50 103.57 67.91 101.91 70.77 C 196.92 70.74 291.92 70.73 386.92 70.71 C 390.68 70.66 394.46 70.88 398.21 70.51 C 386.15 55.59 374.08 40.67 362.02 25.74 C 358.29 21.21 357.49 14.44 360.26 9.24 C 363.18 2.89 371.06 -0.75 377.80 1.22 C 381.10 2.12 384.13 4.05 386.19 6.80 C 403.75 28.53 421.31 50.25 438.86 71.98 C 441.32 75.13 444.40 78.09 445.30 82.14 C 446.94 87.14 445.03 92.70 441.67 96.55 C 423.15 119.47 404.62 142.38 386.11 165.30 C 381.89 170.88 373.47 173.14 367.23 169.69 C 361.41 167.01 357.85 160.36 358.74 154.03 C 359.22 148.27 363.83 144.32 367.09 139.98 C 377.38 127.06 388.05 114.44 398.08 101.33 C 300.39 101.31 202.69 101.35 105.00 101.37 C 104.20 101.41 102.61 101.49 101.81 101.53 C 113.93 116.60 126.15 131.60 138.26 146.69 C 143.43 153.11 141.88 163.51 135.17 168.24 C 130.62 171.67 124.12 172.49 119.10 169.59 C 115.62 168.04 113.47 164.80 111.17 161.93 C 93.53 140.16 75.95 118.36 58.32 96.59 C 54.96 92.69 53.01 87.12 54.70 82.08 C 55.55 78.32 58.30 75.47 60.62 72.55 C 78.08 51.01 95.49 29.44 112.92 7.88 C 115.13 4.65 118.41 2.26 122.17 1.15 Z" />
-                <path fill="#000000" opacity="1.00" d=" M 4.41 15.40 C 9.21 9.96 18.07 8.94 24.04 13.02 C 28.67 15.98 31.28 21.51 31.12 26.95 C 31.11 66.29 31.11 105.62 31.12 144.96 C 31.15 148.75 30.11 152.65 27.70 155.63 C 23.16 161.70 13.93 163.29 7.56 159.24 C 2.86 156.38 0.24 151.10 0.00 145.69 L 0.00 26.22 C 0.42 22.29 1.50 18.24 4.41 15.40 Z" />
-                <path fill="#000000" opacity="1.00" d=" M 485.27 15.27 C 490.43 9.56 500.06 8.92 505.95 13.87 C 509.82 16.79 511.63 21.55 512.00 26.26 L 512.00 146.56 C 511.43 154.29 504.98 161.47 496.97 161.44 C 488.44 162.14 480.81 154.42 480.92 146.00 C 480.84 106.34 480.92 66.68 480.88 27.02 C 480.79 22.73 482.26 18.37 485.27 15.27 Z" />
-                </g>
-                </svg>
-            </button>
-            <button class="control-buttons" onclick="resizePageFitToHeight()" title="Fit to Height">
-                <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-                <svg width="20pt" height="20pt" viewBox="0 0 172 512" version="1.1" xmlns="http://www.w3.org/2000/svg">
-                <g id="fitToHeightButtonSVG">
-                <path fill="#000000" opacity="1.00" d=" M 23.86 0.00 L 147.89 0.00 C 152.59 0.77 157.05 3.38 159.48 7.55 C 162.97 13.16 162.31 20.95 157.88 25.86 C 154.74 29.59 149.83 31.44 145.00 31.24 C 105.35 31.21 65.69 31.27 26.03 31.21 C 17.41 31.55 9.69 23.60 10.30 15.00 C 10.40 7.51 16.58 1.13 23.86 0.00 Z" />
-                <path fill="#000000" opacity="1.00" d=" M 76.44 69.26 C 81.86 64.85 90.25 64.89 95.64 69.33 C 119.09 88.25 142.54 107.19 165.95 126.16 C 172.22 131.19 173.32 141.18 168.31 147.46 C 163.46 154.18 153.01 155.66 146.54 150.44 C 131.50 138.42 116.59 126.23 101.58 114.18 C 101.57 212.72 101.61 311.27 101.66 409.81 C 116.43 397.87 131.20 385.93 145.98 374.00 C 150.07 370.61 155.90 369.45 160.93 371.25 C 166.82 373.16 171.17 378.88 171.46 385.07 C 171.80 390.15 169.42 395.26 165.38 398.34 C 142.33 416.98 119.27 435.62 96.22 454.26 C 92.38 457.54 86.95 458.90 82.05 457.55 C 78.51 456.73 75.74 454.26 73.01 452.03 C 50.89 434.12 28.76 416.25 6.63 398.36 C 2.02 394.86 -0.39 388.71 0.81 383.03 C 1.83 377.29 6.40 372.39 12.05 370.95 C 16.84 369.58 22.17 370.84 26.00 373.98 C 40.85 385.96 55.68 397.98 70.54 409.95 C 70.52 311.35 70.49 212.75 70.45 114.15 C 55.41 126.22 40.47 138.45 25.40 150.49 C 18.92 155.66 8.49 154.16 3.67 147.44 C -1.30 141.17 -0.22 131.23 6.00 126.20 C 29.46 107.19 52.94 88.22 76.44 69.26 Z" />
-                <path fill="#000000" opacity="1.00" d=" M 10.28 496.07 C 10.23 487.78 17.77 480.47 26.07 480.79 C 66.05 480.75 106.04 480.74 146.02 480.79 C 154.61 480.48 162.28 488.39 161.71 496.96 C 161.61 504.46 155.43 510.89 148.13 512.00 L 24.10 512.00 C 16.37 511.04 9.93 503.95 10.28 496.07 Z" />
-                </g>
-                </svg>
-            </button>
-            <button class="control-buttons" onclick="toggleTwoUpMode()" id="two-up-button" title="Two-Page view">
-            <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-            <svg fill="#000000" width="20pt" height="20pt" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
-                     width="20px" height="20px" viewBox="0 0 93.1 93.1" xml:space="preserve">
-            <g>
-                    <g>
-                            <path d="M93.1,13.658H50.943l-4.394,4.393l-4.394-4.394H0v65.784h42.156l4.394-4.392l4.394,4.394H93.1V13.658z M43.828,74.401
-                                    H5.042V18.699h38.786V74.401z M88.058,74.401H49.271V18.699h38.786V74.401z"/>
-                            <rect x="10.722" y="28.187" width="27.896" height="5.042"/>
-                            <rect x="10.722" y="42.699" width="27.896" height="5.042"/>
-                            <rect x="10.722" y="58.1" width="27.896" height="5.041"/>
-                            <rect x="55.592" y="28.187" width="27.896" height="5.042"/>
-                            <rect x="55.592" y="42.699" width="27.896" height="5.042"/>
-                            <rect x="55.592" y="58.1" width="27.896" height="5.041"/>
-                    </g>
-            </g>
-            </svg>
-            </button>
-            <button class="control-buttons" onclick="resizeDematenAndCanvas(90)" title="Zoom Out">
-                <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-                <svg fill="#000000" height="20pt" width="20pt" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
-                    viewBox="0 0 192.904 192.904" xml:space="preserve">
-                <g>
-                    <path d="M190.707,180.101l-47.079-47.077c11.702-14.072,18.752-32.142,18.752-51.831C162.381,36.423,125.959,0,81.191,0
-                        C36.422,0,0,36.423,0,81.193c0,44.767,36.422,81.187,81.191,81.187c19.689,0,37.759-7.049,51.831-18.75l47.079,47.077
-                        c1.464,1.465,3.384,2.197,5.303,2.197c1.919,0,3.839-0.732,5.303-2.197C193.637,187.778,193.637,183.03,190.707,180.101z
-                        M15,81.193C15,44.694,44.693,15,81.191,15c36.497,0,66.189,29.694,66.189,66.193c0,36.496-29.692,66.187-66.189,66.187
-                        C44.693,147.38,15,117.689,15,81.193z"/>
-                    <path d="M118.035,73.689H44.346c-4.142,0-7.5,3.358-7.5,7.5c0,4.142,3.358,7.5,7.5,7.5h73.689c4.142,0,7.5-3.358,7.5-7.5
-                        C125.535,77.047,122.177,73.689,118.035,73.689z"/>
-                </g>
-                </svg>
-            </button>
-            <button class="control-buttons" onclick="resizeDematenAndCanvas(110)" title="Zoom In">
-                    <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-                    <svg fill="#000000" height="20pt" width="20pt" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
-                        viewBox="0 0 192.904 192.904" xml:space="preserve">
-                    <g>
-                        <path d="M190.707,180.101l-47.078-47.077c11.702-14.072,18.752-32.142,18.752-51.831C162.381,36.423,125.959,0,81.191,0
-                            C36.422,0,0,36.423,0,81.193c0,44.767,36.422,81.187,81.191,81.187c19.688,0,37.759-7.049,51.831-18.751l47.079,47.078
-                            c1.464,1.465,3.384,2.197,5.303,2.197c1.919,0,3.839-0.732,5.304-2.197C193.637,187.778,193.637,183.03,190.707,180.101z
-                            M15,81.193C15,44.694,44.693,15,81.191,15c36.497,0,66.189,29.694,66.189,66.193c0,36.496-29.692,66.187-66.189,66.187
-                            C44.693,147.38,15,117.689,15,81.193z"/>
-                        <path d="M118.035,73.689H88.69V44.345c0-4.142-3.357-7.5-7.5-7.5s-7.5,3.358-7.5,7.5v29.345H44.346c-4.143,0-7.5,3.358-7.5,7.5
-                            c0,4.142,3.357,7.5,7.5,7.5H73.69v29.346c0,4.142,3.357,7.5,7.5,7.5s7.5-3.358,7.5-7.5V88.689h29.345c4.143,0,7.5-3.358,7.5-7.5
-                            C125.535,77.047,122.178,73.689,118.035,73.689z"/>
-                    </g>
-                    </svg>
-            </button>
-            <button class="control-buttons" id="play-pause-button">
-                <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" width="20pt" height="20pt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-play">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-                <svg id="pause-icon" style="display:none" xmlns="http://www.w3.org/2000/svg" width="20pt" height="20pt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-pause">
-                <rect x="6" y="4" width="4" height="16"></rect>
-                <rect x="14" y="4" width="4" height="16"></rect>
-                </svg>
-            </button>
-            <button class="control-buttons "id="invert-button">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-            </button>
-            <button class="control-buttons" id="share-button">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <circle cx="18" cy="5" r="3" />
-                  <circle cx="6" cy="12" r="3" />
-                  <circle cx="18" cy="19" r="3" />
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                </svg>
-            </button>
-            <button id="settings-button" onclick="toggleSettingsMenu()">
-                <svg fill="#000000" height="20pt" width="20pt" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
-                    viewBox="0 0 512.003 512.003" xml:space="preserve">
-                <g>
-                    <g>
-                        <path d="M491.584,192.579l-55.918-6.914c-0.919-2.351-1.884-4.682-2.892-6.993l34.648-44.428
-                            c7.227-9.267,6.412-22.464-1.899-30.773l-57.028-56.996c-8.308-8.304-21.502-9.114-30.763-1.893L333.32,79.216
-                            c-2.312-1.008-4.644-1.974-6.994-2.894l-6.915-55.904c-1.443-11.66-11.348-20.415-23.097-20.415h-80.637
-                            c-11.748,0-21.656,8.755-23.097,20.416l-6.914,55.904c-2.349,0.919-4.681,1.884-6.988,2.89l-44.415-34.642
-                            c-9.261-7.222-22.458-6.414-30.768,1.894l-57.021,57.009c-8.31,8.307-9.123,21.506-1.896,30.771l34.644,44.417
-                            c-1.012,2.312-1.978,4.647-2.9,7.002l-55.906,6.914C8.757,194.022,0,203.927,0,215.676v80.64c0,11.75,8.758,21.658,20.421,23.097
-                            l55.901,6.903c0.919,2.352,1.884,4.686,2.894,6.994l-34.641,44.417c-7.224,9.264-6.411,22.46,1.894,30.767l57.021,57.031
-                            c8.307,8.31,21.507,9.121,30.773,1.896l44.417-34.648c2.306,1.007,4.638,1.974,6.987,2.891l6.914,55.921
-                            c1.441,11.66,11.348,20.416,23.097,20.416h80.637c11.748,0,21.655-8.755,23.097-20.416l6.915-55.92
-                            c2.351-0.92,4.682-1.885,6.993-2.892l44.425,34.65c9.266,7.225,22.463,6.414,30.771-1.898l57.015-57.031
-                            c8.307-8.308,9.117-21.504,1.893-30.768l-34.641-44.409c1.012-2.313,1.978-4.647,2.898-7.002l55.901-6.903
-                            c11.661-1.44,20.421-11.348,20.421-23.097v-80.64C512,203.927,503.243,194.022,491.584,192.579z M465.455,275.74l-49.864,6.158
-                            c-9.151,1.131-16.772,7.556-19.431,16.386c-2.813,9.337-6.56,18.387-11.138,26.903c-4.367,8.124-3.525,18.063,2.147,25.335
-                            l30.898,39.613l-27.924,27.932l-39.621-30.905c-7.269-5.668-17.202-6.513-25.327-2.15c-8.513,4.572-17.565,8.319-26.905,11.134
-                            c-8.827,2.661-15.25,10.279-16.381,19.427l-6.169,49.883h-39.492l-6.167-49.883c-1.131-9.146-7.551-16.763-16.375-19.425
-                            c-9.367-2.825-18.417-6.571-26.899-11.132c-8.122-4.369-18.061-3.527-25.336,2.147l-39.615,30.902L93.929,390.13l30.897-39.618
-                            c5.671-7.273,6.513-17.206,2.147-25.328c-4.568-8.501-8.315-17.554-11.137-26.911c-2.662-8.825-10.282-15.247-19.43-16.376
-                            l-49.861-6.156v-39.492l49.866-6.167c9.146-1.131,16.763-7.551,19.423-16.375c2.824-9.356,6.572-18.406,11.143-26.9
-                            c4.374-8.124,3.533-18.067-2.143-25.342l-30.903-39.62l27.924-27.918l39.62,30.902c7.273,5.672,17.209,6.513,25.335,2.146
-                            c8.493-4.565,17.541-8.31,26.896-11.132c8.825-2.662,15.247-10.279,16.378-19.427l6.166-49.867h39.494l6.169,49.869
-                            c1.133,9.148,7.557,16.767,16.384,19.427c9.328,2.811,18.379,6.557,26.902,11.135c8.122,4.364,18.055,3.522,25.325-2.149
-                            l39.616-30.894l27.927,27.912l-30.897,39.618c-5.666,7.267-6.513,17.191-2.158,25.311c4.58,8.54,8.328,17.599,11.138,26.923
-                            c2.661,8.825,10.279,15.248,19.427,16.381l49.878,6.169V275.74z"/>
-                    </g>
-                </g>
-                <g>
-                    <g>
-                        <path d="M255.997,155.153c-55.606,0-100.845,45.244-100.845,100.856c0,55.603,45.239,100.839,100.845,100.839
-                            c55.609,0,100.852-45.236,100.852-100.839C356.849,200.397,311.606,155.153,255.997,155.153z M255.997,310.303
-                            c-29.941,0-54.3-24.356-54.3-54.294c0-29.947,24.359-54.311,54.3-54.311c29.944,0,54.306,24.363,54.306,54.311
-                            C310.303,285.947,285.941,310.303,255.997,310.303z"/>
-                    </g>
-                </g>
-                </svg>
-            </button>
-        </div>
-        <div id="rollijn" class="dashed"></div>`
+            `<style>
+                #control-buttons-row {
+                    position: fixed;
+                    bottom: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(240, 240, 245, 0.95);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    border-radius: 50px;
+                    padding: 8px 20px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+                    display: flex;
+                    gap: 12px;
+                    align-items: center;
+                    z-index: 10000;
+                    border: 1px solid rgba(0,0,0,0.08);
+                }
+                #control-buttons-row .toolbar-btn {
+                    background: transparent;
+                    border: none;
+                    cursor: pointer;
+                    padding: 8px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: background 0.15s ease;
+                }
+                #control-buttons-row .toolbar-btn:hover {
+                    background: rgba(0,0,0,0.08);
+                }
+                #control-buttons-row .toolbar-btn svg {
+                    width: 20px;
+                    height: 20px;
+                    fill: #333;
+                    stroke: #333;
+                }
+                #control-buttons-row .toolbar-divider {
+                    width: 1px;
+                    height: 24px;
+                    background: rgba(0,0,0,0.15);
+                }
+                #extra-tools-menu-dock {
+                    display: none;
+                    position: fixed;
+                    bottom: 70px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(255,255,255,0.95);
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(0,0,0,0.1);
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                    padding: 12px 16px;
+                    z-index: 10001;
+                    border-radius: 12px;
+                    min-width: 160px;
+                    text-align: left;
+                }
+                #extra-tools-menu-dock label,
+                #extra-tools-menu-dock button {
+                    display: block;
+                    width: 100%;
+                    text-align: left;
+                    padding: 8px 10px;
+                    font-size: 14px;
+                    cursor: pointer;
+                    border: none;
+                    background: transparent;
+                    border-radius: 6px;
+                }
+                #extra-tools-menu-dock label:hover,
+                #extra-tools-menu-dock button:hover {
+                    background: rgba(0,0,0,0.06);
+                }
+            </style>
+            <div id="control-buttons-row">
+                <button class="toolbar-btn" onclick="toggleFullscreen(event)" title="Fullscreen">
+                    <svg viewBox="0 0 14 14"><path d="M2,9 L0,9 L0,14 L5,14 L5,12 L2,12 L2,9 Z M0,5 L2,5 L2,2 L5,2 L5,0 L0,0 L0,5 Z M12,12 L9,12 L9,14 L14,14 L14,9 L12,9 L12,12 Z M9,0 L9,2 L12,2 L12,5 L14,5 L14,0 L9,0 Z"/></svg>
+                </button>
+                <div class="toolbar-divider"></div>
+                <button class="toolbar-btn" onclick="resizePageFitToWidth()" title="Fit Width">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="8 8 4 12 8 16"/><polyline points="16 8 20 12 16 16"/><line x1="4" y1="4" x2="4" y2="20"/><line x1="20" y1="4" x2="20" y2="20"/></svg>
+                </button>
+                <button class="toolbar-btn" onclick="resizePageFitToHeight()" title="Fit Height">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="12" y1="4" x2="12" y2="20"/><polyline points="8 8 12 4 16 8"/><polyline points="8 16 12 20 16 16"/><line x1="4" y1="4" x2="20" y2="4"/><line x1="4" y1="20" x2="20" y2="20"/></svg>
+                </button>
+                <button class="toolbar-btn" onclick="toggleTwoUpMode()" id="two-up-button" title="Two-Page View">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="8" height="18" rx="1"/><rect x="14" y="3" width="8" height="18" rx="1"/></svg>
+                </button>
+                <div class="toolbar-divider"></div>
+                <button class="toolbar-btn" onclick="resizeDematenAndCanvas(90)" title="Zoom Out">
+                    <svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7" fill="none" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke-width="2"/><line x1="7" y1="10" x2="13" y2="10" stroke-width="2"/></svg>
+                </button>
+                <button class="toolbar-btn" onclick="resizeDematenAndCanvas(110)" title="Zoom In">
+                    <svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7" fill="none" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke-width="2"/><line x1="7" y1="10" x2="13" y2="10" stroke-width="2"/><line x1="10" y1="7" x2="10" y2="13" stroke-width="2"/></svg>
+                </button>
+                <div class="toolbar-divider"></div>
+                <button class="toolbar-btn" id="play-pause-button" title="Play/Pause">
+                    <svg id="play-icon" viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <svg id="pause-icon" style="display:none" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+                <div class="toolbar-divider"></div>
+                <button class="toolbar-btn" id="more-tools-btn-dock" onclick="toggleExtraToolsDock(event)" title="More">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                </button>
+            </div>
+            <div id="extra-tools-menu-dock">
+                <label style="display:flex; align-items:center;"><input type="checkbox" id="invert-check-dock" style="margin-right:10px;"> Dark Mode</label>
+                <button id="share-btn-dock">Share Link</button>
+            </div>
+            <div id="rollijn" class="dashed"></div>`
         ).appendTo($notation);
     }
     setRollijnVisible(!window.twoUpMode);
     if (typeof setZoomControlsEnabled === 'function') {
         setZoomControlsEnabled(!window.twoUpMode);
     }
-    addInvertButtonListener();
-    addShareButtonListener();
+
+
+    // Toggle logic for the dock dropdown
+    window.toggleExtraToolsDock = function (e) {
+        e.stopPropagation();
+        const menu = $('#extra-tools-menu-dock');
+        menu.toggle();
+    };
+
+    // Close on click outside
+    $(document).off('click.dockMenu').on('click.dockMenu', function (e) {
+        if (!$(e.target).closest('#extra-tools-menu-dock, #more-tools-btn-dock').length) {
+            $('#extra-tools-menu-dock').hide();
+        }
+    });
+
+    // Wire up new Dock Menu Items
+    // Dark Mode
+    $('#invert-check-dock').off('change').on('change', function () {
+        const isDark = $(this).is(':checked');
+        $('html, #notation, #vidyub, #tooltip').css('filter', isDark ? 'invert(0.85)' : 'none');
+    });
+
+    // Share Link
+    $('#share-btn-dock').off('click').on('click', function () {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            const btn = $(this);
+            const originalText = btn.text();
+            btn.text('Copied!');
+            setTimeout(() => btn.text(originalText), 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            prompt("Copy this link:", url);
+        });
+    });
+
+    // Position toolbar centered on #notation (not viewport) when not fullscreen
+    function repositionToolbar() {
+        const toolbar = document.getElementById('control-buttons-row');
+        const toolbarMenu = document.getElementById('extra-tools-menu-dock');
+        const notation = document.getElementById('notation');
+        if (!toolbar || !notation) return;
+
+        const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+
+        if (isFullscreen) {
+            // Center on viewport
+            toolbar.style.left = '50%';
+            toolbar.style.transform = 'translateX(-50%)';
+            if (toolbarMenu) {
+                toolbarMenu.style.left = '50%';
+                toolbarMenu.style.transform = 'translateX(-50%)';
+            }
+        } else {
+            // Center on #notation
+            const notationRect = notation.getBoundingClientRect();
+            const centerX = notationRect.left + (notationRect.width / 2);
+            toolbar.style.left = centerX + 'px';
+            toolbar.style.transform = 'translateX(-50%)';
+            if (toolbarMenu) {
+                toolbarMenu.style.left = centerX + 'px';
+                toolbarMenu.style.transform = 'translateX(-50%)';
+            }
+        }
+    }
+
+    // Initial positioning and on fullscreen change
+    repositionToolbar();
+    $(document).on('fullscreenchange webkitfullscreenchange', repositionToolbar);
+
     initIntersectionObserver(); // Initialize observer for page rendering 
     setupPlayPauseButton();
     this.maatloper = $('<div class="demaat" style="background:' + globalHighlightColor + '; opacity:0.2; left:0px; top:0px; width:0px; height:0px; z-index:2"></div>');
@@ -1227,7 +1250,7 @@ function readPdf$$module$synpdf(pdfData, dataType) {
                 const progressInfo = document.getElementById('progress-info');
                 if (progressBar && progressInfo) {
                     progressBar.value = percentComplete;
-                    progressInfo.textContent = `${loadedMB}MB/${totalMB}MB - ${speedMBps}MBps`;
+                    progressInfo.textContent = `${loadedMB} MB / ${totalMB} MB - ${speedMBps} MBps`;
                 }
 
                 $("#loadingMessage2").hide();
@@ -1417,7 +1440,7 @@ function renderPageIfNotRendered(pageIndex) {
                 // Ignore cancellation errors
                 return;
             }
-            console.error(`[PDF] Render failed for page ${pageIndex}:`, err);
+            console.error(`[PDF] Render failed for page ${pageIndex}: `, err);
             renderingStatus[pageIndex] = 'idle';
         });
     });
@@ -2179,6 +2202,8 @@ $(document).ready(function () {
     });
 
     window.addEventListener('resize', () => {
+        // Skip if in the middle of a fullscreen toggle - refreshAfterFullscreen handles it
+        if (window.__isTogglingFullscreen) return;
         clearTimeout(vpTimer);
         vpTimer = setTimeout(reflowForViewportChange, 150);
     }, { passive: true });
