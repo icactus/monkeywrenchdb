@@ -1527,29 +1527,17 @@ function countVsys$$module$synpdf(a, b, c) {
     c = h;
     d = [d];
     l = [h];
-    var sysprf = $("#sysprf").prop("checked") || opt$$module$synpdf.sysprf;
-    // $("#sysprf").prop("checked") && f.reverse(); // Disable reverse to keep b=Small, c=Large logic consistent
-
+    $("#sysprf").prop("checked") && f.reverse();
     for (k = 1; k < f.length - 1; ++k) h = f[k], h - b > c - h ? l.push(h) : d.push(h), b = d.reduce(function (a, b) {
         return a + b
     }, 0) / d.length, c = l.reduce(function (a, b) {
         return a + b
     }, 0) / l.length;
-
-    // Use a robust relative threshold: System gaps (c) must be at least 2x larger than non-system gaps (b)
-    d = c > 2.0 * b;
-
-    for (f = 0; f < a.length - 1; ++f) {
-        h = p[f];
-        // If sysprf (Prefer Systems): Merge on Small Gaps (h close to b) -> h - b < c - h
-        // Else (Default/Single): Split on Small Gaps (Merge only if h close to c/Large) -> h - b > c - h
-        var shouldMerge = sysprf ? (h - b < c - h) : (h - b > c - h);
-
-        d & shouldMerge || 0 == opt$$module$synpdf.drmpl2 ? a[f + 1] = a[f].concat(a[f + 1]) : g.push({
-            cs: a[f],
-            xs: m[f]
-        });
-    }
+    d = c > opt$$module$synpdf.drmpl2 * b && 5 * l.length > d.length && !opt$$module$synpdf.onestf;
+    for (f = 0; f < a.length - 1; ++f) h = p[f], d & h - b > c - h || 0 == opt$$module$synpdf.drmpl2 ? a[f + 1] = a[f].concat(a[f + 1]) : g.push({
+        cs: a[f],
+        xs: m[f]
+    });
     g.push({
         cs: a[f],
         xs: m[f]
