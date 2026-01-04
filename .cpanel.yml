@@ -23,6 +23,8 @@ deployment:
     - /bin/cp get_recording_from_url.php $DEPLOYPATH
     - /bin/cp get_youtube_ids.php $DEPLOYPATH
     - /bin/cp history_api.php $DEPLOYPATH
+    - /bin/cp admin-live-edit.js $DEPLOYPATH
+    - /bin/cp update_monkeywrench_metric_arr.php $DEPLOYPATH
     - /bin/cp -R assets $DEPLOYPATH
 
     - export DEPLOYPATH2=/home/monkcdmb/phpfiles/
