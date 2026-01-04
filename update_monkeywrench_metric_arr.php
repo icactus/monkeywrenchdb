@@ -22,6 +22,8 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
 // 2. Database Connection
 if (file_exists('phpfiles/config.php')) {
     require_once 'phpfiles/config.php';
+} elseif (file_exists('../phpfiles/config.php')) {
+    require_once '../phpfiles/config.php';
 } else {
     // Fallback or error if config is missing
     echo json_encode(['success' => false, 'message' => 'Database configuration missing.']);
