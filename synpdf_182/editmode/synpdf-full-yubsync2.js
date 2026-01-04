@@ -37,21 +37,21 @@ function logerr$$module$mixer(a) {
 }
 
 function readAudio$$module$mixer(a) {
-    return $jscomp.asyncExecutePromiseGeneratorProgram(function(b) {
-        return b.return(new Promise(function(b, d) {
+    return $jscomp.asyncExecutePromiseGeneratorProgram(function (b) {
+        return b.return(new Promise(function (b, d) {
             var c = new XMLHttpRequest;
             c.open("GET", a, !0);
             c.responseType = "arraybuffer";
-            c.onload = function() {
-                audioCtx$$module$mixer.decodeAudioData(c.response, function(c) {
+            c.onload = function () {
+                audioCtx$$module$mixer.decodeAudioData(c.response, function (c) {
                     logerr$$module$mixer("url: " + a + ", duration: " + c.duration.toFixed(3) + " seconds");
                     $("#loadmsg").append("<br>url: " + a + ", duration: " + c.duration.toFixed(3) + " seconds");
                     b(c)
-                }, function(a) {
+                }, function (a) {
                     d("decode audio error or file missing")
                 })
             };
-            c.onerror = function(a) {
+            c.onerror = function (a) {
                 d("XHR read error")
             };
             c.send()
@@ -61,7 +61,7 @@ function readAudio$$module$mixer(a) {
 
 function mkAudBuffers$$module$mixer() {
     var a, b, c, d, e;
-    return $jscomp.asyncExecutePromiseGeneratorProgram(function(f) {
+    return $jscomp.asyncExecutePromiseGeneratorProgram(function (f) {
         switch (f.nextAddress) {
             case 1:
                 a = duration$$module$mixer = 0;
@@ -135,7 +135,7 @@ function mute$$module$mixer(a) {
 
 function solo$$module$mixer(a) {
     var b = 1 * a.target.id.replace("solo", "");
-    b == soloTrk$$module$mixer ? (tracksOn$$module$mixer = tracksOnPrev$$module$mixer.slice(), tracksOnPrev$$module$mixer = null, soloTrk$$module$mixer = -1) : (tracksOnPrev$$module$mixer || (tracksOnPrev$$module$mixer = tracksOn$$module$mixer.slice()), tracksOn$$module$mixer = tracksOn$$module$mixer.map(function(a, d) {
+    b == soloTrk$$module$mixer ? (tracksOn$$module$mixer = tracksOnPrev$$module$mixer.slice(), tracksOnPrev$$module$mixer = null, soloTrk$$module$mixer = -1) : (tracksOnPrev$$module$mixer || (tracksOnPrev$$module$mixer = tracksOn$$module$mixer.slice()), tracksOn$$module$mixer = tracksOn$$module$mixer.map(function (a, d) {
         return d == b ? 1 : 0
     }), soloTrk$$module$mixer = b);
     setButtons$$module$mixer()
@@ -164,7 +164,7 @@ function setpan$$module$mixer(a) {
 }
 
 function setTrkNames$$module$mixer(a) {
-    for (var b = urls$$module$mixer.map(function(a) {
+    for (var b = urls$$module$mixer.map(function (a) {
         return a.split("/").pop().split(".")[0]
     }), c = document.getElementById("buttons"), d = 0; d < b.length; ++d) {
         var e = "hrz" == a || "left" == a ? trkhrz$$module$mixer : trkvrt$$module$mixer;
@@ -172,7 +172,7 @@ function setTrkNames$$module$mixer(a) {
         c.insertAdjacentHTML("beforeend", e)
     }
     "hrz" == a || "left" == a ? c.insertAdjacentHTML("beforeend", msthrz$$module$mixer + posblk$$module$mixer) : c.insertAdjacentHTML("beforeend", mstvrt$$module$mixer + posblk$$module$mixer);
-    tracksOn$$module$mixer = b.map(function(a) {
+    tracksOn$$module$mixer = b.map(function (a) {
         return 1
     });
     "left" == a && (document.body.style["flex-direction"] = "row", c.style["flex-direction"] = "column");
@@ -182,7 +182,7 @@ function setTrkNames$$module$mixer(a) {
 function setTrkHandlers$$module$mixer() {
     playbtn$$module$mixer = document.getElementById("play");
     playbtn$$module$mixer.disabled = "true";
-    playbtn$$module$mixer.addEventListener("click", function(a) {
+    playbtn$$module$mixer.addEventListener("click", function (a) {
         return keyDown$$module$synpdf({
             key: " "
         })
@@ -193,13 +193,13 @@ function setTrkHandlers$$module$mixer() {
     progressElm$$module$mixer = document.getElementById("pro2");
     progressElm$$module$mixer.value = 0;
     progressElm$$module$mixer.addEventListener("input",
-        function(a) {
+        function (a) {
             playing$$module$mixer && (wasplaying$$module$mixer = 1, startstop$$module$mixer(0));
             playPos$$module$mixer = a = duration$$module$mixer * progressElm$$module$mixer.value;
             posElm$$module$mixer.innerHTML = a.toFixed(1);
             tick$$module$synpdf()
         });
-    progressElm$$module$mixer.addEventListener("change", function(a) {
+    progressElm$$module$mixer.addEventListener("change", function (a) {
         wasplaying$$module$mixer && startstop$$module$mixer(playPos$$module$mixer);
         wasplaying$$module$mixer = 0;
         progressElm$$module$mixer.blur()
@@ -207,28 +207,28 @@ function setTrkHandlers$$module$mixer() {
     for (var a = 0; a < urls$$module$mixer.length; ++a) {
         var b = document.getElementById("mute" +
             a);
-        b.addEventListener("click", function(a) {
+        b.addEventListener("click", function (a) {
             return mute$$module$mixer(a)
         });
         b = document.getElementById("solo" + a);
-        b.addEventListener("click", function(a) {
+        b.addEventListener("click", function (a) {
             return solo$$module$mixer(a)
         });
         b = document.getElementById("vol" + a);
-        b.addEventListener("input", function(a) {
+        b.addEventListener("input", function (a) {
             return setvol$$module$mixer(a)
         });
         b = document.getElementById("pan" + a);
-        b.addEventListener("input", function(a) {
+        b.addEventListener("input", function (a) {
             return setpan$$module$mixer(a)
         })
     }
     b = document.getElementById("mstr");
-    b.addEventListener("input", function(a) {
+    b.addEventListener("input", function (a) {
         return setmstr$$module$mixer()
     });
     (b =
-        document.getElementById("mute5")) && b.addEventListener("click", function(a) {
+        document.getElementById("mute5")) && b.addEventListener("click", function (a) {
             return mutemstr$$module$mixer()
         })
 }
@@ -246,7 +246,7 @@ function setTrkOrient$$module$mixer(a) {
 
 function initMixer$$module$mixer(a, b) {
     var c, d, e;
-    return $jscomp.asyncExecutePromiseGeneratorProgram(function(f) {
+    return $jscomp.asyncExecutePromiseGeneratorProgram(function (f) {
         if (1 == f.nextAddress) {
             urls$$module$mixer = a;
             c = document.querySelector("style");
@@ -297,17 +297,17 @@ var mixplayer$$module$mixer = {
     get paused() {
         return !playing$$module$mixer
     },
-    init: function(a, b, c) {
+    init: function (a, b, c) {
         return initMixer$$module$mixer(a, b, c)
     },
-    setTrkOrient: function(a) {
+    setTrkOrient: function (a) {
         return setTrkOrient$$module$mixer(a)
     },
-    play: function() {
+    play: function () {
         playing$$module$mixer ||
             startstop$$module$mixer(playPos$$module$mixer)
     },
-    pause: function() {
+    pause: function () {
         playing$$module$mixer && startstop$$module$mixer(0)
     }
 },
@@ -428,9 +428,9 @@ function initGlobals$$module$synpdf() {
     gFac$$module$synpdf = .1;
     pdfDoc$$module$synpdf = {};
     jpgData$$module$synpdf = pdfData$$module$synpdf = null;
-    (deTijden$$module$synpdf = times_arr$$module$synpdf ? times_arr$$module$synpdf : []) && deTijden$$module$synpdf.length && deTijden$$module$synpdf[0].length && (deTijden$$module$synpdf = deTijden$$module$synpdf.reduce(function(a, b) {
+    (deTijden$$module$synpdf = times_arr$$module$synpdf ? times_arr$$module$synpdf : []) && deTijden$$module$synpdf.length && deTijden$$module$synpdf[0].length && (deTijden$$module$synpdf = deTijden$$module$synpdf.reduce(function (a, b) {
         return a.concat(b.slice(1))
-    }), deTijden$$module$synpdf = deTijden$$module$synpdf.map(function(a, b) {
+    }), deTijden$$module$synpdf = deTijden$$module$synpdf.map(function (a, b) {
         return {
             t: a,
             mix: b
@@ -468,7 +468,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     this.cursorTime = 0;
     this.time_ix = d;
     var e = this;
-    setTimeout(function() {
+    setTimeout(function () {
         e.setOffsetX.call(e)
     }, 0);
     this.line = c;
@@ -478,7 +478,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     this.sinfo = $("#sync_info");
     this.paused = !0
 }
-Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
+Wijzer$$module$synpdf.prototype.drawRepTokens = function () {
     function a(a, b, c) {
         var d = b[0],
             f = b[1],
@@ -500,18 +500,18 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function() {
     var b = [],
         c = [];
     $(".reptkn").remove();
-    repMaten$$module$synpdf.forEach(function(d) {
+    repMaten$$module$synpdf.forEach(function (d) {
         a(d.jmp, d.tkj, b);
         void 0 != d.dst && a(d.dst, d.tkd, c)
     });
     $(".reptkn").toggle(!!opt$$module$synpdf.synbox)
 };
-Wijzer$$module$synpdf.prototype.setRepeat = function(a) {
+Wijzer$$module$synpdf.prototype.setRepeat = function (a) {
     var b = repMaten$$module$synpdf[repMaten$$module$synpdf.length - 1];
     b && void 0 == b.dst ? (b.dst = a, b.tkd = [0, "red", "Repeat_", repMaten$$module$synpdf.length]) : (b = {}, repMaten$$module$synpdf.push(b), b.jmp = a, b.tkj = [.75, "blue", "Jump_", repMaten$$module$synpdf.length]);
     this.drawRepTokens()
 };
-Wijzer$$module$synpdf.prototype.setOffsetX = function() {
+Wijzer$$module$synpdf.prototype.setOffsetX = function () {
     var a = this.xoffset || 0;
     this.xoffset = this.$cvs.offset().left;
     0 <= this.cursorTime && this.time2x(this.cursorTime);
@@ -525,7 +525,7 @@ Wijzer$$module$synpdf.prototype.setOffsetX = function() {
     this.draw_annots(opt$$module$synpdf.annot);
     this.drawRepTokens()
 };
-Wijzer$$module$synpdf.prototype.time2x = function(a) {
+Wijzer$$module$synpdf.prototype.time2x = function (a) {
     var b, c;
     this.cursorTime = a;
     for (b = deTijden$$module$synpdf.length - 1; 0 <= b; --b) {
@@ -560,7 +560,7 @@ Wijzer$$module$synpdf.prototype.time2x = function(a) {
         }
     }
 };
-Wijzer$$module$synpdf.prototype.drawTags = function() {
+Wijzer$$module$synpdf.prototype.drawTags = function () {
     var a = this.width;
     var b = opt$$module$synpdf.cropx;
     for (var c in {
@@ -576,7 +576,7 @@ Wijzer$$module$synpdf.prototype.drawTags = function() {
             this[c].css("top", d.toFixed(2) + "px").text("atag" == c ? "<" : ">")
         }
 };
-Wijzer$$module$synpdf.prototype.doLoopTag = function(a, b, c, d, e, f) {
+Wijzer$$module$synpdf.prototype.doLoopTag = function (a, b, c, d, e, f) {
     function g(g, h, m) {
         opt$$module$synpdf.lncsr || (lpRec$$module$synpdf.loopStart == d + TOFF$$module$synpdf && (g = "btag", m = "loopEnd"), lpRec$$module$synpdf.loopEnd == e - TOFF$$module$synpdf && (g = "atag", m = "loopStart"), "loopStart" == m ? (a = f.x1, c = d + TOFF$$module$synpdf) : (a = f.x2, c = e - TOFF$$module$synpdf));
         lpRec$$module$synpdf[g] = {
@@ -604,7 +604,7 @@ Wijzer$$module$synpdf.prototype.doLoopTag = function(a, b, c, d, e, f) {
             m < n ? g("atag", 3, "loopStart") : g("btag", 3, "loopEnd")
     }
 };
-Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
+Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
     var d;
     for (d = 0; d < deMaten$$module$synpdf.length; ++d) {
         var e = deMaten$$module$synpdf[d];
@@ -640,7 +640,7 @@ Wijzer$$module$synpdf.prototype.x2time = function(a, b, c) {
         }
     }
 };
-Wijzer$$module$synpdf.prototype.keySync = function(keyType) {
+Wijzer$$module$synpdf.prototype.keySync = function (keyType) {
     if (opt$$module$synpdf.synbox) {
         this.paused && keyDown$$module$synpdf({
             key: " "
@@ -677,20 +677,20 @@ Wijzer$$module$synpdf.prototype.keySync = function(keyType) {
             deMaten$$module$synpdf.length - 1 && (opt$$module$synpdf.synbox = 0, syncChk$$module$synpdf(), $("#synbox").prop("checked", !1), pauseer$$module$synpdf(), playPause2$$module$synpdf(!1, TOFF$$module$synpdf + offset$$module$synpdf))
     }
 };
-Wijzer$$module$synpdf.prototype.goMsre = function(a, b) {
+Wijzer$$module$synpdf.prototype.goMsre = function (a, b) {
     0 == deTijden$$module$synpdf.length || b.altKey || b.ctrlKey || b.shiftKey || b.metaKey || (b.preventDefault && b.preventDefault(), detix$$module$synpdf += a ? 1 : -1, 0 > detix$$module$synpdf && (detix$$module$synpdf = deTijden$$module$synpdf.length - 1), detix$$module$synpdf >= deTijden$$module$synpdf.length && (detix$$module$synpdf = 0), playPause2$$module$synpdf(!1, deTijden$$module$synpdf[detix$$module$synpdf].t + TOFF$$module$synpdf + offset$$module$synpdf))
 };
-Wijzer$$module$synpdf.prototype.goUpDown = function(a, b, c) {
+Wijzer$$module$synpdf.prototype.goUpDown = function (a, b, c) {
     if (b && opt$$module$synpdf.advncd) c = 1 * opt$$module$synpdf.pagenum, opt$$module$synpdf.pagenum = a ? c + 1 : c - 1, setPagenum$$module$synpdf(c);
     else {
         var d = {},
             e;
         if (!(c.altKey || c.ctrlKey || c.shiftKey || c.metaKey)) {
             c.preventDefault && c.preventDefault();
-            deMaten$$module$synpdf.forEach(function(a) {
+            deMaten$$module$synpdf.forEach(function (a) {
                 return d[a.y + a.h] = 1
             });
-            d = Object.keys(d).sort(function(a, b) {
+            d = Object.keys(d).sort(function (a, b) {
                 return a - b
             });
             var f = deMaten$$module$synpdf[demix$$module$synpdf];
@@ -706,18 +706,18 @@ Wijzer$$module$synpdf.prototype.goUpDown = function(a, b, c) {
         }
     }
 };
-Wijzer$$module$synpdf.prototype.showSyncInfo = function() {
+Wijzer$$module$synpdf.prototype.showSyncInfo = function () {
     this.sinfo.html("duration&nbsp;measure: " + (detix$$module$synpdf < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[detix$$module$synpdf + 1].t - deTijden$$module$synpdf[detix$$module$synpdf].t : 0).toFixed(3) + " sec.<br>");
     this.sinfo.append("media&nbsp;offset: " + offset$$module$synpdf.toFixed(3) + " sec.")
 };
-Wijzer$$module$synpdf.prototype.changeTimesKeyb = function(a) {
+Wijzer$$module$synpdf.prototype.changeTimesKeyb = function (a) {
     if (!(detix$$module$synpdf >= deTijden$$module$synpdf.length - 1)) {
         var b = deTijden$$module$synpdf[detix$$module$synpdf + 1];
         b.t += a;
         b.t = Math.round(1E3 * b.t) / 1E3
     }
 };
-Wijzer$$module$synpdf.prototype.changeOffset = function(a) {
+Wijzer$$module$synpdf.prototype.changeOffset = function (a) {
     offset$$module$synpdf += a;
     offset$$module$synpdf = Math.round(1E3 * offset$$module$synpdf) / 1E3;
     for (var b = 1; b < deTijden$$module$synpdf.length; ++b) {
@@ -726,7 +726,7 @@ Wijzer$$module$synpdf.prototype.changeOffset = function(a) {
         c.t = Math.round(1E3 * c.t) / 1E3
     }
 };
-Wijzer$$module$synpdf.prototype.startSync = function() {
+Wijzer$$module$synpdf.prototype.startSync = function () {
     deTijden$$module$synpdf.splice(lastSynced$$module$synpdf + 1);
     lastSynced$$module$synpdf = deTijden$$module$synpdf.length - 1;
     if (-1 == lastSynced$$module$synpdf) {
@@ -747,7 +747,7 @@ Wijzer$$module$synpdf.prototype.startSync = function() {
     } else a = deTijden$$module$synpdf[lastSynced$$module$synpdf],
         a.mix < deMaten$$module$synpdf.length - 1 && playPause2$$module$synpdf(!1, a.t + TOFF$$module$synpdf + offset$$module$synpdf)
 };
-Wijzer$$module$synpdf.prototype.setTmargin = function() {
+Wijzer$$module$synpdf.prototype.setTmargin = function () {
     var a = $("#notation").offset().top,
         b = $("#rollijn").offset().top;
     b < a && (b = a + 15, $("#rollijn").css("top", b + "px"));
@@ -761,24 +761,24 @@ Wijzer$$module$synpdf.prototype.setTmargin = function() {
     var cur = (deNot$$module$synpdf && deNot$$module$synpdf.scrollTop) || 0;
     if (target === cur) return;                                  // no-op -> avoid loop
     cancelAnimationFrame(this.__stm_raf || 0);
-    this.__stm_raf = requestAnimationFrame(function() {
+    this.__stm_raf = requestAnimationFrame(function () {
         doeRol$$module$synpdf(target, 1);                          // run after layout settles
     });
 };
 
-Wijzer$$module$synpdf.prototype.compCountIn = function() {
+Wijzer$$module$synpdf.prototype.compCountIn = function () {
     var a = {
         time: 2.5,
         num: 4
     },
-        b = opt$$module$synpdf.bpmsr.split("-").map(function(a) {
+        b = opt$$module$synpdf.bpmsr.split("-").map(function (a) {
             return parseInt(a)
         });
     a.time = (deTijden$$module$synpdf[detix$$module$synpdf + 1].t - deTijden$$module$synpdf[detix$$module$synpdf].t) / b[0] / opt$$module$synpdf.speed;
     a.num = b[0];
     return a
 };
-Wijzer$$module$synpdf.prototype.annot = function(a, b) {
+Wijzer$$module$synpdf.prototype.annot = function (a, b) {
     var c = Math.floor(annot_fontpx$$module$synpdf * msc_wz$$module$synpdf.width / 1E3);
     a = Math.floor(a) - 10;
     b = Math.floor(b) - c / 2;
@@ -792,13 +792,13 @@ Wijzer$$module$synpdf.prototype.annot = function(a, b) {
     });
     this.draw_annots(1)
 };
-Wijzer$$module$synpdf.prototype.draw_annots = function(a) {
+Wijzer$$module$synpdf.prototype.draw_annots = function (a) {
     var b;
     $(".ant").remove();
     var c = msc_wz$$module$synpdf.width;
     var d = opt$$module$synpdf.cropx;
     var e = Math.floor(annot_fontpx$$module$synpdf * c / 1E3);
-    annots$$module$synpdf = annots$$module$synpdf.filter(function(a) {
+    annots$$module$synpdf = annots$$module$synpdf.filter(function (a) {
         return 0 == a.d
     });
     for (b = 0; b < annots$$module$synpdf.length; ++b) {
@@ -830,30 +830,30 @@ function DummyPlayer$$module$synpdf() {
     this.playing = 0;
     initPbRates$$module$synpdf(.1, 2, .05)
 }
-DummyPlayer$$module$synpdf.prototype.pause = function() {
+DummyPlayer$$module$synpdf.prototype.pause = function () {
     this.clearKlok();
     this.paused = !0;
     this.klok = -1;
     hasMixer$$module$synpdf && setPauseState$$module$synpdf(1)
 };
-DummyPlayer$$module$synpdf.prototype.play = function() {
+DummyPlayer$$module$synpdf.prototype.play = function () {
     this.paused = !1;
     if (-1 == this.klok)
         if (hasMixer$$module$synpdf) setPauseState$$module$synpdf(0);
         else {
             var a = this;
-            this.setKlok(function() {
+            this.setKlok(function () {
                 a.currentTime += a.step / 1E3 * opt$$module$synpdf.speed;
                 tick$$module$synpdf()
             }, this.step)
         }
 };
-DummyPlayer$$module$synpdf.prototype.setKlok = function(a, b) {
+DummyPlayer$$module$synpdf.prototype.setKlok = function (a, b) {
     -1 != this.klok && clearInterval(this.klok);
     this.klok = a ? setInterval(a, b) : -1;
     this.paused = !1
 };
-DummyPlayer$$module$synpdf.prototype.clearKlok = function() {
+DummyPlayer$$module$synpdf.prototype.clearKlok = function () {
     -1 != this.klok && clearInterval(this.klok);
     this.klok = -1;
     this.paused = !0;
@@ -861,7 +861,7 @@ DummyPlayer$$module$synpdf.prototype.clearKlok = function() {
 };
 
 function getPage$$module$synpdf(a) {
-    for (var b = 1, c = 0; c <= a && b < deMetriek$$module$synpdf.length;) c += deMetriek$$module$synpdf[b].bxs.reduce(function(a, b) {
+    for (var b = 1, c = 0; c <= a && b < deMetriek$$module$synpdf.length;) c += deMetriek$$module$synpdf[b].bxs.reduce(function (a, b) {
         return a + b.length - 1
     }, 0), b += 1;
     return b - 1
@@ -869,7 +869,7 @@ function getPage$$module$synpdf(a) {
 
 function page2msr$$module$synpdf(a) {
     var b, c = 0;
-    for (b = 1; b < a; ++b) c += deMetriek$$module$synpdf[b].bxs.reduce(function(a, b) {
+    for (b = 1; b < a; ++b) c += deMetriek$$module$synpdf[b].bxs.reduce(function (a, b) {
         return a + b.length - 1
     }, 0);
     return c
@@ -960,8 +960,8 @@ function copyTiming$$module$synpdf(a, b) {
 function knip$$module$synpdf(a, b, c) {
     var d = JSON.parse(JSON.stringify(b.cxs));
     b = JSON.parse(JSON.stringify(b.bxs));
-    d.forEach(function(a) {
-        a.cs = a.cs.map(function(a) {
+    d.forEach(function (a) {
+        a.cs = a.cs.map(function (a) {
             return 1 * a + c;
         })
     });
@@ -1059,7 +1059,7 @@ function readPdfdoc$$module$synpdf() {
     skipn$$module$synpdf = parseInt(opt$$module$synpdf.skipn);
     rendering$$module$synpdf = 1;
     $("#render").html("rendering ...").toggle(!0);
-    pdfDoc$$module$synpdf.src ? setTimeout(function() {  // tries jpeg first, then reads as pdf
+    pdfDoc$$module$synpdf.src ? setTimeout(function () {  // tries jpeg first, then reads as pdf
         goJpeg$$module$synpdf(0)
     },
         100) : goPage$$module$synpdf(1, 0)
@@ -1112,7 +1112,7 @@ function readPdf$$module$synpdf(a, b) {
         pdfDoc$$module$synpdf = new Image();
         pdfDoc$$module$synpdf.crossOrigin = "anonymous";
         pdfDoc$$module$synpdf.src = c;
-        pdfDoc$$module$synpdf.onload = function() {
+        pdfDoc$$module$synpdf.onload = function () {
             hideNotationLoader();
             setBtnLoading(false);             // <— turn spinner OFF
             readPdfdoc$$module$synpdf();
@@ -1122,7 +1122,7 @@ function readPdf$$module$synpdf(a, b) {
         const task = pdfjsLib.getDocument(a);
         updateNotationLoader(0, "Starting download…");
 
-        task.onProgress = function(p) {
+        task.onProgress = function (p) {
             const pct = p.total ? Math.round(100 * p.loaded / p.total) : null;
             const loadedMB = (p.loaded / 1048576).toFixed(1);
             const totalMB = p.total ? (p.total / 1048576).toFixed(1) : "?";
@@ -1132,13 +1132,13 @@ function readPdf$$module$synpdf(a, b) {
             );
         };
 
-        task.promise.then(function(doc) {
+        task.promise.then(function (doc) {
             pdfDoc$$module$synpdf = doc;
             $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
             hideNotationLoader();
             setBtnLoading(false);             // <— turn spinner OFF
             readPdfdoc$$module$synpdf();
-        }).catch(function(err) {
+        }).catch(function (err) {
             updateNotationLoader(null, "Failed to load PDF");
             setTimeout(hideNotationLoader, 1200);
             setBtnLoading(false);             // <— ensure OFF on error too
@@ -1149,7 +1149,7 @@ function readPdf$$module$synpdf(a, b) {
 
 function goPage$$module$synpdf(a, b) {
     opt$$module$synpdf.advncd && (a = 1 * opt$$module$synpdf.pagenum);  // If advanced mode is on, set the page number to the predefined value
-    pdfDoc$$module$synpdf.getPage(a).then(function(page) {
+    pdfDoc$$module$synpdf.getPage(a).then(function (page) {
         $("#render").html("rendering page: " + a + "/" + pdfDoc$$module$synpdf._pdfInfo.numPages);  // Update the HTML element with id='render' with the page number
         var d = page.getViewport({ scale: (deMetriek$$module$synpdf[0] / page._pageInfo.view[2]) });
         var e = document.createElement("canvas");  // Create a canvas element
@@ -1159,7 +1159,7 @@ function goPage$$module$synpdf(a, b) {
         page.render({  // Render the PDF page into the canvas
             canvasContext: f,
             viewport: d
-        }).promise.then(function() {  // After rendering, proceed to further process the page
+        }).promise.then(function () {  // After rendering, proceed to further process the page
             e = compPage$$module$synpdf(e, a, b);
             if (opt$$module$synpdf.advncd) {  // Continue based on global condition variables
                 rendering$$module$synpdf = 0;
@@ -1282,13 +1282,13 @@ function kliklang$$module$synpdf(evt) {
         touch_tb$$module$synpdf = (new Date).getTime();
         var isShift = start.shiftKey;
 
-        $scope.on(touchDev$$module$synpdf ? "touchmove" : "mousemove", function(moveEvt) {
+        $scope.on(touchDev$$module$synpdf ? "touchmove" : "mousemove", function (moveEvt) {
             moveEvt.stopPropagation();
             var m = touchDev$$module$synpdf ? moveEvt.originalEvent.changedTouches[0] : moveEvt;
             touch_moved$$module$synpdf = 10 < Math.abs(m.clientY - startClientY) + Math.abs(m.clientX - startClientX);
         });
 
-        $scope.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function(endEvt) {
+        $scope.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function (endEvt) {
             endEvt.stopPropagation();
             endEvt.preventDefault();
             $scope.off("mousemove touchmove mouseup touchend");
@@ -1333,7 +1333,7 @@ function annot_move$$module$synpdf(evt) {
     touch_moved$$module$synpdf = 0;
     touch_tb$$module$synpdf = (new Date).getTime();
 
-    $scope.on(touchDev$$module$synpdf ? "touchmove" : "mousemove", function(moveEvt) {
+    $scope.on(touchDev$$module$synpdf ? "touchmove" : "mousemove", function (moveEvt) {
         moveEvt.stopPropagation();
         moveEvt.preventDefault();
         var m = touchDev$$module$synpdf ? moveEvt.originalEvent.changedTouches[0] : moveEvt;
@@ -1360,7 +1360,7 @@ function annot_move$$module$synpdf(evt) {
         }
     });
 
-    $scope.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function(upEvt) {
+    $scope.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function (upEvt) {
         upEvt.stopPropagation();
         upEvt.preventDefault();
         if (!touch_moved$$module$synpdf) {
@@ -1415,7 +1415,7 @@ function drawRes$$module$synpdf(a, b, c) {
         a[a.length - 1] - a[0] < 2 * b && (a = []);
         return a
     }
-    a = function(a) {
+    a = function (a) {
         var b, c = a[0],
             d = 0,
             e = 0,
@@ -1434,18 +1434,18 @@ function drawRes$$module$synpdf(a, b, c) {
         }
         return k
     }(a);
-    var e = a.map(function(a) {
+    var e = a.map(function (a) {
         return a.t
-    }).sort(function(a,
+    }).sort(function (a,
         b) {
         return b - a
-    }).slice(0, 10).reduce(function(a, b) {
+    }).slice(0, 10).reduce(function (a, b) {
         return a + b
     }, 0) / 10 * opt$$module$synpdf.drmpl;
-    a = a.filter(function(a) {
+    a = a.filter(function (a) {
         return a.t >= e
     });
-    b = function(a, b) {
+    b = function (a, b) {
         var c = 0,
             d = {};
         for (b = 0; b < a.length; ++b) {
@@ -1454,14 +1454,14 @@ function drawRes$$module$synpdf(a, b, c) {
             d[c] = (d[c] || 0) + 1;
             c = e
         }
-        a = Object.keys(d).sort(function(a, b) {
+        a = Object.keys(d).sort(function (a, b) {
             return d[b] - d[a]
         });
         return parseInt(a[0])
     }(a, b);
     annot_fontpx$$module$synpdf = 4 * b;
     spatium$$module$synpdf = b;
-    b = function(a, b) {
+    b = function (a, b) {
         var c = 4,
             e, f = a[0].y,
             g = [],
@@ -1486,8 +1486,8 @@ function drawRes$$module$synpdf(a, b, c) {
         h.length && g.push(d(h, b));
         return g
     }(a, b);
-    b.map(function(a) {
-        return a.reduce(function(a, b) {
+    b.map(function (a) {
+        return a.reduce(function (a, b) {
             return a + b
         }) / a.length
     });
@@ -1549,7 +1549,7 @@ function countVsys$$module$synpdf(a, b, c) {
                     for (e =
                         d; d < h.length && h[d] <= k - 5;) d += 1;
                     l.push([e, d - 1])
-                } l.sort(function(a, b) {
+                } l.sort(function (a, b) {
                     return b[1] - b[0] - (a[1] - a[0])
                 });
             h = l[0][0];
@@ -1577,7 +1577,7 @@ function countVsys$$module$synpdf(a, b, c) {
         0 < k && p.push(k)
     }
     f = p.slice();
-    f.sort(function(a, b) {
+    f.sort(function (a, b) {
         return a - b
     });
     d = f[0];
@@ -1587,9 +1587,9 @@ function countVsys$$module$synpdf(a, b, c) {
     d = [d];
     l = [h];
     $("#sysprf").prop("checked") && f.reverse();
-    for (k = 1; k < f.length - 1; ++k) h = f[k], h - b > c - h ? l.push(h) : d.push(h), b = d.reduce(function(a, b) {
+    for (k = 1; k < f.length - 1; ++k) h = f[k], h - b > c - h ? l.push(h) : d.push(h), b = d.reduce(function (a, b) {
         return a + b
-    }, 0) / d.length, c = l.reduce(function(a, b) {
+    }, 0) / d.length, c = l.reduce(function (a, b) {
         return a + b
     }, 0) / l.length;
     d = c > opt$$module$synpdf.drmpl2 * b && 5 * l.length > d.length && !opt$$module$synpdf.onestf;
@@ -1643,7 +1643,7 @@ function findBarLines$$module$synpdf(a, b, c) {
             y.push(B)
         }
         f = y.slice(q, u);
-        f.sort(function(a, b) {
+        f.sort(function (a, b) {
             return b - a
         });
         k = f[0];
@@ -1689,7 +1689,7 @@ function readDbxFile$$module$synpdf(a) {
     $("#wait").toggle(!0);
     $("#err").text("link: " +
         b + "\n");
-    /(pdf$)|(jpe?g$)/i.test(a[1]) ? (pdfFnm$$module$synpdf = b, readPdf$$module$synpdf(b, "url")) : get_file$$module$synpdf(b, function(a) {
+    /(pdf$)|(jpe?g$)/i.test(a[1]) ? (pdfFnm$$module$synpdf = b, readPdf$$module$synpdf(b, "url")) : get_file$$module$synpdf(b, function (a) {
         0 <= a.indexOf("//# This page") || 0 <= xs.indexOf("play_list") ? (initPreload$$module$synpdf(), evalPreload$$module$synpdf(a), msc_check_preload$$module$synpdf()) : $("#wait").append("<br>not a preload file")
     })
 }
@@ -1733,7 +1733,7 @@ function readLocalFile$$module$synpdf(file = null) {
     initLoopRec$$module$synpdf();
 
     var reader = new FileReader();
-    reader.onload = function() {
+    reader.onload = function () {
         readPdfOrJs$$module$synpdf(reader.result);
     };
 
@@ -1794,13 +1794,13 @@ function yubApiReady$$module$synpdf() {
             disablekb: 1 // keyboard controls mess up measure nav
         },
         events: {
-            onReady: function() {
+            onReady: function () {
                 $("#yubuse").prop("checked", !0);
                 // Not needed
                 //medbtnSwitch$$module$synpdf();
                 yubload$$module$synpdf()
             },
-            onStateChange: function(a) {
+            onStateChange: function (a) {
                 a.data == YT.PlayerState.PLAYING ? (dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100), setSpeed$$module$synpdf(0), setPauseState$$module$synpdf(!1)) : (dummyPlayer$$module$synpdf.clearKlok(), setPauseState$$module$synpdf(!0));
                 a.data == YT.PlayerState.CUED && setNotationHeight$$module$synpdf()
             }
@@ -1844,20 +1844,20 @@ function setPlayer$$module$synpdf(a, b) {
         /\.ogg$/i.test(b) && (elmed$$module$synpdf.canPlayType("audio/ogg") || (b = b.replace(/\.ogg$/i, ".mp3")));
         /\.webm$/i.test(b) && (elmed$$module$synpdf.canPlayType("video/webm") || (b = b.replace(/\.webm$/i, ".mp4")));
         a.attr("src", b);
-        a.on("timeupdate", function() {
+        a.on("timeupdate", function () {
             hasMixer$$module$synpdf ? .5 < Math.abs(mixplayer$$module$mixer.currentTime - elmed$$module$synpdf.currentTime) &&
                 (mixplayer$$module$mixer.currentTime = elmed$$module$synpdf.currentTime, tick$$module$synpdf()) : tick$$module$synpdf()
         });
-        a.on("playing", function() {
+        a.on("playing", function () {
             dummyPlayer$$module$synpdf.setKlok(null, 0);
             elmed$$module$synpdf.playbackRate = opt$$module$synpdf.speed;
             setPauseState$$module$synpdf(!1)
         });
-        a.on("pause", function() {
+        a.on("pause", function () {
             dummyPlayer$$module$synpdf.clearKlok();
             setPauseState$$module$synpdf(!0)
         });
-        a.on("loadedmetadata", function() {
+        a.on("loadedmetadata", function () {
             setNotationHeight$$module$synpdf();
             elmed$$module$synpdf.currentTime = c
         });
@@ -1865,7 +1865,7 @@ function setPlayer$$module$synpdf(a, b) {
             2, .05);
         setSpeed$$module$synpdf(0);
         setNotationHeight$$module$synpdf() // below media_height is changed from 30% to 200px
-    } else yubchk$$module$synpdf = 1, opt$$module$synpdf.media_height || (opt$$module$synpdf.media_height = "200px"), $("#vid, #aud").css("display", "none"), $("#vidyub").css("display", "inline-block"), yubload$$module$synpdf(function() {
+    } else yubchk$$module$synpdf = 1, opt$$module$synpdf.media_height || (opt$$module$synpdf.media_height = "200px"), $("#vid, #aud").css("display", "none"), $("#vidyub").css("display", "inline-block"), yubload$$module$synpdf(function () {
         elmed$$module$synpdf = ybplayer$$module$synpdf;
         /// pbrates$$module$synpdf = elmed$$module$synpdf.getAvailablePlaybackRates();     ///COMMENTING OUT ALLOWS YOUTUBE RATES AT 0.05 SPEED INCREMENT
         setSpeed$$module$synpdf(0);
@@ -1895,13 +1895,13 @@ function msc_shift$$module$synpdf(a) {
             d = b ? a.originalEvent.touches[0].clientY : a.pageY,
             e = $("#buttons").height();
         c.css("cursor", "row-resize");
-        c.on(b ? "touchmove" : "mousemove", function(a) {
+        c.on(b ? "touchmove" : "mousemove", function (a) {
             var c = $("body").height();
             opt$$module$synpdf.media_height = (100 * (e + (b ? a.originalEvent.touches[0].clientY : a.clientY) - d) / c).toFixed() + "%";
             $("#buttons").css("height",
                 opt$$module$synpdf.media_height)
         });
-        c.on(b ? "touchend" : "mouseup", function(a) {
+        c.on(b ? "touchend" : "mouseup", function (a) {
             c.css("cursor", "initial");
             $("#buttons").toggleClass("rolgroen", !1);
             c.off("mousemove touchmove mouseup touchend");
@@ -1916,13 +1916,13 @@ function lijn_shift$$module$synpdf(a) {
     var b = "touchstart" == a.type;
     $("#rollijn").toggleClass("rolgroen");
     var c = b ? $("#rollijn") : $("body");
-    c.on(b ? "touchmove" : "mousemove", function(a) {
+    c.on(b ? "touchmove" : "mousemove", function (a) {
         $("#notation").offset();
         opt$$module$synpdf.offrol = (100 * ((b ? a.originalEvent.touches[0].clientY : a.clientY) - dottedHeight$$module$synpdf / 2) / document.body.clientHeight).toFixed(2) + "%";
         $("#rollijn").css("top", opt$$module$synpdf.offrol);
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin()
     });
-    c.on(b ? "touchend" : "mouseup", function(a) {
+    c.on(b ? "touchend" : "mouseup", function (a) {
         c.off("mousemove touchmove mouseup touchend");
         $("#rollijn").toggleClass("rolgroen")
     })
@@ -1934,12 +1934,12 @@ function setSpeed$$module$synpdf(a) {
         var b = a - opt$$module$synpdf.speed;
         .06 >= Math.abs(b) ? a = 0 < b ? 1 : -1 : (opt$$module$synpdf.speed = a, a = 0)
     }
-    b = pbrates$$module$synpdf.map(function(a, b) {
+    b = pbrates$$module$synpdf.map(function (a, b) {
         return {
             x: Math.abs(a - opt$$module$synpdf.speed),
             i: b
         }
-    }).sort(function(a, b) {
+    }).sort(function (a, b) {
         return a.x - b.x
     })[0].i; - 1 == a && 0 < b && (opt$$module$synpdf.speed = pbrates$$module$synpdf[b + a]);
     1 == a && b < pbrates$$module$synpdf.length - 1 && (opt$$module$synpdf.speed = pbrates$$module$synpdf[b + a]);
@@ -1997,7 +1997,7 @@ function playPause$$module$synpdf(a, b) {
                     return
                 }
                 if (b) {
-                    setTimeout(function() {
+                    setTimeout(function () {
                         playPause$$module$synpdf(a, 0)
                     }, b);
                     return
@@ -2161,7 +2161,7 @@ function saveTiming$$module$synpdf() {
         return a
     }
     var b = 'pdf_file = "' + pdfFnm$$module$synpdf + '";\n';
-    if (pdfDoc$$module$synpdf && pdfDoc$$module$synpdf.pdfInfo && !pdfData$$module$synpdf) pdfDoc$$module$synpdf.getData().then(function(a) {
+    if (pdfDoc$$module$synpdf && pdfDoc$$module$synpdf.pdfInfo && !pdfData$$module$synpdf) pdfDoc$$module$synpdf.getData().then(function (a) {
         pdfData$$module$synpdf = a;
         saveTiming$$module$synpdf()
     });
@@ -2187,12 +2187,12 @@ function saveTiming$$module$synpdf() {
             (b + d + e + f + g + p + m + n + l + k + h + c + "\n");
         var r = "data:text/plain;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(l)));
         $("#drpuse").prop("checked") ? ($("#err").text(""), Dropbox.save(r, scoreFnm$$module$synpdf + ".js", {
-            success: function() {
+            success: function () {
                 $("#err").text('"' + scoreFnm$$module$synpdf + '.js" saved to your Dropbox.\n')
             },
-            progress: function(a) { },
-            cancel: function() { },
-            error: function(a) {
+            progress: function (a) { },
+            cancel: function () { },
+            error: function (a) {
                 $("#err").text("Error: " + a + "\n");
                 $("#err").append("fnm: " + scoreFnm$$module$synpdf + ", len: " + r.length + "\n")
             }
@@ -2209,11 +2209,11 @@ function get_file$$module$synpdf(a, b) {
     var c = new XMLHttpRequest;
     c.open("GET", a, !0);
     c.responseType = "text";
-    c.onload = function(a) {
+    c.onload = function (a) {
         $("#err").append("preload loaded.\n");
         b(c.response)
     };
-    c.onerror = function(a) {
+    c.onerror = function (a) {
         $("#wait,#err").append("preload failed.\n")
     };
     c.send()
@@ -2224,7 +2224,7 @@ let jsonString = [];
 function evalPreload$$module$synpdf(a) {
     var b = a.match(/^\s*[\w]+\s*=\s*/mg),
         c = a.split(/^\s*[\w]+\s*=\s*/mg);
-    b.forEach(function(a, b) {
+    b.forEach(function (a, b) {
         a = a.replace(/\s*=\s*/, "");
         b = c[b + 1].replace(/;?\s*$/, "");
         b = JSON.parse(b);
@@ -2310,7 +2310,7 @@ function getPreloadFromDB() {
     return new Promise((resolve, reject) => {
         $.ajax({
             url: 'get_preload.php',
-            success: function(response) {
+            success: function (response) {
                 try {
                     response = JSON.parse(response); // Parse the JSON string
                 } catch (error) {
@@ -2318,7 +2318,7 @@ function getPreloadFromDB() {
                 }
                 resolve(response);
             },
-            error: function(error) {
+            error: function (error) {
                 reject(error);
             }
         });
@@ -2327,11 +2327,11 @@ function getPreloadFromDB() {
 
 function fetchDataFromDB() {
     return getPreloadFromDB()
-        .then(function(response) {
+        .then(function (response) {
             // Return the response to be handled in the chain
             return response;
         })
-        .catch(function(error) {
+        .catch(function (error) {
             // Handle any errors that occurred during the AJAX call
             console.error(error);
         });
@@ -2429,7 +2429,7 @@ function msc_preload$$module$synpdf(a) {
         if (b.indexOf("dropbox.com") >= 0) {
             b += "?dl=1";
         }
-        get_file$$module$synpdf(b, function(a) {
+        get_file$$module$synpdf(b, function (a) {
             evalPreload$$module$synpdf(a);
             msc_check_preload$$module$synpdf();
         });
@@ -2451,19 +2451,19 @@ function msc_check_preload$$module$synpdf() {
         pdf_data$$module$synpdf ? (a = txt2pdf$$module$synpdf(pdf_data$$module$synpdf), readPdf$$module$synpdf(a, "pdfbin")) : jpg_data$$module$synpdf ? (a = txt2pdf$$module$synpdf(jpg_data$$module$synpdf), readPdf$$module$synpdf(a, "jpgbin")) : pdf_file$$module$synpdf && readPdf$$module$synpdf(pdf_file$$module$synpdf, "url");
         offset_js$$module$synpdf && (offset$$module$synpdf = offset_js$$module$synpdf);
         media_file$$module$synpdf && !opt$$module$synpdf.nomed && (media_dir$$module$synpdf && (media_file$$module$synpdf = media_dir$$module$synpdf + media_file$$module$synpdf), setPlayer$$module$synpdf(media_file$$module$synpdf, media_file$$module$synpdf));
-        msc_tracks$$module$synpdf && msc_tracks$$module$synpdf.length && (media_dir$$module$synpdf && (msc_tracks$$module$synpdf = msc_tracks$$module$synpdf.map(function(a) {
+        msc_tracks$$module$synpdf && msc_tracks$$module$synpdf.length && (media_dir$$module$synpdf && (msc_tracks$$module$synpdf = msc_tracks$$module$synpdf.map(function (a) {
             return media_dir$$module$synpdf +
                 a
         })), mixplayer$$module$mixer.init(msc_tracks$$module$synpdf, opt$$module$synpdf.hrz), hasMixer$$module$synpdf = 1);
-        void 0 == msc_tracks$$module$synpdf && (lpRec$$module$synpdf.atag && (lpRec$$module$synpdf.atag.y -= 500, lpRec$$module$synpdf.btag.y -= 500), annots$$module$synpdf && annots$$module$synpdf.forEach(function(a) {
+        void 0 == msc_tracks$$module$synpdf && (lpRec$$module$synpdf.atag && (lpRec$$module$synpdf.atag.y -= 500, lpRec$$module$synpdf.btag.y -= 500), annots$$module$synpdf && annots$$module$synpdf.forEach(function (a) {
             return a.y -= 500
         }));
         opt$$module$synpdf.yubvid && !opt$$module$synpdf.nomed && setPlayer$$module$synpdf("", "");
-        msc_credits$$module$synpdf && (a = msc_credits$$module$synpdf.reduce(function(a, b) {
+        msc_credits$$module$synpdf && (a = msc_credits$$module$synpdf.reduce(function (a, b) {
             return a + b
         }),
             $("#credits").html(a));
-        opt$$module$synpdf.no_menu && !fullmenu$$module$synpdf && ($("#sync").css("display", "none"), opt$$module$synpdf.btns = 0, $("body").on("contextmenu", function(a) {
+        opt$$module$synpdf.no_menu && !fullmenu$$module$synpdf && ($("#sync").css("display", "none"), opt$$module$synpdf.btns = 0, $("body").on("contextmenu", function (a) {
             a.preventDefault()
         }));
         resetIntf$$module$synpdf(!1)
@@ -2475,15 +2475,15 @@ function schaalMetriek$$module$synpdf() {
         b = 1;
     null == a ? (a = opt$$module$synpdf.pagewd, b = a / 1E3) : deMetriek$$module$synpdf[0] != opt$$module$synpdf.pagewd && (a = opt$$module$synpdf.pagewd, b = a / deMetriek$$module$synpdf[0]);
     deMetriek$$module$synpdf[0] = a;
-    1 != b && deMetriek$$module$synpdf.forEach(function(a, d) {
-        0 != d && (a.cxs.forEach(function(a) {
-            a.cs.forEach(function(c, d) {
+    1 != b && deMetriek$$module$synpdf.forEach(function (a, d) {
+        0 != d && (a.cxs.forEach(function (a) {
+            a.cs.forEach(function (c, d) {
                 return a.cs[d] = c * b
             });
             a.xs.x1 *= b;
             a.xs.x2 *= b
-        }), a.bxs.forEach(function(a) {
-            a.forEach(function(c, d) {
+        }), a.bxs.forEach(function (a) {
+            a.forEach(function (c, d) {
                 return a[d] = c * b
             })
         }))
@@ -2495,7 +2495,7 @@ function resetIntf$$module$synpdf(a) {
     opt$$module$synpdf.ipadr && webSokOpen$$module$synpdf(opt$$module$synpdf.ipadr);
     //Commenting out below - We don't need space for buttons since player is to the side.
     //opt$$module$synpdf.media_height && $("#buttons").css("left" == opt$$module$synpdf.hrz ? "width" : "height", opt$$module$synpdf.media_height);
-    opt$$module$synpdf.mmin && !fullmenu$$module$synpdf && opt$$module$synpdf.mmin.split(",").forEach(function(a) {
+    opt$$module$synpdf.mmin && !fullmenu$$module$synpdf && opt$$module$synpdf.mmin.split(",").forEach(function (a) {
         return $("#" + a).toggle(0)
     });
     hasMixer$$module$synpdf && (opt$$module$synpdf.spdctl =
@@ -2521,17 +2521,17 @@ function logerr$$module$synpdf(a) {
 }
 
 function webSokOpen$$module$synpdf(a) {
-    sok$$module$synpdf ? logerr$$module$synpdf("websocket already open") : (sok$$module$synpdf = new WebSocket("ws://" + a + ":8091/"), sok$$module$synpdf.onmessage = function(a) {
+    sok$$module$synpdf ? logerr$$module$synpdf("websocket already open") : (sok$$module$synpdf = new WebSocket("ws://" + a + ":8091/"), sok$$module$synpdf.onmessage = function (a) {
         "master" == a.data ? $("#mbar").css("background", "rgba(255,0,0,0.2)") : playPause$$module$synpdf(a.data, 100 * opt$$module$synpdf.delay)
-    }, sok$$module$synpdf.onerror = function(a) {
+    }, sok$$module$synpdf.onerror = function (a) {
         logerr$$module$synpdf("socket error (server inaccessible?)");
         sok$$module$synpdf = null
-    }, sok$$module$synpdf.onopen = function(a) {
+    }, sok$$module$synpdf.onopen = function (a) {
         $("#mbar").css("background",
             "rgba(0,255,0,0.2)");
         opt$$module$synpdf.mstr && sok$$module$synpdf.send("master");
         logerr$$module$synpdf("connection opened")
-    }, sok$$module$synpdf.onclose = function(a) {
+    }, sok$$module$synpdf.onclose = function (a) {
         $("#mbar").css("background", "");
         logerr$$module$synpdf("connection closed: " + a.code);
         sok$$module$synpdf = null
@@ -2677,7 +2677,7 @@ function syncChk$$module$synpdf() {
 
 function doResize$$module$synpdf() {
     var a = $("body").prop("clientWidth");
-    a == bodyWidth$$module$synpdf ? msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin() : (bodyWidth$$module$synpdf = a, clearTimeout(resizeTimer$$module$synpdf), resizeTimer$$module$synpdf = setTimeout(function() {
+    a == bodyWidth$$module$synpdf ? msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin() : (bodyWidth$$module$synpdf = a, clearTimeout(resizeTimer$$module$synpdf), resizeTimer$$module$synpdf = setTimeout(function () {
         resizePdfSyn$$module$synpdf()
     }, 200))
 }
@@ -2685,16 +2685,16 @@ function doResize$$module$synpdf() {
 function loaddrop$$module$synpdf() {
     var a = Dropbox.createChooseButton({
         success: readDbxFile$$module$synpdf,
-        cancel: function() { },
+        cancel: function () { },
         linkType: "preview",
         multiselect: !1,
         extensions: [".pdf", ".txt", ".js", ".jpg"]
     }),
         b = Dropbox.createChooseButton({
-            success: function(a) {
+            success: function (a) {
                 readMedia$$module$synpdf("dbx", a)
             },
-            cancel: function() { },
+            cancel: function () { },
             linkType: "preview",
             multiselect: !1,
             extensions: [".ogg", ".mp3", ".webm", ".mp4"]
@@ -2713,7 +2713,7 @@ function dropuse$$module$synpdf() {
         url: "https://www.dropbox.com/static/api/2/dropins.js",
         dataType: "script",
         cache: !0
-    }).done(function() {
+    }).done(function () {
         a(!1);
         Dropbox.init({
             appKey: "ckknarypgq10318"
@@ -2786,24 +2786,24 @@ function setFullscreen$$module$synpdf() {
         c = document.exitFullscreen || document.mozCancelFullScreen || document.webkitExitFullscreen;
     b && c && (opt$$module$synpdf.fscr ? b.call(a) : c.call(document))
 }
-$(document).ready(function() {
+$(document).ready(function () {
     deNot$$module$synpdf = document.getElementById("notation");
     hasSmooth$$module$synpdf = CSS.supports("scroll-behavior", "smooth");
     bodyWidth$$module$synpdf = $("body").prop("clientWidth");
     msc_preload$$module$synpdf() || resetIntf$$module$synpdf(!0);
     $("body").keydown(keyDown$$module$synpdf);
-    $("#buttons, #sync").keydown(function(a) {
+    $("#buttons, #sync").keydown(function (a) {
         " " == a.key && a.stopPropagation()
     });
-    $("#closehelp").click(function() {
+    $("#closehelp").click(function () {
         $("#help").toggleClass("showhlp", 0)
     });
-    $("#helpm").click(function() {
+    $("#helpm").click(function () {
         $("#help").toggleClass("showhlp")
     });
     $("#buttons").on("mousedown touchstart", msc_shift$$module$synpdf);
     // File button now has file as correct parameter 
-    $("#fknp").on('change', function() {
+    $("#fknp").on('change', function () {
         const file = this.files[0];
         if (file) {
             readLocalFile$$module$synpdf(file);
@@ -2811,14 +2811,14 @@ $(document).ready(function() {
             $("#err").text("No file selected.");
         }
     });
-    $("#mknp").change(function() {
+    $("#mknp").change(function () {
         readMedia$$module$synpdf("btn", [])
     });
     $("#yknp").click(readMediaYub$$module$synpdf);
-    $("#yubid").keydown(function(a) {
+    $("#yubid").keydown(function (a) {
         a.stopPropagation()
     });
-    $("input[type=number]").keydown(function(a) {
+    $("input[type=number]").keydown(function (a) {
         a.stopPropagation()
     });
     // Not needed
@@ -2827,22 +2827,22 @@ $(document).ready(function() {
     $("#yubuse").prop("checked", true);
     $("#yublbl").hide();
     $("#drpuse").click(dropuse$$module$synpdf);
-    $("#notation").mousedown(function(a) {
+    $("#notation").mousedown(function (a) {
         hideMenuHelp$$module$synpdf(a.clientX < this.clientWidth)
     });
-    $("#knop").click(function() {
+    $("#knop").click(function () {
         keyDown$$module$synpdf({
             key: " "
         });
         $(this).blur()
     });
-    $("#speed").change(function() {
+    $("#speed").change(function () {
         setSpeed$$module$synpdf(2)
     });
     $("#save").click(saveTiming$$module$synpdf);
     $("#show").click(saveTiming$$module$synpdf);
     $("#reset").click(resetTiming$$module$synpdf);
-    $("#saveDlg #saveok").click(function() {
+    $("#saveDlg #saveok").click(function () {
         $("#saveDlg").toggle()
     });
     $("#loop").click(setLoop$$module$synpdf);
@@ -2854,19 +2854,19 @@ $(document).ready(function() {
     // });
     // adding this to show menu by default
     $("#menu").show();
-    $(window).resize(function() {
+    $(window).resize(function () {
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin()
     });
     addtips$$module$synpdf();
     $("body").on("fullscreenchange webkitfullscreenchange mozfullscreenchange",
-        function() {
+        function () {
             var a = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
             $("#fscr").prop("checked", null != a)
         });
-    $("body").on("play_end", function() {
+    $("body").on("play_end", function () {
         !play_list$$module$synpdf || playLstIx$$module$synpdf >= play_list$$module$synpdf.length || (msc_preload$$module$synpdf(play_list$$module$synpdf[playLstIx$$module$synpdf]), playLstIx$$module$synpdf += 1)
     });
-    window.addEventListener("message", function(a) {
+    window.addEventListener("message", function (a) {
         "play" == a.data && keyDown$$module$synpdf({
             key: " "
         });
@@ -2879,10 +2879,10 @@ $(document).ready(function() {
     let drmplValue = parseFloat($('#menu input#drmpl').get(0).value);
 
     Object.defineProperty(opt$$module$synpdf, 'drmpl', {
-        get: function() {
+        get: function () {
             return drmplValue;
         },
-        set: function(newValue) {
+        set: function (newValue) {
             drmplValue = newValue;
             $('#menu input#drmpl').get(0).value = newValue;
         }
@@ -2891,10 +2891,10 @@ $(document).ready(function() {
     let drmpl2Value = parseFloat($('#menu input#drmpl2').get(0).value);
 
     Object.defineProperty(opt$$module$synpdf, 'drmpl2', {
-        get: function() {
+        get: function () {
             return drmpl2Value;
         },
-        set: function(newValue) {
+        set: function (newValue) {
             drmpl2Value = newValue;
             $('#menu input#drmpl2').get(0).value = newValue;
         }
@@ -2903,10 +2903,10 @@ $(document).ready(function() {
     let mtdrmplValue = parseFloat($('#menu input#mtdrmpl').get(0).value);
 
     Object.defineProperty(opt$$module$synpdf, 'mtdrmpl', {
-        get: function() {
+        get: function () {
             return mtdrmplValue;
         },
-        set: function(newValue) {
+        set: function (newValue) {
             mtdrmplValue = newValue;
             $('#menu input#mtdrmpl').get(0).value = newValue;
         }
