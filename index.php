@@ -65,7 +65,22 @@ if (file_exists('session_config.php')) {
                                 <span style="font-size: 0.7em; color: black; font-weight: bold;">
                                     ADMIN <a href="/editmode/synpdf-edit-mode.php"
                                         style="color: #337ab7; text-decoration: underline; margin-left: 3px;">[Edit]</a>
+                                    <button id="enable-live-edit" onclick="loadLiveEdit()"
+                                        style="margin-left:5px; font-size:0.8em; cursor:pointer;">Live Tools</button>
                                 </span>
+                                <script>
+                                    function loadLiveEdit() {
+                                        if (document.getElementById('admin-live-edit-script')) return;
+                                        var script = document.createElement('script');
+                                        script.id = 'admin-live-edit-script';
+                                        script.src = 'admin-live-edit.js?v=' + new Date().getTime();
+                                        script.onload = function () {
+                                            alert("Admin Tools Loaded. Press 'q' to toggle Edit Mode.");
+                                            document.getElementById('enable-live-edit').style.display = 'none';
+                                        };
+                                        document.body.appendChild(script);
+                                    }
+                                </script>
                             <?php endif; ?>
                         </div>
                         <a href="javascript:void(0)" id="history-toggle-btn" onclick="toggleHistoryMenu(); return false;"
