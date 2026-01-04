@@ -1,9 +1,9 @@
 // Copyright (C) 2024 Isaac Trapkus
 
-let SplitclickCoordinates = [];
-let SplitclickY = 0;
-let QisActive = false;
-let WisActive = false;
+var SplitclickCoordinates = [];
+var SplitclickY = 0;
+var QisActive = false;
+var WisActive = false;
 
 let indicatorElement;
 let notation;
