@@ -1,7 +1,9 @@
 <?php
+ob_start();
 // history_api.php
-ini_set('display_errors', 0); // Prevent PHP warnings from breaking JSON
+ini_set('display_errors', 0);
 ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/api_debug.log');
 header('Content-Type: application/json');
 
 try {
@@ -14,6 +16,7 @@ try {
     // 1. Auth Check
     if (!isset($_SESSION['user_id'])) {
         http_response_code(401);
+        ob_end_clean();
         echo json_encode(['error' => 'Unauthorized']);
         exit;
     }
@@ -22,6 +25,7 @@ try {
     $action = $_GET['action'] ?? '';
 
     if ($action === 'test') {
+        ob_end_clean();
         echo json_encode(['status' => 'test_ok', 'user' => $user_id, 'version' => 'v2']);
         exit;
     }
@@ -44,6 +48,7 @@ try {
     $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 
     if ($action === 'check_db') {
+        ob_end_clean();
         echo json_encode(['status' => 'db_ok', 'db_host' => DB_HOST]);
         exit;
     }
@@ -121,10 +126,12 @@ try {
             // Ignore prune errors, don't fail the request
         }
 
+        ob_end_clean();
         echo json_encode(['status' => 'success', 'debug_count' => $count ?? '?', 'pruned' => $pruned_count]);
 
     } elseif ($action === 'get') {
         $history = fetchHistory($mysqli, $user_id);
+        ob_end_clean();
         echo json_encode($history);
 
     } elseif ($action === 'delete') {
@@ -140,7 +147,7 @@ try {
             $stmt->bind_param("ii", $history_id, $user_id);
             $stmt->execute();
         }
-
+        ob_end_clean();
         echo json_encode(['status' => 'success']);
     } else {
         throw new Exception("Invalid action");
@@ -150,6 +157,7 @@ try {
 
 } catch (Throwable $e) {
     http_response_code(500);
+    ob_end_clean();
     echo json_encode(['error' => 'Critical Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine()]);
+
 }
-?>
