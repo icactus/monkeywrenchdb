@@ -5,8 +5,13 @@ let SplitclickY = 0;
 let QisActive = false;
 let WisActive = false;
 
-const indicatorElement = document.getElementById('indicator');
-const notation = document.getElementById('notation');
+let indicatorElement;
+let notation;
+
+document.addEventListener("DOMContentLoaded", function () {
+    indicatorElement = document.getElementById('indicator');
+    notation = document.getElementById('notation');
+});
 
 
 function handleSplit(event) {
