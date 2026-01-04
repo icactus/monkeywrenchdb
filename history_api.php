@@ -46,6 +46,7 @@ try {
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
     $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+    $mysqli->set_charset("utf8mb4");
 
     if ($action === 'check_db') {
         ob_end_clean();
@@ -132,7 +133,13 @@ try {
     } elseif ($action === 'get') {
         $history = fetchHistory($mysqli, $user_id);
         ob_end_clean();
-        echo json_encode($history);
+        $json = json_encode($history);
+        if ($json === false) {
+            http_response_code(500);
+            echo json_encode(['error' => 'JSON Encode Error: ' . json_last_error_msg()]);
+        } else {
+            echo $json;
+        }
 
     } elseif ($action === 'delete') {
         $history_id = $_POST['history_id'] ?? null;
