@@ -968,7 +968,7 @@ function refreshAfterFullscreen() {
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 if (isFullscreen) {
-                    // Entering fullscreen: fit to width to prevent overflow
+                    // Start by fitting to width
                     if (typeof resizePageFitToWidth === 'function') {
                         resizePageFitToWidth();
                     }
@@ -1190,7 +1190,12 @@ function resizePageFitToWidth() {
     const scroller = document.getElementById('notation-scroll');
     if (!scroller) return;
 
-    const viewportW = scroller.clientWidth;          // excludes scrollbar width ✅
+    let viewportW = scroller.clientWidth;          // excludes scrollbar width ✅
+
+    // On mobile, subtract a small safety buffer to prevent horizontal scrolling due to rounding/safe-areas
+    if (window.innerWidth < 900) {
+        viewportW -= 4;
+    }
     const first = scroller.querySelector('canvas');
     if (!first) return;
 

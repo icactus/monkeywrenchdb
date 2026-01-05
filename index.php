@@ -384,7 +384,7 @@ if (file_exists('session_config.php')) {
         Link copied to clipboard!
     </div>
     <script src="stripped-synpdf.js?v=203"></script>
-    <script src="stripped-synpdf-extras.js?v=181"></script>
+    <script src="stripped-synpdf-extras.js?v=183"></script>
 </body>
 
 </html>
