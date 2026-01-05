@@ -1386,8 +1386,10 @@ function initPiecesSearchUI() {
 
     const $input = $container.find('#pieces-search');
 
-    // Always refocus the box when Select Piece is shown
-    $input.focus();
+    // Only refocus on Desktop (>899px) to prevent keyboard popup on mobile
+    if (window.innerWidth > 899) {
+        $input.focus();
+    }
 
     const doFilter = () => {
         const q = $input.val().trim().toLowerCase();
