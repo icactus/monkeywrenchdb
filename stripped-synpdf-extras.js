@@ -114,16 +114,117 @@ function updatePlayPauseButton() {
 
 
 function toggleSettingsMenu() {
-    $("#help").toggleClass("showhlp");
-    $("#about").toggleClass("showabout", !1);
+    toggleHelpLinkMenu();
 }
+
 function toggleHelpLinkMenu() {
-    $("#help").toggleClass("showhlp");
-    $("#about").toggleClass("showabout", !1);
+    var helpModal = document.getElementById("help");
+    var helpBackdrop = document.getElementById("help-backdrop");
+    var aboutModal = document.getElementById("about");
+    var aboutBackdrop = document.getElementById("about-backdrop");
+
+    // Close about if open
+    if (aboutModal) aboutModal.classList.remove("showabout");
+    if (aboutBackdrop) aboutBackdrop.classList.remove("visible");
+
+    // Toggle help
+    if (helpModal) {
+        helpModal.classList.toggle("showhlp");
+        if (helpBackdrop) {
+            helpBackdrop.classList.toggle("visible", helpModal.classList.contains("showhlp"));
+        }
+    }
 }
+
 function toggleAboutLinkMenu() {
-    $("#about").toggleClass("showabout");
-    $("#help").toggleClass("showhlp", !1);
+    var aboutModal = document.getElementById("about");
+    var aboutBackdrop = document.getElementById("about-backdrop");
+    var helpModal = document.getElementById("help");
+    var helpBackdrop = document.getElementById("help-backdrop");
+
+    // Close help if open
+    if (helpModal) helpModal.classList.remove("showhlp");
+    if (helpBackdrop) helpBackdrop.classList.remove("visible");
+
+    // Toggle about
+    if (aboutModal) {
+        aboutModal.classList.toggle("showabout");
+        if (aboutBackdrop) {
+            aboutBackdrop.classList.toggle("visible", aboutModal.classList.contains("showabout"));
+        }
+    }
+}
+
+// Close help/about modals when clicking outside or on backdrop
+document.addEventListener("click", function (e) {
+    var helpModal = document.getElementById("help");
+    var helpBackdrop = document.getElementById("help-backdrop");
+    var aboutModal = document.getElementById("about");
+    var aboutBackdrop = document.getElementById("about-backdrop");
+    var helpLink = document.getElementById("help-link");
+    var aboutLink = document.getElementById("about-link");
+
+    // Close help if clicking backdrop
+    if (e.target === helpBackdrop) {
+        if (helpModal) helpModal.classList.remove("showhlp");
+        helpBackdrop.classList.remove("visible");
+        return;
+    }
+
+    // Close about if clicking backdrop
+    if (e.target === aboutBackdrop) {
+        if (aboutModal) aboutModal.classList.remove("showabout");
+        aboutBackdrop.classList.remove("visible");
+        return;
+    }
+
+    // Check if help is open and click was outside
+    if (helpModal && helpModal.classList.contains("showhlp")) {
+        if (!helpModal.contains(e.target) && e.target !== helpLink && !e.target.closest("#mobile-header-menu")) {
+            helpModal.classList.remove("showhlp");
+            if (helpBackdrop) helpBackdrop.classList.remove("visible");
+        }
+    }
+
+    // Check if about is open and click was outside
+    if (aboutModal && aboutModal.classList.contains("showabout")) {
+        if (!aboutModal.contains(e.target) && e.target !== aboutLink && !e.target.closest("#mobile-header-menu")) {
+            aboutModal.classList.remove("showabout");
+            if (aboutBackdrop) aboutBackdrop.classList.remove("visible");
+        }
+    }
+});
+
+function toggleMobileHeaderMenu() {
+    var menu = document.getElementById("mobile-header-menu");
+    var burger = document.getElementById("mobile-header-burger");
+    if (!menu) {
+        console.error("mobile-header-menu not found");
+        return;
+    }
+    var currentDisplay = window.getComputedStyle(menu).display;
+    console.log("Mobile menu current display:", currentDisplay);
+
+    if (currentDisplay === "none") {
+        menu.style.display = "flex";
+
+        // Add click outside listener
+        setTimeout(function () {
+            var clickOutside = function (e) {
+                if (!menu.contains(e.target) && (!burger || !burger.contains(e.target))) {
+                    menu.style.display = "none";
+                    document.removeEventListener("click", clickOutside);
+                }
+            };
+            document.addEventListener("click", clickOutside);
+
+            // Auto remove listener if menu is closed via other means (optional but safe)
+            // Storing reference on DOM element could handle edge cases, but simple closure works for now.
+        }, 10);
+
+    } else {
+        menu.style.display = "none";
+    }
 }
 
 // HORIZONTAL FETCHINSTRUMENTS
@@ -1391,4 +1492,16 @@ $(document).ready(function () {
 
     fetchSearchByInstrument();
     resizeCanvasTrigger();
+
+    // Auto-open mobile menu/sheet on first visit
+    setTimeout(() => {
+        if (window.matchMedia("(max-width: 899px) and (orientation:portrait)").matches) {
+            if (!sessionStorage.getItem('mobileMenuSeen')) {
+                if (typeof window.toggleMobileDrawer === 'function') {
+                    window.toggleMobileDrawer(); // Opens the unified bottom sheet
+                }
+                sessionStorage.setItem('mobileMenuSeen', 'true');
+            }
+        }
+    }, 800);
 });

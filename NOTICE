@@ -1,0 +1,11 @@
+Monkey Wrench Database
+
+Copyright (c) 2023-2025 Isaac Trapkus.
+Copyright (c) 2015-2023 Willem Vree (contributions Stéphane David).
+
+This project is built on a heavily modified core of SynPdf v.182.
+Original software by Willem Vree (https://wim.vree.org/js2/index.html).
+
+SynPdf is licensed under the GNU General Public License (GPL) version 2 or later.
+
+Portions of this software may use third-party libraries which are subject to their own licenses.

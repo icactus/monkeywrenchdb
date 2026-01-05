@@ -32,38 +32,76 @@
 // History Logic
 function toggleHistoryMenu() {
     const modal = document.getElementById('history-modal');
+    const backdrop = document.getElementById('history-backdrop');
+    const toggleBtn = document.getElementById('history-toggle-btn');
     const isVisible = modal.classList.contains('visible');
 
     if (!isVisible) {
-        // Smart positioning: left in player mode, right on homepage
-        const isPlayerMode = window.location.hash || window.location.search.includes('metricArrId');
-        if (isPlayerMode) {
-            modal.style.left = '20px';
+        // Smart positioning: Drop down below button on desktop (Tablet 768px+ counts as desktop for Header)
+        const isMobile = window.matchMedia("(max-width: 767px)").matches;
+
+        if (!isMobile && toggleBtn) {
+            const rect = toggleBtn.getBoundingClientRect();
+            const modalWidth = 320;
+            const viewportWidth = window.innerWidth;
+
+            // Center horizontally below the button
+            let leftPos = rect.left + (rect.width / 2) - (modalWidth / 2);
+
+            // Clamp to viewport bounds (10px margin)
+            if (leftPos < 10) leftPos = 10;
+            if (leftPos + modalWidth > viewportWidth - 10) {
+                leftPos = viewportWidth - modalWidth - 10;
+            }
+
+            modal.style.position = 'absolute';
+            modal.style.top = (rect.bottom + window.scrollY + 10) + 'px';
+            modal.style.left = (leftPos + window.scrollX) + 'px';
             modal.style.right = 'auto';
-        } else {
-            modal.style.left = 'auto';
-            modal.style.right = '20px';
         }
 
         fetchHistory();
         modal.classList.add('visible');
+        modal.style.display = 'block'; // Force display on desktop to prevent CSS overriding
+        if (backdrop) backdrop.classList.add('visible');
     } else {
         modal.classList.remove('visible');
+        // Clean up inline styles
+        modal.style.display = '';
+        modal.style.position = '';
+        modal.style.top = '';
+        modal.style.left = '';
+        modal.style.right = '';
+
+        if (backdrop) backdrop.classList.remove('visible');
     }
 }
 
-// Close history modal when clicking outside
+// Close history modal when clicking outside or on backdrop
 document.addEventListener('click', function (event) {
     const modal = document.getElementById('history-modal');
+    const backdrop = document.getElementById('history-backdrop');
     const toggleBtn = document.getElementById('history-toggle-btn');
+    const mobileMenu = document.getElementById('mobile-header-menu');
 
-    // If modal is visible and click is NOT on modal AND NOT on toggle button
+    // Close if clicking on backdrop
+    if (event.target === backdrop) {
+        modal.classList.remove('visible');
+        modal.style.display = ''; // Revert display style
+        backdrop.classList.remove('visible');
+        return;
+    }
+
+    // If modal is visible and click is NOT on modal AND NOT on toggle button AND NOT from mobile menu
     if (modal &&
         modal.classList.contains('visible') &&
         !modal.contains(event.target) &&
-        (!toggleBtn || !toggleBtn.contains(event.target))) {
+        (!toggleBtn || !toggleBtn.contains(event.target)) &&
+        (!mobileMenu || !mobileMenu.contains(event.target))) {
 
         modal.classList.remove('visible');
+        modal.style.display = ''; // Revert display style
+        if (backdrop) backdrop.classList.remove('visible');
     }
 });
 
@@ -361,7 +399,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="12" y1="4" x2="12" y2="20"/><polyline points="8 8 12 4 16 8"/><polyline points="8 16 12 20 16 16"/><line x1="4" y1="4" x2="20" y2="4"/><line x1="4" y1="20" x2="20" y2="20"/></svg>
                 </button>
                 <button class="toolbar-btn" onclick="toggleTwoUpMode()" id="two-up-button" title="Two-Page View">
-                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="8" height="18" rx="1"/><rect x="14" y="3" width="8" height="18" rx="1"/></svg>
+                    <svg viewBox="0 0 24 24" style="fill:none; stroke:#555; stroke-width:2px; stroke-linecap:round; stroke-linejoin:round"><rect x="2" y="4" width="8" height="16" rx="1" /><path d="M4 8h4 M4 12h4 M4 16h4" /><rect x="14" y="4" width="8" height="16" rx="1" /><path d="M16 8h4 M16 12h4 M16 16h4" /></svg>
                 </button>
                 <div class="toolbar-divider"></div>
                 <button class="toolbar-btn" onclick="resizeDematenAndCanvas(90)" title="Zoom Out">
@@ -384,7 +422,8 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 <label style="display:flex; align-items:center;"><input type="checkbox" id="invert-check-dock" style="margin-right:10px;"> Dark Mode</label>
                 <button id="share-btn-dock">Share Link</button>
             </div>
-            <div id="rollijn" class="dashed"></div>`
+            <div id="rollijn" class="dashed"></div>
+            <div id="mobile-drawer-backdrop" onclick="toggleMobileDrawer(event)"></div>`
         ).appendTo($notation);
     }
     setRollijnVisible(!window.twoUpMode);
@@ -396,8 +435,34 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     // Toggle logic for the dock dropdown
     window.toggleExtraToolsDock = function (e) {
         e.stopPropagation();
+
+        // Detect Mobile (Portrait)
+        if (window.matchMedia("(max-width: 899px) and (orientation:portrait)").matches) {
+            window.toggleMobileDrawer(e);
+            return;
+        }
+
         const menu = $('#extra-tools-menu-dock');
         menu.toggle();
+    };
+
+    window.toggleMobileDrawer = function (e) {
+        if (e) e.stopPropagation();
+        const drawer = $('sidecontentbar');
+        const backdrop = $('#mobile-drawer-backdrop');
+
+        const isActive = drawer.hasClass('active');
+        if (isActive) {
+            drawer.removeClass('active');
+            backdrop.removeClass('visible');
+        } else {
+            drawer.addClass('active');
+            backdrop.addClass('visible');
+            // Ensure content is visible when opening
+            $('.change-recording-wrapper').show();
+            $('#first-controls').show();
+            $('#sidecontent-toggle h3').text('[hide]');
+        }
     };
 
     // Close on click outside
@@ -409,14 +474,26 @@ function Wijzer$$module$synpdf(a, b, c, d) {
 
     // Wire up new Dock Menu Items
     // Dark Mode
-    $('#invert-check-dock').off('change').on('change', function () {
+    $('#invert-check-dock, #invert-check-mobile').off('change').on('change', function () {
         const isDark = $(this).is(':checked');
-        $('html, #notation, #vidyub, #tooltip').css('filter', isDark ? 'invert(0.85)' : 'none');
+        $('#invert-check-dock, #invert-check-mobile').prop('checked', isDark);
+        $('html').toggleClass('inverted', isDark);
     });
 
     // Share Link
-    $('#share-btn-dock').off('click').on('click', function () {
-        const url = window.location.href;
+    $('#share-btn-dock, #share-btn-mobile').off('click').on('click', function () {
+        // Construct proper shareable URL with metricArrId and recordingId
+        let url = window.location.origin + window.location.pathname;
+
+        // Try to get current metric arr ID and recording ID from global variables
+        if (typeof currentMetricArrGlobal !== 'undefined' && typeof currentRecordingGlobal !== 'undefined'
+            && currentMetricArrGlobal && currentRecordingGlobal) {
+            url += '?metricArrId=' + currentMetricArrGlobal + '&recordingId=' + currentRecordingGlobal;
+        } else if (window.location.search) {
+            // Fallback to current URL params if globals aren't set
+            url += window.location.search;
+        }
+
         navigator.clipboard.writeText(url).then(() => {
             const btn = $(this);
             const originalText = btn.text();
@@ -815,15 +892,33 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
     let targetRowBottom;
 
     if (isPageJump) {
-        let b = 0;
-        while (b <= pageStfIx$$module$synpdf.length && rowIdx >= pageStfIx$$module$synpdf[b]) ++b;
+        // Jump to previous/next actual PDF page
+        const pageCount = (pdfDoc$$module$synpdf && pdfDoc$$module$synpdf.numPages) || nPage$$module$synpdf || 1;
         if (isDown) {
-            if (b == pageStfIx$$module$synpdf.length) b = pageStfIx$$module$synpdf.length - 1;
+            // PageDown - go to next page
+            if (curPage < pageCount) {
+                targetPage = curPage + 1;
+                rows = collectRows(targetPage);
+                if (!rows.length) return;
+                targetRowBottom = rows[0]; // first row of next page
+            } else {
+                // Already on last page - stay on last row
+                targetPage = curPage;
+                targetRowBottom = rows[rows.length - 1];
+            }
         } else {
-            b -= 2;
-            if (b < 0) b = 0;
+            // PageUp - go to previous page
+            if (curPage > 1) {
+                targetPage = curPage - 1;
+                rows = collectRows(targetPage);
+                if (!rows.length) return;
+                targetRowBottom = rows[0]; // first row of previous page
+            } else {
+                // Already on first page - stay on first row
+                targetPage = curPage;
+                targetRowBottom = rows[0];
+            }
         }
-        targetRowBottom = rows[pageStfIx$$module$synpdf[b]];
     } else {
         if (isDown) {
             if (rowIdx < rows.length - 1) {
@@ -868,6 +963,7 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
         }
         const pageLeft = pageLeftInNotation(targetPage); // 1-based
         if (!candidates.length) {
+            // No measures on target row - find any on target page
             for (let j = 0; j < deMaten$$module$synpdf.length; j++) {
                 const mm2 = deMaten$$module$synpdf[j];
                 if (pageOf(mm2) === targetPage)
@@ -875,12 +971,31 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
             }
             return pageLeft + 5;
         }
+
+        // Sort candidates by X position to find leftmost/rightmost
+        candidates.sort((a, b) => a.x - b.x);
+        const leftmost = candidates[0];
+        const rightmost = candidates[candidates.length - 1];
+
+        // If preferred X is left of the leftmost measure, use the leftmost measure's center
+        if (preferInnerX < leftmost.x) {
+            return pageLeft + leftmost.x + (leftmost.w >> 1);
+        }
+
+        // If preferred X is right of the rightmost measure, use the rightmost measure's center
+        if (preferInnerX > rightmost.x + rightmost.w) {
+            return pageLeft + rightmost.x + (rightmost.w >> 1);
+        }
+
+        // Find the closest measure to the preferred X
         let best = candidates[0], bestDist = Math.abs((best.x + best.w * 0.5) - preferInnerX);
         for (let j = 1; j < candidates.length; j++) {
             const cx = candidates[j].x + candidates[j].w * 0.5;
             const d = Math.abs(cx - preferInnerX);
             if (d < bestDist) { bestDist = d; best = candidates[j]; }
         }
+
+        // Return a point inside the best measure
         const inner = Math.min(best.x + best.w - 1, Math.max(best.x + 1, preferInnerX));
         return pageLeft + inner;
     }

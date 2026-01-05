@@ -1,0 +1,23 @@
+DATABASE CONTENT LICENSE
+
+The source code of Monkey Wrench Database is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). See the LICENSE file for details.
+
+HOWEVER, THE DATABASE CONTENT IS EXCLUDED FROM THIS LICENSE.
+
+The "Database Content" includes, but is not limited to:
+- Synchronization timestamps, maps, and coordinate data
+- Metadata regarding musical pieces, recordings, and composers
+- Any SQL dump files (e.g., .sql files)
+- User-generated synchronization data
+
+The Database Content is PROPRIETARY and owned by Isaac Trapkus (or the respective contributors). 
+
+You MAY NOT:
+- Redistribute, sell, or license the Database Content.
+- Use the Database Content to build a competing service.
+- Extract or "scrape" the Database Content for bulk use.
+
+You MAY:
+- Use the Database Content solely for running a personal, non-commercial instance of this software for your own private use.
+
+For permission to use the Database Content beyond these terms, please contact: icactusmusic AT gmail DOT com.

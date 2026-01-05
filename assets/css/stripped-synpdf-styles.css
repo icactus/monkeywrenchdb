@@ -1,3 +1,7 @@
+.mobile-only {
+    display: none !important;
+}
+
 html {
     width: 100%;
     height: 100%;
@@ -188,47 +192,247 @@ audio {
     margin-left: 1em;
 }
 
-#help {
+/* Desktop nav user section */
+.nav-user-section {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 15px;
+}
+
+.nav-username {
+    font-weight: 600;
+    color: #333;
+    font-size: 15px;
+}
+
+/* Unified User Section (Transparent container) */
+.nav-user-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 15px;
+    margin-right: 15px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    font-size: 14px;
+}
+
+.pill-link {
+    color: #444;
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+    border: none;
+    background: none;
+    transition: color 0.2s ease;
+}
+
+.pill-link:hover {
+    color: #5ba2a8;
+}
+
+.pill-link.logout {
+    color: #666;
+    margin-left: 5px;
+    padding-left: 15px;
+    border-left: 1px solid #ddd;
+}
+
+.pill-link.logout:hover {
+    color: #5ba2a8;
+    text-decoration: none;
+    opacity: 1;
+}
+
+/* Admin Group - The "Badge" */
+.pill-admin-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #d8eff1;
+    /* Light Teal background */
+    padding: 4px 12px;
+    border-radius: 100px;
+}
+
+.admin-label {
+    color: #2c5c61;
+    /* Darker teal text */
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 10px;
+    margin-right: 2px;
+}
+
+.nav-user-pill .admin-link {
+    color: #2c5c61;
+    text-decoration: none;
+    font-weight: 600;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    transition: color 0.2s;
+}
+
+.nav-user-pill .admin-link:hover {
+    color: #5ba2a8;
+    text-decoration: underline;
+}
+
+.nav-link {
+    color: #333;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    margin-right: 12px;
+}
+
+.nav-link:hover {
+    color: #5ba2a8;
+}
+
+/* Modal backdrop overlay */
+.modal-backdrop {
     display: none;
-    min-width: 300px;
-    padding: 1%;
-    background: white;
-    position: absolute;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.modal-backdrop.visible {
+    display: block;
+}
+
+/* Help and About Modals - styled like history modal */
+#help,
+#about {
+    display: none;
+    position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 5;
-    overflow-y: auto;
-    max-height: 90%;
-    border: grey double 5px;
+    width: 90%;
+    max-width: 420px;
+    max-height: 85vh;
+    background: white;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    z-index: 1001;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-#help.showhlp {
-    display: block;
+#help.showhlp,
+#about.showabout {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: #333;
+}
+
+.modal-close {
+    background: #f5f5f5;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.modal-close:hover {
+    background: #e5e5e5;
+    color: #333;
+}
+
+.modal-content {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #444;
+}
+
+.modal-content p {
+    margin: 0 0 12px 0;
+}
+
+.modal-content ul {
+    margin: 12px 0;
+    padding-left: 20px;
+}
+
+.modal-content li {
+    margin-bottom: 8px;
+}
+
+.help-note {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.helptbl {
+    width: 100%;
+    font-size: 13px;
+    border-collapse: collapse;
+}
+
+.helptbl td {
+    padding: 8px 4px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.helptbl tr:last-child td {
+    border-bottom: none;
+}
+
+.helptbl td:first-child {
+    font-weight: 500;
+    color: #333;
+}
+
+.helptbl td:last-child {
+    color: #666;
 }
 
 #helpm {
     text-align: center;
     padding: 3px;
-}
-
-#about {
-    display: none;
-    min-width: 300px;
-    padding: 1%;
-    background: white;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 5;
-    overflow-y: auto;
-    max-height: 90%;
-    border: grey double 5px;
-}
-
-#about.showabout {
-    display: block;
 }
 
 #aboutm {
@@ -573,7 +777,8 @@ sidecontentbar h3 {
 
 #sidecontent select {
     width: 100%;
-    padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+    height: 44px;
+    padding: 0 2.5rem 0 0.75rem;
     font-size: 0.875em;
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(0, 0, 0, 0.1);
@@ -648,8 +853,8 @@ invertButton {
 #decrementButton,
 #incrementButton {
     background: rgba(255, 255, 255, 0.9);
-    height: 32px;
-    width: 32px;
+    height: 44px;
+    width: 44px;
     border-radius: 8px;
     border: 1px solid rgba(0, 0, 0, 0.1);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -670,9 +875,10 @@ invertButton {
 }
 
 #speedField {
-    width: 50px;
+    width: 60px;
+    height: 44px;
     margin-left: 8px;
-    padding: 0.4em 0.5em;
+    padding: 0 0.5em;
     text-align: center;
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 6px;
@@ -680,6 +886,8 @@ invertButton {
     font-size: 0.875em;
     font-weight: 600;
     color: #334155;
+    box-sizing: border-box;
+    line-height: normal;
 }
 
 #favcolor {
@@ -766,15 +974,48 @@ select {
         flex-direction: column;
         margin-top: 0px;
         margin-left: 0;
+        padding-bottom: 100px;
     }
 
     .section2-margin-top {
         margin-top: 100px;
     }
 
+
+    .mobile-only {
+        display: block !important;
+    }
+
     sidecontentbar {
-        margin-top: 0px;
+        position: fixed;
+        bottom: -100%;
+        top: auto;
+        left: 0;
+        right: 0;
+        width: 100%;
+        box-sizing: border-box;
+        height: auto;
+        max-height: 85vh;
+
         max-width: none;
+        margin: 0;
+
+        z-index: 10002;
+        transition: bottom 0.3s cubic-bezier(0.1, 0.7, 0.1, 1);
+        padding: 24px 20px 40px 20px;
+        border-radius: 24px 24px 0 0;
+        background: #fff;
+        background: rgba(250, 250, 253, 0.98);
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
+        border-top: 1px solid rgba(255, 255, 255, 0.5);
+        display: block;
+        overflow-y: auto;
+    }
+
+    sidecontentbar.active {
+        bottom: 0;
+        right: 0;
+        /* Clear previous styles */
     }
 
     .sidecontenbar-min-height {
@@ -789,21 +1030,139 @@ select {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
+        align-items: center;
+        padding-top: 20px;
+        margin-bottom: 20px;
+    }
+
+    #composer-piece-name {
+        margin-bottom: 0;
+    }
+
+    #composer-piece-name h3 {
+        margin: 0;
     }
 
     #sidecontent-toggle {
-        display: block;
+        display: none !important;
+    }
+
+
+
+    /* Smaller player on mobile */
+    #vid,
+    #vidyub {
+        width: 300px;
+        height: 200px;
     }
 
     #sidecontent-toggle h3 {
         text-decoration: underline;
     }
 
+    /* Layout adjustments for standardized controls on mobile */
+    sidecontentbar select {
+        padding: 0 40px 0 12px;
+        /* Accommodate custom arrow */
+    }
+
+    #speed-content {
+        gap: 12px;
+    }
+
+    #speedField {
+        width: 64px;
+        margin-left: 0;
+    }
+
+    /* Center history modal on mobile like help/about */
+    .history-modal {
+        top: 50% !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 380px;
+        max-height: 80vh;
+        border-radius: 12px;
+        z-index: 1001;
+    }
+
+}
+
+/* Modern Loading Spinner */
+#yubload {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0;
+    /* Hide text */
+    color: transparent;
+    z-index: 2000;
+    /* Override .dlog styles */
+    background: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    width: 0;
+    height: 0;
+}
+
+
+#yubload::after {
+    content: "\1F527";
+    /* Wrench Emoji 🔧 */
+    display: block;
+    width: 60px;
+    height: 60px;
+    /* Force Emoji Font and Grey Color */
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    color: #555;
+    font-size: 50px;
+    line-height: 60px;
+    text-align: center;
+    background: none;
+    border: none;
+    border-radius: 0;
+    animation: spin 1.5s linear infinite;
+    /* Ensure placement */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: spinCentered 1.5s linear infinite;
+}
+
+@keyframes spinCentered {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+/* Legacy spin (keep if used elsewhere) */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 @media screen and (max-width: 767px) {
-    select {
-        padding: 0.5rem 4rem 0.5rem 0.5rem;
+
+    /* Hide desktop nav links on mobile / phone only */
+    .nav-menu>a,
+    .nav-menu>div:not(#mobile-header-menu),
+    .nav-user-pill {
+        display: none !important;
+    }
+
+    /* Show Mobile Hamburger */
+    #mobile-header-burger {
+        display: flex !important;
     }
 
     .instrument-container {
@@ -1114,30 +1473,36 @@ select {
 
 
 
-body.inverted {
-    filter: invert(90%);
-    transition: filter 0.5s ease;
-}
-
-body.inverted #monkey-logo {
+html.inverted {
     filter: invert(100%);
     transition: filter 0.5s ease;
 }
 
-body.inverted canvas {
-    filter: invert(100%);
+html.inverted #notation-scroll,
+html.inverted #vidyub,
+html.inverted #monkey-logo {
+    filter: invert(100%) !important;
 }
 
-body.inverted #vidyub {
-    filter: invert(100%);
-    transition: filter 0.5s ease;
+/* Ensure fullscreen containers are inverted so children can 'un-invert' back to light colors */
+html.inverted #notation:fullscreen,
+html.inverted #vidyub:fullscreen,
+html.inverted #notation:-webkit-full-screen,
+html.inverted #vidyub:-webkit-full-screen {
+    filter: invert(100%) !important;
 }
 
-body.inverted .demaat {
-    filter: invert(1);
+html.inverted #notation:fullscreen #notation-scroll,
+html.inverted #vidyub:fullscreen {
+    filter: invert(100%) !important;
 }
 
-body.inverted select option {
+html.inverted #notation:-webkit-full-screen #notation-scroll,
+html.inverted #vidyub:-webkit-full-screen {
+    filter: invert(100%) !important;
+}
+
+html.inverted select option {
     background-color: #222 !important;
     color: #eee !important;
 }
@@ -1154,20 +1519,20 @@ body.inverted select option {
 .history-modal {
     display: none;
     position: fixed;
-    top: 60px;
-    right: 20px;
+    top: 70px;
+    right: 30px;
     width: 320px;
     background: white;
     border: none;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    z-index: 2000;
     overflow: hidden;
     transition: left 0.3s ease, right 0.3s ease;
 }
 
 .history-modal.visible {
-    display: block;
+    display: block !important;
 }
 
 .history-header {
@@ -1296,4 +1661,125 @@ body.inverted select option {
 .history-clear-btn:hover {
     background: #eee;
     color: #333;
+}
+
+/* Mobile hamburger button */
+#mobile-header-burger {
+    display: none;
+    position: fixed;
+    right: 12px;
+    top: 12px;
+    z-index: 9999;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+}
+
+#mobile-header-burger svg {
+    width: 24px;
+    height: 24px;
+    padding: 8px;
+    color: #333;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Mobile header menu dropdown */
+#mobile-header-menu {
+    display: none;
+    position: fixed;
+    top: 64px;
+    right: 12px;
+    width: 200px;
+    padding: 8px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    z-index: 9998;
+    flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+#mobile-header-menu a {
+    display: block;
+    padding: 12px 16px;
+    text-decoration: none;
+    color: #333;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+
+#mobile-header-menu a:hover,
+#mobile-header-menu a:active {
+    background: #f5f5f5;
+}
+
+.mobile-menu-greeting {
+    padding: 12px 16px;
+    font-weight: 600;
+    color: #666;
+    font-size: 13px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 4px;
+}
+
+.mobile-menu-divider {
+    height: 1px;
+    background: #eee;
+    margin: 4px 0;
+}
+
+.mobile-menu-logout {
+    color: #d9534f !important;
+}
+
+.mobile-menu-login {
+    background: white !important;
+    color: #444 !important;
+    text-align: center;
+    border-radius: 8px !important;
+    border: 1px solid #ddd !important;
+    margin: 4px;
+    font-weight: 500;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px !important;
+}
+
+.mobile-menu-login:hover {
+    background: #f8f8f8 !important;
+    border-color: #ccc !important;
+}
+
+/* Modern Backdrop Transition */
+#mobile-drawer-backdrop {
+    display: block !important;
+    /* Force block to allow transition, hide via visibility */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9000;
+
+    /* Transition Properties */
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+#mobile-drawer-backdrop.visible {
+    visibility: visible;
+    opacity: 1;
+}
 }
