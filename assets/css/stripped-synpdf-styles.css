@@ -1737,7 +1737,7 @@ html.inverted select option {
 }
 
 .mobile-menu-logout {
-    color: #d9534f !important;
+    color: #999 !important;
 }
 
 .mobile-menu-login {
