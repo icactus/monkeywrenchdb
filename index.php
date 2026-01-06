@@ -390,11 +390,28 @@ if (file_exists('session_config.php')) {
     <script src="stripped-synpdf.js?v=204"></script>
     <script src="stripped-synpdf-extras.js?v=184"></script>
     <script>
-        // Register Service Worker for PWA
+        // Register Service Worker for PWA with auto-update
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('[PWA] Service worker registered'))
+                    .then(reg => {
+                        console.log('[PWA] Service worker registered');
+                        
+                        // Check for updates immediately and every 60 seconds
+                        reg.update();
+                        setInterval(() => reg.update(), 60000);
+                        
+                        // When a new service worker is found, reload to get fresh content
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'activated') {
+                                    console.log('[PWA] New version available, reloading...');
+                                    window.location.reload();
+                                }
+                            });
+                        });
+                    })
                     .catch(err => console.log('[PWA] Service worker registration failed:', err));
             });
         }
