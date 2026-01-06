@@ -478,6 +478,14 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         const isDark = $(this).is(':checked');
         $('#invert-check-dock, #invert-check-mobile').prop('checked', isDark);
         $('html').toggleClass('inverted', isDark);
+
+        // Swap monkey logo for dark mode
+        const logo = document.getElementById('monkey-logo');
+        if (logo) {
+            logo.src = isDark
+                ? 'monkeydark.png'
+                : 'assets/img/monkeywrench-monkey100x100.png';
+        }
     });
 
     // Share Link
