@@ -710,7 +710,7 @@ function addInvertButtonListener() {
             document.body.classList.toggle('inverted');
             var img = document.getElementById('monkey-logo');
             if (img) {
-                img.src = document.body.classList.contains('inverted') ? 'monkeydark.png' : 'monkeywrench-monkey100x100.png';
+                img.src = document.body.classList.contains('inverted') ? 'assets/img/monkeydark.png' : 'assets/img/monkeywrench-monkey100x100.png';
             }
         });
     } else {
