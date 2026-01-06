@@ -28,7 +28,7 @@ if (file_exists('session_config.php')) {
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#00897B" />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192.png" />
+    <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v2.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=3" />
     <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=129" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
