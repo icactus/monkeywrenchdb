@@ -37,5 +37,21 @@
         "music",
         "education"
     ],
-    "lang": "en-US"
+    "lang": "en-US",
+    "screenshots": [
+        {
+            "src": "/assets/img/pwa-horizontal.jpg",
+            "sizes": "930x431",
+            "type": "image/jpeg",
+            "form_factor": "wide",
+            "label": "Sheet music synced with YouTube"
+        },
+        {
+            "src": "/assets/img/pwa-vertical.jpg",
+            "sizes": "393x849",
+            "type": "image/jpeg",
+            "form_factor": "narrow",
+            "label": "Practice with synced sheet music"
+        }
+    ]
 }
