@@ -25,6 +25,10 @@ if (file_exists('session_config.php')) {
     <meta name="viewport"
         content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#00897B" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=3" />
     <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=129" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
@@ -385,6 +389,16 @@ if (file_exists('session_config.php')) {
     </div>
     <script src="stripped-synpdf.js?v=203"></script>
     <script src="stripped-synpdf-extras.js?v=183"></script>
+    <script>
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('[PWA] Service worker registered'))
+                    .catch(err => console.log('[PWA] Service worker registration failed:', err));
+            });
+        }
+    </script>
 </body>
 
 </html>
