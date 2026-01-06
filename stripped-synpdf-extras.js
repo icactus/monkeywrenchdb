@@ -1132,6 +1132,8 @@ function resizeCanvasTrigger() {
 
     $(window).off("resize").on("resize", debounce(function () {
         if (window.__isTogglingFullscreen) return;
+        if (window.__isRotating) return; // Suppress resize during rotation to prevent flashing
+
         // In 2-up, ignore width-delta scaling. reflowForViewportChange + fit-to-height will handle it.
         if (document.getElementById('notation-scroll')?.classList.contains('two-up')) return;
 
@@ -1140,6 +1142,18 @@ function resizeCanvasTrigger() {
         resizeDematenAndCanvas(scaleAmount);
         previousWidth = newWidth;
     }, 100)); // 100 ms debounce
+
+    // Trigger fit-to-width on orientation change to fix PDF scaling issues
+    window.addEventListener("orientationchange", function () {
+        window.__isRotating = true; // Set flag to suppress resize events
+        setTimeout(function () {
+            if (typeof resizePageFitToWidth === 'function') {
+                resizePageFitToWidth();
+            }
+            // Reset flag after layout settles
+            setTimeout(() => { window.__isRotating = false; }, 100);
+        }, 300); // 300ms delay to ensure layout has settled
+    });
 }
 
 // Replace existing function in stripped-synpdf-extras.js

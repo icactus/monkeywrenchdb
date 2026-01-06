@@ -326,7 +326,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     display: flex;
                     gap: 12px;
                     align-items: center;
-                    z-index: 10000;
+                    z-index: 100; /* Standardized: Controls (was 10000) */
                     border: 1px solid rgba(0,0,0,0.08);
                 }
                 #control-buttons-row .toolbar-btn {
