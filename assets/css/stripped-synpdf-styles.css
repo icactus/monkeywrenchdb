@@ -696,7 +696,8 @@ a {
     align-self: end;
     width: 350px;
     height: 200px;
-    z-index: 1000;
+    z-index: 50;
+    /* Standardized: Player (below Sidebar 100/Menu 200) */
 }
 
 section1 {
@@ -1309,8 +1310,8 @@ select {
         box-sizing: border-box;
         /* Include padding in width */
         overflow-y: scroll;
-        z-index: 100;
-        /* Standardized: Sidebar */
+        z-index: 49;
+        /* User defined: Below Player (50) */
         height: 100vh;
         /* Ensure full height */
     }
