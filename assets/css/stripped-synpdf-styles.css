@@ -1236,14 +1236,51 @@ select {
 @media screen and (max-height: 500px) and (orientation:landscape) {
     section1 {
         margin-bottom: -150px;
+        /* Keep sidebar logic as-is to preserve layout structure */
     }
 
     #logo-bar-wrapper {
         padding: 5px;
     }
 
+    /* Hamburger starts at normal right position */
+    #mobile-header-burger {
+        display: flex !important;
+        position: fixed;
+        left: auto;
+        right: 12px;
+        /* Normal right position */
+        top: 8px;
+        z-index: 9999;
+        transition: right 0.3s ease;
+    }
+
+    /* When recording is loaded, move hamburger left of player sidebar (200px + gap) */
+    body.recording-loaded #mobile-header-burger {
+        right: 210px;
+    }
+
+    /* Position mobile menu dropdown below the burger */
+    #mobile-header-menu {
+        top: 56px !important;
+        right: 12px !important;
+        left: auto !important;
+    }
+
+    /* Also move the menu dropdown when recording is loaded */
+    body.recording-loaded #mobile-header-menu {
+        right: 210px !important;
+    }
+
+    /* Hide desktop nav */
+    .nav-menu>a,
+    .nav-menu>div:not(#mobile-header-menu),
+    .nav-user-pill {
+        display: none !important;
+    }
+
     #vidyub {
-        max-width: 240px;
+        max-width: 200px;
         height: 200px;
     }
 
@@ -1254,11 +1291,114 @@ select {
     sidecontentbar {
         width: 200px;
         padding-top: 50px;
+        /* Push content down below player overlap */
+        padding-right: 4px;
+        padding-bottom: 4px;
+        padding-left: 4px;
+        box-sizing: border-box;
+        /* Include padding in width */
         overflow-y: scroll;
+        /* Kept strictly as scroll/sidebar to avoid layout breakage */
     }
 
+    /* Show Title in Landscape */
+    #composer-toggle-wrapper {
+        display: block !important;
+        padding-top: 4px;
+        margin-bottom: 2px;
+        justify-content: center;
+    }
+
+
+
+    #composer-piece-name {
+        display: block;
+        margin-bottom: 4px;
+        text-align: center;
+    }
+
+    #composer-piece-name h3 {
+        font-size: 11px;
+        margin: 0;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 184px;
+    }
+
+    /* Ultra Compact Controls */
     #sidecontent h3 {
         margin-bottom: 0;
+        font-size: 10px;
+    }
+
+    #sidecontent-toggle {
+        display: none !important;
+    }
+
+    /* Compact dropdowns */
+    /* Compact dropdowns - Hyper specific selector override */
+    body sidecontentbar #sidecontent select,
+    #instruments-dropdown,
+    #recordings-dropdown {
+        width: 100%;
+        max-width: 100%;
+        font-size: 11px;
+        padding: 0 4px;
+        height: 32px !important;
+        margin-bottom: 2px;
+    }
+
+    /* REORDERING LOGIC */
+    #speed-part-row {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Speed Control First */
+    #speed-control {
+        order: 1;
+        margin: 2px 0;
+    }
+
+    /* Change Part Second */
+    #change-part-wrapper {
+        order: 2;
+        margin: 2px 0;
+    }
+
+    /* Speed Controls */
+
+    #speed-content {
+        gap: 4px;
+        justify-content: center;
+    }
+
+    #speed-content button {
+        padding: 0 6px;
+        font-size: 11px;
+        height: 32px;
+        line-height: 32px;
+    }
+
+    #speedField {
+        width: 40px;
+        font-size: 11px;
+        padding: 0 4px;
+        height: 32px;
+        line-height: 32px;
+    }
+
+    /* Reduce margins */
+    .change-recording-wrapper {
+        margin: 2px 0;
+    }
+
+    /* Hide the mobile-only elements */
+    sidecontentbar .mobile-only,
+    #share-btn-mobile {
+        display: none !important;
     }
 
     #monkey-logo {

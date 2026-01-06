@@ -861,6 +861,7 @@ function handleRecordingSelection(recordingFullData) {
     let section2 = document.querySelector('section2'); // same as above
     sidecontentbar.classList.add('sidecontentbar-min-height');
     section2.classList.add('section2-margin-top');
+    document.body.classList.add('recording-loaded'); // Enable hamburger transition
 
     let recordingId = recordingFullData.recording_id;
     // Setting the global instrument and recording values for dropdown use
