@@ -497,6 +497,13 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         if (typeof currentMetricArrGlobal !== 'undefined' && typeof currentRecordingGlobal !== 'undefined'
             && currentMetricArrGlobal && currentRecordingGlobal) {
             url += '?metricArrId=' + currentMetricArrGlobal + '&recordingId=' + currentRecordingGlobal;
+
+            // Add current playback time if > 0
+            const rawTime = elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0;
+            const currentTime = Math.round(rawTime * 10) / 10;
+            if (currentTime > 0) {
+                url += '&t=' + currentTime;
+            }
         } else if (window.location.search) {
             // Fallback to current URL params if globals aren't set
             url += window.location.search;
@@ -1948,9 +1955,15 @@ function setPlayer$$module$synpdf(a, b) {
         // below media_height is changed from 30% to 200px
     } else yubchk$$module$synpdf = 1, opt$$module$synpdf.media_height || (opt$$module$synpdf.media_height = "200px"), $("#vid, #aud").css("display", "none"), $("#vidyub").css("display", "inline-block"), yubload$$module$synpdf(function () {
         elmed$$module$synpdf = ybplayer$$module$synpdf;
+        // Use URL start time override if set (for share links with ?t=), otherwise use default
+        var startTime = (window.urlStartTimeOverride > 0) ? window.urlStartTimeOverride : c;
+        if (window.urlStartTimeOverride) {
+            console.log('Using URL start time override:', startTime);
+            delete window.urlStartTimeOverride; // Clear after use
+        }
         elmed$$module$synpdf.cueVideoById({
             videoId: opt$$module$synpdf.yubvid,
-            startSeconds: c
+            startSeconds: startTime
         });
     })
 }

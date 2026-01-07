@@ -1072,7 +1072,7 @@ function resizeDematenAndCanvas(scaleAmount) {
         var newCanvasRect = canvas.getBoundingClientRect();
         var newNotationDivRect = notationDiv.getBoundingClientRect();
         deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount);
-        msc_wz$$module$synpdf.time2x(elmed$$module$synpdf.getCurrentTime() ? elmed$$module$synpdf.getCurrentTime() - offset$$module$synpdf : 0);
+        msc_wz$$module$synpdf.time2x((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf);
     }
 }
 
@@ -1272,11 +1272,22 @@ function addShareButtonListener() {
 
                 const baseUrl = `${protocol}//${host}${path}`;
 
+                // Get current playback time (in seconds, rounded to 1 decimal)
+                const player = elmed$$module$synpdf || window.elmed$$module$synpdf;
+                const rawTime = player?.getCurrentTime?.() ?? player?.currentTime ?? 0;
+                const currentTime = Math.round(rawTime * 10) / 10;
+                console.log('Share link - current time:', currentTime);
+
                 // Construct the query parameters
-                const queryParams = new URLSearchParams({
+                const params = {
                     metricArrId: metricArrId,
                     recordingId: recordingId,
-                }).toString();
+                };
+                // Only add time if > 0 (so links to the start don't have unnecessary params)
+                if (currentTime > 0) {
+                    params.t = currentTime;
+                }
+                const queryParams = new URLSearchParams(params).toString();
 
                 // Combine base URL with query parameters to form the full URL
                 const fullUrl = `${baseUrl}?${queryParams}`;
@@ -1479,12 +1490,21 @@ $(document).ready(function () {
         currentMetricArrGlobal = urlMetricArrId;
         currentRecordingGlobal = urlRecordingId;
 
+        // Get time parameter if present (for seeking)
+        const urlStartTime = parseFloat(urlParams.get('t')) || 0;
+
         // Fetch recordings based on the Metric Arrangement ID
         fetchRecordings(urlMetricArrId)
             .then(recordings => {
                 // Find the specific recording data from the list of recordings
                 const recordingFullData = recordings.find(rec => rec.recording_id.toString() === urlRecordingId);
                 if (recordingFullData) {
+
+                    // Store URL start time globally so handleRecordingSelection can use it
+                    if (urlStartTime > 0) {
+                        window.urlStartTimeOverride = urlStartTime;
+                        console.log('URL start time override set:', urlStartTime);
+                    }
 
                     // Polling function to wait for PDF.js
                     const waitForPDF = () => {
