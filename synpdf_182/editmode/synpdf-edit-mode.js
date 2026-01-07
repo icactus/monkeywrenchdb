@@ -2896,7 +2896,8 @@ module$synpdf.keyDown = keyDown$$module$synpdf;
 module$synpdf.tick = tick$$module$synpdf;
 
 // Helper for manual barline detection (W mode)
-window.detectBarlinesInRect = function (y1, y2, x1, x2) {
+// snap = true means shift was held, enable ±3px snapping optimization
+window.detectBarlinesInRect = function (y1, y2, x1, x2, snap) {
     if (!window.synpdfLastPageData) {
         console.error("synpdfLastPageData is MISSING (probably lost on refresh/render).");
         return [];
@@ -2911,66 +2912,70 @@ window.detectBarlinesInRect = function (y1, y2, x1, x2) {
     var cs = [];
     for (var i = 0; i < 5; i++) cs.push(y1 + i * spatium);
 
-    // --- SNAP TO LINES (Optimization) ---
-    // Helper to score a configuration
-    function getScore(lines) {
-        var score = 0;
-        var count = 0;
-        var width = d.width;
-        var stride = d.stride;
-        // Sample 20 points across the width to be fast
-        var step = Math.floor(width / 20);
-        for (var x = step; x < width; x += step) {
-            var colOffset = x * 4;
-            for (var i = 0; i < lines.length; i++) {
-                var y = Math.round(lines[i]);
-                if (y < 0 || y >= pixelData.length / stride) continue;
+    // --- SNAP TO LINES (Only when shift-click) ---
+    var bestConfig = cs.slice();
 
-                // Check 3 vertical pixels for max blackness (robustness)
-                var maxBlack = 0;
-                for (var dy = -1; dy <= 1; dy++) {
-                    var idx = (y + dy) * stride + colOffset;
-                    if (idx < 0 || idx >= pixelData.length - 4) continue;
-                    // Invert: 255 is white, 0 is black. We want high score for BLACK.
-                    // So score = 255 - brightness
-                    var val = 255 - (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
-                    if (val > maxBlack) maxBlack = val;
+    if (snap) {
+        // Helper to score a configuration
+        function getScore(lines) {
+            var score = 0;
+            var count = 0;
+            var width = d.width;
+            var stride = d.stride;
+            // Sample 20 points across the width to be fast
+            var step = Math.floor(width / 20);
+            for (var x = step; x < width; x += step) {
+                var colOffset = x * 4;
+                for (var i = 0; i < lines.length; i++) {
+                    var y = Math.round(lines[i]);
+                    if (y < 0 || y >= pixelData.length / stride) continue;
+
+                    // Check 3 vertical pixels for max blackness (robustness)
+                    var maxBlack = 0;
+                    for (var dy = -1; dy <= 1; dy++) {
+                        var idx = (y + dy) * stride + colOffset;
+                        if (idx < 0 || idx >= pixelData.length - 4) continue;
+                        // Invert: 255 is white, 0 is black. We want high score for BLACK.
+                        // So score = 255 - brightness
+                        var val = 255 - (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+                        if (val > maxBlack) maxBlack = val;
+                    }
+                    score += maxBlack;
+                    count++;
                 }
-                score += maxBlack;
-                count++;
+            }
+            return count > 0 ? score / count : 0;
+        }
+
+        var bestScore = getScore(cs);
+
+        // 1. Shift vertical position (+/- 3px)
+        for (var offset = -3; offset <= 3; offset++) {
+            if (offset === 0) continue;
+            var shifted = cs.map(function (y) { return y + offset; });
+            var s = getScore(shifted);
+            if (s > bestScore) {
+                bestScore = s;
+                bestConfig = shifted;
             }
         }
-        return count > 0 ? score / count : 0;
-    }
 
-    var bestConfig = cs.slice();
-    var bestScore = getScore(cs);
-
-    // 1. Shift vertical position (+/- 3px)
-    for (var offset = -3; offset <= 3; offset++) {
-        if (offset === 0) continue;
-        var shifted = cs.map(function (y) { return y + offset; });
-        var s = getScore(shifted);
-        if (s > bestScore) {
-            bestScore = s;
-            bestConfig = shifted;
+        // 2. Adjust spatium slightly (+/- 10%)
+        var currentSpatium = (bestConfig[4] - bestConfig[0]) / 4;
+        var startY = bestConfig[0];
+        for (var adj = -0.1; adj <= 0.1; adj += 0.05) {
+            if (Math.abs(adj) < 0.01) continue;
+            var newSpatium = currentSpatium * (1 + adj);
+            var adjusted = [];
+            for (var k = 0; k < 5; k++) adjusted.push(startY + k * newSpatium);
+            var s = getScore(adjusted);
+            if (s > bestScore) {
+                bestScore = s;
+                bestConfig = adjusted;
+            }
         }
-    }
 
-    // 2. Adjust spatium slightly (+/- 5%)? 
-    // User requested "snap 5 lines like normally". Normal logic does spatium adjustment.
-    var currentSpatium = (bestConfig[4] - bestConfig[0]) / 4;
-    var startY = bestConfig[0];
-    for (var adj = -0.1; adj <= 0.1; adj += 0.05) {
-        if (Math.abs(adj) < 0.01) continue;
-        var newSpatium = currentSpatium * (1 + adj);
-        var adjusted = [];
-        for (var k = 0; k < 5; k++) adjusted.push(startY + k * newSpatium);
-        var s = getScore(adjusted);
-        if (s > bestScore) {
-            bestScore = s;
-            bestConfig = adjusted;
-        }
+        console.log("Snapping optimization applied: shifted from", cs[0], "to", bestConfig[0]);
     }
 
     // Update system to use optimized lines

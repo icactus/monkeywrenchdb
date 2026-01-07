@@ -108,31 +108,40 @@ document.addEventListener("DOMContentLoaded", function () {
     if (addNewMetricForm) {
         addNewMetricForm.addEventListener("submit", function (event) {
             event.preventDefault();
-            const submitButton = event.submitter;
-            const buttonName = submitButton.name;
-            const buttonValue = submitButton.value;
             const formData = new FormData(addNewMetricForm);
             formData.append('action', 'add_metric_arr');
-            formData.append(buttonName, buttonValue);
-            if (buttonName === 'update') {
-                formData.delete('file');
-                formData.delete('file_hd');
+
+            // Auto-use the currently loaded PDF as the SD version
+            const loadedPdfFiles = document.getElementById('fknp')?.files;
+            if (loadedPdfFiles && loadedPdfFiles[0]) {
+                formData.set('file', loadedPdfFiles[0]);
+                console.log('Using loaded PDF as SD version:', loadedPdfFiles[0].name);
+            } else {
+                console.warn('No PDF loaded - SD version will be missing');
             }
+
+            // Auto-grab metric data from localStorage (same as 'j' key copies)
+            const metricData = localStorage.getItem('jsonString');
+            if (metricData) {
+                const formattedData = formatCode(metricData);
+                formData.set('metric_arr_data', formattedData);
+                console.log('Using metric data from localStorage');
+            } else {
+                console.warn('No metric data in localStorage');
+            }
+
             fetch("./dispatcher.php", { method: "POST", body: formData })
                 .then(response => response.text())
                 .then(data => {
                     console.log(data);
-                    const isDataSuccess = data.includes("The data has been inserted.") || data.includes("The data has been updated.");
-                    const isFileError = data.includes("Sorry, file already exists. File not uploaded.") || data.includes("Sorry, your file was not uploaded.");
-                    if (isDataSuccess && !isFileError) {
-                        alert("Form submitted successfully");
-                    } else if (isDataSuccess && isFileError) {
-                        alert("Data updated successfully");
+                    const isSuccess = data.includes("The data has been inserted.") || data.includes("The data has been updated.");
+                    if (isSuccess) {
+                        alert("Saved successfully");
                     } else {
-                        alert("Form submission failed");
+                        alert("Save failed: " + data);
                     }
                 })
-                .catch(error => { console.error(error); alert("An error occurred during the form submission."); });
+                .catch(error => { console.error(error); alert("An error occurred during save."); });
         });
     }
 });
@@ -311,11 +320,17 @@ document.addEventListener('keydown', function (event) {
             keyDown$$module$synpdf({
                 key: "PageDown"
             });
+            // Auto-save metric data after page change (same as 'p' key)
+            roundValuesInArray(deMetriek$$module$synpdf);
+            localStorage.setItem('jsonString', JSON.stringify(deMetriek$$module$synpdf));
             break;
         case '.':
             keyDown$$module$synpdf({
                 key: "PageUp"
             });
+            // Auto-save metric data after page change (same as 'p' key)
+            roundValuesInArray(deMetriek$$module$synpdf);
+            localStorage.setItem('jsonString', JSON.stringify(deMetriek$$module$synpdf));
             break;
         case 'o':
             resizePdfSyn$$module$synpdf();
@@ -499,8 +514,9 @@ function editCxsGroups$$module$synpdf(event) {
         endPoint = {
             x: event.clientX - rect.left,
             y: Math.round(event.clientY - rect.top + notation.scrollTop),
+            shiftKey: event.shiftKey  // Track if shift was held for snapping
         };
-        console.log(startPoint.y, endPoint.y);
+        console.log(startPoint.y, endPoint.y, 'shift:', endPoint.shiftKey);
         let cxsBxsData = JSON.parse(localStorage.getItem('jsonString') || '[]');
 
         let pagenum = parseInt(document.getElementById('pagenum').value);
@@ -539,8 +555,8 @@ function editCxsGroups$$module$synpdf(event) {
 
         try {
             if (window.detectBarlinesInRect) {
-                console.log("Auto-detecting barlines for w-mode...");
-                var res = window.detectBarlinesInRect(startPoint.y, endPoint.y, startPoint.x, endPoint.x);
+                console.log("Auto-detecting barlines for w-mode..." + (endPoint.shiftKey ? " (with snapping)" : ""));
+                var res = window.detectBarlinesInRect(startPoint.y, endPoint.y, startPoint.x, endPoint.x, endPoint.shiftKey);
 
                 // Handle new return format (Object) vs old (Array)
                 if (res && res.barlines) {

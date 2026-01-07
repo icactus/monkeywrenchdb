@@ -545,9 +545,9 @@
                 <div id="credits"></div>
                 <div id="credits2"></div>
                 <p><!-- page coordinate editing section info -->Coordinate logging: <span id="indicator"
-                        class="inactive-indicator">OFF</span> Q is for adding or removing barlines, S is for setting
-                    multimeasure rests,<br> W will draw a new staff area when you click the top left and bottom right
-                    corner of new area</p>
+                        class="inactive-indicator">OFF</span> Q toggles on/off for adding or removing barlines
+                    (shift-click to split multimeasure rests),<br> W draws a new staff (click top-left then
+                    bottom-right; shift-click for auto-snap to lines)</p>
             </div>
         </div>
         <div id="sync">
@@ -705,18 +705,11 @@
                         </select>
 
                         <input type="hidden" name="measures_version" value="1" />
-
-                        <textarea name="metric_arr_data" placeholder="Paste metric arr data here..."></textarea>
-                        <div>
-                            <label for="fknp2">SD pdf</label>
-                            <input type="file" id="fknp2" name="file" accept=".pdf" tabindex="1" required />
-                        </div>
                         <div>
                             <label for="fknp2_hd">HD pdf</label>
-                            <input type="file" id="fknp2_hd" name="file_hd" accept=".pdf" required />
+                            <input type="file" id="fknp2_hd" name="file_hd" accept=".pdf" />
                         </div>
-                        <input type="submit" name="submit" value="Submit" />
-                        <input type="submit" name="update" value="Update" />
+                        <input type="submit" name="save" value="Save" />
                     </div>
                 </form>
                 <!-- add recording -->

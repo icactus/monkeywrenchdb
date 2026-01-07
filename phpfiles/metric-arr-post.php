@@ -72,8 +72,8 @@ function scaleValues($item, $scaleFactor)
 
 // --- Main ---
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $piece_id        = (int)$_POST['piece_id'];
-    $instrument_id   = (int)$_POST['instrument_id'];
+    $piece_id = (int) $_POST['piece_id'];
+    $instrument_id = (int) $_POST['instrument_id'];
     $measures_version = $_POST['measures_version'];
     $metric_arr_data = $_POST['metric_arr_data'];
 
@@ -91,64 +91,52 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $response .= "Processed Data Size: $processedSize bytes<br>";
     $response .= "Data Saved: $sizeDifference bytes (" . number_format($percentageSaved, 2) . "%)<br>";
 
-    // Determine which button was pressed
-    $action = isset($_POST['submit']) ? 'submit' : (isset($_POST['update']) ? 'update' : '');
-
+    // --- UPSERT: Check if record exists, then INSERT or UPDATE accordingly ---
     $mysqli->begin_transaction();
 
+    // Check if record already exists
+    $checkQuery = "SELECT * FROM metric_arr WHERE piece_id = ? AND instrument_id = ?";
+    $stmt = $mysqli->prepare($checkQuery);
+    $recordExists = false;
+    if ($stmt) {
+        $stmt->bind_param("ii", $piece_id, $instrument_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $recordExists = ($result->num_rows > 0);
+        $stmt->close();
+    }
 
-    if ($action === 'update') {
-        // --- UPDATE: DB only, skip file handling ---
-        $checkQuery = "SELECT * FROM metric_arr WHERE piece_id = ? AND instrument_id = ?";
-        $stmt = $mysqli->prepare($checkQuery);
-        if ($stmt) {
-            $stmt->bind_param("ii", $piece_id, $instrument_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            if ($result->num_rows > 0) {
-                $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? 
-                            WHERE piece_id = ? AND instrument_id = ?";
-                $stmt_update = $mysqli->prepare($updateQuery);
-                if ($stmt_update) {
-                    $stmt_update->bind_param(
-                        "isii",
-                        $measures_version,
-                        $metric_arr_data_processed,
-                        $piece_id,
-                        $instrument_id
-                    );
-                    $stmt_update->execute();
-                    if ($stmt_update->affected_rows === 0) {
-                        $response .= "Error: No matching record found to update.<br>";
-                        $mysqli->rollback();
-                    } else {
-                        $mysqli->commit();
-                        $response .= "The data has been updated.<br>";
-                    }
-                    $stmt_update->close();
-                } else {
-                    $response .= 'Error preparing update statement: ' . $mysqli->error . "<br>";
-                }
-            } else {
-                $response .= 'Error: No matching record found to update.<br>';
-            }
-            $stmt->close();
+    if ($recordExists) {
+        // --- UPDATE existing record (DB only, no file re-upload needed) ---
+        $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? 
+                        WHERE piece_id = ? AND instrument_id = ?";
+        $stmt_update = $mysqli->prepare($updateQuery);
+        if ($stmt_update) {
+            $stmt_update->bind_param(
+                "isii",
+                $measures_version,
+                $metric_arr_data_processed,
+                $piece_id,
+                $instrument_id
+            );
+            $stmt_update->execute();
+            $mysqli->commit();
+            $response .= "The data has been updated.<br>";
+            $stmt_update->close();
         } else {
-            $response .= 'Error preparing check statement: ' . $mysqli->error . "<br>";
+            $response .= 'Error preparing update statement: ' . $mysqli->error . "<br>";
+            $mysqli->rollback();
         }
-
-        // Stop here so we never fall through to file handling
-        echo $response;
-        exit;
-    } elseif ($action === 'submit') {
-        // --- SUBMIT: require SD + HD file uploads ---
+    } else {
+        // --- INSERT new record (requires SD + HD file uploads) ---
         $baseName = "{$piece_id}-{$instrument_id}.pdf";
-        // Always under the webroot, regardless of where PHP files live
-        $webroot = rtrim($_SERVER['DOCUMENT_ROOT'], '/');   // e.g., /home/username/public_html
-        $stdDir  = $webroot . "/pdfs/";
-        $hdDir   = $webroot . "/hd-pdfs/";
-        if (!is_dir($stdDir)) mkdir($stdDir, 0755, true);
-        if (!is_dir($hdDir))  mkdir($hdDir,  0755, true);
+        $webroot = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
+        $stdDir = $webroot . "/pdfs/";
+        $hdDir = $webroot . "/hd-pdfs/";
+        if (!is_dir($stdDir))
+            mkdir($stdDir, 0755, true);
+        if (!is_dir($hdDir))
+            mkdir($hdDir, 0755, true);
 
         function savePdf($file, $dir, $name, &$response)
         {
@@ -201,8 +189,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             $mysqli->rollback();
         }
-    } else {
-        $response .= "No action determined.<br>";
     }
 
     echo $response;
