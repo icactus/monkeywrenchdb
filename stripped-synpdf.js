@@ -682,11 +682,12 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
                         top: lbox.y + 'px',
                         width: lbox.w + 'px',
                         height: lbox.h + 'px',
-                        background: 'rgba(255, 255, 0, 0.3)',  // Same as maatloper
+                        background: globalHighlightColor,  // Same as main maatloper
+                        opacity: 0.2,  // Same as main maatloper
                         pointerEvents: 'none',
-                        zIndex: 999
+                        zIndex: 2  // Same as main maatloper
                     });
-                    $('#notation').append(linkedDiv);
+                    $('#notation-scroll').append(linkedDiv);  // Same container as main maatloper
                 }
             }
 
