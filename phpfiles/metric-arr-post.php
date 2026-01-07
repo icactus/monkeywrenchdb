@@ -76,6 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $instrument_id = (int) $_POST['instrument_id'];
     $measures_version = $_POST['measures_version'];
     $metric_arr_data = $_POST['metric_arr_data'];
+    $edition_label = isset($_POST['edition_label']) && trim($_POST['edition_label']) !== '' ? trim($_POST['edition_label']) : null;
 
     $originalSize = strlen($metric_arr_data);
     try {
@@ -94,30 +95,60 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // --- UPSERT: Check if record exists, then INSERT or UPDATE accordingly ---
     $mysqli->begin_transaction();
 
-    // Check if record already exists
-    $checkQuery = "SELECT * FROM metric_arr WHERE piece_id = ? AND instrument_id = ?";
+    // Check if record already exists (match on piece_id + instrument_id + edition_label)
+    $checkQuery = "SELECT metric_arr_data FROM metric_arr WHERE piece_id = ? AND instrument_id = ? AND (edition_label = ? OR (edition_label IS NULL AND ? IS NULL))";
     $stmt = $mysqli->prepare($checkQuery);
     $recordExists = false;
+    $existingData = null;
     if ($stmt) {
-        $stmt->bind_param("ii", $piece_id, $instrument_id);
+        $stmt->bind_param("iiss", $piece_id, $instrument_id, $edition_label, $edition_label);
         $stmt->execute();
         $result = $stmt->get_result();
-        $recordExists = ($result->num_rows > 0);
+        if ($result->num_rows > 0) {
+            $recordExists = true;
+            $row = $result->fetch_assoc();
+            $existingData = $row['metric_arr_data'];
+        }
         $stmt->close();
     }
 
+    // Check if force_overwrite confirmation flag is set
+    $forceOverwrite = isset($_POST['force_overwrite']) && $_POST['force_overwrite'] === 'true';
+
     if ($recordExists) {
+        // --- SAFETY CHECK: Compare existing data with new data ---
+        $existingSize = strlen($existingData ?? '');
+        $newSize = strlen($metric_arr_data_processed);
+        $sizeDiff = abs($existingSize - $newSize);
+        $diffPercent = ($existingSize > 0) ? ($sizeDiff / $existingSize) * 100 : 100;
+
+        // If data differs by more than 30%, require confirmation (unless already confirmed)
+        if ($diffPercent > 30 && !$forceOverwrite) {
+            $mysqli->rollback();
+            header('Content-Type: application/json');
+            echo json_encode([
+                'warning' => true,
+                'message' => "WARNING: This looks like significantly different data (" . number_format($diffPercent, 1) . "% change). This might be a new edition. Are you sure you want to overwrite the existing record?",
+                'existing_size' => $existingSize,
+                'new_size' => $newSize,
+                'diff_percent' => round($diffPercent, 1)
+            ]);
+            exit;
+        }
+
         // --- UPDATE existing record (DB only, no file re-upload needed) ---
         $updateQuery = "UPDATE metric_arr SET measures_version = ?, metric_arr_data = ? 
-                        WHERE piece_id = ? AND instrument_id = ?";
+                        WHERE piece_id = ? AND instrument_id = ? AND (edition_label = ? OR (edition_label IS NULL AND ? IS NULL))";
         $stmt_update = $mysqli->prepare($updateQuery);
         if ($stmt_update) {
             $stmt_update->bind_param(
-                "isii",
+                "isiiss",
                 $measures_version,
                 $metric_arr_data_processed,
                 $piece_id,
-                $instrument_id
+                $instrument_id,
+                $edition_label,
+                $edition_label
             );
             $stmt_update->execute();
             $mysqli->commit();
@@ -170,10 +201,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $hdOk = savePdf($_FILES['file_hd'] ?? [], $hdDir, $baseName, $response);
 
         if ($sdOk && $hdOk) {
-            $insertQuery = "INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data) VALUES (?, ?, ?, ?)";
+            $insertQuery = "INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data, edition_label) VALUES (?, ?, ?, ?, ?)";
             $stmt = $mysqli->prepare($insertQuery);
             if ($stmt) {
-                $stmt->bind_param("iiis", $piece_id, $instrument_id, $measures_version, $metric_arr_data_processed);
+                $stmt->bind_param("iiiss", $piece_id, $instrument_id, $measures_version, $metric_arr_data_processed, $edition_label);
                 $stmt->execute();
                 if ($stmt->affected_rows > 0) {
                     $mysqli->commit();

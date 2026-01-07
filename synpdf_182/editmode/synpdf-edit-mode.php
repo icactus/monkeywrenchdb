@@ -216,7 +216,8 @@
             top: 0px;
             font-size: inherit;
             visibility: hidden;
-            z-index: 200; /* Above sidebar */
+            z-index: 200;
+            /* Above sidebar */
             overflow-y: auto;
             overflow-x: hidden;
             max-height: 100%;
@@ -860,7 +861,11 @@
                                 <option value="<?php echo $instrumentId; ?>"><?php echo $instrumentName; ?></option>
                             <?php endforeach; ?>
                         </select>
-
+                        <div>
+                            <label for="edition_label">Edition/Manuscript (optional):</label>
+                            <input type="text" id="edition_label" name="edition_label"
+                                placeholder="e.g., Anna Magdalena Bach" />
+                        </div>
                         <input type="hidden" name="measures_version" value="1" />
                         <div>
                             <label for="fknp2_hd">HD pdf</label>

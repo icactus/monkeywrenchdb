@@ -676,10 +676,19 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
                 for (var lb = 0; lb < c.linkedBoxes.length; lb++) {
                     var lbox = c.linkedBoxes[lb];
                     var linkedCanvasX = pageLeftInNotation(lbox.page ?? c.page ?? 1);
+                    var linkedCanvasY = pageTopInNotation(lbox.page ?? c.page ?? 1);
+
+                    // If page not rendered yet, skip drawing linked box
+                    if (linkedCanvasY === null) continue;
+
+                    var topPos = (typeof lbox.relativeY !== 'undefined')
+                        ? (linkedCanvasY + lbox.relativeY)
+                        : (lbox.y); // Fallback for old data or if relativeY missing (shouldn't happen with new knip)
+
                     var linkedDiv = $('<div class="linked-maatloper demaat"/>').css({
                         position: 'absolute',
                         left: (linkedCanvasX + lbox.x) + 'px',
-                        top: lbox.y + 'px',
+                        top: topPos + 'px',
                         width: lbox.w + 'px',
                         height: lbox.h + 'px',
                         background: globalHighlightColor,  // Same as main maatloper
@@ -1212,6 +1221,7 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
                 prevMeasure.linkedBoxes.push({
                     x: (measureLeftBarline * k),
                     y: (staffTopLine * k),
+                    relativeY: ((staffTopLine - cumulativeHeight) * k),
                     w: ((measureRightBarline - measureLeftBarline) * k),
                     h: ((staffBottomLine - staffTopLine) * k),
                     page: pageNum

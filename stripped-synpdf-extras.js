@@ -1047,11 +1047,25 @@ function canvasXInNotation($canvas) {
     return (c.left - n.left) + notation.scrollLeft;
 }
 
+function canvasYInNotation($canvas) {
+    const notation = document.getElementById('notation-scroll');
+    const c = $canvas[0].getBoundingClientRect();
+    const n = notation.getBoundingClientRect();
+    // position of canvas-top measured in the scrollable content space of #notation
+    return (c.top - n.top) + notation.scrollTop;
+}
+
 function pageLeftInNotation(pageNum) {
     // Measures are 1-based; canvases are #canvas1, #canvas2, ...
     const p = (pageNum != null ? pageNum : 1);
     const $cv = $('#canvas' + p);
     return $cv.length ? canvasXInNotation($cv) : 0;
+}
+
+function pageTopInNotation(pageNum) {
+    const p = (pageNum != null ? pageNum : 1);
+    const $cv = $('#canvas' + p);
+    return $cv.length ? canvasYInNotation($cv) : null;
 }
 
 // RESIZE ALL CANVASES USING CSS

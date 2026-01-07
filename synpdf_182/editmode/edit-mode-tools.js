@@ -139,6 +139,35 @@ document.addEventListener("DOMContentLoaded", function () {
                 .then(response => response.text())
                 .then(data => {
                     console.log(data);
+
+                    // Check if response is JSON warning
+                    try {
+                        const jsonData = JSON.parse(data);
+                        if (jsonData.warning) {
+                            // Show confirmation dialog
+                            const confirmed = confirm(jsonData.message + "\n\nExisting size: " + jsonData.existing_size + " bytes\nNew size: " + jsonData.new_size + " bytes\n\nClick OK to overwrite, or Cancel to abort.");
+                            if (confirmed) {
+                                // Resubmit with force_overwrite flag
+                                formData.set('force_overwrite', 'true');
+                                return fetch("./dispatcher.php", { method: "POST", body: formData })
+                                    .then(r => r.text())
+                                    .then(d => {
+                                        console.log(d);
+                                        if (d.includes("The data has been updated.")) {
+                                            alert("Saved successfully (overwrite confirmed)");
+                                        } else {
+                                            alert("Save failed: " + d);
+                                        }
+                                    });
+                            } else {
+                                alert("Save cancelled. Consider adding an edition label if this is a new manuscript.");
+                            }
+                            return;
+                        }
+                    } catch (e) {
+                        // Not JSON, continue with normal handling
+                    }
+
                     const isSuccess = data.includes("The data has been inserted.") || data.includes("The data has been updated.");
                     if (isSuccess) {
                         alert("Saved successfully");
