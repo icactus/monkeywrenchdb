@@ -402,14 +402,18 @@ if (file_exists('session_config.php')) {
                         setInterval(() => reg.update(), 60000);
 
                         // When a new service worker is found, reload to get fresh content
+                        // But only if there was already an active controller (not first install)
                         reg.addEventListener('updatefound', () => {
                             const newWorker = reg.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'activated') {
-                                    console.log('[PWA] New version available, reloading...');
-                                    window.location.reload();
-                                }
-                            });
+                            // Only reload if we're replacing an existing active worker
+                            if (navigator.serviceWorker.controller) {
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'activated') {
+                                        console.log('[PWA] New version available, reloading...');
+                                        window.location.reload();
+                                    }
+                                });
+                            }
                         });
                     })
                     .catch(err => console.log('[PWA] Service worker registration failed:', err));

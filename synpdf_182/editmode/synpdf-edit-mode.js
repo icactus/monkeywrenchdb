@@ -660,13 +660,36 @@ function knip$$module$synpdf(a, b, c) {
         var p = f[f.length - 1];
         var m = b[e];
         for (f = 0; f < m.length - 1; ++f) {
-            var n = m[f];
-            var l = m[f + 1];
+            // Use absolute values for coordinates (negative = split marker)
+            var n = Math.abs(m[f]);
+            var l = Math.abs(m[f + 1]);
+
+            // If LEFT barline is negative, this is a continuation segment
+            // Add it to the previous measure's linkedBoxes instead of creating new entry
+            if (m[f] < 0 && deMaten$$module$synpdf.length > 0) {
+                var prevMeasure = deMaten$$module$synpdf[deMaten$$module$synpdf.length - 1];
+                if (!prevMeasure.linkedBoxes) {
+                    prevMeasure.linkedBoxes = [];
+                }
+                prevMeasure.linkedBoxes.push({
+                    x: n,
+                    y: g,
+                    w: l - n,
+                    h: p - g
+                });
+                prevMeasure.split = true;  // Mark as split
+                continue;  // Don't create separate deMaten entry
+            }
+
+            // Normal measure - create new deMaten entry
+            // Mark as split if RIGHT barline is negative (first half of split)
+            var isSplit = m[f + 1] < 0;
             deMaten$$module$synpdf.push({
                 x: n,
                 y: g,
                 w: l - n,
-                h: p - g
+                h: p - g,
+                split: isSplit
             })
         }
     }
@@ -1609,14 +1632,33 @@ function maatStrepen$$module$synpdf() {
     if (opt$$module$synpdf.advncd)
         for (var a = 0; a < deMaten$$module$synpdf.length; ++a) {
             var b = deMaten$$module$synpdf[a];
-            b = $('<div class="maten"/>').css({
-                background: a & 1 ? "rgba(0,255,0,0.2)" : "rgba(0,0,255,0.2)",
+            // Use purple for split measures, otherwise alternating green/blue
+            var bgColor = b.split
+                ? "rgba(180, 100, 255, 0.35)"  // Light purple for split measures
+                : (a & 1 ? "rgba(0,255,0,0.2)" : "rgba(0,0,255,0.2)");
+            var box = $('<div class="maten"/>').css({
+                background: bgColor,
                 left: b.x,
                 top: b.y,
                 width: b.w,
                 height: b.h
             });
-            $("#notation").append(b)
+            $("#notation").append(box);
+
+            // Also draw linkedBoxes for split measures (second half)
+            if (b.linkedBoxes) {
+                for (var i = 0; i < b.linkedBoxes.length; i++) {
+                    var lbox = b.linkedBoxes[i];
+                    var linkedEl = $('<div class="maten"/>').css({
+                        background: "rgba(180, 100, 255, 0.35)",  // Purple for linked boxes
+                        left: lbox.x,
+                        top: lbox.y,
+                        width: lbox.w,
+                        height: lbox.h
+                    });
+                    $("#notation").append(linkedEl);
+                }
+            }
         }
 }
 

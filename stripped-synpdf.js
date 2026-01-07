@@ -1149,15 +1149,38 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
         var staffBottomLine = staff[staff.length - 1];
         var staffBarlineArr = pageBarlineArray[i];
         for (let j = 0; j < staffBarlineArr.length - 1; ++j) {
-            var measureLeftBarline = staffBarlineArr[j];
-            var measureRightBarline = staffBarlineArr[j + 1];
+            // Use absolute values for coordinates (negative = split marker)
+            var measureLeftBarline = Math.abs(staffBarlineArr[j]);
+            var measureRightBarline = Math.abs(staffBarlineArr[j + 1]);
             const k = (window.__deMScale || 1);
+
+            // If LEFT barline is negative, this is a continuation segment
+            // Add it to the previous measure's linkedBoxes instead of creating new entry
+            if (staffBarlineArr[j] < 0 && deMaten$$module$synpdf.length > 0) {
+                var prevMeasure = deMaten$$module$synpdf[deMaten$$module$synpdf.length - 1];
+                if (!prevMeasure.linkedBoxes) {
+                    prevMeasure.linkedBoxes = [];
+                }
+                prevMeasure.linkedBoxes.push({
+                    x: (measureLeftBarline * k),
+                    y: (staffTopLine * k),
+                    w: ((measureRightBarline - measureLeftBarline) * k),
+                    h: ((staffBottomLine - staffTopLine) * k),
+                    page: pageNum
+                });
+                prevMeasure.split = true;
+                continue;
+            }
+
+            // Normal measure - create new entry
+            var isSplit = staffBarlineArr[j + 1] < 0;
             deMaten$$module$synpdf.push({
                 x: (measureLeftBarline * k),
                 y: (staffTopLine * k),
                 w: ((measureRightBarline - measureLeftBarline) * k),
                 h: ((staffBottomLine - staffTopLine) * k),
-                page: pageNum
+                page: pageNum,
+                split: isSplit
             });
         }
     }

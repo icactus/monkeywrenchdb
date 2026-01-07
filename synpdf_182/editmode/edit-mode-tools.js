@@ -14,6 +14,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (notation) {
         notation.addEventListener('click', function handleClick(event) {
+            // Alt+Click: Mark/unmark barline as split continuation
+            if (event.altKey && QisActive) {
+                handleSplitMark(event);
+                return;
+            }
             if (handleSplit(event)) return;
             if (handleWCxs(event)) return;
             else if (!QisActive) return;
@@ -222,7 +227,7 @@ function SplitgenerateCoordinates(clickCoords) {
             }
 
             // Sort 'bxs' group from low to high
-            cxsBxsData[pagenum].bxs[j].sort((a, b) => a - b);
+            cxsBxsData[pagenum].bxs[j].sort((a, b) => Math.abs(a) - Math.abs(b));
 
             localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
             requestRefresh();
@@ -231,6 +236,82 @@ function SplitgenerateCoordinates(clickCoords) {
     }
 }
 
+
+// Alt+Click handler: Toggle barline as split measure continuation
+// Marks BOTH: the clicked barline AND the first barline of the next staff
+// This links both halves of a split measure so they share one detix/demix
+function handleSplitMark(event) {
+    let cxsBxsData = JSON.parse(localStorage.getItem('jsonString'));
+    let pagenum = parseInt(document.getElementById('pagenum').value);
+
+    if (pagenum < 1 || pagenum >= cxsBxsData.length) {
+        console.error('Invalid page number for split mark');
+        return;
+    }
+
+    var rect = notation.getBoundingClientRect();
+    var x = event.clientX - rect.left;
+    var y = Math.round(event.clientY - rect.top + notation.scrollTop);
+
+    for (let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
+        let cs_group = cxsBxsData[pagenum].cxs[j].cs;
+
+        // Check if y falls within this staff
+        if (y >= Math.min(...cs_group) && y <= Math.max(...cs_group)) {
+            let bxs_group = cxsBxsData[pagenum].bxs[j];
+
+            // Find nearest barline within 10px
+            for (let i = 0; i < bxs_group.length; i++) {
+                let barlineX = Math.abs(bxs_group[i]); // Handle already-negative values
+
+                if (Math.abs(x - barlineX) <= 10) {
+                    // Determine if we're marking or unmarking
+                    const isMarking = bxs_group[i] >= 0;
+
+                    // Toggle the clicked barline
+                    if (isMarking) {
+                        cxsBxsData[pagenum].bxs[j][i] = -Math.abs(bxs_group[i]);
+                        console.log('Marked barline as split (first half):', barlineX);
+                    } else {
+                        cxsBxsData[pagenum].bxs[j][i] = Math.abs(bxs_group[i]);
+                        console.log('Unmarked barline (first half):', barlineX);
+                    }
+
+                    // Also toggle the FIRST barline of the NEXT staff (second half of split)
+                    const nextStaffIndex = j + 1;
+                    if (nextStaffIndex < cxsBxsData[pagenum].bxs.length) {
+                        const nextBxs = cxsBxsData[pagenum].bxs[nextStaffIndex];
+                        if (nextBxs && nextBxs.length > 0) {
+                            if (isMarking) {
+                                // Mark the first barline of next staff as negative
+                                cxsBxsData[pagenum].bxs[nextStaffIndex][0] = -Math.abs(nextBxs[0]);
+                                console.log('Marked first barline of next staff (second half):', Math.abs(nextBxs[0]));
+                            } else {
+                                // Unmark
+                                cxsBxsData[pagenum].bxs[nextStaffIndex][0] = Math.abs(nextBxs[0]);
+                                console.log('Unmarked first barline of next staff:', Math.abs(nextBxs[0]));
+                            }
+                            // Sort next staff's bxs
+                            cxsBxsData[pagenum].bxs[nextStaffIndex].sort((a, b) => Math.abs(a) - Math.abs(b));
+                        }
+                    } else {
+                        console.warn('No next staff found - split marking incomplete');
+                    }
+
+                    // Re-sort current staff by ABSOLUTE value to maintain position
+                    cxsBxsData[pagenum].bxs[j].sort((a, b) => Math.abs(a) - Math.abs(b));
+
+                    localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
+                    requestRefresh();
+                    return;
+                }
+            }
+
+            console.log('No barline found within 10px of click');
+            return;
+        }
+    }
+}
 
 
 function toggleQActivity() {
@@ -462,7 +543,7 @@ function addRemoveBxs$$module$synpdf(event) {
                 // Push the x coordinate to the corresponding bxs index
                 cxsBxsData[pagenum].bxs[j].push(x);
                 // Sort the 'bxs' group from low to high
-                cxsBxsData[pagenum].bxs[j].sort((a, b) => a - b);
+                cxsBxsData[pagenum].bxs[j].sort((a, b) => Math.abs(a) - Math.abs(b));
             }
 
             localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
