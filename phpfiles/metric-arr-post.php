@@ -1,6 +1,60 @@
 <?php
 require_once 'config.php';
 
+// Helper: Convert edition label to filename-safe slug
+function slugifyEdition($text)
+{
+    if (empty($text))
+        return '';
+    $text = mb_strtolower(trim($text), 'UTF-8');
+    // Transliterate common accented chars
+    $replacements = [
+        'ä' => 'a',
+        'à' => 'a',
+        'á' => 'a',
+        'â' => 'a',
+        'ã' => 'a',
+        'å' => 'a',
+        'é' => 'e',
+        'è' => 'e',
+        'ê' => 'e',
+        'ë' => 'e',
+        'í' => 'i',
+        'ì' => 'i',
+        'î' => 'i',
+        'ï' => 'i',
+        'ö' => 'o',
+        'ò' => 'o',
+        'ó' => 'o',
+        'ô' => 'o',
+        'õ' => 'o',
+        'ø' => 'o',
+        'ü' => 'u',
+        'ù' => 'u',
+        'ú' => 'u',
+        'û' => 'u',
+        'ñ' => 'n',
+        'ç' => 'c',
+        'ß' => 'ss'
+    ];
+    $text = strtr($text, $replacements);
+    $text = preg_replace('/[^a-z0-9]+/', '_', $text);
+    $text = trim($text, '_');
+    $text = preg_replace('/_+/', '_', $text);
+    return $text;
+}
+
+// Helper: Build PDF filename with optional edition label
+function buildPdfFilename($pieceId, $instrumentId, $editionLabel = null)
+{
+    $base = "{$pieceId}-{$instrumentId}";
+    if (!empty($editionLabel)) {
+        $slug = slugifyEdition($editionLabel);
+        return $slug ? "{$base}-{$slug}.pdf" : "{$base}.pdf";
+    }
+    return "{$base}.pdf";
+}
+
 // Establish the database connection
 $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 mysqli_set_charset($mysqli, 'utf8');
@@ -160,7 +214,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     } else {
         // --- INSERT new record (requires SD + HD file uploads) ---
-        $baseName = "{$piece_id}-{$instrument_id}.pdf";
+        $baseName = buildPdfFilename($piece_id, $instrument_id, $edition_label);
         $webroot = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
         $stdDir = $webroot . "/pdfs/";
         $hdDir = $webroot . "/hd-pdfs/";

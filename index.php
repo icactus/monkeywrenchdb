@@ -387,8 +387,8 @@ if (file_exists('session_config.php')) {
         style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=216"></script>
-    <script src="stripped-synpdf-extras.js?v=200"></script>
+    <script src="stripped-synpdf.js?v=217"></script>
+    <script src="stripped-synpdf-extras.js?v=201"></script>
     <script>
         // Register Service Worker for PWA with auto-update
         if ('serviceWorker' in navigator) {

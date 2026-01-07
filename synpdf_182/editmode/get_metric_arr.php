@@ -7,6 +7,59 @@ error_reporting(E_ALL);
 
 require_once '../../phpfiles/read_only_user_config.php';
 
+// Helper: Convert edition label to filename-safe slug
+function slugifyEdition($text)
+{
+  if (empty($text))
+    return '';
+  $text = mb_strtolower(trim($text), 'UTF-8');
+  $replacements = [
+    'ä' => 'a',
+    'à' => 'a',
+    'á' => 'a',
+    'â' => 'a',
+    'ã' => 'a',
+    'å' => 'a',
+    'é' => 'e',
+    'è' => 'e',
+    'ê' => 'e',
+    'ë' => 'e',
+    'í' => 'i',
+    'ì' => 'i',
+    'î' => 'i',
+    'ï' => 'i',
+    'ö' => 'o',
+    'ò' => 'o',
+    'ó' => 'o',
+    'ô' => 'o',
+    'õ' => 'o',
+    'ø' => 'o',
+    'ü' => 'u',
+    'ù' => 'u',
+    'ú' => 'u',
+    'û' => 'u',
+    'ñ' => 'n',
+    'ç' => 'c',
+    'ß' => 'ss'
+  ];
+  $text = strtr($text, $replacements);
+  $text = preg_replace('/[^a-z0-9]+/', '_', $text);
+  $text = trim($text, '_');
+  $text = preg_replace('/_+/', '_', $text);
+  return $text;
+}
+
+// Helper: Build PDF filename with optional edition label
+function buildPdfFilename($pieceId, $instrumentId, $editionLabel = null)
+{
+  $base = "{$pieceId}-{$instrumentId}";
+  if (!empty($editionLabel)) {
+    $slug = slugifyEdition($editionLabel);
+    return $slug ? "{$base}-{$slug}.pdf" : "{$base}.pdf";
+  }
+  return "{$base}.pdf";
+}
+
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 if ($conn->connect_error) {
   http_response_code(500);
@@ -16,7 +69,7 @@ if ($conn->connect_error) {
 mysqli_set_charset($conn, 'utf8mb4');
 
 $piece_id = filter_input(INPUT_GET, 'piece_id', FILTER_VALIDATE_INT);
-$part_id  = filter_input(INPUT_GET, 'part', FILTER_VALIDATE_INT); // instrument_id
+$part_id = filter_input(INPUT_GET, 'part', FILTER_VALIDATE_INT); // instrument_id
 if (!$piece_id || !$part_id) {
   http_response_code(400);
   echo json_encode(['error' => 'Missing or invalid piece_id/part']);
@@ -24,7 +77,7 @@ if (!$piece_id || !$part_id) {
 }
 
 $sql = "
-  SELECT metric_arr_data AS metric_json
+  SELECT metric_arr_data AS metric_json, edition_label
   FROM metric_arr
   WHERE piece_id = ? AND instrument_id = ?
   ORDER BY metric_arr_id DESC
@@ -51,8 +104,11 @@ if ($metric === null && json_last_error() !== JSON_ERROR_NONE) {
   exit;
 }
 
+$edition_label = $row['edition_label'] ?? null;
+
 echo json_encode([
-  'pdf_file'     => sprintf('%d-%d.pdf', $piece_id, $part_id), // or replace with real filename if you store it
-  'metric_arr'   => $metric,
+  'pdf_file' => buildPdfFilename($piece_id, $part_id, $edition_label),
+  'metric_arr' => $metric,
+  'edition_label' => $edition_label,
   'adv_settings' => new stdClass()
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

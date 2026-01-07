@@ -1,5 +1,35 @@
 // Copyright (C) 2023-2025 Isaac Trapkus - All Rights Reserved.
 
+// Helper: Convert edition label to URL/filename-safe slug
+function slugifyEdition(text) {
+    if (!text) return '';
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/[äàáâãå]/g, 'a')
+        .replace(/[éèêë]/g, 'e')
+        .replace(/[íìîï]/g, 'i')
+        .replace(/[öòóôõø]/g, 'o')
+        .replace(/[üùúû]/g, 'u')
+        .replace(/[ñ]/g, 'n')
+        .replace(/[ç]/g, 'c')
+        .replace(/[ß]/g, 'ss')
+        .replace(/[^a-z0-9]+/g, '_')  // Replace non-alphanumeric with underscore
+        .replace(/^_+|_+$/g, '')       // Trim leading/trailing underscores
+        .replace(/_+/g, '_');          // Collapse multiple underscores
+}
+
+// Helper: Build PDF filename with optional edition label
+// Returns: "50-92.pdf" or "50-92-anna_magdalena_bach.pdf"
+function buildPdfFilename(pieceId, instrumentId, editionLabel) {
+    const base = `${pieceId}-${instrumentId}`;
+    if (editionLabel) {
+        const slug = slugifyEdition(editionLabel);
+        return slug ? `${base}-${slug}.pdf` : `${base}.pdf`;
+    }
+    return `${base}.pdf`;
+}
+
 let currentInstrumentGlobal = 0;
 let currentRecordingGlobal = 0;
 let currentMetricArrGlobal = 0;
@@ -672,12 +702,12 @@ function loadRecording(recordingFullData) {
         let storedData = recordingCache[storedId];
         // If data exists in cache, refresh its pdf path to match current mode
         if (storedData) {
-            storedData.pdf_file_name = `${getPdfBaseDir()}${storedData.piece_id}-${storedData.instrument_id}.pdf`;
+            storedData.pdf_file_name = `${getPdfBaseDir()}${buildPdfFilename(storedData.piece_id, storedData.instrument_id, storedData.edition_label)}`;
             sendVarToSynpdf(storedData);
             resolve();
         } else {
             // If data does not exist in cache, create it with the correct base dir
-            const pdfFileName = `${getPdfBaseDir()}${recordingFullData.piece_id}-${recordingFullData.instrument_id}.pdf`;
+            const pdfFileName = `${getPdfBaseDir()}${buildPdfFilename(recordingFullData.piece_id, recordingFullData.instrument_id, recordingFullData.edition_label)}`;
             recordingFullData.pdf_file_name = pdfFileName;
             recordingFullData.timestamp = Date.now();
             recordingCache[storedId] = recordingFullData;
@@ -760,7 +790,7 @@ $('#instruments-dropdown').change(function () {
                 metric_arr_data: partData.metric_arr_data,
                 instrument_id: instrumentData.instrument_id,
                 instrument_name: instrumentData.displayText,
-                pdf_file_name: `${getPdfBaseDir()}${currentRecordingFullData.piece_id}-${instrumentData.instrument_id}.pdf`
+                pdf_file_name: `${getPdfBaseDir()}${buildPdfFilename(currentRecordingFullData.piece_id, instrumentData.instrument_id, instrumentData.edition_label)}`
             };
 
             loadRecording(updatedRecordingFullData)
@@ -1355,7 +1385,8 @@ function toggleHiResPdfs() {
         return;
     }
 
-    const newPath = `${getPdfBaseDir()}${piece}-${inst}.pdf`;
+    const edition = window.currentRecordingFullData?.edition_label;
+    const newPath = `${getPdfBaseDir()}${buildPdfFilename(piece, inst, edition)}`;
 
     // Remember where we are (musical time) so rebuild doesn’t jump
     window.__restoreTime =
