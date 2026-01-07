@@ -1109,6 +1109,13 @@ function scaleNestedArray(arr, scaleAmount) {
             if ('y' in out) out.y = (out.y * k);
             if ('w' in out) out.w = (out.w * k);
             if ('h' in out) out.h = (out.h * k);
+            if ('relativeY' in out) out.relativeY = (out.relativeY * k);
+
+            // Recurse into linkedBoxes (for split measures)
+            if (out.linkedBoxes && Array.isArray(out.linkedBoxes)) {
+                out.linkedBoxes = scaleNestedArray(out.linkedBoxes, scaleAmount);
+            }
+
             return out;
         }
         return item;
