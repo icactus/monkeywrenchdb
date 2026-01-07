@@ -216,7 +216,7 @@
             top: 0px;
             font-size: inherit;
             visibility: hidden;
-            z-index: 2;
+            z-index: 200; /* Above sidebar */
             overflow-y: auto;
             overflow-x: hidden;
             max-height: 100%;
@@ -453,6 +453,8 @@
             display: flex;
             margin-top: 10px;
             margin-left: 20px;
+            margin-right: 330px;
+            /* Space for fixed sidebar */
             filter: brightness(1.5);
             /*overflow-x: hidden; Hiding because R refresh keeps moving canvas*/
         }
@@ -498,16 +500,189 @@
             filter: invert(1);
         }
 
-        #database-menu-top {
-            display: flex;
+        /* === Database Controls - Fixed Right Sidebar === */
+        #database-menus-wrapper {
+            position: fixed;
+            right: 0;
+            top: 50px;
+            /* Below menu button */
+            width: 320px;
+            height: calc(100vh - 50px);
+            background: #f8f9fa;
+            border-left: 1px solid #e0e0e0;
+            padding: 12px;
+            box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
+            overflow-y: auto;
+            z-index: 100;
         }
 
-        #database-menu-top h3 {
+        #database-menu-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #database-menu-top>h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        #database-menu-toggle {
+            background: #4a90d9;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        #database-menu-toggle:hover {
+            background: #3a7bc8;
+        }
+
+        #database-menus {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Form cards */
+        .inputform {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 14px;
             margin: 0;
         }
 
+        .inputform>div {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .inputform label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .inputform input[type="text"],
+        .inputform input[type="number"],
+        .inputform select {
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            min-width: 140px;
+            transition: border-color 0.2s;
+        }
+
+        .inputform input:focus,
+        .inputform select:focus {
+            outline: none;
+            border-color: #4a90d9;
+        }
+
+        .inputform input[type="submit"],
+        .inputform button {
+            background: #4a90d9;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .inputform input[type="submit"]:hover,
+        .inputform button:hover {
+            background: #3a7bc8;
+        }
+
+        .inputform input[type="file"] {
+            font-size: 12px;
+            padding: 6px 0;
+        }
+
         .dropdown-menu {
-            max-width: 200px;
+            max-width: 220px;
+        }
+
+        /* Advanced Tools - collapsed by default */
+        #advanced-tools {
+            margin-top: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+
+        #advanced-tools summary {
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #666;
+            font-weight: 500;
+            user-select: none;
+        }
+
+        #advanced-tools summary:hover {
+            background: #f0f0f0;
+        }
+
+        #advanced-tools .tools-content {
+            padding: 12px 14px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+        }
+
+        #advanced-tools label {
+            font-size: 12px;
+            color: #555;
+            margin-right: 4px;
+        }
+
+        #advanced-tools input[type="number"] {
+            width: 60px;
+            padding: 5px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        #advanced-tools button {
+            background: #777;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        #advanced-tools button:hover {
+            background: #555;
+        }
+
+        #match-info {
+            font-size: 12px;
+            color: #666;
         }
     </style>
 </head>
@@ -606,24 +781,6 @@
                 <h3>Database Controls</h3>
                 <button id="database-menu-toggle"
                     onclick="$('#database-menus').toggle(); return false;">Show/Hide</button>
-                <div>
-                    <div id="detix-box"></div>
-                    <div id="demix-box"></div>
-                </div>
-                <form id="goto-measure-form">
-                    <label for="detix-box">Goto detix</label>
-                    <input id="detix-input" type="number" name="detix-input" placeholder="0" min="0" max="9999" size="4"
-                        oninput="limitInputLength(this)" />
-                    <input type="submit" value="Go">
-                </form>
-                <label for="threshold-input">
-                    <h3>Short M Threshold:</h3>
-                </label>
-                <input id="threshold-input" type="number" step="0.01" value="0.35">
-                <button id="prev-timing-btn">Prev</button>
-                <button id="check-timing-btn">Next</button>
-                <button id="refresh-btn">Refresh</button>
-                <div id="match-info" style="padding-left:10px"></div>
             </div>
             <div id="database-menus">
                 <!-- inputs for adding piece data -->
@@ -712,50 +869,32 @@
                         <input type="submit" name="save" value="Save" />
                     </div>
                 </form>
-                <!-- add recording -->
-                <form class="inputform" id="loadScore" method="POST">
-                    <div style="display:flex;">
+                <!-- Advanced Tools (collapsed) -->
+                <details id="advanced-tools">
+                    <summary>Advanced Tools</summary>
+                    <div class="tools-content">
                         <div>
-                            <label for="piece_id1">Select Piece</label>
-                            <select class="dropdown-menu" id="piece_id1">
-                                <option value="">Select piece...</option>
-                                <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
-                                    <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <label for="detix-input">Goto detix</label>
+                            <form id="goto-measure-form" style="display:inline;">
+                                <input id="detix-input" type="number" name="detix-input" placeholder="0" min="0"
+                                    max="9999" oninput="limitInputLength(this)" />
+                                <button type="submit">Go</button>
+                            </form>
                         </div>
-                        <button type="button" id="loadBtn">Load</button>
-                        <button type="button" id="rewind">Rewind</button>
                         <div>
-                            <label for="recordingsAlready">Check if Already Exists</label>
-                            <select id="recordingsAlready">
-                                <option value="">-- Already Synced Recordings --</option>
-                                </option>
-                            </select>
+                            <label for="threshold-input">Short M Threshold</label>
+                            <input id="threshold-input" type="number" step="0.01" value="0.35">
+                            <button id="prev-timing-btn">Prev</button>
+                            <button id="check-timing-btn">Next</button>
+                            <button id="refresh-btn">Refresh</button>
+                            <span id="match-info"></span>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <div id="detix-box" style="font-size: 11px; color: #666;"></div>
+                            <div id="demix-box" style="font-size: 11px; color: #666;"></div>
                         </div>
                     </div>
-                </form>
-                <div style="display:flex;">
-                    <form class="inputform" id="addnewrecordingform" method="POST">
-                        <div>
-                            <label for="conductor_name">Conductor/Soloist</label>
-                            <input type="text" name="conductor_name" placeholder="First Last" />
-                        </div>
-                        <div>
-                            <label for="ensemble_name">Ensemble Name</label>
-                            <input type="text" name="ensemble_name" placeholder="English Version of Ensemble Name" />
-                        </div>
-                        <div>
-                            <label for="year">Year Performed</label>
-                            <input type="text" name="year" placeholder="Year as YYYY" />
-                        </div>
-                        <input type="hidden" name="piece_id" id="piece_id" />
-                        <input type="hidden" name="offset_js" id="offset_js" />
-                        <input type="hidden" name="youtube_id" id="youtube_id" />
-                        <input type="hidden" name="times_arr_data" id="times_arr_data" />
-                        <input type="submit" value="Submit" />
-                    </form>
-                </div>
+                </details>
             </div>
         </div>
     </section1>
