@@ -670,6 +670,26 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
             maatlooperStyle.width = measureWidth + "px";
             maatlooperStyle.height = measureHeight + "px";
 
+            // Handle linkedBoxes for split measures
+            $('.linked-maatloper').remove();  // Clear old linked highlights
+            if (c.linkedBoxes && c.linkedBoxes.length > 0) {
+                for (var lb = 0; lb < c.linkedBoxes.length; lb++) {
+                    var lbox = c.linkedBoxes[lb];
+                    var linkedCanvasX = pageLeftInNotation(lbox.page ?? c.page ?? 1);
+                    var linkedDiv = $('<div class="linked-maatloper demaat"/>').css({
+                        position: 'absolute',
+                        left: (linkedCanvasX + lbox.x) + 'px',
+                        top: lbox.y + 'px',
+                        width: lbox.w + 'px',
+                        height: lbox.h + 'px',
+                        background: 'rgba(255, 255, 0, 0.3)',  // Same as maatloper
+                        pointerEvents: 'none',
+                        zIndex: 999
+                    });
+                    $('#notation').append(linkedDiv);
+                }
+            }
+
             $('.demaat').hide();
             if (canShowDemaat) {
                 $('.demaat').show();
@@ -780,11 +800,38 @@ function scrollHorizontally(targetX, instant) {
 
 Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
     var d;
+
+    // Helper to check if click (a,b) is within a box
+    function isClickInBox(box, clickX, clickY, pageOffset) {
+        const boxLeft = (box.x + pageOffset);
+        const boxRight = boxLeft + box.w;
+        const boxTop = box.y;
+        const boxBottom = box.y + box.h;
+        return !(clickY > boxBottom || clickX > boxRight || clickX < boxLeft || clickY < boxTop);
+    }
+
     for (d = 0; d < deMaten$$module$synpdf.length; ++d) {
         var e = deMaten$$module$synpdf[d];
-        const exLeft = (e.x + pageLeftInNotation(e.page ?? 1));
+        const pageOffset = pageLeftInNotation(e.page ?? 1);
+        const exLeft = (e.x + pageOffset);
         const exRight = exLeft + e.w;
-        if (!(b > e.y + e.h || a > exRight)) {
+
+        // Check main measure box
+        let isInMeasure = isClickInBox(e, a, b, pageOffset);
+
+        // Also check linkedBoxes (for split measures)
+        if (!isInMeasure && e.linkedBoxes) {
+            for (let lb = 0; lb < e.linkedBoxes.length; lb++) {
+                const linkedBox = e.linkedBoxes[lb];
+                const linkedPageOffset = pageLeftInNotation(linkedBox.page ?? e.page ?? 1);
+                if (isClickInBox(linkedBox, a, b, linkedPageOffset)) {
+                    isInMeasure = true;
+                    break;
+                }
+            }
+        }
+
+        if (isInMeasure) {
             if (a < exLeft) {
                 keyDown$$module$synpdf({
                     key: " "
