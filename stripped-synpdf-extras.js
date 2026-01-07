@@ -841,6 +841,10 @@ function displayMultiplePartLinks(data, clickedLink) {
     data.forEach(function (item) {
 
         var label = item.instrument_name + (item.part_number ? (' ' + item.part_number) : '');
+        // Add edition label if present (e.g., "Cello (Anna Magdalena Bach)")
+        if (item.edition_label) {
+            label += ' (' + item.edition_label + ')';
+        }
         var instrumentLink = $('<a href="#" class="instrument-link"></a>')
             .text(label)
             .data('metric-arr-id', item.metric_arr_id)

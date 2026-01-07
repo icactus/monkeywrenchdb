@@ -388,7 +388,7 @@ if (file_exists('session_config.php')) {
         Link copied to clipboard!
     </div>
     <script src="stripped-synpdf.js?v=213"></script>
-    <script src="stripped-synpdf-extras.js?v=196"></script>
+    <script src="stripped-synpdf-extras.js?v=197"></script>
     <script>
         // Register Service Worker for PWA with auto-update
         if ('serviceWorker' in navigator) {

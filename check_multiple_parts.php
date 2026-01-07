@@ -31,7 +31,7 @@ $instrumentIdArray = explode(',', $instrumentIds);
 $placeholders = implode(',', array_fill(0, count($instrumentIdArray), '?'));
 
 // Prepare the SQL query
-$sql = "SELECT m.metric_arr_id, i.instrument_name, i.part_number
+$sql = "SELECT m.metric_arr_id, i.instrument_name, i.part_number, m.edition_label
         FROM metric_arr m
         JOIN instruments i ON m.instrument_id = i.instrument_id
         WHERE m.piece_id = ? AND m.instrument_id IN ($placeholders)";

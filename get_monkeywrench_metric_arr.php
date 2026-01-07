@@ -17,7 +17,7 @@ if ($conn->connect_error) {
 $metricId = $_GET['metricId'];
 
 // Construct the SQL query to fetch the data
-$sql = "SELECT metric_arr.metric_arr_id, metric_arr.piece_id, composers.composer_last, pieces.piece_name, metric_arr.instrument_id, instruments.instrument_name, metric_arr.metric_arr_data, recordings.youtube_id, 
+$sql = "SELECT metric_arr.metric_arr_id, metric_arr.piece_id, composers.composer_last, pieces.piece_name, metric_arr.instrument_id, instruments.instrument_name, metric_arr.edition_label, metric_arr.metric_arr_data, recordings.youtube_id, 
         CASE 
             WHEN metric_arr.measures_version = 1 THEN recordings.offset_js
             WHEN metric_arr.measures_version = 2 THEN recordings.offset_js2
