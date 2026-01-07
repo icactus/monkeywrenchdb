@@ -24,7 +24,8 @@ $stmt = $conn->prepare("
         i.instrument_name,
         i.part_number,
         i.instrument_key,
-        i.instrument_id
+        i.instrument_id,
+        m.edition_label
     FROM metric_arr m
     JOIN pieces p            ON m.piece_id      = p.piece_id
     JOIN recordings r        ON p.piece_id      = r.piece_id
@@ -66,6 +67,10 @@ if ($result) {
         }
         if ($instrumentKey && ($instrumentKey != 0)) {
             $displayText .= ", " . $instrumentKey;
+        }
+        // Add edition label if present (e.g., "Anna Magdalena Bach")
+        if (!empty($row['edition_label'])) {
+            $displayText .= " (" . $row['edition_label'] . ")";
         }
 
         $metricArrIds[] = array(
