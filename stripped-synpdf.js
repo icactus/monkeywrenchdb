@@ -685,6 +685,17 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
                         ? (linkedCanvasY + lbox.relativeY)
                         : (lbox.y); // Fallback for old data or if relativeY missing (shouldn't happen with new knip)
 
+                    if (window.debugLinkedBoxes) {
+                        console.log('LinkedBox:', {
+                            page: lbox.page,
+                            cPage: c.page,
+                            linkedCanvasY,
+                            relativeY: lbox.relativeY,
+                            oldY: lbox.y,
+                            topPos
+                        });
+                    }
+
                     var linkedDiv = $('<div class="linked-maatloper demaat"/>').css({
                         position: 'absolute',
                         left: (linkedCanvasX + lbox.x) + 'px',
