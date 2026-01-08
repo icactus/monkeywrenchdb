@@ -828,6 +828,8 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
 
         // Check main measure box
         let isInMeasure = isClickInBox(e, a, b, pageOffset);
+        let clickedBox = e;  // Track which box was clicked
+        let clickedBoxOffset = pageOffset;  // Track the page offset of clicked box
 
         // Also check linkedBoxes (for split measures)
         if (!isInMeasure && e.linkedBoxes) {
@@ -848,13 +850,17 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
 
                 if (isClickInBox(adjustedBox, a, b, linkedPageOffset)) {
                     isInMeasure = true;
+                    clickedBox = adjustedBox;  // Use the linked box for calculations
+                    clickedBoxOffset = linkedPageOffset;
                     break;
                 }
             }
         }
 
         if (isInMeasure) {
-            if (a < exLeft) {
+            const clickedBoxLeft = clickedBox.x + clickedBoxOffset;
+
+            if (a < clickedBoxLeft) {
                 keyDown$$module$synpdf({
                     key: " "
                 });
@@ -876,14 +882,15 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
                     d = deTijden$$module$synpdf[b].t;
                     currentMeasureTime = d;
                     var f = b < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[b + 1].t : d + 2;
-                    b = d + (f - d) * (a - e.x) / e.w;
+                    // Use clicked box dimensions for position calculation
+                    b = d + (f - d) * (a - clickedBox.x - clickedBoxOffset) / clickedBox.w;
                     if (elmed$$module$synpdf.getPlayerState() === 5) {
                         elmed$$module$synpdf.seekTo(d + TOFF$$module$synpdf + offset$$module$synpdf);
                         break;
                     }
-                    c ? opt$$module$synpdf.loop && this.doLoopTag(a, e.y, b, d, f, {
-                        x1: e.x,
-                        x2: e.x + e.w
+                    c ? opt$$module$synpdf.loop && this.doLoopTag(a, clickedBox.y, b, d, f, {
+                        x1: clickedBox.x + clickedBoxOffset,
+                        x2: clickedBox.x + clickedBoxOffset + clickedBox.w
                     }) : (b = (opt$$module$synpdf.lncsr ? b : d + TOFF$$module$synpdf) + offset$$module$synpdf, playPause2$$module$synpdf(!1, b));
                     break;
                 }
