@@ -2214,6 +2214,10 @@ function keyDown$$module$synpdf(a) {
                 Date.now() - window.__lastMeasureClickTime < 2000) {
                 time = currentMeasureTime + offset$$module$synpdf;
                 window.__lastMeasureClickTime = undefined; // Clear it after use
+                // Immediately update visual cursor to prevent flicker
+                if (msc_wz$$module$synpdf) {
+                    msc_wz$$module$synpdf.time2x(currentMeasureTime);
+                }
             } else {
                 time = yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime;
             }
