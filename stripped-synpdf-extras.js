@@ -770,6 +770,7 @@ function fetchNewInstrument(metricArrId) {
 $('#instruments-dropdown').change(function () {
     const selectedOption = $(this).find('option:selected');
     const instrumentData = selectedOption.data('instrumentData');
+    console.log('INSTRUMENT DROPDOWN DATA:', instrumentData);
     currentInstrumentGlobal = instrumentData.instrument_id;
     currentMetricArrGlobal = instrumentData.metric_arr_id;
     document.getElementById("notation-scroll").innerHTML = "";  // Clear notation section
