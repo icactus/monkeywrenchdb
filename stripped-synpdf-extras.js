@@ -707,7 +707,9 @@ function loadRecording(recordingFullData) {
             resolve();
         } else {
             // If data does not exist in cache, create it with the correct base dir
+            console.log('Building PDF filename:', { piece: recordingFullData.piece_id, inst: recordingFullData.instrument_id, edition: recordingFullData.edition_label });
             const pdfFileName = `${getPdfBaseDir()}${buildPdfFilename(recordingFullData.piece_id, recordingFullData.instrument_id, recordingFullData.edition_label)}`;
+            console.log('Result PDF filename:', pdfFileName);
             recordingFullData.pdf_file_name = pdfFileName;
             recordingFullData.timestamp = Date.now();
             recordingCache[storedId] = recordingFullData;
