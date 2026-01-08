@@ -29,6 +29,7 @@ $stmt = $conn->prepare("
         pieces.piece_name, 
         metric_arr.instrument_id, 
         instruments.instrument_name, 
+        metric_arr.edition_label,
         recordings.youtube_id, 
         recordings.recording_id,
         recordings.offset_js,       -- Standard offset
