@@ -77,7 +77,8 @@ if ($result) {
             'recording_id' => $recordingId,
             'instrument_id' => $instrumentId,
             'metric_arr_id' => $row['metric_arr_id'],
-            'displayText' => $displayText
+            'displayText' => $displayText,
+            'edition_label' => $row['edition_label'] ?? null
         );
     }
 
