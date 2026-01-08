@@ -794,6 +794,7 @@ $('#instruments-dropdown').change(function () {
                 metric_arr_data: partData.metric_arr_data,
                 instrument_id: instrumentData.instrument_id,
                 instrument_name: instrumentData.displayText,
+                edition_label: instrumentData.edition_label,
                 pdf_file_name: `${getPdfBaseDir()}${buildPdfFilename(currentRecordingFullData.piece_id, instrumentData.instrument_id, instrumentData.edition_label)}`
             };
 
