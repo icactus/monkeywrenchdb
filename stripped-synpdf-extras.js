@@ -596,6 +596,7 @@ function fetchRecordings(metricArrId) {
                     reject("No recordings found");
                 } else {
                     var recordings = JSON.parse(response);
+                    console.log('RAW API RESPONSE - first recording:', recordings[0]);
                     currentMetricArrGlobal = metricArrId;
                     var container = $('#recordings-container');
 
