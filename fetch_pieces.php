@@ -39,6 +39,7 @@ SELECT
     pc.category_name,
     c.composer_last,
     m.metric_arr_id,
+    m.edition_label,
     i.instrument_id,
     i.instrument_name,
     i.part_number,
@@ -98,7 +99,8 @@ while ($row = $res->fetch_assoc()) {
         'metric_arr_id' => (int) $row['metric_arr_id'],
         'instrument_id' => (int) $row['instrument_id'],
         'instrument_name' => $row['instrument_name'],
-        'part_number' => $row['part_number']
+        'part_number' => $row['part_number'],
+        'edition_label' => $row['edition_label']
     ];
 }
 
