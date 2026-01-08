@@ -309,6 +309,7 @@ function handleSplitMark(event) {
                     // Also toggle the FIRST barline of the NEXT staff (second half of split)
                     const nextStaffIndex = j + 1;
                     if (nextStaffIndex < cxsBxsData[pagenum].bxs.length) {
+                        // Next staff is on the same page
                         const nextBxs = cxsBxsData[pagenum].bxs[nextStaffIndex];
                         if (nextBxs && nextBxs.length > 0) {
                             if (isMarking) {
@@ -323,8 +324,25 @@ function handleSplitMark(event) {
                             // Sort next staff's bxs
                             cxsBxsData[pagenum].bxs[nextStaffIndex].sort((a, b) => Math.abs(a) - Math.abs(b));
                         }
+                    } else if (pagenum + 1 < cxsBxsData.length) {
+                        // We're at the last staff of this page - check NEXT PAGE's first staff
+                        const nextPageNum = pagenum + 1;
+                        const nextPageBxs = cxsBxsData[nextPageNum].bxs;
+                        if (nextPageBxs && nextPageBxs.length > 0 && nextPageBxs[0].length > 0) {
+                            if (isMarking) {
+                                // Mark the first barline of first staff on next page as negative
+                                cxsBxsData[nextPageNum].bxs[0][0] = -Math.abs(nextPageBxs[0][0]);
+                                console.log('Marked first barline of NEXT PAGE (cross-page split):', Math.abs(nextPageBxs[0][0]));
+                            } else {
+                                // Unmark
+                                cxsBxsData[nextPageNum].bxs[0][0] = Math.abs(nextPageBxs[0][0]);
+                                console.log('Unmarked first barline of NEXT PAGE:', Math.abs(nextPageBxs[0][0]));
+                            }
+                            // Sort next page's first staff's bxs
+                            cxsBxsData[nextPageNum].bxs[0].sort((a, b) => Math.abs(a) - Math.abs(b));
+                        }
                     } else {
-                        console.warn('No next staff found - split marking incomplete');
+                        console.warn('No next staff found - split marking incomplete (last page)');
                     }
 
                     // Re-sort current staff by ABSOLUTE value to maintain position
