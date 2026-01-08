@@ -2173,8 +2173,9 @@ function pauseer$$module$synpdf() {
 }
 
 function keyDown$$module$synpdf(a) {
-    // --- guard: if typing in the search box, ignore shortcuts ---
-    if (document.activeElement && document.activeElement.id === "pieces-search") {
+    // --- guard: if typing in any input/textarea, ignore shortcuts ---
+    var activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
         return; // let the input handle keys normally
     }
     var b = a.key,
