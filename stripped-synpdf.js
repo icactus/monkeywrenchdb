@@ -834,7 +834,19 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
             for (let lb = 0; lb < e.linkedBoxes.length; lb++) {
                 const linkedBox = e.linkedBoxes[lb];
                 const linkedPageOffset = pageLeftInNotation(linkedBox.page ?? e.page ?? 1);
-                if (isClickInBox(linkedBox, a, b, linkedPageOffset)) {
+                const linkedPageTop = pageTopInNotation(linkedBox.page ?? e.page ?? 1) ?? 0;
+
+                // Create a temporary box with corrected Y coordinates using relativeY
+                const adjustedBox = {
+                    x: linkedBox.x,
+                    w: linkedBox.w,
+                    h: linkedBox.h,
+                    y: (typeof linkedBox.relativeY !== 'undefined')
+                        ? (linkedPageTop + linkedBox.relativeY)
+                        : linkedBox.y
+                };
+
+                if (isClickInBox(adjustedBox, a, b, linkedPageOffset)) {
                     isInMeasure = true;
                     break;
                 }
