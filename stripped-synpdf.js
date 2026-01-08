@@ -881,6 +881,7 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
                 if (d == deTijden$$module$synpdf[b].mix) {
                     d = deTijden$$module$synpdf[b].t;
                     currentMeasureTime = d;
+                    window.__lastMeasureClickTime = Date.now(); // Track when user clicked on a measure
                     var f = b < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[b + 1].t : d + 2;
                     // Use clicked box dimensions for position calculation
                     b = d + (f - d) * (a - clickedBox.x - clickedBoxOffset) / clickedBox.w;
@@ -2206,7 +2207,16 @@ function keyDown$$module$synpdf(a) {
             a.preventDefault &&
                 a.preventDefault();
             if (!elmed$$module$synpdf) break;
-            var time = yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime;
+            // If user clicked on a measure recently (within 2 seconds), use that time
+            // currentMeasureTime is set by x2time when user clicks on a measure
+            var time;
+            if (typeof window.__lastMeasureClickTime !== 'undefined' &&
+                Date.now() - window.__lastMeasureClickTime < 2000) {
+                time = currentMeasureTime + offset$$module$synpdf;
+                window.__lastMeasureClickTime = undefined; // Clear it after use
+            } else {
+                time = yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime;
+            }
             playPause2$$module$synpdf(!0, time);
             break;
         case "a":
