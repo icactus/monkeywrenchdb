@@ -1839,7 +1839,7 @@ function kliklang$$module$synpdf(a) {
                 const $sc = $("#notation-scroll");
                 const aX = a.clientX - $sc.offset().left + $sc.scrollLeft(); // notation-space X
                 const aY = a.clientY - $sc.offset().top + $sc.scrollTop();   // notation-space Y
-                longPress && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(aX, aY) : msc_wz$$module$synpdf.x2time(aX, aY, longPress, e);
+                longPress && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(aX, aY) : msc_wz$$module$synpdf.x2time(aX, aY, longPress, longPress || e);
 
 
             }
