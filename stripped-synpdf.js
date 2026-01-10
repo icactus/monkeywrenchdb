@@ -1831,7 +1831,7 @@ function kliklang$$module$synpdf(a) {
             });
         b.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function (a) {
             a.stopPropagation();
-            a.preventDefault();
+            if (a.cancelable) a.preventDefault();
             b.off("mousemove touchmove mouseup touchend");
             if (!touch_moved$$module$synpdf) {
                 a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
