@@ -27,6 +27,8 @@ deployment:
     - /bin/cp update_monkeywrench_metric_arr.php $DEPLOYPATH
     - /bin/cp manifest.json $DEPLOYPATH
     - /bin/cp sw.js $DEPLOYPATH
+    - /bin/cp annotation-layer.js $DEPLOYPATH
+    - /bin/cp annotations_api.php $DEPLOYPATH
     - /bin/cp -R assets $DEPLOYPATH
 
     - export DEPLOYPATH2=/home/monkcdmb/phpfiles/
@@ -36,6 +38,7 @@ deployment:
     - /bin/cp phpfiles/pieces-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/submit_recording.php $DEPLOYPATH2
     - /bin/cp phpfiles/auth_config.example.php $DEPLOYPATH2
+    - /bin/cp phpfiles/cloudflare_purge.php $DEPLOYPATH2
 
     - export DEPLOYPATH3=/home/monkcdmb/public_html/editmode/
     - /bin/cp synpdf_182/editmode/synpdf-edit-mode.php $DEPLOYPATH3 
