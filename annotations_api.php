@@ -42,12 +42,17 @@ mysqli_set_charset($conn, 'utf8');
 // Handle shared annotations (no auth required)
 if (isset($_GET['share_token'])) {
     $token = $conn->real_escape_string($_GET['share_token']);
-    $result = $conn->query("SELECT annotation_data FROM user_annotations WHERE share_token = '$token'");
+    $result = $conn->query("SELECT user_id, annotation_data FROM user_annotations WHERE share_token = '$token'");
     if ($result && $row = $result->fetch_assoc()) {
+        $is_owner = false;
+        if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] === (int) $row['user_id']) {
+            $is_owner = true;
+        }
+
         echo json_encode([
             'success' => true,
             'annotation_data' => json_decode($row['annotation_data']),
-            'readonly' => true
+            'readonly' => !$is_owner // Editable if owner
         ]);
     } else {
         http_response_code(404);

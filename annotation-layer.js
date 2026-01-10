@@ -614,7 +614,7 @@
             if (data.success && data.annotation_data) {
                 strokes = data.annotation_data.strokes || [];
                 console.log('Shared strokes loaded:', strokes.length);
-                isReadonly = true;
+                isReadonly = data.readonly; // Respect server flag (false if owner)
 
                 createCanvasOverlays();
                 renderAllStrokes();
