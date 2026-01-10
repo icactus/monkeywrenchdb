@@ -489,19 +489,20 @@ $is_share_link = isset($_GET['share']);
                     .then(reg => {
                         console.log('[PWA] Service worker registered');
 
-                        // Check for updates immediately and every 60 seconds
-                        reg.update();
+                        // Check for updates every 60 seconds (skip immediate check to avoid loop)
                         setInterval(() => reg.update(), 60000);
 
                         // When a new service worker is found, reload to get fresh content
-                        // But only if there was already an active controller (not first install)
+                        // Use sessionStorage to prevent infinite reload loops
                         reg.addEventListener('updatefound', () => {
                             const newWorker = reg.installing;
                             // Only reload if we're replacing an existing active worker
-                            if (navigator.serviceWorker.controller) {
+                            // AND we haven't already reloaded this session
+                            if (navigator.serviceWorker.controller && !sessionStorage.getItem('sw_reloaded')) {
                                 newWorker.addEventListener('statechange', () => {
                                     if (newWorker.state === 'activated') {
                                         console.log('[PWA] New version available, reloading...');
+                                        sessionStorage.setItem('sw_reloaded', 'true');
                                         window.location.reload();
                                     }
                                 });
