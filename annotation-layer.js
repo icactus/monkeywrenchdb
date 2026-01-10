@@ -29,6 +29,16 @@
 
     // Initialize annotation system
     window.initAnnotations = function (metric_arr_id) {
+        // Detect part change and clear state
+        if (metricArrId && metricArrId !== metric_arr_id) {
+            console.log('Part changed (MetricArr), clearing annotations state');
+            strokes = [];
+            undoStack = [];
+            redoStack = [];
+            canvasElements = {};
+            isReadonly = false;
+        }
+
         metricArrId = metric_arr_id;
 
         // Check for share token (pending global takes precedence as URL might be wiped by now)
@@ -81,6 +91,14 @@
     function createCanvasOverlays() {
         const notationScroll = document.getElementById('notation-scroll');
         if (!notationScroll) return;
+
+        // Cleanup previous listeners to prevent duplicates
+        if (window._annotationResizeHandler) {
+            window.removeEventListener('resize', window._annotationResizeHandler);
+        }
+        if (window._annotationObserver) {
+            window._annotationObserver.disconnect();
+        }
 
         // Helper to setup or update overlay for a single canvas
         const setupOverlay = (pageCanvas) => {
@@ -171,15 +189,26 @@
             }
         };
 
-        // 1. Setup existing canvases
-        const pageCanvases = notationScroll.querySelectorAll('canvas[id^="canvas"]:not([id^="annotation"])');
-        pageCanvases.forEach(setupOverlay);
+        // Function to reposition all existing overlays (e.g. on resize or layout change)
+        const repositionAllOverlays = () => {
+            const pageCanvases = notationScroll.querySelectorAll('canvas[id^="canvas"]:not([id^="annotation"])');
+            pageCanvases.forEach(setupOverlay);
+        };
 
-        // 2. Observer for new canvases (lazy loading)
+        // Attach resize handler
+        window._annotationResizeHandler = () => requestAnimationFrame(repositionAllOverlays);
+        window.addEventListener('resize', window._annotationResizeHandler);
+
+        // 1. Setup existing canvases
+        repositionAllOverlays();
+
+        // 2. Observer for new canvases (lazy loading) AND layout changes (2-up)
         // Disconnect previous observer if exists to avoid duplicates
         if (window._annotationObserver) window._annotationObserver.disconnect();
 
         window._annotationObserver = new MutationObserver((mutations) => {
+            let shouldReposition = false;
+
             mutations.forEach(mutation => {
                 mutation.addedNodes.forEach(node => {
                     if (node.nodeName === 'CANVAS') {
@@ -187,11 +216,20 @@
                     }
                 });
 
-                // Also check if attributes changed (like width/height setting on load)
                 if (mutation.type === 'attributes' && mutation.target.nodeName === 'CANVAS') {
                     setupOverlay(mutation.target);
                 }
+
+                // Container attributes changed (e.g. class="two-up")
+                if (mutation.target === notationScroll && (mutation.attributeName === 'class' || mutation.attributeName === 'style')) {
+                    shouldReposition = true;
+                }
             });
+
+            if (shouldReposition) {
+                requestAnimationFrame(repositionAllOverlays);
+                setTimeout(repositionAllOverlays, 300);
+            }
         });
 
         window._annotationObserver.observe(notationScroll, {
@@ -201,7 +239,7 @@
             attributeFilter: ['width', 'height', 'style', 'class']
         });
 
-        console.log('Observation started for lazy-loaded pages');
+        console.log('Observation started for lazy-loaded pages and layout changes');
     }
 
     // Setup drawing events for a canvas

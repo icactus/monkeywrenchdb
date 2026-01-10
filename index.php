@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=19"></script>
+        <script src="annotation-layer.js?v=21"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>
@@ -466,6 +466,10 @@ $is_share_link = isset($_GET['share']);
 
             body.annotation-mode #notation-scroll {
                 cursor: crosshair;
+            }
+
+            body.annotations-hidden .annotation-canvas {
+                display: none !important;
             }
         </style>
     <?php endif; ?>
