@@ -483,9 +483,9 @@
 
     // Show/hide annotations toggle in sidebar
     function showAnnotationsToggle(show) {
-        let toggle = document.getElementById('annotations-toggle');
-        if (show && !toggle) {
-            // Will be added by the main UI
+        let section = document.getElementById('annotations-section');
+        if (section) {
+            section.style.display = show ? 'block' : 'none';
         }
     }
 

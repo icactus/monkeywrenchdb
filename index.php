@@ -9,25 +9,25 @@ if (file_exists('session_config.php')) {
 $shared_config = null;
 if (isset($_GET['share'])) {
     $share_token = $_GET['share'];
-    
+
     // Connect to DB
     if (file_exists('phpfiles/config.php')) {
         require_once 'phpfiles/config.php';
     }
-    
+
     // Only attempt if constants are defined
     if (defined('DB_HOST')) {
         $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
         if (!$conn->connect_error) {
             mysqli_set_charset($conn, 'utf8');
-            
+
             // Lookup token
             $stmt = $conn->prepare("SELECT metric_arr_id FROM user_annotations WHERE share_token = ?");
             if ($stmt) {
                 $stmt->bind_param("s", $share_token);
                 $stmt->execute();
                 $result = $stmt->get_result();
-                
+
                 if ($row = $result->fetch_assoc()) {
                     $shared_config = [
                         'token' => $share_token,
@@ -73,8 +73,8 @@ if (isset($_GET['share'])) {
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap"
         rel="stylesheet">
     <script src="jquery.min.js"></script>
-    <?php if (isset($_SESSION['user_id'])): ?>
-        <script src="annotation-layer.js?v=10"></script>
+    <?php if (isset($_SESSION['user_id']) || $shared_config): ?>
+        <script src="annotation-layer.js?v=12"></script>
     <?php endif; ?>
     <?php if ($shared_config): ?>
         <script>
@@ -333,23 +333,24 @@ if (isset($_GET['share'])) {
                         <option value="" disabled hidden selected>Change Recording</option>
                     </select>
                 </div>
-                <?php if (isset($_SESSION['user_id'])): ?>
-                    <div id="annotations-section" style="margin-top: 15px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <h3 style="margin:0;">✏️ My Markings</h3>
+                <!-- Annotations Section (Visible for logged-in users OR when shared annotations loaded) -->
+                <div id="annotations-section" style="margin-top: 15px; display: <?php echo (isset($_SESSION['user_id']) ? 'block' : 'none'); ?>;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="margin:0;">✏️ Markings</h3>
+                        <?php if (isset($_SESSION['user_id'])): ?>
                             <button id="annotation-toggle-btn" onclick="toggleAnnotationMode()"
                                 style="background:#4a90d9; color:#fff; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:13px;">
                                 Edit
                             </button>
-                        </div>
-                        <div id="annotations-visibility-row"
-                            style="display:flex; align-items:center; gap:10px; margin-top:8px;">
-                            <label style="font-size:14px; color:#555;">Show markings</label>
-                            <input type="checkbox" id="annotations-visibility-toggle" checked
-                                onchange="toggleAnnotationsVisibility()" style="width:16px; height:16px;">
-                        </div>
+                        <?php endif; ?>
                     </div>
-                <?php endif; ?>
+                    <div id="annotations-visibility-row"
+                        style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+                        <label style="font-size:14px; color:#555;">Show markings</label>
+                        <input type="checkbox" id="annotations-visibility-toggle" checked
+                            onchange="toggleAnnotationsVisibility()" style="width:16px; height:16px;">
+                    </div>
+                </div>
                 <div class="mobile-only">
                     <div style="height:1px; background:rgba(0,0,0,0.08); margin: 25px 0;"></div>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
