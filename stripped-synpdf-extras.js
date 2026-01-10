@@ -921,6 +921,11 @@ function handleRecordingSelection(recordingFullData) {
                     $('#instruments-dropdown').val(currentInstrumentGlobal);
                     $('#recordings-dropdown').val(currentRecordingGlobal);
                     window.recordingFullyLoaded = true;
+
+                    // Initialize annotations for logged-in users
+                    if (typeof initAnnotations === 'function' && currentMetricArrGlobal) {
+                        initAnnotations(currentMetricArrGlobal);
+                    }
                 })
                 .catch(function (error) {
                     console.error("An error occurred while generating instruments dropdown:", error);

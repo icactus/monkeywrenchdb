@@ -289,6 +289,22 @@ if (file_exists('session_config.php')) {
                         <option value="" disabled hidden selected>Change Recording</option>
                     </select>
                 </div>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                <div id="annotations-section" style="margin-top: 15px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="margin:0;">✏️ My Markings</h3>
+                        <button id="annotation-toggle-btn" onclick="toggleAnnotationMode()" 
+                            style="background:#4a90d9; color:#fff; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:13px;">
+                            Edit
+                        </button>
+                    </div>
+                    <div id="annotations-visibility-row" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+                        <label style="font-size:14px; color:#555;">Show markings</label>
+                        <input type="checkbox" id="annotations-visibility-toggle" checked 
+                            onchange="toggleAnnotationsVisibility()" style="width:16px; height:16px;">
+                    </div>
+                </div>
+                <?php endif; ?>
                 <div class="mobile-only">
                     <div style="height:1px; background:rgba(0,0,0,0.08); margin: 25px 0;"></div>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -387,13 +403,53 @@ if (file_exists('session_config.php')) {
             </div>
         </div>
     </section3>
+    
+    <!-- Annotation Toolbar (logged-in users only) -->
+    <?php if (isset($_SESSION['user_id'])): ?>
+    <div id="annotation-toolbar" style="display:none; position:fixed; bottom:80px; left:50%; transform:translateX(-50%); 
+        background:#fff; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,0.2); padding:10px 15px; 
+        display:none; gap:8px; align-items:center; z-index:10000;">
+        <button class="annotation-tool-btn active" data-tool="pen" onclick="setAnnotationTool('pen')" 
+            style="width:36px; height:36px; border:none; border-radius:6px; background:#eee; cursor:pointer;" title="Pen">
+            ✏️
+        </button>
+        <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')" 
+            style="width:36px; height:36px; border:none; border-radius:6px; background:#eee; cursor:pointer;" title="Eraser">
+            🧹
+        </button>
+        <input type="color" id="annotation-color" value="#000000" onchange="setAnnotationColor(this.value)" 
+            style="width:36px; height:36px; border:none; border-radius:6px; cursor:pointer;" title="Color">
+        <select id="annotation-width" onchange="setAnnotationWidth(parseInt(this.value))" 
+            style="height:36px; border-radius:6px; border:1px solid #ccc; padding:0 8px;">
+            <option value="1">Thin</option>
+            <option value="2" selected>Normal</option>
+            <option value="4">Thick</option>
+        </select>
+        <div style="width:1px; height:24px; background:#ddd; margin:0 5px;"></div>
+        <button onclick="annotationUndo()" style="width:36px; height:36px; border:none; border-radius:6px; background:#eee; cursor:pointer;" title="Undo">↩️</button>
+        <button onclick="annotationRedo()" style="width:36px; height:36px; border:none; border-radius:6px; background:#eee; cursor:pointer;" title="Redo">↪️</button>
+        <div style="width:1px; height:24px; background:#ddd; margin:0 5px;"></div>
+        <button onclick="saveAnnotations()" style="padding:8px 15px; border:none; border-radius:6px; background:#4caf50; color:#fff; cursor:pointer; font-weight:600;">Save</button>
+        <button onclick="shareAnnotations()" style="padding:8px 15px; border:none; border-radius:6px; background:#2196f3; color:#fff; cursor:pointer;">Share</button>
+        <button onclick="toggleAnnotationMode()" style="padding:8px 15px; border:none; border-radius:6px; background:#f44336; color:#fff; cursor:pointer;">Done</button>
+    </div>
+    <style>
+        .annotation-tool-btn.active { background:#4a90d9 !important; }
+        .annotation-canvas { cursor: crosshair; }
+        body.annotation-mode #notation-scroll { cursor: crosshair; }
+    </style>
+    <?php endif; ?>
+    
     <!-- Notification Element -->
     <div id="notification"
         style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
     <script src="stripped-synpdf.js?v=230"></script>
-    <script src="stripped-synpdf-extras.js?v=206"></script>
+    <script src="stripped-synpdf-extras.js?v=207"></script>
+    <?php if (isset($_SESSION['user_id'])): ?>
+        <script src="annotation-layer.js?v=1"></script>
+    <?php endif; ?>
     <script>
         // Register Service Worker for PWA with auto-update
         if ('serviceWorker' in navigator) {
