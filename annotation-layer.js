@@ -68,32 +68,58 @@
         const notationScroll = document.getElementById('notation-scroll');
         if (!notationScroll) return;
 
-        // Helper to setup overlay for a single canvas
+        // Helper to setup or update overlay for a single canvas
         const setupOverlay = (pageCanvas) => {
             if (!pageCanvas.id || !pageCanvas.id.startsWith('canvas') || pageCanvas.id.startsWith('annotation')) return;
 
             const pageNum = parseInt(pageCanvas.id.replace('canvas', ''), 10);
-            if (isNaN(pageNum) || canvasElements[pageNum]) return; // Already exists
+            if (isNaN(pageNum)) return;
 
-            // Skip if canvas has no dimensions yet
-            if (!pageCanvas.width || !pageCanvas.height) return;
+            // Skip if canvas has no meaningful dimensions yet
+            if (!pageCanvas.width || !pageCanvas.height || pageCanvas.width < 10 || pageCanvas.height < 10) return;
 
-            // Create overlay
-            const overlay = document.createElement('canvas');
-            overlay.className = 'annotation-canvas';
-            overlay.id = 'annotation-canvas-' + pageNum;
-            overlay.width = pageCanvas.width;
-            overlay.height = pageCanvas.height;
+            let overlay = canvasElements[pageNum];
 
-            const top = pageCanvas.offsetTop;
-            const left = pageCanvas.offsetLeft;
+            // Update or create overlay
+            if (!overlay) {
+                overlay = document.createElement('canvas');
+                overlay.className = 'annotation-canvas';
+                overlay.id = 'annotation-canvas-' + pageNum;
+                notationScroll.appendChild(overlay);
+                canvasElements[pageNum] = overlay;
+                setupCanvasEvents(overlay, pageNum);
+            }
+
+            // Sync dimensions if changed
+            if (overlay.width !== pageCanvas.width || overlay.height !== pageCanvas.height) {
+                console.log(`Updating overlay ${pageNum} dimensions: ${overlay.width}x${overlay.height} -> ${pageCanvas.width}x${pageCanvas.height}`);
+                overlay.width = pageCanvas.width;
+                overlay.height = pageCanvas.height;
+
+                // Re-render strokes since resizing clears canvas
+                requestAnimationFrame(() => {
+                    const pageStrokes = strokes.filter(s => s.page === pageNum);
+                    if (pageStrokes.length > 0) {
+                        const ctx = overlay.getContext('2d');
+                        ctx.clearRect(0, 0, overlay.width, overlay.height);
+                        pageStrokes.forEach(s => renderStroke(overlay, s));
+                    }
+                });
+            }
+
+            // Position overlay using getBoundingClientRect for accuracy
+            const pageRect = pageCanvas.getBoundingClientRect();
+            const containerRect = notationScroll.getBoundingClientRect();
+
+            const top = pageRect.top - containerRect.top + notationScroll.scrollTop;
+            const left = pageRect.left - containerRect.left + notationScroll.scrollLeft;
 
             overlay.style.cssText = `
                 position: absolute;
                 top: ${top}px;
                 left: ${left}px;
-                width: ${pageCanvas.style.width || pageCanvas.offsetWidth + 'px'};
-                height: ${pageCanvas.style.height || pageCanvas.offsetHeight + 'px'};
+                width: ${pageCanvas.offsetWidth}px;
+                height: ${pageCanvas.offsetHeight}px;
                 pointer-events: auto;
                 touch-action: none;
                 z-index: 100;
@@ -101,6 +127,7 @@
                 user-select: none;
                 -webkit-user-select: none;
             `;
+            console.log(`Updated overlay for Page ${pageNum}: ${top}px, ${left}px (${pageCanvas.offsetWidth}x${pageCanvas.offsetHeight})`);
             overlay.dataset.page = pageNum;
 
             notationScroll.appendChild(overlay);
