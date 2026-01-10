@@ -370,7 +370,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     min-width: 160px;
                     text-align: left;
                 }
-                #extra-tools-menu-dock label,
+                #extra-tools-menu-dock label:not(.toggle-switch),
                 #extra-tools-menu-dock button {
                     display: block;
                     width: 100%;
