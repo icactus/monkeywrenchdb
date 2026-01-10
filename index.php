@@ -357,6 +357,10 @@ if (file_exists('session_config.php')) {
                         <td><b>PgUp / PgDn</b></td>
                         <td>Previous / Next page</td>
                     </tr>
+                    <tr>
+                        <td><b>Shift + Click</b></td>
+                        <td>Play last repeat of measure</td>
+                    </tr>
                 </table>
                 <p class="help-note">This project is a work in progress. Want to help? Email
                     <b>icactusmusic@gmail.com</b>
