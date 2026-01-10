@@ -1046,14 +1046,21 @@ select {
     }
 
     #composer-toggle-wrapper {
-        display: flex;
-        flex-direction: row;
+        display: flex !important;
+        flex-direction: row !important;
         justify-content: space-between;
         align-items: center;
         padding-top: 20px;
         margin-bottom: 20px;
-        flex-wrap: nowrap;
+        flex-wrap: nowrap !important;
         /* Prevent wrapping */
+    }
+
+    /* Ensure the X button doesn't get crushed or wrapped */
+    #composer-toggle-wrapper button {
+        flex-shrink: 0;
+        margin-left: 10px;
+        white-space: nowrap;
     }
 
     #composer-piece-name {
