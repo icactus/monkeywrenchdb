@@ -471,6 +471,26 @@ $is_share_link = isset($_GET['share']);
             body.annotations-hidden .annotation-canvas {
                 display: none !important;
             }
+
+            /* Mobile responsive toolbar */
+            @media (max-width: 600px) {
+                #annotation-toolbar {
+                    max-width: 100vw;
+                    padding: 8px 10px !important;
+                    gap: 6px !important;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+                #annotation-toolbar button,
+                #annotation-toolbar input,
+                #annotation-toolbar select {
+                    flex-shrink: 0;
+                }
+                #annotation-toolbar button[style*="padding:8px 15px"] {
+                    padding: 6px 10px !important;
+                    font-size: 12px !important;
+                }
+            }
         </style>
     <?php endif; ?>
 
@@ -479,7 +499,7 @@ $is_share_link = isset($_GET['share']);
         style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=231"></script>
+    <script src="stripped-synpdf.js?v=232"></script>
     <script src="stripped-synpdf-extras.js?v=210"></script>
     <script>
         // Register Service Worker for PWA with auto-update

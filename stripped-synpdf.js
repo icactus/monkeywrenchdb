@@ -386,6 +386,21 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 #extra-tools-menu-dock button:hover {
                     background: rgba(0,0,0,0.06);
                 }
+                @media (max-width: 600px) {
+                    #control-buttons-row {
+                        max-width: calc(100vw - 20px);
+                        padding: 6px 12px;
+                        gap: 8px;
+                        border-radius: 30px;
+                    }
+                    #control-buttons-row .toolbar-btn {
+                        padding: 6px;
+                    }
+                    #control-buttons-row .toolbar-btn svg {
+                        width: 18px;
+                        height: 18px;
+                    }
+                }
             </style>
             <div id="control-buttons-row">
                 <button class="toolbar-btn" onclick="toggleFullscreen(event)" title="Fullscreen">
