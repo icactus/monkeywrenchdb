@@ -9,10 +9,27 @@
  * - GET with share_token=xxx: Load shared annotations (no auth required)
  */
 
-require_once 'session_config.php';
-require_once 'phpfiles/config.php';
-
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 header('Content-Type: application/json; charset=utf-8');
+
+// Session config
+if (file_exists(__DIR__ . '/session_config.php')) {
+    require_once __DIR__ . '/session_config.php';
+} else {
+    session_start();
+}
+
+// Config - check multiple paths (local vs prod)
+if (file_exists('phpfiles/config.php')) {
+    require_once 'phpfiles/config.php';
+} elseif (file_exists('../phpfiles/config.php')) {
+    require_once '../phpfiles/config.php';
+} else {
+    http_response_code(500);
+    echo json_encode(['error' => 'Config missing']);
+    exit;
+}
 
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 if ($conn->connect_error) {
