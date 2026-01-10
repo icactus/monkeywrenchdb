@@ -31,7 +31,7 @@ $is_share_link = isset($_GET['share']);
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#f7d155" />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v2.png" />
+    <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=3" />
     <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=169" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
