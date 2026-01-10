@@ -1034,7 +1034,7 @@ select {
     }
 }
 
-@media screen and (max-width: 899px) and (orientation:portrait) {
+@media screen and (orientation:portrait) {
     /* Additional mobile-specific styles (sidecontentbar handled in 1024px portrait breakpoint) */
 
     .sidecontenbar-min-height {
