@@ -43,7 +43,18 @@
             toolbar.style.display = annotationMode ? 'flex' : 'none';
         }
 
+        // Update edit button text
+        const editBtn = document.getElementById('annotation-toggle-btn');
+        if (editBtn) {
+            editBtn.textContent = annotationMode ? 'Done' : 'Edit';
+        }
+
         if (annotationMode) {
+            // Ensure notation-scroll has position relative for absolute overlays
+            const notationScroll = document.getElementById('notation-scroll');
+            if (notationScroll) {
+                notationScroll.style.position = 'relative';
+            }
             createCanvasOverlays();
             renderAllStrokes();
         }
@@ -53,37 +64,48 @@
 
     // Create canvas overlays for each PDF page
     function createCanvasOverlays() {
-        const pages = document.querySelectorAll('.pdf-canvas');
-        pages.forEach((pageCanvas, index) => {
-            const pageNum = index + 1;
-            if (canvasElements[pageNum]) return; // Already exists
+        // Find canvases by ID pattern (canvas1, canvas2, etc.)
+        const notationScroll = document.getElementById('notation-scroll');
+        if (!notationScroll) return;
 
-            const container = pageCanvas.parentElement;
-            const rect = pageCanvas.getBoundingClientRect();
+        const pageCanvases = notationScroll.querySelectorAll('canvas[id^="canvas"]');
+        pageCanvases.forEach((pageCanvas) => {
+            const pageNum = parseInt(pageCanvas.id.replace('canvas', ''), 10);
+            if (isNaN(pageNum) || canvasElements[pageNum]) return; // Already exists or invalid
 
+            // Create overlay canvas positioned over the PDF canvas
             const overlay = document.createElement('canvas');
             overlay.className = 'annotation-canvas';
+            overlay.id = 'annotation-canvas-' + pageNum;
             overlay.width = pageCanvas.width;
             overlay.height = pageCanvas.height;
+
+            // Position overlay directly over the page canvas
+            const rect = pageCanvas.getBoundingClientRect();
+            const scrollRect = notationScroll.getBoundingClientRect();
+            const top = pageCanvas.offsetTop;
+            const left = pageCanvas.offsetLeft;
+
             overlay.style.cssText = `
                 position: absolute;
-                top: 0;
-                left: 0;
-                width: ${pageCanvas.offsetWidth}px;
-                height: ${pageCanvas.offsetHeight}px;
-                pointer-events: ${annotationMode && !isReadonly ? 'auto' : 'none'};
+                top: ${top}px;
+                left: ${left}px;
+                width: ${pageCanvas.offsetWidth || pageCanvas.clientWidth}px;
+                height: ${pageCanvas.offsetHeight || pageCanvas.clientHeight}px;
+                pointer-events: auto;
                 touch-action: none;
+                z-index: 100;
             `;
             overlay.dataset.page = pageNum;
 
-            container.style.position = 'relative';
-            container.appendChild(overlay);
-
+            notationScroll.appendChild(overlay);
             canvasElements[pageNum] = overlay;
 
             // Add event listeners
             setupCanvasEvents(overlay, pageNum);
         });
+
+        console.log('Created annotation overlays for pages:', Object.keys(canvasElements));
     }
 
     // Setup drawing events for a canvas
