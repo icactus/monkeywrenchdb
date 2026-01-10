@@ -416,44 +416,72 @@ $is_share_link = isset($_GET['share']);
     <!-- Annotation Toolbar (logged-in users only) -->
     <?php if (isset($_SESSION['user_id'])): ?>
         <div id="annotation-toolbar" style="display:none; position:fixed; bottom:80px; left:50%; transform:translateX(-50%); 
-        background:#fff; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,0.2); padding:10px 15px; 
-        display:none; gap:8px; align-items:center; z-index:10000;">
+        background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-radius:50px; box-shadow:0 4px 20px rgba(0,0,0,0.18); padding:8px 16px; 
+        display:none; gap:6px; align-items:center; z-index:10000; border:1px solid rgba(0,0,0,0.08);">
+            <!-- Drawing Tools -->
             <button class="annotation-tool-btn active" data-tool="pen" onclick="setAnnotationTool('pen')"
-                style="width:36px; height:36px; border:none; border-radius:6px; background:#eee; cursor:pointer;"
+                style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                 title="Pen">
-                ✏️
-            </button>
-            <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')"
-                style="width:36px; height:36px; border:none; border-radius:6px; background:#eee; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Eraser">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                        d="M19.5 9.5L14.5 4.5L7 12L2 17H7L12 12M19.5 9.5L21.34 7.66C21.7151 7.28485 21.9258 6.77607 21.9258 6.245C21.9258 5.71393 21.7151 5.20515 21.34 4.83L19.17 2.66C18.7948 2.28485 18.2861 2.07416 17.755 2.07416C17.2239 2.07416 16.7151 2.28485 16.34 2.66L14.5 4.5M19.5 9.5L13.5 15.5"
-                        stroke="#444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/>
                 </svg>
             </button>
+            <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')"
+                style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+                title="Eraser">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19.5 9.5L14.5 4.5L7 12L2 17H7L12 12M19.5 9.5L21.34 7.66C21.7151 7.28 21.9258 6.78 21.9258 6.25C21.9258 5.71 21.7151 5.21 21.34 4.83L19.17 2.66C18.79 2.28 18.29 2.07 17.76 2.07C17.22 2.07 16.72 2.28 16.34 2.66L14.5 4.5M19.5 9.5L13.5 15.5"/>
+                </svg>
+            </button>
+            <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
+            <!-- Color & Width -->
             <input type="color" id="annotation-color" value="#000000" onchange="setAnnotationColor(this.value)"
-                style="width:36px; height:36px; border:none; border-radius:6px; cursor:pointer;" title="Color">
+                style="width:32px; height:32px; border:none; border-radius:50%; cursor:pointer; padding:0;" title="Color">
             <select id="annotation-width" onchange="setAnnotationWidth(parseInt(this.value))"
-                style="height:36px; border-radius:6px; border:1px solid #ccc; padding:0 8px;">
+                style="height:32px; border-radius:16px; border:1px solid rgba(0,0,0,0.1); padding:0 10px; background:#f5f5f5; font-size:12px; cursor:pointer;">
                 <option value="1">Thin</option>
-                <option value="2" selected>Normal</option>
+                <option value="2" selected>Med</option>
                 <option value="4">Thick</option>
             </select>
-            <div style="width:1px; height:24px; background:#ddd; margin:0 5px;"></div>
+            <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
+            <!-- Undo/Redo -->
             <button onclick="annotationUndo()"
-                style="width:36px; height:36px; border:none; border-radius:6px; background:#eee; cursor:pointer;"
-                title="Undo">↩️</button>
+                style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+                title="Undo">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+                </svg>
+            </button>
             <button onclick="annotationRedo()"
-                style="width:36px; height:36px; border:none; border-radius:6px; background:#eee; cursor:pointer;"
-                title="Redo">↪️</button>
-            <div style="width:1px; height:24px; background:#ddd; margin:0 5px;"></div>
+                style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+                title="Redo">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
+                </svg>
+            </button>
+            <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
+            <!-- Actions: Save → Share → Done -->
             <button onclick="saveAnnotations()"
-                style="padding:8px 15px; border:none; border-radius:6px; background:#4caf50; color:#fff; cursor:pointer; font-weight:600;">Save</button>
+                style="width:36px; height:36px; border:none; border-radius:50%; background:#4caf50; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+                title="Save Annotations">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                </svg>
+            </button>
             <button onclick="shareAnnotations()"
-                style="padding:8px 15px; border:none; border-radius:6px; background:#2196f3; color:#fff; cursor:pointer;">Share</button>
+                style="width:36px; height:36px; border:none; border-radius:50%; background:#2196f3; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+                title="Share Link">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+            </button>
             <button onclick="toggleAnnotationMode()"
-                style="padding:8px 15px; border:none; border-radius:6px; background:#f44336; color:#fff; cursor:pointer;">Done</button>
+                style="width:36px; height:36px; border:none; border-radius:50%; background:#666; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+                title="Done Editing">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </button>
         </div>
         <style>
             .annotation-tool-btn.active {
