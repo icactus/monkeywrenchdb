@@ -466,8 +466,8 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     window.toggleExtraToolsDock = function (e) {
         e.stopPropagation();
 
-        // Detect Mobile (Portrait)
-        if (window.matchMedia("(max-width: 899px) and (orientation:portrait)").matches) {
+        // Detect Mobile/Tablet (Any Portrait Mode)
+        if (window.matchMedia("(orientation:portrait)").matches) {
             window.toggleMobileDrawer(e);
             return;
         }
