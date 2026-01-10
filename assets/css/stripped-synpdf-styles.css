@@ -601,6 +601,8 @@ a {
     display: flex;
     justify-content: center;
     overflow-x: hidden;
+    padding-top: env(safe-area-inset-top);
+    /* Extend gradient into notch/status bar area */
     background: linear-gradient(145deg,
             #f7d155 0%,
             #e4c262 30%,
@@ -615,8 +617,6 @@ a {
     flex-wrap: wrap;
     max-width: 1400px;
     padding: 1em;
-    padding-top: calc(1em + env(safe-area-inset-top));
-    /* Push content below notch/status bar */
 }
 
 #logo-bar {
