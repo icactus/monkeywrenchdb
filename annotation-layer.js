@@ -458,54 +458,25 @@
     }
 
     // Load shared annotations
-    // Visual Debugger for Share Links
-    function logDebug(msg) {
-        console.log(msg);
-        const debugBox = document.getElementById('share-debug-log');
-        if (debugBox) {
-            debugBox.innerHTML += `<div>${new Date().toLocaleTimeString()} - ${msg}</div>`;
-        }
-    }
-
     // Load shared annotations
     window.loadSharedAnnotations = async function (shareToken) {
-        // Create debug box if share token exists
-        if (!document.getElementById('share-debug-log')) {
-            const div = document.createElement('div');
-            div.id = 'share-debug-log';
-            div.style.cssText = 'position:fixed; top:10px; left:10px; background:rgba(255,0,0,0.8); color:white; padding:10px; z-index:9999; max-width:300px; font-size:12px; pointer-events:none; border-radius:4px;';
-            document.body.appendChild(div);
-            div.innerHTML = '<div>Debug Log Started</div>';
-        }
-
-        logDebug(`Loading shared token: ${shareToken.substring(0, 6)}...`);
-
+        console.log('loadSharedAnnotations called with token:', shareToken.substring(0, 6) + '...');
         try {
             const response = await fetch(`annotations_api.php?share_token=${shareToken}`);
-            logDebug(`API Status: ${response.status}`);
-
             const data = await response.json();
-            logDebug(`API Success: ${data.success}`);
 
             if (data.success && data.annotation_data) {
                 strokes = data.annotation_data.strokes || [];
-                logDebug(`Strokes: ${strokes.length}`);
+                console.log('Shared strokes loaded:', strokes.length);
                 isReadonly = true;
 
                 createCanvasOverlays();
-                logDebug('Overlays created');
                 renderAllStrokes();
-                logDebug('Render called');
-
                 showAnnotationsToggle(true);
-                const section = document.getElementById('annotations-section');
-                logDebug(`Toggle called. Section found: ${!!section}. Display: ${section ? section.style.display : 'N/A'}`);
             } else {
-                logDebug('No data or success=false');
-                console.warn('Data success false or no annotation_data', data);
+                console.warn('Failed to load shared data or no data:', data);
             }
         } catch (err) {
-            logDebug(`Error: ${err.message}`);
             console.error('Load shared error:', err);
         }
     };
