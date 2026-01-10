@@ -9,22 +9,36 @@ if (file_exists('session_config.php')) {
 $shared_config = null;
 if (isset($_GET['share'])) {
     $share_token = $_GET['share'];
-    require_once 'phpfiles/db_connection.php';
-
-    // Lookup token
-    $stmt = $conn->prepare("SELECT metric_arr_id FROM user_annotations WHERE share_token = ?");
-    $stmt->bind_param("s", $share_token);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($row = $result->fetch_assoc()) {
-        $shared_config = [
-            'token' => $share_token,
-            'metric_arr_id' => $row['metric_arr_id']
-        ];
+    
+    // Connect to DB
+    if (file_exists('phpfiles/config.php')) {
+        require_once 'phpfiles/config.php';
     }
-    $stmt->close();
-    $conn->close();
+    
+    // Only attempt if constants are defined
+    if (defined('DB_HOST')) {
+        $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+        if (!$conn->connect_error) {
+            mysqli_set_charset($conn, 'utf8');
+            
+            // Lookup token
+            $stmt = $conn->prepare("SELECT metric_arr_id FROM user_annotations WHERE share_token = ?");
+            if ($stmt) {
+                $stmt->bind_param("s", $share_token);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($row = $result->fetch_assoc()) {
+                    $shared_config = [
+                        'token' => $share_token,
+                        'metric_arr_id' => $row['metric_arr_id']
+                    ];
+                }
+                $stmt->close();
+            }
+            $conn->close();
+        }
+    }
 }
 ?>
 <!DOCTYPE HTML>
