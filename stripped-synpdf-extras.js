@@ -1547,10 +1547,16 @@ $(document).ready(function () {
         $('#' + tabId).show();
     });
 
-    // LOAD PIECE AND RECORDING VIA URL
     const urlParams = new URLSearchParams(window.location.search);
     const urlMetricArrId = urlParams.get('metricArrId');
     const urlRecordingId = urlParams.get('recordingId');
+
+    // Capture share token if present (before pushState wipes it)
+    const urlShareToken = urlParams.get('share');
+    if (urlShareToken) {
+        window.pendingShareToken = urlShareToken;
+        console.log('Detected URL share token:', urlShareToken);
+    }
 
     // Check for URL parameters 
     if (urlMetricArrId && urlRecordingId) {

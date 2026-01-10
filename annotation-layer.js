@@ -31,12 +31,16 @@
     window.initAnnotations = function (metric_arr_id) {
         metricArrId = metric_arr_id;
 
-        // Check for "share" parameter in URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const shareToken = urlParams.get('share');
+        // Check for share token (pending global takes precedence as URL might be wiped by now)
+        let shareToken = window.pendingShareToken;
+
+        if (!shareToken) {
+            const urlParams = new URLSearchParams(window.location.search);
+            shareToken = urlParams.get('share');
+        }
 
         if (shareToken) {
-            console.log('Found share token in URL:', shareToken);
+            console.log('Found share token:', shareToken);
             loadSharedAnnotations(shareToken);
         } else {
             loadAnnotations();
