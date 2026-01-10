@@ -808,7 +808,7 @@ function scrollHorizontally(targetX, instant) {
     }
 }
 
-Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
+Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, shiftKey) {
     var d;
 
     // Helper to check if click (a,b) is within a box
@@ -877,24 +877,39 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
                 }
             }
             currentMeasureIndex = d;
-            for (b = 0; b < deTijden$$module$synpdf.length; ++b)
-                if (d == deTijden$$module$synpdf[b].mix) {
-                    d = deTijden$$module$synpdf[b].t;
-                    currentMeasureTime = d;
-                    window.__lastMeasureClickTime = Date.now(); // Track when user clicked on a measure
-                    var f = b < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[b + 1].t : d + 2;
-                    // Use clicked box dimensions for position calculation
-                    b = d + (f - d) * (a - clickedBox.x - clickedBoxOffset) / clickedBox.w;
-                    if (elmed$$module$synpdf.getPlayerState() === 5) {
-                        elmed$$module$synpdf.seekTo(d + TOFF$$module$synpdf + offset$$module$synpdf);
+
+            // Find the matching time entry - if shiftKey, find LAST occurrence (for repeats)
+            var timeIndex = -1;
+            var matchCount = 0;
+            for (var searchIdx = 0; searchIdx < deTijden$$module$synpdf.length; ++searchIdx) {
+                if (d == deTijden$$module$synpdf[searchIdx].mix) {
+                    matchCount++;
+                    if (shiftKey) {
+                        timeIndex = searchIdx; // Keep updating to get the last one
+                    } else if (timeIndex === -1) {
+                        timeIndex = searchIdx; // Take the first one
                         break;
                     }
+                }
+            }
+
+            if (timeIndex >= 0) {
+                b = timeIndex;
+                d = deTijden$$module$synpdf[b].t;
+                currentMeasureTime = d;
+                window.__lastMeasureClickTime = Date.now(); // Track when user clicked on a measure
+                var f = b < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[b + 1].t : d + 2;
+                // Use clicked box dimensions for position calculation
+                b = d + (f - d) * (a - clickedBox.x - clickedBoxOffset) / clickedBox.w;
+                if (elmed$$module$synpdf.getPlayerState() === 5) {
+                    elmed$$module$synpdf.seekTo(d + TOFF$$module$synpdf + offset$$module$synpdf);
+                } else {
                     c ? opt$$module$synpdf.loop && this.doLoopTag(a, clickedBox.y, b, d, f, {
                         x1: clickedBox.x + clickedBoxOffset,
                         x2: clickedBox.x + clickedBoxOffset + clickedBox.w
                     }) : (b = (opt$$module$synpdf.lncsr ? b : d + TOFF$$module$synpdf) + offset$$module$synpdf, playPause2$$module$synpdf(!1, b));
-                    break;
                 }
+            }
             break;
         }
     }
@@ -1095,7 +1110,7 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
     const preferInnerX = cur.x + cur.w * 0.5;
     const targetY = targetRowBottom - 5;
     const absX = pickSafeAbsX(targetPage, targetRowBottom, preferInnerX);
-    this.x2time(absX, targetY, !1);
+    this.x2time(absX, targetY, !1, false);
 };
 
 Wijzer$$module$synpdf.prototype.changeTimesKeyb = function (a) {
@@ -1824,7 +1839,7 @@ function kliklang$$module$synpdf(a) {
                 const $sc = $("#notation-scroll");
                 const aX = a.clientX - $sc.offset().left + $sc.scrollLeft(); // notation-space X
                 const aY = a.clientY - $sc.offset().top + $sc.scrollTop();   // notation-space Y
-                c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(aX, aY) : msc_wz$$module$synpdf.x2time(aX, aY, c);
+                c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(aX, aY) : msc_wz$$module$synpdf.x2time(aX, aY, c, e);
 
 
             }

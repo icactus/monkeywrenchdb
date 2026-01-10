@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once 'cloudflare_purge.php';
 
 // Helper: Convert edition label to filename-safe slug
 function slugifyEdition($text)
@@ -206,6 +207,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             );
             $stmt_update->execute();
             $mysqli->commit();
+
+            // Purge Cloudflare cache for this metric_arr
+            $purgeResult = purgeMetricArrCache($row['metric_arr_id'] ?? 0, $piece_id, $instrument_id);
+
             $response .= "The data has been updated.<br>";
             $stmt_update->close();
         } else {
@@ -261,7 +266,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $stmt->bind_param("iiiss", $piece_id, $instrument_id, $measures_version, $metric_arr_data_processed, $edition_label);
                 $stmt->execute();
                 if ($stmt->affected_rows > 0) {
+                    $newMetricArrId = $mysqli->insert_id;
                     $mysqli->commit();
+
+                    // Purge Cloudflare cache for related endpoints
+                    $purgeResult = purgeMetricArrCache($newMetricArrId, $piece_id, $instrument_id);
+
                     $response .= "The data has been inserted.<br>";
                 } else {
                     $response .= 'Error in insertion: ' . $stmt->error . "<br>";

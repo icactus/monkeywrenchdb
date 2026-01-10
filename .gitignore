@@ -21,3 +21,4 @@ cs-stripped-output.txt
 client_secret_1092592565682-h7sd76u9qt69629fob6r2u8u8mul8g50.apps.googleusercontent.com.json
 
 *.sql
+phpfiles/cloudflare_config.php
