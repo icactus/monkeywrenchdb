@@ -4,6 +4,28 @@ if (file_exists('session_config.php')) {
 } else {
     session_start();
 }
+
+// Handle share link
+$shared_config = null;
+if (isset($_GET['share'])) {
+    $share_token = $_GET['share'];
+    require_once 'phpfiles/db_connection.php';
+
+    // Lookup token
+    $stmt = $conn->prepare("SELECT metric_arr_id FROM user_annotations WHERE share_token = ?");
+    $stmt->bind_param("s", $share_token);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($row = $result->fetch_assoc()) {
+        $shared_config = [
+            'token' => $share_token,
+            'metric_arr_id' => $row['metric_arr_id']
+        ];
+    }
+    $stmt->close();
+    $conn->close();
+}
 ?>
 <!DOCTYPE HTML>
 <html>
@@ -38,7 +60,12 @@ if (file_exists('session_config.php')) {
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id'])): ?>
-        <script src="annotation-layer.js?v=9"></script>
+        <script src="annotation-layer.js?v=10"></script>
+    <?php endif; ?>
+    <?php if ($shared_config): ?>
+        <script>
+            window.monkeyWrenchSharedConfig = <?php echo json_encode($shared_config); ?>;
+        </script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>

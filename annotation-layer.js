@@ -30,7 +30,15 @@
     // Initialize annotation system
     window.initAnnotations = function (metric_arr_id) {
         metricArrId = metric_arr_id;
-        loadAnnotations();
+
+        // If we have a pending share token (set by shared config loader), load that instead
+        if (window.pendingShareToken) {
+            console.log('Using pending share token:', window.pendingShareToken);
+            loadSharedAnnotations(window.pendingShareToken);
+            window.pendingShareToken = null; // Clear it to avoid sticking
+        } else {
+            loadAnnotations();
+        }
     };
 
     // Toggle annotation mode

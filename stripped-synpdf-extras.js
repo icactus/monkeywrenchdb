@@ -1520,6 +1520,13 @@ document.addEventListener('keydown', (e) => {
 });
 
 $(document).ready(function () {
+    // Handle shared piece loading
+    if (window.monkeyWrenchSharedConfig) {
+        console.log('Loading shared piece:', window.monkeyWrenchSharedConfig);
+        window.pendingShareToken = window.monkeyWrenchSharedConfig.token;
+        fetchRecordings(window.monkeyWrenchSharedConfig.metric_arr_id);
+    }
+
 
     $('#monkey-logo, #monkeywrench-logo-text').on('click', 'a[href="/"]', function () {
         // Kill two-up for the homepage so the tab UI isn't laid out as a grid
