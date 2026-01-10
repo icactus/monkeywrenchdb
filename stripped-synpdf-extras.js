@@ -1063,8 +1063,14 @@ function toggleFullscreen(event) {
     window.__isTogglingFullscreen = true;
 
     const notationDiv = document.getElementById("notation");
+    const annotationToolbar = document.getElementById("annotation-toolbar");
 
     if (!document.fullscreenElement) {
+        // Move annotation toolbar into notation div for fullscreen visibility
+        if (annotationToolbar && notationDiv) {
+            window.__annotationToolbarParent = annotationToolbar.parentNode;
+            notationDiv.appendChild(annotationToolbar);
+        }
         if (notationDiv.requestFullscreen) notationDiv.requestFullscreen();
         else if (notationDiv.mozRequestFullScreen) notationDiv.mozRequestFullScreen();
         else if (notationDiv.webkitRequestFullscreen) notationDiv.webkitRequestFullscreen();
@@ -1074,6 +1080,11 @@ function toggleFullscreen(event) {
         else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
         else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
         else if (document.msExitFullscreen) document.msExitFullscreen();
+        // Restore annotation toolbar to original parent after exiting fullscreen
+        if (annotationToolbar && window.__annotationToolbarParent) {
+            window.__annotationToolbarParent.appendChild(annotationToolbar);
+            window.__annotationToolbarParent = null;
+        }
     }
 }
 
