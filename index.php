@@ -472,7 +472,7 @@ $is_share_link = isset($_GET['share']);
         Link copied to clipboard!
     </div>
     <script src="stripped-synpdf.js?v=231"></script>
-    <script src="stripped-synpdf-extras.js?v=209"></script>
+    <script src="stripped-synpdf-extras.js?v=210"></script>
     <script>
         // Register Service Worker for PWA with auto-update
         if ('serviceWorker' in navigator) {
