@@ -974,6 +974,22 @@ select {
     /* Set a column break after group 2 */
 }
 
+/* Tablet: Hide sidebar on homepage until recording loads */
+@media screen and (min-width: 600px) and (max-width: 1024px) {
+    sidecontentbar {
+        display: none;
+    }
+
+    body.recording-loaded sidecontentbar {
+        display: block;
+    }
+
+    /* Let content use full width when no sidebar */
+    section2 {
+        margin-left: 0;
+    }
+}
+
 @media screen and (max-width: 899px) and (orientation:portrait) {
     section2 {
         flex-direction: column;
@@ -1297,6 +1313,12 @@ select {
     }
 
     sidecontentbar {
+        display: none;
+        /* Hidden until recording loads */
+    }
+
+    body.recording-loaded sidecontentbar {
+        display: block;
         position: relative;
         /* Revert to flow */
         width: 200px;
