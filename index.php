@@ -38,7 +38,7 @@ if (file_exists('session_config.php')) {
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id'])): ?>
-        <script src="annotation-layer.js?v=4"></script>
+        <script src="annotation-layer.js?v=5"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>

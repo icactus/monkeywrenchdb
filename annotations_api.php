@@ -65,8 +65,18 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = (int) $_SESSION['user_id'];
-$action = $_REQUEST['action'] ?? '';
-$metric_arr_id = (int) ($_REQUEST['metric_arr_id'] ?? 0);
+
+// For POST requests with JSON body, parse it first
+$input = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $action = $input['action'] ?? '';
+    $metric_arr_id = (int) ($input['metric_arr_id'] ?? 0);
+} else {
+    // GET requests use query params
+    $action = $_GET['action'] ?? '';
+    $metric_arr_id = (int) ($_GET['metric_arr_id'] ?? 0);
+}
 
 switch ($action) {
     case 'save':
@@ -76,9 +86,8 @@ switch ($action) {
             exit;
         }
 
-        $input = json_decode(file_get_contents('php://input'), true);
+        // $input already parsed above for POST requests
         $annotation_data = $input['annotation_data'] ?? null;
-        $metric_arr_id = (int) ($input['metric_arr_id'] ?? 0);
 
         if (!$annotation_data || !$metric_arr_id) {
             http_response_code(400);
@@ -141,8 +150,7 @@ switch ($action) {
             exit;
         }
 
-        $input = json_decode(file_get_contents('php://input'), true);
-        $metric_arr_id = (int) ($input['metric_arr_id'] ?? 0);
+        // $input already parsed above for POST requests
 
         if (!$metric_arr_id) {
             http_response_code(400);
