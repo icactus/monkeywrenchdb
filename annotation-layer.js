@@ -63,32 +63,28 @@
     };
 
     // Create canvas overlays for each PDF page
+    // Create canvas overlays for each PDF page
     function createCanvasOverlays() {
-        // Find canvases by ID pattern (canvas1, canvas2, etc.)
         const notationScroll = document.getElementById('notation-scroll');
         if (!notationScroll) return;
 
-        const pageCanvases = notationScroll.querySelectorAll('canvas[id^="canvas"]:not([id^="annotation"])');
-        pageCanvases.forEach((pageCanvas) => {
+        // Helper to setup overlay for a single canvas
+        const setupOverlay = (pageCanvas) => {
+            if (!pageCanvas.id || !pageCanvas.id.startsWith('canvas') || pageCanvas.id.startsWith('annotation')) return;
+
             const pageNum = parseInt(pageCanvas.id.replace('canvas', ''), 10);
-            if (isNaN(pageNum) || canvasElements[pageNum]) return; // Already exists or invalid
+            if (isNaN(pageNum) || canvasElements[pageNum]) return; // Already exists
 
-            // Skip if canvas has no dimensions (not rendered yet due to lazy loading)
-            if (!pageCanvas.width || !pageCanvas.height) {
-                console.log('Skipping page', pageNum, '- canvas not rendered yet');
-                return;
-            }
+            // Skip if canvas has no dimensions yet
+            if (!pageCanvas.width || !pageCanvas.height) return;
 
-            // Create overlay canvas positioned over the PDF canvas
+            // Create overlay
             const overlay = document.createElement('canvas');
             overlay.className = 'annotation-canvas';
             overlay.id = 'annotation-canvas-' + pageNum;
             overlay.width = pageCanvas.width;
             overlay.height = pageCanvas.height;
 
-            // Position overlay directly over the page canvas
-            const rect = pageCanvas.getBoundingClientRect();
-            const scrollRect = notationScroll.getBoundingClientRect();
             const top = pageCanvas.offsetTop;
             const left = pageCanvas.offsetLeft;
 
@@ -102,17 +98,54 @@
                 touch-action: none;
                 z-index: 100;
                 background: transparent;
+                user-select: none;
+                -webkit-user-select: none;
             `;
             overlay.dataset.page = pageNum;
 
             notationScroll.appendChild(overlay);
             canvasElements[pageNum] = overlay;
-
-            // Add event listeners
             setupCanvasEvents(overlay, pageNum);
+
+            // Render strokes for this page if any exist
+            const pageStrokes = strokes.filter(s => s.page === pageNum);
+            if (pageStrokes.length > 0) {
+                renderStroke(overlay, { points: [] }); // Clear (just in case)
+                pageStrokes.forEach(s => renderStroke(overlay, s));
+            }
+        };
+
+        // 1. Setup existing canvases
+        const pageCanvases = notationScroll.querySelectorAll('canvas[id^="canvas"]:not([id^="annotation"])');
+        pageCanvases.forEach(setupOverlay);
+
+        // 2. Observer for new canvases (lazy loading)
+        // Disconnect previous observer if exists to avoid duplicates
+        if (window._annotationObserver) window._annotationObserver.disconnect();
+
+        window._annotationObserver = new MutationObserver((mutations) => {
+            mutations.forEach(mutation => {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeName === 'CANVAS') {
+                        setupOverlay(node);
+                    }
+                });
+
+                // Also check if attributes changed (like width/height setting on load)
+                if (mutation.type === 'attributes' && mutation.target.nodeName === 'CANVAS') {
+                    setupOverlay(mutation.target);
+                }
+            });
         });
 
-        console.log('Created annotation overlays for pages:', Object.keys(canvasElements));
+        window._annotationObserver.observe(notationScroll, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['width', 'height', 'style']
+        });
+
+        console.log('Observation started for lazy-loaded pages');
     }
 
     // Setup drawing events for a canvas
