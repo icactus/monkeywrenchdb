@@ -5,41 +5,8 @@ if (file_exists('session_config.php')) {
     session_start();
 }
 
-// Handle share link
-$shared_config = null;
-if (isset($_GET['share'])) {
-    $share_token = $_GET['share'];
-
-    // Connect to DB
-    if (file_exists('phpfiles/config.php')) {
-        require_once 'phpfiles/config.php';
-    }
-
-    // Only attempt if constants are defined
-    if (defined('DB_HOST')) {
-        $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-        if (!$conn->connect_error) {
-            mysqli_set_charset($conn, 'utf8');
-
-            // Lookup token
-            $stmt = $conn->prepare("SELECT metric_arr_id FROM user_annotations WHERE share_token = ?");
-            if ($stmt) {
-                $stmt->bind_param("s", $share_token);
-                $stmt->execute();
-                $result = $stmt->get_result();
-
-                if ($row = $result->fetch_assoc()) {
-                    $shared_config = [
-                        'token' => $share_token,
-                        'metric_arr_id' => $row['metric_arr_id']
-                    ];
-                }
-                $stmt->close();
-            }
-            $conn->close();
-        }
-    }
-}
+// Handle share link (guests)
+$is_share_link = isset($_GET['share']);
 ?>
 <!DOCTYPE HTML>
 <html>
@@ -73,13 +40,8 @@ if (isset($_GET['share'])) {
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap"
         rel="stylesheet">
     <script src="jquery.min.js"></script>
-    <?php if (isset($_SESSION['user_id']) || $shared_config): ?>
-        <script src="annotation-layer.js?v=12"></script>
-    <?php endif; ?>
-    <?php if ($shared_config): ?>
-        <script>
-            window.monkeyWrenchSharedConfig = <?php echo json_encode($shared_config); ?>;
-        </script>
+    <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
+        <script src="annotation-layer.js?v=14"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>

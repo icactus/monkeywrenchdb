@@ -31,11 +31,13 @@
     window.initAnnotations = function (metric_arr_id) {
         metricArrId = metric_arr_id;
 
-        // If we have a pending share token (set by shared config loader), load that instead
-        if (window.pendingShareToken) {
-            console.log('Using pending share token:', window.pendingShareToken);
-            loadSharedAnnotations(window.pendingShareToken);
-            window.pendingShareToken = null; // Clear it to avoid sticking
+        // Check for "share" parameter in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const shareToken = urlParams.get('share');
+
+        if (shareToken) {
+            console.log('Found share token in URL:', shareToken);
+            loadSharedAnnotations(shareToken);
         } else {
             loadAnnotations();
         }
@@ -471,7 +473,23 @@
 
             const data = await response.json();
             if (data.success) {
-                navigator.clipboard.writeText(data.share_url);
+                // Construct explicit share URL
+                const baseUrl = window.location.origin + window.location.pathname;
+
+                // Get current recording ID from global scope
+                // Use window.currentRecordingGlobal if available, or try URL params, or failure
+                let recId = window.currentRecordingGlobal;
+                if (!recId) {
+                    const params = new URLSearchParams(window.location.search);
+                    recId = params.get('recordingId') || 0;
+                }
+
+                // If we still don't have a recording ID, we can still share just the piece
+                // but standard share links usually have both.
+
+                const shareUrl = `${baseUrl}?metricArrId=${metricArrId}&recordingId=${recId}&share=${data.share_token}`;
+
+                navigator.clipboard.writeText(shareUrl);
                 showAnnotationMessage('Share link copied!');
             } else {
                 showAnnotationMessage('Failed to share: ' + data.error, true);

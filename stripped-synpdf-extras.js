@@ -1520,25 +1520,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 $(document).ready(function () {
-    // Handle shared piece loading
-    if (window.monkeyWrenchSharedConfig) {
-        console.log('Loading shared piece:', window.monkeyWrenchSharedConfig);
-        window.pendingShareToken = window.monkeyWrenchSharedConfig.token;
 
-        // Fetch recordings and auto-select the first one
-        fetchRecordings(window.monkeyWrenchSharedConfig.metric_arr_id)
-            .then(function (recordings) {
-                if (recordings && recordings.length > 0) {
-                    console.log('Auto-selecting first recording for shared piece');
-                    handleRecordingSelection(recordings[0]);
-                } else {
-                    console.error('No recordings found for shared metric_arr_id');
-                }
-            })
-            .catch(function (err) {
-                console.error('Error auto-loading shared recording:', err);
-            });
-    }
 
 
     $('#monkey-logo, #monkeywrench-logo-text').on('click', 'a[href="/"]', function () {
