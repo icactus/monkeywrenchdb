@@ -386,6 +386,13 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 #extra-tools-menu-dock button:hover {
                     background: rgba(0,0,0,0.06);
                 }
+                /* Toggle Switch Styles */
+                .toggle-switch input:checked + .toggle-slider {
+                    background: #4CAF50;
+                }
+                .toggle-switch input:checked + .toggle-slider span {
+                    transform: translateX(20px);
+                }
                 @media (max-width: 600px) {
                     #control-buttons-row {
                         max-width: calc(100vw - 20px);
@@ -434,7 +441,15 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 </button>
             </div>
             <div id="extra-tools-menu-dock">
-                <label style="display:flex; align-items:center;"><input type="checkbox" id="invert-check-dock" style="margin-right:10px;"> Dark Mode</label>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px;">
+                    <span style="font-size:14px; color:#333;">Dark Mode</span>
+                    <label class="toggle-switch" style="position:relative; display:inline-block; width:44px; height:24px; margin:0;">
+                        <input type="checkbox" id="invert-check-dock" style="opacity:0; width:0; height:0;">
+                        <span class="toggle-slider" style="position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:24px; transition:.2s;">
+                            <span style="position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; background:white; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
+                        </span>
+                    </label>
+                </div>
                 <button id="share-btn-dock">Share Link</button>
             </div>
             <div id="rollijn" class="dashed"></div>
