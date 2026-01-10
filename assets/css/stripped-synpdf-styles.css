@@ -1052,18 +1052,32 @@ select {
         align-items: center;
         padding-top: 20px;
         margin-bottom: 20px;
+        flex-wrap: nowrap;
+        /* Prevent wrapping */
     }
 
     #composer-piece-name {
         margin-bottom: 0;
+        flex: 1;
+        /* Take available space */
+        min-width: 0;
+        /* Allow text truncation */
+        padding-right: 10px;
     }
 
     #composer-piece-name h3 {
         margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     #sidecontent-toggle {
-        display: none !important;
+        display: block !important;
+        /* Ensure visible */
+        flex-shrink: 0;
+        /* Don't shrink */
+        white-space: nowrap;
     }
 
 
