@@ -316,7 +316,15 @@ $is_share_link = isset($_GET['share']);
                     <div style="height:1px; background:rgba(0,0,0,0.08); margin: 25px 0;"></div>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                         <label style="font-weight:600; color:#444; font-size: 15px;">Dark Mode</label>
-                        <input type="checkbox" id="invert-check-mobile" style="transform:scale(1.3);">
+                        <label class="toggle-switch"
+                            style="position:relative; display:inline-block; width:44px; height:24px; margin:0;">
+                            <input type="checkbox" id="invert-check-mobile" style="opacity:0; width:0; height:0;">
+                            <span class="toggle-slider"
+                                style="position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:24px; transition:.2s;">
+                                <span
+                                    style="position:absolute; height:20px; width:20px; left:2px; bottom:2px; background:white; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
+                            </span>
+                        </label>
                     </div>
                     <button id="share-btn-mobile"
                         style="width:100%; padding:14px; background:#f1f1f1; border:none; border-radius:12px; font-weight:600; color:#444; font-size:15px;">Share
@@ -525,7 +533,7 @@ $is_share_link = isset($_GET['share']);
         style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=239"></script>
+    <script src="stripped-synpdf.js?v=240"></script>
     <script src="stripped-synpdf-extras.js?v=211"></script>
     <script>
         // Register Service Worker for PWA with auto-update
