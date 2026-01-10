@@ -1363,12 +1363,7 @@ select {
     }
 
     /* Show Title in Landscape */
-    #composer-toggle-wrapper {
-        display: block !important;
-        padding-top: 4px;
-        margin-bottom: 2px;
-        justify-content: center;
-    }
+
 
 
 
