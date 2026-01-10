@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=15"></script>
+        <script src="annotation-layer.js?v=16"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>
