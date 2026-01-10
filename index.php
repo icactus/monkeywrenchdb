@@ -500,16 +500,7 @@ $is_share_link = isset($_GET['share']);
                 display: none !important;
             }
 
-            /* Mobile responsive toolbar */
-            @media (max-width: 600px) {
-                #annotation-toolbar {
-                    width: calc(100vw - 20px);
-                    max-width: 100vw;
-                    left: 10px !important;
-                    transform: none !important;
-                    justify-content: space-between;
-                }
-            }
+
         </style>
     <?php endif; ?>
 
