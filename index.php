@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=18"></script>
+        <script src="annotation-layer.js?v=19"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>
@@ -424,9 +424,13 @@ $is_share_link = isset($_GET['share']);
                 ✏️
             </button>
             <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')"
-                style="width:36px; height:36px; border:none; border-radius:6px; background:#eee; cursor:pointer;"
+                style="width:36px; height:36px; border:none; border-radius:6px; background:#eee; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                 title="Eraser">
-                🧹
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M19.5 9.5L14.5 4.5L7 12L2 17H7L12 12M19.5 9.5L21.34 7.66C21.7151 7.28485 21.9258 6.77607 21.9258 6.245C21.9258 5.71393 21.7151 5.20515 21.34 4.83L19.17 2.66C18.7948 2.28485 18.2861 2.07416 17.755 2.07416C17.2239 2.07416 16.7151 2.28485 16.34 2.66L14.5 4.5M19.5 9.5L13.5 15.5"
+                        stroke="#444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
             </button>
             <input type="color" id="annotation-color" value="#000000" onchange="setAnnotationColor(this.value)"
                 style="width:36px; height:36px; border:none; border-radius:6px; cursor:pointer;" title="Color">

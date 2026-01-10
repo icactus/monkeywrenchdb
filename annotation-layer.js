@@ -240,10 +240,17 @@
             currentStroke = {
                 page: pageNum,
                 tool: currentTool,
-                color: currentTool === 'eraser' ? null : penColor,
-                width: currentTool === 'eraser' ? penWidth * 5 : penWidth,
+                // Eraser visual: semi-transparent highlight trail (e.g. pale red/pink)
+                color: currentTool === 'eraser' ? 'rgba(255, 182, 193, 0.4)' : penColor,
+                // Eraser width: much larger ("Giant Eraser")
+                width: currentTool === 'eraser' ? 30 : penWidth,
                 points: [[point.x, point.y]]
             };
+
+            // Cursor feedback
+            if (currentTool === 'eraser') {
+                canvas.style.cursor = 'crosshair'; // Or a custom SVG cursor if desired later
+            }
         };
 
         const draw = (e) => {
@@ -264,27 +271,37 @@
             e.stopPropagation();
             isDrawing = false;
 
+            // Reset cursor
+            canvas.style.cursor = 'default';
+
             if (currentStroke.points.length > 1) {
                 if (currentStroke.tool === 'eraser') {
                     eraseStrokes(currentStroke);
+                    // Force re-render to remove the temporary eraser trail
+                    renderAllStrokes();
                 } else {
                     strokes.push(currentStroke);
                     undoStack.push({ action: 'add', stroke: currentStroke });
                     redoStack = [];
+                    // For regular strokes, we don't need to re-render everything, 
+                    // but to be safe and consistent we can. 
+                    // Actually, currentStroke is already drawn.
                 }
             }
 
             currentStroke = null;
+            // If we didn't erase, strictly speaking we might not need renderAll, 
+            // but the eraser trail MUST be cleared.
             renderAllStrokes();
         };
 
-        // Mouse events
+        // ... event listeners ...
         canvas.addEventListener('mousedown', startDrawing);
         canvas.addEventListener('mousemove', draw);
         canvas.addEventListener('mouseup', endDrawing);
         canvas.addEventListener('mouseleave', endDrawing);
 
-        // Touch events
+        // ... touch events ...
         canvas.addEventListener('touchstart', startDrawing, { passive: false });
         canvas.addEventListener('touchmove', draw, { passive: false });
         canvas.addEventListener('touchend', endDrawing);
@@ -297,6 +314,7 @@
         if (stroke.points.length < 2) return;
 
         ctx.beginPath();
+        // Use stroke color or default black. This supports rgba for eraser trail.
         ctx.strokeStyle = stroke.color || '#000000';
         ctx.lineWidth = stroke.width || 2;
         ctx.lineCap = 'round';
