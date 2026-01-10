@@ -33,7 +33,7 @@ $is_share_link = isset($_GET['share']);
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v2.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=3" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=161" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=162" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -255,9 +255,7 @@ $is_share_link = isset($_GET['share']);
                     <div id="composer-piece-name"></div>
                     <button class="mobile-only" onclick="toggleMobileDrawer()" aria-label="Close"
                         style="background:none; border:none; font-size:28px; line-height:1; color:#555; padding:0 8px; cursor:pointer;">&times;</button>
-                    <div id="sidecontent-toggle">
-                        <h3>[hide]</h3>
-                    </div>
+
                 </div>
                 <div id="first-controls">
                     <div id="speed-part-row">
@@ -527,7 +525,7 @@ $is_share_link = isset($_GET['share']);
         style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=238"></script>
+    <script src="stripped-synpdf.js?v=239"></script>
     <script src="stripped-synpdf-extras.js?v=211"></script>
     <script>
         // Register Service Worker for PWA with auto-update

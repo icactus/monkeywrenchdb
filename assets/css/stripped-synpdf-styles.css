@@ -1072,13 +1072,7 @@ select {
         text-overflow: ellipsis;
     }
 
-    #sidecontent-toggle {
-        display: block !important;
-        /* Ensure visible */
-        flex-shrink: 0;
-        /* Don't shrink */
-        white-space: nowrap;
-    }
+
 
 
 

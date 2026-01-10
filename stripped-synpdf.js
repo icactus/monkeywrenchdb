@@ -491,7 +491,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
             // Ensure content is visible when opening
             $('.change-recording-wrapper').show();
             $('#first-controls').show();
-            $('#sidecontent-toggle h3').text('[hide]');
+
         }
     };
 
