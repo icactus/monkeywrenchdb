@@ -30,9 +30,9 @@ function buildPdfFilename(pieceId, instrumentId, editionLabel) {
     return `${base}.pdf`;
 }
 
-let currentInstrumentGlobal = 0;
-let currentRecordingGlobal = 0;
-let currentMetricArrGlobal = 0;
+var currentInstrumentGlobal = 0;
+var currentRecordingGlobal = 0;
+var currentMetricArrGlobal = 0;
 let canvasesGlobal = [];
 let currentDeTijdenIndex = 0;
 let currentMeasureIndex = 0;
