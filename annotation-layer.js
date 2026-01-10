@@ -144,6 +144,7 @@
         const startDrawing = (e) => {
             if (!annotationMode || isReadonly) return;
             e.preventDefault();
+            e.stopPropagation();
             isDrawing = true;
 
             const point = getPoint(e);
@@ -159,6 +160,7 @@
         const draw = (e) => {
             if (!isDrawing || !currentStroke) return;
             e.preventDefault();
+            e.stopPropagation();
 
             const point = getPoint(e);
             currentStroke.points.push([point.x, point.y]);
@@ -169,6 +171,8 @@
 
         const endDrawing = (e) => {
             if (!isDrawing || !currentStroke) return;
+            e.preventDefault();
+            e.stopPropagation();
             isDrawing = false;
 
             if (currentStroke.points.length > 1) {
