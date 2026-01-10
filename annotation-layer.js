@@ -338,6 +338,10 @@
                     eraseStrokes(currentStroke);
                     renderAllStrokes();
                 } else {
+                    // Optimized: Simplify stroke before saving (RDP algorithm)
+                    // Epsilon 0.001 = ~1px on 1000px screen (High quality simplification)
+                    currentStroke.points = simplifyPoints(currentStroke.points, 0.001);
+
                     strokes.push(currentStroke);
                     undoStack.push({ action: 'add', stroke: currentStroke });
                     redoStack = [];
@@ -434,6 +438,40 @@
             undoStack.push({ action: 'remove', stroke: removed, index: index });
         });
         redoStack = [];
+    }
+
+    // Ramer-Douglas-Peucker Simplification
+    function perpendicularDistance(point, lineStart, lineEnd) {
+        let dx = lineEnd[0] - lineStart[0];
+        let dy = lineEnd[1] - lineStart[1];
+        if (dx === 0 && dy === 0) {
+            return Math.sqrt(Math.pow(point[0] - lineStart[0], 2) + Math.pow(point[1] - lineStart[1], 2));
+        }
+        let t = ((point[0] - lineStart[0]) * dx + (point[1] - lineStart[1]) * dy) / (dx * dx + dy * dy);
+        t = Math.max(0, Math.min(1, t));
+        let closest = [lineStart[0] + t * dx, lineStart[1] + t * dy];
+        return Math.sqrt(Math.pow(point[0] - closest[0], 2) + Math.pow(point[1] - closest[1], 2));
+    }
+
+    function simplifyPoints(points, epsilon) {
+        if (points.length < 3) return points;
+        let dmax = 0;
+        let index = 0;
+        const end = points.length - 1;
+        for (let i = 1; i < end; i++) {
+            let d = perpendicularDistance(points[i], points[0], points[end]);
+            if (d > dmax) {
+                index = i;
+                dmax = d;
+            }
+        }
+        if (dmax > epsilon) {
+            let recResults1 = simplifyPoints(points.slice(0, index + 1), epsilon);
+            let recResults2 = simplifyPoints(points.slice(index), epsilon);
+            return recResults1.slice(0, recResults1.length - 1).concat(recResults2);
+        } else {
+            return [points[0], points[end]];
+        }
     }
 
     // Undo last action
