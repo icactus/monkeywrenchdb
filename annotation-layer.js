@@ -284,7 +284,10 @@
                 // Store normalized coordinates (0-1) for cross-device compatibility
                 canvasWidth: canvas.width,
                 canvasHeight: canvas.height,
-                points: [[point.x / canvas.width, point.y / canvas.height]]
+                points: [[
+                    Math.round((point.x / canvas.width) * 10000) / 10000,
+                    Math.round((point.y / canvas.height) * 10000) / 10000
+                ]]
             };
 
             // Cursor feedback
@@ -299,8 +302,23 @@
             e.stopPropagation();
 
             const point = getPoint(e);
-            // Store normalized coordinates
-            currentStroke.points.push([point.x / canvas.width, point.y / canvas.height]);
+
+            // Round to 4 decimal places (~0.1px precision on 1000px screen)
+            const x = Math.round((point.x / canvas.width) * 10000) / 10000;
+            const y = Math.round((point.y / canvas.height) * 10000) / 10000;
+
+            // Distance filtering: Only add point if it's far enough from the last one
+            // 0.003 approx 3px on 1000px width
+            const lastPoint = currentStroke.points[currentStroke.points.length - 1];
+            if (lastPoint) {
+                const dx = x - lastPoint[0];
+                const dy = y - lastPoint[1];
+                if (Math.sqrt(dx * dx + dy * dy) < 0.003) {
+                    return; // Skip redundant point
+                }
+            }
+
+            currentStroke.points.push([x, y]);
 
             // Render current stroke (denormalize for display)
             renderStroke(canvas, currentStroke);
