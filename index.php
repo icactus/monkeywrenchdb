@@ -358,7 +358,7 @@ if (file_exists('session_config.php')) {
                         <td>Previous / Next page</td>
                     </tr>
                     <tr>
-                        <td><b>Shift + Click</b></td>
+                        <td><b>Shift + Click</b> / <b>Double-tap</b></td>
                         <td>Play last repeat of measure</td>
                     </tr>
                 </table>
