@@ -1839,7 +1839,19 @@ function kliklang$$module$synpdf(a) {
                 const $sc = $("#notation-scroll");
                 const aX = a.clientX - $sc.offset().left + $sc.scrollLeft(); // notation-space X
                 const aY = a.clientY - $sc.offset().top + $sc.scrollTop();   // notation-space Y
-                longPress && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(aX, aY) : msc_wz$$module$synpdf.x2time(aX, aY, longPress, longPress || e);
+
+                // Double-tap detection for mobile
+                var now = Date.now();
+                var isDoubleTap = false;
+                if (window.__lastTapTime && (now - window.__lastTapTime) < 400) {
+                    // Double-tap detected
+                    isDoubleTap = true;
+                    window.__lastTapTime = 0; // Reset to prevent triple-tap
+                } else {
+                    window.__lastTapTime = now;
+                }
+
+                longPress && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(aX, aY) : msc_wz$$module$synpdf.x2time(aX, aY, longPress, isDoubleTap || e);
 
 
             }
