@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=21"></script>
+        <script src="annotation-layer.js?v=22"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>
@@ -460,14 +460,7 @@ $is_share_link = isset($_GET['share']);
                 </svg>
             </button>
             <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
-            <!-- Actions: Save → Share → Done -->
-            <button onclick="saveAnnotations()"
-                style="width:36px; height:36px; border:none; border-radius:50%; background:#4caf50; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Save Annotations">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
-                </svg>
-            </button>
+            <!-- Actions: Share → Done (autosave handles saving) -->
             <button onclick="shareAnnotations()"
                 style="width:36px; height:36px; border:none; border-radius:50%; background:#2196f3; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                 title="Share Link">

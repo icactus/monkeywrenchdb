@@ -26,6 +26,7 @@
     let isDrawing = false;
     let metricArrId = null;
     let isReadonly = false;
+    let autosaveTimer = null;
 
     // Initialize annotation system
     window.initAnnotations = function (metric_arr_id) {
@@ -315,16 +316,14 @@
             if (currentStroke.points.length > 1) {
                 if (currentStroke.tool === 'eraser') {
                     eraseStrokes(currentStroke);
-                    // Force re-render to remove the temporary eraser trail
                     renderAllStrokes();
                 } else {
                     strokes.push(currentStroke);
                     undoStack.push({ action: 'add', stroke: currentStroke });
                     redoStack = [];
-                    // For regular strokes, we don't need to re-render everything, 
-                    // but to be safe and consistent we can. 
-                    // Actually, currentStroke is already drawn.
                 }
+                // Trigger autosave
+                scheduleAutosave();
             }
 
             currentStroke = null;
@@ -426,6 +425,7 @@
         }
         redoStack.push(action);
         renderAllStrokes();
+        scheduleAutosave();
     };
 
     // Redo last undone action
@@ -441,6 +441,7 @@
         }
         undoStack.push(action);
         renderAllStrokes();
+        scheduleAutosave();
     };
 
     // Set current tool
@@ -461,12 +462,18 @@
         penWidth = width;
     };
 
-    // Save annotations to backend
-    window.saveAnnotations = async function () {
-        if (!metricArrId) {
-            console.error('No metric_arr_id set');
-            return;
-        }
+    // Schedule autosave with debounce
+    function scheduleAutosave() {
+        if (isReadonly) return; // Don't autosave in readonly mode
+        if (autosaveTimer) clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(() => {
+            saveAnnotationsSilent();
+        }, 1000); // 1 second debounce
+    }
+
+    // Save annotations to backend (silent - for autosave)
+    async function saveAnnotationsSilent() {
+        if (!metricArrId || isReadonly) return;
 
         try {
             const response = await fetch('annotations_api.php', {
@@ -480,15 +487,21 @@
             });
 
             const data = await response.json();
-            if (data.success) {
-                showAnnotationMessage('Annotations saved!');
+            if (!data.success) {
+                console.error('Autosave failed:', data.error);
             } else {
-                showAnnotationMessage('Failed to save: ' + data.error, true);
+                console.log('Autosaved');
             }
         } catch (err) {
-            console.error('Save error:', err);
-            showAnnotationMessage('Failed to save annotations', true);
+            console.error('Autosave error:', err);
         }
+    }
+
+    // Manual save (kept for backwards compatibility, but now just triggers immediate save)
+    window.saveAnnotations = async function () {
+        if (autosaveTimer) clearTimeout(autosaveTimer);
+        await saveAnnotationsSilent();
+        showAnnotationMessage('Saved!');
     };
 
     // Load annotations from backend
