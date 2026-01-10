@@ -68,10 +68,16 @@
         const notationScroll = document.getElementById('notation-scroll');
         if (!notationScroll) return;
 
-        const pageCanvases = notationScroll.querySelectorAll('canvas[id^="canvas"]');
+        const pageCanvases = notationScroll.querySelectorAll('canvas[id^="canvas"]:not([id^="annotation"])');
         pageCanvases.forEach((pageCanvas) => {
             const pageNum = parseInt(pageCanvas.id.replace('canvas', ''), 10);
             if (isNaN(pageNum) || canvasElements[pageNum]) return; // Already exists or invalid
+
+            // Skip if canvas has no dimensions (not rendered yet due to lazy loading)
+            if (!pageCanvas.width || !pageCanvas.height) {
+                console.log('Skipping page', pageNum, '- canvas not rendered yet');
+                return;
+            }
 
             // Create overlay canvas positioned over the PDF canvas
             const overlay = document.createElement('canvas');
@@ -90,11 +96,12 @@
                 position: absolute;
                 top: ${top}px;
                 left: ${left}px;
-                width: ${pageCanvas.offsetWidth || pageCanvas.clientWidth}px;
-                height: ${pageCanvas.offsetHeight || pageCanvas.clientHeight}px;
+                width: ${pageCanvas.style.width || pageCanvas.offsetWidth + 'px'};
+                height: ${pageCanvas.style.height || pageCanvas.offsetHeight + 'px'};
                 pointer-events: auto;
                 touch-action: none;
                 z-index: 100;
+                background: transparent;
             `;
             overlay.dataset.page = pageNum;
 
