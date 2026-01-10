@@ -504,7 +504,11 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     });
 
     // Share Link
-    $('#share-btn-dock, #share-btn-mobile').off('click').on('click', function () {
+    $('#share-btn-dock, #share-btn-mobile').off('click').on('click', async function () {
+        const btn = $(this);
+        const originalText = btn.text();
+        btn.text('...');
+
         // Construct proper shareable URL with metricArrId and recordingId
         let url = window.location.origin + window.location.pathname;
 
@@ -519,18 +523,39 @@ function Wijzer$$module$synpdf(a, b, c, d) {
             if (currentTime > 0) {
                 url += '&t=' + currentTime;
             }
+
+            // Check if annotations are visible and include share token
+            const annotationsHidden = document.body.classList.contains('annotations-hidden');
+            if (!annotationsHidden && typeof window.shareAnnotations === 'function') {
+                try {
+                    // Get share token from annotation API
+                    const response = await fetch('annotations_api.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'share',
+                            metric_arr_id: currentMetricArrGlobal
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success && data.share_token) {
+                        url += '&share=' + data.share_token;
+                    }
+                } catch (err) {
+                    console.error('Failed to get annotation share token:', err);
+                }
+            }
         } else if (window.location.search) {
             // Fallback to current URL params if globals aren't set
             url += window.location.search;
         }
 
         navigator.clipboard.writeText(url).then(() => {
-            const btn = $(this);
-            const originalText = btn.text();
             btn.text('Copied!');
             setTimeout(() => btn.text(originalText), 2000);
         }).catch(err => {
             console.error('Failed to copy: ', err);
+            btn.text(originalText);
             prompt("Copy this link:", url);
         });
     });

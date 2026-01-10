@@ -422,22 +422,32 @@ $is_share_link = isset($_GET['share']);
             <button class="annotation-tool-btn active" data-tool="pen" onclick="setAnnotationTool('pen')"
                 style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                 title="Pen">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 19l7-7 3 3-7 7-3-3z" />
+                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+                    <path d="M2 2l7.586 7.586" />
                 </svg>
             </button>
             <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')"
                 style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                 title="Eraser">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M19.5 9.5L14.5 4.5L7 12L2 17H7L12 12M19.5 9.5L21.34 7.66C21.7151 7.28 21.9258 6.78 21.9258 6.25C21.9258 5.71 21.7151 5.21 21.34 4.83L19.17 2.66C18.79 2.28 18.29 2.07 17.76 2.07C17.22 2.07 16.72 2.28 16.34 2.66L14.5 4.5M19.5 9.5L13.5 15.5"/>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M19.5 9.5L14.5 4.5L7 12L2 17H7L12 12M19.5 9.5L21.34 7.66C21.7151 7.28 21.9258 6.78 21.9258 6.25C21.9258 5.71 21.7151 5.21 21.34 4.83L19.17 2.66C18.79 2.28 18.29 2.07 17.76 2.07C17.22 2.07 16.72 2.28 16.34 2.66L14.5 4.5M19.5 9.5L13.5 15.5" />
                 </svg>
             </button>
             <button class="annotation-tool-btn" data-tool="hand" onclick="setAnnotationTool('hand')"
                 style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                 title="Scroll Mode">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                    <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
+                    <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+                    <path
+                        d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
                 </svg>
             </button>
             <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
@@ -455,15 +465,19 @@ $is_share_link = isset($_GET['share']);
             <button onclick="annotationUndo()"
                 style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                 title="Undo">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 7v6h6" />
+                    <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
                 </svg>
             </button>
             <button onclick="annotationRedo()"
                 style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                 title="Redo">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 7v6h-6" />
+                    <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
                 </svg>
             </button>
             <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
@@ -471,15 +485,21 @@ $is_share_link = isset($_GET['share']);
             <button onclick="shareAnnotations()"
                 style="width:36px; height:36px; border:none; border-radius:50%; background:#2196f3; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                 title="Share Link">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="18" cy="5" r="3" />
+                    <circle cx="6" cy="12" r="3" />
+                    <circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                 </svg>
             </button>
             <button onclick="toggleAnnotationMode()"
                 style="width:36px; height:36px; border:none; border-radius:50%; background:#666; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                 title="Done Editing">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12"/>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
                 </svg>
             </button>
         </div>
@@ -499,8 +519,6 @@ $is_share_link = isset($_GET['share']);
             body.annotations-hidden .annotation-canvas {
                 display: none !important;
             }
-
-
         </style>
     <?php endif; ?>
 
@@ -509,7 +527,7 @@ $is_share_link = isset($_GET['share']);
         style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=232"></script>
+    <script src="stripped-synpdf.js?v=233"></script>
     <script src="stripped-synpdf-extras.js?v=211"></script>
     <script>
         // Register Service Worker for PWA with auto-update
@@ -540,7 +558,8 @@ $is_share_link = isset($_GET['share']);
                         });
                     })
                     .catch(err => console.log('[PWA] Service worker registration failed:', err));
-            });     }
+            });
+        }
     </script>
 </body>
 
