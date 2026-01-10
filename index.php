@@ -475,20 +475,11 @@ $is_share_link = isset($_GET['share']);
             /* Mobile responsive toolbar */
             @media (max-width: 600px) {
                 #annotation-toolbar {
+                    width: calc(100vw - 20px);
                     max-width: 100vw;
-                    padding: 8px 10px !important;
-                    gap: 6px !important;
-                    flex-wrap: wrap;
-                    justify-content: center;
-                }
-                #annotation-toolbar button,
-                #annotation-toolbar input,
-                #annotation-toolbar select {
-                    flex-shrink: 0;
-                }
-                #annotation-toolbar button[style*="padding:8px 15px"] {
-                    padding: 6px 10px !important;
-                    font-size: 12px !important;
+                    left: 10px !important;
+                    transform: none !important;
+                    justify-content: space-between;
                 }
             }
         </style>
@@ -530,8 +521,7 @@ $is_share_link = isset($_GET['share']);
                         });
                     })
                     .catch(err => console.log('[PWA] Service worker registration failed:', err));
-            });
-        }
+            });     }
     </script>
 </body>
 
