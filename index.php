@@ -334,7 +334,8 @@ if (isset($_GET['share'])) {
                     </select>
                 </div>
                 <!-- Annotations Section (Visible for logged-in users OR when shared annotations loaded) -->
-                <div id="annotations-section" style="margin-top: 15px; display: <?php echo (isset($_SESSION['user_id']) ? 'block' : 'none'); ?>;">
+                <div id="annotations-section"
+                    style="margin-top: 15px; display: <?php echo (isset($_SESSION['user_id']) ? 'block' : 'none'); ?>;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <h3 style="margin:0;">✏️ Markings</h3>
                         <?php if (isset($_SESSION['user_id'])): ?>
@@ -509,7 +510,7 @@ if (isset($_GET['share'])) {
         Link copied to clipboard!
     </div>
     <script src="stripped-synpdf.js?v=231"></script>
-    <script src="stripped-synpdf-extras.js?v=207"></script>
+    <script src="stripped-synpdf-extras.js?v=208"></script>
     <script>
         // Register Service Worker for PWA with auto-update
         if ('serviceWorker' in navigator) {
