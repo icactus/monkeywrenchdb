@@ -1835,11 +1835,11 @@ function kliklang$$module$synpdf(a) {
             b.off("mousemove touchmove mouseup touchend");
             if (!touch_moved$$module$synpdf) {
                 a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
-                var c = 500 < (new Date).getTime() - touch_tb$$module$synpdf || e;
+                var longPress = 500 < (new Date).getTime() - touch_tb$$module$synpdf;
                 const $sc = $("#notation-scroll");
                 const aX = a.clientX - $sc.offset().left + $sc.scrollLeft(); // notation-space X
                 const aY = a.clientY - $sc.offset().top + $sc.scrollTop();   // notation-space Y
-                c && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(aX, aY) : msc_wz$$module$synpdf.x2time(aX, aY, c, e);
+                longPress && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(aX, aY) : msc_wz$$module$synpdf.x2time(aX, aY, longPress, e);
 
 
             }
