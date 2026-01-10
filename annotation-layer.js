@@ -98,6 +98,21 @@
                 notationScroll.appendChild(overlay);
                 canvasElements[pageNum] = overlay;
                 setupCanvasEvents(overlay, pageNum);
+
+                // Render strokes for this page immediately
+                // Render strokes for this page immediately
+                const pageStrokes = strokes.filter(s => s.page === pageNum);
+                if (pageStrokes.length > 0) {
+                    // Ensure overlay dimensions match page before rendering
+                    if (overlay.width !== pageCanvas.width || overlay.height !== pageCanvas.height) {
+                        overlay.width = pageCanvas.width;
+                        overlay.height = pageCanvas.height;
+                    }
+
+                    // Force render
+                    pageStrokes.forEach(s => renderStroke(overlay, s));
+                    console.log(`Rendered ${pageStrokes.length} strokes on new overlay ${pageNum}`);
+                }
             }
 
             // Sync dimensions if changed
@@ -439,18 +454,24 @@
     }
 
     // Load shared annotations
+    // Load shared annotations
     window.loadSharedAnnotations = async function (shareToken) {
+        console.log('loadSharedAnnotations called with token:', shareToken);
         try {
             const response = await fetch(`annotations_api.php?share_token=${shareToken}`);
             const data = await response.json();
+            console.log('Shared annotation data received:', data);
 
             if (data.success && data.annotation_data) {
                 strokes = data.annotation_data.strokes || [];
+                console.log('Parsed shared strokes:', strokes.length);
                 isReadonly = true;
 
                 createCanvasOverlays();
                 renderAllStrokes();
                 showAnnotationsToggle(true);
+            } else {
+                console.warn('Data success false or no annotation_data', data);
             }
         } catch (err) {
             console.error('Load shared error:', err);
