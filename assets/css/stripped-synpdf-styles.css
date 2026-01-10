@@ -990,8 +990,8 @@ select {
     }
 }
 
-/* Tablet/Mobile PORTRAIT: Use bottom sheet layout */
-@media screen and (max-width: 1024px) and (orientation: portrait) {
+/* Any PORTRAIT device: Use bottom sheet layout */
+@media screen and (orientation: portrait) {
     section2 {
         flex-direction: column;
         margin-top: 0px;

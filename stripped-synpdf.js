@@ -446,7 +446,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     <label class="toggle-switch" style="position:relative; display:inline-block; width:44px; height:24px; margin:0;">
                         <input type="checkbox" id="invert-check-dock" style="opacity:0; width:0; height:0;">
                         <span class="toggle-slider" style="position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:24px; transition:.2s;">
-                            <span style="position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; background:white; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
+                            <span style="position:absolute; height:20px; width:20px; left:2px; bottom:2px; background:white; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
                         </span>
                     </label>
                 </div>
