@@ -37,6 +37,9 @@ if (file_exists('session_config.php')) {
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap"
         rel="stylesheet">
     <script src="jquery.min.js"></script>
+    <?php if (isset($_SESSION['user_id'])): ?>
+        <script src="annotation-layer.js?v=2"></script>
+    <?php endif; ?>
     <title>monkey wrench database</title>
 </head>
 
@@ -463,9 +466,6 @@ if (file_exists('session_config.php')) {
         style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
         Link copied to clipboard!
     </div>
-    <?php if (isset($_SESSION['user_id'])): ?>
-        <script src="annotation-layer.js?v=2"></script>
-    <?php endif; ?>
     <script src="stripped-synpdf.js?v=231"></script>
     <script src="stripped-synpdf-extras.js?v=207"></script>
     <script>
