@@ -17,8 +17,6 @@ body {
     height: 100%;
     margin: 0px;
     padding: 0px;
-    padding-top: env(safe-area-inset-top);
-    /* Edge-to-edge: push content below notch/status bar */
     background: white
         /*#e3f7fe*/
     ;
@@ -617,6 +615,8 @@ a {
     flex-wrap: wrap;
     max-width: 1400px;
     padding: 1em;
+    padding-top: calc(1em + env(safe-area-inset-top));
+    /* Push content below notch/status bar */
 }
 
 #logo-bar {
