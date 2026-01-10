@@ -2049,6 +2049,11 @@ function pauseer$$module$synpdf() {
 let initialScrollTop = window.scrollY; // Store the initial scroll position
 
 function keyDown$$module$synpdf(a) {
+    // --- guard: if typing in any input/textarea, ignore shortcuts ---
+    var activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+        return; // let the input handle keys normally
+    }
     var b = a.key,
         c = 1;
     switch (b) {
