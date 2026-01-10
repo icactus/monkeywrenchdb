@@ -15,7 +15,7 @@
 
     // State
     let annotationMode = false;
-    let currentTool = 'pen';
+    let currentTool = 'pen'; // 'pen', 'eraser', or 'hand' (scroll mode)
     let penColor = '#000000';
     let penWidth = 2;
     let strokes = []; // All saved strokes
@@ -168,8 +168,8 @@
                 left: ${left}px;
                 width: ${pageCanvas.offsetWidth}px;
                 height: ${pageCanvas.offsetHeight}px;
-                pointer-events: auto;
-                touch-action: none;
+                pointer-events: ${annotationMode && currentTool !== 'hand' ? 'auto' : 'none'};
+                touch-action: ${annotationMode && currentTool !== 'hand' ? 'none' : 'auto'};
                 z-index: 100;
                 background: transparent;
                 user-select: none;
@@ -279,11 +279,12 @@
             currentStroke = {
                 page: pageNum,
                 tool: currentTool,
-                // Eraser visual: semi-transparent highlight trail (e.g. pale red/pink)
                 color: currentTool === 'eraser' ? 'rgba(255, 182, 193, 0.4)' : penColor,
-                // Eraser width: much larger ("Giant Eraser")
                 width: currentTool === 'eraser' ? 30 : penWidth,
-                points: [[point.x, point.y]]
+                // Store normalized coordinates (0-1) for cross-device compatibility
+                canvasWidth: canvas.width,
+                canvasHeight: canvas.height,
+                points: [[point.x / canvas.width, point.y / canvas.height]]
             };
 
             // Cursor feedback
@@ -298,9 +299,10 @@
             e.stopPropagation();
 
             const point = getPoint(e);
-            currentStroke.points.push([point.x, point.y]);
+            // Store normalized coordinates
+            currentStroke.points.push([point.x / canvas.width, point.y / canvas.height]);
 
-            // Render current stroke
+            // Render current stroke (denormalize for display)
             renderStroke(canvas, currentStroke);
         };
 
@@ -351,15 +353,18 @@
         if (stroke.points.length < 2) return;
 
         ctx.beginPath();
-        // Use stroke color or default black. This supports rgba for eraser trail.
         ctx.strokeStyle = stroke.color || '#000000';
         ctx.lineWidth = stroke.width || 2;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
-        ctx.moveTo(stroke.points[0][0], stroke.points[0][1]);
+        // Denormalize points from 0-1 to current canvas size
+        const scaleX = canvas.width;
+        const scaleY = canvas.height;
+
+        ctx.moveTo(stroke.points[0][0] * scaleX, stroke.points[0][1] * scaleY);
         for (let i = 1; i < stroke.points.length; i++) {
-            ctx.lineTo(stroke.points[i][0], stroke.points[i][1]);
+            ctx.lineTo(stroke.points[i][0] * scaleX, stroke.points[i][1] * scaleY);
         }
         ctx.stroke();
     }
@@ -385,7 +390,8 @@
     function eraseStrokes(eraserStroke) {
         const eraserPath = eraserStroke.points;
         const pageNum = eraserStroke.page;
-        const eraserWidth = eraserStroke.width;
+        // Use normalized threshold (approx 30px on a 1000px canvas = 0.03)
+        const eraserThreshold = 0.03;
 
         const toRemove = [];
         strokes.forEach((stroke, index) => {
@@ -396,7 +402,7 @@
                 for (let j = 0; j < eraserPath.length; j++) {
                     const dx = stroke.points[i][0] - eraserPath[j][0];
                     const dy = stroke.points[i][1] - eraserPath[j][1];
-                    if (Math.sqrt(dx * dx + dy * dy) < eraserWidth) {
+                    if (Math.sqrt(dx * dx + dy * dy) < eraserThreshold) {
                         toRemove.push(index);
                         return;
                     }
@@ -449,6 +455,12 @@
         currentTool = tool;
         document.querySelectorAll('.annotation-tool-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tool === tool);
+        });
+
+        // Refresh canvas pointer-events when switching to/from hand mode
+        Object.values(canvasElements).forEach(canvas => {
+            canvas.style.pointerEvents = (annotationMode && tool !== 'hand') ? 'auto' : 'none';
+            canvas.style.touchAction = (annotationMode && tool !== 'hand') ? 'none' : 'auto';
         });
     };
 
@@ -519,6 +531,15 @@
                 if (strokes.length > 0) {
                     // Show annotations toggle in sidebar
                     showAnnotationsToggle(true);
+
+                    // Auto-show annotations: create overlays and render
+                    document.body.classList.remove('annotations-hidden');
+                    createCanvasOverlays();
+                    renderAllStrokes();
+
+                    // Ensure checkbox is checked
+                    const checkbox = document.getElementById('annotations-visibility-toggle');
+                    if (checkbox) checkbox.checked = true;
                 }
             }
         } catch (err) {
@@ -625,11 +646,18 @@
 
     // Toggle visibility of annotations
     window.toggleAnnotationsVisibility = function () {
-        const visible = document.body.classList.toggle('annotations-hidden');
+        const isHidden = document.body.classList.toggle('annotations-hidden');
+
+        // If showing annotations and no overlays exist, create them
+        if (!isHidden && Object.keys(canvasElements).length === 0 && strokes.length > 0) {
+            createCanvasOverlays();
+            renderAllStrokes();
+        }
+
         Object.values(canvasElements).forEach(canvas => {
-            canvas.style.display = visible ? 'none' : 'block';
+            canvas.style.display = isHidden ? 'none' : 'block';
         });
-        return !visible;
+        return !isHidden;
     };
 
     // Clear all annotations

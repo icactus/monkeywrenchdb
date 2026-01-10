@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=22"></script>
+        <script src="annotation-layer.js?v=25"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>
@@ -431,6 +431,13 @@ $is_share_link = isset($_GET['share']);
                 title="Eraser">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M19.5 9.5L14.5 4.5L7 12L2 17H7L12 12M19.5 9.5L21.34 7.66C21.7151 7.28 21.9258 6.78 21.9258 6.25C21.9258 5.71 21.7151 5.21 21.34 4.83L19.17 2.66C18.79 2.28 18.29 2.07 17.76 2.07C17.22 2.07 16.72 2.28 16.34 2.66L14.5 4.5M19.5 9.5L13.5 15.5"/>
+                </svg>
+            </button>
+            <button class="annotation-tool-btn" data-tool="hand" onclick="setAnnotationTool('hand')"
+                style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+                title="Scroll Mode">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
                 </svg>
             </button>
             <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
