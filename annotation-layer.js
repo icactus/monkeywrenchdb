@@ -142,7 +142,7 @@
             childList: true,
             subtree: true,
             attributes: true,
-            attributeFilter: ['width', 'height', 'style']
+            attributeFilter: ['width', 'height', 'style', 'class']
         });
 
         console.log('Observation started for lazy-loaded pages');
