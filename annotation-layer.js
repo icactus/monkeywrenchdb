@@ -27,6 +27,11 @@
     let metricArrId = null;
     let isReadonly = false;
     let autosaveTimer = null;
+    // Multi-annotation set support
+    let currentAnnotationId = null;
+    let currentAnnotationName = 'My Annotations';
+    let annotationSets = []; // List of sets for current piece
+    let pendingShareToken = null; // Token from shared link
 
     // Initialize annotation system
     window.initAnnotations = function (metric_arr_id) {
@@ -544,12 +549,34 @@
         if (!metricArrId || isReadonly) return;
 
         try {
+            // If no ID yet, create new set first
+            if (!currentAnnotationId) {
+                const createResp = await fetch('annotations_api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'create',
+                        metric_arr_id: metricArrId,
+                        name: 'My Annotations',
+                        annotation_data: { strokes: strokes }
+                    })
+                });
+                const createData = await createResp.json();
+                if (createData.success) {
+                    currentAnnotationId = createData.id;
+                    currentAnnotationName = createData.name;
+                    console.log('Created new annotation set:', currentAnnotationId);
+                    updateAnnotationSetUI();
+                }
+                return;
+            }
+
             const response = await fetch('annotations_api.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'save',
-                    metric_arr_id: metricArrId,
+                    id: currentAnnotationId,
                     annotation_data: { strokes: strokes }
                 })
             });
@@ -582,31 +609,204 @@
 
             if (data.success && data.annotation_data) {
                 strokes = data.annotation_data.strokes || [];
+                currentAnnotationId = data.id;
+                currentAnnotationName = data.name || 'My Annotations';
                 isReadonly = data.readonly || false;
 
                 if (strokes.length > 0) {
-                    // Show annotations toggle in sidebar
                     showAnnotationsToggle(true);
-
-                    // Auto-show annotations: create overlays and render
                     document.body.classList.remove('annotations-hidden');
                     createCanvasOverlays();
                     renderAllStrokes();
-
-                    // Ensure checkbox is checked
                     const checkbox = document.getElementById('annotations-visibility-toggle');
                     if (checkbox) checkbox.checked = true;
                 }
+
+                // Load list of all sets for this piece
+                loadAnnotationSetsList();
+                updateAnnotationSetUI();
+            } else if (data.success) {
+                // No annotations yet
+                currentAnnotationId = null;
+                strokes = [];
             }
         } catch (err) {
             console.error('Load error:', err);
         }
     }
 
-    // Load shared annotations
+    // Load list of annotation sets for current piece
+    async function loadAnnotationSetsList() {
+        if (!metricArrId) return;
+        try {
+            const response = await fetch(`annotations_api.php?action=list&metric_arr_id=${metricArrId}`);
+            const data = await response.json();
+            if (data.success) {
+                annotationSets = data.sets || [];
+                updateAnnotationSetUI();
+            }
+        } catch (err) {
+            console.error('Load sets list error:', err);
+        }
+    }
+
+    // Update the annotation set picker UI
+    function updateAnnotationSetUI() {
+        const picker = document.getElementById('annotation-set-picker');
+        if (!picker) return;
+
+        picker.innerHTML = '';
+        annotationSets.forEach(set => {
+            const option = document.createElement('option');
+            option.value = set.id;
+            option.textContent = set.name;
+            if (set.id === currentAnnotationId) option.selected = true;
+            picker.appendChild(option);
+        });
+
+        // Show picker if multiple sets
+        picker.style.display = annotationSets.length > 1 ? 'block' : 'none';
+    }
+
+    // Switch to a different annotation set
+    window.switchAnnotationSet = async function (id) {
+        if (!id || id === currentAnnotationId) return;
+        try {
+            const response = await fetch(`annotations_api.php?action=load&metric_arr_id=${metricArrId}&id=${id}`);
+            const data = await response.json();
+            if (data.success && data.annotation_data) {
+                strokes = data.annotation_data.strokes || [];
+                currentAnnotationId = data.id;
+                currentAnnotationName = data.name;
+                isReadonly = data.readonly || false;
+                renderAllStrokes();
+                showAnnotationMessage('Switched to: ' + currentAnnotationName);
+            }
+        } catch (err) {
+            console.error('Switch set error:', err);
+        }
+    };
+
+    // Create a new annotation set
+    window.createNewAnnotationSet = async function (name) {
+        if (!metricArrId) return;
+        name = name || 'New Annotation';
+        try {
+            const response = await fetch('annotations_api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'create',
+                    metric_arr_id: metricArrId,
+                    name: name
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                currentAnnotationId = data.id;
+                currentAnnotationName = data.name;
+                strokes = [];
+                undoStack = [];
+                redoStack = [];
+                renderAllStrokes();
+                loadAnnotationSetsList();
+                showAnnotationMessage('Created: ' + name);
+            }
+        } catch (err) {
+            console.error('Create set error:', err);
+        }
+    };
+
+    // Import shared annotations as a new set
+    window.importSharedAnnotations = async function (shareToken) {
+        if (!shareToken) {
+            shareToken = window.pendingShareToken || new URLSearchParams(window.location.search).get('share');
+        }
+        if (!shareToken) {
+            showAnnotationMessage('No shared annotations to import', true);
+            return;
+        }
+        try {
+            const response = await fetch('annotations_api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'import',
+                    share_token: shareToken
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                currentAnnotationId = data.id;
+                currentAnnotationName = data.name;
+                isReadonly = false;
+                loadAnnotationSetsList();
+                showAnnotationMessage('Imported as: ' + data.name);
+            } else {
+                showAnnotationMessage('Import failed: ' + data.error, true);
+            }
+        } catch (err) {
+            console.error('Import error:', err);
+            showAnnotationMessage('Import failed', true);
+        }
+    };
+
+    // Rename current annotation set
+    window.renameAnnotationSet = async function (newName) {
+        if (!currentAnnotationId || !newName) return;
+        try {
+            const response = await fetch('annotations_api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'rename',
+                    id: currentAnnotationId,
+                    name: newName
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                currentAnnotationName = newName;
+                loadAnnotationSetsList();
+                showAnnotationMessage('Renamed to: ' + newName);
+            }
+        } catch (err) {
+            console.error('Rename error:', err);
+        }
+    };
+
+    // Delete current annotation set
+    window.deleteAnnotationSet = async function () {
+        if (!currentAnnotationId) return;
+        if (!confirm('Delete this annotation set? This cannot be undone.')) return;
+        try {
+            const response = await fetch('annotations_api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'delete',
+                    id: currentAnnotationId
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showAnnotationMessage('Deleted');
+                currentAnnotationId = null;
+                strokes = [];
+                renderAllStrokes();
+                loadAnnotationSetsList();
+                // Load next available set if any
+                loadAnnotations();
+            }
+        } catch (err) {
+            console.error('Delete error:', err);
+        }
+    };
+
     // Load shared annotations
     window.loadSharedAnnotations = async function (shareToken) {
         console.log('loadSharedAnnotations called with token:', shareToken.substring(0, 6) + '...');
+        pendingShareToken = shareToken; // Store for import
         try {
             const response = await fetch(`annotations_api.php?share_token=${shareToken}`);
             const data = await response.json();
@@ -615,10 +815,18 @@
                 strokes = data.annotation_data.strokes || [];
                 console.log('Shared strokes loaded:', strokes.length);
                 isReadonly = data.readonly; // Respect server flag (false if owner)
+                currentAnnotationId = data.is_owner ? data.id : null; // Only set ID if owner
+                currentAnnotationName = data.name || 'Shared Annotations';
 
                 createCanvasOverlays();
                 renderAllStrokes();
                 showAnnotationsToggle(true);
+
+                // Show import button if NOT owner and logged in
+                const importBtn = document.getElementById('import-btn');
+                if (importBtn && !data.is_owner) {
+                    importBtn.style.display = 'block';
+                }
             } else {
                 console.warn('Failed to load shared data or no data:', data);
             }
@@ -629,7 +837,10 @@
 
     // Share annotations
     window.shareAnnotations = async function () {
-        if (!metricArrId) return;
+        if (!currentAnnotationId) {
+            showAnnotationMessage('No annotations to share', true);
+            return;
+        }
 
         try {
             const response = await fetch('annotations_api.php', {
@@ -637,7 +848,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'share',
-                    metric_arr_id: metricArrId
+                    id: currentAnnotationId
                 })
             });
 

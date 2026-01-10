@@ -1,12 +1,17 @@
 <?php
 /**
- * Annotations API - Save, Load, Share
+ * Annotations API - Multi-Set Support
  * 
  * Endpoints:
- * - POST with action=save: Save annotations
- * - GET with action=load: Load annotations
- * - POST with action=share: Generate share token
- * - GET with share_token=xxx: Load shared annotations (no auth required)
+ * - GET  action=list:   List all annotation sets for user+piece
+ * - GET  action=load:   Load specific set by ID (or default)
+ * - POST action=save:   Update existing set by ID
+ * - POST action=create: Create new set
+ * - POST action=rename: Rename set by ID
+ * - POST action=delete: Delete set by ID
+ * - POST action=import: Import shared annotations as new set
+ * - POST action=share:  Generate share token for a set
+ * - GET  share_token=xxx: Load shared annotations (no auth required)
  */
 
 ini_set('display_errors', 0);
@@ -42,7 +47,7 @@ mysqli_set_charset($conn, 'utf8');
 // Handle shared annotations (no auth required)
 if (isset($_GET['share_token'])) {
     $token = $conn->real_escape_string($_GET['share_token']);
-    $result = $conn->query("SELECT user_id, annotation_data FROM user_annotations WHERE share_token = '$token'");
+    $result = $conn->query("SELECT annotation_id, user_id, metric_arr_id, name, annotation_data FROM user_annotations WHERE share_token = '$token'");
     if ($result && $row = $result->fetch_assoc()) {
         $is_owner = false;
         if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] === (int) $row['user_id']) {
@@ -51,8 +56,12 @@ if (isset($_GET['share_token'])) {
 
         echo json_encode([
             'success' => true,
+            'id' => (int) $row['annotation_id'],
+            'metric_arr_id' => (int) $row['metric_arr_id'],
+            'name' => $row['name'],
             'annotation_data' => json_decode($row['annotation_data']),
-            'readonly' => !$is_owner // Editable if owner
+            'readonly' => !$is_owner,
+            'is_owner' => $is_owner
         ]);
     } else {
         http_response_code(404);
@@ -77,40 +86,106 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     $action = $input['action'] ?? '';
     $metric_arr_id = (int) ($input['metric_arr_id'] ?? 0);
+    $annotation_id = (int) ($input['id'] ?? 0);
 } else {
     // GET requests use query params
     $action = $_GET['action'] ?? '';
     $metric_arr_id = (int) ($_GET['metric_arr_id'] ?? 0);
+    $annotation_id = (int) ($_GET['id'] ?? 0);
 }
 
 switch ($action) {
+    case 'list':
+        // List all annotation sets for this user+piece
+        if (!$metric_arr_id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing metric_arr_id']);
+            exit;
+        }
+
+        $stmt = $conn->prepare("SELECT annotation_id, name, is_default, updated_at FROM user_annotations WHERE user_id = ? AND metric_arr_id = ? ORDER BY is_default DESC, updated_at DESC");
+        $stmt->bind_param('ii', $user_id, $metric_arr_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $sets = [];
+        while ($row = $result->fetch_assoc()) {
+            $sets[] = [
+                'id' => (int) $row['annotation_id'],
+                'name' => $row['name'],
+                'is_default' => (bool) $row['is_default'],
+                'updated_at' => $row['updated_at']
+            ];
+        }
+
+        echo json_encode(['success' => true, 'sets' => $sets]);
+        $stmt->close();
+        break;
+
+    case 'load':
+        // Load specific annotation set by ID, or the default one
+        if (!$metric_arr_id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing metric_arr_id']);
+            exit;
+        }
+
+        if ($annotation_id) {
+            // Load specific set
+            $stmt = $conn->prepare("SELECT annotation_id, name, annotation_data, share_token, is_default FROM user_annotations WHERE annotation_id = ? AND user_id = ?");
+            $stmt->bind_param('ii', $annotation_id, $user_id);
+        } else {
+            // Load default (or most recent)
+            $stmt = $conn->prepare("SELECT annotation_id, name, annotation_data, share_token, is_default FROM user_annotations WHERE user_id = ? AND metric_arr_id = ? ORDER BY is_default DESC, updated_at DESC LIMIT 1");
+            $stmt->bind_param('ii', $user_id, $metric_arr_id);
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($row = $result->fetch_assoc()) {
+            echo json_encode([
+                'success' => true,
+                'id' => (int) $row['annotation_id'],
+                'name' => $row['name'],
+                'annotation_data' => json_decode($row['annotation_data']),
+                'share_token' => $row['share_token'],
+                'is_default' => (bool) $row['is_default'],
+                'readonly' => false
+            ]);
+        } else {
+            echo json_encode([
+                'success' => true,
+                'id' => null,
+                'annotation_data' => null,
+                'readonly' => false
+            ]);
+        }
+        $stmt->close();
+        break;
+
     case 'save':
+        // Update existing annotation set
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo json_encode(['error' => 'POST required']);
             exit;
         }
 
-        // $input already parsed above for POST requests
         $annotation_data = $input['annotation_data'] ?? null;
 
-        if (!$annotation_data || !$metric_arr_id) {
+        if (!$annotation_data || !$annotation_id) {
             http_response_code(400);
-            echo json_encode(['error' => 'Missing annotation_data or metric_arr_id']);
+            echo json_encode(['error' => 'Missing annotation_data or id']);
             exit;
         }
 
         $json_data = json_encode($annotation_data);
 
-        // Upsert: insert or update
-        $stmt = $conn->prepare("
-            INSERT INTO user_annotations (user_id, metric_arr_id, annotation_data) 
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE annotation_data = VALUES(annotation_data), updated_at = CURRENT_TIMESTAMP
-        ");
-        $stmt->bind_param('iis', $user_id, $metric_arr_id, $json_data);
+        $stmt = $conn->prepare("UPDATE user_annotations SET annotation_data = ?, updated_at = CURRENT_TIMESTAMP WHERE annotation_id = ? AND user_id = ?");
+        $stmt->bind_param('sii', $json_data, $annotation_id, $user_id);
 
-        if ($stmt->execute()) {
+        if ($stmt->execute() && $stmt->affected_rows >= 0) {
             echo json_encode(['success' => true, 'message' => 'Annotations saved']);
         } else {
             http_response_code(500);
@@ -119,55 +194,160 @@ switch ($action) {
         $stmt->close();
         break;
 
-    case 'load':
-        if (!$metric_arr_id) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Missing metric_arr_id']);
-            exit;
-        }
-
-        $stmt = $conn->prepare("SELECT annotation_data, share_token FROM user_annotations WHERE user_id = ? AND metric_arr_id = ?");
-        $stmt->bind_param('ii', $user_id, $metric_arr_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        if ($row = $result->fetch_assoc()) {
-            echo json_encode([
-                'success' => true,
-                'annotation_data' => json_decode($row['annotation_data']),
-                'share_token' => $row['share_token'],
-                'readonly' => false
-            ]);
-        } else {
-            echo json_encode([
-                'success' => true,
-                'annotation_data' => null,
-                'readonly' => false
-            ]);
-        }
-        $stmt->close();
-        break;
-
-    case 'share':
+    case 'create':
+        // Create new annotation set
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo json_encode(['error' => 'POST required']);
             exit;
         }
 
-        // $input already parsed above for POST requests
-
         if (!$metric_arr_id) {
             http_response_code(400);
             echo json_encode(['error' => 'Missing metric_arr_id']);
             exit;
         }
 
+        $name = $input['name'] ?? 'New Annotation';
+        $annotation_data = $input['annotation_data'] ?? ['strokes' => []];
+        $json_data = json_encode($annotation_data);
+
+        // Check if user has existing sets - if not, make this one default
+        $check_stmt = $conn->prepare("SELECT COUNT(*) as cnt FROM user_annotations WHERE user_id = ? AND metric_arr_id = ?");
+        $check_stmt->bind_param('ii', $user_id, $metric_arr_id);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result()->fetch_assoc();
+        $is_default = ($check_result['cnt'] == 0) ? 1 : 0;
+        $check_stmt->close();
+
+        $stmt = $conn->prepare("INSERT INTO user_annotations (user_id, metric_arr_id, name, annotation_data, is_default) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param('iissi', $user_id, $metric_arr_id, $name, $json_data, $is_default);
+
+        if ($stmt->execute()) {
+            $new_id = $conn->insert_id;
+            echo json_encode(['success' => true, 'id' => $new_id, 'name' => $name, 'is_default' => (bool) $is_default]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to create: ' . $stmt->error]);
+        }
+        $stmt->close();
+        break;
+
+    case 'rename':
+        // Rename annotation set
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'POST required']);
+            exit;
+        }
+
+        $name = $input['name'] ?? null;
+        if (!$annotation_id || !$name) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing id or name']);
+            exit;
+        }
+
+        $stmt = $conn->prepare("UPDATE user_annotations SET name = ? WHERE annotation_id = ? AND user_id = ?");
+        $stmt->bind_param('sii', $name, $annotation_id, $user_id);
+
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Renamed']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to rename']);
+        }
+        $stmt->close();
+        break;
+
+    case 'delete':
+        // Delete annotation set
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'POST required']);
+            exit;
+        }
+
+        if (!$annotation_id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing id']);
+            exit;
+        }
+
+        $stmt = $conn->prepare("DELETE FROM user_annotations WHERE annotation_id = ? AND user_id = ?");
+        $stmt->bind_param('ii', $annotation_id, $user_id);
+
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Deleted']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to delete']);
+        }
+        $stmt->close();
+        break;
+
+    case 'import':
+        // Import shared annotations as new set
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'POST required']);
+            exit;
+        }
+
+        $share_token = $input['share_token'] ?? null;
+        if (!$share_token) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing share_token']);
+            exit;
+        }
+
+        // Get shared annotation data
+        $token = $conn->real_escape_string($share_token);
+        $source = $conn->query("SELECT metric_arr_id, name, annotation_data FROM user_annotations WHERE share_token = '$token'");
+
+        if (!$source || !($src_row = $source->fetch_assoc())) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Shared annotations not found']);
+            exit;
+        }
+
+        $src_metric_arr_id = (int) $src_row['metric_arr_id'];
+        $import_name = 'Imported: ' . $src_row['name'];
+        $src_data = $src_row['annotation_data'];
+
+        // Create new set for this user
+        $stmt = $conn->prepare("INSERT INTO user_annotations (user_id, metric_arr_id, name, annotation_data, is_default) VALUES (?, ?, ?, ?, 0)");
+        $stmt->bind_param('iiss', $user_id, $src_metric_arr_id, $import_name, $src_data);
+
+        if ($stmt->execute()) {
+            $new_id = $conn->insert_id;
+            echo json_encode(['success' => true, 'id' => $new_id, 'name' => $import_name, 'metric_arr_id' => $src_metric_arr_id]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to import: ' . $stmt->error]);
+        }
+        $stmt->close();
+        break;
+
+    case 'share':
+        // Generate share token for a set
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'POST required']);
+            exit;
+        }
+
+        if (!$annotation_id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing id']);
+            exit;
+        }
+
         // Generate unique share token
         $token = bin2hex(random_bytes(16));
 
-        $stmt = $conn->prepare("UPDATE user_annotations SET share_token = ? WHERE user_id = ? AND metric_arr_id = ?");
-        $stmt->bind_param('sii', $token, $user_id, $metric_arr_id);
+        $stmt = $conn->prepare("UPDATE user_annotations SET share_token = ? WHERE annotation_id = ? AND user_id = ?");
+        $stmt->bind_param('sii', $token, $annotation_id, $user_id);
 
         if ($stmt->execute() && $stmt->affected_rows > 0) {
             echo json_encode([
@@ -184,7 +364,7 @@ switch ($action) {
 
     default:
         http_response_code(400);
-        echo json_encode(['error' => 'Invalid action. Use: save, load, or share']);
+        echo json_encode(['error' => 'Invalid action. Use: list, load, save, create, rename, delete, import, share']);
 }
 
 $conn->close();

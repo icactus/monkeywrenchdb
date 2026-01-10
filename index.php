@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=28"></script>
+        <script src="annotation-layer.js?v=30"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>
@@ -486,6 +486,17 @@ $is_share_link = isset($_GET['share']);
                     <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
                 </svg>
             </button>
+            <!-- Annotation Set Picker -->
+            <select id="annotation-set-picker" onchange="switchAnnotationSet(parseInt(this.value))"
+                style="display:none; height:32px; border-radius:16px; border:1px solid rgba(0,0,0,0.1); padding:0 10px; background:#f5f5f5; font-size:12px; cursor:pointer; max-width:120px;"
+                title="Switch Annotation Set">
+            </select>
+            <button onclick="createNewAnnotationSet(prompt('Name for new annotation set:', 'New Annotation'))"
+                style="width:28px; height:28px; border:none; border-radius:50%; background:#e8e8e8; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; color:#666;"
+                title="New Annotation Set">+</button>
+            <button id="import-btn" onclick="importSharedAnnotations()"
+                style="display:none; height:28px; border:none; border-radius:14px; background:#4caf50; cursor:pointer; padding:0 12px; font-size:11px; color:#fff;"
+                title="Import to My Notes">Import</button>
             <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
             <!-- Actions: Share → Done (autosave handles saving) -->
             <button onclick="shareAnnotations()"
@@ -564,8 +575,7 @@ $is_share_link = isset($_GET['share']);
                         });
                     })
                     .catch(err => console.log('[PWA] Service worker registration failed:', err));
-            });
-        }
+            });     }
     </script>
 </body>
 
