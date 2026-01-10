@@ -806,6 +806,11 @@ $('#instruments-dropdown').change(function () {
                     window.__twoUpPrevPage = undefined;
                     readPdf$$module$synpdf(pdf_file$$module$synpdf, "url");
                     scrollFlag = 1;
+
+                    // Re-initialize annotations for the new part
+                    if (typeof initAnnotations === 'function') {
+                        initAnnotations(partData.metric_arr_id);
+                    }
                 })
                 .catch(error => console.error(`Error loading recording: ${error}`));
         })
