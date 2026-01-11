@@ -33,7 +33,7 @@ $is_share_link = isset($_GET['share']);
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=3" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=169" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=170" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=34"></script>
+        <script src="annotation-layer.js?v=35"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>
@@ -168,6 +168,26 @@ $is_share_link = isset($_GET['share']);
         <button onclick="clearHistory()" class="history-clear-btn">Clear All History</button>
     </div>
 
+    <!-- Annotations Manager Modal -->
+    <?php if (isset($_SESSION['user_id'])): ?>
+        <div id="annotations-backdrop" class="modal-backdrop"></div>
+        <div id="annotations-modal" class="annotations-modal">
+            <div class="annotations-header">
+                <h3>
+                    <svg style="width:16px; height:16px; vertical-align:middle; margin-right:6px;" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 19l7-7 3 3-7 7-3-3z" />
+                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+                    </svg>
+                    My Notes
+                </h3>
+                <button class="annotations-close" onclick="toggleAnnotationsManager()" aria-label="Close">&times;</button>
+            </div>
+            <ul id="annotations-list" class="annotations-list"></ul>
+            <button onclick="createNewAnnotationSet(prompt('Name your notes:', 'My Notes'))" class="annotations-new-btn">+
+                New Notes</button>
+        </div>
+    <?php endif; ?>
     <div id="sync">
         <div id="mbar">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24px" height="24px">
@@ -491,6 +511,14 @@ $is_share_link = isset($_GET['share']);
                 style="display:none; height:32px; border-radius:16px; border:1px solid rgba(0,0,0,0.1); padding:0 10px; background:#f5f5f5; font-size:12px; cursor:pointer; max-width:120px;"
                 title="Switch Annotation Set">
             </select>
+            <button onclick="toggleAnnotationsManager()"
+                style="width:28px; height:28px; border:none; border-radius:50%; background:#e8e8e8; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+                title="Manage Notes">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                </svg>
+            </button>
             <button onclick="createNewAnnotationSet(prompt('Name your notes:', 'My Notes'))"
                 style="width:28px; height:28px; border:none; border-radius:50%; background:#e8e8e8; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; color:#666;"
                 title="Create New Notes">+</button>

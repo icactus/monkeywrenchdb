@@ -671,7 +671,126 @@
 
         // Show picker if multiple sets
         picker.style.display = annotationSets.length > 1 ? 'block' : 'none';
+
+        // Also update modal list if visible
+        renderAnnotationsList();
     }
+
+    // Toggle annotations manager modal
+    window.toggleAnnotationsManager = function () {
+        const modal = document.getElementById('annotations-modal');
+        const backdrop = document.getElementById('annotations-backdrop');
+        if (!modal) return;
+
+        const isVisible = modal.classList.contains('visible');
+        if (isVisible) {
+            modal.classList.remove('visible');
+            if (backdrop) backdrop.style.display = 'none';
+        } else {
+            // Load latest list and show
+            loadAnnotationSetsList();
+            modal.classList.add('visible');
+            if (backdrop) backdrop.style.display = 'block';
+        }
+    };
+
+    // Render the annotations list in the modal
+    function renderAnnotationsList() {
+        const list = document.getElementById('annotations-list');
+        if (!list) return;
+
+        list.innerHTML = '';
+
+        if (annotationSets.length === 0) {
+            list.innerHTML = '<li class="annotations-empty">No notes yet. Create one!</li>';
+            return;
+        }
+
+        annotationSets.forEach(set => {
+            const li = document.createElement('li');
+            li.className = set.id === currentAnnotationId ? 'active' : '';
+
+            // Format date
+            const date = set.updated_at ? new Date(set.updated_at).toLocaleDateString() : '';
+
+            li.innerHTML = `
+                <div class="annotation-item-info" onclick="switchAnnotationSet(${set.id}); toggleAnnotationsManager();">
+                    <p class="annotation-item-name">${escapeHtml(set.name)}</p>
+                    <span class="annotation-item-date">${date}</span>
+                </div>
+                <div class="annotation-item-actions">
+                    <button onclick="event.stopPropagation(); renameAnnotationSetPrompt(${set.id}, '${escapeHtml(set.name)}')" title="Rename">✏️</button>
+                    <button onclick="event.stopPropagation(); deleteAnnotationSetById(${set.id})" title="Delete">🗑️</button>
+                </div>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    // Rename annotation set with prompt
+    window.renameAnnotationSetPrompt = async function (id, currentName) {
+        const newName = prompt('Rename notes:', currentName);
+        if (newName === null || newName === currentName) return;
+        try {
+            const response = await fetch('annotations_api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'rename',
+                    id: id,
+                    name: newName || 'Untitled'
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                if (id === currentAnnotationId) currentAnnotationName = newName;
+                loadAnnotationSetsList();
+            }
+        } catch (err) {
+            console.error('Rename error:', err);
+        }
+    };
+
+    // Delete annotation set by ID
+    window.deleteAnnotationSetById = async function (id) {
+        if (!confirm('Delete these notes? This cannot be undone.')) return;
+        try {
+            const response = await fetch('annotations_api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'delete',
+                    id: id
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                if (id === currentAnnotationId) {
+                    currentAnnotationId = null;
+                    strokes = [];
+                    renderAllStrokes();
+                }
+                loadAnnotationSetsList();
+            }
+        } catch (err) {
+            console.error('Delete error:', err);
+        }
+    };
+
+    // Helper to escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Setup backdrop click to close
+    document.addEventListener('DOMContentLoaded', function () {
+        const backdrop = document.getElementById('annotations-backdrop');
+        if (backdrop) {
+            backdrop.addEventListener('click', toggleAnnotationsManager);
+        }
+    });
 
     // Switch to a different annotation set
     window.switchAnnotationSet = async function (id) {
