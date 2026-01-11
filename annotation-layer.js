@@ -676,8 +676,11 @@
         renderAnnotationsList();
     }
 
+    // Global annotations list for modal
+    let allAnnotationSets = [];
+
     // Toggle annotations manager modal
-    window.toggleAnnotationsManager = function () {
+    window.toggleAnnotationsManager = async function () {
         const modal = document.getElementById('annotations-modal');
         const backdrop = document.getElementById('annotations-backdrop');
         if (!modal) return;
@@ -687,26 +690,35 @@
             modal.classList.remove('visible');
             if (backdrop) backdrop.style.display = 'none';
         } else {
-            // Load latest list and show
-            loadAnnotationSetsList();
+            // Load ALL annotations for user
+            try {
+                const response = await fetch('annotations_api.php?action=list_all');
+                const data = await response.json();
+                if (data.success) {
+                    allAnnotationSets = data.sets || [];
+                    renderGlobalAnnotationsList();
+                }
+            } catch (err) {
+                console.error('Load all annotations error:', err);
+            }
             modal.classList.add('visible');
             if (backdrop) backdrop.style.display = 'block';
         }
     };
 
-    // Render the annotations list in the modal
-    function renderAnnotationsList() {
+    // Render the GLOBAL annotations list in the modal
+    function renderGlobalAnnotationsList() {
         const list = document.getElementById('annotations-list');
         if (!list) return;
 
         list.innerHTML = '';
 
-        if (annotationSets.length === 0) {
-            list.innerHTML = '<li class="annotations-empty">No notes yet. Create one!</li>';
+        if (allAnnotationSets.length === 0) {
+            list.innerHTML = '<li class="annotations-empty">No notes yet. Create one by editing a piece!</li>';
             return;
         }
 
-        annotationSets.forEach(set => {
+        allAnnotationSets.forEach(set => {
             const li = document.createElement('li');
             li.className = set.id === currentAnnotationId ? 'active' : '';
 
@@ -714,7 +726,9 @@
             const date = set.updated_at ? new Date(set.updated_at).toLocaleDateString() : '';
 
             li.innerHTML = `
-                <div class="annotation-item-info" onclick="switchAnnotationSet(${set.id}); toggleAnnotationsManager();">
+                <div class="annotation-item-info" onclick="loadAnnotationFromGlobal(${set.id}, ${set.metric_arr_id}); toggleAnnotationsManager();">
+                    <p class="annotation-composer">${escapeHtml(set.composer_name)}</p>
+                    <p class="annotation-piece">${escapeHtml(set.piece_name)}</p>
                     <p class="annotation-item-name">${escapeHtml(set.name)}</p>
                     <span class="annotation-item-date">${date}</span>
                 </div>
@@ -725,6 +739,24 @@
             `;
             list.appendChild(li);
         });
+    }
+
+    // Load annotation from global list (may need to navigate to piece first)
+    window.loadAnnotationFromGlobal = async function (id, targetMetricArrId) {
+        // If we're on the same piece, just switch
+        if (metricArrId === targetMetricArrId) {
+            switchAnnotationSet(id);
+            return;
+        }
+        // Otherwise, store pending and let the user know
+        // For now, just show a message - navigation is complex
+        showAnnotationMessage('Please navigate to that piece first', true);
+    };
+
+    // Render the annotations list in the modal (kept for local list usage)
+    function renderAnnotationsList() {
+        // Use global render now
+        renderGlobalAnnotationsList();
     }
 
     // Rename annotation set with prompt
@@ -796,7 +828,7 @@
     window.switchAnnotationSet = async function (id) {
         if (!id || id === currentAnnotationId) return;
         try {
-            const response = await fetch(`annotations_api.php?action=load&metric_arr_id=${metricArrId}&id=${id}`);
+            const response = await fetch(`annotations_api.php ? action = load & metric_arr_id=${metricArrId}& id=${id} `);
             const data = await response.json();
             if (data.success && data.annotation_data) {
                 strokes = data.annotation_data.strokes || [];
@@ -939,7 +971,7 @@
         console.log('loadSharedAnnotations called with token:', shareToken.substring(0, 6) + '...');
         pendingShareToken = shareToken; // Store for import
         try {
-            const response = await fetch(`annotations_api.php?share_token=${shareToken}`);
+            const response = await fetch(`annotations_api.php ? share_token = ${shareToken} `);
             const data = await response.json();
 
             if (data.success && data.annotation_data) {
@@ -999,7 +1031,7 @@
                 // If we still don't have a recording ID, we can still share just the piece
                 // but standard share links usually have both.
 
-                const shareUrl = `${baseUrl}?metricArrId=${metricArrId}&recordingId=${recId}&share=${data.share_token}`;
+                const shareUrl = `${baseUrl}?metricArrId = ${metricArrId}& recordingId=${recId}& share=${data.share_token} `;
 
                 navigator.clipboard.writeText(shareUrl);
                 showAnnotationMessage('Share link copied!');
@@ -1028,15 +1060,15 @@
         el.id = 'annotation-message';
         el.textContent = msg;
         el.style.cssText = `
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: ${isError ? '#c00' : '#333'};
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 5px;
-            z-index: 10000;
+        position: fixed;
+        bottom: 80px;
+        left: 50 %;
+        transform: translateX(-50 %);
+        background: ${isError ? '#c00' : '#333'};
+        color: #fff;
+        padding: 10px 20px;
+        border - radius: 5px;
+        z - index: 10000;
         `;
         document.body.appendChild(el);
         setTimeout(() => el.remove(), 2000);

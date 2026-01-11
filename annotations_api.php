@@ -96,6 +96,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 switch ($action) {
+    case 'list_all':
+        // List ALL annotation sets for this user across all pieces
+        $sql = "
+            SELECT 
+                ua.annotation_id, ua.metric_arr_id, ua.name, ua.updated_at,
+                p.piece_name, c.composer_last as composer_name
+            FROM user_annotations ua
+            JOIN metric_arrs ma ON ua.metric_arr_id = ma.metric_arr_id
+            JOIN pieces p ON ma.piece_id = p.piece_id
+            JOIN composers c ON p.composer_id = c.composer_id
+            WHERE ua.user_id = ?
+            ORDER BY ua.updated_at DESC
+        ";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Prepare failed: ' . $conn->error]);
+            exit;
+        }
+        $stmt->bind_param('i', $user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $sets = [];
+        while ($row = $result->fetch_assoc()) {
+            $sets[] = [
+                'id' => (int) $row['annotation_id'],
+                'metric_arr_id' => (int) $row['metric_arr_id'],
+                'name' => $row['name'],
+                'piece_name' => $row['piece_name'],
+                'composer_name' => $row['composer_name'],
+                'updated_at' => $row['updated_at']
+            ];
+        }
+
+        echo json_encode(['success' => true, 'sets' => $sets]);
+        $stmt->close();
+        break;
+
     case 'list':
         // List all annotation sets for this user+piece
         if (!$metric_arr_id) {
