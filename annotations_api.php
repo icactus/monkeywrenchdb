@@ -101,7 +101,9 @@ switch ($action) {
         $sql = "
             SELECT 
                 ua.annotation_id, ua.metric_arr_id, ua.name, ua.updated_at,
-                p.piece_name, c.composer_last as composer_name
+                p.piece_name, c.composer_last as composer_name,
+                ma.part as instrument_name,
+                (SELECT r.recording_id FROM recordings r WHERE r.metric_arr_id = ua.metric_arr_id LIMIT 1) as recording_id
             FROM user_annotations ua
             JOIN metric_arr ma ON ua.metric_arr_id = ma.metric_arr_id
             JOIN pieces p ON ma.piece_id = p.piece_id
@@ -124,9 +126,11 @@ switch ($action) {
             $sets[] = [
                 'id' => (int) $row['annotation_id'],
                 'metric_arr_id' => (int) $row['metric_arr_id'],
+                'recording_id' => (int) ($row['recording_id'] ?? 0),
                 'name' => $row['name'],
                 'piece_name' => $row['piece_name'],
                 'composer_name' => $row['composer_name'],
+                'instrument_name' => $row['instrument_name'] ?? '',
                 'updated_at' => $row['updated_at']
             ];
         }

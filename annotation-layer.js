@@ -725,10 +725,16 @@
             // Format date
             const date = set.updated_at ? new Date(set.updated_at).toLocaleDateString() : '';
 
+            // Use loadPieceFromHistory for navigation (same as history)
+            const clickHandler = set.recording_id ?
+                `loadPieceFromHistory(${set.metric_arr_id}, ${set.recording_id}); toggleAnnotationsManager();` :
+                `showAnnotationMessage('No recording found for this piece', true);`;
+
             li.innerHTML = `
-                <div class="annotation-item-info" onclick="loadAnnotationFromGlobal(${set.id}, ${set.metric_arr_id}); toggleAnnotationsManager();">
+                <div class="annotation-item-info" onclick="${clickHandler}">
                     <p class="annotation-composer">${escapeHtml(set.composer_name)}</p>
                     <p class="annotation-piece">${escapeHtml(set.piece_name)}</p>
+                    <p class="annotation-instrument">${escapeHtml(set.instrument_name || '')}</p>
                     <p class="annotation-item-name">${escapeHtml(set.name)}</p>
                     <span class="annotation-item-date">${date}</span>
                 </div>
