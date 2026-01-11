@@ -102,12 +102,13 @@ switch ($action) {
             SELECT 
                 ua.annotation_id, ua.metric_arr_id, ua.name, ua.updated_at,
                 p.piece_name, c.composer_last as composer_name,
-                ma.part as instrument_name,
+                i.instrument_name, i.part_number,
                 (SELECT r.recording_id FROM recordings r WHERE r.metric_arr_id = ua.metric_arr_id LIMIT 1) as recording_id
             FROM user_annotations ua
             JOIN metric_arr ma ON ua.metric_arr_id = ma.metric_arr_id
             JOIN pieces p ON ma.piece_id = p.piece_id
             JOIN composers c ON p.composer_id = c.composer_id
+            JOIN instruments i ON ma.instrument_id = i.instrument_id
             WHERE ua.user_id = ?
             ORDER BY ua.updated_at DESC
         ";
@@ -123,6 +124,11 @@ switch ($action) {
 
         $sets = [];
         while ($row = $result->fetch_assoc()) {
+            // Combine instrument_name and part_number like "Violin 1" or "Clarinet E-flat"
+            $instrument = $row['instrument_name'] ?? '';
+            if (!empty($row['part_number']) && $row['part_number'] != '1') {
+                $instrument .= ' ' . $row['part_number'];
+            }
             $sets[] = [
                 'id' => (int) $row['annotation_id'],
                 'metric_arr_id' => (int) $row['metric_arr_id'],
@@ -130,7 +136,7 @@ switch ($action) {
                 'name' => $row['name'],
                 'piece_name' => $row['piece_name'],
                 'composer_name' => $row['composer_name'],
-                'instrument_name' => $row['instrument_name'] ?? '',
+                'instrument_name' => $instrument,
                 'updated_at' => $row['updated_at']
             ];
         }
