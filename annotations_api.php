@@ -221,6 +221,11 @@ switch ($action) {
         $check_stmt->close();
 
         $stmt = $conn->prepare("INSERT INTO user_annotations (user_id, metric_arr_id, name, annotation_data, is_default) VALUES (?, ?, ?, ?, ?)");
+        if (!$stmt) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Prepare failed: ' . $conn->error]);
+            exit;
+        }
         $stmt->bind_param('iissi', $user_id, $metric_arr_id, $name, $json_data, $is_default);
 
         if ($stmt->execute()) {

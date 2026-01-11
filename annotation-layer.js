@@ -703,8 +703,9 @@
                 })
             });
             if (!response.ok) {
-                console.error('Create set failed:', response.status);
-                showAnnotationMessage('Failed to create set', true);
+                const errData = await response.json().catch(() => ({}));
+                console.error('Create set failed:', response.status, errData);
+                showAnnotationMessage(errData.error || 'Failed to create set', true);
                 return;
             }
             const data = await response.json();
