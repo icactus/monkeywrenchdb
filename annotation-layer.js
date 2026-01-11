@@ -690,6 +690,7 @@
     // Create a new annotation set
     window.createNewAnnotationSet = async function (name) {
         if (!metricArrId) return;
+        if (name === null) return; // User cancelled prompt
         name = name || 'New Annotation';
         try {
             const response = await fetch('annotations_api.php', {
@@ -701,6 +702,11 @@
                     name: name
                 })
             });
+            if (!response.ok) {
+                console.error('Create set failed:', response.status);
+                showAnnotationMessage('Failed to create set', true);
+                return;
+            }
             const data = await response.json();
             if (data.success) {
                 currentAnnotationId = data.id;
