@@ -554,6 +554,28 @@
         if (!metricArrId || isReadonly) return;
 
         try {
+            // If strokes are empty and we have an ID, delete the annotation set
+            if (strokes.length === 0 && currentAnnotationId) {
+                const response = await fetch('annotations_api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'delete',
+                        id: currentAnnotationId
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    console.log('Deleted empty annotation set');
+                    currentAnnotationId = null;
+                    currentAnnotationName = 'My Annotations';
+                }
+                return;
+            }
+
+            // If no strokes and no ID, nothing to do
+            if (strokes.length === 0) return;
+
             // If no ID yet, create new set first
             if (!currentAnnotationId) {
                 const createResp = await fetch('annotations_api.php', {
