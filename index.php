@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=33"></script>
+        <script src="annotation-layer.js?v=34"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>
@@ -491,9 +491,9 @@ $is_share_link = isset($_GET['share']);
                 style="display:none; height:32px; border-radius:16px; border:1px solid rgba(0,0,0,0.1); padding:0 10px; background:#f5f5f5; font-size:12px; cursor:pointer; max-width:120px;"
                 title="Switch Annotation Set">
             </select>
-            <button onclick="createNewAnnotationSet(prompt('Name for new annotation set:', 'New Annotation'))"
+            <button onclick="createNewAnnotationSet(prompt('Name your notes:', 'My Notes'))"
                 style="width:28px; height:28px; border:none; border-radius:50%; background:#e8e8e8; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; color:#666;"
-                title="New Annotation Set">+</button>
+                title="Create New Notes">+</button>
             <button id="import-btn" onclick="importSharedAnnotations()"
                 style="display:none; height:28px; border:none; border-radius:14px; background:#4caf50; cursor:pointer; padding:0 12px; font-size:11px; color:#fff;"
                 title="Import to My Notes">Import</button>
