@@ -2,7 +2,7 @@
 // Version 2 - Online-only, always fetch fresh content
 // Bump this version number to force update on all clients
 
-const SW_VERSION = 44;
+const SW_VERSION = 45;
 
 // Install event - activate immediately
 self.addEventListener('install', (event) => {

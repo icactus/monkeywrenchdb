@@ -43,6 +43,11 @@
             redoStack = [];
             canvasElements = {};
             isReadonly = false;
+            // Clear multi-set state
+            currentAnnotationId = null;
+            currentAnnotationName = 'My Annotations';
+            annotationSets = [];
+            updateAnnotationSetUI();
         }
 
         metricArrId = metric_arr_id;
