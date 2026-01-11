@@ -103,7 +103,7 @@ switch ($action) {
                 ua.annotation_id, ua.metric_arr_id, ua.name, ua.updated_at,
                 p.piece_name, c.composer_last as composer_name
             FROM user_annotations ua
-            JOIN metric_arrs ma ON ua.metric_arr_id = ma.metric_arr_id
+            JOIN metric_arr ma ON ua.metric_arr_id = ma.metric_arr_id
             JOIN pieces p ON ma.piece_id = p.piece_id
             JOIN composers c ON p.composer_id = c.composer_id
             WHERE ua.user_id = ?
