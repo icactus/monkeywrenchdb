@@ -103,7 +103,7 @@ switch ($action) {
                 ua.annotation_id, ua.metric_arr_id, ua.name, ua.updated_at,
                 p.piece_name, c.composer_last as composer_name,
                 i.instrument_name, i.part_number,
-                (SELECT r.recording_id FROM recordings r WHERE r.metric_arr_id = ua.metric_arr_id LIMIT 1) as recording_id
+                (SELECT r.recording_id FROM recordings r WHERE r.piece_id = p.piece_id LIMIT 1) as recording_id
             FROM user_annotations ua
             JOIN metric_arr ma ON ua.metric_arr_id = ma.metric_arr_id
             JOIN pieces p ON ma.piece_id = p.piece_id
