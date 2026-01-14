@@ -540,6 +540,49 @@
         penWidth = width;
     };
 
+    // Toggle pen popover
+    window.togglePenPopover = function () {
+        const popover = document.getElementById('pen-popover');
+        if (!popover) return;
+        popover.style.display = popover.style.display === 'none' ? 'block' : 'none';
+        // Also set to pen tool
+        setAnnotationTool('pen');
+    };
+
+    // Close pen popover when clicking outside
+    document.addEventListener('click', function (e) {
+        const popover = document.getElementById('pen-popover');
+        const penBtn = document.getElementById('pen-btn');
+        if (popover && popover.style.display === 'block') {
+            if (!popover.contains(e.target) && !penBtn.contains(e.target)) {
+                popover.style.display = 'none';
+            }
+        }
+    });
+
+    // Select pen color
+    window.selectPenColor = function (color) {
+        penColor = color;
+        document.getElementById('annotation-color').value = color;
+        // Update swatch borders
+        document.querySelectorAll('.color-swatch').forEach(swatch => {
+            swatch.style.borderColor = swatch.dataset.color === color ? '#333' : 'transparent';
+        });
+    };
+
+    // Select pen width
+    window.selectPenWidth = function (width) {
+        penWidth = width;
+        document.getElementById('annotation-width').value = width;
+        // Update width button styles
+        document.querySelectorAll('.width-btn').forEach(btn => {
+            const isActive = parseInt(btn.dataset.width) === width;
+            btn.style.borderColor = isActive ? '#333' : '#ddd';
+            btn.style.borderWidth = isActive ? '2px' : '1px';
+            btn.style.background = isActive ? '#f5f5f5' : '#fff';
+        });
+    };
+
     // Schedule autosave with debounce
     function scheduleAutosave() {
         if (isReadonly) return; // Don't autosave in readonly mode

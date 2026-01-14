@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=38"></script>
+        <script src="annotation-layer.js?v=39"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>
@@ -445,23 +445,68 @@ $is_share_link = isset($_GET['share']);
         background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-radius:50px; box-shadow:0 4px 20px rgba(0,0,0,0.18); padding:8px 16px; 
         display:none; gap:6px; align-items:center; z-index:10000; border:1px solid rgba(0,0,0,0.08);">
             <!-- Drawing Tools -->
-            <button class="annotation-tool-btn active" data-tool="pen" onclick="setAnnotationTool('pen')"
-                style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Pen">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 19l7-7 3 3-7 7-3-3z" />
-                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-                    <path d="M2 2l7.586 7.586" />
-                </svg>
-            </button>
+            <!-- Pen with popover -->
+            <div style="position:relative;">
+                <button id="pen-btn" class="annotation-tool-btn active" data-tool="pen" onclick="togglePenPopover()"
+                    style="width:36px; height:36px; border:none; border-radius:50%; background:#e8e8e8; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+                    title="Pen Settings">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 19l7-7 3 3-7 7-3-3z" />
+                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+                        <path d="M2 2l7.586 7.586" />
+                    </svg>
+                </button>
+                <!-- Pen Popover -->
+                <div id="pen-popover"
+                    style="display:none; position:absolute; top:42px; left:0; background:white; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.15); padding:12px; z-index:1000; min-width:160px;">
+                    <!-- Colors -->
+                    <div style="margin-bottom:10px;">
+                        <div style="font-size:10px; color:#888; margin-bottom:6px; text-transform:uppercase;">Color</div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <button onclick="selectPenColor('#000000')" class="color-swatch" data-color="#000000"
+                                style="width:24px; height:24px; border:2px solid #333; border-radius:50%; background:#000000; cursor:pointer;"></button>
+                            <button onclick="selectPenColor('#e53935')" class="color-swatch" data-color="#e53935"
+                                style="width:24px; height:24px; border:2px solid transparent; border-radius:50%; background:#e53935; cursor:pointer;"></button>
+                            <button onclick="selectPenColor('#1e88e5')" class="color-swatch" data-color="#1e88e5"
+                                style="width:24px; height:24px; border:2px solid transparent; border-radius:50%; background:#1e88e5; cursor:pointer;"></button>
+                            <button onclick="selectPenColor('#43a047')" class="color-swatch" data-color="#43a047"
+                                style="width:24px; height:24px; border:2px solid transparent; border-radius:50%; background:#43a047; cursor:pointer;"></button>
+                            <button onclick="selectPenColor('#fb8c00')" class="color-swatch" data-color="#fb8c00"
+                                style="width:24px; height:24px; border:2px solid transparent; border-radius:50%; background:#fb8c00; cursor:pointer;"></button>
+                            <button onclick="selectPenColor('#8e24aa')" class="color-swatch" data-color="#8e24aa"
+                                style="width:24px; height:24px; border:2px solid transparent; border-radius:50%; background:#8e24aa; cursor:pointer;"></button>
+                        </div>
+                    </div>
+                    <!-- Thickness -->
+                    <div>
+                        <div style="font-size:10px; color:#888; margin-bottom:6px; text-transform:uppercase;">Thickness
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="selectPenWidth(1)" class="width-btn" data-width="1"
+                                style="flex:1; padding:8px 0; border:1px solid #ddd; border-radius:6px; background:#fff; cursor:pointer; display:flex; justify-content:center;">
+                                <div style="width:20px; height:1px; background:#333;"></div>
+                            </button>
+                            <button onclick="selectPenWidth(2)" class="width-btn active" data-width="2"
+                                style="flex:1; padding:8px 0; border:2px solid #333; border-radius:6px; background:#f5f5f5; cursor:pointer; display:flex; justify-content:center;">
+                                <div style="width:20px; height:2px; background:#333;"></div>
+                            </button>
+                            <button onclick="selectPenWidth(4)" class="width-btn" data-width="4"
+                                style="flex:1; padding:8px 0; border:1px solid #ddd; border-radius:6px; background:#fff; cursor:pointer; display:flex; justify-content:center;">
+                                <div style="width:20px; height:4px; background:#333;"></div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')"
                 style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                 title="Eraser">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
-                    <path
-                        d="M19.5 9.5L14.5 4.5L7 12L2 17H7L12 12M19.5 9.5L21.34 7.66C21.7151 7.28 21.9258 6.78 21.9258 6.25C21.9258 5.71 21.7151 5.21 21.34 4.83L19.17 2.66C18.79 2.28 18.29 2.07 17.76 2.07C17.22 2.07 16.72 2.28 16.34 2.66L14.5 4.5M19.5 9.5L13.5 15.5" />
+                    <path d="M7 21h10" />
+                    <path d="M5.5 11.5L16.5 2l5 5L10.5 18H5.5v-6.5z" />
+                    <path d="M10.5 18l-5-5" />
                 </svg>
             </button>
             <button class="annotation-tool-btn" data-tool="hand" onclick="setAnnotationTool('hand')"
@@ -477,15 +522,9 @@ $is_share_link = isset($_GET['share']);
                 </svg>
             </button>
             <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
-            <!-- Color & Width -->
-            <input type="color" id="annotation-color" value="#000000" onchange="setAnnotationColor(this.value)"
-                style="width:32px; height:32px; border:none; border-radius:50%; cursor:pointer; padding:0;" title="Color">
-            <select id="annotation-width" onchange="setAnnotationWidth(parseInt(this.value))"
-                style="height:32px; border-radius:16px; border:1px solid rgba(0,0,0,0.1); padding:0 10px; background:#f5f5f5; font-size:12px; cursor:pointer;">
-                <option value="1">Thin</option>
-                <option value="2" selected>Med</option>
-                <option value="4">Thick</option>
-            </select>
+            <!-- Hidden color/width inputs for JS compatibility -->
+            <input type="hidden" id="annotation-color" value="#000000">
+            <input type="hidden" id="annotation-width" value="2">
             <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
             <!-- Undo/Redo -->
             <button onclick="annotationUndo()"
