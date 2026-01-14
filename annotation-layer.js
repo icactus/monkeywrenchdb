@@ -52,6 +52,13 @@
 
         metricArrId = metric_arr_id;
 
+        // Move annotation toolbar inside notation container (like control-buttons-row)
+        const toolbar = document.getElementById('annotation-toolbar');
+        const notation = document.getElementById('notation');
+        if (toolbar && notation && toolbar.parentNode !== notation) {
+            notation.appendChild(toolbar);
+        }
+
         // Check for share token (pending global takes precedence as URL might be wiped by now)
         let shareToken = window.pendingShareToken;
 
