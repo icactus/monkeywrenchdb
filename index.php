@@ -441,7 +441,7 @@ $is_share_link = isset($_GET['share']);
 
     <!-- Annotation Toolbar (logged-in users only) -->
     <?php if (isset($_SESSION['user_id'])): ?>
-        <div id="annotation-toolbar" style="display:none; position:fixed; bottom:80px; left:50%; transform:translateX(-50%); 
+        <div id="annotation-toolbar" style="display:none; position:fixed; bottom:80px; left:calc(50% + 125px); transform:translateX(-50%); 
         background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-radius:50px; box-shadow:0 4px 20px rgba(0,0,0,0.18); padding:8px 16px; 
         display:none; gap:6px; align-items:center; z-index:10000; border:1px solid rgba(0,0,0,0.08);">
             <!-- Drawing Tools -->
