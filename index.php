@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=39"></script>
+        <script src="annotation-layer.js?v=40"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>
@@ -457,135 +457,128 @@ $is_share_link = isset($_GET['share']);
                         <path d="M2 2l7.586 7.586" />
                     </svg>
                 </button>
-                <!-- Pen Popover -->
+                <!-- Pen Popover - opens upward, compact single row -->
                 <div id="pen-popover"
-                    style="display:none; position:absolute; top:42px; left:0; background:white; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.15); padding:12px; z-index:1000; min-width:160px;">
-                    <!-- Colors -->
-                    <div style="margin-bottom:10px;">
-                        <div style="font-size:10px; color:#888; margin-bottom:6px; text-transform:uppercase;">Color</div>
-                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                            <button onclick="selectPenColor('#000000')" class="color-swatch" data-color="#000000"
-                                style="width:24px; height:24px; border:2px solid #333; border-radius:50%; background:#000000; cursor:pointer;"></button>
-                            <button onclick="selectPenColor('#e53935')" class="color-swatch" data-color="#e53935"
-                                style="width:24px; height:24px; border:2px solid transparent; border-radius:50%; background:#e53935; cursor:pointer;"></button>
-                            <button onclick="selectPenColor('#1e88e5')" class="color-swatch" data-color="#1e88e5"
-                                style="width:24px; height:24px; border:2px solid transparent; border-radius:50%; background:#1e88e5; cursor:pointer;"></button>
-                            <button onclick="selectPenColor('#43a047')" class="color-swatch" data-color="#43a047"
-                                style="width:24px; height:24px; border:2px solid transparent; border-radius:50%; background:#43a047; cursor:pointer;"></button>
-                            <button onclick="selectPenColor('#fb8c00')" class="color-swatch" data-color="#fb8c00"
-                                style="width:24px; height:24px; border:2px solid transparent; border-radius:50%; background:#fb8c00; cursor:pointer;"></button>
-                            <button onclick="selectPenColor('#8e24aa')" class="color-swatch" data-color="#8e24aa"
-                                style="width:24px; height:24px; border:2px solid transparent; border-radius:50%; background:#8e24aa; cursor:pointer;"></button>
-                        </div>
-                    </div>
-                    <!-- Thickness -->
-                    <div>
-                        <div style="font-size:10px; color:#888; margin-bottom:6px; text-transform:uppercase;">Thickness
-                        </div>
-                        <div style="display:flex; gap:6px;">
-                            <button onclick="selectPenWidth(1)" class="width-btn" data-width="1"
-                                style="flex:1; padding:8px 0; border:1px solid #ddd; border-radius:6px; background:#fff; cursor:pointer; display:flex; justify-content:center;">
-                                <div style="width:20px; height:1px; background:#333;"></div>
-                            </button>
-                            <button onclick="selectPenWidth(2)" class="width-btn active" data-width="2"
-                                style="flex:1; padding:8px 0; border:2px solid #333; border-radius:6px; background:#f5f5f5; cursor:pointer; display:flex; justify-content:center;">
-                                <div style="width:20px; height:2px; background:#333;"></div>
-                            </button>
-                            <button onclick="selectPenWidth(4)" class="width-btn" data-width="4"
-                                style="flex:1; padding:8px 0; border:1px solid #ddd; border-radius:6px; background:#fff; cursor:pointer; display:flex; justify-content:center;">
-                                <div style="width:20px; height:4px; background:#333;"></div>
-                            </button>
-                        </div>
+                    style="display:none; position:absolute; bottom:42px; left:50%; transform:translateX(-50%); background:white; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,0.15); padding:8px; z-index:1000;">
+                    <div style="display:flex; gap:4px; align-items:center;">
+                        <!-- Colors -->
+                        <button onclick="selectPenColor('#000000')" class="color-swatch" data-color="#000000"
+                            style="width:22px; height:22px; border:2px solid #333; border-radius:50%; background:#000000; cursor:pointer;"></button>
+                        <button onclick="selectPenColor('#e53935')" class="color-swatch" data-color="#e53935"
+                            style="width:22px; height:22px; border:2px solid transparent; border-radius:50%; background:#e53935; cursor:pointer;"></button>
+                        <button onclick="selectPenColor('#1e88e5')" class="color-swatch" data-color="#1e88e5"
+                            style="width:22px; height:22px; border:2px solid transparent; border-radius:50%; background:#1e88e5; cursor:pointer;"></button>
+                        <button onclick="selectPenColor('#43a047')" class="color-swatch" data-color="#43a047"
+                            style="width:22px; height:22px; border:2px solid transparent; border-radius:50%; background:#43a047; cursor:pointer;"></button>
+                        <button onclick="selectPenColor('#fb8c00')" class="color-swatch" data-color="#fb8c00"
+                            style="width:22px; height:22px; border:2px solid transparent; border-radius:50%; background:#fb8c00; cursor:pointer;"></button>
+                        <button onclick="selectPenColor('#8e24aa')" class="color-swatch" data-color="#8e24aa"
+                            style="width:22px; height:22px; border:2px solid transparent; border-radius:50%; background:#8e24aa; cursor:pointer;"></button>
+                        <!-- Divider -->
+                        <div style="width:1px; height:18px; background:#ddd; margin:0 4px;"></div>
+                        <!-- Widths -->
+                        <button onclick="selectPenWidth(1)" class="width-btn" data-width="1"
+                            style="width:28px; height:22px; border:1px solid #ddd; border-radius:4px; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                            <div style="width:14px; height:1px; background:#333;"></div>
+                        </button>
+                        <button onclick="selectPenWidth(2)" class="width-btn active" data-width="2"
+                            style="width:28px; height:22px; border:2px solid #333; border-radius:4px; background:#f5f5f5; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                            <div style="width:14px; height:2px; background:#333;"></div>
+                        </button>
+                        <button onclick="selectPenWidth(4)" class="width-btn" data-width="4"
+                            style="width:28px; height:22px; border:1px solid #ddd; border-radius:4px; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                            <div style="width:14px; height:4px; background:#333;"></div>
+                        </button>
                     </div>
                 </div>
             </div>
             <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')"
-                style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Eraser">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M7 21h10" />
-                    <path d="M5.5 11.5L16.5 2l5 5L10.5 18H5.5v-6.5z" />
-                    <path d="M10.5 18l-5-5" />
-                </svg>
-            </button>
-            <button class="annotation-tool-btn" data-tool="hand" onclick="setAnnotationTool('hand')"
-                style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Scroll Mode">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
-                    <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
-                    <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
-                    <path
-                        d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
-                </svg>
-            </button>
-            <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
-            <!-- Hidden color/width inputs for JS compatibility -->
-            <input type="hidden" id="annotation-color" value="#000000">
-            <input type="hidden" id="annotation-width" value="2">
-            <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
-            <!-- Undo/Redo -->
-            <button onclick="annotationUndo()"
-                style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Undo">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 7v6h6" />
-                    <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
-                </svg>
-            </button>
-            <button onclick="annotationRedo()"
-                style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Redo">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 7v6h-6" />
-                    <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
-                </svg>
-            </button>
-            <!-- Annotation Set Picker -->
-            <select id="annotation-set-picker" onchange="switchAnnotationSet(parseInt(this.value))"
-                style="display:none; height:32px; border-radius:16px; border:1px solid rgba(0,0,0,0.1); padding:0 10px; background:#f5f5f5; font-size:12px; cursor:pointer; max-width:120px;"
-                title="Switch Annotation Set">
-            </select>
-            <button onclick="toggleAnnotationsManager()"
-                style="width:28px; height:28px; border:none; border-radius:50%; background:#e8e8e8; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Manage Notes">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-                </svg>
-            </button>
-            <button onclick="createNewAnnotationSet(prompt('Name your notes:', 'My Notes'))"
-                style="width:28px; height:28px; border:none; border-radius:50%; background:#e8e8e8; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; color:#666;"
-                title="Create New Notes">+</button>
-            <button id="import-btn" onclick="importSharedAnnotations()"
-                style="display:none; height:28px; border:none; border-radius:14px; background:#4caf50; cursor:pointer; padding:0 12px; font-size:11px; color:#fff;"
-                title="Import to My Notes">Import</button>
-            <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
-            <!-- Actions: Share → Done (autosave handles saving) -->
-            <button onclick="shareAnnotations()"
-                style="width:36px; height:36px; border:none; border-radius:50%; background:#2196f3; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Share Link">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="18" cy="5" r="3" />
-                    <circle cx="6" cy="12" r="3" />
-                    <circle cx="18" cy="19" r="3" />
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                </svg>
-            </button>
-            <button onclick="toggleAnnotationMode()"
-                style="width:36px; height:36px; border:none; border-radius:50%; background:#666; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Done Editing">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                </svg>
-            </button>
+            style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+            title="Eraser">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 21h10" />
+                <path d="M5.5 11.5L16.5 2l5 5L10.5 18H5.5v-6.5z" />
+                <path d="M10.5 18l-5-5" />
+            </svg>
+        </button>
+        <button class="annotation-tool-btn" data-tool="hand" onclick="setAnnotationTool('hand')"
+            style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+            title="Scroll Mode">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
+                <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+                <path
+                    d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+            </svg>
+        </button>
+        <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
+        <!-- Hidden color/width inputs for JS compatibility -->
+        <input type="hidden" id="annotation-color" value="#000000">
+        <input type="hidden" id="annotation-width" value="2">
+        <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
+        <!-- Undo/Redo -->
+        <button onclick="annotationUndo()"
+            style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+            title="Undo">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7v6h6" />
+                <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+            </svg>
+        </button>
+        <button onclick="annotationRedo()"
+            style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+            title="Redo">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 7v6h-6" />
+                <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
+            </svg>
+        </button>
+        <!-- Annotation Set Picker -->
+        <select id="annotation-set-picker" onchange="switchAnnotationSet(parseInt(this.value))"
+            style="display:none; height:32px; border-radius:16px; border:1px solid rgba(0,0,0,0.1); padding:0 10px; background:#f5f5f5; font-size:12px; cursor:pointer; max-width:120px;"
+            title="Switch Annotation Set">
+        </select>
+        <button onclick="toggleAnnotationsManager()"
+            style="width:28px; height:28px; border:none; border-radius:50%; background:#e8e8e8; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+            title="Manage Notes">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+            </svg>
+        </button>
+        <button onclick="createNewAnnotationSet(prompt('Name your notes:', 'My Notes'))"
+            style="width:28px; height:28px; border:none; border-radius:50%; background:#e8e8e8; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; color:#666;"
+            title="Create New Notes">+</button>
+        <button id="import-btn" onclick="importSharedAnnotations()"
+            style="display:none; height:28px; border:none; border-radius:14px; background:#4caf50; cursor:pointer; padding:0 12px; font-size:11px; color:#fff;"
+            title="Import to My Notes">Import</button>
+        <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
+        <!-- Actions: Share → Done (autosave handles saving) -->
+        <button onclick="shareAnnotations()"
+            style="width:36px; height:36px; border:none; border-radius:50%; background:#2196f3; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+            title="Share Link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
+        </button>
+        <button onclick="toggleAnnotationMode()"
+            style="width:36px; height:36px; border:none; border-radius:50%; background:#666; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+            title="Done Editing">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+            </svg>
+        </button>
         </div>
         <style>
             .annotation-tool-btn.active {
