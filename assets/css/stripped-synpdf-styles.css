@@ -848,11 +848,10 @@ invertButton {
 }
 
 #annotation-toolbar {
-    position: sticky;
+    position: fixed;
     bottom: 80px;
     left: 50%;
     transform: translateX(-50%);
-    width: fit-content;
     z-index: 10000;
 }
 
