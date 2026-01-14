@@ -1146,7 +1146,7 @@
         color: #fff;
         padding: 10px 20px;
         border - radius: 5px;
-        z - index: 10000;
+        z - index: 10001;
         `;
         document.body.appendChild(el);
         setTimeout(() => el.remove(), 2000);
