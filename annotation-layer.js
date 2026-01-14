@@ -1140,13 +1140,13 @@
         el.style.cssText = `
         position: fixed;
         bottom: 80px;
-        left: 50 %;
-        transform: translateX(-50 %);
+        left: 50%;
+        transform: translateX(-50%);
         background: ${isError ? '#c00' : '#333'};
         color: #fff;
         padding: 10px 20px;
-        border - radius: 5px;
-        z - index: 10001;
+        border-radius: 5px;
+        z-index: 10001;
         `;
         document.body.appendChild(el);
         setTimeout(() => el.remove(), 2000);
