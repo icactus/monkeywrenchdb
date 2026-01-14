@@ -579,35 +579,49 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     function repositionToolbar() {
         const toolbar = document.getElementById('control-buttons-row');
         const toolbarMenu = document.getElementById('extra-tools-menu-dock');
+        const annotationToolbar = document.getElementById('annotation-toolbar');
         const notation = document.getElementById('notation');
-        if (!toolbar || !notation) return;
+        if (!notation) return;
 
         const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
 
         if (isFullscreen) {
             // Center on viewport
-            toolbar.style.left = '50%';
-            toolbar.style.transform = 'translateX(-50%)';
+            if (toolbar) {
+                toolbar.style.left = '50%';
+                toolbar.style.transform = 'translateX(-50%)';
+            }
             if (toolbarMenu) {
                 toolbarMenu.style.left = '50%';
                 toolbarMenu.style.transform = 'translateX(-50%)';
+            }
+            if (annotationToolbar) {
+                annotationToolbar.style.left = '50%';
+                annotationToolbar.style.transform = 'translateX(-50%)';
             }
         } else {
             // Center on #notation
             const notationRect = notation.getBoundingClientRect();
             const centerX = notationRect.left + (notationRect.width / 2);
-            toolbar.style.left = centerX + 'px';
-            toolbar.style.transform = 'translateX(-50%)';
+            if (toolbar) {
+                toolbar.style.left = centerX + 'px';
+                toolbar.style.transform = 'translateX(-50%)';
+            }
             if (toolbarMenu) {
                 toolbarMenu.style.left = centerX + 'px';
                 toolbarMenu.style.transform = 'translateX(-50%)';
             }
+            if (annotationToolbar) {
+                annotationToolbar.style.left = centerX + 'px';
+                annotationToolbar.style.transform = 'translateX(-50%)';
+            }
         }
     }
 
-    // Initial positioning and on fullscreen change
+    // Initial positioning and on fullscreen change or window resize
     repositionToolbar();
     $(document).on('fullscreenchange webkitfullscreenchange', repositionToolbar);
+    $(window).on('resize', repositionToolbar);
 
     initIntersectionObserver(); // Initialize observer for page rendering 
     setupPlayPauseButton();
