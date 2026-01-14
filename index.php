@@ -495,14 +495,14 @@ $is_share_link = isset($_GET['share']);
             <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')"
                 style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                 title="Eraser">
-                <!-- Angled eraser with line being erased -->
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5">
-                    <!-- Line being erased -->
-                    <line x1="2" y1="20" x2="22" y2="20" stroke-dasharray="2,2" />
-                    <!-- Angled eraser body -->
-                    <rect x="8" y="6" width="12" height="8" rx="1" transform="rotate(25 14 10)" fill="#f5f5f5" />
-                    <line x1="12" y1="5" x2="14" y2="14" transform="rotate(25 14 10)" />
-                </svg>
+                <!-- Classic eraser icon -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Diagonal line being erased -->
+                <line x1="4" y1="20" x2="10" y2="20"/>
+                <!-- Slanted eraser body -->
+                <path d="M20 8L14 2L4 12L8 16L20 8z"/>
+                <path d="M14 2L8 16"/>
+            </svg>
             </button>
             <button class="annotation-tool-btn" data-tool="hand" onclick="setAnnotationTool('hand')"
                 style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
