@@ -33,7 +33,7 @@ $is_share_link = isset($_GET['share']);
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=3" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=172" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=173" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -441,9 +441,9 @@ $is_share_link = isset($_GET['share']);
 
     <!-- Annotation Toolbar (logged-in users only) -->
     <?php if (isset($_SESSION['user_id'])): ?>
-        <div id="annotation-toolbar" style="display:none; position:sticky; bottom:80px; left:50%; transform:translateX(-50%); width:fit-content; margin:0 auto;
+        <div id="annotation-toolbar" style="display:none; 
         background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-radius:50px; box-shadow:0 4px 20px rgba(0,0,0,0.18); padding:8px 16px; 
-        gap:6px; align-items:center; z-index:10000; border:1px solid rgba(0,0,0,0.08);">
+        gap:6px; align-items:center; border:1px solid rgba(0,0,0,0.08);">
             <!-- Drawing Tools -->
             <!-- Pen with popover -->
             <div style="position:relative;">

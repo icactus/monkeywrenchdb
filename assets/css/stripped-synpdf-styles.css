@@ -847,6 +847,15 @@ invertButton {
     z-index: 5;
 }
 
+#annotation-toolbar {
+    position: sticky;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: fit-content;
+    z-index: 10000;
+}
+
 .control-buttons {
     cursor: pointer;
 
@@ -1253,6 +1262,13 @@ select {
         left: 0;
         background-color: #f8f8f8;
         border-top: solid 1px #cecece;
+    }
+
+    #annotation-toolbar {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
     }
 
     .control-buttons {
