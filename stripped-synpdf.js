@@ -436,7 +436,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     <svg id="pause-icon" style="display:none" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                 </button>
                 <button class="toolbar-btn" id="annotation-edit-btn" onclick="toggleAnnotationMode()" title="Edit Markings" style="display:none;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="none" d="M12 19l7-7 3 3-7 7-3-3z"/><path fill="none" d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path fill="none" d="M2 2l7.586 7.586"/></svg>
                 </button>
                 <div class="toolbar-divider"></div>
                 <button class="toolbar-btn" id="more-tools-btn-dock" onclick="toggleExtraToolsDock(event)" title="More">
