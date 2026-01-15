@@ -37,7 +37,7 @@ function toggleHistoryMenu() {
     const isVisible = modal.classList.contains('visible');
 
     if (!isVisible) {
-        // Position below user dropdown trigger on desktop
+        // Position below user dropdown trigger on desktop/tablet
         const isMobile = window.matchMedia("(max-width: 767px)").matches;
         const userTrigger = document.querySelector('.nav-user-trigger');
 
@@ -48,11 +48,18 @@ function toggleHistoryMenu() {
             modal.style.left = rect.left + 'px';
             modal.style.right = 'auto';
             modal.style.transform = 'none';
+        } else {
+            // Mobile: clear inline styles so CSS centering takes over
+            modal.style.position = '';
+            modal.style.top = '';
+            modal.style.left = '';
+            modal.style.right = '';
+            modal.style.transform = '';
         }
 
         fetchHistory();
         modal.classList.add('visible');
-        modal.style.display = 'block'; // Force display on desktop to prevent CSS overriding
+        modal.style.display = 'block'; // Force display to prevent CSS overriding
         if (backdrop) backdrop.classList.add('visible');
     } else {
         modal.classList.remove('visible');
@@ -62,6 +69,7 @@ function toggleHistoryMenu() {
         modal.style.top = '';
         modal.style.left = '';
         modal.style.right = '';
+        modal.style.transform = '';
 
         if (backdrop) backdrop.classList.remove('visible');
     }

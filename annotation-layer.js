@@ -802,14 +802,21 @@
             } catch (err) {
                 console.error('Load all annotations error:', err);
             }
-            // Position modal below user dropdown trigger
+            // Position modal below user dropdown trigger on desktop/tablet
+            const isMobile = window.matchMedia("(max-width: 767px)").matches;
             const userTrigger = document.querySelector('.nav-user-trigger');
-            if (userTrigger && !window.matchMedia("(max-width: 767px)").matches) {
+            if (!isMobile && userTrigger) {
                 const rect = userTrigger.getBoundingClientRect();
                 modal.style.position = 'fixed';
                 modal.style.top = (rect.bottom + 8) + 'px';
                 modal.style.left = rect.left + 'px';
                 modal.style.transform = 'none';
+            } else {
+                // Mobile: clear inline styles so CSS centering takes over
+                modal.style.position = '';
+                modal.style.top = '';
+                modal.style.left = '';
+                modal.style.transform = '';
             }
             modal.classList.add('visible');
             if (backdrop) backdrop.style.display = 'block';
