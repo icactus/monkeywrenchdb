@@ -354,8 +354,7 @@ audio {
 .nav-dropdown-menu {
     position: absolute;
     top: calc(100% + 8px);
-    left: auto;
-    right: 0;
+    left: 0;
     min-width: 200px;
     background: white;
     border-radius: 12px;
@@ -364,7 +363,7 @@ audio {
     visibility: hidden;
     transform: translateY(-8px);
     transition: all 0.2s ease;
-    z-index: 1000;
+    z-index: 9999;
     overflow: hidden;
 }
 
