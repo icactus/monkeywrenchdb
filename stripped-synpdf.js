@@ -37,11 +37,11 @@ function toggleHistoryMenu() {
     const isVisible = modal.classList.contains('visible');
 
     if (!isVisible) {
-        // Position below user dropdown trigger on desktop/tablet
-        const isMobile = window.matchMedia("(max-width: 767px)").matches;
+        // Position below user dropdown trigger on desktop only (>1024px)
+        const isMobileOrTablet = window.matchMedia("(max-width: 1024px)").matches;
         const userTrigger = document.querySelector('.nav-user-trigger');
 
-        if (!isMobile && userTrigger) {
+        if (!isMobileOrTablet && userTrigger) {
             const rect = userTrigger.getBoundingClientRect();
             modal.style.position = 'fixed';
             modal.style.top = (rect.bottom + 8) + 'px';

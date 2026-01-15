@@ -1232,7 +1232,7 @@ select {
         margin-left: 0;
     }
 
-    /* Center history modal on mobile like help/about */
+    /* Center history modal on mobile/tablet like help/about */
     .history-modal {
         top: 50% !important;
         left: 50% !important;
@@ -1245,7 +1245,7 @@ select {
         z-index: 1001;
     }
 
-    /* Center annotations modal on mobile like help/about */
+    /* Center annotations modal on mobile/tablet like help/about */
     .annotations-modal {
         top: 50% !important;
         left: 50% !important;
@@ -1258,6 +1258,21 @@ select {
         z-index: 1001;
     }
 
+}
+
+/* Tablet centering for modals (768px - 1024px) */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+
+    .history-modal,
+    .annotations-modal {
+        top: 50% !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 420px;
+        max-height: 80vh;
+    }
 }
 
 /* Modern Loading Spinner */
