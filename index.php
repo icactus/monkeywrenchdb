@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=43"></script>
+        <script src="annotation-layer.js?v=46"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>
@@ -82,6 +82,8 @@ $is_share_link = isset($_GET['share']);
                             </div>
                             <a href="javascript:void(0)"
                                 onclick="toggleHistoryMenu(); toggleMobileHeaderMenu();">History</a>
+                            <a href="javascript:void(0)" onclick="toggleAnnotationsManager(); toggleMobileHeaderMenu();">My
+                                Markings</a>
                             <a href="auth_logout.php" class="mobile-menu-logout">Logout</a>
                         <?php else: ?>
                             <a href="auth_login.php?provider=google" class="mobile-menu-login">
@@ -111,6 +113,8 @@ $is_share_link = isset($_GET['share']);
                                     class="nav-username"><?= htmlspecialchars(explode(' ', $_SESSION['user_name'])[0]) ?></span>
                                 <a href="javascript:void(0)" id="history-toggle-btn"
                                     onclick="toggleHistoryMenu(); return false;" class="pill-link">History</a>
+                                <a href="javascript:void(0)" id="markings-toggle-btn"
+                                    onclick="toggleAnnotationsManager(); return false;" class="pill-link">My Markings</a>
                                 <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
                                     <div class="pill-admin-group">
                                         <span class="admin-label">ADMIN</span>
@@ -168,7 +172,7 @@ $is_share_link = isset($_GET['share']);
         <button onclick="clearHistory()" class="history-clear-btn">Clear All History</button>
     </div>
 
-    <!-- Annotations Manager Modal -->
+    <!-- Markings Manager Modal -->
     <?php if (isset($_SESSION['user_id'])): ?>
         <div id="annotations-backdrop" class="modal-backdrop"></div>
         <div id="annotations-modal" class="annotations-modal">
@@ -179,13 +183,14 @@ $is_share_link = isset($_GET['share']);
                         <path d="M12 19l7-7 3 3-7 7-3-3z" />
                         <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
                     </svg>
-                    My Notes
+                    My Markings
                 </h3>
                 <button class="annotations-close" onclick="toggleAnnotationsManager()" aria-label="Close">&times;</button>
             </div>
             <ul id="annotations-list" class="annotations-list"></ul>
-            <button onclick="createNewAnnotationSet(prompt('Name your notes:', 'My Notes'))" class="annotations-new-btn">+
-                New Notes</button>
+            <button onclick="createNewAnnotationSet(prompt('Name your markings:', 'My Markings'))"
+                class="annotations-new-btn">+
+                New Markings</button>
         </div>
     <?php endif; ?>
     <div id="sync">

@@ -392,14 +392,15 @@ function toggleWActivity() {
     WisActive = !WisActive;
 
     if (WisActive) {
-        console.log('insertCxsGroups is ON');
+        console.log('W mode is ON (auto-adjust:' + !exactBoundariesMode + ')');
         // Add any visual indicator or behavior for 'W' being active
 
         if (QisActive) {
             toggleQActivity();
         }
     } else {
-        console.log('insertCxsGroups is OFF');
+        console.log('W mode is OFF');
+        exactBoundariesMode = false; // Reset when turning off
     }
 }
 
@@ -438,11 +439,26 @@ document.addEventListener('keydown', function (event) {
             saveTiming$$module$synpdf();
             break;
         case 'W':
-            startPoint = null;
-            endPoint = null;
+            // Capital W: toggle exact boundaries mode (use clicked points, no staff line adjustment)
+            if (!WisActive) {
+                exactBoundariesMode = true;
+                toggleWActivity();
+                console.log('Exact boundaries mode ON');
+            } else {
+                // Clear points if already active
+                startPoint = null;
+                endPoint = null;
+            }
             break;
         case 'w':
-            toggleWActivity();
+            // Lowercase w: toggle auto-adjust mode (detect staff lines near click points)
+            if (!WisActive) {
+                exactBoundariesMode = false;
+                toggleWActivity();
+                console.log('Auto-adjust mode ON');
+            } else {
+                toggleWActivity(); // Turn off
+            }
             break;
         case '/':
             keyDown$$module$synpdf({
@@ -629,6 +645,7 @@ function handleWCxs(event) {
 
 let startPoint = null;
 let endPoint = null;
+let exactBoundariesMode = false; // true = use exact clicked points, false = auto-adjust to staff lines
 
 function editCxsGroups$$module$synpdf(event) {
     var rect = notation.getBoundingClientRect();
@@ -683,15 +700,19 @@ function editCxsGroups$$module$synpdf(event) {
 
         try {
             if (window.detectBarlinesInRect) {
-                console.log("Auto-detecting barlines for w-mode..." + (endPoint.shiftKey ? " (with snapping)" : ""));
+                const modeInfo = exactBoundariesMode ? " (exact boundaries)" : " (auto-adjust)";
+                console.log("Auto-detecting barlines for w-mode..." + modeInfo + (endPoint.shiftKey ? " (with snapping)" : ""));
                 var res = window.detectBarlinesInRect(startPoint.y, endPoint.y, startPoint.x, endPoint.x, endPoint.shiftKey);
 
                 // Handle new return format (Object) vs old (Array)
                 if (res && res.barlines) {
                     newBarlines = res.barlines;
-                    optimizedCs = res.cs;
+                    // Only use optimized CS if NOT in exact boundaries mode
+                    if (!exactBoundariesMode) {
+                        optimizedCs = res.cs;
+                    }
                     console.log("Auto-detection finished. Found: " + newBarlines.length);
-                    console.log("Optimized CS: " + JSON.stringify(optimizedCs));
+                    console.log("Optimized CS: " + (exactBoundariesMode ? "skipped (exact mode)" : JSON.stringify(optimizedCs)));
                 } else if (Array.isArray(res)) {
                     newBarlines = res; // Fallback for safety
                 }
@@ -702,14 +723,11 @@ function editCxsGroups$$module$synpdf(event) {
             console.error("Auto-detection failed:", e);
         }
 
-        var finalCs = [startPoint.y, endPoint.y]; // Default (2 points? No, cxs expects 2 points [top, bottom])
+        // In exact boundaries mode, always use raw click coordinates
+        var finalCs = [startPoint.y, endPoint.y]; // Default: exact clicked points
 
-
-        if (optimizedCs && optimizedCs.length === 5) {
-            finalCs = optimizedCs;
-        } else {
-            // Just top/bottom
-            finalCs = [startPoint.y, endPoint.y];
+        if (!exactBoundariesMode && optimizedCs && optimizedCs.length === 5) {
+            finalCs = optimizedCs; // Use optimized staff line positions
         }
 
         cxsBxsData[pagenum].cxs.push({ cs: finalCs, xs: { x1: startPoint.x, x2: endPoint.x } });

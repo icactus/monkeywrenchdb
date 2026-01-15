@@ -29,7 +29,7 @@
     let autosaveTimer = null;
     // Multi-annotation set support
     let currentAnnotationId = null;
-    let currentAnnotationName = 'My Annotations';
+    let currentAnnotationName = 'My Markings';
     let annotationSets = []; // List of sets for current piece
     let pendingShareToken = null; // Token from shared link
 
@@ -45,7 +45,7 @@
             isReadonly = false;
             // Clear multi-set state
             currentAnnotationId = null;
-            currentAnnotationName = 'My Annotations';
+            currentAnnotationName = 'My Markings';
             annotationSets = [];
             updateAnnotationSetUI();
         }
@@ -964,7 +964,7 @@
             shareToken = window.pendingShareToken || new URLSearchParams(window.location.search).get('share');
         }
         if (!shareToken) {
-            showAnnotationMessage('No shared annotations to import', true);
+            showAnnotationMessage('No shared markings to import', true);
             return;
         }
         try {
@@ -1079,7 +1079,7 @@
     // Share annotations
     window.shareAnnotations = async function () {
         if (!currentAnnotationId) {
-            showAnnotationMessage('No annotations to share', true);
+            showAnnotationMessage('No markings to share', true);
             return;
         }
 
