@@ -118,7 +118,7 @@ $is_share_link = isset($_GET['share']);
                                 </svg>
                             </button>
                             <div class="nav-dropdown-menu" id="user-dropdown-menu">
-                                <a href="javascript:void(0)" onclick="toggleHistoryMenu(); closeUserDropdown();">
+                                <a href="javascript:void(0)" id="history-toggle-btn" onclick="toggleHistoryMenu(); closeUserDropdown();">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                         stroke-width="2">
                                         <circle cx="12" cy="12" r="10" />
