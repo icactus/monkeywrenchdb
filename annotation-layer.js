@@ -635,7 +635,7 @@
                 if (data.success) {
                     console.log('Deleted empty annotation set');
                     currentAnnotationId = null;
-                    currentAnnotationName = 'My Annotations';
+                    currentAnnotationName = 'My Markings';
                 }
                 return;
             }
@@ -651,7 +651,7 @@
                     body: JSON.stringify({
                         action: 'create',
                         metric_arr_id: metricArrId,
-                        name: 'My Annotations',
+                        name: 'My Markings',
                         annotation_data: { strokes: strokes }
                     })
                 });
@@ -704,7 +704,7 @@
             if (data.success && data.annotation_data) {
                 strokes = data.annotation_data.strokes || [];
                 currentAnnotationId = data.id;
-                currentAnnotationName = data.name || 'My Annotations';
+                currentAnnotationName = data.name || 'My Markings';
                 isReadonly = data.readonly || false;
 
                 if (strokes.length > 0) {
@@ -792,6 +792,12 @@
             }
             modal.classList.add('visible');
             if (backdrop) backdrop.style.display = 'block';
+
+            // Hide "+ New Markings" button if no piece is loaded
+            const newBtn = modal.querySelector('.annotations-new-btn');
+            if (newBtn) {
+                newBtn.style.display = metricArrId ? 'block' : 'none';
+            }
         }
     };
 
