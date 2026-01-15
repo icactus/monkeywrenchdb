@@ -352,17 +352,14 @@ audio {
 }
 
 .nav-dropdown-menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
+    position: fixed;
     min-width: 200px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-8px);
-    transition: all 0.2s ease;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
     z-index: 9999;
     overflow: hidden;
 }
@@ -370,7 +367,6 @@ audio {
 .nav-dropdown-menu.open {
     opacity: 1;
     visibility: visible;
-    transform: translateY(0);
 }
 
 .nav-dropdown-menu a {
