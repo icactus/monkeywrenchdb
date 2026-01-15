@@ -1083,7 +1083,7 @@
         console.log('loadSharedAnnotations called with token:', shareToken.substring(0, 6) + '...');
         pendingShareToken = shareToken; // Store for import
         try {
-            const response = await fetch(`annotations_api.php ? share_token = ${shareToken} `);
+            const response = await fetch(`annotations_api.php?share_token=${shareToken}`);
             const data = await response.json();
 
             if (data.success && data.annotation_data) {
@@ -1122,6 +1122,7 @@
             }
         } catch (err) {
             console.error('Load shared error:', err);
+            showAnnotationMessage('Shared markings not found', true);
         }
     };
 
