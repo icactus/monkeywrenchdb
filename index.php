@@ -171,9 +171,17 @@ $is_share_link = isset($_GET['share']);
                             function toggleUserDropdown(e) {
                                 e.stopPropagation();
                                 const menu = document.getElementById('user-dropdown-menu');
+                                const trigger = e.currentTarget;
                                 const isOpen = menu.classList.contains('open');
                                 closeUserDropdown();
-                                if (!isOpen) menu.classList.add('open');
+                                if (!isOpen) {
+                                    // Position dropdown using fixed positioning
+                                    const rect = trigger.getBoundingClientRect();
+                                    menu.style.position = 'fixed';
+                                    menu.style.top = (rect.bottom + 8) + 'px';
+                                    menu.style.left = rect.left + 'px';
+                                    menu.classList.add('open');
+                                }
                             }
                             function closeUserDropdown() {
                                 document.getElementById('user-dropdown-menu')?.classList.remove('open');
