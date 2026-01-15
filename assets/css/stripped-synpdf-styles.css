@@ -354,6 +354,7 @@ audio {
 .nav-dropdown-menu {
     position: absolute;
     top: calc(100% + 8px);
+    left: auto;
     right: 0;
     min-width: 200px;
     background: white;
