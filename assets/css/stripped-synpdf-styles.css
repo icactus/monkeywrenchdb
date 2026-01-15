@@ -726,9 +726,8 @@ a {
 #logo-bar-wrapper {
     width: 100%;
     display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    align-items: normal;
+    flex-direction: column;
+    align-items: flex-start;
     flex-wrap: wrap;
     max-width: 1400px;
     padding: 1em;
