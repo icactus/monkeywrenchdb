@@ -86,6 +86,13 @@
         annotationMode = !annotationMode;
         document.body.classList.toggle('annotation-mode', annotationMode);
 
+        // Sync pen cursor state
+        if (annotationMode && currentTool === 'pen') {
+            document.body.classList.add('pen-cursor-active');
+        } else {
+            document.body.classList.remove('pen-cursor-active');
+        }
+
         const toolbar = document.getElementById('annotation-toolbar');
         if (toolbar) {
             toolbar.style.display = annotationMode ? 'flex' : 'none';
@@ -558,6 +565,13 @@
         document.querySelectorAll('.annotation-tool-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tool === tool);
         });
+
+        // Toggle pen cursor class on body
+        if (annotationMode && tool === 'pen') {
+            document.body.classList.add('pen-cursor-active');
+        } else {
+            document.body.classList.remove('pen-cursor-active');
+        }
 
         // Refresh canvas pointer-events when switching to/from hand mode
         Object.values(canvasElements).forEach(canvas => {

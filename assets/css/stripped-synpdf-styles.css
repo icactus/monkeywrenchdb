@@ -2332,3 +2332,9 @@ html.inverted select option {
     visibility: visible;
     opacity: 1;
 }
+
+/* Custom Pen Cursor */
+body.pen-cursor-active,
+body.pen-cursor-active .annotation-canvas {
+    cursor: url('/assets/img/pen-cursor.svg') 2 2, crosshair !important;
+}
