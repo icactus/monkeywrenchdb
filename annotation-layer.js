@@ -802,6 +802,15 @@
             } catch (err) {
                 console.error('Load all annotations error:', err);
             }
+            // Position modal below user dropdown trigger
+            const userTrigger = document.querySelector('.nav-user-trigger');
+            if (userTrigger && !window.matchMedia("(max-width: 767px)").matches) {
+                const rect = userTrigger.getBoundingClientRect();
+                modal.style.position = 'fixed';
+                modal.style.top = (rect.bottom + 8) + 'px';
+                modal.style.left = rect.left + 'px';
+                modal.style.transform = 'none';
+            }
             modal.classList.add('visible');
             if (backdrop) backdrop.style.display = 'block';
 

@@ -37,27 +37,17 @@ function toggleHistoryMenu() {
     const isVisible = modal.classList.contains('visible');
 
     if (!isVisible) {
-        // Smart positioning: Drop down below button on desktop (Tablet 768px+ counts as desktop for Header)
+        // Position below user dropdown trigger on desktop
         const isMobile = window.matchMedia("(max-width: 767px)").matches;
+        const userTrigger = document.querySelector('.nav-user-trigger');
 
-        if (!isMobile && toggleBtn) {
-            const rect = toggleBtn.getBoundingClientRect();
-            const modalWidth = 320;
-            const viewportWidth = window.innerWidth;
-
-            // Center horizontally below the button
-            let leftPos = rect.left + (rect.width / 2) - (modalWidth / 2);
-
-            // Clamp to viewport bounds (10px margin)
-            if (leftPos < 10) leftPos = 10;
-            if (leftPos + modalWidth > viewportWidth - 10) {
-                leftPos = viewportWidth - modalWidth - 10;
-            }
-
-            modal.style.position = 'absolute';
-            modal.style.top = (rect.bottom + window.scrollY + 10) + 'px';
-            modal.style.left = (leftPos + window.scrollX) + 'px';
+        if (!isMobile && userTrigger) {
+            const rect = userTrigger.getBoundingClientRect();
+            modal.style.position = 'fixed';
+            modal.style.top = (rect.bottom + 8) + 'px';
+            modal.style.left = rect.left + 'px';
             modal.style.right = 'auto';
+            modal.style.transform = 'none';
         }
 
         fetchHistory();
