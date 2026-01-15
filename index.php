@@ -518,7 +518,6 @@ $is_share_link = isset($_GET['share']);
             <!-- Hidden color/width inputs for JS compatibility -->
             <input type="hidden" id="annotation-color" value="#000000">
             <input type="hidden" id="annotation-width" value="2">
-            <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
             <!-- Undo/Redo -->
             <button id="undo-btn" onclick="annotationUndo()"
                 style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0.3; pointer-events:none;"
