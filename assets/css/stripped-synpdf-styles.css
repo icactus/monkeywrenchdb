@@ -2335,6 +2335,7 @@ html.inverted select option {
 
 /* Custom Pen Cursor */
 body.pen-cursor-active,
-body.pen-cursor-active .annotation-canvas {
-    cursor: url('/assets/img/pen-cursor.svg') 2 2, crosshair !important;
+body.pen-cursor-active .annotation-canvas,
+body.pen-cursor-active #pdf-container {
+    cursor: url('/assets/img/pen-cursor.svg?v=2') 2 2, crosshair !important;
 }
