@@ -821,7 +821,7 @@
         list.innerHTML = '';
 
         if (allAnnotationSets.length === 0) {
-            list.innerHTML = '<li class="annotations-empty">No notes yet. Create one by editing a piece!</li>';
+            list.innerHTML = '<li class="annotations-empty">No markings yet. Create one by editing a piece!</li>';
             return;
         }
 
@@ -847,7 +847,7 @@
                 </div>
                 <div class="annotation-item-actions">
                     <button onclick="event.stopPropagation(); renameAnnotationSetPrompt(${set.id}, '${escapeHtml(set.name)}')" title="Rename">✏️</button>
-                    <button onclick="event.stopPropagation(); deleteAnnotationSetById(${set.id})" title="Delete">🗑️</button>
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteAnnotationSetById(${set.id}, this)" title="Delete">🗑️</button>
                 </div>
             `;
             list.appendChild(li);
@@ -897,8 +897,23 @@
     };
 
     // Delete annotation set by ID
-    window.deleteAnnotationSetById = async function (id) {
-        if (!confirm('Delete these notes? This cannot be undone.')) return;
+    window.deleteAnnotationSetById = async function (id, btnElement) {
+        // Click-twice confirmation pattern (native confirm() is blocked in some contexts)
+        if (btnElement && !btnElement.dataset.confirming) {
+            btnElement.dataset.confirming = 'true';
+            btnElement.textContent = 'Sure?';
+            btnElement.style.color = '#c00';
+            btnElement.style.fontSize = '11px';
+            setTimeout(() => {
+                if (btnElement) {
+                    delete btnElement.dataset.confirming;
+                    btnElement.textContent = '🗑️';
+                    btnElement.style.color = '';
+                    btnElement.style.fontSize = '';
+                }
+            }, 3000);
+            return;
+        }
         try {
             const response = await fetch('annotations_api.php', {
                 method: 'POST',
