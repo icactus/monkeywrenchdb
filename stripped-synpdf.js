@@ -458,6 +458,12 @@ function Wijzer$$module$synpdf(a, b, c, d) {
             <div id="rollijn" class="dashed"></div>
             <div id="mobile-drawer-backdrop" onclick="toggleMobileDrawer(event)"></div>`
         ).appendTo($notation);
+
+        // Show pen button if annotation layer is loaded (logged-in users)
+        if (typeof window.toggleAnnotationMode === 'function') {
+            const penBtn = document.getElementById('annotation-edit-btn');
+            if (penBtn) penBtn.style.display = 'flex';
+        }
     }
     setRollijnVisible(!window.twoUpMode);
     if (typeof setZoomControlsEnabled === 'function') {
