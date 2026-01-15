@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=46"></script>
+        <script src="annotation-layer.js?v=47"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
 </head>
@@ -520,8 +520,8 @@ $is_share_link = isset($_GET['share']);
             <input type="hidden" id="annotation-width" value="2">
             <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
             <!-- Undo/Redo -->
-            <button onclick="annotationUndo()"
-                style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+            <button id="undo-btn" onclick="annotationUndo()"
+                style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0.3; pointer-events:none;"
                 title="Undo">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
@@ -529,8 +529,8 @@ $is_share_link = isset($_GET['share']);
                     <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
                 </svg>
             </button>
-            <button onclick="annotationRedo()"
-                style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+            <button id="redo-btn" onclick="annotationRedo()"
+                style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0.3; pointer-events:none;"
                 title="Redo">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">

@@ -1268,6 +1268,26 @@ select {
         bottom: 80px;
         left: 50%;
         transform: translateX(-50%);
+        padding: 6px 10px !important;
+        gap: 4px !important;
+    }
+
+    #annotation-toolbar button {
+        width: 28px !important;
+        height: 28px !important;
+        min-width: 28px !important;
+    }
+
+    #annotation-toolbar svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+
+    /* Hide less essential items on very small mobile screens */
+    #annotation-set-picker,
+    #annotation-toolbar [title="Create New Notes"],
+    #annotation-toolbar [title="Manage Notes"] {
+        display: none !important;
     }
 
     .control-buttons {

@@ -423,6 +423,23 @@
                 renderStroke(canvas, stroke);
             }
         });
+
+        // Update undo/redo button states
+        updateUndoRedoButtons();
+    }
+
+    // Update undo/redo button visual states
+    function updateUndoRedoButtons() {
+        const undoBtn = document.getElementById('undo-btn');
+        const redoBtn = document.getElementById('redo-btn');
+        if (undoBtn) {
+            undoBtn.style.opacity = undoStack.length === 0 ? '0.3' : '1';
+            undoBtn.style.pointerEvents = undoStack.length === 0 ? 'none' : 'auto';
+        }
+        if (redoBtn) {
+            redoBtn.style.opacity = redoStack.length === 0 ? '0.3' : '1';
+            redoBtn.style.pointerEvents = redoStack.length === 0 ? 'none' : 'auto';
+        }
     }
 
     // Erase strokes intersecting with eraser path
@@ -881,6 +898,17 @@
                     renderAllStrokes();
                 }
                 loadAnnotationSetsList();
+                // Also refresh global list for modal
+                try {
+                    const resp = await fetch('annotations_api.php?action=list_all');
+                    const allData = await resp.json();
+                    if (allData.success) {
+                        allAnnotationSets = allData.sets || [];
+                        renderGlobalAnnotationsList();
+                    }
+                } catch (e) {
+                    console.error('Failed to refresh global list:', e);
+                }
             }
         } catch (err) {
             console.error('Delete error:', err);
@@ -1057,11 +1085,25 @@
                 console.log('Shared strokes loaded:', strokes.length);
                 isReadonly = data.readonly; // Respect server flag (false if owner)
                 currentAnnotationId = data.is_owner ? data.id : null; // Only set ID if owner
-                currentAnnotationName = data.name || 'Shared Annotations';
+                currentAnnotationName = data.name || 'Shared Markings';
 
-                createCanvasOverlays();
-                renderAllStrokes();
-                showAnnotationsToggle(true);
+                // Wait for PDF canvases to exist before creating overlays
+                const waitForCanvases = (retries = 0) => {
+                    const canvas1 = document.getElementById('canvas1');
+                    if (canvas1 && canvas1.width > 10) {
+                        createCanvasOverlays();
+                        renderAllStrokes();
+                        showAnnotationsToggle(true);
+                        console.log('Shared annotations rendered after canvas ready');
+                    } else if (retries < 20) {
+                        // Retry up to 20 times (5 seconds total)
+                        setTimeout(() => waitForCanvases(retries + 1), 250);
+                    } else {
+                        console.warn('Timed out waiting for canvases, annotations may not display');
+                        showAnnotationsToggle(true); // Still show toggle even if render failed
+                    }
+                };
+                waitForCanvases();
 
                 // Show import button if NOT owner and logged in
                 const importBtn = document.getElementById('import-btn');
@@ -1070,6 +1112,7 @@
                 }
             } else {
                 console.warn('Failed to load shared data or no data:', data);
+                showAnnotationMessage('Shared markings not found', true);
             }
         } catch (err) {
             console.error('Load shared error:', err);
