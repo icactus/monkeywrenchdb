@@ -309,8 +309,8 @@ audio {
     align-items: center;
     gap: 8px;
     padding: 6px 12px 6px 6px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(91, 162, 168, 0.15);
+    border: 1px solid rgba(91, 162, 168, 0.3);
     border-radius: 24px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -318,7 +318,7 @@ audio {
 }
 
 .nav-user-trigger:hover {
-    background: white;
+    background: rgba(91, 162, 168, 0.25);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
