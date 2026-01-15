@@ -59,6 +59,12 @@
             notation.appendChild(toolbar);
         }
 
+        // Show the pen button in control bar (for logged-in users)
+        const penBtn = document.getElementById('annotation-edit-btn');
+        if (penBtn) {
+            penBtn.style.display = 'flex';
+        }
+
         // Check for share token (pending global takes precedence as URL might be wiped by now)
         let shareToken = window.pendingShareToken;
 
@@ -89,6 +95,12 @@
         const editBtn = document.getElementById('annotation-toggle-btn');
         if (editBtn) {
             editBtn.textContent = annotationMode ? 'Done' : 'Edit';
+        }
+
+        // Update pen button in control bar (highlight when active)
+        const penBtn = document.getElementById('annotation-edit-btn');
+        if (penBtn) {
+            penBtn.style.background = annotationMode ? '#e8e8e8' : 'transparent';
         }
 
         if (annotationMode) {
