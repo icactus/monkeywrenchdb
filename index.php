@@ -203,10 +203,10 @@ $is_share_link = isset($_GET['share']);
                     <?php else: ?>
                         <a href="auth_login.php?provider=google" class="nav-link">Login</a>
                     <?php endif; ?>
-                    <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;"
-                        class="nav-link">Help</a>
                     <a id="about-link" href="javascript:void(0)" onclick="toggleAboutLinkMenu(); return false;"
                         class="nav-link">About</a>
+                    <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;"
+                        class="nav-link">Help</a>
                 </div>
             </div>
 
