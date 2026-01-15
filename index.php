@@ -33,7 +33,7 @@ $is_share_link = isset($_GET['share']);
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=3" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=186" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=187" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -53,18 +53,19 @@ $is_share_link = isset($_GET['share']);
             <audio id="aud" controls="controls">Your browser does not support the audio element.</audio>
             <video id="vid" controls="controls">Your browser does not support the video element.</video>
             <div id="logo-bar-wrapper">
-                <div id="logo-bar">
-                    <a href="/">
-                        <img id="monkey-logo" src="assets/img/monkeywrench-monkey100x100.png"></img>
-                    </a>
-                    <div id="monkeywrench-logo-text">
-                        <a href="/">
-                            <h2>MONKEY WRENCH DATABASE</h2>
-                            <h3 id="logotext-line2">sheet music synced with youtube</h3>
-                        </a>
+                <a href="/" id="logo-link">
+                    <img id="monkey-logo" src="assets/img/monkeywrench-monkey100x100.png"></img>
+                </a>
+                <div id="header-content-column">
+                    <div id="logo-bar">
+                        <div id="monkeywrench-logo-text">
+                            <a href="/">
+                                <h2>MONKEY WRENCH DATABASE</h2>
+                                <h3 id="logotext-line2">sheet music synced with youtube</h3>
+                            </a>
+                        </div>
                     </div>
-                </div>
-                <div class="nav-menu">
+                    <div class="nav-menu">
                     <!-- Mobile Hamburger Button -->
                     <button id="mobile-header-burger" onclick="toggleMobileHeaderMenu()" aria-label="Open menu">
                         <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" fill="none"
@@ -207,6 +208,7 @@ $is_share_link = isset($_GET['share']);
                         class="nav-link">About</a>
                     <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;"
                         class="nav-link">Help</a>
+                </div>
                 </div>
             </div>
 
