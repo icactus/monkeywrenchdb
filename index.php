@@ -500,7 +500,7 @@ $is_share_link = isset($_GET['share']);
             <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')"
                 style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                 title="Eraser">
-                <img src="assets/img/eraser.svg" width="20" height="20" alt="Eraser">
+                <img src="assets/img/eraser.svg" width="24" height="24" alt="Eraser">
             </button>
             <button class="annotation-tool-btn" data-tool="hand" onclick="setAnnotationTool('hand')"
                 style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
