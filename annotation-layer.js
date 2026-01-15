@@ -1158,7 +1158,7 @@
                 // If we still don't have a recording ID, we can still share just the piece
                 // but standard share links usually have both.
 
-                const shareUrl = `${baseUrl}?metricArrId = ${metricArrId}& recordingId=${recId}& share=${data.share_token} `;
+                const shareUrl = `${baseUrl}?metricArrId=${metricArrId}&recordingId=${recId}&share=${data.share_token}`;
 
                 navigator.clipboard.writeText(shareUrl);
                 showAnnotationMessage('Share link copied!');
