@@ -89,8 +89,7 @@ $is_share_link = isset($_GET['share']);
                                 <a href="auth_logout.php" class="mobile-menu-logout">Logout</a>
                             <?php else: ?>
                                 <a href="auth_login.php?provider=google" class="mobile-menu-login">
-                                    <svg viewBox="0 0 24 24" width="18" height="18"
-                                        style="vertical-align: middle; margin-right: 8px;">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" class="inline-svg-icon">
                                         <path fill="#4285F4"
                                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                                         <path fill="#34A853"
@@ -227,8 +226,7 @@ $is_share_link = isset($_GET['share']);
     <div id="history-modal" class="history-modal">
         <div class="history-header">
             <h3>
-                <svg style="width:16px; height:16px; vertical-align:middle; margin-right:6px;" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
@@ -246,8 +244,7 @@ $is_share_link = isset($_GET['share']);
         <div id="annotations-modal" class="annotations-modal">
             <div class="annotations-header">
                 <h3>
-                    <svg style="width:16px; height:16px; vertical-align:middle; margin-right:6px;" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2">
+                    <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 19l7-7 3 3-7 7-3-3z" />
                         <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
                     </svg>
@@ -346,8 +343,8 @@ $is_share_link = isset($_GET['share']);
 
                 <div id="composer-toggle-wrapper">
                     <div id="composer-piece-name"></div>
-                    <button class="mobile-only" onclick="toggleMobileDrawer()" aria-label="Close"
-                        style="background:none; border:none; font-size:28px; line-height:1; color:#555; padding:0 8px; cursor:pointer;">&times;</button>
+                    <button class="mobile-only mobile-drawer-close" onclick="toggleMobileDrawer()"
+                        aria-label="Close">&times;</button>
 
                 </div>
                 <div id="first-controls">
@@ -388,40 +385,33 @@ $is_share_link = isset($_GET['share']);
                 </div>
                 <!-- Annotations Section (Visible for logged-in users OR when shared annotations loaded) -->
                 <div id="annotations-section"
-                    style="margin-top: 15px; display: <?php echo (isset($_SESSION['user_id']) ? 'block' : 'none'); ?>;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <h3 style="margin:0;">✏️ Markings</h3>
+                    style="display: <?php echo (isset($_SESSION['user_id']) ? 'block' : 'none'); ?>;">
+                    <div class="annotations-section-header">
+                        <h3>✏️ Markings</h3>
                         <?php if (isset($_SESSION['user_id'])): ?>
-                            <button id="annotation-toggle-btn" onclick="toggleAnnotationMode()"
-                                style="background:#4a90d9; color:#fff; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:13px;">
+                            <button id="annotation-toggle-btn" onclick="toggleAnnotationMode()">
                                 Edit
                             </button>
                         <?php endif; ?>
                     </div>
-                    <div id="annotations-visibility-row"
-                        style="display:flex; align-items:center; gap:10px; margin-top:8px;">
-                        <label style="font-size:14px; color:#555;">Show markings</label>
+                    <div id="annotations-visibility-row">
+                        <label>Show markings</label>
                         <input type="checkbox" id="annotations-visibility-toggle" checked
-                            onchange="toggleAnnotationsVisibility()" style="width:16px; height:16px;">
+                            onchange="toggleAnnotationsVisibility()">
                     </div>
                 </div>
                 <div class="mobile-only">
-                    <div style="height:1px; background:rgba(0,0,0,0.08); margin: 25px 0;"></div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <label style="font-weight:600; color:#444; font-size: 15px;">Dark Mode</label>
-                        <label class="toggle-switch"
-                            style="position:relative; display:inline-block; width:44px; height:24px; margin:0;">
-                            <input type="checkbox" id="invert-check-mobile" style="opacity:0; width:0; height:0;">
-                            <span class="toggle-slider"
-                                style="position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:24px; transition:.2s;">
-                                <span
-                                    style="position:absolute; height:20px; width:20px; left:2px; bottom:2px; background:white; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
+                    <div class="mobile-controls-divider"></div>
+                    <div class="mobile-controls-row">
+                        <label class="mobile-controls-label">Dark Mode</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="invert-check-mobile">
+                            <span class="toggle-slider">
+                                <span class="toggle-slider-knob"></span>
                             </span>
                         </label>
                     </div>
-                    <button id="share-btn-mobile"
-                        style="width:100%; padding:14px; background:#f1f1f1; border:none; border-radius:12px; font-weight:600; color:#444; font-size:15px;">Share
-                        Link</button>
+                    <button id="share-btn-mobile">Share Link</button>
                 </div>
             </div>
         </sidecontentbar>
@@ -514,14 +504,11 @@ $is_share_link = isset($_GET['share']);
 
     <!-- Annotation Toolbar (logged-in users only) -->
     <?php if (isset($_SESSION['user_id'])): ?>
-        <div id="annotation-toolbar" style="display:none; 
-        background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-radius:50px; box-shadow:0 4px 20px rgba(0,0,0,0.18); padding:8px 16px; 
-        gap:6px; align-items:center; border:1px solid rgba(0,0,0,0.08);">
+        <div id="annotation-toolbar">
             <!-- Drawing Tools -->
             <!-- Pen with popover -->
-            <div style="position:relative;">
+            <div class="pen-popover-wrapper">
                 <button id="pen-btn" class="annotation-tool-btn active" data-tool="pen" onclick="togglePenPopover()"
-                    style="width:36px; height:36px; border:none; border-radius:50%; background:#e8e8e8; cursor:pointer; display:flex; align-items:center; justify-content:center;"
                     title="Pen Settings">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -531,48 +518,40 @@ $is_share_link = isset($_GET['share']);
                     </svg>
                 </button>
                 <!-- Pen Popover - opens upward, aligned to left -->
-                <div id="pen-popover"
-                    style="display:none; position:absolute; bottom:42px; left:0; background:white; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,0.15); padding:8px; z-index:1000;">
-                    <div style="display:flex; gap:4px; align-items:center;">
+                <div id="pen-popover">
+                    <div class="pen-popover-content">
                         <!-- Colors -->
-                        <button onclick="selectPenColor('#000000')" class="color-swatch" data-color="#000000"
-                            style="width:22px; height:22px; border:2px solid #333; border-radius:50%; background:#000000; cursor:pointer;"></button>
+                        <button onclick="selectPenColor('#000000')" class="color-swatch active" data-color="#000000"
+                            style="background:#000000;"></button>
                         <button onclick="selectPenColor('#e53935')" class="color-swatch" data-color="#e53935"
-                            style="width:22px; height:22px; border:2px solid transparent; border-radius:50%; background:#e53935; cursor:pointer;"></button>
+                            style="background:#e53935;"></button>
                         <button onclick="selectPenColor('#1e88e5')" class="color-swatch" data-color="#1e88e5"
-                            style="width:22px; height:22px; border:2px solid transparent; border-radius:50%; background:#1e88e5; cursor:pointer;"></button>
+                            style="background:#1e88e5;"></button>
                         <button onclick="selectPenColor('#43a047')" class="color-swatch" data-color="#43a047"
-                            style="width:22px; height:22px; border:2px solid transparent; border-radius:50%; background:#43a047; cursor:pointer;"></button>
+                            style="background:#43a047;"></button>
                         <button onclick="selectPenColor('#fb8c00')" class="color-swatch" data-color="#fb8c00"
-                            style="width:22px; height:22px; border:2px solid transparent; border-radius:50%; background:#fb8c00; cursor:pointer;"></button>
+                            style="background:#fb8c00;"></button>
                         <button onclick="selectPenColor('#8e24aa')" class="color-swatch" data-color="#8e24aa"
-                            style="width:22px; height:22px; border:2px solid transparent; border-radius:50%; background:#8e24aa; cursor:pointer;"></button>
+                            style="background:#8e24aa;"></button>
                         <!-- Divider -->
-                        <div style="width:1px; height:18px; background:#ddd; margin:0 4px;"></div>
+                        <div class="toolbar-divider-small"></div>
                         <!-- Widths -->
-                        <button onclick="selectPenWidth(1)" class="width-btn" data-width="1"
-                            style="width:28px; height:22px; border:1px solid #ddd; border-radius:4px; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;">
-                            <div style="width:14px; height:1px; background:#333;"></div>
+                        <button onclick="selectPenWidth(1)" class="width-btn" data-width="1">
+                            <div class="width-btn-line" style="height:1px;"></div>
                         </button>
-                        <button onclick="selectPenWidth(2)" class="width-btn active" data-width="2"
-                            style="width:28px; height:22px; border:2px solid #333; border-radius:4px; background:#f5f5f5; cursor:pointer; display:flex; align-items:center; justify-content:center;">
-                            <div style="width:14px; height:2px; background:#333;"></div>
+                        <button onclick="selectPenWidth(2)" class="width-btn active" data-width="2">
+                            <div class="width-btn-line" style="height:2px;"></div>
                         </button>
-                        <button onclick="selectPenWidth(4)" class="width-btn" data-width="4"
-                            style="width:28px; height:22px; border:1px solid #ddd; border-radius:4px; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;">
-                            <div style="width:14px; height:4px; background:#333;"></div>
+                        <button onclick="selectPenWidth(4)" class="width-btn" data-width="4">
+                            <div class="width-btn-line" style="height:4px;"></div>
                         </button>
                     </div>
                 </div>
             </div>
-            <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')"
-                style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Eraser">
+            <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')" title="Eraser">
                 <img src="assets/img/eraser.svg" width="24" height="24" alt="Eraser">
             </button>
-            <button class="annotation-tool-btn" data-tool="hand" onclick="setAnnotationTool('hand')"
-                style="width:36px; height:36px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Scroll Mode">
+            <button class="annotation-tool-btn" data-tool="hand" onclick="setAnnotationTool('hand')" title="Scroll Mode">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
@@ -582,23 +561,19 @@ $is_share_link = isset($_GET['share']);
                         d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
                 </svg>
             </button>
-            <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
+            <div class="toolbar-divider"></div>
             <!-- Hidden color/width inputs for JS compatibility -->
             <input type="hidden" id="annotation-color" value="#000000">
             <input type="hidden" id="annotation-width" value="2">
             <!-- Undo/Redo -->
-            <button id="undo-btn" onclick="annotationUndo()"
-                style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0.3; pointer-events:none;"
-                title="Undo">
+            <button id="undo-btn" class="disabled" onclick="annotationUndo()" title="Undo">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3 7v6h6" />
                     <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
                 </svg>
             </button>
-            <button id="redo-btn" onclick="annotationRedo()"
-                style="width:32px; height:32px; border:none; border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0.3; pointer-events:none;"
-                title="Redo">
+            <button id="redo-btn" class="disabled" onclick="annotationRedo()" title="Redo">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 7v6h-6" />
@@ -607,28 +582,20 @@ $is_share_link = isset($_GET['share']);
             </button>
             <!-- Annotation Set Picker -->
             <select id="annotation-set-picker" onchange="switchAnnotationSet(parseInt(this.value))"
-                style="display:none; height:32px; border-radius:16px; border:1px solid rgba(0,0,0,0.1); padding:0 10px; background:#f5f5f5; font-size:12px; cursor:pointer; max-width:120px;"
                 title="Switch Annotation Set">
             </select>
-            <button onclick="toggleAnnotationsManager()"
-                style="width:28px; height:28px; border:none; border-radius:50%; background:#e8e8e8; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Manage Notes">
+            <button class="toolbar-btn-small" onclick="toggleAnnotationsManager()" title="Manage Notes">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
                 </svg>
             </button>
-            <button onclick="createNewAnnotationSet(prompt('Name your notes:', 'My Notes'))"
-                style="width:28px; height:28px; border:none; border-radius:50%; background:#e8e8e8; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; color:#666;"
+            <button class="toolbar-btn-small" onclick="createNewAnnotationSet(prompt('Name your notes:', 'My Notes'))"
                 title="Create New Notes">+</button>
-            <button id="import-btn" onclick="importSharedAnnotations()"
-                style="display:none; height:28px; border:none; border-radius:14px; background:#4caf50; cursor:pointer; padding:0 12px; font-size:11px; color:#fff;"
-                title="Import to My Notes">Import</button>
-            <div style="width:1px; height:20px; background:rgba(0,0,0,0.1); margin:0 4px;"></div>
+            <button id="import-btn" onclick="importSharedAnnotations()" title="Import to My Notes">Import</button>
+            <div class="toolbar-divider"></div>
             <!-- Actions: Share → Done (autosave handles saving) -->
-            <button onclick="shareAnnotations()"
-                style="width:36px; height:36px; border:none; border-radius:50%; background:#2196f3; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Share Link">
+            <button class="toolbar-share-btn" onclick="shareAnnotations()" title="Share Link">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="18" cy="5" r="3" />
@@ -638,9 +605,7 @@ $is_share_link = isset($_GET['share']);
                     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                 </svg>
             </button>
-            <button onclick="toggleAnnotationMode()"
-                style="width:36px; height:36px; border:none; border-radius:50%; background:#666; cursor:pointer; display:flex; align-items:center; justify-content:center;"
-                title="Done Editing">
+            <button class="toolbar-done-btn" onclick="toggleAnnotationMode()" title="Done Editing">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"
                     stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="20 6 9 17 4 12" />
@@ -667,8 +632,7 @@ $is_share_link = isset($_GET['share']);
     <?php endif; ?>
 
     <!-- Notification Element -->
-    <div id="notification"
-        style="display: none; position: fixed; bottom: 60px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); z-index: 10001;">
+    <div id="notification">
         Link copied to clipboard!
     </div>
     <script src="stripped-synpdf.js?v=248"></script>

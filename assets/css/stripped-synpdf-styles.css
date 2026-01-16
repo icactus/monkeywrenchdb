@@ -2340,3 +2340,407 @@ body.pen-cursor-active .annotation-canvas,
 body.pen-cursor-active #pdf-container {
     cursor: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDwhLS0gV2hpdGUgb3V0ZXIgc3Ryb2tlIGZvciB2aXNpYmlsaXR5IG9uIGRhcmsgYmFja2dyb3VuZHMgLS0+CiAgICA8cGF0aCBkPSJNMTIgMTlsNy03IDMgMy03IDctMy0zeiIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogICAgPHBhdGggZD0iTTE4IDEzbC0xLjUtNy41TDIgMmwzLjUgMTQuNUwxMyAxOGw1LTV6IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgICA8cGF0aCBkPSJNMiAybDcuNTg2IDcuNTg2IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgICAKICAgIDwhLS0gQmxhY2sgaW5uZXIgc3Ryb2tlIC0tPgogICAgPHBhdGggZD0iTTEyIDE5bDctNyAzIDMtNyA3LTMtM3oiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICAgIDxwYXRoIGQ9Ik0xOCAxM2wtMS41LTcuNUwyIDJsMy41IDE0LjVMMTMgMThsNS01eiIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogICAgPHBhdGggZD0iTTIgMmw3LjU4NiA3LjU4NiIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K') 2 2, crosshair !important;
 }
+
+/* ========== Inline Style Cleanup ========== */
+
+/* Modal header icons */
+.modal-header-icon {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+/* Inline SVG icons (e.g., Google login) */
+.inline-svg-icon {
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+/* Mobile drawer close button */
+.mobile-drawer-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    color: #555;
+    padding: 0 8px;
+    cursor: pointer;
+}
+
+/* ========== Annotations Section ========== */
+#annotations-section {
+    margin-top: 15px;
+}
+
+.annotations-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.annotations-section-header h3 {
+    margin: 0;
+}
+
+#annotation-toggle-btn {
+    background: #4a90d9;
+    color: #fff;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+#annotation-toggle-btn:hover {
+    background: #3a7bc8;
+}
+
+#annotations-visibility-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+#annotations-visibility-row label {
+    font-size: 14px;
+    color: #555;
+}
+
+#annotations-visibility-toggle {
+    width: 16px;
+    height: 16px;
+}
+
+/* ========== Mobile Controls ========== */
+.mobile-controls-divider {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.08);
+    margin: 25px 0;
+}
+
+.mobile-controls-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.mobile-controls-label {
+    font-weight: 600;
+    color: #444;
+    font-size: 15px;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    margin: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #ccc;
+    border-radius: 24px;
+    transition: 0.2s;
+}
+
+.toggle-slider-knob {
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    left: 2px;
+    bottom: 2px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input:checked+.toggle-slider {
+    background: #5ba2a8;
+}
+
+.toggle-switch input:checked+.toggle-slider .toggle-slider-knob {
+    transform: translateX(20px);
+}
+
+#share-btn-mobile {
+    width: 100%;
+    padding: 14px;
+    background: #f1f1f1;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    color: #444;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+#share-btn-mobile:hover {
+    background: #e5e5e5;
+}
+
+/* ========== Annotation Toolbar ========== */
+#annotation-toolbar {
+    display: none;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 50px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+    padding: 8px 16px;
+    gap: 6px;
+    align-items: center;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+}
+
+#annotation-toolbar.visible {
+    display: flex;
+}
+
+.annotation-tool-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.annotation-tool-btn:hover {
+    background: #e8e8e8;
+}
+
+.annotation-tool-btn.active {
+    background: #4a90d9 !important;
+}
+
+.annotation-tool-btn.active svg {
+    stroke: white;
+}
+
+#pen-btn {
+    background: #e8e8e8;
+}
+
+/* Pen Popover Wrapper */
+.pen-popover-wrapper {
+    position: relative;
+}
+
+/* Pen Popover */
+#pen-popover {
+    display: none;
+    position: absolute;
+    bottom: 42px;
+    left: 0;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    z-index: 1000;
+}
+
+#pen-popover.visible {
+    display: block;
+}
+
+.pen-popover-content {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+/* Color Swatches */
+.color-swatch {
+    width: 22px;
+    height: 22px;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+}
+
+.color-swatch.active {
+    border-color: #333;
+}
+
+/* Width Buttons */
+.width-btn {
+    width: 28px;
+    height: 22px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.width-btn.active {
+    border: 2px solid #333;
+    background: #f5f5f5;
+}
+
+.width-btn-line {
+    width: 14px;
+    background: #333;
+}
+
+/* Toolbar Dividers */
+.toolbar-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.1);
+    margin: 0 4px;
+}
+
+.toolbar-divider-small {
+    width: 1px;
+    height: 18px;
+    background: #ddd;
+    margin: 0 4px;
+}
+
+/* Undo/Redo Buttons */
+#undo-btn,
+#redo-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#undo-btn.disabled,
+#redo-btn.disabled {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* Annotation Set Picker */
+#annotation-set-picker {
+    display: none;
+    height: 32px;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0 10px;
+    background: #f5f5f5;
+    font-size: 12px;
+    cursor: pointer;
+    max-width: 120px;
+}
+
+/* Import Button */
+#import-btn {
+    display: none;
+    height: 28px;
+    border: none;
+    border-radius: 14px;
+    background: #4caf50;
+    cursor: pointer;
+    padding: 0 12px;
+    font-size: 11px;
+    color: #fff;
+}
+
+#import-btn:hover {
+    background: #43a047;
+}
+
+/* Toolbar Action Buttons */
+.toolbar-btn-small {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: #e8e8e8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #666;
+}
+
+.toolbar-btn-small:hover {
+    background: #ddd;
+}
+
+.toolbar-share-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: #2196f3;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toolbar-share-btn:hover {
+    background: #1976d2;
+}
+
+.toolbar-done-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toolbar-done-btn:hover {
+    background: #555;
+}
+
+/* ========== Notification Toast ========== */
+#notification {
+    display: none;
+    position: fixed;
+    bottom: 60px;
+    right: 20px;
+    background: #333;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 10001;
+}
+
+#notification.visible {
+    display: block;
+}
