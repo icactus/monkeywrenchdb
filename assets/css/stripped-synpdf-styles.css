@@ -969,6 +969,7 @@ invertButton {
 }
 
 #annotation-toolbar {
+    display: none;
     position: fixed;
     bottom: 80px;
     left: 50%;
