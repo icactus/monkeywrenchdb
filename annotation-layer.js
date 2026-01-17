@@ -598,25 +598,21 @@
         const isVisible = popover.style.display === 'block';
         popover.style.display = isVisible ? 'none' : 'block';
 
-        // Constrain popover within viewport horizontally
+        // Constrain popover within viewport - only shift left if it goes off right edge
         if (!isVisible) {
-            // Reset position first to measure natural position
-            popover.style.left = '50%';
-            popover.style.transform = 'translateX(-50%)';
+            // Reset to default position (aligned with left edge of pen button)
+            popover.style.left = '0';
+            popover.style.right = 'auto';
 
             requestAnimationFrame(() => {
                 const rect = popover.getBoundingClientRect();
                 const viewportWidth = window.innerWidth;
                 const margin = 10;
 
-                if (rect.left < margin) {
-                    // Goes off left edge - shift right
-                    const shift = margin - rect.left;
-                    popover.style.transform = `translateX(calc(-50% + ${shift}px))`;
-                } else if (rect.right > viewportWidth - margin) {
-                    // Goes off right edge - shift left
-                    const shift = rect.right - (viewportWidth - margin);
-                    popover.style.transform = `translateX(calc(-50% - ${shift}px))`;
+                if (rect.right > viewportWidth - margin) {
+                    // Goes off right edge - shift left by setting right instead
+                    popover.style.left = 'auto';
+                    popover.style.right = '0';
                 }
             });
         }

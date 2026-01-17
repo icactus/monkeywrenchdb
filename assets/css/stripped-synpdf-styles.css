@@ -2561,8 +2561,7 @@ body.pen-cursor-active #pdf-container {
     display: none;
     position: absolute;
     bottom: 42px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
