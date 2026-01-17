@@ -1143,8 +1143,10 @@ function resizeDematenAndCanvas(scaleAmount) {
         var notationDivRect = notationDiv.getBoundingClientRect();
         scaleCanvasElements(scaleAmount);
 
-        // setOffsetX and time2x handle navigation lock internally
-        if (window.msc_wz$$module$synpdf) msc_wz$$module$synpdf.setOffsetX();
+        // Only call setOffsetX if navigation is not locked (it calls time2x internally)
+        if (window.msc_wz$$module$synpdf && !window.__navigationLocked) {
+            msc_wz$$module$synpdf.setOffsetX();
+        }
 
         var newCanvasRect = canvas.getBoundingClientRect();
         var newNotationDivRect = notationDiv.getBoundingClientRect();
