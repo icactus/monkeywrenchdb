@@ -789,23 +789,13 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
             }
 
             var notationEl = document.getElementById('notation-scroll');
-
-            // Adjust viewport tracking for pinch-zoom
-            var useVisualViewport = (window.visualViewport && window.visualViewport.scale > 1.01);
-
-            var viewportWidth = useVisualViewport ? window.visualViewport.width : notationEl.clientWidth;
-            // Visual Left relative to Layout Origin = scrollLeft + pageLeft
-            var currentScrollLeft = useVisualViewport
-                ? (notationEl.scrollLeft + window.visualViewport.pageLeft)
-                : notationEl.scrollLeft;
-
+            var viewportWidth = notationEl.clientWidth;
+            var currentScrollLeft = notationEl.scrollLeft;
             var marginX = 200;
             var self = this;
 
             // Determine if we're at a line end and scrolled right
-            // Use notation scrollLeft for logic resets regardless of zoom
-            var realScrollLeft = notationEl.scrollLeft;
-            var isLineEndReset = realScrollLeft > 0 && distanceToScrollX < -500; // Big leftward jump
+            var isLineEndReset = currentScrollLeft > 0 && distanceToScrollX < -500; // Big leftward jump
             var useInstantScroll = isLineEndReset;
 
             // 2-up: only snap when moving from a RIGHT page to the NEXT LEFT page (or back)
@@ -853,7 +843,6 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
                 }
 
                 // Ensure the current spread is actually in view even if it wasn't a formal "turn"
-                // (covers direct seeks within the same spread or when previousPage is unknown)
                 const spreadStart = (curPage % 2 === 0) ? curPage - 1 : curPage;
                 const desiredLeft = pageLeftInNotation(spreadStart);
                 const needHorizSnap = Math.abs(scroller.scrollLeft - desiredLeft) > 8;
@@ -870,82 +859,13 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
                 window.__twoUpPrevPage = curPage;
             }
 
-            // Horizontal scrolling logic
-            // Need to map target back to Layout Coordinates for scrollHorizontally
-            // scrollHorizontally takes layout-relative value.
-            // If we calculate target based on Visual Coordinates, we need to correct it?
-            // "targetScrollLeft" is passed to scrollHorizontally.
-            // Existing logic: target = measureLeft - margin.
-            // If measureLeft is 1000. margin 200. Target 800.
-            // We want Measure 1000 to be at Visual 200.
-            // Visual X = measureX - scrollLeft.
-            // We want Visual X = 200 (approx margin).
-            // measureX - scrollLeft = 200.
-            // scrollLeft = measureX - 200.
-            // This assumes `margin` is relative to Visual Viewport.
-            // If using `effectiveScrollLeft` (Visual Left Edge relative to Layout), logic holds if logic is generic "Visible Range".
-            // But `scrollHorizontally` expects Layout ScrollLeft target.
-            // If our `targetScrollLeft` calculation uses `measureLeft` (Layout) and `marginX` (Layout?), it returns Layout target.
-            // If we want Visual Margin, maybe scaling matters?
-            // But simple logic should be fine: scroll such that measureLeft is `margin` pixels from left edge.
-            // Wait. If we are zoomed in, `margin` (200px) might be huge?
-            // If zoomed 2x, 200 CSS pixels takes half screen?
-            // Maybe we should scale margin? `marginX / scale`?
-            // But let's stick to standard margin for now.
-            // IMPORTANT: The BOUNDARY CHECKS use `currentScrollLeft` which we properly adjusted to be Visual Left.
-            // So if `measureLeft < VisualLeft + margin`, we scroll.
-            // And target is `measureLeft - margin`. This moves measure to margin.
-            // Is `measureLeft - margin` the correct Layout Scroll Position?
-            // If we set `scrollLeft = 800`. Visual Viewport follows?
-            // If Visual Viewport is panned, `v.pageLeft` > 0.
-            // If we set `scrollLeft=800`. Visual Viewport is at *some* offset relative to new position?
-            // No, `scrollLeft` shifts content.
-            // If we want `measureX` to be at `VisualX = 200`.
-            // We need `LayoutX relative to Viewport` = 200.
-            // `LayoutX relative to Viewport` = `OriginalX - ScrollLeft` (if Viewport is fixed).
-            // But Viewport also has `v.pageLeft` offset (User Pan).
-            // So User sees `X - ScrollLeft - v.pageLeft` ??
-            // If `v.pageLeft` persists (User pan stays relative to Layout Frame), then yes.
-            // So `VisibleX = measureX - ScrollLeft - v.pageLeft`.
-            // We want `VisibleX = margin`.
-            // `measureX - ScrollLeft - v.pageLeft = margin`.
-            // `ScrollLeft = measureX - v.pageLeft - margin`.
-
-            // This adjustment is needed if `targetScrollLeft` logic just returns `measureX - margin`.
-            // So: `targetScrollLeft = Math.max(0, measureLeft - marginX - (useVisualViewport ? window.visualViewport.pageLeft : 0));`
-
-            // Let's implement this adjustment.
-
-            var visualOffsetX = useVisualViewport ? window.visualViewport.pageLeft : 0;
-
+            // Horizontal scrolling
             if (measureLeft < currentScrollLeft + marginX) {
-                var rawTarget = Math.max(0, measureLeft - marginX);
-                // Adjust target to be relative to Visual offset
-                // Wait. If we want scrollLeft to be X.
-                // If we account for visualOffset, we need to subtract it from target?
-                // See formula: ScrollLeft = measureX - margin - v.pageLeft.
-                // Yes.
-                var targetScrollLeft = Math.max(0, rawTarget - visualOffsetX);
-
-                scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(notationEl.scrollLeft - targetScrollLeft) > 500 ? 1 : 0));
+                var targetScrollLeft = Math.max(0, measureLeft - marginX);
+                scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0));
             } else if (measureRight > currentScrollLeft + viewportWidth - marginX) {
-                // measureRight is to the right.
-                // We want `measureRight` to be at `VisibleWidth - margin`.
-                // `VisibleX` of measureRight = `measureRight - ScrollLeft - v.pageLeft`.
-                // We want `VisibleX` = `v.width - margin`.
-                // `measureRight - ScrollLeft - v.pageLeft = v.width - margin`.
-                // `ScrollLeft = measureRight - v.pageLeft - v.width + margin`.
-
-                // Existing logic: `target = measureRight - viewportWidth + margin`.
-                // logic uses `viewportWidth`. If we use `v.width`.
-                // `target = measureRight - v.width + margin`.
-                // Result: `ScrollLeft = measureRight - v.width + margin - v.pageLeft`.
-                // Yes. So subtract `visualOffsetX` again.
-
-                var rawTarget = measureRight - viewportWidth + marginX;
-                var targetScrollLeft = rawTarget - visualOffsetX;
-
-                scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(notationEl.scrollLeft - targetScrollLeft) > 500 ? 1 : 0));
+                var targetScrollLeft = measureRight - viewportWidth + marginX;
+                scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0));
             }
         }
     }
@@ -2653,3 +2573,78 @@ $(document).ready(function () {
         setTimeout(reflowForViewportChange, 75);
     });
 });
+
+// Custom Pinch-to-Zoom for PDF Only
+// This hooks touch gestures on the notation scroller and uses internal zoom (resizeDematenAndCanvas)
+// so that autoscroll and all other layout logic works correctly.
+(function initPinchZoom() {
+    var el = document.getElementById('notation-scroll');
+    if (!el) {
+        // DOM not ready yet, try again later
+        document.addEventListener('DOMContentLoaded', initPinchZoom);
+        return;
+    }
+
+    var startDist = 0;
+    var isPinching = false;
+
+    function getDistance(touches) {
+        var dx = touches[0].clientX - touches[1].clientX;
+        var dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    el.addEventListener('touchstart', function (e) {
+        if (e.touches.length === 2) {
+            isPinching = true;
+            startDist = getDistance(e.touches);
+        }
+    }, { passive: true });
+
+    el.addEventListener('touchmove', function (e) {
+        if (isPinching && e.touches.length === 2) {
+            // Prevent default to stop any native behavior
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    el.addEventListener('touchend', function (e) {
+        if (isPinching && e.touches.length < 2 && startDist > 0) {
+            // Calculate final distance from cached changedTouches if available
+            // On touchend, we get the remaining touch points
+            // If we had 2 fingers and lifted one, we have 1 remaining
+            // We need to use the last known distance from touchmove
+            isPinching = false;
+        }
+    }, { passive: true });
+
+    // Track last known distance during pinch for final calculation
+    var lastDist = 0;
+
+    el.addEventListener('touchmove', function (e) {
+        if (isPinching && e.touches.length === 2 && startDist > 0) {
+            lastDist = getDistance(e.touches);
+        }
+    }, { passive: true });
+
+    el.addEventListener('touchend', function (e) {
+        if (startDist > 0 && lastDist > 0 && lastDist !== startDist) {
+            var ratio = lastDist / startDist;
+
+            // Clamp ratio to reasonable bounds (0.5x to 2x per gesture)
+            ratio = Math.max(0.5, Math.min(2.0, ratio));
+
+            // Only trigger if there's a meaningful change (> 5%)
+            if (Math.abs(ratio - 1.0) > 0.05) {
+                // resizeDematenAndCanvas expects percentage (e.g., 110 for 10% zoom in)
+                if (typeof resizeDematenAndCanvas === 'function') {
+                    resizeDematenAndCanvas(ratio * 100);
+                }
+            }
+
+            // Reset
+            startDist = 0;
+            lastDist = 0;
+        }
+    }, { passive: true });
+})();
