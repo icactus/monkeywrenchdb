@@ -699,6 +699,12 @@ Wijzer$$module$synpdf.prototype.setOffsetX = function () {
 Wijzer$$module$synpdf.prototype.time2x = function (a) {
     // Block all autoscroll when navigation is locked (paused after playing)
     // Check both internal flag AND actual player state
+    // Check for pinch zoom - never autoscroll while pinching
+    if (window.__isPinching) {
+        console.log('[time2x] BLOCKED by pinch zoom');
+        return;
+    }
+
     var actuallyPaused = this.paused;
     if (typeof yubchk$$module$synpdf !== 'undefined' && yubchk$$module$synpdf && elmed$$module$synpdf) {
         // YouTube - paused if not playing (state !== 1)
@@ -2668,6 +2674,7 @@ $(document).ready(function () {
         document.addEventListener('touchstart', function (e) {
             if (e.touches.length === 2 && isInNotationScroll(e.target)) {
                 isPinching = true;
+                window.__isPinching = true; // Expose global flag
                 startDist = getDistance(e.touches);
                 lastDist = startDist;
                 var center = getCenter(e.touches);
@@ -2777,6 +2784,7 @@ $(document).ready(function () {
 
                 // Reset state
                 isPinching = false;
+                window.__isPinching = false; // Reset global flag
                 startDist = 0;
                 lastDist = 0;
             }
