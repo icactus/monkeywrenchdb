@@ -2629,6 +2629,11 @@ $(document).ready(function () {
                 var originX = ((pinchCenterX - rect.left) / rect.width * 100) + '%';
                 var originY = ((pinchCenterY - rect.top) / rect.height * 100) + '%';
                 el.style.transformOrigin = originX + ' ' + originY;
+
+                // Hide annotation canvases during gesture (they use absolute positioning that doesn't scale with transform)
+                document.querySelectorAll('.annotation-canvas').forEach(function (c) {
+                    c.style.visibility = 'hidden';
+                });
             }
         }, { passive: true, capture: true });
 
@@ -2652,6 +2657,11 @@ $(document).ready(function () {
                 // Remove transform preview
                 el.style.transform = '';
                 el.style.transformOrigin = '';
+
+                // Show annotation canvases again (visibility doesn't affect layout)
+                document.querySelectorAll('.annotation-canvas').forEach(function (c) {
+                    c.style.visibility = 'visible';
+                });
 
                 if (startDist > 0 && lastDist > 0) {
                     var ratio = lastDist / startDist;
