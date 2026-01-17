@@ -2579,7 +2579,6 @@ body.pen-cursor-active #pdf-container {
         left: 50%;
         transform: translateX(-50%);
         right: auto;
-        width: fit-content;
         max-width: calc(100vw - 16px);
     }
 }
