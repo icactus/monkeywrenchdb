@@ -2561,12 +2561,23 @@ body.pen-cursor-active #pdf-container {
     display: none;
     position: absolute;
     bottom: 42px;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     padding: 8px;
     z-index: 1000;
+    white-space: nowrap;
+}
+
+/* On small screens, position from right edge of toolbar instead */
+@media screen and (max-width: 400px) {
+    #pen-popover {
+        left: auto;
+        right: -60px;
+        transform: none;
+    }
 }
 
 #pen-popover.visible {
