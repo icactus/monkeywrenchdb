@@ -1143,32 +1143,15 @@ function resizeDematenAndCanvas(scaleAmount) {
         var notationDivRect = notationDiv.getBoundingClientRect();
         scaleCanvasElements(scaleAmount);
 
-        // Skip ALL navigation when paused - check both internal state AND actual player state
-        var internalPaused = msc_wz$$module$synpdf && msc_wz$$module$synpdf.paused;
-
-        // Check actual player paused state (YouTube or HTML5)
-        var actualPlayerPaused = false;
-        if (typeof yubchk$$module$synpdf !== 'undefined' && yubchk$$module$synpdf) {
-            // YouTube - paused if not playing (state !== 1)
-            actualPlayerPaused = !elmed$$module$synpdf || elmed$$module$synpdf.getPlayerState?.() !== 1;
-        } else if (elmed$$module$synpdf) {
-            // HTML5 video
-            actualPlayerPaused = elmed$$module$synpdf.paused;
-        }
-
-        var isPaused = internalPaused || actualPlayerPaused;
-        console.log('[resizeDematenAndCanvas] isPaused:', isPaused, 'internal:', internalPaused, 'actual:', actualPlayerPaused);
-
-        if (!isPaused && window.msc_wz$$module$synpdf) {
-            msc_wz$$module$synpdf.setOffsetX();
-        }
+        // setOffsetX and time2x handle navigation lock internally
+        if (window.msc_wz$$module$synpdf) msc_wz$$module$synpdf.setOffsetX();
 
         var newCanvasRect = canvas.getBoundingClientRect();
         var newNotationDivRect = notationDiv.getBoundingClientRect();
         deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount);
 
-        // Only navigate to current measure if NOT paused
-        if (!isPaused && msc_wz$$module$synpdf) {
+        // time2x will skip navigation if __navigationLocked is true
+        if (msc_wz$$module$synpdf) {
             msc_wz$$module$synpdf.time2x((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf);
         }
     }

@@ -697,6 +697,11 @@ Wijzer$$module$synpdf.prototype.setOffsetX = function () {
 };
 
 Wijzer$$module$synpdf.prototype.time2x = function (a) {
+    // Block all autoscroll when navigation is locked (paused after playing)
+    if (window.__navigationLocked && this.paused) {
+        return;
+    }
+
     var b, c;
     this.cursorTime = a;
 
@@ -980,6 +985,7 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, shiftKey) {
                 d = deTijden$$module$synpdf[b].t;
                 currentMeasureTime = d;
                 window.__lastMeasureClickTime = Date.now(); // Track when user clicked on a measure
+                window.__navigationLocked = false; // Unlock navigation for intentional seek
                 var f = b < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[b + 1].t : d + 2;
                 // Use clicked box dimensions for position calculation
                 b = d + (f - d) * (a - clickedBox.x - clickedBoxOffset) / clickedBox.w;
@@ -1252,9 +1258,13 @@ DummyPlayer$$module$synpdf.prototype.pause = function () {
     this.clearKlok();
     this.paused = !0;
     this.klok = -1;
+    // Lock navigation when paused to prevent autoscroll during zoom
+    window.__navigationLocked = true;
 };
 DummyPlayer$$module$synpdf.prototype.play = function () {
     this.paused = !1;
+    // Unlock navigation when playing
+    window.__navigationLocked = false;
     // Re-show measure highlight if it was hidden during annotation mode zoom
     $('.demaat').show();
     $('.linked-maatloper').show();
