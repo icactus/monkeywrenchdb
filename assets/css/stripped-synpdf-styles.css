@@ -1859,7 +1859,6 @@ html.inverted {
     transition: filter 0.5s ease;
 }
 
-html.inverted #notation-scroll,
 html.inverted #vidyub,
 html.inverted #monkey-logo {
     filter: invert(100%) !important;
@@ -1873,12 +1872,10 @@ html.inverted #vidyub:-webkit-full-screen {
     filter: invert(100%) !important;
 }
 
-html.inverted #notation:fullscreen #notation-scroll,
 html.inverted #vidyub:fullscreen {
     filter: invert(100%) !important;
 }
 
-html.inverted #notation:-webkit-full-screen #notation-scroll,
 html.inverted #vidyub:-webkit-full-screen {
     filter: invert(100%) !important;
 }
