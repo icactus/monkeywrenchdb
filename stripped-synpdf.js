@@ -523,7 +523,22 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 ? 'assets/img/monkeydark.png'
                 : 'assets/img/monkeywrench-monkey100x100.png';
         }
+
+        // Persist preference to localStorage
+        try {
+            localStorage.setItem('darkMode', isDark ? '1' : '0');
+        } catch (e) { /* ignore storage errors */ }
     });
+
+    // Sync checkbox and logo with loaded dark mode preference (from head script)
+    try {
+        const isDark = localStorage.getItem('darkMode') === '1';
+        $('#invert-check-dock, #invert-check-mobile').prop('checked', isDark);
+        const logo = document.getElementById('monkey-logo');
+        if (logo && isDark) {
+            logo.src = 'assets/img/monkeydark.png';
+        }
+    } catch (e) { /* ignore storage errors */ }
 
     // Share Link
     $('#share-btn-dock, #share-btn-mobile').off('click').on('click', async function () {

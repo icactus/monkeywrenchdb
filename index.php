@@ -44,6 +44,14 @@ $is_share_link = isset($_GET['share']);
         <script src="annotation-layer.js?v=58"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
+    <!-- Load dark mode preference early to prevent flash -->
+    <script>
+        try {
+            if (localStorage.getItem('darkMode') === '1') {
+                document.documentElement.classList.add('inverted');
+            }
+        } catch (e) {}
+    </script>
 </head>
 
 <body>
