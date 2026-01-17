@@ -1143,8 +1143,9 @@ function resizeDematenAndCanvas(scaleAmount) {
         var notationDivRect = notationDiv.getBoundingClientRect();
         scaleCanvasElements(scaleAmount);
 
-        // Check if in annotation mode and paused - skip all navigation to allow free zoom/pan
-        var inAnnotationMode = typeof window.annotationMode !== 'undefined' && window.annotationMode;
+        // Check if annotation toolbar is visible (more reliable than window.annotationMode)
+        var toolbar = document.getElementById('annotation-toolbar');
+        var inAnnotationMode = toolbar && toolbar.style.display !== 'none' && toolbar.offsetParent !== null;
         var isPaused = msc_wz$$module$synpdf && msc_wz$$module$synpdf.paused;
         var skipNavigation = inAnnotationMode && isPaused;
 

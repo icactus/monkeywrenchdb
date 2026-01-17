@@ -2656,27 +2656,27 @@ $(document).ready(function () {
 
                 if (startDist > 0 && lastDist > 0) {
                     var ratio = lastDist / startDist;
-                    ratio = Math.max(0.5, Math.min(2.0, ratio));
 
-                    // Only trigger if there's a meaningful change (> 5%)
-                    if (Math.abs(ratio - 1.0) > 0.05) {
-                        // Check if in annotation mode - if so, hide measure highlight
-                        var inAnnotationMode = typeof window.annotationMode !== 'undefined' && window.annotationMode;
-                        if (inAnnotationMode) {
+                    // Wider limits for smoother continuous zoom (0.25x to 4x per gesture)
+                    ratio = Math.max(0.25, Math.min(4.0, ratio));
+
+                    // Only trigger if there's a meaningful change (> 3%)
+                    if (Math.abs(ratio - 1.0) > 0.03) {
+                        // Check if annotation toolbar is visible (more reliable than window.annotationMode)
+                        var toolbar = document.getElementById('annotation-toolbar');
+                        var inAnnotationMode = toolbar && toolbar.style.display !== 'none' && toolbar.offsetParent !== null;
+
+                        // Also check paused state
+                        var isPaused = window.msc_wz$$module$synpdf && window.msc_wz$$module$synpdf.paused;
+
+                        if (inAnnotationMode && isPaused) {
                             // Hide measure highlight so it doesn't interfere with marking
                             $('.demaat').hide();
                             $('.linked-maatloper').hide();
-                            // Set flag to prevent navigation during zoom in annotation mode
-                            window.__annotationZoomActive = true;
                         }
 
                         if (typeof resizeDematenAndCanvas === 'function') {
                             resizeDematenAndCanvas(ratio * 100);
-                        }
-
-                        // Keep highlight hidden if in annotation mode (will be re-shown on play/click)
-                        if (inAnnotationMode) {
-                            window.__annotationZoomActive = false;
                         }
                     }
                 }
