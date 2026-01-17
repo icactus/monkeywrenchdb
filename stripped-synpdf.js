@@ -2103,9 +2103,11 @@ async function onPlayerStateChange(event) {
     if (event.data == YT.PlayerState.PLAYING) {
         dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
         setPauseState$$module$synpdf(false);
+        window.__navigationLocked = false; // Unlock navigation when playing
     } else {
         dummyPlayer$$module$synpdf.clearKlok();
         setPauseState$$module$synpdf(true);
+        window.__navigationLocked = true; // Lock navigation when not playing
     }
 
     if (event.data == YT.PlayerState.PAUSED) {
