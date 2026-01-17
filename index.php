@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=62"></script>
+        <script src="annotation-layer.js?v=63"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
     <!-- Load dark mode preference early to prevent flash -->
@@ -652,7 +652,7 @@ $is_share_link = isset($_GET['share']);
     <div id="notification">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=255"></script>
+    <script src="stripped-synpdf.js?v=256"></script>
     <script src="stripped-synpdf-extras.js?v=212"></script>
     <script>
         // Dark Mode menu toggles - wire up immediately on page load

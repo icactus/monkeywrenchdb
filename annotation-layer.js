@@ -308,6 +308,10 @@
         const startDrawing = (e) => {
             // Allow native gestures (scroll/zoom) if in Hand mode
             if (!annotationMode || isReadonly || currentTool === 'hand') return;
+
+            // Allow 2-finger gestures (pinch zoom) to bubble up - only intercept single-finger drawing
+            if (e.touches && e.touches.length >= 2) return;
+
             e.preventDefault();
             e.stopPropagation();
             isDrawing = true;

@@ -1895,6 +1895,12 @@ function tick$$module$synpdf(a) {
 //Long-click/touch handling
 function kliklang$$module$synpdf(a) {
     void 0 == touchDev$$module$synpdf && (touchDev$$module$synpdf = "touchstart" == a.type);
+
+    // Allow 2-finger gestures (pinch zoom) to bubble up - only intercept single-finger touches
+    if (a.type === "touchstart" && a.originalEvent && a.originalEvent.touches && a.originalEvent.touches.length >= 2) {
+        return; // Let pinch zoom handler on notation-scroll handle it
+    }
+
     var b = touchDev$$module$synpdf ? $(this) : $("body");
     a.stopPropagation();
     if (hideMenuHelp$$module$synpdf(0) || touchDev$$module$synpdf && "mousedown" == a.type) a.preventDefault();
