@@ -306,7 +306,8 @@
         };
 
         const startDrawing = (e) => {
-            if (!annotationMode || isReadonly) return;
+            // Allow native gestures (scroll/zoom) if in Hand mode
+            if (!annotationMode || isReadonly || currentTool === 'hand') return;
             e.preventDefault();
             e.stopPropagation();
             isDrawing = true;

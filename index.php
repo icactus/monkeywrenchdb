@@ -26,7 +26,7 @@ $is_share_link = isset($_GET['share']);
     </script>
     <meta charset="utf-8">
     <meta name="viewport"
-        content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+        content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5.0, user-scalable=yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#000000" />
@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=61"></script>
+        <script src="annotation-layer.js?v=62"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
     <!-- Load dark mode preference early to prevent flash -->
