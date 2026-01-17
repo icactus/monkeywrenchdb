@@ -2560,7 +2560,7 @@ body.pen-cursor-active #pdf-container {
     display: none;
     position: absolute;
     /* Default: Align relative to button */
-    bottom: 42px;
+    bottom: 54px;
     left: 0;
     width: max-content;
     background: white;
@@ -2574,7 +2574,7 @@ body.pen-cursor-active #pdf-container {
 @media screen and (max-width: 600px) {
     #pen-popover {
         position: fixed;
-        bottom: 55px;
+        bottom: 42px;
         /* Closer to toolbar */
         left: 50%;
         transform: translateX(-50%);
