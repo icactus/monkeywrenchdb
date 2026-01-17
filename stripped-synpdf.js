@@ -1255,6 +1255,9 @@ DummyPlayer$$module$synpdf.prototype.pause = function () {
 };
 DummyPlayer$$module$synpdf.prototype.play = function () {
     this.paused = !1;
+    // Re-show measure highlight if it was hidden during annotation mode zoom
+    $('.demaat').show();
+    $('.linked-maatloper').show();
     if (-1 == this.klok) {
         var a = this;
         this.setKlok(function () {
@@ -2657,8 +2660,23 @@ $(document).ready(function () {
 
                     // Only trigger if there's a meaningful change (> 5%)
                     if (Math.abs(ratio - 1.0) > 0.05) {
+                        // Check if in annotation mode - if so, hide measure highlight
+                        var inAnnotationMode = typeof window.annotationMode !== 'undefined' && window.annotationMode;
+                        if (inAnnotationMode) {
+                            // Hide measure highlight so it doesn't interfere with marking
+                            $('.demaat').hide();
+                            $('.linked-maatloper').hide();
+                            // Set flag to prevent navigation during zoom in annotation mode
+                            window.__annotationZoomActive = true;
+                        }
+
                         if (typeof resizeDematenAndCanvas === 'function') {
                             resizeDematenAndCanvas(ratio * 100);
+                        }
+
+                        // Keep highlight hidden if in annotation mode (will be re-shown on play/click)
+                        if (inAnnotationMode) {
+                            window.__annotationZoomActive = false;
                         }
                     }
                 }
