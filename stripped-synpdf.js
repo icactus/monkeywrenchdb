@@ -1280,11 +1280,14 @@ DummyPlayer$$module$synpdf.prototype.pause = function () {
     this.clearKlok();
     this.paused = !0;
     this.klok = -1;
-    // Lock navigation when paused to prevent autoscroll during zoom
-    window.__navigationLocked = true;
+    // Lock navigation when paused only if played before
+    if (window.__playerHasPlayed) {
+        window.__navigationLocked = true;
+    }
 };
 DummyPlayer$$module$synpdf.prototype.play = function () {
     this.paused = !1;
+    window.__playerHasPlayed = true;
     // Unlock navigation when playing
     window.__navigationLocked = false;
     // Re-show measure highlight if it was hidden during annotation mode zoom
@@ -2724,25 +2727,19 @@ $(document).ready(function () {
                         // === SCROLL PRESERVATION ===
                         // Calculate the content position under the pinch center BEFORE anything changes
                         // Note: el still has transform applied, so use scrollLeft/Top and calculate
-                        var contentX = el.scrollLeft + (pinchCenterX - el.getBoundingClientRect().left);
-                        var contentY = el.scrollTop + (pinchCenterY - el.getBoundingClientRect().top);
-                        // Adjust for the CSS transform that's still applied
-                        // The content under pinch center in actual coordinates:
-                        var actualContentX = contentX / ratio;  // undo the visual transform
-                        var actualContentY = contentY / ratio;  // undo the visual transform
-
-                        // Calculate where we want to scroll to AFTER resize
-                        var newContentX = actualContentX * ratio;  // will be same as contentX!
-                        var newContentY = actualContentY * ratio;  // will be same as contentY!
-
                         console.log('[PINCH] BEFORE resize - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
 
-                        // Calculate pinch center content position BEFORE resize
+                        // Calculate pinch center as PROPORTION of total scrollable content
+                        // This handles non-linear scaling (e.g. fixed headers vs content) robustly
+                        var scrollWidth = el.scrollWidth;
+                        var scrollHeight = el.scrollHeight;
                         var elRect = el.getBoundingClientRect();
                         var relX = pinchCenterX - elRect.left;
                         var relY = pinchCenterY - elRect.top;
-                        var contentX = el.scrollLeft + relX;
-                        var contentY = el.scrollTop + relY;
+
+                        // Avoid divide by zero
+                        var pctX = (scrollWidth > 0) ? (el.scrollLeft + relX) / scrollWidth : 0;
+                        var pctY = (scrollHeight > 0) ? (el.scrollTop + relY) / scrollHeight : 0;
 
                         // Remove transform and resize
                         el.style.transform = '';
@@ -2755,13 +2752,16 @@ $(document).ready(function () {
 
                         console.log('[PINCH] AFTER resize - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
 
-                        // Normal scroll preservation - keep pinch center in place
-                        // Content scaled by ratio, adjust scroll to keep same content at pinch point
+                        // Calculate new scroll position using PRESERVED PROPORTIONS
+                        // This ensures the point under the pinch remains at the same relative position in the document
+                        var newScrollWidth = el.scrollWidth;
+                        var newScrollHeight = el.scrollHeight;
                         var newElRect = el.getBoundingClientRect();
                         var newRelX = pinchCenterX - newElRect.left;
                         var newRelY = pinchCenterY - newElRect.top;
-                        el.scrollLeft = (contentX * ratio) - newRelX;
-                        el.scrollTop = (contentY * ratio) - newRelY;
+
+                        el.scrollLeft = (pctX * newScrollWidth) - newRelX;
+                        el.scrollTop = (pctY * newScrollHeight) - newRelY;
 
                         console.log('[PINCH] AFTER preservation - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
                     } else {
