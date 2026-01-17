@@ -1321,6 +1321,12 @@ function setPagenum$$module$synpdf(a) {
 }
 
 function doeRol$$module$synpdf(a, b) {
+    console.log('[doeRol-real] locked:', window.__navigationLocked, 'paused:', window.msc_wz$$module$synpdf?.paused, 'target:', a);
+    // Skip scroll if navigation is locked and actually paused
+    if (window.__navigationLocked && window.msc_wz$$module$synpdf?.paused) {
+        console.log('[doeRol-real] BLOCKED by guard');
+        return;
+    }
     if (0 > a) {
         a = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
         deNot$$module$synpdf.scrollTop = 0;
