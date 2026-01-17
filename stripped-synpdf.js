@@ -2630,10 +2630,8 @@ $(document).ready(function () {
                 var originY = ((pinchCenterY - rect.top) / rect.height * 100) + '%';
                 el.style.transformOrigin = originX + ' ' + originY;
 
-                // Hide annotation canvases during gesture (they use absolute positioning that doesn't scale with transform)
-                document.querySelectorAll('.annotation-canvas').forEach(function (c) {
-                    c.style.visibility = 'hidden';
-                });
+                // Hide annotation canvases during gesture using CSS class (has !important)
+                document.body.classList.add('annotations-hidden');
             }
         }, { passive: true, capture: true });
 
@@ -2658,10 +2656,8 @@ $(document).ready(function () {
                 el.style.transform = '';
                 el.style.transformOrigin = '';
 
-                // Show annotation canvases again (visibility doesn't affect layout)
-                document.querySelectorAll('.annotation-canvas').forEach(function (c) {
-                    c.style.visibility = 'visible';
-                });
+                // Show annotation canvases again (remove the hiding class)
+                document.body.classList.remove('annotations-hidden');
 
                 if (startDist > 0 && lastDist > 0) {
                     var ratio = lastDist / startDist;
