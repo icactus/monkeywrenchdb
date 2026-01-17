@@ -339,6 +339,10 @@
 
         const draw = (e) => {
             if (!isDrawing || !currentStroke) return;
+
+            // Skip if 2-finger gesture (pinch zoom)
+            if (e.touches && e.touches.length >= 2) return;
+
             e.preventDefault();
             e.stopPropagation();
 

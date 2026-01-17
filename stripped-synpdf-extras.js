@@ -1146,7 +1146,10 @@ function resizeDematenAndCanvas(scaleAmount) {
         var newCanvasRect = canvas.getBoundingClientRect();
         var newNotationDivRect = notationDiv.getBoundingClientRect();
         deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount);
-        msc_wz$$module$synpdf.time2x((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf);
+        // Only navigate to current measure if NOT paused - allows zooming/marking anywhere when paused
+        if (msc_wz$$module$synpdf && !msc_wz$$module$synpdf.paused) {
+            msc_wz$$module$synpdf.time2x((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf);
+        }
     }
 }
 
