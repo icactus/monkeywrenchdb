@@ -2559,8 +2559,8 @@ body.pen-cursor-active #pdf-container {
 /* Pen Popover */
 #pen-popover {
     display: none;
-    position: fixed;
-    bottom: 130px;
+    position: absolute;
+    bottom: 42px;
     left: 50%;
     transform: translateX(-50%);
     background: white;
@@ -2569,8 +2569,6 @@ body.pen-cursor-active #pdf-container {
     padding: 8px;
     z-index: 10001;
     white-space: nowrap;
-    max-width: calc(100vw - 20px);
-    overflow-x: auto;
 }
 
 #pen-popover.visible {

@@ -594,7 +594,33 @@
     window.togglePenPopover = function () {
         const popover = document.getElementById('pen-popover');
         if (!popover) return;
-        popover.style.display = popover.style.display === 'none' ? 'block' : 'none';
+
+        const isVisible = popover.style.display === 'block';
+        popover.style.display = isVisible ? 'none' : 'block';
+
+        // Constrain popover within viewport horizontally
+        if (!isVisible) {
+            // Reset position first to measure natural position
+            popover.style.left = '50%';
+            popover.style.transform = 'translateX(-50%)';
+
+            requestAnimationFrame(() => {
+                const rect = popover.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                const margin = 10;
+
+                if (rect.left < margin) {
+                    // Goes off left edge - shift right
+                    const shift = margin - rect.left;
+                    popover.style.transform = `translateX(calc(-50% + ${shift}px))`;
+                } else if (rect.right > viewportWidth - margin) {
+                    // Goes off right edge - shift left
+                    const shift = rect.right - (viewportWidth - margin);
+                    popover.style.transform = `translateX(calc(-50% - ${shift}px))`;
+                }
+            });
+        }
+
         // Also set to pen tool
         setAnnotationTool('pen');
     };
