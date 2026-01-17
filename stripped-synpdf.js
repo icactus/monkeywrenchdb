@@ -2639,11 +2639,6 @@ $(document).ready(function () {
                 // Calculate current scale ratio (no clamping - natural zoom)
                 var ratio = lastDist / startDist;
 
-                // Hide annotation canvases during preview (they use absolute positioning that doesn't scale with transform)
-                document.querySelectorAll('.annotation-canvas').forEach(function (c) {
-                    c.style.display = 'none';
-                });
-
                 // Apply CSS transform for visual feedback
                 el.style.transform = 'scale(' + ratio + ')';
 
@@ -2657,11 +2652,6 @@ $(document).ready(function () {
                 // Remove transform preview
                 el.style.transform = '';
                 el.style.transformOrigin = '';
-
-                // Show annotation canvases again (they were hidden during preview)
-                document.querySelectorAll('.annotation-canvas').forEach(function (c) {
-                    c.style.display = '';
-                });
 
                 if (startDist > 0 && lastDist > 0) {
                     var ratio = lastDist / startDist;
