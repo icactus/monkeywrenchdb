@@ -698,7 +698,17 @@ Wijzer$$module$synpdf.prototype.setOffsetX = function () {
 
 Wijzer$$module$synpdf.prototype.time2x = function (a) {
     // Block all autoscroll when navigation is locked (paused after playing)
-    if (window.__navigationLocked && this.paused) {
+    // Check both internal flag AND actual player state
+    var actuallyPaused = this.paused;
+    if (typeof yubchk$$module$synpdf !== 'undefined' && yubchk$$module$synpdf && elmed$$module$synpdf) {
+        // YouTube - paused if not playing (state !== 1)
+        actuallyPaused = actuallyPaused || elmed$$module$synpdf.getPlayerState?.() !== 1;
+    } else if (elmed$$module$synpdf && typeof elmed$$module$synpdf.paused !== 'undefined') {
+        // HTML5 video
+        actuallyPaused = actuallyPaused || elmed$$module$synpdf.paused;
+    }
+
+    if (window.__navigationLocked && actuallyPaused) {
         return;
     }
 
