@@ -2675,11 +2675,14 @@ $(document).ready(function () {
                 pinchCenterX = center.x;
                 pinchCenterY = center.y;
 
-                // Set transform origin to pinch center (relative to el)
-                var rect = el.getBoundingClientRect();
-                var originX = ((pinchCenterX - rect.left) / rect.width * 100) + '%';
-                var originY = ((pinchCenterY - rect.top) / rect.height * 100) + '%';
-                el.style.transformOrigin = originX + ' ' + originY;
+                // Set transform origin to pinch center (relative to CONTENT ELEMENT)
+                var visualEl = document.getElementById('notation');
+                if (visualEl) {
+                    var rect = visualEl.getBoundingClientRect();
+                    var originX = ((pinchCenterX - rect.left) / rect.width * 100) + '%';
+                    var originY = ((pinchCenterY - rect.top) / rect.height * 100) + '%';
+                    visualEl.style.transformOrigin = originX + ' ' + originY;
+                }
 
                 // Hide annotation canvases during gesture using CSS class (has !important)
                 document.body.classList.add('annotations-hidden');
@@ -2693,8 +2696,9 @@ $(document).ready(function () {
                 // Calculate current scale ratio (no clamping - natural zoom)
                 var ratio = lastDist / startDist;
 
-                // Apply CSS transform for visual feedback
-                el.style.transform = 'scale(' + ratio + ')';
+                // Apply CSS transform for visual feedback to CONTENT
+                var visualEl = document.getElementById('notation');
+                if (visualEl) visualEl.style.transform = 'scale(' + ratio + ')';
 
                 // Prevent default to stop scrolling during pinch
                 if (e.cancelable) e.preventDefault();
@@ -2735,12 +2739,14 @@ $(document).ready(function () {
                         var relX = pinchCenterX - elRect.left;
                         var relY = pinchCenterY - elRect.top;
 
-                        var pctX = (scrollWidth > 0) ? (el.scrollLeft + relX) / scrollWidth : 0;
                         var pctY = (scrollHeight > 0) ? (el.scrollTop + relY) / scrollHeight : 0;
 
                         // Remove transform and resize
-                        el.style.transform = '';
-                        el.style.transformOrigin = '';
+                        var visualEl = document.getElementById('notation');
+                        if (visualEl) {
+                            visualEl.style.transform = '';
+                            visualEl.style.transformOrigin = '';
+                        }
 
                         // Do the actual resize
                         if (typeof resizeDematenAndCanvas === 'function') {
@@ -2770,13 +2776,19 @@ $(document).ready(function () {
                         }
                     } else {
                         // No meaningful zoom change, just remove transform
-                        el.style.transform = '';
-                        el.style.transformOrigin = '';
+                        var visualEl = document.getElementById('notation');
+                        if (visualEl) {
+                            visualEl.style.transform = '';
+                            visualEl.style.transformOrigin = '';
+                        }
                     }
                 } else {
                     // No valid distances, just remove transform
-                    el.style.transform = '';
-                    el.style.transformOrigin = '';
+                    var visualEl = document.getElementById('notation');
+                    if (visualEl) {
+                        visualEl.style.transform = '';
+                        visualEl.style.transformOrigin = '';
+                    }
                 }
 
                 // Reset state
