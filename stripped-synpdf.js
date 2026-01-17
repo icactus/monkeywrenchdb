@@ -874,6 +874,12 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
 
 // Vertical scroll function
 function doeRol$$module$synpdf(a, b) {
+    // Adjust for pinch-zoom: ensure measure is in Visual Viewport
+    if (window.visualViewport && window.visualViewport.scale > 1.01) {
+        // Shift target so it aligns with the top of the visible area
+        a = Math.max(0, a - window.visualViewport.offsetTop);
+    }
+
     a = Math.round(a);
     if (deNot$$module$synpdf.scrollTop !== a) {
         deNot$$module$synpdf.style["scroll-behavior"] = b ? "auto" : "smooth"; // b=1 means auto
