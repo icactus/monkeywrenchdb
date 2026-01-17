@@ -1329,6 +1329,10 @@ function resizePageFitToWidth() {
     const scaleAmount = Math.max(0.1, Math.min(4.0, viewportW / contentW)) * 100;
 
     resizeDematenAndCanvas(scaleAmount);
+
+    // Reset scroll position to top-left after fit-to-width to avoid content appearing off-screen
+    scroller.scrollLeft = 0;
+    scroller.scrollTop = 0;
 }
 
 function setZoomControlsEnabled(enabled) {
