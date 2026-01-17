@@ -1153,8 +1153,12 @@ function resizeDematenAndCanvas(scaleAmount) {
         deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount);
 
         // time2x will skip navigation if __navigationLocked is true
-        if (msc_wz$$module$synpdf) {
+        // Also check here as defense in depth
+        if (msc_wz$$module$synpdf && !window.__navigationLocked) {
+            console.log('[resizeDematenAndCanvas] calling time2x - locked:', window.__navigationLocked);
             msc_wz$$module$synpdf.time2x((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf);
+        } else {
+            console.log('[resizeDematenAndCanvas] SKIPPING time2x - locked:', window.__navigationLocked);
         }
     }
 }

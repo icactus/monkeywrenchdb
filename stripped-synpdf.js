@@ -904,8 +904,8 @@ function doeRol$$module$synpdf(a, b) {
 // Horizontal scroll function
 function scrollHorizontally(targetX, instant) {
     console.log('[scrollHoriz] locked:', window.__navigationLocked, 'paused:', window.msc_wz$$module$synpdf?.paused, 'target:', targetX);
-    // Skip scroll if navigation is locked and actually paused
-    if (window.__navigationLocked && window.msc_wz$$module$synpdf?.paused) {
+    // Skip scroll if navigation is locked
+    if (window.__navigationLocked) {
         console.log('[scrollHoriz] BLOCKED by guard');
         return;
     }
