@@ -2544,32 +2544,33 @@ body.pen-cursor-active #pdf-container {
 /* Small screen optimization for Annotation Toolbar */
 @media screen and (max-width: 400px) {
     #annotation-toolbar {
-        padding: 6px 8px;
-        gap: 2px;
+        padding: 4px 4px;
+        gap: 1px;
         bottom: 70px;
         /* Adjust bottom position slightly */
-        width: 96%;
+        width: 98%;
         /* Ensure it fits within screen width */
-        max-width: 96%;
-        justify-content: space-between;
-        /* Distribute space evenly if tight */
+        max-width: 98%;
+        justify-content: center;
+        /* Center items */
         flex-wrap: nowrap;
         /* Prevent wrapping */
     }
 
     .annotation-tool-btn {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
+        padding: 0;
     }
 
     .annotation-tool-btn svg {
-        width: 18px;
-        height: 18px;
+        width: 14px;
+        height: 14px;
     }
 
     .toolbar-divider {
-        margin: 0 2px;
-        height: 18px;
+        margin: 0 1px;
+        height: 16px;
     }
 }
 
