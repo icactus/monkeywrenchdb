@@ -594,29 +594,7 @@
     window.togglePenPopover = function () {
         const popover = document.getElementById('pen-popover');
         if (!popover) return;
-
-        const isVisible = popover.style.display === 'block';
-        popover.style.display = isVisible ? 'none' : 'block';
-
-        // Constrain popover within viewport - only shift left if it goes off right edge
-        if (!isVisible) {
-            // Reset to default position (aligned with left edge of pen button)
-            popover.style.left = '0';
-            popover.style.right = 'auto';
-
-            requestAnimationFrame(() => {
-                const rect = popover.getBoundingClientRect();
-                const viewportWidth = window.innerWidth;
-                const margin = 10;
-
-                if (rect.right > viewportWidth - margin) {
-                    // Goes off right edge - shift left by setting right instead
-                    popover.style.left = 'auto';
-                    popover.style.right = '0';
-                }
-            });
-        }
-
+        popover.style.display = popover.style.display === 'block' ? 'none' : 'block';
         // Also set to pen tool
         setAnnotationTool('pen');
     };

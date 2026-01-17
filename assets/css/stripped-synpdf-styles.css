@@ -2551,23 +2551,23 @@ body.pen-cursor-active #pdf-container {
     background: #e8e8e8;
 }
 
-/* Pen Popover Wrapper */
 .pen-popover-wrapper {
-    position: relative;
+    position: static;
 }
 
 /* Pen Popover */
 #pen-popover {
     display: none;
-    position: absolute;
-    bottom: 42px;
-    left: 0;
+    position: fixed;
+    bottom: 130px;
+    left: 10px;
+    right: 10px;
+    width: auto;
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     padding: 8px;
     z-index: 10001;
-    white-space: nowrap;
 }
 
 #pen-popover.visible {
@@ -2578,6 +2578,8 @@ body.pen-cursor-active #pdf-container {
     display: flex;
     gap: 4px;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 /* Scale down pen popover on very small screens */
