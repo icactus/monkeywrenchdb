@@ -1888,12 +1888,8 @@ html.inverted select option {
     color: #eee !important;
 }
 
-/* Un-invert annotation toolbar and color swatches in dark mode */
-html.inverted #annotation-toolbar {
-    filter: invert(100%);
-}
-
-html.inverted #pen-popover .color-swatch {
+/* Un-invert color swatches in dark mode so they show true colors */
+html.inverted .color-swatch {
     filter: invert(100%);
 }
 
