@@ -1143,8 +1143,21 @@ function resizeDematenAndCanvas(scaleAmount) {
         var notationDivRect = notationDiv.getBoundingClientRect();
         scaleCanvasElements(scaleAmount);
 
-        // Skip ALL navigation when paused - allows free zoom/pan without jumping to current measure
-        var isPaused = msc_wz$$module$synpdf && msc_wz$$module$synpdf.paused;
+        // Skip ALL navigation when paused - check both internal state AND actual player state
+        var internalPaused = msc_wz$$module$synpdf && msc_wz$$module$synpdf.paused;
+
+        // Check actual player paused state (YouTube or HTML5)
+        var actualPlayerPaused = false;
+        if (typeof yubchk$$module$synpdf !== 'undefined' && yubchk$$module$synpdf) {
+            // YouTube - paused if not playing (state !== 1)
+            actualPlayerPaused = !elmed$$module$synpdf || elmed$$module$synpdf.getPlayerState?.() !== 1;
+        } else if (elmed$$module$synpdf) {
+            // HTML5 video
+            actualPlayerPaused = elmed$$module$synpdf.paused;
+        }
+
+        var isPaused = internalPaused || actualPlayerPaused;
+        console.log('[resizeDematenAndCanvas] isPaused:', isPaused, 'internal:', internalPaused, 'actual:', actualPlayerPaused);
 
         if (!isPaused && window.msc_wz$$module$synpdf) {
             msc_wz$$module$synpdf.setOffsetX();
