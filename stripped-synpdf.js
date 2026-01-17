@@ -2581,8 +2581,7 @@ $(document).ready(function () {
 });
 
 // Custom Pinch-to-Zoom for PDF Only
-// This hooks touch gestures on the notation scroller and uses internal zoom (resizeDematenAndCanvas)
-// so that autoscroll and all other layout logic works correctly.
+// Uses CAPTURE phase to intercept events BEFORE they reach canvas handlers
 (function initPinchZoom() {
     function setupPinchZoom() {
         var el = document.getElementById('notation-scroll');
@@ -2599,26 +2598,31 @@ $(document).ready(function () {
             return Math.sqrt(dx * dx + dy * dy);
         }
 
-        el.addEventListener('touchstart', function (e) {
-            if (e.touches.length === 2) {
+        function isInNotationScroll(target) {
+            return el.contains(target);
+        }
+
+        // Use CAPTURE phase to intercept events before canvas handlers
+        document.addEventListener('touchstart', function (e) {
+            if (e.touches.length === 2 && isInNotationScroll(e.target)) {
                 isPinching = true;
                 startDist = getDistance(e.touches);
                 lastDist = startDist;
-                console.log('[PinchZoom] Start, dist:', startDist);
+                console.log('[PinchZoom] Start (capture), dist:', startDist);
             }
-        }, { passive: true });
+        }, { passive: true, capture: true });
 
-        el.addEventListener('touchmove', function (e) {
+        document.addEventListener('touchmove', function (e) {
             if (isPinching && e.touches.length === 2) {
                 lastDist = getDistance(e.touches);
                 // Prevent default to stop scrolling during pinch
-                e.preventDefault();
+                if (e.cancelable) e.preventDefault();
             }
-        }, { passive: false });
+        }, { passive: false, capture: true });
 
-        el.addEventListener('touchend', function (e) {
+        document.addEventListener('touchend', function (e) {
             if (isPinching) {
-                console.log('[PinchZoom] End, startDist:', startDist, 'lastDist:', lastDist);
+                console.log('[PinchZoom] End (capture), startDist:', startDist, 'lastDist:', lastDist);
 
                 if (startDist > 0 && lastDist > 0) {
                     var ratio = lastDist / startDist;
@@ -2630,7 +2634,6 @@ $(document).ready(function () {
 
                     // Only trigger if there's a meaningful change (> 5%)
                     if (Math.abs(ratio - 1.0) > 0.05) {
-                        // resizeDematenAndCanvas expects percentage (e.g., 110 for 10% zoom in)
                         if (typeof resizeDematenAndCanvas === 'function') {
                             console.log('[PinchZoom] Calling resizeDematenAndCanvas with:', ratio * 100);
                             resizeDematenAndCanvas(ratio * 100);
@@ -2645,20 +2648,17 @@ $(document).ready(function () {
                 startDist = 0;
                 lastDist = 0;
             }
-        }, { passive: true });
+        }, { passive: true, capture: true });
 
-        console.log('[PinchZoom] Handler attached to #notation-scroll');
+        console.log('[PinchZoom] Capture-phase handler attached');
         return true;
     }
 
     // Try immediately
     if (!setupPinchZoom()) {
-        // If element doesn't exist, wait for DOM
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', setupPinchZoom);
         } else {
-            // DOM is ready but element doesn't exist - try again after a short delay
-            // (element might be created dynamically)
             setTimeout(setupPinchZoom, 500);
         }
     }
