@@ -111,7 +111,8 @@ $is_share_link = isset($_GET['share']);
                                 </a>
                             <?php endif; ?>
                             <div class="mobile-menu-divider"></div>
-                            <div class="mobile-controls-row" style="padding: 8px 16px;">
+                            <div
+                                style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px;">
                                 <span class="mobile-controls-label">Dark Mode</span>
                                 <label class="toggle-switch">
                                     <input type="checkbox" id="invert-check-menu-mobile">
@@ -427,15 +428,6 @@ $is_share_link = isset($_GET['share']);
                 </div>
                 <div class="mobile-only">
                     <div class="mobile-controls-divider"></div>
-                    <div class="mobile-controls-row">
-                        <label class="mobile-controls-label">Dark Mode</label>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="invert-check-mobile">
-                            <span class="toggle-slider">
-                                <span class="toggle-slider-knob"></span>
-                            </span>
-                        </label>
-                    </div>
                     <button id="share-btn-mobile">Share Link</button>
                 </div>
             </div>
@@ -663,6 +655,37 @@ $is_share_link = isset($_GET['share']);
     <script src="stripped-synpdf.js?v=251"></script>
     <script src="stripped-synpdf-extras.js?v=212"></script>
     <script>
+        // Dark Mode menu toggles - wire up immediately on page load
+        $(function () {
+            const darkModeSelectors = '#invert-check-menu-mobile, #invert-check-menu-desktop';
+
+            // Sync checkboxes with current state
+            const isDark = $('html').hasClass('inverted');
+            $(darkModeSelectors).prop('checked', isDark);
+
+            // Update logo if dark
+            if (isDark) {
+                const logo = document.getElementById('monkey-logo');
+                if (logo) logo.src = 'assets/img/monkeydark.png';
+            }
+
+            // Handle toggle changes
+            $(darkModeSelectors).on('change', function () {
+                const isDark = $(this).is(':checked');
+                $(darkModeSelectors).prop('checked', isDark);
+                $('html').toggleClass('inverted', isDark);
+
+                const logo = document.getElementById('monkey-logo');
+                if (logo) {
+                    logo.src = isDark ? 'assets/img/monkeydark.png' : 'assets/img/monkeywrench-monkey100x100.png';
+                }
+
+                try {
+                    localStorage.setItem('darkMode', isDark ? '1' : '0');
+                } catch (e) { }
+            });
+        });
+
         // Register Service Worker for PWA with auto-update
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

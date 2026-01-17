@@ -501,8 +501,8 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     });
 
     // Wire up new Dock Menu Items
-    // Dark Mode - handles all dark mode toggles: mobile drawer, mobile menu, desktop menu
-    const darkModeSelectors = '#invert-check-mobile, #invert-check-menu-mobile, #invert-check-menu-desktop';
+    // Dark Mode - handles all dark mode toggles: mobile menu, desktop menu
+    const darkModeSelectors = '#invert-check-menu-mobile, #invert-check-menu-desktop';
     $(darkModeSelectors).off('change').on('change', function () {
         const isDark = $(this).is(':checked');
         $(darkModeSelectors).prop('checked', isDark);
