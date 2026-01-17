@@ -1322,8 +1322,8 @@ function setPagenum$$module$synpdf(a) {
 
 function doeRol$$module$synpdf(a, b) {
     console.log('[doeRol-real] locked:', window.__navigationLocked, 'paused:', window.msc_wz$$module$synpdf?.paused, 'target:', a);
-    // Skip scroll if navigation is locked and actually paused
-    if (window.__navigationLocked && window.msc_wz$$module$synpdf?.paused) {
+    // Skip scroll if navigation is locked
+    if (window.__navigationLocked) {
         console.log('[doeRol-real] BLOCKED by guard');
         return;
     }
@@ -2107,10 +2107,12 @@ async function onPlayerStateChange(event) {
     }
 
     if (event.data == YT.PlayerState.PLAYING) {
+        console.log('[YT-STATE] PLAYING - unlocking navigation');
         dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
         setPauseState$$module$synpdf(false);
         window.__navigationLocked = false; // Unlock navigation when playing
     } else {
+        console.log('[YT-STATE] NOT PLAYING (state=' + event.data + ') - locking navigation');
         dummyPlayer$$module$synpdf.clearKlok();
         setPauseState$$module$synpdf(true);
         window.__navigationLocked = true; // Lock navigation when not playing
