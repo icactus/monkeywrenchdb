@@ -888,8 +888,10 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
 
 // Vertical scroll function
 function doeRol$$module$synpdf(a, b) {
+    console.log('[doeRol] locked:', window.__navigationLocked, 'paused:', window.msc_wz$$module$synpdf?.paused, 'target:', a);
     // Skip scroll if navigation is locked and actually paused
     if (window.__navigationLocked && window.msc_wz$$module$synpdf?.paused) {
+        console.log('[doeRol] BLOCKED by guard');
         return;
     }
     a = Math.round(a);
@@ -901,8 +903,10 @@ function doeRol$$module$synpdf(a, b) {
 
 // Horizontal scroll function
 function scrollHorizontally(targetX, instant) {
+    console.log('[scrollHoriz] locked:', window.__navigationLocked, 'paused:', window.msc_wz$$module$synpdf?.paused, 'target:', targetX);
     // Skip scroll if navigation is locked and actually paused
     if (window.__navigationLocked && window.msc_wz$$module$synpdf?.paused) {
+        console.log('[scrollHoriz] BLOCKED by guard');
         return;
     }
     var notation = deNot$$module$synpdf;
