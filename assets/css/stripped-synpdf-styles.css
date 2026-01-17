@@ -1860,7 +1860,8 @@ html.inverted {
 }
 
 html.inverted #vidyub,
-html.inverted #monkey-logo {
+html.inverted #monkey-logo,
+html.inverted #notation-scroll canvas {
     filter: invert(100%) !important;
 }
 
