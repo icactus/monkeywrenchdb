@@ -888,6 +888,10 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
 
 // Vertical scroll function
 function doeRol$$module$synpdf(a, b) {
+    // Skip scroll if navigation is locked and actually paused
+    if (window.__navigationLocked && window.msc_wz$$module$synpdf?.paused) {
+        return;
+    }
     a = Math.round(a);
     if (deNot$$module$synpdf.scrollTop !== a) {
         deNot$$module$synpdf.style["scroll-behavior"] = b ? "auto" : "smooth"; // b=1 means auto
@@ -897,6 +901,10 @@ function doeRol$$module$synpdf(a, b) {
 
 // Horizontal scroll function
 function scrollHorizontally(targetX, instant) {
+    // Skip scroll if navigation is locked and actually paused
+    if (window.__navigationLocked && window.msc_wz$$module$synpdf?.paused) {
+        return;
+    }
     var notation = deNot$$module$synpdf;
     targetX = Math.round(targetX);
     if (notation.scrollLeft !== targetX) {
