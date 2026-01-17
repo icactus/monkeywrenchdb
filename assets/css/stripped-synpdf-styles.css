@@ -2548,7 +2548,7 @@ body.pen-cursor-active #pdf-container {
         gap: 1px;
         bottom: 70px;
         /* Adjust bottom position slightly */
-        width: 98%;
+        /* width: 98%; Removed per user request */
         /* Ensure it fits within screen width */
         max-width: 98%;
         justify-content: center;
@@ -2571,6 +2571,15 @@ body.pen-cursor-active #pdf-container {
     .toolbar-divider {
         margin: 0 1px;
         height: 16px;
+    }
+}
+
+/* Fix PDF Controls fitting on small screens */
+@media screen and (max-width: 425px) {
+    #control-buttons-row {
+        gap: 0;
+        justify-content: center;
+        /* Ensure centered if possible */
     }
 }
 
