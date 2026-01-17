@@ -2641,7 +2641,7 @@ $(document).ready(function () {
 
                 // Hide annotation canvases during preview (they use absolute positioning that doesn't scale with transform)
                 document.querySelectorAll('.annotation-canvas').forEach(function (c) {
-                    c.style.opacity = '0';
+                    c.style.display = 'none';
                 });
 
                 // Apply CSS transform for visual feedback
@@ -2660,7 +2660,7 @@ $(document).ready(function () {
 
                 // Show annotation canvases again (they were hidden during preview)
                 document.querySelectorAll('.annotation-canvas').forEach(function (c) {
-                    c.style.opacity = '1';
+                    c.style.display = '';
                 });
 
                 if (startDist > 0 && lastDist > 0) {
