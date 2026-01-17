@@ -1331,8 +1331,13 @@ function resizePageFitToWidth() {
     resizeDematenAndCanvas(scaleAmount);
 
     // Reset scroll position to top-left after fit-to-width to avoid content appearing off-screen
-    scroller.scrollLeft = 0;
-    scroller.scrollTop = 0;
+    // Use double rAF to ensure layout has settled
+    requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+            scroller.scrollLeft = 0;
+            scroller.scrollTop = 0;
+        });
+    });
 }
 
 function setZoomControlsEnabled(enabled) {
