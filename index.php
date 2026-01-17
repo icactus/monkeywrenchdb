@@ -652,7 +652,7 @@ $is_share_link = isset($_GET['share']);
     <div id="notification">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=254"></script>
+    <script src="stripped-synpdf.js?v=255"></script>
     <script src="stripped-synpdf-extras.js?v=212"></script>
     <script>
         // Dark Mode menu toggles - wire up immediately on page load

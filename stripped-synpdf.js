@@ -2578,73 +2578,82 @@ $(document).ready(function () {
 // This hooks touch gestures on the notation scroller and uses internal zoom (resizeDematenAndCanvas)
 // so that autoscroll and all other layout logic works correctly.
 (function initPinchZoom() {
-    var el = document.getElementById('notation-scroll');
-    if (!el) {
-        // DOM not ready yet, try again later
-        document.addEventListener('DOMContentLoaded', initPinchZoom);
-        return;
-    }
+    function setupPinchZoom() {
+        var el = document.getElementById('notation-scroll');
+        if (!el) return false;
 
-    var startDist = 0;
-    var isPinching = false;
+        var startDist = 0;
+        var lastDist = 0;
+        var isPinching = false;
 
-    function getDistance(touches) {
-        var dx = touches[0].clientX - touches[1].clientX;
-        var dy = touches[0].clientY - touches[1].clientY;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    el.addEventListener('touchstart', function (e) {
-        if (e.touches.length === 2) {
-            isPinching = true;
-            startDist = getDistance(e.touches);
+        function getDistance(touches) {
+            if (touches.length < 2) return 0;
+            var dx = touches[0].clientX - touches[1].clientX;
+            var dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
         }
-    }, { passive: true });
 
-    el.addEventListener('touchmove', function (e) {
-        if (isPinching && e.touches.length === 2) {
-            // Prevent default to stop any native behavior
-            e.preventDefault();
-        }
-    }, { passive: false });
-
-    el.addEventListener('touchend', function (e) {
-        if (isPinching && e.touches.length < 2 && startDist > 0) {
-            // Calculate final distance from cached changedTouches if available
-            // On touchend, we get the remaining touch points
-            // If we had 2 fingers and lifted one, we have 1 remaining
-            // We need to use the last known distance from touchmove
-            isPinching = false;
-        }
-    }, { passive: true });
-
-    // Track last known distance during pinch for final calculation
-    var lastDist = 0;
-
-    el.addEventListener('touchmove', function (e) {
-        if (isPinching && e.touches.length === 2 && startDist > 0) {
-            lastDist = getDistance(e.touches);
-        }
-    }, { passive: true });
-
-    el.addEventListener('touchend', function (e) {
-        if (startDist > 0 && lastDist > 0 && lastDist !== startDist) {
-            var ratio = lastDist / startDist;
-
-            // Clamp ratio to reasonable bounds (0.5x to 2x per gesture)
-            ratio = Math.max(0.5, Math.min(2.0, ratio));
-
-            // Only trigger if there's a meaningful change (> 5%)
-            if (Math.abs(ratio - 1.0) > 0.05) {
-                // resizeDematenAndCanvas expects percentage (e.g., 110 for 10% zoom in)
-                if (typeof resizeDematenAndCanvas === 'function') {
-                    resizeDematenAndCanvas(ratio * 100);
-                }
+        el.addEventListener('touchstart', function (e) {
+            if (e.touches.length === 2) {
+                isPinching = true;
+                startDist = getDistance(e.touches);
+                lastDist = startDist;
+                console.log('[PinchZoom] Start, dist:', startDist);
             }
+        }, { passive: true });
 
-            // Reset
-            startDist = 0;
-            lastDist = 0;
+        el.addEventListener('touchmove', function (e) {
+            if (isPinching && e.touches.length === 2) {
+                lastDist = getDistance(e.touches);
+                // Prevent default to stop scrolling during pinch
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        el.addEventListener('touchend', function (e) {
+            if (isPinching) {
+                console.log('[PinchZoom] End, startDist:', startDist, 'lastDist:', lastDist);
+
+                if (startDist > 0 && lastDist > 0) {
+                    var ratio = lastDist / startDist;
+
+                    // Clamp ratio to reasonable bounds (0.5x to 2x per gesture)
+                    ratio = Math.max(0.5, Math.min(2.0, ratio));
+
+                    console.log('[PinchZoom] Ratio:', ratio);
+
+                    // Only trigger if there's a meaningful change (> 5%)
+                    if (Math.abs(ratio - 1.0) > 0.05) {
+                        // resizeDematenAndCanvas expects percentage (e.g., 110 for 10% zoom in)
+                        if (typeof resizeDematenAndCanvas === 'function') {
+                            console.log('[PinchZoom] Calling resizeDematenAndCanvas with:', ratio * 100);
+                            resizeDematenAndCanvas(ratio * 100);
+                        } else {
+                            console.log('[PinchZoom] resizeDematenAndCanvas not found!');
+                        }
+                    }
+                }
+
+                // Reset state
+                isPinching = false;
+                startDist = 0;
+                lastDist = 0;
+            }
+        }, { passive: true });
+
+        console.log('[PinchZoom] Handler attached to #notation-scroll');
+        return true;
+    }
+
+    // Try immediately
+    if (!setupPinchZoom()) {
+        // If element doesn't exist, wait for DOM
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupPinchZoom);
+        } else {
+            // DOM is ready but element doesn't exist - try again after a short delay
+            // (element might be created dynamically)
+            setTimeout(setupPinchZoom, 500);
         }
-    }, { passive: true });
+    }
 })();
