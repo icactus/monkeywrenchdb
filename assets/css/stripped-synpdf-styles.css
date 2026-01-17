@@ -2558,16 +2558,30 @@ body.pen-cursor-active #pdf-container {
 /* Pen Popover */
 #pen-popover {
     display: none;
-    position: fixed;
-    bottom: 130px;
-    left: 10px;
-    right: 10px;
-    width: auto;
+    position: absolute;
+    /* Default: Align relative to button */
+    bottom: 42px;
+    left: 0;
+    width: max-content;
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     padding: 8px;
     z-index: 10001;
+}
+
+/* Mobile/Small Screens: Center fixed on screen, wrap only if needed */
+@media screen and (max-width: 600px) {
+    #pen-popover {
+        position: fixed;
+        bottom: 55px;
+        /* Closer to toolbar */
+        left: 50%;
+        transform: translateX(-50%);
+        right: auto;
+        width: fit-content;
+        max-width: calc(100vw - 16px);
+    }
 }
 
 #pen-popover.visible {
