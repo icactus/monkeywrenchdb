@@ -2621,6 +2621,15 @@ body.pen-cursor-active #pdf-container {
         right: auto;
         max-width: calc(100vw - 16px);
     }
+
+    /* Fix overlap with hamburger menu on small screens */
+    #logo-bar-wrapper {
+        padding-right: 60px;
+    }
+
+    #monkeywrench-logo-text h2 {
+        font-size: 1.4em;
+    }
 }
 
 #pen-popover.visible {
