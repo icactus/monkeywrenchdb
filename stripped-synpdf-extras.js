@@ -1143,8 +1143,23 @@ function resizeDematenAndCanvas(scaleAmount) {
         var notationDivRect = notationDiv.getBoundingClientRect();
         scaleCanvasElements(scaleAmount);
 
-        // Only call setOffsetX if navigation is not locked (it calls time2x internally)
-        if (window.msc_wz$$module$synpdf && !window.__navigationLocked) {
+        // Skip ALL navigation when paused - check both internal state AND actual player state
+        var internalPaused = msc_wz$$module$synpdf && msc_wz$$module$synpdf.paused;
+
+        // Check actual player paused state (YouTube or HTML5)
+        var actualPlayerPaused = false;
+        if (typeof yubchk$$module$synpdf !== 'undefined' && yubchk$$module$synpdf) {
+            // YouTube - paused if not playing (state !== 1)
+            actualPlayerPaused = !elmed$$module$synpdf || elmed$$module$synpdf.getPlayerState?.() !== 1;
+        } else if (elmed$$module$synpdf) {
+            // HTML5 video
+            actualPlayerPaused = elmed$$module$synpdf.paused;
+        }
+
+        var isPaused = internalPaused || actualPlayerPaused;
+        console.log('[resizeDematenAndCanvas] isPaused:', isPaused, 'internal:', internalPaused, 'actual:', actualPlayerPaused);
+
+        if (!isPaused && window.msc_wz$$module$synpdf) {
             msc_wz$$module$synpdf.setOffsetX();
         }
 
@@ -1152,13 +1167,9 @@ function resizeDematenAndCanvas(scaleAmount) {
         var newNotationDivRect = notationDiv.getBoundingClientRect();
         deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount);
 
-        // time2x will skip navigation if __navigationLocked is true
-        // Also check here as defense in depth
-        if (msc_wz$$module$synpdf && !window.__navigationLocked) {
-            console.log('[resizeDematenAndCanvas] calling time2x - locked:', window.__navigationLocked);
+        // Only navigate to current measure if NOT paused
+        if (!isPaused && msc_wz$$module$synpdf) {
             msc_wz$$module$synpdf.time2x((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf);
-        } else {
-            console.log('[resizeDematenAndCanvas] SKIPPING time2x - locked:', window.__navigationLocked);
         }
     }
 }
@@ -1197,10 +1208,10 @@ function scaleCanvasElements(scaleAmount) {
     var canvases = document.getElementsByTagName('canvas');
     for (var i = 0; i < canvases.length; i++) {
         var canvas = canvases[i];
-        var currentWidth = canvas.getBoundingClientRect().width;
-        var currentHeight = canvas.getBoundingClientRect().height;
-        canvas.style.width = (currentWidth * (scaleAmount / 100)) + 'px';
-        canvas.style.height = (currentHeight * (scaleAmount / 100)) + 'px';
+        var currentWidth = canvas.style.width;
+        var currentHeight = canvas.style.height;
+        canvas.style.width = (parseFloat(currentWidth) * (scaleAmount / 100)) + 'px';
+        canvas.style.height = (parseFloat(currentHeight) * (scaleAmount / 100)) + 'px';
         // canvas.style.marginLeft = 'auto';
         // canvas.style.marginRight = 'auto';
     }

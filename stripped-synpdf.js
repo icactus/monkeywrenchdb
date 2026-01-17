@@ -697,27 +697,6 @@ Wijzer$$module$synpdf.prototype.setOffsetX = function () {
 };
 
 Wijzer$$module$synpdf.prototype.time2x = function (a) {
-    // Block all autoscroll when navigation is locked (paused after playing)
-    // Check both internal flag AND actual player state
-    // Check for pinch zoom - never autoscroll while pinching
-    if (window.__isPinching) {
-        console.log('[time2x] BLOCKED by pinch zoom');
-        return;
-    }
-
-    var actuallyPaused = this.paused;
-    if (typeof yubchk$$module$synpdf !== 'undefined' && yubchk$$module$synpdf && elmed$$module$synpdf) {
-        // YouTube - paused if not playing (state !== 1)
-        actuallyPaused = actuallyPaused || elmed$$module$synpdf.getPlayerState?.() !== 1;
-    } else if (elmed$$module$synpdf && typeof elmed$$module$synpdf.paused !== 'undefined') {
-        // HTML5 video
-        actuallyPaused = actuallyPaused || elmed$$module$synpdf.paused;
-    }
-
-    if (window.__navigationLocked && actuallyPaused) {
-        return;
-    }
-
     var b, c;
     this.cursorTime = a;
 
@@ -894,10 +873,6 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
 
 // Vertical scroll function
 function doeRol$$module$synpdf(a, b) {
-    // Skip scroll if navigation is locked and actually paused
-    if (window.__navigationLocked && window.msc_wz$$module$synpdf?.paused) {
-        return;
-    }
     a = Math.round(a);
     if (deNot$$module$synpdf.scrollTop !== a) {
         deNot$$module$synpdf.style["scroll-behavior"] = b ? "auto" : "smooth"; // b=1 means auto
@@ -907,10 +882,6 @@ function doeRol$$module$synpdf(a, b) {
 
 // Horizontal scroll function
 function scrollHorizontally(targetX, instant) {
-    // Skip scroll if navigation is locked
-    if (window.__navigationLocked) {
-        return;
-    }
     var notation = deNot$$module$synpdf;
     targetX = Math.round(targetX);
     if (notation.scrollLeft !== targetX) {
@@ -1009,7 +980,6 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, shiftKey) {
                 d = deTijden$$module$synpdf[b].t;
                 currentMeasureTime = d;
                 window.__lastMeasureClickTime = Date.now(); // Track when user clicked on a measure
-                window.__navigationLocked = false; // Unlock navigation for intentional seek
                 var f = b < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[b + 1].t : d + 2;
                 // Use clicked box dimensions for position calculation
                 b = d + (f - d) * (a - clickedBox.x - clickedBoxOffset) / clickedBox.w;
@@ -1282,16 +1252,9 @@ DummyPlayer$$module$synpdf.prototype.pause = function () {
     this.clearKlok();
     this.paused = !0;
     this.klok = -1;
-    // Lock navigation when paused only if played before
-    if (window.__playerHasPlayed) {
-        window.__navigationLocked = true;
-    }
 };
 DummyPlayer$$module$synpdf.prototype.play = function () {
     this.paused = !1;
-    window.__playerHasPlayed = true;
-    // Unlock navigation when playing
-    window.__navigationLocked = false;
     // Re-show measure highlight if it was hidden during annotation mode zoom
     $('.demaat').show();
     $('.linked-maatloper').show();
@@ -1326,10 +1289,6 @@ function setPagenum$$module$synpdf(a) {
 }
 
 function doeRol$$module$synpdf(a, b) {
-    // Skip scroll if navigation is locked
-    if (window.__navigationLocked) {
-        return;
-    }
     if (0 > a) {
         a = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
         deNot$$module$synpdf.scrollTop = 0;
@@ -2110,20 +2069,11 @@ async function onPlayerStateChange(event) {
     }
 
     if (event.data == YT.PlayerState.PLAYING) {
-        console.log('[YT-STATE] PLAYING - unlocking navigation');
-        window.__playerHasPlayed = true; // Mark that player has played at least once
         dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
         setPauseState$$module$synpdf(false);
-        window.__navigationLocked = false; // Unlock navigation when playing
     } else {
-        console.log('[YT-STATE] NOT PLAYING (state=' + event.data + ')');
         dummyPlayer$$module$synpdf.clearKlok();
         setPauseState$$module$synpdf(true);
-        // Only lock navigation if player has played at least once (don't lock on initial load)
-        if (window.__playerHasPlayed) {
-            console.log('[YT-STATE] Locking navigation (player has played before)');
-            window.__navigationLocked = true;
-        }
     }
 
     if (event.data == YT.PlayerState.PAUSED) {
@@ -2668,21 +2618,17 @@ $(document).ready(function () {
         document.addEventListener('touchstart', function (e) {
             if (e.touches.length === 2 && isInNotationScroll(e.target)) {
                 isPinching = true;
-                window.__isPinching = true; // Expose global flag
                 startDist = getDistance(e.touches);
                 lastDist = startDist;
                 var center = getCenter(e.touches);
                 pinchCenterX = center.x;
                 pinchCenterY = center.y;
 
-                // Set transform origin to pinch center (relative to CONTENT ELEMENT)
-                var visualEl = document.getElementById('notation');
-                if (visualEl) {
-                    var rect = visualEl.getBoundingClientRect();
-                    var originX = ((pinchCenterX - rect.left) / rect.width * 100) + '%';
-                    var originY = ((pinchCenterY - rect.top) / rect.height * 100) + '%';
-                    visualEl.style.transformOrigin = originX + ' ' + originY;
-                }
+                // Set transform origin to pinch center (relative to el)
+                var rect = el.getBoundingClientRect();
+                var originX = ((pinchCenterX - rect.left) / rect.width * 100) + '%';
+                var originY = ((pinchCenterY - rect.top) / rect.height * 100) + '%';
+                el.style.transformOrigin = originX + ' ' + originY;
 
                 // Hide annotation canvases during gesture using CSS class (has !important)
                 document.body.classList.add('annotations-hidden');
@@ -2696,9 +2642,8 @@ $(document).ready(function () {
                 // Calculate current scale ratio (no clamping - natural zoom)
                 var ratio = lastDist / startDist;
 
-                // Apply CSS transform for visual feedback to CONTENT
-                var visualEl = document.getElementById('notation');
-                if (visualEl) visualEl.style.transform = 'scale(' + ratio + ')';
+                // Apply CSS transform for visual feedback
+                el.style.transform = 'scale(' + ratio + ')';
 
                 // Prevent default to stop scrolling during pinch
                 if (e.cancelable) e.preventDefault();
@@ -2707,6 +2652,10 @@ $(document).ready(function () {
 
         document.addEventListener('touchend', function (e) {
             if (isPinching) {
+                // Remove transform preview
+                el.style.transform = '';
+                el.style.transformOrigin = '';
+
                 // Show annotation canvases again (remove the hiding class)
                 document.body.classList.remove('annotations-hidden');
 
@@ -2730,70 +2679,32 @@ $(document).ready(function () {
                         }
 
                         // === SCROLL PRESERVATION ===
-                        // Calculate the content position under the pinch center BEFORE anything changes
-                        // Note: el still has transform applied, so use scrollLeft/Top and calculate
-                        // Avoid divide by zero
-                        var scrollWidth = el.scrollWidth;
-                        var scrollHeight = el.scrollHeight;
+                        // Calculate the content position under the pinch center BEFORE resize
                         var elRect = el.getBoundingClientRect();
+                        // Position of pinch center relative to el's viewport position
                         var relX = pinchCenterX - elRect.left;
                         var relY = pinchCenterY - elRect.top;
-
-                        var pctY = (scrollHeight > 0) ? (el.scrollTop + relY) / scrollHeight : 0;
-
-                        // Remove transform and resize
-                        var visualEl = document.getElementById('notation');
-                        if (visualEl) {
-                            visualEl.style.transform = '';
-                            visualEl.style.transformOrigin = '';
-                        }
+                        // Content position under the pinch (scroll + relative offset)
+                        var contentX = el.scrollLeft + relX;
+                        var contentY = el.scrollTop + relY;
 
                         // Do the actual resize
                         if (typeof resizeDematenAndCanvas === 'function') {
                             resizeDematenAndCanvas(ratio * 100);
                         }
 
-                        // Calculate new scroll position using PRESERVED PROPORTIONS
-                        // This ensures the point under the pinch remains at the same relative position in the document
-                        var newScrollWidth = el.scrollWidth;
-                        var newScrollHeight = el.scrollHeight;
-                        var newElRect = el.getBoundingClientRect();
-                        var newRelX = pinchCenterX - newElRect.left;
-                        var newRelY = pinchCenterY - newElRect.top;
-
-                        // Force instant scroll to prevent smooth scrolling interference
-                        var prevBehavior = el.style.scrollBehavior;
-                        el.style.scrollBehavior = 'auto';
-
-                        el.scrollLeft = (pctX * newScrollWidth) - newRelX;
-                        el.scrollTop = (pctY * newScrollHeight) - newRelY;
-
-                        // Restore scroll behavior immediately
-                        if (prevBehavior) {
-                            el.style.scrollBehavior = prevBehavior;
-                        } else {
-                            el.style.removeProperty('scroll-behavior');
-                        }
-                    } else {
-                        // No meaningful zoom change, just remove transform
-                        var visualEl = document.getElementById('notation');
-                        if (visualEl) {
-                            visualEl.style.transform = '';
-                            visualEl.style.transformOrigin = '';
-                        }
-                    }
-                } else {
-                    // No valid distances, just remove transform
-                    var visualEl = document.getElementById('notation');
-                    if (visualEl) {
-                        visualEl.style.transform = '';
-                        visualEl.style.transformOrigin = '';
+                        // After resize, position the pinch center's content back to the same screen location
+                        // Content scaled by ratio, so new content position = old * ratio
+                        var newContentX = contentX * ratio;
+                        var newContentY = contentY * ratio;
+                        // Set scroll so that position is at the same relative screen location
+                        el.scrollLeft = newContentX - relX;
+                        el.scrollTop = newContentY - relY;
                     }
                 }
 
                 // Reset state
                 isPinching = false;
-                window.__isPinching = false; // Reset global flag
                 startDist = 0;
                 lastDist = 0;
             }
