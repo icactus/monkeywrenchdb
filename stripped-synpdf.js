@@ -2659,22 +2659,41 @@ $(document).ready(function () {
 
                     // Only trigger if there's any meaningful change (> 1%)
                     if (Math.abs(ratio - 1.0) > 0.01) {
-                        // Check if annotation toolbar is visible (more reliable than window.annotationMode)
+                        // Check if annotation toolbar is visible
                         var toolbar = document.getElementById('annotation-toolbar');
                         var inAnnotationMode = toolbar && toolbar.style.display !== 'none' && toolbar.offsetParent !== null;
 
                         // Also check paused state
-                        var isPaused = window.msc_wz$$module$synpdf && window.msc_wz$$module$synpdf.paused;
+                        var isPausedNow = window.msc_wz$$module$synpdf && window.msc_wz$$module$synpdf.paused;
 
-                        if (inAnnotationMode && isPaused) {
+                        if (inAnnotationMode && isPausedNow) {
                             // Hide measure highlight so it doesn't interfere with marking
                             $('.demaat').hide();
                             $('.linked-maatloper').hide();
                         }
 
+                        // === SCROLL PRESERVATION ===
+                        // Calculate the content position under the pinch center BEFORE resize
+                        var elRect = el.getBoundingClientRect();
+                        // Position of pinch center relative to el's viewport position
+                        var relX = pinchCenterX - elRect.left;
+                        var relY = pinchCenterY - elRect.top;
+                        // Content position under the pinch (scroll + relative offset)
+                        var contentX = el.scrollLeft + relX;
+                        var contentY = el.scrollTop + relY;
+
+                        // Do the actual resize
                         if (typeof resizeDematenAndCanvas === 'function') {
                             resizeDematenAndCanvas(ratio * 100);
                         }
+
+                        // After resize, position the pinch center's content back to the same screen location
+                        // Content scaled by ratio, so new content position = old * ratio
+                        var newContentX = contentX * ratio;
+                        var newContentY = contentY * ratio;
+                        // Set scroll so that position is at the same relative screen location
+                        el.scrollLeft = newContentX - relX;
+                        el.scrollTop = newContentY - relY;
                     }
                 }
 
