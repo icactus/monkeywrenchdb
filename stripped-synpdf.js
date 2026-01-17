@@ -697,6 +697,9 @@ Wijzer$$module$synpdf.prototype.setOffsetX = function () {
 };
 
 Wijzer$$module$synpdf.prototype.time2x = function (a) {
+    // Skip ALL scrolling when paused - prevents jump on zoom when paused
+    if (this.paused) return;
+
     var b, c;
     this.cursorTime = a;
 

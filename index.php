@@ -32,8 +32,8 @@ $is_share_link = isset($_GET['share']);
     <meta name="theme-color" content="#000000" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
-    <link rel="stylesheet" href="assets/css/fonts.css?v=3" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=210" />
+    <link rel="stylesheet" href="assets/css/fonts.css?v=33" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=240" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=65"></script>
+        <script src="annotation-layer.js?v=95"></script>
     <?php endif; ?>
     <title>monkey wrench database</title>
     <!-- Load dark mode preference early to prevent flash -->
@@ -652,8 +652,8 @@ $is_share_link = isset($_GET['share']);
     <div id="notification">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=268"></script>
-    <script src="stripped-synpdf-extras.js?v=219"></script>
+    <script src="stripped-synpdf.js?v=290"></script>
+    <script src="stripped-synpdf-extras.js?v=249"></script>
     <script>
         // Dark Mode menu toggles - wire up immediately on page load
         $(function () {
