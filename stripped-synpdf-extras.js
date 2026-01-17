@@ -1143,13 +1143,10 @@ function resizeDematenAndCanvas(scaleAmount) {
         var notationDivRect = notationDiv.getBoundingClientRect();
         scaleCanvasElements(scaleAmount);
 
-        // Check if annotation toolbar is visible (more reliable than window.annotationMode)
-        var toolbar = document.getElementById('annotation-toolbar');
-        var inAnnotationMode = toolbar && toolbar.style.display !== 'none' && toolbar.offsetParent !== null;
+        // Skip ALL navigation when paused - allows free zoom/pan without jumping to current measure
         var isPaused = msc_wz$$module$synpdf && msc_wz$$module$synpdf.paused;
-        var skipNavigation = inAnnotationMode && isPaused;
 
-        if (!skipNavigation && window.msc_wz$$module$synpdf) {
+        if (!isPaused && window.msc_wz$$module$synpdf) {
             msc_wz$$module$synpdf.setOffsetX();
         }
 
@@ -1157,8 +1154,8 @@ function resizeDematenAndCanvas(scaleAmount) {
         var newNotationDivRect = notationDiv.getBoundingClientRect();
         deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount);
 
-        // Only navigate to current measure if NOT in annotation mode and NOT paused
-        if (!skipNavigation && msc_wz$$module$synpdf) {
+        // Only navigate to current measure if NOT paused
+        if (!isPaused && msc_wz$$module$synpdf) {
             msc_wz$$module$synpdf.time2x((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf);
         }
     }

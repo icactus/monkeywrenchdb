@@ -2636,9 +2636,8 @@ $(document).ready(function () {
             if (isPinching && e.touches.length === 2) {
                 lastDist = getDistance(e.touches);
 
-                // Calculate current scale ratio
+                // Calculate current scale ratio (no clamping - natural zoom)
                 var ratio = lastDist / startDist;
-                ratio = Math.max(0.5, Math.min(2.0, ratio));
 
                 // Apply CSS transform for visual feedback
                 el.style.transform = 'scale(' + ratio + ')';
@@ -2656,12 +2655,10 @@ $(document).ready(function () {
 
                 if (startDist > 0 && lastDist > 0) {
                     var ratio = lastDist / startDist;
+                    // No clamping - let zoom be completely natural
 
-                    // Wider limits for smoother continuous zoom (0.25x to 4x per gesture)
-                    ratio = Math.max(0.25, Math.min(4.0, ratio));
-
-                    // Only trigger if there's a meaningful change (> 3%)
-                    if (Math.abs(ratio - 1.0) > 0.03) {
+                    // Only trigger if there's any meaningful change (> 1%)
+                    if (Math.abs(ratio - 1.0) > 0.01) {
                         // Check if annotation toolbar is visible (more reliable than window.annotationMode)
                         var toolbar = document.getElementById('annotation-toolbar');
                         var inAnnotationMode = toolbar && toolbar.style.display !== 'none' && toolbar.offsetParent !== null;
