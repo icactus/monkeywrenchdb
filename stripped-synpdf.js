@@ -2694,10 +2694,6 @@ $(document).ready(function () {
 
         document.addEventListener('touchend', function (e) {
             if (isPinching) {
-                // Remove transform preview
-                el.style.transform = '';
-                el.style.transformOrigin = '';
-
                 // Show annotation canvases again (remove the hiding class)
                 document.body.classList.remove('annotations-hidden');
 
@@ -2721,16 +2717,28 @@ $(document).ready(function () {
                         }
 
                         // === SCROLL PRESERVATION ===
-                        // Calculate the content position under the pinch center BEFORE resize
-                        var elRect = el.getBoundingClientRect();
-                        // Position of pinch center relative to el's viewport position
-                        var relX = pinchCenterX - elRect.left;
-                        var relY = pinchCenterY - elRect.top;
-                        // Content position under the pinch (scroll + relative offset)
-                        var contentX = el.scrollLeft + relX;
-                        var contentY = el.scrollTop + relY;
+                        // Calculate the content position under the pinch center BEFORE anything changes
+                        // Note: el still has transform applied, so use scrollLeft/Top and calculate
+                        var contentX = el.scrollLeft + (pinchCenterX - el.getBoundingClientRect().left);
+                        var contentY = el.scrollTop + (pinchCenterY - el.getBoundingClientRect().top);
+                        // Adjust for the CSS transform that's still applied
+                        // The content under pinch center in actual coordinates:
+                        var actualContentX = contentX / ratio;  // undo the visual transform
+                        var actualContentY = contentY / ratio;  // undo the visual transform
 
-                        console.log('[PINCH] BEFORE resize - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft, 'locked:', window.__navigationLocked, 'paused:', window.msc_wz$$module$synpdf?.paused);
+                        // Calculate where we want to scroll to AFTER resize
+                        var newContentX = actualContentX * ratio;  // will be same as contentX!
+                        var newContentY = actualContentY * ratio;  // will be same as contentY!
+
+                        console.log('[PINCH] BEFORE resize - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft, 'locked:', window.__navigationLocked);
+
+                        // Store current scroll position
+                        var scrollLeftBefore = el.scrollLeft;
+                        var scrollTopBefore = el.scrollTop;
+
+                        // Remove transform and resize in one batch
+                        el.style.transform = '';
+                        el.style.transformOrigin = '';
 
                         // Do the actual resize
                         if (typeof resizeDematenAndCanvas === 'function') {
@@ -2739,16 +2747,33 @@ $(document).ready(function () {
 
                         console.log('[PINCH] AFTER resize - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
 
-                        // After resize, position the pinch center's content back to the same screen location
-                        // Content scaled by ratio, so new content position = old * ratio
-                        var newContentX = contentX * ratio;
-                        var newContentY = contentY * ratio;
-                        // Set scroll so that position is at the same relative screen location
-                        el.scrollLeft = newContentX - relX;
-                        el.scrollTop = newContentY - relY;
-
-                        console.log('[PINCH] AFTER preservation - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
+                        // When navigation is locked (paused), DON'T do any scroll adjustment
+                        // Just keep the scroll where it was - pure zoom without navigation
+                        if (window.__navigationLocked) {
+                            // Restore scroll to exactly where it was (may have been modified by resize)
+                            el.scrollLeft = scrollLeftBefore;
+                            el.scrollTop = scrollTopBefore;
+                            console.log('[PINCH] LOCKED - restored scroll to:', el.scrollTop, el.scrollLeft);
+                        } else {
+                            // Normal scroll preservation - keep pinch center in place
+                            var elRect = el.getBoundingClientRect();
+                            var relX = pinchCenterX - elRect.left;
+                            var relY = pinchCenterY - elRect.top;
+                            var contentX = scrollLeftBefore + (pinchCenterX - el.getBoundingClientRect().left);
+                            var contentY = scrollTopBefore + (pinchCenterY - el.getBoundingClientRect().top);
+                            el.scrollLeft = (contentX * ratio) - relX;
+                            el.scrollTop = (contentY * ratio) - relY;
+                            console.log('[PINCH] AFTER preservation - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
+                        }
+                    } else {
+                        // No meaningful zoom change, just remove transform
+                        el.style.transform = '';
+                        el.style.transformOrigin = '';
                     }
+                } else {
+                    // No valid distances, just remove transform
+                    el.style.transform = '';
+                    el.style.transformOrigin = '';
                 }
 
                 // Reset state
