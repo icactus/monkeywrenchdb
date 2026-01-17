@@ -84,6 +84,7 @@
     // Toggle annotation mode
     window.toggleAnnotationMode = function () {
         annotationMode = !annotationMode;
+        window.annotationMode = annotationMode; // Expose to window for other scripts
         document.body.classList.toggle('annotation-mode', annotationMode);
 
         // Sync pen cursor state
