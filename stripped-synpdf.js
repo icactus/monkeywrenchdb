@@ -2108,14 +2108,19 @@ async function onPlayerStateChange(event) {
 
     if (event.data == YT.PlayerState.PLAYING) {
         console.log('[YT-STATE] PLAYING - unlocking navigation');
+        window.__playerHasPlayed = true; // Mark that player has played at least once
         dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
         setPauseState$$module$synpdf(false);
         window.__navigationLocked = false; // Unlock navigation when playing
     } else {
-        console.log('[YT-STATE] NOT PLAYING (state=' + event.data + ') - locking navigation');
+        console.log('[YT-STATE] NOT PLAYING (state=' + event.data + ')');
         dummyPlayer$$module$synpdf.clearKlok();
         setPauseState$$module$synpdf(true);
-        window.__navigationLocked = true; // Lock navigation when not playing
+        // Only lock navigation if player has played at least once (don't lock on initial load)
+        if (window.__playerHasPlayed) {
+            console.log('[YT-STATE] Locking navigation (player has played before)');
+            window.__navigationLocked = true;
+        }
     }
 
     if (event.data == YT.PlayerState.PAUSED) {
@@ -2730,13 +2735,16 @@ $(document).ready(function () {
                         var newContentX = actualContentX * ratio;  // will be same as contentX!
                         var newContentY = actualContentY * ratio;  // will be same as contentY!
 
-                        console.log('[PINCH] BEFORE resize - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft, 'locked:', window.__navigationLocked);
+                        console.log('[PINCH] BEFORE resize - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
 
-                        // Store current scroll position
-                        var scrollLeftBefore = el.scrollLeft;
-                        var scrollTopBefore = el.scrollTop;
+                        // Calculate pinch center content position BEFORE resize
+                        var elRect = el.getBoundingClientRect();
+                        var relX = pinchCenterX - elRect.left;
+                        var relY = pinchCenterY - elRect.top;
+                        var contentX = el.scrollLeft + relX;
+                        var contentY = el.scrollTop + relY;
 
-                        // Remove transform and resize in one batch
+                        // Remove transform and resize
                         el.style.transform = '';
                         el.style.transformOrigin = '';
 
@@ -2747,24 +2755,15 @@ $(document).ready(function () {
 
                         console.log('[PINCH] AFTER resize - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
 
-                        // When navigation is locked (paused), DON'T do any scroll adjustment
-                        // Just keep the scroll where it was - pure zoom without navigation
-                        if (window.__navigationLocked) {
-                            // Restore scroll to exactly where it was (may have been modified by resize)
-                            el.scrollLeft = scrollLeftBefore;
-                            el.scrollTop = scrollTopBefore;
-                            console.log('[PINCH] LOCKED - restored scroll to:', el.scrollTop, el.scrollLeft);
-                        } else {
-                            // Normal scroll preservation - keep pinch center in place
-                            var elRect = el.getBoundingClientRect();
-                            var relX = pinchCenterX - elRect.left;
-                            var relY = pinchCenterY - elRect.top;
-                            var contentX = scrollLeftBefore + (pinchCenterX - el.getBoundingClientRect().left);
-                            var contentY = scrollTopBefore + (pinchCenterY - el.getBoundingClientRect().top);
-                            el.scrollLeft = (contentX * ratio) - relX;
-                            el.scrollTop = (contentY * ratio) - relY;
-                            console.log('[PINCH] AFTER preservation - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
-                        }
+                        // Normal scroll preservation - keep pinch center in place
+                        // Content scaled by ratio, adjust scroll to keep same content at pinch point
+                        var newElRect = el.getBoundingClientRect();
+                        var newRelX = pinchCenterX - newElRect.left;
+                        var newRelY = pinchCenterY - newElRect.top;
+                        el.scrollLeft = (contentX * ratio) - newRelX;
+                        el.scrollTop = (contentY * ratio) - newRelY;
+
+                        console.log('[PINCH] AFTER preservation - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
                     } else {
                         // No meaningful zoom change, just remove transform
                         el.style.transform = '';
