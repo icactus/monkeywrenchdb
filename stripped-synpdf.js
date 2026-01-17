@@ -2728,10 +2728,14 @@ $(document).ready(function () {
                         var contentX = el.scrollLeft + relX;
                         var contentY = el.scrollTop + relY;
 
+                        console.log('[PINCH] BEFORE resize - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft, 'locked:', window.__navigationLocked, 'paused:', window.msc_wz$$module$synpdf?.paused);
+
                         // Do the actual resize
                         if (typeof resizeDematenAndCanvas === 'function') {
                             resizeDematenAndCanvas(ratio * 100);
                         }
+
+                        console.log('[PINCH] AFTER resize - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
 
                         // After resize, position the pinch center's content back to the same screen location
                         // Content scaled by ratio, so new content position = old * ratio
@@ -2740,6 +2744,8 @@ $(document).ready(function () {
                         // Set scroll so that position is at the same relative screen location
                         el.scrollLeft = newContentX - relX;
                         el.scrollTop = newContentY - relY;
+
+                        console.log('[PINCH] AFTER preservation - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
                     }
                 }
 
