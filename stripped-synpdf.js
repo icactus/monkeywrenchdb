@@ -2590,12 +2590,21 @@ $(document).ready(function () {
         var startDist = 0;
         var lastDist = 0;
         var isPinching = false;
+        var pinchCenterX = 0;
+        var pinchCenterY = 0;
 
         function getDistance(touches) {
             if (touches.length < 2) return 0;
             var dx = touches[0].clientX - touches[1].clientX;
             var dy = touches[0].clientY - touches[1].clientY;
             return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function getCenter(touches) {
+            return {
+                x: (touches[0].clientX + touches[1].clientX) / 2,
+                y: (touches[0].clientY + touches[1].clientY) / 2
+            };
         }
 
         function isInNotationScroll(target) {
@@ -2608,13 +2617,29 @@ $(document).ready(function () {
                 isPinching = true;
                 startDist = getDistance(e.touches);
                 lastDist = startDist;
-                console.log('[PinchZoom] Start (capture), dist:', startDist);
+                var center = getCenter(e.touches);
+                pinchCenterX = center.x;
+                pinchCenterY = center.y;
+
+                // Set transform origin to pinch center (relative to el)
+                var rect = el.getBoundingClientRect();
+                var originX = ((pinchCenterX - rect.left) / rect.width * 100) + '%';
+                var originY = ((pinchCenterY - rect.top) / rect.height * 100) + '%';
+                el.style.transformOrigin = originX + ' ' + originY;
             }
         }, { passive: true, capture: true });
 
         document.addEventListener('touchmove', function (e) {
             if (isPinching && e.touches.length === 2) {
                 lastDist = getDistance(e.touches);
+
+                // Calculate current scale ratio
+                var ratio = lastDist / startDist;
+                ratio = Math.max(0.5, Math.min(2.0, ratio));
+
+                // Apply CSS transform for visual feedback
+                el.style.transform = 'scale(' + ratio + ')';
+
                 // Prevent default to stop scrolling during pinch
                 if (e.cancelable) e.preventDefault();
             }
@@ -2622,23 +2647,18 @@ $(document).ready(function () {
 
         document.addEventListener('touchend', function (e) {
             if (isPinching) {
-                console.log('[PinchZoom] End (capture), startDist:', startDist, 'lastDist:', lastDist);
+                // Remove transform preview
+                el.style.transform = '';
+                el.style.transformOrigin = '';
 
                 if (startDist > 0 && lastDist > 0) {
                     var ratio = lastDist / startDist;
-
-                    // Clamp ratio to reasonable bounds (0.5x to 2x per gesture)
                     ratio = Math.max(0.5, Math.min(2.0, ratio));
-
-                    console.log('[PinchZoom] Ratio:', ratio);
 
                     // Only trigger if there's a meaningful change (> 5%)
                     if (Math.abs(ratio - 1.0) > 0.05) {
                         if (typeof resizeDematenAndCanvas === 'function') {
-                            console.log('[PinchZoom] Calling resizeDematenAndCanvas with:', ratio * 100);
                             resizeDematenAndCanvas(ratio * 100);
-                        } else {
-                            console.log('[PinchZoom] resizeDematenAndCanvas not found!');
                         }
                     }
                 }
@@ -2650,7 +2670,7 @@ $(document).ready(function () {
             }
         }, { passive: true, capture: true });
 
-        console.log('[PinchZoom] Capture-phase handler attached');
+        console.log('[PinchZoom] Capture-phase handler with visual feedback attached');
         return true;
     }
 
