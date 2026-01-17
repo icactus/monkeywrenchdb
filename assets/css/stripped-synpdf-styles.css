@@ -2559,25 +2559,18 @@ body.pen-cursor-active #pdf-container {
 /* Pen Popover */
 #pen-popover {
     display: none;
-    position: absolute;
-    bottom: 42px;
+    position: fixed;
+    bottom: 130px;
     left: 50%;
     transform: translateX(-50%);
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     padding: 8px;
-    z-index: 1000;
+    z-index: 10001;
     white-space: nowrap;
-}
-
-/* On small screens, position from right edge of toolbar instead */
-@media screen and (max-width: 400px) {
-    #pen-popover {
-        left: auto;
-        right: -60px;
-        transform: none;
-    }
+    max-width: calc(100vw - 20px);
+    overflow-x: auto;
 }
 
 #pen-popover.visible {
@@ -2588,6 +2581,31 @@ body.pen-cursor-active #pdf-container {
     display: flex;
     gap: 4px;
     align-items: center;
+}
+
+/* Scale down pen popover on very small screens */
+@media screen and (max-width: 360px) {
+    #pen-popover {
+        padding: 6px;
+    }
+
+    .pen-popover-content {
+        gap: 2px;
+    }
+
+    .color-swatch {
+        width: 18px;
+        height: 18px;
+    }
+
+    .width-btn {
+        width: 22px;
+        height: 18px;
+    }
+
+    .toolbar-divider-small {
+        margin: 0 2px;
+    }
 }
 
 /* Color Swatches */
