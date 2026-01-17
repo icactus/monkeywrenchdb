@@ -50,7 +50,7 @@ $is_share_link = isset($_GET['share']);
             if (localStorage.getItem('darkMode') === '1') {
                 document.documentElement.classList.add('inverted');
             }
-        } catch (e) {}
+        } catch (e) { }
     </script>
 </head>
 
@@ -111,6 +111,14 @@ $is_share_link = isset($_GET['share']);
                                 </a>
                             <?php endif; ?>
                             <div class="mobile-menu-divider"></div>
+                            <div class="mobile-controls-row" style="padding: 8px 16px;">
+                                <span class="mobile-controls-label">Dark Mode</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="invert-check-menu-mobile">
+                                    <span class="toggle-slider"><span class="toggle-slider-knob"></span></span>
+                                </label>
+                            </div>
+                            <div class="mobile-menu-divider"></div>
                             <a href="javascript:void(0)"
                                 onclick="toggleAboutLinkMenu(); toggleMobileHeaderMenu();">About</a>
                             <a href="javascript:void(0)"
@@ -167,6 +175,15 @@ $is_share_link = isset($_GET['share']);
                                             Live Edit
                                         </a>
                                     <?php endif; ?>
+                                    <div class="nav-dropdown-divider"></div>
+                                    <div
+                                        style="display:flex; align-items:center; justify-content:space-between; padding:10px 16px;">
+                                        <span style="font-size:14px; color:#333;">Dark Mode</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="invert-check-menu-desktop">
+                                            <span class="toggle-slider"><span class="toggle-slider-knob"></span></span>
+                                        </label>
+                                    </div>
                                     <div class="nav-dropdown-divider"></div>
                                     <a href="auth_logout.php" class="nav-dropdown-logout">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -643,7 +660,7 @@ $is_share_link = isset($_GET['share']);
     <div id="notification">
         Link copied to clipboard!
     </div>
-    <script src="stripped-synpdf.js?v=248"></script>
+    <script src="stripped-synpdf.js?v=251"></script>
     <script src="stripped-synpdf-extras.js?v=212"></script>
     <script>
         // Register Service Worker for PWA with auto-update

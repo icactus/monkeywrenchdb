@@ -442,15 +442,6 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 </button>
             </div>
             <div id="extra-tools-menu-dock">
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px;">
-                    <span style="font-size:14px; color:#333;">Dark Mode</span>
-                    <label class="toggle-switch" style="position:relative; display:inline-block; width:44px; height:24px; margin:0;">
-                        <input type="checkbox" id="invert-check-dock" style="opacity:0; width:0; height:0;">
-                        <span class="toggle-slider" style="position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:24px; transition:.2s;">
-                            <span style="position:absolute; height:20px; width:20px; left:2px; bottom:2px; background:white; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
-                        </span>
-                    </label>
-                </div>
                 <button id="share-btn-dock">Share Link</button>
             </div>
             <div id="rollijn" class="dashed"></div>
@@ -510,10 +501,11 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     });
 
     // Wire up new Dock Menu Items
-    // Dark Mode
-    $('#invert-check-dock, #invert-check-mobile').off('change').on('change', function () {
+    // Dark Mode - handles all dark mode toggles: mobile drawer, mobile menu, desktop menu
+    const darkModeSelectors = '#invert-check-mobile, #invert-check-menu-mobile, #invert-check-menu-desktop';
+    $(darkModeSelectors).off('change').on('change', function () {
         const isDark = $(this).is(':checked');
-        $('#invert-check-dock, #invert-check-mobile').prop('checked', isDark);
+        $(darkModeSelectors).prop('checked', isDark);
         $('html').toggleClass('inverted', isDark);
 
         // Swap monkey logo for dark mode
@@ -533,7 +525,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     // Sync checkbox and logo with loaded dark mode preference (from head script)
     try {
         const isDark = localStorage.getItem('darkMode') === '1';
-        $('#invert-check-dock, #invert-check-mobile').prop('checked', isDark);
+        $(darkModeSelectors).prop('checked', isDark);
         const logo = document.getElementById('monkey-logo');
         if (logo && isDark) {
             logo.src = 'assets/img/monkeydark.png';
