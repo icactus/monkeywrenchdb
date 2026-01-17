@@ -2541,6 +2541,38 @@ body.pen-cursor-active #pdf-container {
     background: #4a90d9 !important;
 }
 
+/* Small screen optimization for Annotation Toolbar */
+@media screen and (max-width: 400px) {
+    #annotation-toolbar {
+        padding: 6px 8px;
+        gap: 2px;
+        bottom: 70px;
+        /* Adjust bottom position slightly */
+        width: 96%;
+        /* Ensure it fits within screen width */
+        max-width: 96%;
+        justify-content: space-between;
+        /* Distribute space evenly if tight */
+        flex-wrap: nowrap;
+        /* Prevent wrapping */
+    }
+
+    .annotation-tool-btn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .annotation-tool-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .toolbar-divider {
+        margin: 0 2px;
+        height: 18px;
+    }
+}
+
 .annotation-tool-btn.active svg {
     stroke: white;
 }
