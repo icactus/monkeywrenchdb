@@ -894,10 +894,8 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
 
 // Vertical scroll function
 function doeRol$$module$synpdf(a, b) {
-    console.log('[doeRol] locked:', window.__navigationLocked, 'paused:', window.msc_wz$$module$synpdf?.paused, 'target:', a);
     // Skip scroll if navigation is locked and actually paused
     if (window.__navigationLocked && window.msc_wz$$module$synpdf?.paused) {
-        console.log('[doeRol] BLOCKED by guard');
         return;
     }
     a = Math.round(a);
@@ -909,10 +907,8 @@ function doeRol$$module$synpdf(a, b) {
 
 // Horizontal scroll function
 function scrollHorizontally(targetX, instant) {
-    console.log('[scrollHoriz] locked:', window.__navigationLocked, 'paused:', window.msc_wz$$module$synpdf?.paused, 'target:', targetX);
     // Skip scroll if navigation is locked
     if (window.__navigationLocked) {
-        console.log('[scrollHoriz] BLOCKED by guard');
         return;
     }
     var notation = deNot$$module$synpdf;
@@ -1330,10 +1326,8 @@ function setPagenum$$module$synpdf(a) {
 }
 
 function doeRol$$module$synpdf(a, b) {
-    console.log('[doeRol-real] locked:', window.__navigationLocked, 'paused:', window.msc_wz$$module$synpdf?.paused, 'target:', a);
     // Skip scroll if navigation is locked
     if (window.__navigationLocked) {
-        console.log('[doeRol-real] BLOCKED by guard');
         return;
     }
     if (0 > a) {
@@ -2734,17 +2728,13 @@ $(document).ready(function () {
                         // === SCROLL PRESERVATION ===
                         // Calculate the content position under the pinch center BEFORE anything changes
                         // Note: el still has transform applied, so use scrollLeft/Top and calculate
-                        console.log('[PINCH] BEFORE resize - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
-
-                        // Calculate pinch center as PROPORTION of total scrollable content
-                        // This handles non-linear scaling (e.g. fixed headers vs content) robustly
+                        // Avoid divide by zero
                         var scrollWidth = el.scrollWidth;
                         var scrollHeight = el.scrollHeight;
                         var elRect = el.getBoundingClientRect();
                         var relX = pinchCenterX - elRect.left;
                         var relY = pinchCenterY - elRect.top;
 
-                        // Avoid divide by zero
                         var pctX = (scrollWidth > 0) ? (el.scrollLeft + relX) / scrollWidth : 0;
                         var pctY = (scrollHeight > 0) ? (el.scrollTop + relY) / scrollHeight : 0;
 
@@ -2757,8 +2747,6 @@ $(document).ready(function () {
                             resizeDematenAndCanvas(ratio * 100);
                         }
 
-                        console.log('[PINCH] AFTER resize - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
-
                         // Calculate new scroll position using PRESERVED PROPORTIONS
                         // This ensures the point under the pinch remains at the same relative position in the document
                         var newScrollWidth = el.scrollWidth;
@@ -2767,10 +2755,19 @@ $(document).ready(function () {
                         var newRelX = pinchCenterX - newElRect.left;
                         var newRelY = pinchCenterY - newElRect.top;
 
+                        // Force instant scroll to prevent smooth scrolling interference
+                        var prevBehavior = el.style.scrollBehavior;
+                        el.style.scrollBehavior = 'auto';
+
                         el.scrollLeft = (pctX * newScrollWidth) - newRelX;
                         el.scrollTop = (pctY * newScrollHeight) - newRelY;
 
-                        console.log('[PINCH] AFTER preservation - scrollTop:', el.scrollTop, 'scrollLeft:', el.scrollLeft);
+                        // Restore scroll behavior immediately
+                        if (prevBehavior) {
+                            el.style.scrollBehavior = prevBehavior;
+                        } else {
+                            el.style.removeProperty('scroll-behavior');
+                        }
                     } else {
                         // No meaningful zoom change, just remove transform
                         el.style.transform = '';

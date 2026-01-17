@@ -1197,10 +1197,10 @@ function scaleCanvasElements(scaleAmount) {
     var canvases = document.getElementsByTagName('canvas');
     for (var i = 0; i < canvases.length; i++) {
         var canvas = canvases[i];
-        var currentWidth = canvas.style.width;
-        var currentHeight = canvas.style.height;
-        canvas.style.width = (parseFloat(currentWidth) * (scaleAmount / 100)) + 'px';
-        canvas.style.height = (parseFloat(currentHeight) * (scaleAmount / 100)) + 'px';
+        var currentWidth = canvas.getBoundingClientRect().width;
+        var currentHeight = canvas.getBoundingClientRect().height;
+        canvas.style.width = (currentWidth * (scaleAmount / 100)) + 'px';
+        canvas.style.height = (currentHeight * (scaleAmount / 100)) + 'px';
         // canvas.style.marginLeft = 'auto';
         // canvas.style.marginRight = 'auto';
     }
