@@ -1635,11 +1635,17 @@ function readPdf$$module$synpdf(pdfData, dataType) {
     }
 }
 
-// Retry function for stalled/failed PDF loads
+// Retry function for stalled/failed PDF loads (with cache-busting)
 function retryPdfLoad$$module$synpdf() {
     if (lastPdfLoadParams$$module$synpdf) {
-        console.debug("[PDF] Retrying load");
-        readPdf$$module$synpdf(lastPdfLoadParams$$module$synpdf.pdfData, lastPdfLoadParams$$module$synpdf.dataType);
+        console.debug("[PDF] Retrying load with cache-bust");
+        let pdfUrl = lastPdfLoadParams$$module$synpdf.pdfData;
+        // Add cache-busting timestamp to bypass CDN cached partial downloads
+        if (typeof pdfUrl === 'string') {
+            const separator = pdfUrl.includes('?') ? '&' : '?';
+            pdfUrl = pdfUrl + separator + '_cb=' + Date.now();
+        }
+        readPdf$$module$synpdf(pdfUrl, lastPdfLoadParams$$module$synpdf.dataType);
     }
 }
 
