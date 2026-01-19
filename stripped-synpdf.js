@@ -230,6 +230,9 @@ var opt$$module$synpdf, times_arr$$module$synpdf, offset_js$$module$synpdf, pdf_
     TOFF$$module$synpdf = .01,
     elmed$$module$synpdf, msc_wz$$module$synpdf, doReadPdf$$module$synpdf, skipn$$module$synpdf = null,
     onYouTubeAPIContinue$$module$synpdf,
+    // PDF loading cancellation support
+    currentPdfLoadingTask$$module$synpdf = null,
+    lastPdfLoadParams$$module$synpdf = null,
 
     //default options for page reading//
     opt_default$$module$synpdf = {
@@ -1485,6 +1488,16 @@ async function buildAllPageShells$$module$synpdf() {
 }
 
 function readPdf$$module$synpdf(pdfData, dataType) {
+    // Cancel any existing PDF load
+    if (currentPdfLoadingTask$$module$synpdf) {
+        console.debug("[PDF] Cancelling previous load");
+        currentPdfLoadingTask$$module$synpdf.destroy();
+        currentPdfLoadingTask$$module$synpdf = null;
+    }
+
+    // Store params for retry
+    lastPdfLoadParams$$module$synpdf = { pdfData, dataType };
+
     initGlobals$$module$synpdf();
 
     let pdfCopy = pdfData;
@@ -1554,6 +1567,7 @@ function readPdf$$module$synpdf(pdfData, dataType) {
         console.debug("[PDF] PDF.js options:", pdfjsOptions);
 
         const loadingTask = pdfjsLib.getDocument(pdfjsOptions);
+        currentPdfLoadingTask$$module$synpdf = loadingTask; // Store for cancellation
 
         // Progress handler
         loadingTask.onProgress = function (progressData) {
@@ -1573,6 +1587,7 @@ function readPdf$$module$synpdf(pdfData, dataType) {
                         <div id="progress-container" style="width: 100%; text-align: center; margin: 20px 0;">
                             <progress id="progress-bar" value="0" max="100" style="width: 80%; height: 20px;"></progress>
                             <div id="progress-info" style="margin-top: 10px; font-size: 20px;"></div>
+                            <button id="pdf-retry-btn" onclick="retryPdfLoad$$module$synpdf()" style="margin-top: 12px; padding: 8px 20px; font-size: 14px; cursor: pointer; background: #f0f0f5; border: 1px solid #ccc; border-radius: 6px;">Retry</button>
                         </div>
                     `);
                 }
@@ -1592,12 +1607,19 @@ function readPdf$$module$synpdf(pdfData, dataType) {
         loadingTask.promise
             .then(function (pdf) {
                 console.debug("[PDF] PDF.js loaded successfully");
+                currentPdfLoadingTask$$module$synpdf = null; // Clear on success
                 pdfDoc$$module$synpdf = pdf;
                 $("#pagenum").attr("max", pdf.numPages);
                 shouldUpdate = false;
                 readPdfdoc$$module$synpdf();
             })
             .catch(function (error) {
+                currentPdfLoadingTask$$module$synpdf = null; // Clear on failure
+                // Ignore cancellation errors (expected when switching parts)
+                if (error.name === "RenderingCancelledException" || error.message?.includes("destroy")) {
+                    console.debug("[PDF] Load cancelled");
+                    return;
+                }
                 console.error("[PDF] PDF.js load failed:", error);
                 // Add detailed error handling
                 if (error.name === "InvalidPDFException") {
@@ -1610,6 +1632,15 @@ function readPdf$$module$synpdf(pdfData, dataType) {
             });
     }
 }
+
+// Retry function for stalled/failed PDF loads
+function retryPdfLoad$$module$synpdf() {
+    if (lastPdfLoadParams$$module$synpdf) {
+        console.debug("[PDF] Retrying load");
+        readPdf$$module$synpdf(lastPdfLoadParams$$module$synpdf.pdfData, lastPdfLoadParams$$module$synpdf.dataType);
+    }
+}
+
 
 
 let renderedPages = 1;
