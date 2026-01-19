@@ -1615,8 +1615,10 @@ function readPdf$$module$synpdf(pdfData, dataType) {
             })
             .catch(function (error) {
                 currentPdfLoadingTask$$module$synpdf = null; // Clear on failure
-                // Ignore cancellation errors (expected when switching parts)
-                if (error.name === "RenderingCancelledException" || error.message?.includes("destroy")) {
+                // Ignore cancellation/termination errors (expected when switching parts or retrying)
+                if (error.name === "RenderingCancelledException" ||
+                    error.message?.includes("destroy") ||
+                    error.message?.includes("terminated")) {
                     console.debug("[PDF] Load cancelled");
                     return;
                 }
