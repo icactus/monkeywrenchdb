@@ -436,7 +436,10 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
                 // Rename "Solo + Orchestra" to "<Instrument> + Orchestra"
                 if (originalSO && originalSO.length) {
                     groupedPieces[soloOrchestraKey] = originalSO;
-                    delete groupedPieces['Solo + Orchestra'];
+                    // Only delete if renaming to a different key
+                    if (soloOrchestraKey !== 'Solo + Orchestra') {
+                        delete groupedPieces['Solo + Orchestra'];
+                    }
                 }
 
                 // Rename "Solo + Piano" to "<Instrument> + Piano"
