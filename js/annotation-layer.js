@@ -88,12 +88,14 @@
         document.body.classList.toggle('annotation-mode', annotationMode);
 
         // Sync cursor state
-        document.body.classList.remove('pen-cursor-active', 'eraser-cursor-active');
+        document.body.classList.remove('pen-cursor-active', 'eraser-cursor-active', 'hand-cursor-active');
         if (annotationMode) {
             if (currentTool === 'pen') {
                 document.body.classList.add('pen-cursor-active');
             } else if (currentTool === 'eraser') {
                 document.body.classList.add('eraser-cursor-active');
+            } else if (currentTool === 'hand') {
+                document.body.classList.add('hand-cursor-active');
             }
         }
 
@@ -577,12 +579,14 @@
         });
 
         // Toggle cursor classes on body
-        document.body.classList.remove('pen-cursor-active', 'eraser-cursor-active');
+        document.body.classList.remove('pen-cursor-active', 'eraser-cursor-active', 'hand-cursor-active');
         if (annotationMode) {
             if (tool === 'pen') {
                 document.body.classList.add('pen-cursor-active');
             } else if (tool === 'eraser') {
                 document.body.classList.add('eraser-cursor-active');
+            } else if (tool === 'hand') {
+                document.body.classList.add('hand-cursor-active');
             }
         }
 
