@@ -886,7 +886,7 @@
                     <span class="annotation-item-date">${date}</span>
                 </div>
                 <div class="annotation-item-actions">
-                    <button onclick="event.stopPropagation(); renameAnnotationSetPrompt(${set.id}, '${escapeHtml(set.name)}')" title="Rename"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/></svg></button>
+                    <button onclick="event.stopPropagation(); renameAnnotationSetPrompt(${set.id}, '${escapeHtml(set.name)}')" title="Rename"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
                     <button class="delete-btn" onclick="event.stopPropagation(); deleteAnnotationSetById(${set.id}, this)" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 </div>
             `;
