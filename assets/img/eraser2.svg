@@ -1,9 +1,10 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <!-- White outer stroke for visibility on dark backgrounds -->
-    <path d="M20 20H11.5L19.7 11.8a1.9 1.9 0 0 0 0-2.7L15 4.3a1.9 1.9 0 0 0-2.7 0L4.3 12.3a1.9 1.9 0 0 0 0 2.7L7.8 18.5a.5.5 0 0 0 .35.14H20" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 18.5H11.5L19.7 11.8a1.9 1.9 0 0 0 0-2.7L15 4.3a1.9 1.9 0 0 0-2.7 0L4.3 12.3a1.9 1.9 0 0 0 0 2.7L7.8 18.5a.5.5 0 0 0 .3.14H20" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M14.3 4.9l4.8 4.8" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M7.3 9.9l6 6" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
     
     <!-- Black inner stroke -->
-    <path d="M20 20H11.5L19.7 11.8a1.9 1.9 0 0 0 0-2.7L15 4.3a1.9 1.9 0 0 0-2.7 0L4.3 12.3a1.9 1.9 0 0 0 0 2.7L7.8 18.5a.5.5 0 0 0 .35.14H20" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M14.3 4.9l4.8 4.8" stroke="black" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M20 18.6H11.5L19.7 11.8a1.9 1.9 0 0 0 0-2.7L15 4.3a1.9 1.9 0 0 0-2.7 0L4.3 12.3a1.9 1.9 0 0 0 0 2.7L7.8 18.5a.5.5 0 0 0 .35.14H20" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7.3 9.9l6 6" stroke="black" stroke-width="1.5" stroke-linecap="round"/>
 </svg>
