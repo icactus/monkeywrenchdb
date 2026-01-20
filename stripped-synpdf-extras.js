@@ -407,8 +407,8 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
             if (instrumentName === "Piano") {
                 // Split concertos: piano concertos vs. other-instrument concertos (with piano accomp.)
                 if (originalSO && originalSO.length) {
-                    const pianoConcertos = originalSO.filter(p => p.solo_instrument_id === pianoId);
-                    const otherConcertos = originalSO.filter(p => p.solo_instrument_id && p.solo_instrument_id !== pianoId);
+                    const pianoConcertos = originalSO.filter(p => p.solo_instrument_ids && p.solo_instrument_ids.includes(pianoId));
+                    const otherConcertos = originalSO.filter(p => p.solo_instrument_ids && p.solo_instrument_ids.length > 0 && !p.solo_instrument_ids.includes(pianoId));
 
                     if (otherConcertos.length) {
                         if (!groupedPieces[soloPianoKey]) groupedPieces[soloPianoKey] = [];
@@ -422,7 +422,7 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
 
                 // Keep true orchestral works (no solo) under Orchestra
                 if (groupedPieces['Orchestra']) {
-                    const pureOrchestra = groupedPieces['Orchestra'].filter(p => !p.solo_instrument_id);
+                    const pureOrchestra = groupedPieces['Orchestra'].filter(p => !p.solo_instrument_ids || p.solo_instrument_ids.length === 0);
                     if (pureOrchestra.length) groupedPieces['Orchestra'] = pureOrchestra;
                     else delete groupedPieces['Orchestra'];
                 }

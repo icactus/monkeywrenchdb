@@ -32,6 +32,7 @@ if (empty($instrumentIds)) {
 
 $placeholders = implode(',', array_fill(0, count($instrumentIds), '?'));
 
+// Main query - uses GROUP_CONCAT for solo instruments from junction table
 $sql = "
 SELECT
     p.piece_id,
@@ -44,7 +45,7 @@ SELECT
     i.instrument_name,
     i.part_number,
     COALESCE(rc.total_recordings_value, 0) AS total_recordings_value,
-    p.solo_instrument_id
+    (SELECT GROUP_CONCAT(psi.instrument_id) FROM piece_solo_instruments psi WHERE psi.piece_id = p.piece_id) AS solo_instrument_ids
 FROM pieces p
 JOIN composers        c  ON c.composer_id   = p.composer_id
 JOIN piece_categories pc ON pc.category_id  = p.category_id
@@ -79,6 +80,12 @@ while ($row = $res->fetch_assoc()) {
     $pid = (int) $row['piece_id'];
 
     if (!isset($pieces[$pid])) {
+        // Parse solo_instrument_ids from comma-separated string to array of ints
+        $soloIds = [];
+        if (!empty($row['solo_instrument_ids'])) {
+            $soloIds = array_map('intval', explode(',', $row['solo_instrument_ids']));
+        }
+
         $pieces[$pid] = [
             'piece_id' => $pid,
             'piece_name' => $row['piece_name'],
@@ -86,7 +93,7 @@ while ($row = $res->fetch_assoc()) {
             'composer_last' => $row['composer_last'],
             'metric_arr_id' => (int) $row['metric_arr_id'],
             'total_recordings_value' => (int) $row['total_recordings_value'],
-            'solo_instrument_id' => isset($row['solo_instrument_id']) ? (int) $row['solo_instrument_id'] : null,
+            'solo_instrument_ids' => $soloIds,
             'parts' => []
         ];
     } else {
@@ -111,3 +118,4 @@ echo json_encode([
     'pieces' => array_values($pieces),
     'instrumentName' => $_GET['instrumentName'] ?? ''
 ], JSON_UNESCAPED_UNICODE);
+
