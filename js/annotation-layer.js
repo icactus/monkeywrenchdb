@@ -627,6 +627,27 @@
         }
     });
 
+    // Keyboard shortcuts for undo/redo in annotation mode
+    document.addEventListener('keydown', function (e) {
+        if (!annotationMode) return;
+
+        // Ctrl+Z or Cmd+Z for undo
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            window.annotationUndo();
+        }
+        // Ctrl+Y or Cmd+Y for redo
+        else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+            e.preventDefault();
+            window.annotationRedo();
+        }
+        // Ctrl+Shift+Z or Cmd+Shift+Z for redo
+        else if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
+            e.preventDefault();
+            window.annotationRedo();
+        }
+    });
+
     // Select pen color
     window.selectPenColor = function (color) {
         penColor = color;
