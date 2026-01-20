@@ -101,42 +101,42 @@ document.addEventListener('click', function (event) {
         modal.style.display = ''; // Revert display style
         if (backdrop) backdrop.classList.remove('visible');
     }
-});
+}
 
 function addToHistory(pieceId, metricArrId, recordingId) {
-    if (!window.loggedInUserId) return; // Silent return for guests
+        if (!window.loggedInUserId) return; // Silent return for guests
 
-    const formData = new FormData();
-    formData.append('piece_id', pieceId);
-    formData.append('metric_arr_id', metricArrId);
-    formData.append('recording_id', recordingId);
+        const formData = new FormData();
+        formData.append('piece_id', pieceId);
+        formData.append('metric_arr_id', metricArrId);
+        formData.append('recording_id', recordingId);
 
-    fetch('history_api.php?action=add', {
-        method: 'POST',
-        body: formData
-    })
-        .then(res => res.json())
-        .then(data => {
-            if (!data.success) {
-                console.warn("Failed to add history:", data.error);
-            }
-            // If the history menu is open, refresh it
-            const modal = document.getElementById('history-modal');
-            if (modal && modal.classList.contains('visible')) {
-                fetchHistory();
-            }
+        fetch('history_api.php?action=add', {
+            method: 'POST',
+            body: formData
         })
-        .catch(err => console.error("History add error:", err));
-}
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    console.warn("Failed to add history:", data.error);
+                }
+                // If the history menu is open, refresh it
+                const modal = document.getElementById('history-modal');
+                if (modal && modal.classList.contains('visible')) {
+                    fetchHistory();
+                }
+            })
+            .catch(err => console.error("History add error:", err));
+    }
 
 function clearHistory() {
-    const formData = new FormData();
-    formData.append('clear_all', 'true');
-    fetch('history_api.php?action=delete', {
-        method: 'POST',
-        body: formData
-    }).then(() => fetchHistory());
-}
+        const formData = new FormData();
+        formData.append('clear_all', 'true');
+        fetch('history_api.php?action=delete', {
+            method: 'POST',
+            body: formData
+        }).then(() => fetchHistory());
+    }
 
 var opt$$module$synpdf, times_arr$$module$synpdf, offset_js$$module$synpdf, pdf_file$$module$synpdf, pdf_data$$module$synpdf, jpg_data$$module$synpdf, media_dir$$module$synpdf, metric_arr$$module$synpdf, pdfDoc$$module$synpdf, pdfData$$module$synpdf, jpgData$$module$synpdf, nPage$$module$synpdf =
     1,
