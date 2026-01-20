@@ -90,18 +90,16 @@ function deleteHistoryItem(event, historyId) {
 
     if (!historyId) return;
 
+    const formData = new FormData();
+    formData.append('history_id', historyId);
+
     fetch('history_api.php?action=delete', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            id: historyId
-        })
+        body: formData
     })
         .then(res => res.json())
         .then(data => {
-            if (data.success) {
+            if (data.status === 'success') {
                 fetchHistory(); // Reload list
             } else {
                 alert("Failed to delete: " + (data.error || 'Unknown error'));
