@@ -2355,7 +2355,7 @@ body.pen-cursor-active #pdf-container {
 body.eraser-cursor-active,
 body.eraser-cursor-active .annotation-canvas,
 body.eraser-cursor-active #pdf-container {
-    cursor: url('../img/eraser-cursor.svg') 2 22, crosshair !important;
+    cursor: url('../img/eraser2.svg') 2 20, crosshair !important;
 }
 
 body.hand-cursor-active,
