@@ -33,7 +33,7 @@ $is_share_link = isset($_GET['share']);
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=33" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=250" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=251" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -562,7 +562,7 @@ $is_share_link = isset($_GET['share']);
                 </div>
             </div>
             <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')" title="Eraser">
-                <img src="assets/img/eraser2.svg?v=2" width="24" height="24" alt="Eraser">
+                <img src="assets/img/eraser2.svg?v=3" width="24" height="24" alt="Eraser">
             </button>
             <button class="annotation-tool-btn" data-tool="hand" onclick="setAnnotationTool('hand')" title="Scroll Mode">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
