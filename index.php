@@ -41,7 +41,7 @@ $is_share_link = isset($_GET['share']);
         rel="stylesheet">
     <script src="jquery.min.js"></script>
     <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="annotation-layer.js?v=95"></script>
+        <script src="annotation-layer.js?v=96"></script>
     <?php endif; ?>
     <script>
         window.loggedInUserId = <?php echo isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : 'null'; ?>;
@@ -656,7 +656,7 @@ $is_share_link = isset($_GET['share']);
     <div id="notification">
         Link copied to clipboard!
     </div>
-    <script src="js/history-manager.js?v=3"></script>
+    <script src="js/history-manager.js?v=4"></script>
     <script src="stripped-synpdf.js?v=294"></script>
     <script src="stripped-synpdf-extras.js?v=251"></script>
     <script>
