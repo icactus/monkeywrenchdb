@@ -490,7 +490,7 @@ $is_share_link = isset($_GET['share']);
                     </tr>
                 </table>
                 <p class="help-note">This project is a work in progress. Want to help? Email
-                    <b>icactusmusic@gmail.com</b>
+                    <b>icactusmusic AT gmail DOT com</b>
                 </p>
             </div>
         </div>
