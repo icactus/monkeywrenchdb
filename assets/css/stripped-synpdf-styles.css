@@ -380,6 +380,15 @@ audio {
     transition: background 0.15s ease;
 }
 
+.nav-dropdown-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    color: #333;
+    font-size: 15px;
+}
+
 .nav-dropdown-menu a:hover {
     background: #f5f5f5;
     color: #333 !important;
@@ -2431,8 +2440,8 @@ body.pen-cursor-active #pdf-container {
 }
 
 .mobile-controls-label {
-    font-weight: 600;
-    color: #444;
+    font-weight: 400;
+    color: #333;
     font-size: 15px;
 }
 
