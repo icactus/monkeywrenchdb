@@ -799,12 +799,13 @@ a {
 }
 
 .nav-menu a {
-    color: black;
+    color: #555;
     padding: 10px;
+    font-size: 15px;
 }
 
 .nav-menu a:hover {
-    color: #FFF;
+    color: #333;
 }
 
 .nav-menu {
@@ -2283,7 +2284,7 @@ html.inverted .color-swatch {
     padding: 12px 16px;
     font-weight: 600;
     color: #666;
-    font-size: 13px;
+    font-size: 15px;
     border-bottom: 1px solid #eee;
     margin-bottom: 4px;
 }
