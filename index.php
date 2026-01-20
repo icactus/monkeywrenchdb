@@ -139,7 +139,7 @@ $is_share_link = isset($_GET['share']);
                                         <path d="M6 9l6 6 6-6" />
                                     </svg>
                                 </button>
-                                <div class="nav-dropdown-menu" id="user-dropdown-menu">
+                                <div class="nav-dropdown-menu" id="user-dropdown-menu" onclick="event.stopPropagation()">
                                     <a href="javascript:void(0)" id="history-toggle-btn"
                                         onclick="toggleHistoryMenu(); closeUserDropdown();">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
