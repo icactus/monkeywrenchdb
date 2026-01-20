@@ -200,38 +200,7 @@ $is_share_link = isset($_GET['share']);
                                     </a>
                                 </div>
                             </div>
-                            <script>
-                                function toggleUserDropdown(e) {
-                                    e.stopPropagation();
-                                    const menu = document.getElementById('user-dropdown-menu');
-                                    const trigger = e.currentTarget;
-                                    const isOpen = menu.classList.contains('open');
-                                    closeUserDropdown();
-                                    if (!isOpen) {
-                                        // Position dropdown using fixed positioning
-                                        const rect = trigger.getBoundingClientRect();
-                                        menu.style.position = 'fixed';
-                                        menu.style.top = (rect.bottom + 8) + 'px';
-                                        menu.style.left = rect.left + 'px';
-                                        menu.classList.add('open');
-                                    }
-                                }
-                                function closeUserDropdown() {
-                                    document.getElementById('user-dropdown-menu')?.classList.remove('open');
-                                }
-                                document.addEventListener('click', closeUserDropdown);
-                                <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
-                                    function loadLiveEdit() {
-                                        if (document.getElementById('admin-live-edit-script')) return;
-                                        var script = document.createElement('script');
-                                        script.id = 'admin-live-edit-script';
-                                        script.src = 'admin-live-edit.js?v=' + new Date().getTime();
-                                        script.onload = function () {
-                                            alert("Admin Tools Loaded. Press 'q' to toggle Edit Mode.");
-                                        };
-                                        document.body.appendChild(script);
-                                    }
-                                <?php endif; ?>
+                            <script>                             function toggleUserDropdown(e) {                                 e.stopPropagation();                                 const menu = document.getElementById('user-dropdown-menu');                                 const trigger = e.currentTarget;                                 const isOpen = menu.classList.contains('open');                                 closeUserDropdown();                                 if (!isOpen) {                                     // Position dropdown using fixed positioning                                     const rect = trigger.getBoundingClientRect();                                     menu.style.position = 'fixed';                                     menu.style.top = (rect.bottom + 8) + 'px';                                     menu.style.left = rect.left + 'px';                                     menu.classList.add('open');                                 }                             }                             function closeUserDropdown() {                                 document.getElementById('user-dropdown-menu')?.classList.remove('open');                             }                             document.addEventListener('click', closeUserDropdown);                             <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>                             function loadLiveEdit() {                                 if (document.getElementById('admin-live-edit-script')) return;                                 var script = document.createElement('script');                                 script.id = 'admin-live-edit-script';                                 script.src = 'admin-live-edit.js?v=' + new Date().getTime();                                 script.onload = function () {                                     alert("Admin Tools Loaded. Press 'q' to toggle Edit Mode.");                                 };                                 document.body.appendChild(script);                             }                             <?php endif; ?>
                             </script>
                         <?php else: ?>
                             <a href="auth_login.php?provider=google" class="nav-link">Login</a>
@@ -655,8 +624,8 @@ $is_share_link = isset($_GET['share']);
     <div id="notification">
         Link copied to clipboard!
     </div>
-    <script src="js/history-manager.js?v=1"></script>
-    <script src="stripped-synpdf.js?v=293"></script>
+    <script src="js/history-manager.js?v=2"></script>
+    <script src="stripped-synpdf.js?v=294"></script>
     <script src="stripped-synpdf-extras.js?v=251"></script>
     <script>
         // Dark Mode menu toggles - wire up immediately on page load
