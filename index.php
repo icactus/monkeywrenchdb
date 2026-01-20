@@ -656,7 +656,7 @@ $is_share_link = isset($_GET['share']);
     <div id="notification">
         Link copied to clipboard!
     </div>
-    <script src="js/history-manager.js?v=2"></script>
+    <script src="js/history-manager.js?v=3"></script>
     <script src="stripped-synpdf.js?v=294"></script>
     <script src="stripped-synpdf-extras.js?v=251"></script>
     <script>
