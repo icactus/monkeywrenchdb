@@ -27,7 +27,7 @@ deployment:
     - /bin/cp update_monkeywrench_metric_arr.php $DEPLOYPATH
     - /bin/cp manifest.json $DEPLOYPATH
     - /bin/cp sw.js $DEPLOYPATH
-    - /bin/cp annotation-layer.js $DEPLOYPATH
+
     - /bin/cp annotations_api.php $DEPLOYPATH
     - /bin/cp -R assets $DEPLOYPATH
     - /bin/cp -R js $DEPLOYPATH
