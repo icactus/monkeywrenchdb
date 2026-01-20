@@ -2125,9 +2125,7 @@ html.inverted .color-swatch {
     background: #f9f9f9;
 }
 
-.annotations-list li.active {
-    background: #e3f2fd;
-}
+/* Active state removed - rely on hover only */
 
 .annotation-item-info {
     flex: 1;
@@ -2179,7 +2177,7 @@ html.inverted .color-swatch {
 .annotation-item-actions button {
     background: none;
     border: none;
-    color: #ccc;
+    color: #888;
     font-size: 14px;
     cursor: pointer;
     padding: 4px;
