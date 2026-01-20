@@ -2352,6 +2352,12 @@ body.pen-cursor-active #pdf-container {
     cursor: url('../img/pen-cursor.svg') 2 2, crosshair !important;
 }
 
+body.eraser-cursor-active,
+body.eraser-cursor-active .annotation-canvas,
+body.eraser-cursor-active #pdf-container {
+    cursor: url('../img/eraser2.svg') 8 20, crosshair !important;
+}
+
 /* ========== Inline Style Cleanup ========== */
 
 /* Modal header icons */

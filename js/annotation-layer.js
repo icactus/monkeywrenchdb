@@ -87,11 +87,14 @@
         window.annotationMode = annotationMode; // Expose to window for other scripts
         document.body.classList.toggle('annotation-mode', annotationMode);
 
-        // Sync pen cursor state
-        if (annotationMode && currentTool === 'pen') {
-            document.body.classList.add('pen-cursor-active');
-        } else {
-            document.body.classList.remove('pen-cursor-active');
+        // Sync cursor state
+        document.body.classList.remove('pen-cursor-active', 'eraser-cursor-active');
+        if (annotationMode) {
+            if (currentTool === 'pen') {
+                document.body.classList.add('pen-cursor-active');
+            } else if (currentTool === 'eraser') {
+                document.body.classList.add('eraser-cursor-active');
+            }
         }
 
         const toolbar = document.getElementById('annotation-toolbar');
@@ -332,10 +335,7 @@
                 ]]
             };
 
-            // Cursor feedback
-            if (currentTool === 'eraser') {
-                canvas.style.cursor = 'crosshair'; // Or a custom SVG cursor if desired later
-            }
+            // Cursor feedback handled by CSS now
         };
 
         const draw = (e) => {
@@ -376,8 +376,8 @@
             e.stopPropagation();
             isDrawing = false;
 
-            // Reset cursor
-            canvas.style.cursor = 'default';
+            // Reset cursor (handled by CSS class on body)
+            canvas.style.cursor = '';
 
             if (currentStroke.points.length > 1) {
                 if (currentStroke.tool === 'eraser') {
@@ -576,11 +576,14 @@
             btn.classList.toggle('active', btn.dataset.tool === tool);
         });
 
-        // Toggle pen cursor class on body
-        if (annotationMode && tool === 'pen') {
-            document.body.classList.add('pen-cursor-active');
-        } else {
-            document.body.classList.remove('pen-cursor-active');
+        // Toggle cursor classes on body
+        document.body.classList.remove('pen-cursor-active', 'eraser-cursor-active');
+        if (annotationMode) {
+            if (tool === 'pen') {
+                document.body.classList.add('pen-cursor-active');
+            } else if (tool === 'eraser') {
+                document.body.classList.add('eraser-cursor-active');
+            }
         }
 
         // Refresh canvas pointer-events when switching to/from hand mode
