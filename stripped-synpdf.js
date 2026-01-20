@@ -103,69 +103,6 @@ document.addEventListener('click', function (event) {
     }
 });
 
-// Helper function: format relative time
-function getRelativeTime(dateString) {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-
-    if (seconds < 60) return 'Just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-    if (seconds < 172800) return 'Yesterday';
-    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
-    return date.toLocaleDateString();
-}
-
-function fetchHistory() {
-    fetch('history_api.php?action=get')
-        .then(res => res.json())
-        .then(data => {
-            const list = document.getElementById('history-list');
-            list.innerHTML = '';
-
-            // Error check
-            if (!Array.isArray(data)) {
-                console.error("History API Error:", data);
-                list.innerHTML = '<li style="padding:16px; color:#999;">Error loading history.</li>';
-                return;
-            }
-
-            if (data.length === 0) {
-                list.innerHTML = '<li style="padding:16px; color:#999;">No history yet.</li>';
-                return;
-            }
-
-            data.forEach(item => {
-                const li = document.createElement('li');
-                const timestamp = getRelativeTime(item.viewed_at);
-
-                li.innerHTML = `
-                    <a href="javascript:void(0)" 
-                       onclick="loadPieceFromHistory(${item.metric_arr_id}, ${item.recording_id}); toggleHistoryMenu();" 
-                       class="history-entry-content">
-                        <p class="history-composer">${item.composer_name}</p>
-                        <p class="history-piece">${item.piece_name}</p>
-                        <p class="history-timestamp">${timestamp}</p>
-                    </a>
-                    <button onclick="deleteHistoryItem(${item.id})" 
-                            class="history-delete" 
-                            aria-label="Delete">&times;</button>
-                `;
-                list.appendChild(li);
-            });
-        });
-}
-
-function loadPieceFromHistory(metricArrId, recordingId) {
-    if (!metricArrId || !recordingId) {
-        alert("This history item is missing context data.");
-        return;
-    }
-    // Reload page with specific recording context
-    window.location.search = `?metricArrId=${metricArrId}&recordingId=${recordingId}`;
-}
-
 function addToHistory(pieceId, metricArrId, recordingId) {
     const formData = new FormData();
     formData.append('piece_id', pieceId);
@@ -181,15 +118,6 @@ function addToHistory(pieceId, metricArrId, recordingId) {
             fetchHistory();
         }
     });
-}
-
-function deleteHistoryItem(id) {
-    const formData = new FormData();
-    formData.append('history_id', id);
-    fetch('history_api.php?action=delete', {
-        method: 'POST',
-        body: formData
-    }).then(() => fetchHistory()); // Refresh
 }
 
 function clearHistory() {
@@ -568,7 +496,11 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                             action: 'share',
                             metric_arr_id: currentMetricArrGlobal
                         })
-                    });
+                    })
+                        .catch(err => {
+                            console.error('Fetch error for annotations_api.php:', err);
+                            throw err; // Re-throw to be caught by the outer try-catch
+                        });
                     const data = await response.json();
                     if (data.success && data.share_token) {
                         url += '&share=' + data.share_token;

@@ -18,31 +18,24 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
     exit;
 }
 
-// 2. Database Connection
-// 2. Database Connection
+// 2. Database Connection (Standardized)
 if (file_exists('phpfiles/config.php')) {
     require_once 'phpfiles/config.php';
 } elseif (file_exists('../phpfiles/config.php')) {
     require_once '../phpfiles/config.php';
 } else {
-    // Fallback or error if config is missing
+    http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Database configuration missing.']);
     exit;
 }
 
-$dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
-$options = [
-    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES => false,
-];
-
-try {
-    $pdo = new PDO($dsn, DB_USER, DB_PASSWORD, $options);
-} catch (\PDOException $e) {
-    echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $e->getMessage()]);
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+if ($conn->connect_error) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $conn->connect_error]);
     exit;
 }
+mysqli_set_charset($conn, 'utf8');
 
 // 3. Process Request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -51,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$metricArrId || !$metricArrData) {
         echo json_encode(['success' => false, 'message' => 'Missing ID or Data parameters.']);
+        $conn->close();
         exit;
     }
 
@@ -58,38 +52,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $decoded = json_decode($metricArrData);
     if ($decoded === null) {
         echo json_encode(['success' => false, 'message' => 'Invalid JSON data.']);
+        $conn->close();
         exit;
     }
 
-    try {
-        // Update Query
-        // Assuming table is 'monkeywrench_metric_arr' based on 'get_monkeywrench_metric_arr.php' context
-        // OR table is 'metric_arr'. Let's verify table name in next step if this fails, but 'monkeywrench_metric_arr' seems likely given file naming.
-        // Actually, checking 'get_monkeywrench_metric_arr.php' content would be smart logic, but I'll assume 'metric_arr' table based on common sense or previous 'get.php'.
-        // Wait, 'schaalMetriek' often implies just 'metric_arr'.
-
-        // Let's peek at 'get_monkeywrench_metric_arr.php' logic quickly?
-        // No, I'll trust the table is likely 'metric_arr' or 'monkeywrench_metric_arr'.
-        // Given the db name is monkeywrenchdb, table might be 'metric_arr'.
-
-        $stmt = $pdo->prepare("UPDATE metric_arr SET metric_arr_data = :data WHERE metric_arr_id = :id");
-        $stmt->execute([
-            ':data' => $metricArrData,
-            ':id' => $metricArrId
-        ]);
-
-        if ($stmt->rowCount() > 0) {
-            echo json_encode(['success' => true, 'message' => 'Updated successfully.']);
-        } else {
-            // Row count 0 means either ID not found OR data was identical
-            echo json_encode(['success' => true, 'message' => 'No changes made or ID not found.']);
-        }
-
-    } catch (\PDOException $e) {
-        echo json_encode(['success' => false, 'message' => 'SQL Error: ' . $e->getMessage()]);
+    // Update Query
+    $stmt = $conn->prepare("UPDATE metric_arr SET metric_arr_data = ? WHERE metric_arr_id = ?");
+    if (!$stmt) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
+        $conn->close();
+        exit;
     }
 
+    // Bind parameters: s = string (data), i = int (id) - assuming ID is int, if string use 'ss'
+    // Usually metric_arr_id is int.
+    $stmt->bind_param('si', $metricArrData, $metricArrId);
+
+    if ($stmt->execute()) {
+        if ($stmt->affected_rows >= 0) {
+            echo json_encode(['success' => true, 'message' => 'Updated successfully.']);
+        } else {
+            // Should not happen if execute returns true, but safe fallback
+            echo json_encode(['success' => false, 'message' => 'No changes made.']);
+        }
+    } else {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'SQL Error: ' . $stmt->error]);
+    }
+
+    $stmt->close();
+
 } else {
+    http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Invalid Request Method.']);
 }
+
+$conn->close();
 ?>

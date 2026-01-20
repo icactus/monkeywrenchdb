@@ -30,6 +30,7 @@ deployment:
     - /bin/cp annotation-layer.js $DEPLOYPATH
     - /bin/cp annotations_api.php $DEPLOYPATH
     - /bin/cp -R assets $DEPLOYPATH
+    - /bin/cp -R js $DEPLOYPATH
 
     - export DEPLOYPATH2=/home/monkcdmb/phpfiles/
     - /bin/cp phpfiles/composers-addnew.php $DEPLOYPATH2
