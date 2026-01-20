@@ -808,15 +808,9 @@ a {
 }
 
 .nav-menu {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: row;
     align-items: center;
-}
-
-/* PixelOperator only on direct nav links (About, Help, Login) */
-.nav-menu>.nav-link {
-    font-family: 'PixelOperator';
 }
 
 
