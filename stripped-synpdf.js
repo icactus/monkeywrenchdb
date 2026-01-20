@@ -104,20 +104,29 @@ document.addEventListener('click', function (event) {
 });
 
 function addToHistory(pieceId, metricArrId, recordingId) {
+    if (!window.loggedInUserId) return; // Silent return for guests
+
     const formData = new FormData();
     formData.append('piece_id', pieceId);
     formData.append('metric_arr_id', metricArrId);
     formData.append('recording_id', recordingId);
+
     fetch('history_api.php?action=add', {
         method: 'POST',
         body: formData
-    }).then(() => {
-        // If the history menu is open, refresh it
-        const modal = document.getElementById('history-modal');
-        if (modal && modal.classList.contains('visible')) {
-            fetchHistory();
-        }
-    });
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                console.warn("Failed to add history:", data.error);
+            }
+            // If the history menu is open, refresh it
+            const modal = document.getElementById('history-modal');
+            if (modal && modal.classList.contains('visible')) {
+                fetchHistory();
+            }
+        })
+        .catch(err => console.error("History add error:", err));
 }
 
 function clearHistory() {
