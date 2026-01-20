@@ -918,8 +918,42 @@
         const li = btnElement ? btnElement.closest('li') : document.querySelector(`[data-annotation-id="${id}"]`);
         if (!li) return;
 
+        const infoDiv = li.querySelector('.annotation-item-info');
         const nameEl = li.querySelector('.annotation-item-name');
+        const actionsDiv = li.querySelector('.annotation-item-actions');
+
         if (!nameEl || nameEl.classList.contains('editing')) return;
+
+        // Disable navigation clicks on the row while editing
+        if (infoDiv) infoDiv.style.pointerEvents = 'none';
+
+        // Hide original actions
+        const originalActionsDisplay = actionsDiv.style.display;
+        actionsDiv.style.display = 'none';
+
+        // Create temp actions
+        const tempActions = document.createElement('div');
+        tempActions.className = 'annotation-item-actions';
+        tempActions.style.marginLeft = '8px';
+        tempActions.onclick = (e) => e.stopPropagation();
+
+        // Save Button (Check)
+        const saveBtn = document.createElement('button');
+        saveBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        saveBtn.title = "Save";
+        saveBtn.style.color = '#2e7d32'; // Green
+
+        // Cancel Button (X)
+        const cancelBtn = document.createElement('button');
+        cancelBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+        cancelBtn.title = "Cancel";
+        cancelBtn.style.color = '#c62828'; // Red
+
+        tempActions.appendChild(saveBtn);
+        tempActions.appendChild(cancelBtn);
+
+        // Insert temp actions after original actions
+        actionsDiv.parentNode.insertBefore(tempActions, actionsDiv.nextSibling);
 
         // Replace name element with input
         const input = document.createElement('input');
@@ -936,6 +970,7 @@
             color: #333;
             width: 100%;
             box-sizing: border-box;
+            pointer-events: auto; /* Re-enable clicking on input */
         `;
 
         // Prevent clicks on input from triggering navigation
@@ -952,14 +987,20 @@
 
         let saved = false;
 
+        function cleanup() {
+            nameEl.classList.remove('editing');
+            tempActions.remove();
+            actionsDiv.style.display = originalActionsDisplay;
+            if (infoDiv) infoDiv.style.pointerEvents = '';
+        }
+
         async function saveRename() {
             if (saved) return;
             saved = true;
             const newName = input.value.trim();
             if (!newName || newName === currentName) {
-                // Restore original
-                nameEl.classList.remove('editing');
                 nameEl.textContent = originalText;
+                cleanup();
                 return;
             }
             try {
@@ -975,30 +1016,32 @@
                 const data = await response.json();
                 if (data.success) {
                     if (id === currentAnnotationId) currentAnnotationName = newName;
-                    // Update UI immediately
-                    nameEl.classList.remove('editing');
                     nameEl.textContent = newName;
                     // Update allAnnotationSets array
                     const setIndex = allAnnotationSets.findIndex(s => s.id === id);
                     if (setIndex >= 0) allAnnotationSets[setIndex].name = newName;
                     loadAnnotationSetsList();
+                    cleanup();
                 } else {
-                    nameEl.classList.remove('editing');
                     nameEl.textContent = originalText;
+                    cleanup();
                 }
             } catch (err) {
                 console.error('Rename error:', err);
-                nameEl.classList.remove('editing');
                 nameEl.textContent = originalText;
+                cleanup();
             }
         }
 
         function cancelRename() {
             if (saved) return;
             saved = true;
-            nameEl.classList.remove('editing');
             nameEl.textContent = originalText;
+            cleanup();
         }
+
+        saveBtn.onclick = (e) => { e.stopPropagation(); saveRename(); };
+        cancelBtn.onclick = (e) => { e.stopPropagation(); cancelRename(); };
 
         input.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') {
@@ -1010,8 +1053,12 @@
             }
         });
 
-        input.addEventListener('blur', function () {
-            // Small delay to allow click events to fire first
+        // Save on blur (click outside), but give buttons a chance to click first
+        input.addEventListener('blur', function (e) {
+            // Check if related target is one of our buttons
+            if (e.relatedTarget && (tempActions && tempActions.contains(e.relatedTarget))) {
+                return;
+            }
             setTimeout(() => {
                 if (!saved) saveRename();
             }, 100);
