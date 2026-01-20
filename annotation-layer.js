@@ -930,13 +930,18 @@
             font-size: inherit;
             font-family: inherit;
             padding: 2px 6px;
-            border: 1px solid #666;
+            border: 1px solid #999;
             border-radius: 3px;
-            background: #2a2a2a;
-            color: #fff;
+            background: #fff;
+            color: #333;
             width: 100%;
             box-sizing: border-box;
         `;
+
+        // Prevent clicks on input from triggering navigation
+        input.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
 
         nameEl.classList.add('editing');
         const originalText = nameEl.textContent;
