@@ -2355,13 +2355,13 @@ body.pen-cursor-active #pdf-container {
 body.eraser-cursor-active,
 body.eraser-cursor-active .annotation-canvas,
 body.eraser-cursor-active #pdf-container {
-    cursor: url('../img/eraser2.svg') 12 12, crosshair !important;
+    cursor: url('../img/eraser-cursor.svg') 2 22, crosshair !important;
 }
 
 body.hand-cursor-active,
 body.hand-cursor-active .annotation-canvas,
 body.hand-cursor-active #pdf-container {
-    cursor: url('../img/hand-cursor.svg') 12 12, grab !important;
+    cursor: grab !important;
 }
 
 /* ========== Inline Style Cleanup ========== */
