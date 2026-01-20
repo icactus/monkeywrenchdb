@@ -631,18 +631,20 @@
     document.addEventListener('keydown', function (e) {
         if (!annotationMode) return;
 
-        // Ctrl+Z or Cmd+Z for undo
-        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        const key = e.key.toLowerCase();
+
+        // Ctrl+Z or Cmd+Z for undo (without Shift)
+        if ((e.ctrlKey || e.metaKey) && key === 'z' && !e.shiftKey) {
             e.preventDefault();
             window.annotationUndo();
         }
         // Ctrl+Y or Cmd+Y for redo
-        else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        else if ((e.ctrlKey || e.metaKey) && key === 'y') {
             e.preventDefault();
             window.annotationRedo();
         }
         // Ctrl+Shift+Z or Cmd+Shift+Z for redo
-        else if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
+        else if ((e.ctrlKey || e.metaKey) && key === 'z' && e.shiftKey) {
             e.preventDefault();
             window.annotationRedo();
         }
