@@ -562,7 +562,7 @@ $is_share_link = isset($_GET['share']);
                 </div>
             </div>
             <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')" title="Eraser">
-                <img src="assets/img/eraser.svg" width="24" height="24" alt="Eraser">
+                <img src="assets/img/eraser2.svg" width="24" height="24" alt="Eraser">
             </button>
             <button class="annotation-tool-btn" data-tool="hand" onclick="setAnnotationTool('hand')" title="Scroll Mode">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
