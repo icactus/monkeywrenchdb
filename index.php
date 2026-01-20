@@ -630,12 +630,10 @@ $is_share_link = isset($_GET['share']);
                 background: #4a90d9 !important;
             }
 
-            .annotation-canvas {
-                cursor: crosshair;
-            }
-
-            body.annotation-mode #notation-scroll {
-                cursor: crosshair;
+            /* Hand tool uses grab cursor */
+            body.hand-cursor-active .annotation-canvas,
+            body.hand-cursor-active #notation-scroll {
+                cursor: grab;
             }
 
             body.annotations-hidden .annotation-canvas {
