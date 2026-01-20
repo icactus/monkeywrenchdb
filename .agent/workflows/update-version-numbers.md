@@ -16,7 +16,15 @@ When you modify JavaScript or CSS files, you must update the query string versio
 2.  **Increment the Version**: Increase the number after `v=`.
     ```html
     <script src="stripped-synpdf.js?v=294"></script>
+    <link href="assets/css/stripped-synpdf-styles.css?v=241" />
     ```
+
+## Files to Check
+- `stripped-synpdf.js`
+- `stripped-synpdf-extras.js`
+- `annotation-layer.js`
+- `js/history-manager.js`
+- `assets/css/stripped-synpdf-styles.css`
 
 ## Turbo Mode
 // turbo-all
