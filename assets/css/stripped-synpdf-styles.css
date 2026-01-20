@@ -2020,7 +2020,7 @@ html.inverted .color-swatch {
 .history-delete {
     background: none;
     border: none;
-    color: #ccc;
+    color: #888;
     font-size: 18px;
     cursor: pointer;
     padding: 0;
