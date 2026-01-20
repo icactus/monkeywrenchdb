@@ -886,7 +886,7 @@
                     <span class="annotation-item-date">${date}</span>
                 </div>
                 <div class="annotation-item-actions">
-                    <button onclick="event.stopPropagation(); renameAnnotationSetPrompt(${set.id}, '${escapeHtml(set.name)}')" title="Rename"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+                    <button onclick="event.stopPropagation(); renameAnnotationSetPrompt(${set.id}, '${escapeHtml(set.name)}', this)" title="Rename"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
                     <button class="delete-btn" onclick="event.stopPropagation(); deleteAnnotationSetById(${set.id}, this)" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 </div>
             `;
@@ -912,28 +912,105 @@
         renderGlobalAnnotationsList();
     }
 
-    // Rename annotation set with prompt
-    window.renameAnnotationSetPrompt = async function (id, currentName) {
-        const newName = prompt('Rename notes:', currentName);
-        if (newName === null || newName === currentName) return;
-        try {
-            const response = await fetch('annotations_api.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'rename',
-                    id: id,
-                    name: newName || 'Untitled'
-                })
-            });
-            const data = await response.json();
-            if (data.success) {
-                if (id === currentAnnotationId) currentAnnotationName = newName;
-                loadAnnotationSetsList();
+    // Rename annotation set inline
+    window.renameAnnotationSetPrompt = async function (id, currentName, btnElement) {
+        // Find the list item containing this rename button
+        const li = btnElement ? btnElement.closest('li') : document.querySelector(`[data-annotation-id="${id}"]`);
+        if (!li) return;
+
+        const nameEl = li.querySelector('.annotation-item-name');
+        if (!nameEl || nameEl.classList.contains('editing')) return;
+
+        // Replace name element with input
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'annotation-rename-input';
+        input.value = currentName;
+        input.style.cssText = `
+            font-size: inherit;
+            font-family: inherit;
+            padding: 2px 6px;
+            border: 1px solid #666;
+            border-radius: 3px;
+            background: #2a2a2a;
+            color: #fff;
+            width: 100%;
+            box-sizing: border-box;
+        `;
+
+        nameEl.classList.add('editing');
+        const originalText = nameEl.textContent;
+        nameEl.textContent = '';
+        nameEl.appendChild(input);
+        input.focus();
+        input.select();
+
+        let saved = false;
+
+        async function saveRename() {
+            if (saved) return;
+            saved = true;
+            const newName = input.value.trim();
+            if (!newName || newName === currentName) {
+                // Restore original
+                nameEl.classList.remove('editing');
+                nameEl.textContent = originalText;
+                return;
             }
-        } catch (err) {
-            console.error('Rename error:', err);
+            try {
+                const response = await fetch('annotations_api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'rename',
+                        id: id,
+                        name: newName
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    if (id === currentAnnotationId) currentAnnotationName = newName;
+                    // Update UI immediately
+                    nameEl.classList.remove('editing');
+                    nameEl.textContent = newName;
+                    // Update allAnnotationSets array
+                    const setIndex = allAnnotationSets.findIndex(s => s.id === id);
+                    if (setIndex >= 0) allAnnotationSets[setIndex].name = newName;
+                    loadAnnotationSetsList();
+                } else {
+                    nameEl.classList.remove('editing');
+                    nameEl.textContent = originalText;
+                }
+            } catch (err) {
+                console.error('Rename error:', err);
+                nameEl.classList.remove('editing');
+                nameEl.textContent = originalText;
+            }
         }
+
+        function cancelRename() {
+            if (saved) return;
+            saved = true;
+            nameEl.classList.remove('editing');
+            nameEl.textContent = originalText;
+        }
+
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveRename();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelRename();
+            }
+        });
+
+        input.addEventListener('blur', function () {
+            // Small delay to allow click events to fire first
+            setTimeout(() => {
+                if (!saved) saveRename();
+            }, 100);
+        });
     };
 
     // Delete annotation set by ID
