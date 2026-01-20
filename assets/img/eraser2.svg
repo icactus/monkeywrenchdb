@@ -1,6 +1,9 @@
-<svg fill="#000000" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-  <!-- White outline for visibility -->
-  <path d="M20.25,19.86H11.31l9.2-9.2a1.88,1.88,0,0,0,0-2.65L16.27,3.76a1.88,1.88,0,0,0-2.65,0l-5.3,5.3,0,0,0,0-5.3,5.3a1.88,1.88,0,0,0,0,2.65l3.48,3.48a.38.38,0,0,0,.27.11H20.25a.38.38,0,0,0,0-.75ZM14.15,4.29a1.13,1.13,0,0,1,1.59,0l4.24,4.24a1.13,1.13,0,0,1,0,1.59l-5.04,5.04-5.83-5.83ZM10.25,19.86H6.91l-3.37-3.37a1.13,1.13,0,0,1,0-1.59l5.04-5.04,5.83,5.83Z" stroke="white" stroke-width="1.5" stroke-linejoin="round" />
-  <!-- Original Black Path -->
-  <path d="M20.25,19.86H11.31l9.2-9.2a1.88,1.88,0,0,0,0-2.65L16.27,3.76a1.88,1.88,0,0,0-2.65,0l-5.3,5.3,0,0,0,0-5.3,5.3a1.88,1.88,0,0,0,0,2.65l3.48,3.48a.38.38,0,0,0,.27.11H20.25a.38.38,0,0,0,0-.75ZM14.15,4.29a1.13,1.13,0,0,1,1.59,0l4.24,4.24a1.13,1.13,0,0,1,0,1.59l-5.04,5.04-5.83-5.83ZM10.25,19.86H6.91l-3.37-3.37a1.13,1.13,0,0,1,0-1.59l5.04-5.04,5.83,5.83Z"/>
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- White outer stroke for visibility on dark backgrounds -->
+    <path d="M20 20H11.5L19.7 11.8a1.9 1.9 0 0 0 0-2.7L15 4.3a1.9 1.9 0 0 0-2.7 0L4.3 12.3a1.9 1.9 0 0 0 0 2.7L7.8 18.5a.5.5 0 0 0 .35.14H20" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M14.3 4.9l4.8 4.8" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+    
+    <!-- Black inner stroke -->
+    <path d="M20 20H11.5L19.7 11.8a1.9 1.9 0 0 0 0-2.7L15 4.3a1.9 1.9 0 0 0-2.7 0L4.3 12.3a1.9 1.9 0 0 0 0 2.7L7.8 18.5a.5.5 0 0 0 .35.14H20" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M14.3 4.9l4.8 4.8" stroke="black" stroke-width="1.5" stroke-linecap="round"/>
 </svg>
