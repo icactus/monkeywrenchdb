@@ -250,17 +250,12 @@ window.toggleFavorite = function () {
         formData.append('piece_id', pieceId);
         formData.append('metric_arr_id', metricArrId);
         formData.append('recording_id', recordingId);
-        console.log('Adding favorite:', { pieceId, metricArrId, recordingId });
         window.fetch('favorites_api.php?action=add', {
             method: 'POST',
             body: formData
         })
-            .then(res => {
-                console.log('Favorite API response status:', res.status);
-                return res.json();
-            })
+            .then(res => res.json())
             .then(data => {
-                console.log('Favorite API response data:', data);
                 if (data.status === 'success') {
                     updateFavoriteButton(true);
                 } else if (data.error) {
@@ -272,14 +267,13 @@ window.toggleFavorite = function () {
 };
 
 // Update star button appearance
+// Update star button appearance
 window.updateFavoriteButton = function (isFavorited) {
     const starBtn = document.getElementById('favorite-btn');
-    console.log('updateFavoriteButton called with:', isFavorited, 'button found:', !!starBtn);
     if (!starBtn) return;
 
     const outlineStar = starBtn.querySelector('#star-outline');
     const filledStar = starBtn.querySelector('#star-filled');
-    console.log('Stars found - outline:', !!outlineStar, 'filled:', !!filledStar);
 
     if (isFavorited) {
         starBtn.classList.add('favorited');
@@ -524,7 +518,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     #control-buttons-row {
                         max-width: calc(100vw - 20px);
                         padding: 6px 12px;
-                        gap: 8px;
+                        gap: 0px;
                         border-radius: 30px;
                     }
                     #control-buttons-row .toolbar-btn {
