@@ -17,8 +17,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 
 // Get the path from the request - handle both direct path and query param styles if needed
+// Get the path from the request - handle both direct path and query param styles if needed
 // PostHog SDK usually appends path like /static/array.js or /decide/
-$path = isset($_SERVER['PATH_INFO']) ? $_SERVER['PATH_INFO'] : '';
+$path = '';
+
+// Check if we are using the rewrite rule ^ph/(.*)
+if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/ph/') !== false) {
+    // Extract everything after /ph/
+    $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    $parts = explode('/ph/', $requestUri, 2);
+    if (count($parts) > 1) {
+        $path = '/' . $parts[1];
+    }
+}
+
+// Fallback to PATH_INFO if not using rewrite or if rewrite failed to parse
+if (empty($path)) {
+    $path = isset($_SERVER['PATH_INFO']) ? $_SERVER['PATH_INFO'] : '';
+}
+
+// Still empty? Try to extract from script name if it looks like /posthog_proxy.php/something
+if (empty($path) && strpos($_SERVER['PHP_SELF'], 'posthog_proxy.php/') !== false) {
+    $parts = explode('posthog_proxy.php', $_SERVER['PHP_SELF'], 2);
+    if (count($parts) > 1) {
+        $path = $parts[1];
+    }
+}
+
 if (empty($path) || $path == '/') {
     // Fallback for some server configs where PATH_INFO isn't set, try to get it from request URI
     // Verify if this is needed based on specific server behavior, but for now assuming standard PATH_INFO
