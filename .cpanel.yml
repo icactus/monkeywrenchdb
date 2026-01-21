@@ -12,6 +12,7 @@ deployment:
     - /bin/cp get_recording_instruments.php $DEPLOYPATH
     - /bin/cp index.php $DEPLOYPATH
     - /bin/cp mysql-metric-arr-submit.php $DEPLOYPATH
+    - /bin/cp .htaccess $DEPLOYPATH
     - /bin/cp posthog_proxy.php $DEPLOYPATH
     - /bin/cp phpinfo.php $DEPLOYPATH
     - /bin/cp stripped-synpdf-extras.js $DEPLOYPATH
