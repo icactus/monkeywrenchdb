@@ -17,13 +17,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 
 // Get the path from the request - handle both direct path and query param styles if needed
-// Get the path from the request - handle both direct path and query param styles if needed
 // PostHog SDK usually appends path like /static/array.js or /decide/
 $path = '';
 
-// Check if we are using the rewrite rule ^ph/(.*)
-if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/ph/') !== false) {
-    // Extract everything after /ph/
+// Check if we are using the rewrite rule ^ph/(.*) which maps to ?_ph_path=...
+if (isset($_GET['_ph_path'])) {
+    $path = '/' . $_GET['_ph_path'];
+    // clean up $_GET so we don't forward this internal param
+    unset($_GET['_ph_path']);
+    // Reconstruct QUERY_STRING without our internal param
+    $qs = http_build_query($_GET);
+    $_SERVER['QUERY_STRING'] = $qs;
+} elseif (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/ph/') !== false) {
+    // Fallback: extraction from URI if param is missing for some reason
     $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     $parts = explode('/ph/', $requestUri, 2);
     if (count($parts) > 1) {
@@ -31,7 +37,7 @@ if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/ph/') !=
     }
 }
 
-// Fallback to PATH_INFO if not using rewrite or if rewrite failed to parse
+// Fallback to PATH_INFO
 if (empty($path)) {
     $path = isset($_SERVER['PATH_INFO']) ? $_SERVER['PATH_INFO'] : '';
 }
@@ -45,8 +51,8 @@ if (empty($path) && strpos($_SERVER['PHP_SELF'], 'posthog_proxy.php/') !== false
 }
 
 if (empty($path) || $path == '/') {
-    // Fallback for some server configs where PATH_INFO isn't set, try to get it from request URI
-    // Verify if this is needed based on specific server behavior, but for now assuming standard PATH_INFO
+    // If we still don't have a path, and it's a direct hit, maybe return 404 or just empty
+    // But PostHog usually hits /static/ or /i/ or /decide/
 }
 
 // Construct the target URL

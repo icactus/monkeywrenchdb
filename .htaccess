@@ -1,2 +1,2 @@
 RewriteEngine On
-RewriteRule ^ph/(.*)$ posthog_proxy.php [L,QSA]
+RewriteRule ^ph/(.*)$ posthog_proxy.php?_ph_path=$1 [L,QSA]
