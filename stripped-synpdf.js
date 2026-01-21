@@ -250,14 +250,21 @@ window.toggleFavorite = function () {
         formData.append('piece_id', pieceId);
         formData.append('metric_arr_id', metricArrId);
         formData.append('recording_id', recordingId);
+        console.log('Adding favorite:', { pieceId, metricArrId, recordingId });
         window.fetch('favorites_api.php?action=add', {
             method: 'POST',
             body: formData
         })
-            .then(res => res.json())
+            .then(res => {
+                console.log('Favorite API response status:', res.status);
+                return res.json();
+            })
             .then(data => {
+                console.log('Favorite API response data:', data);
                 if (data.status === 'success') {
                     updateFavoriteButton(true);
+                } else if (data.error) {
+                    console.error('Favorite API error:', data.error);
                 }
             })
             .catch(err => console.error('Favorite add error:', err));
