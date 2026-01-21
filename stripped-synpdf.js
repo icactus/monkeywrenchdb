@@ -274,20 +274,22 @@ window.toggleFavorite = function () {
 // Update star button appearance
 window.updateFavoriteButton = function (isFavorited) {
     const starBtn = document.getElementById('favorite-btn');
+    console.log('updateFavoriteButton called with:', isFavorited, 'button found:', !!starBtn);
     if (!starBtn) return;
 
     const outlineStar = starBtn.querySelector('#star-outline');
     const filledStar = starBtn.querySelector('#star-filled');
+    console.log('Stars found - outline:', !!outlineStar, 'filled:', !!filledStar);
 
     if (isFavorited) {
         starBtn.classList.add('favorited');
         starBtn.title = 'Remove from Favorites';
         if (outlineStar) outlineStar.style.display = 'none';
-        if (filledStar) filledStar.style.display = 'block';
+        if (filledStar) filledStar.style.display = '';  // Empty string reverts to default
     } else {
         starBtn.classList.remove('favorited');
         starBtn.title = 'Add to Favorites';
-        if (outlineStar) outlineStar.style.display = 'block';
+        if (outlineStar) outlineStar.style.display = '';
         if (filledStar) filledStar.style.display = 'none';
     }
 };
