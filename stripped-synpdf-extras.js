@@ -920,12 +920,12 @@ function handleRecordingSelection(recordingFullData) {
     document.getElementById("notation-scroll").innerHTML = "";  // clear notation section so it looks responsive faster
 
     // Show favorite button and check status
-    if (typeof showFavoriteButton === 'function') {
-        showFavoriteButton(true);
+    if (typeof window.showFavoriteButton === 'function') {
+        window.showFavoriteButton(true);
     }
 
-    if (typeof checkIfFavorited === 'function') {
-        checkIfFavorited(recordingFullData.piece_id);
+    if (typeof window.checkIfFavorited === 'function') {
+        window.checkIfFavorited(recordingFullData.piece_id);
     }
 
     loadRecording(recordingFullData)
@@ -943,8 +943,11 @@ function handleRecordingSelection(recordingFullData) {
                     window.recordingFullyLoaded = true;
 
                     // Initialize annotations for logged-in users
-                    if (typeof initAnnotations === 'function' && currentMetricArrGlobal) {
-                        initAnnotations(currentMetricArrGlobal);
+                    if (typeof window.initAnnotations === 'function' && window.currentMetricArrGlobal) {
+                        window.initAnnotations(window.currentMetricArrGlobal);
+                        // Force show pen button in case initAnnotations failed to style it
+                        const penBtn = document.getElementById('annotation-edit-btn');
+                        if (penBtn) penBtn.style.display = 'flex';
                     }
                 })
                 .catch(function (error) {
