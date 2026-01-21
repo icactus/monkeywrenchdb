@@ -2112,6 +2112,17 @@ function startIntf$$module$synpdf(a) {
     $("#rollijn").on("mousedown touchstart", lijn_shift$$module$synpdf);
     opt$$module$synpdf.offrol && $("#rollijn").css("top", opt$$module$synpdf.offrol);
     doresize$$module$synpdf = 0;
+
+    // Show favorite and annotation buttons now that toolbar is created
+    if (typeof window.showFavoriteButton === 'function' && window.currentPieceGlobal) {
+        window.showFavoriteButton(true);
+    }
+    if (typeof window.checkIfFavorited === 'function' && window.currentPieceGlobal) {
+        window.checkIfFavorited(window.currentPieceGlobal);
+    }
+    if (typeof window.initAnnotations === 'function' && window.currentMetricArrGlobal) {
+        window.initAnnotations(window.currentMetricArrGlobal);
+    }
 }
 
 // Vars for restoring position after resizing/rotating
