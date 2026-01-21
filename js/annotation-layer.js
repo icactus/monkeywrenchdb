@@ -217,7 +217,7 @@
                 user-select: none;
                 -webkit-user-select: none;
             `;
-            console.log(`Updated overlay for Page ${pageNum}: ${top}px, ${left}px (${pageCanvas.offsetWidth}x${pageCanvas.offsetHeight})`);
+            // console.log(`Updated overlay for Page ${pageNum}: ${top}px, ${left}px (${pageCanvas.offsetWidth}x${pageCanvas.offsetHeight})`);
             overlay.dataset.page = pageNum;
 
             notationScroll.appendChild(overlay);
