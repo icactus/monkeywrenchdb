@@ -139,7 +139,7 @@ function clearHistory() {
 }
 
 // Favorites Logic
-function toggleFavoritesMenu() {
+window.toggleFavoritesMenu = function () {
     const modal = document.getElementById('favorites-modal');
     const backdrop = document.getElementById('favorites-backdrop');
     const isVisible = modal.classList.contains('visible');
@@ -179,7 +179,7 @@ function toggleFavoritesMenu() {
         modal.style.transform = '';
         if (backdrop) backdrop.classList.remove('visible');
     }
-}
+};
 
 // Close favorites modal when clicking outside or on backdrop
 document.addEventListener('click', function (event) {
@@ -211,7 +211,7 @@ document.addEventListener('click', function (event) {
 });
 
 // Toggle favorite for current piece
-function toggleFavorite() {
+window.toggleFavorite = function () {
     if (!window.loggedInUserId) {
         alert('Please log in to save favorites.');
         return;
@@ -233,7 +233,7 @@ function toggleFavorite() {
         // Remove from favorites
         const formData = new FormData();
         formData.append('piece_id', pieceId);
-        fetch('favorites_api.php?action=delete', {
+        window.fetch('favorites_api.php?action=delete', {
             method: 'POST',
             body: formData
         })
@@ -250,7 +250,7 @@ function toggleFavorite() {
         formData.append('piece_id', pieceId);
         formData.append('metric_arr_id', metricArrId);
         formData.append('recording_id', recordingId);
-        fetch('favorites_api.php?action=add', {
+        window.fetch('favorites_api.php?action=add', {
             method: 'POST',
             body: formData
         })
@@ -262,10 +262,10 @@ function toggleFavorite() {
             })
             .catch(err => console.error('Favorite add error:', err));
     }
-}
+};
 
 // Update star button appearance
-function updateFavoriteButton(isFavorited) {
+window.updateFavoriteButton = function (isFavorited) {
     const starBtn = document.getElementById('favorite-btn');
     if (!starBtn) return;
 
@@ -283,16 +283,16 @@ function updateFavoriteButton(isFavorited) {
         if (outlineStar) outlineStar.style.display = 'block';
         if (filledStar) filledStar.style.display = 'none';
     }
-}
+};
 
 // Check if current piece is favorited
-function checkIfFavorited(pieceId) {
+window.checkIfFavorited = function (pieceId) {
     if (!window.loggedInUserId || !pieceId) {
         updateFavoriteButton(false);
         return;
     }
 
-    fetch('favorites_api.php?action=check&piece_id=' + pieceId)
+    window.fetch('favorites_api.php?action=check&piece_id=' + pieceId)
         .then(res => res.json())
         .then(data => {
             updateFavoriteButton(data.favorited === true);
@@ -301,17 +301,17 @@ function checkIfFavorited(pieceId) {
             console.error('Check favorite error:', err);
             updateFavoriteButton(false);
         });
-}
+};
 
 // Show/hide favorite button based on piece loaded state
-function showFavoriteButton(show) {
+window.showFavoriteButton = function (show) {
     const btn = document.getElementById('favorite-btn');
     if (btn) {
         // Show button if requested (auth check handled on click)
         const displayVal = show ? 'flex' : 'none';
         btn.style.setProperty('display', displayVal, 'important');
     }
-}
+};
 
 var opt$$module$synpdf, times_arr$$module$synpdf, offset_js$$module$synpdf, pdf_file$$module$synpdf, pdf_data$$module$synpdf, jpg_data$$module$synpdf, media_dir$$module$synpdf, metric_arr$$module$synpdf, pdfDoc$$module$synpdf, pdfData$$module$synpdf, jpgData$$module$synpdf, nPage$$module$synpdf =
     1,
