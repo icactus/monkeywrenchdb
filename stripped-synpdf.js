@@ -138,6 +138,179 @@ function clearHistory() {
     }).then(() => fetchHistory());
 }
 
+// Favorites Logic
+function toggleFavoritesMenu() {
+    const modal = document.getElementById('favorites-modal');
+    const backdrop = document.getElementById('favorites-backdrop');
+    const isVisible = modal.classList.contains('visible');
+
+    if (!isVisible) {
+        // Position below user dropdown trigger on desktop only (>1024px)
+        const isMobileOrTablet = window.matchMedia("(max-width: 1024px)").matches;
+        const userTrigger = document.querySelector('.nav-user-trigger');
+
+        if (!isMobileOrTablet && userTrigger) {
+            const rect = userTrigger.getBoundingClientRect();
+            modal.style.position = 'fixed';
+            modal.style.top = (rect.bottom + 8) + 'px';
+            modal.style.left = rect.left + 'px';
+            modal.style.right = 'auto';
+            modal.style.transform = 'none';
+        } else {
+            // Mobile: clear inline styles so CSS centering takes over
+            modal.style.position = '';
+            modal.style.top = '';
+            modal.style.left = '';
+            modal.style.right = '';
+            modal.style.transform = '';
+        }
+
+        fetchFavorites();
+        modal.classList.add('visible');
+        modal.style.display = 'block';
+        if (backdrop) backdrop.classList.add('visible');
+    } else {
+        modal.classList.remove('visible');
+        modal.style.display = '';
+        modal.style.position = '';
+        modal.style.top = '';
+        modal.style.left = '';
+        modal.style.right = '';
+        modal.style.transform = '';
+        if (backdrop) backdrop.classList.remove('visible');
+    }
+}
+
+// Close favorites modal when clicking outside or on backdrop
+document.addEventListener('click', function (event) {
+    const modal = document.getElementById('favorites-modal');
+    const backdrop = document.getElementById('favorites-backdrop');
+    const toggleBtn = document.getElementById('favorites-toggle-btn');
+    const mobileMenu = document.getElementById('mobile-header-menu');
+
+    if (!modal) return;
+
+    // Close if clicking on backdrop
+    if (event.target === backdrop) {
+        modal.classList.remove('visible');
+        modal.style.display = '';
+        backdrop.classList.remove('visible');
+        return;
+    }
+
+    // If modal is visible and click is NOT on modal AND NOT on toggle button AND NOT from mobile menu
+    if (modal.classList.contains('visible') &&
+        !modal.contains(event.target) &&
+        (!toggleBtn || !toggleBtn.contains(event.target)) &&
+        (!mobileMenu || !mobileMenu.contains(event.target))) {
+
+        modal.classList.remove('visible');
+        modal.style.display = '';
+        if (backdrop) backdrop.classList.remove('visible');
+    }
+});
+
+// Toggle favorite for current piece
+function toggleFavorite() {
+    if (!window.loggedInUserId) {
+        alert('Please log in to save favorites.');
+        return;
+    }
+
+    const pieceId = window.currentPieceGlobal;
+    const metricArrId = window.currentMetricArrGlobal;
+    const recordingId = window.currentRecordingGlobal;
+
+    if (!pieceId || !metricArrId || !recordingId) {
+        console.warn('Cannot toggle favorite: missing piece data');
+        return;
+    }
+
+    const starBtn = document.getElementById('favorite-btn');
+    const isFavorited = starBtn && starBtn.classList.contains('favorited');
+
+    if (isFavorited) {
+        // Remove from favorites
+        const formData = new FormData();
+        formData.append('piece_id', pieceId);
+        fetch('favorites_api.php?action=delete', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    updateFavoriteButton(false);
+                }
+            })
+            .catch(err => console.error('Favorite delete error:', err));
+    } else {
+        // Add to favorites
+        const formData = new FormData();
+        formData.append('piece_id', pieceId);
+        formData.append('metric_arr_id', metricArrId);
+        formData.append('recording_id', recordingId);
+        fetch('favorites_api.php?action=add', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    updateFavoriteButton(true);
+                }
+            })
+            .catch(err => console.error('Favorite add error:', err));
+    }
+}
+
+// Update star button appearance
+function updateFavoriteButton(isFavorited) {
+    const starBtn = document.getElementById('favorite-btn');
+    if (!starBtn) return;
+
+    const outlineStar = starBtn.querySelector('#star-outline');
+    const filledStar = starBtn.querySelector('#star-filled');
+
+    if (isFavorited) {
+        starBtn.classList.add('favorited');
+        starBtn.title = 'Remove from Favorites';
+        if (outlineStar) outlineStar.style.display = 'none';
+        if (filledStar) filledStar.style.display = 'block';
+    } else {
+        starBtn.classList.remove('favorited');
+        starBtn.title = 'Add to Favorites';
+        if (outlineStar) outlineStar.style.display = 'block';
+        if (filledStar) filledStar.style.display = 'none';
+    }
+}
+
+// Check if current piece is favorited
+function checkIfFavorited(pieceId) {
+    if (!window.loggedInUserId || !pieceId) {
+        updateFavoriteButton(false);
+        return;
+    }
+
+    fetch('favorites_api.php?action=check&piece_id=' + pieceId)
+        .then(res => res.json())
+        .then(data => {
+            updateFavoriteButton(data.favorited === true);
+        })
+        .catch(err => {
+            console.error('Check favorite error:', err);
+            updateFavoriteButton(false);
+        });
+}
+
+// Show/hide favorite button based on login and piece loaded state
+function showFavoriteButton(show) {
+    const btn = document.getElementById('favorite-btn');
+    if (btn) {
+        btn.style.display = show && window.loggedInUserId ? 'flex' : 'none';
+    }
+}
+
 var opt$$module$synpdf, times_arr$$module$synpdf, offset_js$$module$synpdf, pdf_file$$module$synpdf, pdf_data$$module$synpdf, jpg_data$$module$synpdf, media_dir$$module$synpdf, metric_arr$$module$synpdf, pdfDoc$$module$synpdf, pdfData$$module$synpdf, jpgData$$module$synpdf, nPage$$module$synpdf =
     1,
     Cs$$module$synpdf = [],
@@ -375,6 +548,10 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 </button>
                 <button class="toolbar-btn" id="annotation-edit-btn" onclick="toggleAnnotationMode()" title="Edit Markings" style="display:none;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path fill="none" d="M12 19l7-7 3 3-7 7-3-3z"/><path fill="none" d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path fill="none" d="M2 2l7.586 7.586"/></svg>
+                </button>
+                <button class="toolbar-btn" id="favorite-btn" onclick="toggleFavorite()" title="Add to Favorites" style="display:none;">
+                    <svg id="star-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <svg id="star-filled" style="display:none" viewBox="0 0 24 24" fill="#f4c542" stroke="#f4c542" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                 </button>
                 <div class="toolbar-divider"></div>
                 <button class="toolbar-btn" id="more-tools-btn-dock" onclick="toggleExtraToolsDock(event)" title="More">

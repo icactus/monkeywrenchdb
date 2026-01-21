@@ -914,7 +914,16 @@ function handleRecordingSelection(recordingFullData) {
     // Setting the global instrument and recording values for dropdown use
     currentInstrumentGlobal = recordingFullData.instrument_id;
     currentRecordingGlobal = recordingFullData.recording_id;
+    window.currentPieceGlobal = recordingFullData.piece_id; // For favorites
     document.getElementById("notation-scroll").innerHTML = "";  // clear notation section so it looks responsive faster
+
+    // Show favorite button and check status
+    if (typeof showFavoriteButton === 'function') {
+        showFavoriteButton(true);
+    }
+    if (typeof checkIfFavorited === 'function') {
+        checkIfFavorited(recordingFullData.piece_id);
+    }
 
     loadRecording(recordingFullData)
         .then(function () {
