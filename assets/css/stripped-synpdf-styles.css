@@ -1247,20 +1247,9 @@ select {
         margin-left: 0;
     }
 
-    /* Center history modal on mobile/tablet like help/about */
-    .history-modal {
-        top: 50% !important;
-        left: 50% !important;
-        right: auto !important;
-        transform: translate(-50%, -50%);
-        width: 90%;
-        max-width: 380px;
-        max-height: 80vh;
-        border-radius: 12px;
-        z-index: 1001;
-    }
-
-    /* Center annotations modal on mobile/tablet like help/about */
+    /* Center modals on mobile/tablet like help/about */
+    .history-modal,
+    .favorites-modal,
     .annotations-modal {
         top: 50% !important;
         left: 50% !important;
@@ -1279,6 +1268,7 @@ select {
 @media screen and (min-width: 768px) and (max-width: 1024px) {
 
     .history-modal,
+    .favorites-modal,
     .annotations-modal {
         top: 50% !important;
         left: 50% !important;
@@ -2992,21 +2982,4 @@ body.hand-cursor-active #pdf-container {
 
 #notification.visible {
     display: block;
-}
-
-/* ========== Consistent Modal Positioning for Mobile ========== */
-@media screen and (max-width: 600px) {
-
-    .history-modal,
-    .favorites-modal,
-    .annotations-modal {
-        top: 50%;
-        left: 50%;
-        right: auto;
-        transform: translate(-50%, -50%);
-        width: 90%;
-        max-width: 400px;
-        max-height: 85vh;
-        border-radius: 16px;
-    }
 }
