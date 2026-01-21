@@ -471,6 +471,11 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     fill: #333;
                     stroke: #333;
                 }
+                /* Favorited star styling */
+                #control-buttons-row #favorite-btn.favorited #star-filled {
+                    fill: #f4c542;
+                    stroke: #f4c542;
+                }
                 #control-buttons-row .toolbar-divider {
                     width: 1px;
                     height: 24px;
