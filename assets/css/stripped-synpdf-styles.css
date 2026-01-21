@@ -2197,7 +2197,7 @@ html.inverted .color-swatch {
     display: none;
     position: fixed;
     top: 70px;
-    left: 30px;
+    right: 30px;
     width: 320px;
     background: white;
     border: none;
@@ -2992,4 +2992,21 @@ body.hand-cursor-active #pdf-container {
 
 #notification.visible {
     display: block;
+}
+
+/* ========== Consistent Modal Positioning for Mobile ========== */
+@media screen and (max-width: 600px) {
+
+    .history-modal,
+    .favorites-modal,
+    .annotations-modal {
+        top: 50%;
+        left: 50%;
+        right: auto;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 400px;
+        max-height: 85vh;
+        border-radius: 16px;
+    }
 }
