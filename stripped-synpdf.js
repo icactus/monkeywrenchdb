@@ -303,18 +303,12 @@ function checkIfFavorited(pieceId) {
         });
 }
 
-// Show/hide favorite button based on login and piece loaded state
+// Show/hide favorite button based on piece loaded state
 function showFavoriteButton(show) {
     const btn = document.getElementById('favorite-btn');
-    console.log('DEBUG: showFavoriteButton called', {
-        show: show,
-        userId: window.loggedInUserId,
-        btnExists: !!btn
-    });
     if (btn) {
-        const displayVal = show && window.loggedInUserId ? 'flex' : 'none';
-        console.log('DEBUG: setting star display to', displayVal);
-        // Force !important to override any specific CSS
+        // Show button if requested (auth check handled on click)
+        const displayVal = show ? 'flex' : 'none';
         btn.style.setProperty('display', displayVal, 'important');
     }
 }

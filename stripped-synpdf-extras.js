@@ -920,11 +920,8 @@ function handleRecordingSelection(recordingFullData) {
     document.getElementById("notation-scroll").innerHTML = "";  // clear notation section so it looks responsive faster
 
     // Show favorite button and check status
-    console.log('DEBUG: Calling showFavoriteButton(true) from extras');
     if (typeof showFavoriteButton === 'function') {
         showFavoriteButton(true);
-    } else {
-        console.error('DEBUG: showFavoriteButton is NOT a function');
     }
 
     if (typeof checkIfFavorited === 'function') {
