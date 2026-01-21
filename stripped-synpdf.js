@@ -306,8 +306,16 @@ function checkIfFavorited(pieceId) {
 // Show/hide favorite button based on login and piece loaded state
 function showFavoriteButton(show) {
     const btn = document.getElementById('favorite-btn');
+    console.log('DEBUG: showFavoriteButton called', {
+        show: show,
+        userId: window.loggedInUserId,
+        btnExists: !!btn
+    });
     if (btn) {
-        btn.style.display = show && window.loggedInUserId ? 'flex' : 'none';
+        const displayVal = show && window.loggedInUserId ? 'flex' : 'none';
+        console.log('DEBUG: setting star display to', displayVal);
+        // Force !important to override any specific CSS
+        btn.style.setProperty('display', displayVal, 'important');
     }
 }
 
@@ -2714,6 +2722,7 @@ $(document).ready(function () {
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin();
     });
     window.addEventListener("message", function (a) {
+        if (typeof a.data !== 'string') return; // Ignore non-string messages (e.g., from YouTube)
         "play" == a.data && keyDown$$module$synpdf({
             key: " "
         });

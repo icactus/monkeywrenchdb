@@ -915,12 +915,18 @@ function handleRecordingSelection(recordingFullData) {
     currentInstrumentGlobal = recordingFullData.instrument_id;
     currentRecordingGlobal = recordingFullData.recording_id;
     window.currentPieceGlobal = recordingFullData.piece_id; // For favorites
+    window.currentMetricArrGlobal = recordingFullData.metric_arr_id; // Ensure this is set for annotations
+
     document.getElementById("notation-scroll").innerHTML = "";  // clear notation section so it looks responsive faster
 
     // Show favorite button and check status
+    console.log('DEBUG: Calling showFavoriteButton(true) from extras');
     if (typeof showFavoriteButton === 'function') {
         showFavoriteButton(true);
+    } else {
+        console.error('DEBUG: showFavoriteButton is NOT a function');
     }
+
     if (typeof checkIfFavorited === 'function') {
         checkIfFavorited(recordingFullData.piece_id);
     }
