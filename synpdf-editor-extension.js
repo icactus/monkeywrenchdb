@@ -486,7 +486,7 @@
 
         // Send AJAX with explicit UTF-8 charset for international characters
         $.ajax({
-            url: 'synpdf_182/editmode/dispatcher.php',
+            url: '/editmode/dispatcher.php',
             type: 'POST',
             data: payload,
             contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
