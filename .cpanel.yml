@@ -15,6 +15,8 @@ deployment:
     - /bin/cp phpinfo.php $DEPLOYPATH
     - /bin/cp stripped-synpdf-extras.js $DEPLOYPATH
     - /bin/cp stripped-synpdf.js $DEPLOYPATH
+    - /bin/cp preview-editor.php $DEPLOYPATH
+    - /bin/cp synpdf-editor-extension.js $DEPLOYPATH
     - /bin/cp check_multiple_parts.php $DEPLOYPATH
     - /bin/cp auth_login.php $DEPLOYPATH
     - /bin/cp auth_callback.php $DEPLOYPATH
