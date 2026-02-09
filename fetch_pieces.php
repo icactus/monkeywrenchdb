@@ -32,6 +32,18 @@ if (empty($instrumentIds)) {
 
 $placeholders = implode(',', array_fill(0, count($instrumentIds), '?'));
 
+// Check if piece_solo_instruments table exists
+$soloTableExists = false;
+$tableCheck = $conn->query("SHOW TABLES LIKE 'piece_solo_instruments'");
+if ($tableCheck && $tableCheck->num_rows > 0) {
+    $soloTableExists = true;
+}
+
+// Build the solo instruments subquery only if table exists
+$soloSubquery = $soloTableExists
+    ? "(SELECT GROUP_CONCAT(psi.instrument_id) FROM piece_solo_instruments psi WHERE psi.piece_id = p.piece_id) AS solo_instrument_ids"
+    : "NULL AS solo_instrument_ids";
+
 // Main query - uses GROUP_CONCAT for solo instruments from junction table
 $sql = "
 SELECT
@@ -45,7 +57,7 @@ SELECT
     i.instrument_name,
     i.part_number,
     COALESCE(rc.total_recordings_value, 0) AS total_recordings_value,
-    (SELECT GROUP_CONCAT(psi.instrument_id) FROM piece_solo_instruments psi WHERE psi.piece_id = p.piece_id) AS solo_instrument_ids
+    $soloSubquery
 FROM pieces p
 JOIN composers        c  ON c.composer_id   = p.composer_id
 JOIN piece_categories pc ON pc.category_id  = p.category_id

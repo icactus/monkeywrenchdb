@@ -3,7 +3,7 @@ require_once 'config.php';
 
 // Establish the database connection
 $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-mysqli_set_charset($mysqli, 'utf8');
+mysqli_set_charset($mysqli, 'utf8mb4');
 
 // Check the database connection
 if ($mysqli->connect_error) {
@@ -42,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         die('MySQL prepare error: ' . $mysqli->error);
     }
 
-    $stmt->bind_param("sssisss", $conductor_name, $ensemble_name, $year, $piece_id, $youtube_id, $offset_js, $times_arr_data); 
+    $stmt->bind_param("sssisss", $conductor_name, $ensemble_name, $year, $piece_id, $youtube_id, $offset_js, $times_arr_data);
     $stmt->execute();
 
     if ($stmt->affected_rows === 0) {

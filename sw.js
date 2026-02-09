@@ -1,8 +1,9 @@
 // Service Worker for Monkey Wrench Database PWA
-// Version 2 - Online-only, always fetch fresh content
+// Version 108 - Added timeout and better error handling
 // Bump this version number to force update on all clients
 
-const SW_VERSION = 107;
+const SW_VERSION = 108;
+const FETCH_TIMEOUT_MS = 10000; // 10 second timeout
 
 // Install event - activate immediately
 self.addEventListener('install', (event) => {
@@ -31,24 +32,59 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Fetch event - always go to network (online-only mode)
-// Add cache-busting for JS/CSS files
-self.addEventListener('fetch', (event) => {
-    const url = new URL(event.request.url);
+// Helper: fetch with timeout to prevent hanging
+function fetchWithTimeout(request, timeoutMs) {
+    return new Promise((resolve, reject) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+            controller.abort();
+            reject(new Error('Fetch timeout'));
+        }, timeoutMs);
 
-    // For navigation requests, always fetch fresh
-    if (event.request.mode === 'navigate') {
-        event.respondWith(
-            fetch(event.request, { cache: 'no-store' })
-                .catch(() => fetch(event.request))
-        );
+        fetch(request, { signal: controller.signal })
+            .then(response => {
+                clearTimeout(timeoutId);
+                resolve(response);
+            })
+            .catch(err => {
+                clearTimeout(timeoutId);
+                reject(err);
+            });
+    });
+}
+
+// Fetch event - always go to network with timeout
+self.addEventListener('fetch', (event) => {
+    // Skip non-HTTP requests (e.g., chrome-extension://)
+    if (!event.request.url.startsWith('http')) {
         return;
     }
 
-    // For all other requests, fetch with cache refresh
     event.respondWith(
-        fetch(event.request, { cache: 'no-cache' })
-            .catch(() => fetch(event.request))
+        fetchWithTimeout(event.request, FETCH_TIMEOUT_MS)
+            .catch(err => {
+                console.warn('[SW] Fetch failed for:', event.request.url, err.message);
+                // Return a simple error response instead of hanging
+                if (event.request.mode === 'navigate') {
+                    return new Response(
+                        `<!DOCTYPE html>
+                        <html>
+                        <head><title>Connection Error</title></head>
+                        <body style="font-family: sans-serif; padding: 40px; text-align: center;">
+                            <h1>⚠️ Connection Error</h1>
+                            <p>Could not load the page. Please check your connection and try again.</p>
+                            <button onclick="location.reload()">Retry</button>
+                        </body>
+                        </html>`,
+                        { status: 503, headers: { 'Content-Type': 'text/html' } }
+                    );
+                }
+                // For non-navigation requests, return a network error
+                return new Response('Network error', {
+                    status: 503,
+                    statusText: 'Service Unavailable'
+                });
+            })
     );
 });
 

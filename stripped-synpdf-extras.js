@@ -1626,44 +1626,116 @@ $(document).ready(function () {
     }
 
     // Check for URL parameters 
-    if (urlMetricArrId && urlRecordingId) {
+    const urlPreview = urlParams.get('preview');
+
+    if (urlMetricArrId && (urlRecordingId || urlPreview)) {
         // Set global variables
         currentMetricArrGlobal = urlMetricArrId;
-        currentRecordingGlobal = urlRecordingId;
+        // If preview, we might not have a real recording ID, but we need something non-null
+        currentRecordingGlobal = urlRecordingId || 999999;
 
         // Get time parameter if present (for seeking)
         const urlStartTime = parseFloat(urlParams.get('t')) || 0;
 
-        // Fetch recordings based on the Metric Arrangement ID
-        fetchRecordings(urlMetricArrId)
-            .then(recordings => {
-                // Find the specific recording data from the list of recordings
-                const recordingFullData = recordings.find(rec => rec.recording_id.toString() === urlRecordingId);
-                if (recordingFullData) {
+        if (urlPreview) {
+            console.log("PREVIEW MODE DETECTED: " + urlPreview);
+            // 1. Fetch the preview JSON
+            fetch(urlPreview)
+                .then(res => res.json())
+                .then(previewData => {
+                    console.log("Preview data loaded:", previewData);
 
-                    // Store URL start time globally so handleRecordingSelection can use it
-                    if (urlStartTime > 0) {
-                        window.urlStartTimeOverride = urlStartTime;
-                        console.log('URL start time override set:', urlStartTime);
-                    }
+                    // 2. Fetch basic recording metadata (we still need piece_id etc.)
+                    // We can use fetchRecordings to get the list, then pick ANY recording to use as a template
+                    // OR better, since we have metricArrId, we can just fetch the first recording 
+                    // and overwrite the sensitive bits.
 
-                    // Polling function to wait for PDF.js
-                    const waitForPDF = () => {
-                        if (window.pdfjsLib) {
-                            handleRecordingSelection(recordingFullData);
-                        } else {
-                            setTimeout(waitForPDF, 50);
+                    fetchRecordings(urlMetricArrId)
+                        .then(recordings => {
+                            // Find a template. If recordingId provided, use that, else use first.
+                            let templateRecording = null;
+                            if (urlRecordingId) {
+                                templateRecording = recordings.find(rec => rec.recording_id.toString() === urlRecordingId);
+                            }
+                            if (!templateRecording && recordings.length > 0) {
+                                templateRecording = recordings[0];
+                            }
+
+                            if (templateRecording) {
+                                // Clone it
+                                const recordingFullData = JSON.parse(JSON.stringify(templateRecording));
+
+                                // OVERRIDE DATA
+                                recordingFullData.times_arr_data = previewData.times_arr_data;
+                                recordingFullData.offset_js = previewData.offset;
+                                if (previewData.youtube_id) {
+                                    recordingFullData.youtube_id = previewData.youtube_id;
+                                    option = { yubvid: previewData.youtube_id }; // Update options
+                                }
+
+                                console.log("Constructed Preview Data:", recordingFullData);
+
+                                // Load it
+                                if (urlStartTime > 0) {
+                                    window.urlStartTimeOverride = urlStartTime;
+                                }
+
+                                const waitForPDF = () => {
+                                    if (window.pdfjsLib) {
+                                        handleRecordingSelection(recordingFullData);
+                                        // Force UI indication
+                                        const indicator = document.createElement("div");
+                                        indicator.style.cssText = "position:fixed;top:10px;left:50%;transform:translateX(-50%);background:red;color:white;padding:5px 10px;z-index:10000;font-weight:bold;";
+                                        indicator.innerText = "PREVIEW MODE";
+                                        document.body.appendChild(indicator);
+                                    } else {
+                                        setTimeout(waitForPDF, 50);
+                                    }
+                                };
+                                waitForPDF();
+                            } else {
+                                alert("No base recording found for this piece to use as template.");
+                            }
+                        });
+                })
+                .catch(err => {
+                    console.error("Failed to load preview file:", err);
+                    alert("Failed to load preview file: " + err.message);
+                });
+
+        } else {
+            // ORIGINAL LOGIC
+            // Fetch recordings based on the Metric Arrangement ID
+            fetchRecordings(urlMetricArrId)
+                .then(recordings => {
+                    // Find the specific recording data from the list of recordings
+                    const recordingFullData = recordings.find(rec => rec.recording_id.toString() === urlRecordingId);
+                    if (recordingFullData) {
+
+                        // Store URL start time globally so handleRecordingSelection can use it
+                        if (urlStartTime > 0) {
+                            window.urlStartTimeOverride = urlStartTime;
+                            console.log('URL start time override set:', urlStartTime);
                         }
-                    };
-                    waitForPDF();
 
-                } else {
-                    console.error('Recording not found with the provided ID:', urlRecordingId);
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching recordings:', error);
-            });
+                        // Polling function to wait for PDF.js
+                        const waitForPDF = () => {
+                            if (window.pdfjsLib) {
+                                handleRecordingSelection(recordingFullData);
+                            } else {
+                                setTimeout(waitForPDF, 50);
+                            }
+                        };
+                        waitForPDF();
+
+                    } else {
+                        console.error('Recording not found with the provided ID:', urlRecordingId);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching recordings:', error);
+                });
+        }
     }
 
     //Add show-hide toggle listener
