@@ -1662,7 +1662,10 @@ $(document).ready(function () {
                         const recordingFullData = JSON.parse(JSON.stringify(templateRecording));
 
                         // OVERRIDE DATA
-                        recordingFullData.times_arr_data = previewData.times_arr_data;
+                        // times_arr_data must be a JSON string since sendVarToSynpdf calls JSON.parse on it
+                        recordingFullData.times_arr_data = typeof previewData.times_arr_data === 'string'
+                            ? previewData.times_arr_data
+                            : JSON.stringify(previewData.times_arr_data);
                         recordingFullData.offset_js = previewData.offset;
                         if (previewData.youtube_id) {
                             recordingFullData.youtube_id = previewData.youtube_id;
