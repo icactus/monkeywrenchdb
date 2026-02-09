@@ -629,39 +629,31 @@ HTML_TEMPLATE = '''
             btn.innerHTML = '<span class="spinner"></span> Generating...';
             
             try {
-                const response = await fetch('/save_preview', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        metricArrId: metricArrId,
-                        timestamps: timestamps,
-                        offset: totalOffset,
-                        youtube_id: videoId
-                    })
-                });
+                // Build the preview data object
+                const previewData = {
+                    times_arr_data: timestamps,
+                    offset: totalOffset,
+                    youtube_id: videoId
+                };
                 
-                const data = await response.json();
+                // Base64 encode the JSON
+                const jsonStr = JSON.stringify(previewData);
+                const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
                 
-                if (data.success) {
-                    let baseUrl = document.getElementById('previewBaseUrl').value;
-                    if (!baseUrl.endsWith('/')) {
-                        baseUrl += '/';
-                    }
-                    
-                    // Construct the preview link
-                    // We need to pass the asset path relative to the web root
-                    // Assuming assets/previews is accessible via the web server
-                    
-                    const previewLink = `${baseUrl}preview-editor.php?metricArrId=${metricArrId}&preview=${data.path}&offset=${totalOffset}`;
-                    
-                    document.getElementById('previewUrl').value = previewLink;
-                    document.getElementById('previewLinkOpen').href = previewLink;
-                    document.getElementById('previewResult').classList.remove('hidden');
-                } else {
-                    alert("Error saving preview: " + data.error);
+                let baseUrl = document.getElementById('previewBaseUrl').value;
+                if (!baseUrl.endsWith('/')) {
+                    baseUrl += '/';
                 }
+                
+                // Construct the preview link with data in hash fragment
+                const previewLink = `${baseUrl}preview-editor.php?metricArrId=${metricArrId}#data=${base64Data}`;
+                
+                document.getElementById('previewUrl').value = previewLink;
+                document.getElementById('previewLinkOpen').href = previewLink;
+                document.getElementById('previewResult').classList.remove('hidden');
+                
             } catch (err) {
-                alert("Network error: " + err.message);
+                alert("Error generating preview: " + err.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = '👁️ Generate Preview Link';

@@ -1628,7 +1628,12 @@ $(document).ready(function () {
     // Check for URL parameters 
     const urlPreview = urlParams.get('preview');
 
-    if (urlMetricArrId && (urlRecordingId || urlPreview)) {
+    // Check for hash fragment data (base64 encoded preview)
+    const hashData = window.location.hash.startsWith('#data=')
+        ? window.location.hash.substring(6)
+        : null;
+
+    if (urlMetricArrId && (urlRecordingId || urlPreview || hashData)) {
         // Set global variables
         currentMetricArrGlobal = urlMetricArrId;
         // If preview, we might not have a real recording ID, but we need something non-null
@@ -1637,67 +1642,79 @@ $(document).ready(function () {
         // Get time parameter if present (for seeking)
         const urlStartTime = parseFloat(urlParams.get('t')) || 0;
 
-        if (urlPreview) {
+        // Helper function to load preview with given data
+        const loadPreviewData = (previewData) => {
+            console.log("Preview data loaded:", previewData);
+
+            fetchRecordings(urlMetricArrId)
+                .then(recordings => {
+                    // Find a template. If recordingId provided, use that, else use first.
+                    let templateRecording = null;
+                    if (urlRecordingId) {
+                        templateRecording = recordings.find(rec => rec.recording_id.toString() === urlRecordingId);
+                    }
+                    if (!templateRecording && recordings.length > 0) {
+                        templateRecording = recordings[0];
+                    }
+
+                    if (templateRecording) {
+                        // Clone it
+                        const recordingFullData = JSON.parse(JSON.stringify(templateRecording));
+
+                        // OVERRIDE DATA
+                        recordingFullData.times_arr_data = previewData.times_arr_data;
+                        recordingFullData.offset_js = previewData.offset;
+                        if (previewData.youtube_id) {
+                            recordingFullData.youtube_id = previewData.youtube_id;
+                            option = { yubvid: previewData.youtube_id }; // Update options
+                        }
+
+                        // Store for editor access
+                        window.currentRecordingFullData = recordingFullData;
+
+                        console.log("Constructed Preview Data:", recordingFullData);
+
+                        // Load it
+                        if (urlStartTime > 0) {
+                            window.urlStartTimeOverride = urlStartTime;
+                        }
+
+                        const waitForPDF = () => {
+                            if (window.pdfjsLib) {
+                                handleRecordingSelection(recordingFullData);
+                                // Force UI indication
+                                const indicator = document.createElement("div");
+                                indicator.style.cssText = "position:fixed;top:10px;left:50%;transform:translateX(-50%);background:red;color:white;padding:5px 10px;z-index:10000;font-weight:bold;";
+                                indicator.innerText = "PREVIEW MODE";
+                                document.body.appendChild(indicator);
+                            } else {
+                                setTimeout(waitForPDF, 50);
+                            }
+                        };
+                        waitForPDF();
+                    } else {
+                        alert("No base recording found for this piece to use as template.");
+                    }
+                });
+        };
+
+        if (hashData) {
+            // Decode base64 from hash fragment
+            console.log("PREVIEW MODE DETECTED: data in URL hash");
+            try {
+                const jsonStr = decodeURIComponent(escape(atob(hashData)));
+                const previewData = JSON.parse(jsonStr);
+                loadPreviewData(previewData);
+            } catch (err) {
+                console.error("Failed to decode hash data:", err);
+                alert("Failed to decode preview data from URL: " + err.message);
+            }
+        } else if (urlPreview) {
             console.log("PREVIEW MODE DETECTED: " + urlPreview);
-            // 1. Fetch the preview JSON
+            // Fetch the preview JSON file
             fetch(urlPreview)
                 .then(res => res.json())
-                .then(previewData => {
-                    console.log("Preview data loaded:", previewData);
-
-                    // 2. Fetch basic recording metadata (we still need piece_id etc.)
-                    // We can use fetchRecordings to get the list, then pick ANY recording to use as a template
-                    // OR better, since we have metricArrId, we can just fetch the first recording 
-                    // and overwrite the sensitive bits.
-
-                    fetchRecordings(urlMetricArrId)
-                        .then(recordings => {
-                            // Find a template. If recordingId provided, use that, else use first.
-                            let templateRecording = null;
-                            if (urlRecordingId) {
-                                templateRecording = recordings.find(rec => rec.recording_id.toString() === urlRecordingId);
-                            }
-                            if (!templateRecording && recordings.length > 0) {
-                                templateRecording = recordings[0];
-                            }
-
-                            if (templateRecording) {
-                                // Clone it
-                                const recordingFullData = JSON.parse(JSON.stringify(templateRecording));
-
-                                // OVERRIDE DATA
-                                recordingFullData.times_arr_data = previewData.times_arr_data;
-                                recordingFullData.offset_js = previewData.offset;
-                                if (previewData.youtube_id) {
-                                    recordingFullData.youtube_id = previewData.youtube_id;
-                                    option = { yubvid: previewData.youtube_id }; // Update options
-                                }
-
-                                console.log("Constructed Preview Data:", recordingFullData);
-
-                                // Load it
-                                if (urlStartTime > 0) {
-                                    window.urlStartTimeOverride = urlStartTime;
-                                }
-
-                                const waitForPDF = () => {
-                                    if (window.pdfjsLib) {
-                                        handleRecordingSelection(recordingFullData);
-                                        // Force UI indication
-                                        const indicator = document.createElement("div");
-                                        indicator.style.cssText = "position:fixed;top:10px;left:50%;transform:translateX(-50%);background:red;color:white;padding:5px 10px;z-index:10000;font-weight:bold;";
-                                        indicator.innerText = "PREVIEW MODE";
-                                        document.body.appendChild(indicator);
-                                    } else {
-                                        setTimeout(waitForPDF, 50);
-                                    }
-                                };
-                                waitForPDF();
-                            } else {
-                                alert("No base recording found for this piece to use as template.");
-                            }
-                        });
-                })
+                .then(previewData => loadPreviewData(previewData))
                 .catch(err => {
                     console.error("Failed to load preview file:", err);
                     alert("Failed to load preview file: " + err.message);
