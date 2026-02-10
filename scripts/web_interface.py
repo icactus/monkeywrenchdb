@@ -576,13 +576,19 @@ HTML_TEMPLATE = '''
                     document.getElementById('outputTimestamps').value = JSON.stringify(cleanOutput, null, 2);
                     document.getElementById('logsOutput').value = data.logs;
                     
-                    // Store full results for preview generation
+                     // Store full results for preview generation
                     window.fullPipelineResults = data.zero_based_results;
+                    console.log("[DEBUG] Received results:", data.zero_based_results.length, "items");
+                    if (data.zero_based_results.length > 0) {
+                        console.log("[DEBUG] Sample item:", data.zero_based_results[0]);
+                    }
 
                     // Generate fix list (low confidence items)
                     window.fullFixList = data.zero_based_results
                         .map((item, index) => ({ ...item, detix: index }))
                         .filter(item => item.confidence && (String(item.confidence).toLowerCase() === 'low' || item.confidence < 0.5));
+                    
+                    console.log("[DEBUG] Generated Fix List:", window.fullFixList.length, "items");
 
                     resultsSection.classList.remove('hidden');
                     logsSection.classList.remove('hidden');
@@ -666,6 +672,8 @@ HTML_TEMPLATE = '''
                     youtube_id: videoId,
                     fix_list: window.fullFixList || []
                 };
+                
+                console.log("[DEBUG] Preview Data to encode:", previewData);
                 
                 // Base64 encode the JSON
                 const jsonStr = JSON.stringify(previewData);

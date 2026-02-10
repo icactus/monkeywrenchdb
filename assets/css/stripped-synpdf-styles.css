@@ -2982,7 +2982,9 @@ body.hand-cursor-active #pdf-container {
 
 #notification.visible {
     display: block;
-}.quickfix-panel {
+}
+
+.quickfix-panel {
     margin-bottom: 15px;
     background: #fff;
     border: 1px solid #ddd;
@@ -3038,9 +3040,13 @@ body.hand-cursor-active #pdf-container {
 }
 
 .quickfix-item.active {
-    background: #fff3e0;
-    border-left: 4px solid #ff9800;
-    padding-left: 8px; /* Compensate for border */
+    background: #ffe0b2;
+    /* Darker orange */
+    border-left: 4px solid #f57c00;
+    /* Stronger border */
+    padding-left: 8px;
+    /* Compensate for border */
+    font-weight: 600;
 }
 
 .quickfix-item.done {

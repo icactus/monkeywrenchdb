@@ -338,10 +338,8 @@
             // Visual feedback on the score container
             document.getElementById('notation').style.border = '2px solid #ff9800'; // Orange border
 
-            // Start polling for sync info updates (measure duration changes as we play)
-            if (!window.syncInfoInterval) {
-                window.syncInfoInterval = setInterval(updateSyncInfo, 200);
-            }
+            // Hook into the time2x function to update UI on every frame/change
+            installTime2xHook();
         } else {
             btn.innerHTML = '✏️ Edit Preview';
             btn.style.backgroundColor = '#f0f0f0';
@@ -350,12 +348,35 @@
             log('Edit Mode DISABLED');
 
             document.getElementById('notation').style.border = 'none';
-
-            if (window.syncInfoInterval) {
-                clearInterval(window.syncInfoInterval);
-                window.syncInfoInterval = null;
-            }
         }
+    }
+
+    // --- HOOK INTO SYNPDF LOGIC ---
+    let isHooked = false;
+    function installTime2xHook() {
+        if (isHooked) return;
+
+        // Wait for msc_wz to be available
+        if (!window.msc_wz$$module$synpdf) {
+            setTimeout(installTime2xHook, 500);
+            return;
+        }
+
+        const originalTime2x = window.msc_wz$$module$synpdf.time2x;
+
+        // Overwrite with wrapper
+        window.msc_wz$$module$synpdf.time2x = function (t) {
+            // Call original
+            originalTime2x.apply(this, arguments);
+
+            // Update our UI if editing
+            if (window.isEditing) {
+                updateSyncInfo();
+            }
+        };
+
+        isHooked = true;
+        log('Hooked into time2x for optimized UI updates.');
     }
 
     // --- SYNC INFO DISPLAY ---
@@ -389,12 +410,12 @@
                 "<b>Media Offset:</b> " + offset.toFixed(3) + " sec.<br>";
         }
 
-        content += "<hr style='margin: 8px 0; border: 0; border-top: 1px solid #ddd;'>" +
-            "<small><b>Controls:</b><br>" +
-            "<b>, / .</b> : -/+ 0.1s (Current Duration)<br>" +
-            "<b>Shift + , / .</b> : -/+ 0.01s<br>" +
-            "<b>b</b> : Snap NEXT bar start to now<br>" +
-            "<b>c</b> : Snap CURRENT bar start to now</small>";
+        // content += "<hr style='margin: 8px 0; border: 0; border-top: 1px solid #ddd;'>" +
+        //     "<small><b>Controls:</b><br>" +
+        //     "<b>, / .</b> : -/+ 0.1s (Current Duration)<br>" +
+        //     "<b>Shift + , / .</b> : -/+ 0.01s<br>" +
+        //     "<b>b</b> : Snap NEXT bar start to now<br>" +
+        //     "<b>c</b> : Snap CURRENT bar start to now</small>";
 
         syncInfoDiv.html(content);
     }
