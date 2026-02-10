@@ -363,8 +363,16 @@ HTML_TEMPLATE = '''
                     </div>
                     
                     <div class="form-group">
-                        <label for="timestamps">Timestamp Array (JSON)</label>
+                        <label for="timestamps">Rec 1 Timestamps (JSON)</label>
                         <textarea id="timestamps" name="timestamps" placeholder='[{"mix": 0, "t": 0}, {"mix": 1, "t": 2.5}, ...]'></textarea>
+                    </div>
+
+                    <div class="form-group" style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+                        <label for="timestamps_rec2">Recording 2 Manual Timestamps (Ground Truth - Optional)</label>
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                            If provided, the pipeline will compare its output against these values index-by-index.
+                        </p>
+                        <textarea id="timestamps_rec2" name="timestamps_rec2" placeholder='[{"mix": 0, "t": 0}, {"mix": 1, "t": 4.9}, ...]' style="min-height: 120px;"></textarea>
                     </div>
                     
                     <button type="submit" class="btn btn-primary" id="submitBtn">
@@ -481,6 +489,7 @@ HTML_TEMPLATE = '''
             const offset2 = parseTimeToSeconds(document.getElementById('offset2').value);
             const end2 = parseTimeToSeconds(document.getElementById('end2').value);
             const timestampsRaw = document.getElementById('timestamps').value;
+            const timestampsRec2Raw = document.getElementById('timestamps_rec2').value.trim();
             
             // Validate time parsing
             if (offset2 === null) {
@@ -506,8 +515,19 @@ HTML_TEMPLATE = '''
             try {
                 timestamps = JSON.parse(timestampsRaw);
             } catch (err) {
-                showStatus('error', 'Invalid JSON in timestamps field: ' + err.message);
+                showStatus('error', 'Invalid JSON in Rec 1 timestamps field: ' + err.message);
                 return;
+            }
+
+            // Parse Rec 2 ground truth if provided
+            let timestampsRec2 = null;
+            if (timestampsRec2Raw) {
+                try {
+                    timestampsRec2 = JSON.parse(timestampsRec2Raw);
+                } catch (err) {
+                    showStatus('error', 'Invalid JSON in Rec 2 ground truth field: ' + err.message);
+                    return;
+                }
             }
             
             // Validate
@@ -532,7 +552,9 @@ HTML_TEMPLATE = '''
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        url1, url2, offset1, end1, offset2, end2, timestamps
+                        url1, url2, offset1, end1, offset2, end2, 
+                        timestamps, 
+                        timestamps_rec2: timestampsRec2
                     })
                 });
                 
@@ -698,6 +720,7 @@ def run():
         if end2:
             end2 = float(end2)
         timestamps = data.get('timestamps', [])
+        timestamps_rec2 = data.get('timestamps_rec2')
         
         # DEBUG: Print what we're receiving
         print(f"[DEBUG] Received: offset1={offset1}, end1={end1}, offset2={offset2}, end2={end2}")
@@ -710,7 +733,8 @@ def run():
             end1=end1,
             offset2=offset2,
             end2=end2,
-            timestamps_list=timestamps
+            timestamps_list=timestamps,
+            timestamps_list_rec2=timestamps_rec2
         )
         
         return jsonify({

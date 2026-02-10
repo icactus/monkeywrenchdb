@@ -159,9 +159,107 @@ class AudioSync:
         
         return list(path)
 
+    def local_refine(self, f1_hires, f2_hires, t1_sec, t2_est_sec, 
+                      window_sec=3.0, local_hop=256):
+        """
+        Refine a single timestamp using pre-computed high-res features.
+        
+        Slices ±window_sec windows from pre-computed feature arrays and runs
+        a small local DTW. No feature extraction per-call — just array slicing + DTW.
+        
+        Args:
+            f1_hires: Pre-computed high-res features for rec1 (frames, dims)
+            f2_hires: Pre-computed high-res features for rec2 (frames, dims)
+            t1_sec: Timestamp in rec1 (seconds)
+            t2_est_sec: Global DTW estimate for rec2 (seconds)
+            window_sec: Half-window size in seconds (default 3.0)
+            local_hop: Hop length used for the high-res features (default 256)
+            
+        Returns:
+            Refined t2 in seconds
+        """
+        from dtaidistance import dtw_ndim
+        
+        local_frame_rate = self.sr / local_hop  # ~86 Hz
+        win_frames = int(window_sec * local_frame_rate)
+        
+        # Convert timestamps to high-res frame indices
+        t1_frame = int(t1_sec * local_frame_rate)
+        t2_frame = int(t2_est_sec * local_frame_rate)
+        
+        # Extract windows (clamped to array boundaries)
+        start1 = max(0, t1_frame - win_frames)
+        end1_idx = min(len(f1_hires), t1_frame + win_frames)
+        start2 = max(0, t2_frame - win_frames)
+        end2_idx = min(len(f2_hires), t2_frame + win_frames)
+        
+        seg1 = f1_hires[start1:end1_idx]
+        seg2 = f2_hires[start2:end2_idx]
+        
+        # Need minimum frames for meaningful DTW
+        if len(seg1) < 20 or len(seg2) < 20:
+            return t2_est_sec
+        
+        # Run local DTW (small matrix, no window constraint needed)
+        f1_c = np.ascontiguousarray(seg1, dtype=np.float64)
+        f2_c = np.ascontiguousarray(seg2, dtype=np.float64)
+        
+        local_path = dtw_ndim.warping_path(f1_c, f2_c, use_c=True)
+        
+        # Find where t1 maps in the local path
+        t1_local_frame = t1_frame - start1
+        t1_local_frame = max(0, min(t1_local_frame, len(seg1) - 1))
+        
+        # Find the path entry closest to t1_local_frame in the rec1 axis
+        path_arr = np.array(local_path)
+        mask = path_arr[:, 0] == t1_local_frame
+        if mask.any():
+            t2_local_frame = int(np.mean(path_arr[mask, 1]))
+        else:
+            diffs = np.abs(path_arr[:, 0] - t1_local_frame)
+            nearest_idx = np.argmin(diffs)
+            t2_local_frame = int(path_arr[nearest_idx, 1])
+        
+        # Convert back to absolute seconds
+        t2_refined = (start2 + t2_local_frame) / local_frame_rate
+        
+        return t2_refined
+
+    def extract_features_hires(self, y, local_hop=256):
+        """
+        Pre-compute high-resolution features for local refinement.
+        Computed once per recording, then sliced for each local DTW.
+        
+        Returns: features array (frames, 25)
+        """
+        print(f"  Computing high-res features (hop={local_hop}, ~{self.sr/local_hop:.0f}Hz)...")
+        
+        chroma = librosa.feature.chroma_cqt(y=y, sr=self.sr, hop_length=local_hop)
+        chroma = librosa.util.normalize(chroma, axis=0)
+        
+        delta = librosa.feature.delta(chroma)
+        delta = librosa.util.normalize(delta, axis=0)
+        
+        onset = librosa.onset.onset_strength(y=y, sr=self.sr, hop_length=local_hop)
+        onset = onset / (onset.max() + 1e-8)
+        
+        min_len = min(chroma.shape[1], delta.shape[1], len(onset))
+        features = np.vstack([
+            chroma[:, :min_len], 
+            delta[:, :min_len], 
+            onset[:min_len].reshape(1, -1)
+        ]).T  # (frames, 25)
+        
+        print(f"  High-res features: {features.shape[0]} frames ({features.shape[0] * local_hop / self.sr:.1f}s)")
+        return features
+
     def map_timestamps(self, coarse_path, manual_timestamps_list, y1, y2):
         """
-        Maps timestamps using Global Path directly.
+        Maps timestamps using Global Path + Local Refinement.
+        
+        First uses global DTW path for coarse estimation, then runs a
+        high-resolution local DTW around each estimate for sub-frame accuracy.
+        Features are pre-computed once at high resolution and sliced per-timestamp.
         
         TERMINOLOGY NOTE:
         - mix: The measure number (e.g. 100). NOT UNIQUE if there are repeats.
@@ -169,9 +267,18 @@ class AudioSync:
           ALWAYS use the index/detix for alignment verification and mapping
           to avoid ambiguity during repeated sections.
         """
-        print(f"\n--- Mapping Timestamps (Global Path Only) ---")
+        print(f"\n--- Mapping Timestamps (Global Path + Local Refinement) ---")
         
-        # Create interpolation function from Path
+        # Pre-compute high-res features ONCE for both recordings
+        local_hop = 256
+        import time
+        t_start = time.time()
+        print("  [Pre-computing high-res features for local refinement]")
+        f1_hires = self.extract_features_hires(y1, local_hop=local_hop)
+        f2_hires = self.extract_features_hires(y2, local_hop=local_hop)
+        print(f"  Feature pre-computation: {time.time() - t_start:.1f}s")
+        
+        # Create interpolation function from global path
         path_arr = np.array(coarse_path) 
         u_i, u_idx = np.unique(path_arr[:, 0], return_index=True)
         u_j = path_arr[u_idx, 1]
@@ -181,15 +288,27 @@ class AudioSync:
         
         results = []
         mapped_count = 0
+        refined_count = 0
+        total_correction = 0.0
         
+        t_refine_start = time.time()
         for i, record in enumerate(manual_timestamps_list):
             t1 = record['t']
             mix_num = record.get('mix', 0)
             
-            # Map using global path
+            # Map using global path (coarse estimate)
             t1_frame = int(t1 * self.sr / self.hop_length)
             t2_frame_est = coarse_mapper(t1_frame)
-            t2_final = t2_frame_est * self.hop_length / self.sr
+            t2_coarse = float(t2_frame_est * self.hop_length / self.sr)
+            
+            # Local refinement pass (just array slicing + small DTW)
+            t2_final = self.local_refine(f1_hires, f2_hires, t1, t2_coarse, 
+                                          local_hop=local_hop)
+            
+            correction = abs(t2_final - t2_coarse)
+            if correction > 0.001:  # More than 1ms correction
+                refined_count += 1
+                total_correction += correction
             
             results.append({
                 "index": i,
@@ -197,8 +316,13 @@ class AudioSync:
                 "t": t2_final
             })
             mapped_count += 1
-            
+        
+        avg_correction = total_correction / max(refined_count, 1)
+        refine_elapsed = time.time() - t_refine_start
         print(f"  Mapped {mapped_count} timestamps")
+        print(f"  Local refinement adjusted {refined_count}/{mapped_count} points")
+        print(f"  Average correction: {avg_correction*1000:.1f}ms")
+        print(f"  Refinement time: {refine_elapsed:.1f}s ({refine_elapsed/max(mapped_count,1)*1000:.0f}ms/point)")
         return results
 
     def run_sync(self, url1, url2, output_json="sync_path.json", 

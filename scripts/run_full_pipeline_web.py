@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from improved_audio_sync import AudioSync
 
 
-def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_list, max_duration=None):
+def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_list, max_duration=None, timestamps_list_rec2=None):
     """
     Run the DTW sync pipeline with custom parameters.
     
@@ -202,6 +202,68 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         
 
         
+        # ========================================================================
+        # Step 3: Ground Truth Comparison (Optional)
+        # ========================================================================
+        if timestamps_list_rec2:
+            print("\n[STEP 3/3] Comparing with Ground Truth (Rec 2 Manual Timestamps)...")
+            
+            # Use 'final_results' which are relative to the start of the audio file (after offset2)
+            # Match by index
+            errors = []
+            max_err = 0
+            max_err_idx = -1
+            
+            num_points = min(len(final_results), len(timestamps_list_rec2))
+            
+            print(f"  Comparing {num_points} matching indices...")
+            
+            if len(final_results) != len(timestamps_list_rec2):
+                print(f"  WARNING: Length mismatch! Pipeline output has {len(final_results)} points, "
+                      f"but Ground Truth has {len(timestamps_list_rec2)} points.")
+            
+            print("\n  Top 20 Errors (>= 0.1s):")
+            print("  " + "-" * 50)
+            print("  Index | Measure (Mix) | Pipeline T | Manual T | Abs Error | Confidence")
+            
+            high_error_count = 0
+            
+            for i in range(num_points):
+                p_t = final_results[i]['t']
+                m_t = float(timestamps_list_rec2[i]['t'])
+                err = abs(p_t - m_t)
+                errors.append(err)
+                
+                if err > max_err:
+                    max_err = err
+                    max_err_idx = i
+                
+                if err >= 0.1:
+                    high_error_count += 1
+                    
+                # Print details for top/significant errors
+                if err >= 0.1 or i < 5: # Always print first few, then significant ones
+                    confidence = "LOW" if final_results[i].get('low_energy') else "HIGH"
+                    print(f"  {i:5d} | {final_results[i]['mix']:13d} | {p_t:10.3f} | {m_t:8.3f} | {err:9.3f}s | {confidence}")
+
+            if not errors:
+                print("  No comparison possible (zero points).")
+            else:
+                mae = sum(errors) / len(errors)
+                print("  " + "-" * 50)
+                print(f"  SUMMARY STATISTICS:")
+                print(f"    Mean Absolute Error (MAE): {mae:.4f}s")
+                print(f"    Max Absolute Error: {max_err:.4f}s at index {max_err_idx}")
+                print(f"    Total points with error >= 0.1s: {high_error_count} ({high_error_count/num_points*100:.1f}%)")
+                
+                # Check if "HIGH" confidence points have high error
+                high_conf_errors = [e for i, e in enumerate(errors) if not final_results[i].get('low_energy')]
+                if high_conf_errors:
+                    mae_high = sum(high_conf_errors) / len(high_conf_errors)
+                    max_high = max(high_conf_errors)
+                    print(f"    MAE (High Confidence points only): {mae_high:.4f}s")
+                    print(f"    Max Error (High Confidence points): {max_high:.4f}s")
+
         print("\n" + "=" * 60)
         print("PIPELINE COMPLETE")
         print("=" * 60)
