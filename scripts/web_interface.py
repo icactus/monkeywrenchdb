@@ -719,8 +719,7 @@ def run():
             'first_mapped_t': result['first_mapped_t'],
             'final_results': result['final_results'],
             'zero_based_results': result['zero_based_results'],
-            'logs': result['logs'],
-            'rt_errors': result['rt_errors']
+            'logs': result['logs']
         })
         
     except Exception as e:

@@ -1953,73 +1953,74 @@ url2 = 'https://www.youtube.com/watch?v=q5OaSju0qNc'
 # 100 frames = 2.3 seconds latitude.
 # 1000 frames = 23 seconds latitude.
 # Using new optimized parallel sync
-# 1. Load path from latest run
-print("Loading alignment path from sync_path_test.json...")
-with open("sync_path_test.json") as f:
-    dt_data = json.load(f)
-    path = dt_data['path']
-    # Use parameters from the file
-    syncer.sr = dt_data.get('sr', 22050)
-    syncer.hop_length = dt_data.get('hop_length', 512)
-    offset2 = dt_data.get('offset2', 26)
+if __name__ == "__main__":
+    # 1. Load path from latest run
+    print("Loading alignment path from sync_path_test.json...")
+    with open("sync_path_test.json") as f:
+        dt_data = json.load(f)
+        path = dt_data['path']
+        # Use parameters from the file
+        syncer.sr = dt_data.get('sr', 22050)
+        syncer.hop_length = dt_data.get('hop_length', 512)
+        offset2 = dt_data.get('offset2', 26)
 
-# 2. Map timestamps
-print("Mapping timestamps...")
-mapped_timestamps = []
+    # 2. Map timestamps
+    print("Mapping timestamps...")
+    mapped_timestamps = []
 
-# path is tuple (idx1, idx2)
-# Convert path to dictionary for fast lookup: idx1 -> idx2
-# Since DTW is 1-to-many or many-to-1, we need to pick a strategy.
-# Usually taking the *first* occurrence is fine for "start of measure".
-path_dict = {}
-for i, j in path:
-    if i not in path_dict:
-        path_dict[i] = j
+    # path is tuple (idx1, idx2)
+    # Convert path to dictionary for fast lookup: idx1 -> idx2
+    # Since DTW is 1-to-many or many-to-1, we need to pick a strategy.
+    # Usually taking the *first* occurrence is fine for "start of measure".
+    path_dict = {}
+    for i, j in path:
+        if i not in path_dict:
+            path_dict[i] = j
 
-temp_results = []
-for entry in timestamps1_raw:
-    t1_orig = entry['t']
-    mix_num = entry['mix']
-    
-    # 1. Apply offset to get "YouTube Time" / "Audio File Time"
-    t1 = t1_orig + 0.01
+    temp_results = []
+    for entry in timestamps1_raw:
+        t1_orig = entry['t']
+        mix_num = entry['mix']
+        
+        # 1. Apply offset to get "YouTube Time" / "Audio File Time"
+        t1 = t1_orig + 0.01
 
-    # 2. Convert to frame index
-    frame_idx1 = int(t1 * syncer.sr / syncer.hop_length)
+        # 2. Convert to frame index
+        frame_idx1 = int(t1 * syncer.sr / syncer.hop_length)
 
-    # 3. Find corresponding frame in Rec 2
-    if frame_idx1 in path_dict:
-        frame_idx2 = path_dict[frame_idx1]
+        # 3. Find corresponding frame in Rec 2
+        if frame_idx1 in path_dict:
+            frame_idx2 = path_dict[frame_idx1]
+        else:
+            frame_idx2 = path_dict[min(path_dict.keys(), key=lambda k: abs(k-frame_idx1))]
+
+        # 4. Convert frame index 2 to time
+        t2_relative = frame_idx2 * syncer.hop_length / syncer.sr
+        
+        # 5. Apply Rec 2 offset (start_offset=25)
+        t2_absolute = t2_relative + 25.0
+        
+        temp_results.append({
+            "fn": mix_num,
+            "t_absolute": t2_absolute
+        })
+
+    # Normalize so first timestamp is 0
+    if temp_results:
+        initial_offset = temp_results[0]["t_absolute"]
     else:
-        frame_idx2 = path_dict[min(path_dict.keys(), key=lambda k: abs(k-frame_idx1))]
+        initial_offset = 0
 
-    # 4. Convert frame index 2 to time
-    t2_relative = frame_idx2 * syncer.hop_length / syncer.sr
-    
-    # 5. Apply Rec 2 offset (start_offset=25)
-    t2_absolute = t2_relative + 25.0
-    
-    temp_results.append({
-        "fn": mix_num,
-        "t_absolute": t2_absolute
-    })
+    final_results = []
+    for res in temp_results:
+        final_results.append({
+            "mix": res["fn"], # using key 'mix' to match input format
+            "t": round(res["t_absolute"] - initial_offset, 3)
+        })
 
-# Normalize so first timestamp is 0
-if temp_results:
-    initial_offset = temp_results[0]["t_absolute"]
-else:
-    initial_offset = 0
+    print(f"Total Offset from Video Start: {initial_offset} seconds")
+    # print(json.dumps(final_results))
 
-final_results = []
-for res in temp_results:
-    final_results.append({
-        "mix": res["fn"], # using key 'mix' to match input format
-        "t": round(res["t_absolute"] - initial_offset, 3)
-    })
-
-print(f"Total Offset from Video Start: {initial_offset} seconds")
-# print(json.dumps(final_results))
-
-with open("evaluation_results.json", "w") as f:
-    json.dump(final_results, f, indent=4)
-print("Results saved to evaluation_results.json")
+    with open("evaluation_results.json", "w") as f:
+        json.dump(final_results, f, indent=4)
+    print("Results saved to evaluation_results.json")

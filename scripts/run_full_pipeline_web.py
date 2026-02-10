@@ -41,7 +41,6 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             - final_results: List of mapped timestamps for Rec2
             - total_offset_rec2: The total offset for Rec2 (offset2 + first mapped timestamp)
             - logs: Captured console output
-            - rt_errors: Round-trip error analysis
     """
     
     # Capture all stdout
@@ -59,17 +58,21 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         print(f"  Recording 1: {url1}")
         print(f"  Recording 2: {url2}")
         print(f"  Rec1: offset={offset1}s, end={end1 or 'full'}")
+        print(f"  Rec1: offset={offset1}s, end={end1 or 'full'}")
         print(f"  Rec2: offset={offset2}s, end={end2 or 'full'}")
-        if max_duration:
-            print(f"  Duration override: {max_duration}s")
         
-        syncer = AudioSync()
+        syncer = AudioSync()  # Initialize BEFORE calculation
         
         effective_end1 = end1
         effective_end2 = end2
+        
         if max_duration:
+            print(f"  Duration override: {max_duration}s")
             effective_end1 = offset1 + max_duration if offset1 else max_duration
             effective_end2 = offset2 + max_duration
+            
+        print(f"  Effective End1: {effective_end1}")
+        print(f"  Effective End2: {effective_end2}")
         
         # Run Sync (returns path and raw audio)
         path, y1, y2 = syncer.run_sync(
@@ -113,7 +116,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             
             final_results.append({
                 "mix": mix_num,
-                "detix": item['index'],
+                "index": item['index'],
                 "t": round(t_refined_rel, 3)
             })
             
@@ -122,29 +125,29 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         # ========================================================================
         # Calculate Total Offset for Rec2
         # ========================================================================
-        # The first mapped timestamp (detix 0) gives us the relative position in rec2
-        # Total offset = offset2 + t_of_detix_0
+        # The first mapped timestamp (index 0) gives us the relative position in rec2
+        # Total offset = offset2 + t_of_index_0
         first_mapped_t = final_results[0]['t'] if final_results else 0.0
         total_offset_rec2 = offset2 + first_mapped_t
         
         print(f"\n[OFFSET CALCULATION]")
         print(f"  Rec2 Start Offset (input): {offset2}s")
-        print(f"  Mapped time of Detix 0: {first_mapped_t}s")
+        print(f"  Mapped time of Index 0: {first_mapped_t}s")
         print(f"  Total Offset for Rec2: {total_offset_rec2}s")
         
         # ========================================================================
-        # Create Zero-Based Output (Detix 0 = t:0)
+        # Create Zero-Based Output (Index 0 = t:0)
         # ========================================================================
         zero_based_results = []
         for item in final_results:
             zero_based_results.append({
                 "mix": item['mix'],
-                "detix": item['detix'],
+                "index": item['index'],
                 "t": round(item['t'] - first_mapped_t, 3)
             })
         
         print(f"\n[ZERO-BASED OUTPUT]")
-        print(f"  Shifted all timestamps so Detix 0 starts at t=0")
+        print(f"  Shifted all timestamps so Index 0 starts at t=0")
         
         # ========================================================================
         # Step 2.5: Low-Energy Flagging
@@ -197,98 +200,24 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         for i, item in enumerate(zero_based_results):
             item['low_energy'] = bool(low_energy_flags[i]['is_low'])
         
-        # ========================================================================
-        # Step 3: Round-Trip Verification
-        # ========================================================================
-        print("\n[STEP 3/3] Round-Trip Verification (Error Detection)...")
-        print("  Running reverse DTW: Rec2 -> Rec1...")
-        
-        reverse_input = []
-        for item in final_results:
-            reverse_input.append({
-                'detix': item['detix'],
-                'mix': item['mix'],
-                't': item['t']
-            })
-        
-        syncer_reverse = AudioSync()
-        
-        f2 = syncer_reverse.extract_features(y2, syncer_reverse.hop_length)
-        f1 = syncer_reverse.extract_features(y1, syncer_reverse.hop_length)
-        
-        reverse_path = syncer_reverse.run_hybrid_sync(f2, f1)
-        
-        print(f"  Reverse path points: {len(reverse_path)}")
-        
-        reverse_results = syncer_reverse.map_timestamps(reverse_path, reverse_input, y2, y1)
-        
-        print(f"  Reverse-mapped {len(reverse_results)} timestamps")
-        
-        print(f"\n[ROUND-TRIP ERROR ANALYSIS]")
-        print(f"{'Detix':<5} | {'Mix':<5} | {'Original Rec1':<12} | {'Round-Trip':<12} | {'RT Error':<10} | {'Confidence':<10}")
-        print("-" * 75)
-        
-        rt_errors = []
-        for i, item in enumerate(reverse_results):
-            if i >= len(input_timestamps):
-                break
-                
-            mix = item['mix']
-            detix = final_results[i]['detix']
-            original_t = input_timestamps[i]['t']
-            roundtrip_t = item['t']
-            
-            rt_error = abs(roundtrip_t - original_t)
-            rt_errors.append({'detix': detix, 'mix': mix, 'original': original_t, 'roundtrip': roundtrip_t, 'error': rt_error})
-            
-            if rt_error <= 0.12:
-                confidence = "HIGH"
-            elif rt_error <= 0.3:
-                confidence = "MEDIUM"
-            else:
-                confidence = "LOW ⚠"
-            
-            if rt_error > 0.12:
-                print(f"{detix:<5} | {mix:<5} | {original_t:<12.3f} | {roundtrip_t:<12.3f} | {rt_error:<10.3f} | {confidence:<10}")
-        
-        if rt_errors:
-            import numpy as np
-            mean_rt_error = np.mean([e['error'] for e in rt_errors])
-            max_rt_error = max([e['error'] for e in rt_errors])
-            low_conf_count = sum(1 for e in rt_errors if e['error'] > 1.0)
-            
-            print("-" * 65)
-            print(f"\n[ROUND-TRIP SUMMARY]")
-            print(f"  Mean Round-Trip Error: {mean_rt_error:.3f}s")
-            print(f"  Max Round-Trip Error: {max_rt_error:.3f}s")
-            print(f"  Low Confidence Measures: {low_conf_count} (error > 1.0s)")
-            
-            print(f"\n[TOP 10 ROUND-TRIP ERRORS (Flagged for Review)]")
-            print(f"{'Rank':<5} | {'Detix':<5} | {'Mix':<5} | {'RT Error':<10}")
-            print("-" * 35)
-            sorted_rt = sorted(rt_errors, key=lambda x: x['error'], reverse=True)
-            
-            filtered_rt = [e for e in sorted_rt if e['error'] >= 0.12]
-            
-            if not filtered_rt:
-                print("  No round-trip errors > 0.12s found. ✓")
-            else:
-                for rank, e in enumerate(filtered_rt[:10], 1):
-                    print(f"{rank:<5} | {e['detix']:<5} | {e['mix']:<5} | {e['error']:<10.3f}")
+
         
         print("\n" + "=" * 60)
         print("PIPELINE COMPLETE")
         print("=" * 60)
     
+    # Create final clean output array [ { "t": ..., "mix": ... }, ... ]
+    final_results_clean = [{'t': r['t'], 'mix': r['mix']} for r in final_results]
+    zero_based_results_clean = [{'t': r['t'], 'mix': r['mix']} for r in zero_based_results]
+
     logs = log_buffer.getvalue()
     
     return {
-        'final_results': final_results,
-        'zero_based_results': zero_based_results,
+        'final_results': final_results_clean,
+        'zero_based_results': zero_based_results_clean,
         'total_offset_rec2': total_offset_rec2,
         'first_mapped_t': first_mapped_t,
-        'logs': logs,
-        'rt_errors': rt_errors
+        'logs': logs
     }
 
 
