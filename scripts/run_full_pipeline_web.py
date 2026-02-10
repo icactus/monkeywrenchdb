@@ -31,6 +31,11 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         timestamps_list: List of dicts with 'mix' and 't' keys for Recording 1 timestamps
         max_duration: Optional max duration override
         
+    TERMINOLOGY:
+        - mix: Measure number (e.g., 50, 100). Non-unique due to repeats.
+        - detix / index: Unique sequential identifier for each measure encounter in the score.
+          Crucial for disambiguating which instance of a repeated measure we are aligning.
+        
     Returns:
         dict with keys:
             - final_results: List of mapped timestamps for Rec2

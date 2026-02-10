@@ -21,7 +21,13 @@ class AudioSync:
         self.sr = sr
         self.hop_length = hop_length
         self.cache_dir = cache_dir
-        self.frame_time = hop_length / sr  # ~23ms per frame
+        self.frame_time = hop_length / sr  # ~46ms per frame @ 1024 hop
+        
+        # DTW Parameter Notes:
+        # - hop_length=1024 (~21.5Hz): Good balance of performance and memory.
+        # - penalty=0.0: Crucial. Additive penalty in dtaidistance forces a linear path.
+        #   normalized features (0.0-1.0) need 0.0 penalty to allow warping around fermatas.
+        
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
             
@@ -143,7 +149,7 @@ class AudioSync:
         path = dtw_ndim.warping_path(
             f1_c, f2_c,
             window=window_frames,
-            penalty=1.0,  # Balanced penalty - higher values hurt tempo flexibility
+            penalty=0.0,  # Zero penalty to allow free warping (mimic librosa)
             use_c=True
         )
         
@@ -156,7 +162,12 @@ class AudioSync:
     def map_timestamps(self, coarse_path, manual_timestamps_list, y1, y2):
         """
         Maps timestamps using Global Path directly.
-        Local refinement removed as it degraded performance.
+        
+        TERMINOLOGY NOTE:
+        - mix: The measure number (e.g. 100). NOT UNIQUE if there are repeats.
+        - detix / index: The unique array index of the measure playback (0 to N).
+          ALWAYS use the index/detix for alignment verification and mapping
+          to avoid ambiguity during repeated sections.
         """
         print(f"\n--- Mapping Timestamps (Global Path Only) ---")
         
