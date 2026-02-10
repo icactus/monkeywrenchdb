@@ -255,11 +255,12 @@ class AudioSync:
 
     def map_timestamps(self, coarse_path, manual_timestamps_list, y1, y2):
         """
-        Maps timestamps using Global Path + Local Refinement.
+        Maps timestamps using Global Path + Local Refinement + Onset Snapping.
         
-        First uses global DTW path for coarse estimation, then runs a
-        high-resolution local DTW around each estimate for sub-frame accuracy.
-        Features are pre-computed once at high resolution and sliced per-timestamp.
+        Process:
+        1. Global DTW path -> Coarse estimate
+        2. Local Refinement -> Sub-frame accuracy using high-res DTW
+        3. Onset Snapping -> Snap to nearest note attack if musically appropriate
         
         TERMINOLOGY NOTE:
         - mix: The measure number (e.g. 100). NOT UNIQUE if there are repeats.
@@ -267,7 +268,7 @@ class AudioSync:
           ALWAYS use the index/detix for alignment verification and mapping
           to avoid ambiguity during repeated sections.
         """
-        print(f"\n--- Mapping Timestamps (Global Path + Local Refinement) ---")
+        print(f"\\n--- Mapping Timestamps (Global + Local + Onset) ---")
         
         # Pre-compute high-res features ONCE for both recordings
         local_hop = 256
@@ -276,7 +277,17 @@ class AudioSync:
         print("  [Pre-computing high-res features for local refinement]")
         f1_hires = self.extract_features_hires(y1, local_hop=local_hop)
         f2_hires = self.extract_features_hires(y2, local_hop=local_hop)
-        print(f"  Feature pre-computation: {time.time() - t_start:.1f}s")
+        
+        # Pre-compute onsets for snapping (using standard librosa detection)
+        print("  [Detecting onsets for snapping]")
+        
+        # Use librosa's built-in onset detection which includes adaptive thresholding
+        # backtrack=False ensures we get the peak, not the start of the attack (better for alignment)
+        onsets1_sec = librosa.onset.onset_detect(y=y1, sr=self.sr, hop_length=local_hop, units='time')
+        onsets2_sec = librosa.onset.onset_detect(y=y2, sr=self.sr, hop_length=local_hop, units='time')
+        
+        print(f"  Feature & Onset computation: {time.time() - t_start:.1f}s")
+        print(f"  Detected Onsets: Rec1={len(onsets1_sec)}, Rec2={len(onsets2_sec)}")
         
         # Create interpolation function from global path
         path_arr = np.array(coarse_path) 
@@ -289,7 +300,12 @@ class AudioSync:
         results = []
         mapped_count = 0
         refined_count = 0
+        snapped_count = 0
+        eligible_for_snap = 0
         total_correction = 0.0
+        
+        SNAP_THRESHOLD_REC1 = 0.10  # Only snap if Rec1 t is within 100ms of a real onset
+        SNAP_THRESHOLD_REC2 = 0.15  # Search radius in Rec2
         
         t_refine_start = time.time()
         for i, record in enumerate(manual_timestamps_list):
@@ -302,13 +318,55 @@ class AudioSync:
             t2_coarse = float(t2_frame_est * self.hop_length / self.sr)
             
             # Local refinement pass (just array slicing + small DTW)
-            t2_final = self.local_refine(f1_hires, f2_hires, t1, t2_coarse, 
+            t2_refined = self.local_refine(f1_hires, f2_hires, t1, t2_coarse, 
                                           local_hop=local_hop)
             
-            correction = abs(t2_final - t2_coarse)
+            # Calculate correction
+            correction = abs(t2_refined - t2_coarse)
             if correction > 0.001:  # More than 1ms correction
                 refined_count += 1
                 total_correction += correction
+                
+            # --- ONSET SNAPPING LOGIC ---
+            t2_final = t2_refined
+            
+            # 1. Check if t1 is near an onset in Rec 1
+            # Find nearest onset in Rec 1
+            nearest_idx1 = np.searchsorted(onsets1_sec, t1)
+            dist_to_onset1 = float('inf')
+            
+            # Check left and right neighbors
+            candidates1 = []
+            if nearest_idx1 < len(onsets1_sec):
+                candidates1.append(onsets1_sec[nearest_idx1])
+            if nearest_idx1 > 0:
+                candidates1.append(onsets1_sec[nearest_idx1 - 1])
+                
+            if candidates1:
+                 # Find closest candidate
+                closest_onset1 = min(candidates1, key=lambda x: abs(x - t1))
+                dist_to_onset1 = abs(closest_onset1 - t1)
+                
+            # If t1 is "on a beat" (nearby onset), try to snap t2
+            if dist_to_onset1 < SNAP_THRESHOLD_REC1:
+                eligible_for_snap += 1
+                
+                # Find nearest onset in Rec 2 to our refined estimate
+                nearest_idx2 = np.searchsorted(onsets2_sec, t2_refined)
+                candidates2 = []
+                if nearest_idx2 < len(onsets2_sec):
+                    candidates2.append(onsets2_sec[nearest_idx2])
+                if nearest_idx2 > 0:
+                    candidates2.append(onsets2_sec[nearest_idx2 - 1])
+                
+                if candidates2:
+                    closest_onset2 = min(candidates2, key=lambda x: abs(x - t2_refined))
+                    dist_to_onset2 = abs(closest_onset2 - t2_refined)
+                    
+                    # Snap if within threshold
+                    if dist_to_onset2 < SNAP_THRESHOLD_REC2:
+                        t2_final = float(closest_onset2)
+                        snapped_count += 1
             
             results.append({
                 "index": i,
@@ -320,9 +378,9 @@ class AudioSync:
         avg_correction = total_correction / max(refined_count, 1)
         refine_elapsed = time.time() - t_refine_start
         print(f"  Mapped {mapped_count} timestamps")
-        print(f"  Local refinement adjusted {refined_count}/{mapped_count} points")
-        print(f"  Average correction: {avg_correction*1000:.1f}ms")
-        print(f"  Refinement time: {refine_elapsed:.1f}s ({refine_elapsed/max(mapped_count,1)*1000:.0f}ms/point)")
+        print(f"  Local Refinement: adjusted {refined_count}/{mapped_count} points (Avg: {avg_correction*1000:.1f}ms)")
+        print(f"  Onset Snapping:   snapped {snapped_count}/{eligible_for_snap} eligible points (Rec1 on beat)")
+        print(f"  Total Time: {refine_elapsed:.1f}s ({refine_elapsed/max(mapped_count,1)*1000:.0f}ms/point)")
         return results
 
     def run_sync(self, url1, url2, output_json="sync_path.json", 
