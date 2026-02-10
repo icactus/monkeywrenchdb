@@ -22,3 +22,12 @@ client_secret_1092592565682-h7sd76u9qt69629fob6r2u8u8mul8g50.apps.googleusercont
 
 *.sql
 phpfiles/cloudflare_config.php
+
+assets/previews/
+audio_cache/
+inspect_start.py
+manual_rec1.json
+manual_rec2.json
+notebooks/.ipynb_checkpoints/
+notebooks/improved-dtw.ipynb
+scripts/__pycache__/
