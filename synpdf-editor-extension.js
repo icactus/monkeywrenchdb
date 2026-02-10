@@ -220,7 +220,19 @@
         const activeRow = document.querySelector(`.quickfix-item[data-index="${index}"]`);
         if (activeRow) {
             activeRow.classList.add('active');
-            activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Manual scroll to avoid window jumping (replaces scrollIntoView)
+            const list = document.getElementById('quickfix-list');
+            if (list) {
+                const listRect = list.getBoundingClientRect();
+                const rowRect = activeRow.getBoundingClientRect();
+
+                if (rowRect.top < listRect.top) {
+                    list.scrollBy({ top: rowRect.top - listRect.top, behavior: 'smooth' });
+                } else if (rowRect.bottom > listRect.bottom) {
+                    list.scrollBy({ top: rowRect.bottom - listRect.bottom, behavior: 'smooth' });
+                }
+            }
         }
 
         // Jump Score
