@@ -12,6 +12,64 @@
     // Helper to log with prefix
     const log = (msg) => console.log(`[SynPdf Editor] ${msg}`);
 
+    // --- QUICK FIX STATE ---
+    window.quickFixList = [];
+    window.activeFixIndex = -1;
+    window.isQuickFixPanelVisible = false;
+
+    // --- INITIALIZATION ---
+    function initQuickFix() {
+        let fixList = null;
+        let youtubeId = null;
+
+        // 1. Check if stripped-synpdf-extras.js already parsed it
+        if (window.previewFixList && Array.isArray(window.previewFixList) && window.previewFixList.length > 0) {
+            fixList = window.previewFixList;
+            youtubeId = window.currentRecordingFullData?.youtube_id;
+            log('Using pre-parsed Quick Fix list from global scope.');
+        }
+
+        // 2. Fallback: Check hash if not found
+        if (!fixList) {
+            const hash = window.location.hash;
+            if (hash && hash.includes('data=')) {
+                try {
+                    const base64Data = hash.split('data=')[1].split('&')[0];
+                    const jsonStr = decodeURIComponent(escape(atob(base64Data)));
+                    const data = JSON.parse(jsonStr);
+
+                    if (data.fix_list && Array.isArray(data.fix_list) && data.fix_list.length > 0) {
+                        fixList = data.fix_list;
+                        youtubeId = data.youtube_id;
+                        log(`Parsed ${fixList.length} Quick Fix items from URL hash.`);
+                    }
+                } catch (e) {
+                    log('Error parsing Quick Fix data from hash: ' + e.message);
+                }
+            }
+        }
+
+        if (fixList) {
+            window.quickFixList = fixList;
+            log(`Loaded ${window.quickFixList.length} Quick Fix items.`);
+
+            // Restore session state (checked items)
+            if (youtubeId) {
+                const sessionKey = `quickFix_${youtubeId}`;
+                try {
+                    const savedState = JSON.parse(sessionStorage.getItem(sessionKey) || '[]');
+                    window.quickFixList.forEach(item => {
+                        if (savedState.includes(item.detix)) item.done = true;
+                    });
+                } catch (e) { }
+            }
+
+            injectQuickFixPanel();
+        } else {
+            log('No Quick Fix data found.');
+        }
+    }
+
     // --- UI INJECTION ---
 
     function injectEditButton() {
@@ -53,6 +111,213 @@
         syncInfoContainer.id = 'editor-sync-info-display';
         syncInfoContainer.style.cssText = 'margin-top:10px;padding:10px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px;font-size:0.9rem;color:#333;display:none;';
         buttonContainer.appendChild(syncInfoContainer);
+    }
+
+    // --- QUICK FIX UI ---
+
+    function injectQuickFixPanel() {
+        log('Attempting to inject Quick Fix Panel...');
+        const sideContent = document.getElementById('sidecontent');
+        if (!sideContent) {
+            log('Error: #sidecontent not found. Retrying in 500ms...');
+            setTimeout(injectQuickFixPanel, 500);
+            return;
+        }
+
+        // Prevent duplicate injection
+        if (document.getElementById('quickfix-panel')) {
+            log('Quick Fix Panel already exists. Skipping.');
+            return;
+        }
+
+        const panel = document.createElement('div');
+        panel.id = 'quickfix-panel';
+        panel.className = 'quickfix-panel';
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'quickfix-header';
+        header.innerHTML = `
+            <h3>🚩 Quick Fix <span id="quickfix-counter">(0/${window.quickFixList.length})</span></h3>
+            <button class="quickfix-toggle" onclick="toggleQuickFixVisibility()">▼</button>
+        `;
+        panel.appendChild(header);
+
+        // List Container
+        const list = document.createElement('div');
+        list.id = 'quickfix-list';
+        list.className = 'quickfix-list';
+
+        window.quickFixList.forEach((item, index) => {
+            const row = document.createElement('div');
+            row.className = `quickfix-item ${item.done ? 'done' : ''}`;
+            row.dataset.index = index;
+            row.dataset.detix = item.detix;
+            row.onclick = (e) => {
+                if (e.target.type !== 'checkbox') {
+                    activateFixItem(index);
+                }
+            };
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = !!item.done;
+            checkbox.className = 'quickfix-checkbox';
+            checkbox.onclick = (e) => {
+                toggleFixItemDone(index);
+                e.stopPropagation();
+            };
+
+            const label = document.createElement('span');
+            label.className = 'quickfix-label';
+            const devText = item.gap_dev ? `gap: ${item.gap_dev.toFixed(2)}s` : `tempo: ${item.tempo_dev?.toFixed(2) || '?'}`;
+            label.innerHTML = `detix ${item.detix} <small>(${devText})</small>`;
+
+            row.appendChild(checkbox);
+            row.appendChild(label);
+            list.appendChild(row);
+        });
+
+        panel.appendChild(list);
+
+        // Insert logic
+        const btnContainer = document.getElementById('editor-button-container');
+        if (btnContainer && btnContainer.parentNode === sideContent) {
+            log('Injecting Quick Fix Panel after buttons');
+            btnContainer.insertAdjacentElement('afterend', panel);
+        } else {
+            log('Button container not found or not in sidecontent. Injecting at top of sidecontent.');
+            sideContent.insertBefore(panel, sideContent.firstChild);
+        }
+
+        window.isQuickFixPanelVisible = true;
+        updateQuickFixCounter();
+
+        // Verification log
+        if (document.getElementById('quickfix-panel')) {
+            log('Quick Fix Panel injected successfully (verified in DOM)');
+        } else {
+            log('Error: Panel insertion failed despite no errors!');
+        }
+    }
+
+    function toggleQuickFixVisibility() {
+        const list = document.getElementById('quickfix-list');
+        if (list) {
+            window.isQuickFixPanelVisible = !window.isQuickFixPanelVisible;
+            list.style.display = window.isQuickFixPanelVisible ? 'block' : 'none';
+        }
+    }
+
+    function activateFixItem(index) {
+        if (index < 0 || index >= window.quickFixList.length) return;
+
+        window.activeFixIndex = index;
+        const item = window.quickFixList[index];
+
+        // Highlight in UI
+        document.querySelectorAll('.quickfix-item').forEach(el => el.classList.remove('active'));
+        const activeRow = document.querySelector(`.quickfix-item[data-index="${index}"]`);
+        if (activeRow) {
+            activeRow.classList.add('active');
+            activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // Jump Score
+        const deTijden = getDeTijden();
+
+        if (deTijden && window.msc_wz$$module$synpdf) {
+            if (deTijden[item.detix]) {
+                const targetTime = deTijden[item.detix].t;
+                window.msc_wz$$module$synpdf.time2x(targetTime);
+                log(`Jumped to Quick Fix item ${index} (Detix ${item.detix}, Time ${targetTime})`);
+            } else {
+                log(`Error: Detix ${item.detix} not found in deTijden.`);
+            }
+        } else {
+            log(`Error: Cannot navigate. deTijden found: ${!!deTijden}, msc_wz found: ${!!window.msc_wz$$module$synpdf}`);
+        }
+    }
+
+    function toggleFixItemDone(index) {
+        if (index < 0 || index >= window.quickFixList.length) return;
+
+        const item = window.quickFixList[index];
+        item.done = !item.done;
+
+        // Update UI
+        const row = document.querySelector(`.quickfix-item[data-index="${index}"]`);
+        const checkbox = row.querySelector('.quickfix-checkbox');
+
+        if (item.done) {
+            row.classList.add('done');
+            checkbox.checked = true;
+        } else {
+            row.classList.remove('done');
+            checkbox.checked = false;
+        }
+
+        // Save State
+        saveQuickFixState();
+        updateQuickFixCounter();
+    }
+
+    function saveQuickFixState() {
+        // Find ID to key off
+        let youtubeId = '';
+        const hash = window.location.hash;
+        if (hash && hash.includes('data=')) {
+            try {
+                const base64Data = hash.split('data=')[1].split('&')[0];
+                const data = JSON.parse(decodeURIComponent(escape(atob(base64Data))));
+                youtubeId = data.youtube_id;
+            } catch (e) { }
+        }
+
+        if (youtubeId) {
+            const doneIndices = window.quickFixList.filter(i => i.done).map(i => i.detix);
+            sessionStorage.setItem(`quickFix_${youtubeId}`, JSON.stringify(doneIndices));
+        }
+    }
+
+    function updateQuickFixCounter() {
+        const total = window.quickFixList.length;
+        const done = window.quickFixList.filter(i => i.done).length;
+        const counter = document.getElementById('quickfix-counter');
+        if (counter) counter.textContent = `(${done}/${total})`;
+    }
+
+    function navigateQuickFix(direction) {
+        // direction: 1 for next, -1 for prev
+        let start = window.activeFixIndex;
+        // If no active index, start from beginning (or end)
+        if (start === -1) start = direction > 0 ? -1 : window.quickFixList.length;
+
+        let nextIndex = start;
+        let found = false;
+        let loopCount = 0;
+
+        // Find next UNDONE item
+        while (loopCount < window.quickFixList.length) {
+            nextIndex += direction;
+
+            // Bounds check
+            if (nextIndex < 0 || nextIndex >= window.quickFixList.length) {
+                break; // Don't loop wrap text, just stop at ends
+            }
+
+            if (!window.quickFixList[nextIndex].done) {
+                found = true;
+                break;
+            }
+            loopCount++;
+        }
+
+        if (found) {
+            activateFixItem(nextIndex);
+        } else {
+            log("No more uncompleted quick fix items in that direction.");
+        }
     }
 
     // --- CORE LOGIC ---
@@ -384,6 +649,27 @@
                 snapCurrentMeasureToCurrent();
                 e.preventDefault();
                 break;
+
+
+            case 'n':
+            case 'N':
+                if (window.quickFixList.length > 0) {
+                    if (e.key === 'N' || e.shiftKey) { // N - Previous
+                        navigateQuickFix(-1);
+                    } else { // n - Next
+                        navigateQuickFix(1);
+                    }
+                    e.preventDefault();
+                }
+                break;
+
+            case 'x':
+            case 'X':
+                if (window.activeFixIndex !== -1 && window.quickFixList.length > 0) {
+                    toggleFixItemDone(window.activeFixIndex);
+                    e.preventDefault();
+                }
+                break;
         }
     });
 
@@ -531,7 +817,14 @@
     // Wait for DOM and Scripts
     window.addEventListener('DOMContentLoaded', () => {
         // Give a slight delay to ensure other scripts have initialized globals
-        setTimeout(injectEditButton, 1000);
+        setTimeout(() => {
+            log('Initializing extension...');
+            injectEditButton();
+            initQuickFix();
+        }, 1000);
     });
+
+    // Global scope exposure for debugging
+    window.toggleQuickFixVisibility = toggleQuickFixVisibility;
 
 })();

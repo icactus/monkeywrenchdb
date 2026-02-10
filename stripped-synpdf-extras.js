@@ -1672,8 +1672,15 @@ $(document).ready(function () {
                             option = { yubvid: previewData.youtube_id }; // Update options
                         }
 
+
                         // Store for editor access
                         window.currentRecordingFullData = recordingFullData;
+
+                        // Store fix list globally because the hash is cleared by handleRecordingSelection
+                        if (previewData.fix_list) {
+                            window.previewFixList = previewData.fix_list;
+                            console.log("Stored previewFixList:", window.previewFixList.length, "items");
+                        }
 
                         console.log("Constructed Preview Data:", recordingFullData);
 

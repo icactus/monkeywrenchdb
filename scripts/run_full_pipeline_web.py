@@ -203,6 +203,181 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
 
         
         # ========================================================================
+        # Step 2.5: Round-Trip Verification (Backward Pass)
+        # ========================================================================
+        print("\n[STEP 2.5/3] Running Round-Trip Verification (Backward Pass)...")
+        import numpy as np
+        from scipy.interpolate import interp1d
+        
+        # Run DTW in reverse direction: Rec2 -> Rec1
+        print("  Running backward sync (Rec2 -> Rec1)...")
+        path_bwd, y2_bwd, y1_bwd = syncer.run_sync(
+            url1=url2,       # Swapped
+            url2=url1,       # Swapped
+            output_json=None,
+            offset1=offset2,  # Swapped
+            end1=effective_end2,
+            offset2=offset1,
+            end2=effective_end1
+        )
+        print(f"  Backward path points: {len(path_bwd)}")
+        
+        # Build backward mapper: Rec2 frame -> Rec1 frame
+        path_bwd_arr = np.array(path_bwd)
+        bwd_u_i, bwd_u_idx = np.unique(path_bwd_arr[:, 0], return_index=True)
+        bwd_u_j = path_bwd_arr[bwd_u_idx, 1]
+        bwd_mapper = interp1d(bwd_u_i, bwd_u_j, kind='linear', fill_value="extrapolate")
+        
+        # Calculate round-trip error for each timestamp
+        rt_errors = []
+        for i, item in enumerate(final_results):
+            t_rec1_original = input_timestamps[i]['t'] if i < len(input_timestamps) else 0
+            t_rec2_forward = item['t']
+            
+            # Map t_rec2 through backward path -> t_rec1_back
+            frame_rec2 = int(t_rec2_forward * sr / hop_length)
+            frame_rec1_back = bwd_mapper(frame_rec2)
+            t_rec1_back = float(frame_rec1_back * hop_length / sr)
+            
+            rt_err = abs(t_rec1_original - t_rec1_back)
+            rt_errors.append(rt_err)
+        
+        # ================================================================
+        # Tempo Ratio Anomaly Detection (Primary Confidence Signal)
+        # ================================================================
+        print("\n  [TEMPO RATIO ANALYSIS]")
+        
+        # Calculate tempo ratios for consecutive timestamps
+        tempo_ratios = [None]  # First point has no ratio
+        for i in range(1, len(final_results)):
+            dt_rec1 = input_timestamps[i]['t'] - input_timestamps[i-1]['t'] if i < len(input_timestamps) else 1.0
+            dt_rec2 = final_results[i]['t'] - final_results[i-1]['t']
+            
+            if abs(dt_rec1) < 0.01:  # Avoid division by near-zero
+                tempo_ratios.append(None)
+            else:
+                tempo_ratios.append(dt_rec2 / dt_rec1)
+        
+        # Calculate local median for each point (window of 5 neighbors on each side)
+        NEIGHBOR_WINDOW = 5
+        TEMPO_ANOMALY_THRESHOLD = 0.5  # Flag if ratio deviates > 0.5 from local median
+        
+        tempo_anomalies = [False] * len(final_results)
+        tempo_deviations = [0.0] * len(final_results)
+        
+        valid_ratios = [r for r in tempo_ratios if r is not None]
+        global_median = float(np.median(valid_ratios)) if valid_ratios else 1.0
+        
+        for i in range(len(final_results)):
+            if tempo_ratios[i] is None:
+                tempo_deviations[i] = 0.0
+                continue
+            
+            # Gather neighbor ratios
+            neighbors = []
+            for j in range(max(0, i - NEIGHBOR_WINDOW), min(len(tempo_ratios), i + NEIGHBOR_WINDOW + 1)):
+                if j != i and tempo_ratios[j] is not None:
+                    neighbors.append(tempo_ratios[j])
+            
+            local_median = float(np.median(neighbors)) if neighbors else global_median
+            deviation = abs(tempo_ratios[i] - local_median)
+            tempo_deviations[i] = round(deviation, 4)
+            
+            if deviation > TEMPO_ANOMALY_THRESHOLD:
+                tempo_anomalies[i] = True
+        
+        num_anomalies = sum(tempo_anomalies)
+        print(f"    Global median tempo ratio: {global_median:.4f}")
+        print(f"    Tempo anomalies detected: {num_anomalies}")
+        
+        # ================================================================
+        # Gap Deviation Detection (catches single-point jumps)
+        # ================================================================
+        GAP_DEVIATION_THRESHOLD = 0.8  # Flag if |Δt_rec2 - Δt_rec1| > 0.8s
+        
+        gap_deviations = [0.0] * len(final_results)
+        gap_anomalies = [False] * len(final_results)
+        
+        for i in range(1, len(final_results)):
+            dt_rec1 = input_timestamps[i]['t'] - input_timestamps[i-1]['t'] if i < len(input_timestamps) else 0
+            dt_rec2 = final_results[i]['t'] - final_results[i-1]['t']
+            gap_dev = abs(dt_rec2 - dt_rec1)
+            gap_deviations[i] = round(gap_dev, 4)
+        
+        # A point is a gap anomaly if the gap BEFORE it or AFTER it is large
+        # (catches the point that jumped, not just its neighbors)
+        for i in range(len(final_results)):
+            if gap_deviations[i] > GAP_DEVIATION_THRESHOLD:
+                gap_anomalies[i] = True
+            if i + 1 < len(final_results) and gap_deviations[i + 1] > GAP_DEVIATION_THRESHOLD:
+                gap_anomalies[i] = True
+        
+        num_gap_anomalies = sum(gap_anomalies)
+        print(f"    Gap anomalies detected: {num_gap_anomalies} (|Δt_rec2 - Δt_rec1| > {GAP_DEVIATION_THRESHOLD}s)")
+        
+        # ================================================================
+        # Combined Confidence Assignment
+        # ================================================================
+        # PRIMARY: Tempo ratio anomaly OR gap deviation (catches actual jumps)
+        # SECONDARY: RT error + low energy (catches uncertain silence regions)
+        
+        for i, item in enumerate(final_results):
+            rt_err = rt_errors[i]
+            is_low_energy = item.get('low_energy', False)
+            is_tempo_anomaly = tempo_anomalies[i]
+            is_gap_anomaly = gap_anomalies[i]
+            
+            # LOW: Tempo anomaly or gap anomaly (actual jump detected)
+            if is_tempo_anomaly or is_gap_anomaly:
+                confidence = "LOW"
+            # MEDIUM: High RT error + low energy (uncertain but not necessarily wrong)
+            elif rt_err >= 0.5 and is_low_energy:
+                confidence = "MEDIUM"
+            # HIGH: Everything else
+            else:
+                confidence = "HIGH"
+            
+            item['rt_error'] = round(rt_err, 4)
+            item['tempo_dev'] = tempo_deviations[i]
+            item['gap_dev'] = gap_deviations[i]
+            item['confidence'] = confidence
+        
+        # Mirror onto zero-based results
+        for i, item in enumerate(zero_based_results):
+            item['rt_error'] = final_results[i]['rt_error']
+            item['tempo_dev'] = final_results[i]['tempo_dev']
+            item['gap_dev'] = final_results[i]['gap_dev']
+            item['confidence'] = final_results[i]['confidence']
+        
+        # Print summary
+        high_count = sum(1 for item in final_results if item['confidence'] == 'HIGH')
+        med_count = sum(1 for item in final_results if item['confidence'] == 'MEDIUM')
+        low_count = sum(1 for item in final_results if item['confidence'] == 'LOW')
+        
+        print(f"\n  [CONFIDENCE SUMMARY]")
+        print(f"    HIGH:   {high_count}")
+        print(f"    MEDIUM: {med_count} (high RT error + silence)")
+        print(f"    LOW:    {low_count} (tempo/gap anomaly — likely needs correction)")
+        
+        if rt_errors:
+            mean_rt = sum(rt_errors) / len(rt_errors)
+            max_rt = max(rt_errors)
+            max_rt_idx = rt_errors.index(max_rt)
+            print(f"    Mean RT Error: {mean_rt:.4f}s")
+            print(f"    Max RT Error:  {max_rt:.4f}s at index {max_rt_idx} (mix={final_results[max_rt_idx]['mix']})")
+        
+        # Print LOW confidence offenders (these need manual review)
+        offenders = [(i, final_results[i]) for i in range(len(final_results)) 
+                     if final_results[i]['confidence'] == 'LOW']
+        if offenders:
+            offenders.sort(key=lambda x: max(x[1]['tempo_dev'], x[1]['gap_dev']), reverse=True)
+            print(f"\n  🚩 Timestamps Needing Manual Review:")
+            print(f"  {'Index':>5} | {'Mix':>5} | {'Tempo Dev':>10} | {'Gap Dev':>10} | {'RT Error':>10} | {'T (Rec2)':>10}")
+            print("  " + "-" * 70)
+            for idx, item in offenders:
+                print(f"  {idx:5d} | {item['mix']:5d} | {item['tempo_dev']:10.4f} | {item['gap_dev']:10.4f}s | {item['rt_error']:10.4f}s | {item['t']:10.3f}s")
+        
+        # ========================================================================
         # Step 3: Ground Truth Comparison (Optional)
         # ========================================================================
         if timestamps_list_rec2:
@@ -223,8 +398,8 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                       f"but Ground Truth has {len(timestamps_list_rec2)} points.")
             
             print("\n  Top 20 Errors (>= 0.1s):")
-            print("  " + "-" * 50)
-            print("  Index | Measure (Mix) | Pipeline T | Manual T | Abs Error | Confidence")
+            print("  " + "-" * 60)
+            print(f"  {'Index':>5} | {'Mix':>5} | {'Pipeline T':>10} | {'Manual T':>8} | {'Abs Error':>9} | {'Confidence':>10}")
             
             high_error_count = 0
             
@@ -243,21 +418,21 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                     
                 # Print details for top/significant errors
                 if err >= 0.1 or i < 5: # Always print first few, then significant ones
-                    confidence = "LOW" if final_results[i].get('low_energy') else "HIGH"
-                    print(f"  {i:5d} | {final_results[i]['mix']:13d} | {p_t:10.3f} | {m_t:8.3f} | {err:9.3f}s | {confidence}")
+                    confidence = final_results[i].get('confidence', 'N/A')
+                    print(f"  {i:5d} | {final_results[i]['mix']:5d} | {p_t:10.3f} | {m_t:8.3f} | {err:9.3f}s | {confidence:>10}")
 
             if not errors:
                 print("  No comparison possible (zero points).")
             else:
                 mae = sum(errors) / len(errors)
-                print("  " + "-" * 50)
+                print("  " + "-" * 60)
                 print(f"  SUMMARY STATISTICS:")
                 print(f"    Mean Absolute Error (MAE): {mae:.4f}s")
                 print(f"    Max Absolute Error: {max_err:.4f}s at index {max_err_idx}")
                 print(f"    Total points with error >= 0.1s: {high_error_count} ({high_error_count/num_points*100:.1f}%)")
                 
                 # Check if "HIGH" confidence points have high error
-                high_conf_errors = [e for i, e in enumerate(errors) if not final_results[i].get('low_energy')]
+                high_conf_errors = [e for i, e in enumerate(errors) if final_results[i].get('confidence') == 'HIGH']
                 if high_conf_errors:
                     mae_high = sum(high_conf_errors) / len(high_conf_errors)
                     max_high = max(high_conf_errors)
@@ -268,9 +443,9 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         print("PIPELINE COMPLETE")
         print("=" * 60)
     
-    # Create final clean output array [ { "t": ..., "mix": ... }, ... ]
-    final_results_clean = [{'t': r['t'], 'mix': r['mix']} for r in final_results]
-    zero_based_results_clean = [{'t': r['t'], 'mix': r['mix']} for r in zero_based_results]
+    # Create final clean output array with rt_error, tempo_dev, and confidence
+    final_results_clean = [{'t': r['t'], 'mix': r['mix'], 'rt_error': r.get('rt_error', 0), 'tempo_dev': r.get('tempo_dev', 0), 'confidence': r.get('confidence', 'N/A')} for r in final_results]
+    zero_based_results_clean = [{'t': r['t'], 'mix': r['mix'], 'rt_error': r.get('rt_error', 0), 'tempo_dev': r.get('tempo_dev', 0), 'confidence': r.get('confidence', 'N/A')} for r in zero_based_results]
 
     logs = log_buffer.getvalue()
     
