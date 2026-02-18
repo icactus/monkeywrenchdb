@@ -14,7 +14,7 @@ $is_share_link = isset($_GET['share']);
 <head>
     <!-- PostHog -->
     <script>
-        !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep onSessionId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+        !function (t, e) { var o, n, p, r; e.__SV || (window.posthog = e, e._i = [], e.init = function (i, s, a) { function g(t, e) { var o = e.split("."); 2 == o.length && (t = t[o[0]], e = o[1]), t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } } (p = t.createElement("script")).type = "text/javascript", p.async = !0, p.src = s.api_host + "/static/array.js", (r = t.getElementsByTagName("script")[0]).parentNode.insertBefore(p, r); var u = e; for (void 0 !== a ? u = e[a] = [] : a = "posthog", u.people = u.people || [], u.toString = function (t) { var e = "posthog"; return "posthog" !== a && (e += "." + a), t || (e += " (stub)"), e }, u.people.toString = function () { return u.toString(1) + ".people (stub)" }, o = "capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep onSessionId".split(" "), n = 0; n < o.length; n++)g(u, o[n]); e._i.push([i, s, a]) }, e.__SV = 1) }(document, window.posthog || []);
         posthog.init('phc_2Ts5Lx322dlrKpUKGMD14Swujuo0aWc7zR5UAumxzQa', {
             api_host: '/ingest',
             person_profiles: 'identified_only'
@@ -48,8 +48,10 @@ $is_share_link = isset($_GET['share']);
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap"
         rel="stylesheet">
     <script src="jquery.min.js"></script>
-    <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-        <script src="js/annotation-layer.js?v=105"></script>
+    <?php if (false): // Markings Mode Disabled ?>
+        <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
+            <script src="js/annotation-layer.js?v=105"></script>
+        <?php endif; ?>
     <?php endif; ?>
     <script>
         window.loggedInUserId = <?php echo isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : 'null'; ?>;
@@ -104,9 +106,9 @@ $is_share_link = isset($_GET['share']);
                                     onclick="toggleHistoryMenu(); toggleMobileHeaderMenu();">History</a>
                                 <a href="javascript:void(0)"
                                     onclick="toggleFavoritesMenu(); toggleMobileHeaderMenu();">Favorites</a>
-                                <a href="javascript:void(0)"
+                                <!-- <a href="javascript:void(0)"
                                     onclick="toggleAnnotationsManager(); toggleMobileHeaderMenu();">My
-                                    Markings</a>
+                                    Markings</a> -->
                             <?php else: ?>
                                 <a href="auth_login.php?provider=google" class="mobile-menu-login">
                                     <svg viewBox="0 0 24 24" width="18" height="18" class="inline-svg-icon">
@@ -171,14 +173,14 @@ $is_share_link = isset($_GET['share']);
                                         </svg>
                                         Favorites
                                     </a>
-                                    <a href="javascript:void(0)" onclick="toggleAnnotationsManager(); closeUserDropdown();">
+                                    <!-- <a href="javascript:void(0)" onclick="toggleAnnotationsManager(); closeUserDropdown();">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                             stroke-width="2">
                                             <path d="M12 19l7-7 3 3-7 7-3-3z" />
                                             <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
                                         </svg>
                                         My Markings
-                                    </a>
+                                    </a> -->
                                     <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
                                         <div class="nav-dropdown-divider"></div>
                                         <div class="nav-dropdown-label">Admin</div>
@@ -302,24 +304,26 @@ $is_share_link = isset($_GET['share']);
     </div>
 
     <!-- Markings Manager Modal -->
-    <?php if (isset($_SESSION['user_id'])): ?>
-        <div id="annotations-backdrop" class="modal-backdrop"></div>
-        <div id="annotations-modal" class="annotations-modal">
-            <div class="annotations-header">
-                <h3>
-                    <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 19l7-7 3 3-7 7-3-3z" />
-                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-                    </svg>
-                    My Markings
-                </h3>
-                <button class="annotations-close" onclick="toggleAnnotationsManager()" aria-label="Close">&times;</button>
+    <?php if (false): // Markings Mode Disabled ?>
+        <?php if (isset($_SESSION['user_id'])): ?>
+            <div id="annotations-backdrop" class="modal-backdrop"></div>
+            <div id="annotations-modal" class="annotations-modal">
+                <div class="annotations-header">
+                    <h3>
+                        <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 19l7-7 3 3-7 7-3-3z" />
+                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+                        </svg>
+                        My Markings
+                    </h3>
+                    <button class="annotations-close" onclick="toggleAnnotationsManager()" aria-label="Close">&times;</button>
+                </div>
+                <ul id="annotations-list" class="annotations-list"></ul>
+                <button onclick="createNewAnnotationSet(prompt('Name your markings:', 'My Markings'))"
+                    class="annotations-new-btn">+
+                    New Markings</button>
             </div>
-            <ul id="annotations-list" class="annotations-list"></ul>
-            <button onclick="createNewAnnotationSet(prompt('Name your markings:', 'My Markings'))"
-                class="annotations-new-btn">+
-                New Markings</button>
-        </div>
+        <?php endif; ?>
     <?php endif; ?>
     <div id="sync">
         <div id="mbar">
@@ -330,7 +334,7 @@ $is_share_link = isset($_GET['share']);
         <form id="menu">
             <label class="mnrm" id="lp"><span>full screen:</span> <input id="fscr" type="checkbox" /></label>
             <label class="mnrm" id="l3"><span>speed ctrl:</span> <input id="spdctl" type="checkbox" /></label>
-            <label class="mnrm" id="lo"><span>annotate:</span> <input id="annot" type="checkbox" /></label>
+            <!-- <label class="mnrm" id="lo"><span>annotate:</span> <input id="annot" type="checkbox" /></label> -->
             <label class="mnrm" id="l7"><span>hide player:</span> <input id="noplyr" type="checkbox" /></label>
             <label class="mnrm" id="ld"><span>hide dashes:</span> <input id="nodash" type="checkbox" /></label>
             <label class="mnrm" id="ln"><span>count in:</span> <input id="cntin" type="checkbox" /></label>
@@ -447,7 +451,7 @@ $is_share_link = isset($_GET['share']);
                     </select>
                 </div>
                 <!-- Annotations Section (Visible for logged-in users OR when shared annotations loaded) -->
-                <div id="annotations-section"
+                <!-- <div id="annotations-section"
                     style="display: <?php echo (isset($_SESSION['user_id']) ? 'block' : 'none'); ?>;">
                     <div class="annotations-section-header">
                         <h3>✏️ Markings</h3>
@@ -462,7 +466,7 @@ $is_share_link = isset($_GET['share']);
                         <input type="checkbox" id="annotations-visibility-toggle" checked
                             onchange="toggleAnnotationsVisibility()">
                     </div>
-                </div>
+                </div> -->
                 <div class="mobile-only">
                     <div class="mobile-controls-divider"></div>
                     <button id="share-btn-mobile">Share Link</button>
@@ -557,130 +561,132 @@ $is_share_link = isset($_GET['share']);
     </section3>
 
     <!-- Annotation Toolbar (logged-in users only) -->
-    <?php if (isset($_SESSION['user_id'])): ?>
-        <div id="annotation-toolbar">
-            <!-- Drawing Tools -->
-            <!-- Pen with popover -->
-            <div class="pen-popover-wrapper">
-                <button id="pen-btn" class="annotation-tool-btn active" data-tool="pen" onclick="togglePenPopover()"
-                    title="Pen Settings">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 19l7-7 3 3-7 7-3-3z" />
-                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-                        <path d="M2 2l7.586 7.586" />
-                    </svg>
-                </button>
-                <!-- Pen Popover - opens upward, aligned to left -->
-                <div id="pen-popover">
-                    <div class="pen-popover-content">
-                        <!-- Colors -->
-                        <button onclick="selectPenColor('#000000')" class="color-swatch active" data-color="#000000"
-                            style="background:#000000;"></button>
-                        <button onclick="selectPenColor('#e53935')" class="color-swatch" data-color="#e53935"
-                            style="background:#e53935;"></button>
-                        <button onclick="selectPenColor('#1e88e5')" class="color-swatch" data-color="#1e88e5"
-                            style="background:#1e88e5;"></button>
-                        <button onclick="selectPenColor('#43a047')" class="color-swatch" data-color="#43a047"
-                            style="background:#43a047;"></button>
-                        <button onclick="selectPenColor('#fb8c00')" class="color-swatch" data-color="#fb8c00"
-                            style="background:#fb8c00;"></button>
-                        <button onclick="selectPenColor('#8e24aa')" class="color-swatch" data-color="#8e24aa"
-                            style="background:#8e24aa;"></button>
-                        <!-- Divider -->
-                        <div class="toolbar-divider-small"></div>
-                        <!-- Widths -->
-                        <button onclick="selectPenWidth(1)" class="width-btn" data-width="1">
-                            <div class="width-btn-line" style="height:1px;"></div>
-                        </button>
-                        <button onclick="selectPenWidth(2)" class="width-btn active" data-width="2">
-                            <div class="width-btn-line" style="height:2px;"></div>
-                        </button>
-                        <button onclick="selectPenWidth(4)" class="width-btn" data-width="4">
-                            <div class="width-btn-line" style="height:4px;"></div>
-                        </button>
+    <?php if (false): // Markings Mode Disabled ?>
+        <?php if (isset($_SESSION['user_id'])): ?>
+            <div id="annotation-toolbar">
+                <!-- Drawing Tools -->
+                <!-- Pen with popover -->
+                <div class="pen-popover-wrapper">
+                    <button id="pen-btn" class="annotation-tool-btn active" data-tool="pen" onclick="togglePenPopover()"
+                        title="Pen Settings">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 19l7-7 3 3-7 7-3-3z" />
+                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+                            <path d="M2 2l7.586 7.586" />
+                        </svg>
+                    </button>
+                    <!-- Pen Popover - opens upward, aligned to left -->
+                    <div id="pen-popover">
+                        <div class="pen-popover-content">
+                            <!-- Colors -->
+                            <button onclick="selectPenColor('#000000')" class="color-swatch active" data-color="#000000"
+                                style="background:#000000;"></button>
+                            <button onclick="selectPenColor('#e53935')" class="color-swatch" data-color="#e53935"
+                                style="background:#e53935;"></button>
+                            <button onclick="selectPenColor('#1e88e5')" class="color-swatch" data-color="#1e88e5"
+                                style="background:#1e88e5;"></button>
+                            <button onclick="selectPenColor('#43a047')" class="color-swatch" data-color="#43a047"
+                                style="background:#43a047;"></button>
+                            <button onclick="selectPenColor('#fb8c00')" class="color-swatch" data-color="#fb8c00"
+                                style="background:#fb8c00;"></button>
+                            <button onclick="selectPenColor('#8e24aa')" class="color-swatch" data-color="#8e24aa"
+                                style="background:#8e24aa;"></button>
+                            <!-- Divider -->
+                            <div class="toolbar-divider-small"></div>
+                            <!-- Widths -->
+                            <button onclick="selectPenWidth(1)" class="width-btn" data-width="1">
+                                <div class="width-btn-line" style="height:1px;"></div>
+                            </button>
+                            <button onclick="selectPenWidth(2)" class="width-btn active" data-width="2">
+                                <div class="width-btn-line" style="height:2px;"></div>
+                            </button>
+                            <button onclick="selectPenWidth(4)" class="width-btn" data-width="4">
+                                <div class="width-btn-line" style="height:4px;"></div>
+                            </button>
+                        </div>
                     </div>
                 </div>
+                <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')" title="Eraser">
+                    <img src="assets/img/eraser2.svg?v=3" width="24" height="24" alt="Eraser">
+                </button>
+                <button class="annotation-tool-btn" data-tool="hand" onclick="setAnnotationTool('hand')" title="Scroll Mode">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                        <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
+                        <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+                        <path
+                            d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+                    </svg>
+                </button>
+                <div class="toolbar-divider"></div>
+                <!-- Hidden color/width inputs for JS compatibility -->
+                <input type="hidden" id="annotation-color" value="#000000">
+                <input type="hidden" id="annotation-width" value="2">
+                <!-- Undo/Redo -->
+                <button id="undo-btn" class="disabled" onclick="annotationUndo()" title="Undo">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 7v6h6" />
+                        <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+                    </svg>
+                </button>
+                <button id="redo-btn" class="disabled" onclick="annotationRedo()" title="Redo">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 7v6h-6" />
+                        <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
+                    </svg>
+                </button>
+                <!-- Annotation Set Picker -->
+                <select id="annotation-set-picker" onchange="switchAnnotationSet(parseInt(this.value))"
+                    title="Switch Annotation Set">
+                </select>
+                <button class="toolbar-btn-small" onclick="toggleAnnotationsManager()" title="Manage Notes">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                    </svg>
+                </button>
+                <button class="toolbar-btn-small" onclick="createNewAnnotationSet(prompt('Name your notes:', 'My Notes'))"
+                    title="Create New Notes">+</button>
+                <button id="import-btn" onclick="importSharedAnnotations()" title="Import to My Notes">Import</button>
+                <div class="toolbar-divider"></div>
+                <!-- Actions: Share → Done (autosave handles saving) -->
+                <button class="toolbar-share-btn" onclick="shareAnnotations()" title="Share Link">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="18" cy="5" r="3" />
+                        <circle cx="6" cy="12" r="3" />
+                        <circle cx="18" cy="19" r="3" />
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                    </svg>
+                </button>
+                <button class="toolbar-done-btn" onclick="toggleAnnotationMode()" title="Done Editing">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                </button>
             </div>
-            <button class="annotation-tool-btn" data-tool="eraser" onclick="setAnnotationTool('eraser')" title="Eraser">
-                <img src="assets/img/eraser2.svg?v=3" width="24" height="24" alt="Eraser">
-            </button>
-            <button class="annotation-tool-btn" data-tool="hand" onclick="setAnnotationTool('hand')" title="Scroll Mode">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
-                    <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
-                    <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
-                    <path
-                        d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
-                </svg>
-            </button>
-            <div class="toolbar-divider"></div>
-            <!-- Hidden color/width inputs for JS compatibility -->
-            <input type="hidden" id="annotation-color" value="#000000">
-            <input type="hidden" id="annotation-width" value="2">
-            <!-- Undo/Redo -->
-            <button id="undo-btn" class="disabled" onclick="annotationUndo()" title="Undo">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 7v6h6" />
-                    <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
-                </svg>
-            </button>
-            <button id="redo-btn" class="disabled" onclick="annotationRedo()" title="Redo">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 7v6h-6" />
-                    <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
-                </svg>
-            </button>
-            <!-- Annotation Set Picker -->
-            <select id="annotation-set-picker" onchange="switchAnnotationSet(parseInt(this.value))"
-                title="Switch Annotation Set">
-            </select>
-            <button class="toolbar-btn-small" onclick="toggleAnnotationsManager()" title="Manage Notes">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-                </svg>
-            </button>
-            <button class="toolbar-btn-small" onclick="createNewAnnotationSet(prompt('Name your notes:', 'My Notes'))"
-                title="Create New Notes">+</button>
-            <button id="import-btn" onclick="importSharedAnnotations()" title="Import to My Notes">Import</button>
-            <div class="toolbar-divider"></div>
-            <!-- Actions: Share → Done (autosave handles saving) -->
-            <button class="toolbar-share-btn" onclick="shareAnnotations()" title="Share Link">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="18" cy="5" r="3" />
-                    <circle cx="6" cy="12" r="3" />
-                    <circle cx="18" cy="19" r="3" />
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                </svg>
-            </button>
-            <button class="toolbar-done-btn" onclick="toggleAnnotationMode()" title="Done Editing">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                </svg>
-            </button>
-        </div>
-        <style>
-            .annotation-tool-btn.active {
-                background: #4a90d9 !important;
-            }
+            <style>
+                .annotation-tool-btn.active {
+                    background: #4a90d9 !important;
+                }
 
-            /* Hand tool uses grab cursor */
-            body.hand-cursor-active .annotation-canvas,
-            body.hand-cursor-active #notation-scroll {
-                cursor: grab;
-            }
+                /* Hand tool uses grab cursor */
+                body.hand-cursor-active .annotation-canvas,
+                body.hand-cursor-active #notation-scroll {
+                    cursor: grab;
+                }
 
-            body.annotations-hidden .annotation-canvas {
-                display: none !important;
-            }
-        </style>
+                body.annotations-hidden .annotation-canvas {
+                    display: none !important;
+                }
+            </style>
+        <?php endif; ?>
     <?php endif; ?>
 
     <!-- Notification Element -->
