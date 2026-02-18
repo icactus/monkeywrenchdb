@@ -367,12 +367,28 @@ HTML_TEMPLATE = '''
                         <textarea id="timestamps" name="timestamps" placeholder='[{"mix": 0, "t": 0}, {"mix": 1, "t": 2.5}, ...]'></textarea>
                     </div>
 
+                    <div class="form-group">
+                        <label for="rec1_timestamps_offset">Rec 1 Timestamps Offset (seconds)</label>
+                        <input type="number" id="rec1_timestamps_offset" name="rec1_timestamps_offset" value="0" step="0.01">
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                            If your timestamps start at t=0 but the audio actually starts later (e.g. t=2s), enter 2 here.
+                        </p>
+                    </div>
+
                     <div class="form-group" style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
                         <label for="timestamps_rec2">Recording 2 Manual Timestamps (Ground Truth - Optional)</label>
                         <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
                             If provided, the pipeline will compare its output against these values index-by-index.
                         </p>
                         <textarea id="timestamps_rec2" name="timestamps_rec2" placeholder='[{"mix": 0, "t": 0}, {"mix": 1, "t": 4.9}, ...]' style="min-height: 120px;"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rec2_timestamps_offset">Rec 2 Ground Truth Offset (seconds)</label>
+                        <input type="number" id="rec2_timestamps_offset" name="rec2_timestamps_offset" value="0" step="0.01">
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                            If your ground truth timestamps start at t=0 but the audio actually starts later, enter the offset here.
+                        </p>
                     </div>
                     
                     <button type="submit" class="btn btn-primary" id="submitBtn">
@@ -489,7 +505,9 @@ HTML_TEMPLATE = '''
             const offset2 = parseTimeToSeconds(document.getElementById('offset2').value);
             const end2 = parseTimeToSeconds(document.getElementById('end2').value);
             const timestampsRaw = document.getElementById('timestamps').value;
+            const rec1TimestampsOffset = parseFloat(document.getElementById('rec1_timestamps_offset').value) || 0;
             const timestampsRec2Raw = document.getElementById('timestamps_rec2').value.trim();
+            const rec2TimestampsOffset = parseFloat(document.getElementById('rec2_timestamps_offset').value) || 0;
             
             // Validate time parsing
             if (offset2 === null) {
@@ -553,8 +571,8 @@ HTML_TEMPLATE = '''
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         url1, url2, offset1, end1, offset2, end2, 
-                        timestamps, 
-                        timestamps_rec2: timestampsRec2
+                        timestamps, rec1_timestamps_offset: rec1TimestampsOffset,
+                        timestamps_rec2: timestampsRec2, rec2_timestamps_offset: rec2TimestampsOffset
                     })
                 });
                 
@@ -737,7 +755,9 @@ def run():
         if end2:
             end2 = float(end2)
         timestamps = data.get('timestamps', [])
+        rec1_timestamps_offset = float(data.get('rec1_timestamps_offset', 0))
         timestamps_rec2 = data.get('timestamps_rec2')
+        rec2_timestamps_offset = float(data.get('rec2_timestamps_offset', 0))
         
         # DEBUG: Print what we're receiving
         print(f"[DEBUG] Received: offset1={offset1}, end1={end1}, offset2={offset2}, end2={end2}")
@@ -751,7 +771,9 @@ def run():
             offset2=offset2,
             end2=end2,
             timestamps_list=timestamps,
-            timestamps_list_rec2=timestamps_rec2
+            rec1_timestamps_offset=rec1_timestamps_offset,
+            timestamps_list_rec2=timestamps_rec2,
+            rec2_timestamps_offset=rec2_timestamps_offset
         )
         
         return jsonify({

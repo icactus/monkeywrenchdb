@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from improved_audio_sync import AudioSync
 
 
-def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_list, max_duration=None, timestamps_list_rec2=None):
+def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_list, max_duration=None, timestamps_list_rec2=None, rec1_timestamps_offset=0, rec2_timestamps_offset=0):
     """
     Run the DTW sync pipeline with custom parameters.
     
@@ -30,6 +30,9 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         end2: End time for Recording 2 (seconds)
         timestamps_list: List of dicts with 'mix' and 't' keys for Recording 1 timestamps
         max_duration: Optional max duration override
+        timestamps_list_rec2: Optional ground truth timestamps
+        rec1_timestamps_offset: Offset to add to all Rec 1 timestamps (seconds)
+        rec2_timestamps_offset: Offset to add to all Rec 2 ground truth timestamps (seconds)
         
     TERMINOLOGY:
         - mix: Measure number (e.g., 50, 100). Non-unique due to repeats.
@@ -92,12 +95,14 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         # ========================================================================
         print(f"\n[STEP 2/3] Mapping Timestamps (Global + Local Refinement)...")
         
+        print(f"  Rec1 Timestamps Offset: {rec1_timestamps_offset}s")
+        
         # Prepare input timestamps with required format
         input_timestamps = []
         for i, item in enumerate(timestamps_list):
             input_timestamps.append({
                 'mix': item.get('mix', i),
-                't': float(item['t']),
+                't': float(item['t']) + rec1_timestamps_offset,
                 'index': i
             })
         
@@ -383,7 +388,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         if timestamps_list_rec2:
             print("\n[STEP 3/3] Comparing with Ground Truth (Rec 2 Manual Timestamps)...")
             
-            # Use 'final_results' which are relative to the start of the audio file (after offset2)
+            # Use 'final_results' (player time) — both sides include their offsets
             # Match by index
             errors = []
             max_err = 0
@@ -405,7 +410,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             
             for i in range(num_points):
                 p_t = final_results[i]['t']
-                m_t = float(timestamps_list_rec2[i]['t'])
+                m_t = float(timestamps_list_rec2[i]['t']) + rec2_timestamps_offset
                 err = abs(p_t - m_t)
                 errors.append(err)
                 
