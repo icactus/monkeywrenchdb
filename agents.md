@@ -22,3 +22,6 @@ The Python pipeline (located in `scripts/`) is designed for local use to generat
 ## Database Compatibility
 The database connection should use `utf8mb4` to support international characters.
 The `fetch_pieces.php` script handles cases where the `piece_solo_instruments` table might be missing (useful for local development clones).
+
+## Cache Busting
+When modifying CSS or JS files, you MUST increment the version number (`?v=XXX`) in `index.php` (and any other files that include them) to ensure users receive the latest changes immediately. Do not wait for the user to ask for this. Refer to the `update-version-numbers` workflow.

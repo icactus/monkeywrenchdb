@@ -433,13 +433,49 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
             } else {
                 // Non-Piano: standard renames
 
+                // Convert instrumentIds string "11,12" to array of numbers [11, 12]
+                // The argument is typically a comma-separated string from the UI
+                const selectedInstrumentIds = (instrumentIds || '')
+                    .toString()
+                    .split(',')
+                    .map(s => parseInt(s.trim(), 10))
+                    .filter(n => !isNaN(n));
+
                 // Rename "Solo + Orchestra" to "<Instrument> + Orchestra"
                 if (originalSO && originalSO.length) {
-                    groupedPieces[soloOrchestraKey] = originalSO;
-                    // Only delete if renaming to a different key
-                    if (soloOrchestraKey !== 'Solo + Orchestra') {
-                        delete groupedPieces['Solo + Orchestra'];
+
+                    // Filter pieces:
+                    // 1. definitiveSolo: pieces where AT LEAST ONE of the solo instruments is in our selected list
+                    // 2. orchestralPart: pieces where NONE of the solo instruments are in our selected list
+
+                    const definitiveSolo = originalSO.filter(p => {
+                        if (!p.solo_instrument_ids || p.solo_instrument_ids.length === 0) return false;
+                        // Check intersection
+                        return p.solo_instrument_ids.some(id => selectedInstrumentIds.includes(id));
+                    });
+
+                    const orchestralPart = originalSO.filter(p => {
+                        if (!p.solo_instrument_ids || p.solo_instrument_ids.length === 0) return true; // Treat as orchestra if no solo info
+                        // Check intersection (none)
+                        return !p.solo_instrument_ids.some(id => selectedInstrumentIds.includes(id));
+                    });
+
+                    // Assign definitive solos to the "Instrument + Orchestra" key
+                    if (definitiveSolo.length > 0) {
+                        groupedPieces[soloOrchestraKey] = definitiveSolo;
                     }
+
+                    // Move the rest to "Orchestra"
+                    if (orchestralPart.length > 0) {
+                        if (!groupedPieces['Orchestra']) {
+                            groupedPieces['Orchestra'] = [];
+                        }
+                        // Add them to existing orchestra array
+                        groupedPieces['Orchestra'] = groupedPieces['Orchestra'].concat(orchestralPart);
+                    }
+
+                    // Clean up the old key
+                    delete groupedPieces['Solo + Orchestra'];
                 }
 
                 // Rename "Solo + Piano" to "<Instrument> + Piano"
