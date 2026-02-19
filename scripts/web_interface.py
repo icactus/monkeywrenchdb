@@ -329,6 +329,16 @@ HTML_TEMPLATE = '''
         <div class="grid">
             <div class="card">
                 <h2 class="card-title">Input Configuration</h2>
+                
+                <div class="form-group" style="background: var(--bg-tertiary); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                    <label for="presetSelect" style="margin: 0; white-space: nowrap;">🧪 Test Preset</label>
+                    <select id="presetSelect" style="flex: 1; padding: 0.5rem 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.875rem; cursor: pointer;" onchange="loadPreset(this.value)">
+                        <option value="">— Select a preset —</option>
+                    </select>
+                    <button type="button" onclick="savePreset()" style="padding: 0.5rem 0.75rem; background: var(--accent-secondary); border: none; border-radius: 6px; color: #0f0f23; font-weight: 600; font-size: 0.75rem; cursor: pointer; white-space: nowrap;">💾 Save</button>
+                    <button type="button" onclick="deletePreset()" style="padding: 0.5rem 0.75rem; background: var(--accent-warning); border: none; border-radius: 6px; color: #fff; font-weight: 600; font-size: 0.75rem; cursor: pointer; white-space: nowrap;">🗑️ Delete</button>
+                </div>
+
                 <form id="pipelineForm">
                     <div class="form-group">
                         <label for="url1">Recording 1 URL (YouTube)</label>
@@ -727,6 +737,111 @@ HTML_TEMPLATE = '''
             btn.textContent = '✓';
             setTimeout(() => btn.textContent = '📋', 2000);
         }
+
+        // --- Preset loading ---
+        async function loadPresets() {
+            try {
+                const resp = await fetch('/presets');
+                const presets = await resp.json();
+                const sel = document.getElementById('presetSelect');
+                presets.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name;
+                    sel.appendChild(opt);
+                });
+            } catch(e) { console.warn('Could not load presets:', e); }
+        }
+
+        async function loadPreset(id) {
+            if (!id) return;
+            try {
+                const resp = await fetch('/presets?name=' + encodeURIComponent(id));
+                const p = await resp.json();
+                if (p.error) { alert(p.error); return; }
+
+                document.getElementById('url1').value = p.url1 || '';
+                document.getElementById('url2').value = p.url2 || '';
+                document.getElementById('offset1').value = p.offset1 || 0;
+                document.getElementById('end1').value = p.end1 || '';
+                document.getElementById('offset2').value = p.offset2 || 0;
+                document.getElementById('end2').value = p.end2 || '';
+                document.getElementById('timestamps').value = JSON.stringify(p.timestamps || [], null, 2);
+                document.getElementById('rec1_timestamps_offset').value = p.rec1_timestamps_offset || 0;
+                document.getElementById('timestamps_rec2').value = p.timestamps_rec2 ? JSON.stringify(p.timestamps_rec2, null, 2) : '';
+                document.getElementById('rec2_timestamps_offset').value = p.rec2_timestamps_offset || 0;
+
+                showStatus('success', '✓ Loaded preset: ' + p.name);
+                setTimeout(() => { status.className = 'status'; }, 2000);
+            } catch(e) { alert('Error loading preset: ' + e.message); }
+        }
+
+        async function savePreset() {
+            const name = prompt('Preset name (e.g. "Berlioz Roman Carnival Overture"):');
+            if (!name) return;
+            const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+
+            const timestampsRaw = document.getElementById('timestamps').value.trim();
+            const rec2Raw = document.getElementById('timestamps_rec2').value.trim();
+            let timestamps = [], timestamps_rec2 = null;
+            try { timestamps = JSON.parse(timestampsRaw); } catch(e) {}
+            try { if (rec2Raw) timestamps_rec2 = JSON.parse(rec2Raw); } catch(e) {}
+
+            const preset = {
+                id, name,
+                url1: document.getElementById('url1').value,
+                url2: document.getElementById('url2').value,
+                offset1: parseFloat(document.getElementById('offset1').value) || 0,
+                end1: document.getElementById('end1').value,
+                offset2: document.getElementById('offset2').value,
+                end2: document.getElementById('end2').value,
+                rec1_timestamps_offset: parseFloat(document.getElementById('rec1_timestamps_offset').value) || 0,
+                rec2_timestamps_offset: parseFloat(document.getElementById('rec2_timestamps_offset').value) || 0,
+                timestamps,
+                timestamps_rec2
+            };
+
+            try {
+                const resp = await fetch('/presets/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(preset)
+                });
+                const result = await resp.json();
+                if (result.error) { alert(result.error); return; }
+                showStatus('success', '✓ Saved preset: ' + name);
+                setTimeout(() => { status.className = 'status'; }, 2000);
+                // Refresh the dropdown
+                const sel = document.getElementById('presetSelect');
+                sel.innerHTML = '<option value="">— Select a preset —</option>';
+                await loadPresets();
+                sel.value = id;
+            } catch(e) { alert('Error saving preset: ' + e.message); }
+        }
+
+        async function deletePreset() {
+            const sel = document.getElementById('presetSelect');
+            const id = sel.value;
+            if (!id) { alert('Select a preset to delete first.'); return; }
+            const selectedName = sel.options[sel.selectedIndex].textContent;
+            if (!confirm('Delete preset "' + selectedName + '"?')) return;
+            try {
+                const resp = await fetch('/presets/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const result = await resp.json();
+                if (result.error) { alert(result.error); return; }
+                showStatus('success', '✓ Deleted preset: ' + selectedName);
+                setTimeout(() => { status.className = 'status'; }, 2000);
+                sel.innerHTML = '<option value="">— Select a preset —</option>';
+                await loadPresets();
+            } catch(e) { alert('Error deleting preset: ' + e.message); }
+        }
+
+        // Load preset list on page load
+        loadPresets();
     </script>
 </body>
 </html>
@@ -736,6 +851,84 @@ HTML_TEMPLATE = '''
 @app.route('/')
 def index():
     return render_template_string(HTML_TEMPLATE)
+
+
+@app.route('/presets')
+def presets():
+    """Serve test presets from test_presets.json"""
+    presets_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_presets.json')
+    try:
+        with open(presets_file, 'r') as f:
+            all_presets = json.load(f)
+    except FileNotFoundError:
+        return jsonify({'error': 'test_presets.json not found'}), 404
+
+    # If a specific preset requested, return full data
+    name = request.args.get('name')
+    if name:
+        for p in all_presets:
+            if p.get('id') == name:
+                return jsonify(p)
+        return jsonify({'error': f'Preset "{name}" not found'}), 404
+
+    # Otherwise return list of id/name for the dropdown
+    return jsonify([{'id': p['id'], 'name': p['name']} for p in all_presets])
+
+
+@app.route('/presets/save', methods=['POST'])
+def save_preset_data():
+    """Save or update a preset in test_presets.json"""
+    presets_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_presets.json')
+    try:
+        with open(presets_file, 'r') as f:
+            all_presets = json.load(f)
+    except FileNotFoundError:
+        all_presets = []
+
+    new_preset = request.get_json()
+    preset_id = new_preset.get('id')
+    if not preset_id:
+        return jsonify({'error': 'Preset id is required'}), 400
+
+    # Replace existing preset with same id, or append
+    replaced = False
+    for i, p in enumerate(all_presets):
+        if p.get('id') == preset_id:
+            all_presets[i] = new_preset
+            replaced = True
+            break
+    if not replaced:
+        all_presets.append(new_preset)
+
+    with open(presets_file, 'w') as f:
+        json.dump(all_presets, f, indent=2)
+
+    return jsonify({'success': True, 'replaced': replaced})
+
+
+@app.route('/presets/delete', methods=['POST'])
+def delete_preset_data():
+    """Delete a preset from test_presets.json"""
+    presets_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_presets.json')
+    try:
+        with open(presets_file, 'r') as f:
+            all_presets = json.load(f)
+    except FileNotFoundError:
+        return jsonify({'error': 'No presets file found'}), 404
+
+    preset_id = request.get_json().get('id')
+    if not preset_id:
+        return jsonify({'error': 'Preset id is required'}), 400
+
+    original_len = len(all_presets)
+    all_presets = [p for p in all_presets if p.get('id') != preset_id]
+    if len(all_presets) == original_len:
+        return jsonify({'error': f'Preset "{preset_id}" not found'}), 404
+
+    with open(presets_file, 'w') as f:
+        json.dump(all_presets, f, indent=2)
+
+    return jsonify({'success': True})
 
 
 @app.route('/run', methods=['POST'])

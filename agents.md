@@ -22,8 +22,8 @@ The Python pipeline (located in `scripts/`) is designed for local use to generat
 ### Architecture (improved_audio_sync.py)
 - **Features**: Chroma (12) + Chroma Delta (12) + Onset (1, 5x boosted) + Energy (1) = 26 dimensions
 - **DTW Backend**: dtaidistance C backend with Sakoe-Chiba band (30s window), penalty=0.0
-- **Path Mapping**: Averaged many-to-one DTW mappings → linear interpolation → 3-pass smoothing → monotonicity enforcement
-- **Refinement**: All audio-content refinement methods DISABLED (different performers = different audio, see below)
+- **Path Mapping**: Averaged many-to-one DTW mappings → linear interpolation → local refinement (1.5s, damage guarded) → 3-pass smoothing → monotonicity enforcement
+- **Refinement**: Local DTW (1.5s window) with damage guard. Cross-correlation and onset envelope methods DISABLED (different performers = different audio)
 - **Flagging** (run_full_pipeline_web.py): Tempo ratio, gap deviation (0.4s), offset trend (0.25s), RT error, low energy
 
 ### Experiment Log (Feb 2026)
@@ -39,6 +39,10 @@ The Python pipeline (located in `scripts/`) is designed for local use to generat
 | **Local DTW refinement** | Converges to wrong local minima in dense textures (hurt 215/446 points) | ❌ DISABLED (Old 5.0s window) |
 | **Local DTW (Window=1.5s)** | Re-enabled with tight 1.5s constraint. Reduced flags 56->32, improved MAE -> 0.0838s | ✅ KEPT |
 | **Refinement Damage Guard** | Rejects refinement moving away from coarse trend. MAE 0.0838→0.0778, help:hurt 2.5:1, flags 32→24 | ✅ KEPT |
+| **Local DTW (Window=1.0s)** | Tighter window: identical MAE (0.0778), 2.5x faster (0.8s vs 2.1s) but 4 more flags (28 vs 24). Damage guard makes window size moot | ❌ NOT WORTH IT — kept 1.5s |
+| **Bidirectional Path Fusion** | Average forward+backward DTW mappers. Zero effect — paths too correlated (same features/algo), errors don't cancel | ❌ NO EFFECT |
+| **Feature Augmentation (+Tonnetz +Spectral Contrast)** | 26→39 dims. Coarse MAE degraded 0.0983→0.1013, max error 0.478→0.924. Timbral features capture performer differences, dilute chroma signal | ❌ REVERTED |
+| **Density-Gated Smoothing** | Skip smoothing when local rec1 gaps avg > 2.5s (slow/sparse sections). Help:hurt 28:5 (5.6:1) vs old 32:14 (2.3:1). MAE ≈same (0.0781). Eliminates smoothing damage in fermatas/slow passages | ✅ KEPT |
 | **Onset snapping** | Hurt 2:1 (88 hurt vs 49 helped), MAE 0.087→0.092 — orchestral "onsets" are soft entries/swells | ❌ DISABLED for orchestral/classical |
 
 ### Key Constraints

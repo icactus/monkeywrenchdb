@@ -72,7 +72,7 @@ class AudioSync:
         # 2. Chroma (Harmonic content) - KEY for music alignment
         chroma = librosa.feature.chroma_cqt(y=y_harmonic, sr=self.sr, hop_length=self.hop_length)
         
-        # 2. Compute RMS energy for silence detection
+        # Compute RMS energy for silence detection
         rms = librosa.feature.rms(y=y, hop_length=self.hop_length)[0]
         rms_norm = rms / (rms.max() + 1e-8)
         
@@ -83,9 +83,10 @@ class AudioSync:
         chroma_delta = librosa.feature.delta(chroma)
         chroma_delta = librosa.util.normalize(chroma_delta, axis=0)
         
+
+        
         # 4. Onset Strength (Rhythmic articulation)
         # BOOST WEIGHT: Multiply by 5.0 to make skipping note attacks expensive
-        # This fixes "jumping ahead" on repeated notes
         onset_env = librosa.onset.onset_strength(y=y, sr=self.sr, hop_length=self.hop_length)
         onset_env = onset_env / (onset_env.max() + 1e-8)
         onset_env = onset_env.reshape(1, -1) * 5.0
@@ -95,24 +96,20 @@ class AudioSync:
         chroma = chroma[:, :min_len]
         chroma_delta = chroma_delta[:, :min_len]
         onset_env = onset_env[:, :min_len]
-        rms_norm = rms_norm[:min_len].reshape(1, -1)  # Reshape for stacking
+        rms_norm = rms_norm[:min_len].reshape(1, -1)
         
         # Stack: (12+12+1+1, frames) -> (26, frames)
         features = np.vstack([chroma, chroma_delta, onset_env, rms_norm])
         
-        # 5. ZERO-COST SILENCE: Set silent frames to identical zero vectors
-        # This allows DTW to traverse silence freely (0 cost for silent-to-silent)
-        SILENCE_THRESHOLD = 0.02  # 2% of max energy = silence
-        # rms_norm is (1, frames), so we flatten it to get a 1D mask for columns
+        # ZERO-COST SILENCE: Set silent frames to identical zero vectors
+        SILENCE_THRESHOLD = 0.02
         silent_mask = rms_norm.flatten() < SILENCE_THRESHOLD
         num_silent = np.sum(silent_mask)
-        
-        # Set silent frames to zero (making all silent frames identical)
         features[:, silent_mask] = 0.0
         
         print(f"  Zero-cost silence: {num_silent} frames ({100*num_silent/min_len:.1f}%) set to zero")
         
-        return features.T  # Return (frames, 25)
+        return features.T  # Return (frames, 26)
 
     def run_hybrid_sync(self, f1, f2):
         """
@@ -352,6 +349,8 @@ class AudioSync:
         
         delta = librosa.feature.delta(chroma)
         delta = librosa.util.normalize(delta, axis=0)
+        
+
         
         onset_raw = librosa.onset.onset_strength(y=y, sr=self.sr, hop_length=local_hop)
         onset = onset_raw / (onset_raw.max() + 1e-8)
@@ -653,12 +652,25 @@ class AudioSync:
         # Window size 11 (approx 5-10s depending on density) captures local trend while ignoring single outliers
         trend_offsets = median_filter(all_offsets, size=11)
         
+        DENSITY_GATE_SEC = 2.5  # Only smooth in dense sections (avg gap < this)
+        
         def run_smoothing_pass(current_results, threshold_sec, neighbor_radius=3):
             sm_count = 0
+            sm_skipped_sparse = 0
             
             for i in range(len(current_results)):
                 t1_self = manual_timestamps_list[i]['t']
                 offset_self = current_results[i]['t'] - t1_self
+                
+                # DENSITY GATE: compute average gap of nearby rec1 timestamps
+                # If timestamps are sparse (slow section), skip smoothing
+                local_gaps = []
+                for j in range(max(0, i - 2), min(len(manual_timestamps_list) - 1, i + 2)):
+                    gap = manual_timestamps_list[j + 1]['t'] - manual_timestamps_list[j]['t']
+                    local_gaps.append(gap)
+                if local_gaps and np.mean(local_gaps) > DENSITY_GATE_SEC:
+                    sm_skipped_sparse += 1
+                    continue
                 
                 # Gather neighbors
                 neighbor_indices = []
@@ -705,16 +717,16 @@ class AudioSync:
                     current_results[i]['smooth_delta'] = round(prev_delta + (new_t - old_t), 6)
                     sm_count += 1
 
-            return sm_count
+            return sm_count, sm_skipped_sparse
 
         # Pass 1: Large outliers (>0.3s)
-        c1 = run_smoothing_pass(results, 0.3)
+        c1, s1 = run_smoothing_pass(results, 0.3)
         # Pass 2: Subtle outliers (>0.15s)
-        c2 = run_smoothing_pass(results, 0.15)
+        c2, s2 = run_smoothing_pass(results, 0.15)
         # Pass 3: Fine-grained (>0.10s) with wider neighbor window for broader consensus
-        c3 = run_smoothing_pass(results, 0.10, neighbor_radius=5)
+        c3, s3 = run_smoothing_pass(results, 0.10, neighbor_radius=5)
         
-        print(f"  Smarter Smoothing: Pass 1 corrected {c1}, Pass 2 corrected {c2}, Pass 3 corrected {c3}")
+        print(f"  Smarter Smoothing: Pass 1 corrected {c1}, Pass 2 corrected {c2}, Pass 3 corrected {c3} (skipped {s1+s2+s3} sparse-section points)")
         
         # ----- MONOTONICITY ENFORCEMENT -----
         # Ensure timestamps are strictly increasing after smoothing
