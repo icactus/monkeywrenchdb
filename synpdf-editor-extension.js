@@ -391,6 +391,19 @@
         log('Hooked into time2x for optimized UI updates.');
     }
 
+    // --- PATCH SYNPDF GLOBALS ---
+    // Ensure we re-hook after 2-up mode toggle rebuilds the view
+    const _originalToggleTwoUpMode = window.toggleTwoUpMode;
+    if (typeof _originalToggleTwoUpMode === 'function') {
+        window.toggleTwoUpMode = function (on) {
+            _originalToggleTwoUpMode(on);
+            // The rebuild replaces msc_wz, so we must re-hook
+            isHooked = false;
+            setTimeout(installTime2xHook, 200);
+        };
+        log('Patched toggleTwoUpMode to preserve UI updates.');
+    }
+
     // --- SYNC INFO DISPLAY ---
     function updateSyncInfo() {
         if (!window.isEditing) return;

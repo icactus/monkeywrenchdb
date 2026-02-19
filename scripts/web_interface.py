@@ -601,10 +601,10 @@ HTML_TEMPLATE = '''
                         console.log("[DEBUG] Sample item:", data.zero_based_results[0]);
                     }
 
-                    // Generate fix list (low confidence items)
+                    // Generate fix list (low and medium confidence items)
                     window.fullFixList = data.zero_based_results
                         .map((item, index) => ({ ...item, detix: index }))
-                        .filter(item => item.confidence && (String(item.confidence).toLowerCase() === 'low' || item.confidence < 0.5));
+                        .filter(item => item.confidence && (String(item.confidence).toLowerCase() === 'low' || String(item.confidence).toLowerCase() === 'medium'));
                     
                     console.log("[DEBUG] Generated Fix List:", window.fullFixList.length, "items");
 
