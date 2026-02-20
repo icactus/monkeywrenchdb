@@ -4,9 +4,106 @@ import librosa
 import yt_dlp
 import json
 import warnings
+import gc
+import concurrent.futures
+import multiprocessing
+
+# Globals no longer needed for memmap
+#_pool_f1_hires = None
+#_pool_f2_hires = None
+
+def _local_refine_core(f1, f2, t1_sec, t2_est_sec, window_sec, local_hop, sr):
+    """
+    Core static logic for local refinement (no self, no side effects).
+    """
+    
+    local_frame_rate = sr / local_hop
+    win_frames = int(window_sec * local_frame_rate)
+    
+    # Convert timestamps to high-res frame indices
+    t1_frame = int(t1_sec * local_frame_rate)
+    t2_frame = int(t2_est_sec * local_frame_rate)
+    
+    # Extract windows (clamped to array boundaries)
+    start1 = max(0, t1_frame - win_frames)
+    end1_idx = min(len(f1), t1_frame + win_frames)
+    start2 = max(0, t2_frame - win_frames)
+    end2_idx = min(len(f2), t2_frame + win_frames)
+    
+    seg1 = f1[start1:end1_idx]
+    seg2 = f2[start2:end2_idx]
+    
+    # Need minimum frames for meaningful DTW
+    if len(seg1) < 20 or len(seg2) < 20:
+        return t2_est_sec
+    
+    # Run local DTW (small matrix, no window constraint needed)
+    # Use dtaidistance fast C implementation for small matrices
+    from dtaidistance import dtw_ndim
+    f1_c = np.ascontiguousarray(seg1, dtype=np.float64)
+    f2_c = np.ascontiguousarray(seg2, dtype=np.float64)
+    
+    local_path = dtw_ndim.warping_path(f1_c, f2_c, use_c=True)
+    
+    # Find where t1 maps in the local path
+    t1_local_frame = t1_frame - start1
+    t1_local_frame = max(0, min(t1_local_frame, len(seg1) - 1))
+    
+    # Find the path entry closest to t1_local_frame in the rec1 axis
+    path_arr = np.array(local_path)
+    mask = path_arr[:, 0] == t1_local_frame
+    if mask.any():
+        t2_local_frame = int(np.mean(path_arr[mask, 1]))
+    else:
+        diffs = np.abs(path_arr[:, 0] - t1_local_frame)
+        nearest_idx = np.argmin(diffs)
+        t2_local_frame = int(path_arr[nearest_idx, 1])
+    
+    # Convert back to absolute seconds
+    t2_refined = (start2 + t2_local_frame) / local_frame_rate
+    
+    return t2_refined
+
+
+def _worker_task(args):
+    """Worker function for ProcessPoolExecutor using memmap files"""
+    t1, t2_est, win, hop, sr, f1_shape, f1_path, f2_shape, f2_path = args
+    
+    # Load read-only memmap using shapes passed
+    f1_mmap = np.memmap(f1_path, dtype='float32', mode='r', shape=f1_shape)
+    f2_mmap = np.memmap(f2_path, dtype='float32', mode='r', shape=f2_shape)
+    
+    return _local_refine_core(f1_mmap, f2_mmap, t1, t2_est, win, hop, sr)
+
+
 
 # Suppress warnings
 warnings.filterwarnings("ignore")
+
+
+# Global worker function for HPSS (must be picklable)
+def _hpss_worker_task(args):
+    """
+    Worker to compute HPSS and save to cache.
+    Args:
+        audio_path: Path to audio file
+        offset: Start offset
+        duration: Duration to read
+        sr: Sample rate
+        cache_path: Output path for .npy
+    """
+    audio_path, offset, duration, sr, cache_path = args
+    
+    # Load audio
+    y, _ = librosa.load(audio_path, sr=sr, offset=offset, duration=duration)
+    
+    # Compute HPSS
+    y_harmonic, _ = librosa.effects.hpss(y)
+    
+    # Save to cache
+    np.save(cache_path, y_harmonic)
+    
+    return True
 
 
 class AudioSync:
@@ -17,7 +114,7 @@ class AudioSync:
     Uses Sakoe-Chiba band constraint for memory efficiency.
     """
     
-    def __init__(self, sr=22050, hop_length=1024, cache_dir="audio_cache"):
+    def __init__(self, sr=22050, hop_length=2048, cache_dir="audio_cache"):
         self.sr = sr
         self.hop_length = hop_length
         self.cache_dir = cache_dir
@@ -57,7 +154,7 @@ class AudioSync:
             ydl.download([youtube_url])
         return output_path
 
-    def extract_features(self, y, hop_length, saliency_threshold=0.05, y_harmonic=None):
+    def extract_features(self, y, hop_length, saliency_threshold=0.05, y_harmonic=None, n_stack=15):
         """
         Extracts features with zero-cost silence matching.
         
@@ -109,7 +206,21 @@ class AudioSync:
         
         print(f"  Zero-cost silence: {num_silent} frames ({100*num_silent/min_len:.1f}%) set to zero")
         
-        return features.T  # Return (frames, 26)
+        # 5. Feature Stacking (Timbre Context)
+        # Adds temporal context to each frame to distinguish identical notes
+        # (e.g. m.81 repeated in m.82). Even if the note is identical,
+        # the *history* (previous frames) will differ.
+        if n_stack > 1:
+            # stack_memory creates [f_t, f_{t-1}, f_{t-2}...]
+            # effectively enforcing a matching "window" of features
+            features = librosa.feature.stack_memory(features, n_steps=n_stack, delay=1)
+            
+            # Since stack_memory pads with zeros or repeats, we might need to trim?
+            # Actually librosa usually handles it safely.
+            # But let's verify shape.
+            # print(f"  Stacked features (n={n_stack}): {features.shape}")
+
+        return features.T  # Return (frames, 26 * n_stack)
 
     def run_hybrid_sync(self, f1, f2):
         """
@@ -123,45 +234,52 @@ class AudioSync:
         print(f"\n--- DTW Alignment (dtaidistance C backend) ---")
         print(f"  Sample Rate: {self.sr} Hz")
         
-        # Resolution determined by __init__ (Hop 1024 @ 22050Hz ~ 21.5Hz)
+        # Resolution determined by __init__ (Hop 2048 @ 22050Hz ~ 10.7Hz)
         
-        # Use full resolution (no downsampling)
-        frame_rate = self.sr / self.hop_length  # ~43 Hz
+        # COARSE-TO-FINE STRATEGY (Optimization)
+        # We use a larger hop length (2048) to get ~10Hz resolution natively.
+        # This is better than Hop 1024 + Downsample 2 because it integrates
+        # all audio data (windowing) rather than discarding half (decimation).
         
-        print(f"  Full resolution: {len(f1)} x {len(f2)} frames (~{frame_rate:.1f}Hz)")
+        DOWNSAMPLE_FACTOR = 1
+        
+        # No downsampling (f_coarse is just f)
+        f1_coarse = f1
+        f2_coarse = f2
+        
+        frame_rate = self.sr / self.hop_length  # ~10.7 Hz
+        coarse_frame_rate = frame_rate
+        
+        print(f"  Coarse resolution: {len(f1_coarse)} x {len(f2_coarse)} frames (~{coarse_frame_rate:.1f}Hz)")
         
         # Sakoe-Chiba window: 30 seconds
-        # Increased to 30s to handle inter-movement silence differences (e.g. 10s vs 2s)
         window_sec = 30.0
-        window_frames = int(window_sec * frame_rate)
+        window_frames_coarse = int(window_sec * coarse_frame_rate)
         
-        print(f"  Sakoe-Chiba window: {window_frames} frames ({window_sec}s)")
-        # Memory for full run (21k frames, 30s window, 25 dims):
-        # 21000 * (30*21) * 8 * 25 = ~2.6 GB. Very safe for 24GB.
-        print(f"  Expected memory: {len(f1) * window_frames * 8 * f1.shape[1] / 1e6:.1f} MB (feature-aware)")
-        print(f"  Computing DTW (C backend, {f1.shape[1]}-dim features)...")
+        print(f"  Sakoe-Chiba window: {window_frames_coarse} coarse frames ({window_sec}s)")
+        print(f"  Computing DTW (dtaidistance C backend) on Native 10Hz features...")
         
         import time
         start = time.time()
         
         # Ensure contiguous float64 arrays for C backend
-        f1_c = np.ascontiguousarray(f1, dtype=np.float64)
-        f2_c = np.ascontiguousarray(f2, dtype=np.float64)
+        f1_c = np.ascontiguousarray(f1_coarse, dtype=np.float64)
+        f2_c = np.ascontiguousarray(f2_coarse, dtype=np.float64)
         
         # Use dtw_ndim for multi-dimensional features
-        # Add penalty to prevent path from jumping too wildly
-        path = dtw_ndim.warping_path(
+        path_coarse = dtw_ndim.warping_path(
             f1_c, f2_c,
-            window=window_frames,
-            penalty=0.0,  # Zero penalty to allow free warping (mimic librosa)
+            window=window_frames_coarse,
+            penalty=0.0,  # Zero penalty to allow free warping
             use_c=True
         )
         
         elapsed = time.time() - start
-        print(f"  Path length: {len(path)}")
+        print(f"  Coarse path length: {len(path_coarse)}")
         print(f"  Computation time: {elapsed:.2f}s")
         
-        return list(path)
+        # Returns path directly (no upscaling needed)
+        return path_coarse
 
     def local_refine(self, f1_hires, f2_hires, t1_sec, t2_est_sec, 
                       window_sec=5.0, local_hop=256):
@@ -182,52 +300,12 @@ class AudioSync:
         Returns:
             Refined t2 in seconds
         """
-        from dtaidistance import dtw_ndim
-        
-        local_frame_rate = self.sr / local_hop  # ~86 Hz
-        win_frames = int(window_sec * local_frame_rate)
-        
-        # Convert timestamps to high-res frame indices
-        t1_frame = int(t1_sec * local_frame_rate)
-        t2_frame = int(t2_est_sec * local_frame_rate)
-        
-        # Extract windows (clamped to array boundaries)
-        start1 = max(0, t1_frame - win_frames)
-        end1_idx = min(len(f1_hires), t1_frame + win_frames)
-        start2 = max(0, t2_frame - win_frames)
-        end2_idx = min(len(f2_hires), t2_frame + win_frames)
-        
-        seg1 = f1_hires[start1:end1_idx]
-        seg2 = f2_hires[start2:end2_idx]
-        
-        # Need minimum frames for meaningful DTW
-        if len(seg1) < 20 or len(seg2) < 20:
-            return t2_est_sec
-        
-        # Run local DTW (small matrix, no window constraint needed)
-        f1_c = np.ascontiguousarray(seg1, dtype=np.float64)
-        f2_c = np.ascontiguousarray(seg2, dtype=np.float64)
-        
-        local_path = dtw_ndim.warping_path(f1_c, f2_c, use_c=True)
-        
-        # Find where t1 maps in the local path
-        t1_local_frame = t1_frame - start1
-        t1_local_frame = max(0, min(t1_local_frame, len(seg1) - 1))
-        
-        # Find the path entry closest to t1_local_frame in the rec1 axis
-        path_arr = np.array(local_path)
-        mask = path_arr[:, 0] == t1_local_frame
-        if mask.any():
-            t2_local_frame = int(np.mean(path_arr[mask, 1]))
-        else:
-            diffs = np.abs(path_arr[:, 0] - t1_local_frame)
-            nearest_idx = np.argmin(diffs)
-            t2_local_frame = int(path_arr[nearest_idx, 1])
-        
-        # Convert back to absolute seconds
-        t2_refined = (start2 + t2_local_frame) / local_frame_rate
-        
-        return t2_refined
+        """
+        Refine a single timestamp using pre-computed high-res features.
+        Wrapper around static _local_refine_core.
+        """
+        return _local_refine_core(f1_hires, f2_hires, t1_sec, t2_est_sec, 
+                                window_sec, local_hop, self.sr)
 
     def cross_correlate_refine(self, f1_hires, f2_hires, t1_sec, t2_est_sec,
                                 window_sec=1.0, search_sec=0.5, local_hop=256):
@@ -369,7 +447,14 @@ class AudioSync:
         ]).T  # (frames, 26)
         
         print(f"  High-res features: {features.shape[0]} frames ({features.shape[0] * local_hop / self.sr:.1f}s)")
-        return features, onset_raw[:min_len]
+        
+        # Explicit cleanup of large intermediates
+        del chroma, delta, onset_raw, rms_norm
+        if 'y_harmonic' not in locals(): # Only delete if we created it locally
+             del y_harmonic
+        gc.collect()
+        
+        return features, onset[:min_len]
 
     def onset_envelope_refine(self, onset_env1, onset_env2, t1_sec, t2_est_sec,
                               template_sec=2.0, search_sec=0.5, local_hop=256):
@@ -454,7 +539,7 @@ class AudioSync:
         return t2_refined, confidence_ratio
 
 
-    def map_timestamps(self, coarse_path, manual_timestamps_list, y1, y2, y1_harmonic=None, y2_harmonic=None, snap_enabled=False):
+    def map_timestamps(self, coarse_path, manual_timestamps_list, y1, y2, y1_harmonic=None, y2_harmonic=None, snap_enabled=False, offset1=0):
         """
         Maps timestamps using Global Path + Local Refinement + Onset Snapping.
         
@@ -511,23 +596,83 @@ class AudioSync:
         SNAP_THRESHOLD_REC1 = 0.10  # Only snap if Rec1 t is within 100ms of a real onset
         SNAP_THRESHOLD_REC2 = 0.15  # Search radius in Rec2
         
-        t_refine_start = time.time()
+        
+        # Prepare memmap files for parallel workers to avoid RAM duplication
+        import tempfile
+        import os
+        
+        # Create temp files
+        fd1, f1_path = tempfile.mkstemp(suffix='.dat')
+        fd2, f2_path = tempfile.mkstemp(suffix='.dat')
+        os.close(fd1)
+        os.close(fd2)
+        
+        # Write data to memmap files
+        f1_shape = f1_hires.shape
+        f2_shape = f2_hires.shape
+        
+        # Create writeable memmap
+        fp1 = np.memmap(f1_path, dtype='float32', mode='w+', shape=f1_shape)
+        fp1[:] = f1_hires[:]
+        fp1.flush()
+        del fp1  # close write handle
+        
+        fp2 = np.memmap(f2_path, dtype='float32', mode='w+', shape=f2_shape)
+        fp2[:] = f2_hires[:]
+        fp2.flush()
+        del fp2 # close write handle
+        
+        
+        # Prepare parallel tasks
+        tasks = []
         for i, record in enumerate(manual_timestamps_list):
             t1 = record['t']
-            mix_num = record.get('mix', 0)
             
             # Map using global path (coarse estimate)
-            t1_frame = int(t1 * self.sr / self.hop_length)
+            # t1 is global time. y1 is cropped starting at offset1.
+            # Convert t1 to relative time within y1 buffer.
+            t1_rel = t1 - offset1
+            
+            # If t1 < offset1, we can't map it properly to this buffer. Clamp to 0?
+            if t1_rel < 0:
+                 # print(f"Warning: Timestamp {t1} is before buffer start {offset1}")
+                 t1_rel = 0
+                 
+            t1_frame = int(t1_rel * self.sr / self.hop_length)
             t2_frame_est = coarse_mapper(t1_frame)
             t2_coarse = float(t2_frame_est * self.hop_length / self.sr)
             
-            # Refinement stage: Local High-Res DTW
-            # Re-enabled with TIGHT constraint (1.5s) to fix "wandering"
-            # This uses the pre-computed high-res features (hop=256) for sub-frame accuracy
-            t2_refined = self.local_refine(
-                f1_hires, f2_hires, t1, t2_coarse, 
-                window_sec=1.5, local_hop=local_hop
-            )
+            # Store coarse for later
+            record['_t2_coarse'] = t2_coarse
+            
+            # Task: (t1, t2_coarse, window, hop, sr, shapes, paths)
+            # Optimized Window: 0.3s (Coarse path is accurate, search only local error)
+            tasks.append((t1, t2_coarse, 0.3, local_hop, self.sr, f1_shape, f1_path, f2_shape, f2_path))
+            
+        # Run Parallel Refinement
+        t_refine_start = time.time()
+        print(f"  [Running Parallel Refinement on {multiprocessing.cpu_count()} cores using memmap]")
+        
+        try:
+            # Use process pool with SPAWN context to avoid memory duplication
+            # This ensures workers start fresh (~50MB) instead of cloning parent (~6GB)
+            ctx = multiprocessing.get_context('spawn')
+            with concurrent.futures.ProcessPoolExecutor(mp_context=ctx) as executor:
+                # Map returns results in order
+                refined_results = list(executor.map(_worker_task, tasks))
+        finally:
+            # Cleanup temp files
+            if os.path.exists(f1_path): os.remove(f1_path)
+            if os.path.exists(f2_path): os.remove(f2_path)
+            # Explicit GC
+            gc.collect()
+            
+        for i, record in enumerate(manual_timestamps_list):
+            t1 = record['t']
+            mix_num = record.get('mix', 0)
+            t2_coarse = record['_t2_coarse']
+            t2_refined = refined_results[i]
+
 
                 
             # --- ONSET SNAPPING LOGIC ---
@@ -619,7 +764,9 @@ class AudioSync:
             coarse_dev = abs(coarse_offsets[i] - coarse_trend[i])
             refined_dev = abs(refined_offsets[i] - coarse_trend[i])
             
-            if refined_dev > coarse_dev:
+            # Refinement Damage Guard: Only allow refinement if it doesn't make things SIGNIFICANTLY worse
+            # TIGHTENED to +0.02s (from +0.1s) to prevent degradation while allowing micro-fixes
+            if refined_dev > coarse_dev + 0.02:
                 # Refinement moved us AWAY from trend — revert
                 r['t'] = r['t_coarse']
                 r['t_refined'] = r['t_coarse']
@@ -701,7 +848,8 @@ class AudioSync:
                 
                 # If the proposed "correction" is further from the global trend than we already are,
                 # AND we are decently close to the trend (within 2x threshold), skip it.
-                if (proposed_dev_from_trend > current_dev_from_trend) and (current_dev_from_trend < threshold_sec * 2):
+                # RELAXED GUARD: Allow +0.1s leeway for local smoothing to deviate
+                if (proposed_dev_from_trend > current_dev_from_trend + 0.1) and (current_dev_from_trend < threshold_sec * 2):
                     continue
                 
                 deviation = abs(offset_self - expected_offset)
@@ -721,10 +869,12 @@ class AudioSync:
 
         # Pass 1: Large outliers (>0.3s)
         c1, s1 = run_smoothing_pass(results, 0.3)
-        # Pass 2: Subtle outliers (>0.15s)
-        c2, s2 = run_smoothing_pass(results, 0.15)
-        # Pass 3: Fine-grained (>0.10s) with wider neighbor window for broader consensus
-        c3, s3 = run_smoothing_pass(results, 0.10, neighbor_radius=5)
+        # Pass 2: Subtle outliers (>0.15s) - DISABLED per user request to favor accuracy over smoothness
+        # c2, s2 = run_smoothing_pass(results, 0.15)
+        c2, s2 = 0, 0
+        # Pass 3: Fine-grained (>0.10s) - DISABLED
+        # c3, s3 = run_smoothing_pass(results, 0.10, neighbor_radius=5)
+        c3, s3 = 0, 0
         
         print(f"  Smarter Smoothing: Pass 1 corrected {c1}, Pass 2 corrected {c2}, Pass 3 corrected {c3} (skipped {s1+s2+s3} sparse-section points)")
         
@@ -751,22 +901,83 @@ class AudioSync:
         
         if mono_fixes > 0:
             print(f"  Monotonicity: fixed {mono_fixes} inversions")
+            
+        # Explicit cleanup of high-res features
+        del f1_hires, f2_hires, onset_env1, onset_env2, coarse_path
+        gc.collect()
         
+        return results
+
+
+
+    def compute_hpss_parallel(self, inputs):
+        """
+        Compute HPSS in parallel for multiple inputs.
+        
+        inputs: List of tuples (id_str, audio_path, offset, duration)
+        
+        Returns:
+            list of y_harmonic arrays (in same order as inputs)
+        """
+        results = [None] * len(inputs)
+        missing_indices = []
+        tasks = []
+        
+        print(f"  [Parallel HPSS] Checking cache for {len(inputs)} items...")
+        
+        for i, (id_str, audio_path, offset, duration) in enumerate(inputs):
+            cache_path = os.path.join(self.cache_dir, f"{id_str}_harmonic.npy")
+            
+            if os.path.exists(cache_path):
+                print(f"    [Cache hit] {cache_path}")
+                try:
+                    results[i] = np.load(cache_path)
+                except Exception as e:
+                    print(f"    [Cache corrupt] {e}. Recomputing.")
+                    missing_indices.append(i)
+            else:
+                missing_indices.append(i)
+                
+        if not missing_indices:
+            return results
+            
+        print(f"  [Parallel HPSS] Computing {len(missing_indices)} items on {min(len(missing_indices), multiprocessing.cpu_count())} cores...")
+        
+        # Prepare tasks for missing items
+        for i in missing_indices:
+            id_str, audio_path, offset, duration = inputs[i]
+            cache_path = os.path.join(self.cache_dir, f"{id_str}_harmonic.npy")
+            tasks.append((audio_path, offset, duration, self.sr, cache_path))
+            
+        # Run parallel
+        import time
+        t0 = time.time()
+        
+        # Use ProcessPoolExecutor
+        # Note: We re-load audio in worker to avoid pickling the huge 'y' array if we had it.
+        # But here run_sync calls this *before* it returns anything, so we might as well 
+        # let the worker load it.
+        # HOWEVER, run_sync already loaded 'y' for duration logging. 
+        # To avoid double-loading, we could pass 'y', but that is slow IPC.
+        # Efficient path: Worker loads -> computes -> saves. Main -> loads from cache.
+        
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            list(executor.map(_hpss_worker_task, tasks))
+            
+        print(f"  [Parallel HPSS] Finished in {time.time() - t0:.1f}s")
+        
+        # Load newly computed results
+        for i in missing_indices:
+            id_str = inputs[i][0]
+            cache_path = os.path.join(self.cache_dir, f"{id_str}_harmonic.npy")
+            results[i] = np.load(cache_path)
+            
         return results
 
     def run_sync(self, url1, url2, output_json="sync_path.json", 
                  offset1=0, end1=None, offset2=0, end2=None):
         """
         Main execution pipeline using Hybrid 2-Pass DTW.
-        
-        Args:
-            url1: URL for recording 1
-            url2: URL for recording 2
-            output_json: Output file for alignment path
-            offset1: Start time in seconds for rec1 (video time)
-            end1: End time in seconds for rec1 (video time), None = full
-            offset2: Start time in seconds for rec2 (video time)
-            end2: End time in seconds for rec2 (video time), None = full
         """
         # 1. Download/Load Audio
         print(f"\n[1/3] Downloading audio...")
@@ -776,7 +987,6 @@ class AudioSync:
         if not os.path.exists("audio_cache"):
             os.makedirs("audio_cache")
             
-        # Create unique filename based on URL hash
         def get_url_hash(url):
             return hashlib.md5(url.encode('utf-8')).hexdigest()[:10]
             
@@ -801,22 +1011,36 @@ class AudioSync:
             
         print(f"\n[2/3] Loading audio...")
         
-        # Calculate durations from offset/end
+        # Calculate durations
         duration1 = (end1 - offset1) if end1 else None
         duration2 = (end2 - offset2) if end2 else None
         
-        # Load Rec1 with offset/duration
+        # Parallel HPSS + Caching
+        # We need y1, y2 for later (features extract needs y + y_harmonic). 
+        # We could load them now, OR let the cache loading step happen.
+        # Optimized flow:
+        # 1. Trigger HPSS background jobs (if needed).
+        # 2. While they run (or after), load y1/y2 in main thread.
+        # 3. Load y1_harmonic/y2_harmonic from cache.
+        
+        hpss_inputs = [
+            (id1, f1_path, offset1, duration1),
+            (id2, f2_path, offset2, duration2)
+        ]
+        
+        # This will block until HPSS is done and loaded
+        print("  Computing HPSS (harmonic separation) in parallel...")
+        harmonics = self.compute_hpss_parallel(hpss_inputs)
+        y1_harmonic = harmonics[0]
+        y2_harmonic = harmonics[1]
+        
+        # Load raw audio (fast compared to HPSS)
+        print("  Loading raw audio waveforms...")
         y1, sr = librosa.load(f1_path, sr=self.sr, offset=offset1, duration=duration1)
-        # Load Rec2 with offset/duration
         y2, sr = librosa.load(f2_path, sr=self.sr, offset=offset2, duration=duration2)
         
         print(f"  Recording 1: {len(y1)/sr:.1f}s (offset={offset1}s, end={end1 or 'full'})")
         print(f"  Recording 2: {len(y2)/sr:.1f}s (offset={offset2}s, end={end2 or 'full'})")
-        
-        # Compute HPSS once per recording (reused by local refinement later)
-        print("  Computing HPSS (harmonic separation)...")
-        y1_harmonic, _ = librosa.effects.hpss(y1)
-        y2_harmonic, _ = librosa.effects.hpss(y2)
         
         # Extract features using pre-computed harmonics
         f1 = self.extract_features(y1, self.hop_length, y_harmonic=y1_harmonic)

@@ -42,7 +42,8 @@ The Python pipeline (located in `scripts/`) is designed for local use to generat
 | **Local DTW (Window=1.0s)** | Tighter window: identical MAE (0.0778), 2.5x faster (0.8s vs 2.1s) but 4 more flags (28 vs 24). Damage guard makes window size moot | ❌ NOT WORTH IT — kept 1.5s |
 | **Bidirectional Path Fusion** | Average forward+backward DTW mappers. Zero effect — paths too correlated (same features/algo), errors don't cancel | ❌ NO EFFECT |
 | **Feature Augmentation (+Tonnetz +Spectral Contrast)** | 26→39 dims. Coarse MAE degraded 0.0983→0.1013, max error 0.478→0.924. Timbral features capture performer differences, dilute chroma signal | ❌ REVERTED |
-| **Density-Gated Smoothing** | Skip smoothing when local rec1 gaps avg > 2.5s (slow/sparse sections). Help:hurt 28:5 (5.6:1) vs old 32:14 (2.3:1). MAE ≈same (0.0781). Eliminates smoothing damage in fermatas/slow passages | ✅ KEPT |
+| **Density-Gated Smoothing** | Skip smoothing when local rec1 gaps avg > 2.5s (slow/sparse sections). Help:hurt 28:5 (5.6:1). Eliminates smoothing damage in fermatas/slow passages | ✅ KEPT |
+| **2x Downsampling (Coarse)** | Coarse DTW at ~10.8Hz instead of 21.5Hz. MAE 0.078→0.081 (slight loss) but Max Error 1.15s→0.49s (huge win). Fixes index 20 outlier. | ✅ KEPT |
 | **Onset snapping** | Hurt 2:1 (88 hurt vs 49 helped), MAE 0.087→0.092 — orchestral "onsets" are soft entries/swells | ❌ DISABLED for orchestral/classical |
 
 ### Key Constraints

@@ -576,6 +576,7 @@ HTML_TEMPLATE = '''
             logsSection.classList.add('hidden');
             
             try {
+                // Step 1: Start the job
                 const response = await fetch('/run', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -589,41 +590,76 @@ HTML_TEMPLATE = '''
                 const data = await response.json();
                 
                 if (data.error) {
-                    showStatus('error', 'Error: ' + data.error);
-                } else {
-                    showStatus('success', '✓ Pipeline completed successfully!');
-                    
-                    // Display results
-                    document.getElementById('totalOffset').textContent = data.total_offset_rec2.toFixed(3) + 's';
-                    
-                    // Format output: only t and mix, in that order
-                    const cleanOutput = data.zero_based_results.map(item => ({
-                        t: item.t,
-                        mix: item.mix
-                    }));
-                    document.getElementById('outputTimestamps').value = JSON.stringify(cleanOutput, null, 2);
-                    document.getElementById('logsOutput').value = data.logs;
-                    
-                     // Store full results for preview generation
-                    window.fullPipelineResults = data.zero_based_results;
-                    console.log("[DEBUG] Received results:", data.zero_based_results.length, "items");
-                    if (data.zero_based_results.length > 0) {
-                        console.log("[DEBUG] Sample item:", data.zero_based_results[0]);
-                    }
-
-                    // Generate fix list (low and medium confidence items)
-                    window.fullFixList = data.zero_based_results
-                        .map((item, index) => ({ ...item, detix: index }))
-                        .filter(item => item.confidence && (String(item.confidence).toLowerCase() === 'low' || String(item.confidence).toLowerCase() === 'medium'));
-                    
-                    console.log("[DEBUG] Generated Fix List:", window.fullFixList.length, "items");
-
-                    resultsSection.classList.remove('hidden');
-                    logsSection.classList.remove('hidden');
+                    showStatus('error', 'Error starting pipeline: ' + data.error);
+                    submitBtn.disabled = false;
+                    return;
                 }
+                
+                // Step 2: Poll for status
+                const jobId = data.job_id;
+                showStatus('loading', '<span class="spinner"></span> Pipeline started. Initializing...');
+                logsSection.classList.remove('hidden'); // Show logs immediately
+                
+                const pollInterval = setInterval(async () => {
+                    try {
+                        const statusResp = await fetch('/status/' + jobId);
+                        const statusData = await statusResp.json();
+                        
+                        if (statusData.error) {
+                            clearInterval(pollInterval);
+                            showStatus('error', 'Job Error: ' + statusData.error);
+                            submitBtn.disabled = false;
+                            return;
+                        }
+                        
+                        // Update logs
+                        if (statusData.logs) {
+                            const logsArea = document.getElementById('logsOutput');
+                            logsArea.value = statusData.logs;
+                            logsArea.scrollTop = logsArea.scrollHeight; // Auto-scroll
+                        }
+                        
+                        // Update status message
+                        if (statusData.status === 'running') {
+                            showStatus('loading', '<span class="spinner"></span> ' + (statusData.step || 'Running...'));
+                        } else if (statusData.status === 'completed') {
+                            clearInterval(pollInterval);
+                            showStatus('success', '✓ Pipeline completed successfully!');
+                            submitBtn.disabled = false;
+                            
+                            // Display results
+                            document.getElementById('totalOffset').textContent = statusData.total_offset_rec2.toFixed(3) + 's';
+                            
+                            // Format output
+                            const cleanOutput = statusData.zero_based_results.map(item => ({
+                                t: item.t,
+                                mix: item.mix
+                            }));
+                            document.getElementById('outputTimestamps').value = JSON.stringify(cleanOutput, null, 2);
+                            
+                             // Store full results for preview generation
+                            window.fullPipelineResults = statusData.zero_based_results;
+                            
+                            // Generate fix list 
+                            window.fullFixList = statusData.zero_based_results
+                                .map((item, index) => ({ ...item, detix: index }))
+                                .filter(item => item.confidence && (String(item.confidence).toLowerCase() === 'low' || String(item.confidence).toLowerCase() === 'medium'));
+                            
+                            resultsSection.classList.remove('hidden');
+                        } else if (statusData.status === 'error') {
+                            clearInterval(pollInterval);
+                            showStatus('error', 'Pipeline Error (check logs)');
+                            submitBtn.disabled = false;
+                        }
+                        
+                    } catch (err) {
+                        console.error("Polling error:", err);
+                        // Don't stop polling on transient network error
+                    }
+                }, 3000); // Poll every 3s
+                
             } catch (err) {
                 showStatus('error', 'Network error: ' + err.message);
-            } finally {
                 submitBtn.disabled = false;
             }
         });
@@ -848,6 +884,11 @@ HTML_TEMPLATE = '''
 '''
 
 
+
+# Global job store
+# { job_id: { 'status': 'running'|'completed'|'error', 'logs': [], 'result': ..., 'thread': ... } }
+JOBS = {}
+
 @app.route('/')
 def index():
     return render_template_string(HTML_TEMPLATE)
@@ -931,31 +972,40 @@ def delete_preset_data():
     return jsonify({'success': True})
 
 
-@app.route('/run', methods=['POST'])
-def run():
+class JobLogger:
+    """File-like object that streams writes to a job's log list"""
+    def __init__(self, job_id):
+        self.job_id = job_id
+        
+    def write(self, text):
+        if self.job_id in JOBS:
+            JOBS[self.job_id]['logs'].append(text)
+            
+    def flush(self):
+        pass
+
+
+def run_pipeline_thread(job_id, data):
+    """Target function for background thread"""
     try:
-        data = request.get_json()
+        logger = JobLogger(job_id)
         
         url1 = data.get('url1')
         url2 = data.get('url2')
         offset1 = float(data.get('offset1', 0))
         end1 = data.get('end1')
-        if end1:
-            end1 = float(end1)
+        if end1: end1 = float(end1)
             
         offset2 = float(data.get('offset2', 0))
         end2 = data.get('end2')
-        if end2:
-            end2 = float(end2)
+        if end2: end2 = float(end2)
+            
         timestamps = data.get('timestamps', [])
         rec1_timestamps_offset = float(data.get('rec1_timestamps_offset', 0))
         timestamps_rec2 = data.get('timestamps_rec2')
         rec2_timestamps_offset = float(data.get('rec2_timestamps_offset', 0))
         
-        # DEBUG: Print what we're receiving
-        print(f"[DEBUG] Received: offset1={offset1}, end1={end1}, offset2={offset2}, end2={end2}")
-        
-        # Run the pipeline
+        # Run the pipeline with our custom logger
         result = run_pipeline_custom(
             url1=url1,
             url2=url2,
@@ -966,16 +1016,47 @@ def run():
             timestamps_list=timestamps,
             rec1_timestamps_offset=rec1_timestamps_offset,
             timestamps_list_rec2=timestamps_rec2,
-            rec2_timestamps_offset=rec2_timestamps_offset
+            rec2_timestamps_offset=rec2_timestamps_offset,
+            stream_file=logger 
         )
+        
+        JOBS[job_id]['result'] = result
+        JOBS[job_id]['status'] = 'completed'
+        
+    except Exception as e:
+        import traceback
+        err_msg = str(e) + "\n" + traceback.format_exc()
+        if job_id in JOBS:
+            JOBS[job_id]['error'] = err_msg
+            JOBS[job_id]['status'] = 'error'
+            JOBS[job_id]['logs'].append(f"\n[ERROR] {err_msg}")
+
+
+@app.route('/run', methods=['POST'])
+def run():
+    try:
+        data = request.get_json()
+        
+        # Create job
+        import uuid
+        job_id = str(uuid.uuid4())
+        JOBS[job_id] = {
+            'status': 'running',
+            'logs': [],
+            'result': None,
+            'created_at': __import__('time').time()
+        }
+        
+        # Start thread
+        import threading
+        t = threading.Thread(target=run_pipeline_thread, args=(job_id, data))
+        t.daemon = True
+        t.start()
         
         return jsonify({
             'success': True,
-            'total_offset_rec2': result['total_offset_rec2'],
-            'first_mapped_t': result['first_mapped_t'],
-            'final_results': result['final_results'],
-            'zero_based_results': result['zero_based_results'],
-            'logs': result['logs']
+            'job_id': job_id,
+            'message': 'Pipeline started in background'
         })
         
     except Exception as e:
@@ -984,6 +1065,42 @@ def run():
             'error': str(e),
             'traceback': traceback.format_exc()
         }), 500
+
+
+@app.route('/status/<job_id>')
+def job_status(job_id):
+    if job_id not in JOBS:
+        return jsonify({'error': 'Job not found'}), 404
+        
+    job = JOBS[job_id]
+    
+    # Calculate progress step from logs
+    # Simple heuristic
+    step = "Initializing..."
+    logs_str = "".join(job['logs'])
+    if "[STEP 1/3]" in logs_str: step = "Step 1/3: DTW Alignment"
+    if "[STEP 2/3]" in logs_str: step = "Step 2/3: Mapping Timestamps"
+    if "[STEP 2.5/3]" in logs_str: step = "Step 2.5/3: Round-Trip Verification"
+    if "[STEP 3/3]" in logs_str: step = "Step 3/3: Ground Truth Comparison"
+    
+    response = {
+        'status': job['status'],
+        'logs': logs_str,
+        'step': step
+    }
+    
+    if job['status'] == 'completed':
+        result = job['result']
+        response.update({
+            'total_offset_rec2': result['total_offset_rec2'],
+            'first_mapped_t': result['first_mapped_t'],
+            'final_results': result['final_results'],
+            'zero_based_results': result['zero_based_results']
+        })
+    elif job['status'] == 'error':
+        response['error'] = job.get('error', 'Unknown error')
+        
+    return jsonify(response)
 
 
 @app.route('/save_preview', methods=['POST'])
@@ -1045,4 +1162,15 @@ def save_preview():
 if __name__ == '__main__':
     print("Starting DTW Audio Sync Pipeline Web Interface...")
     print("Open http://localhost:5000 in your browser")
+    
+    # Suppress /status polling logs
+    import logging
+    class StatusLogFilter(logging.Filter):
+        def filter(self, record):
+            return '/status/' not in record.getMessage()
+            
+    # Werkzeug logs to stdout, so filter it
+    log = logging.getLogger('werkzeug')
+    log.addFilter(StatusLogFilter())
+    
     app.run(host='0.0.0.0', port=5000, debug=True)

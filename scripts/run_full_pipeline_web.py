@@ -9,6 +9,7 @@ import json
 import sys
 import os
 import io
+import gc
 from contextlib import redirect_stdout
 
 # Add scripts directory to path
@@ -17,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from improved_audio_sync import AudioSync
 
 
-def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_list, max_duration=None, timestamps_list_rec2=None, rec1_timestamps_offset=0, rec2_timestamps_offset=0):
+def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_list, max_duration=None, timestamps_list_rec2=None, rec1_timestamps_offset=0, rec2_timestamps_offset=0, stream_file=None):
     """
     Run the DTW sync pipeline with custom parameters.
     
@@ -33,6 +34,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         timestamps_list_rec2: Optional ground truth timestamps
         rec1_timestamps_offset: Offset to add to all Rec 1 timestamps (seconds)
         rec2_timestamps_offset: Offset to add to all Rec 2 ground truth timestamps (seconds)
+        stream_file: Optional file-like object to write logs to (for real-time streaming)
         
     TERMINOLOGY:
         - mix: Measure number (e.g., 50, 100). Non-unique due to repeats.
@@ -46,10 +48,27 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             - logs: Captured console output
     """
     
-    # Capture all stdout
+    # Capture all stdout (either to buffer or custom stream)
     log_buffer = io.StringIO()
     
-    with redirect_stdout(log_buffer):
+    # If stream_file provided, use it. Otherwise use internal buffer.
+    # But wait, we want TO RETURN the logs too.
+    # So we need a Tee (write to both).
+    
+    class Tee:
+        def __init__(self, *files):
+            self.files = files
+        def write(self, obj):
+            for f in self.files:
+                f.write(obj)
+                f.flush() # ensure real-time
+        def flush(self):
+            for f in self.files:
+                f.flush()
+                
+    output_stream = Tee(log_buffer, stream_file) if stream_file else log_buffer
+    
+    with redirect_stdout(output_stream):
         print("=" * 60)
         print("DTW AUDIO SYNC PIPELINE")
         print("=" * 60)
@@ -109,9 +128,13 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         if max_duration:
             input_timestamps = [t for t in input_timestamps if t['t'] < max_duration]
         
-        # Map Timestamps (Global + Local Refinement)
         refined_results_rel = syncer.map_timestamps(path, input_timestamps, y1, y2,
-                                                     y1_harmonic=y1_harmonic, y2_harmonic=y2_harmonic)
+                                                     y1_harmonic=y1_harmonic, y2_harmonic=y2_harmonic,
+                                                     offset1=offset1)
+        
+        # Cleanup large path and harmonics immediately
+        del path, y1_harmonic, y2_harmonic
+        gc.collect()
         
         final_results = []
         
@@ -211,6 +234,11 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             item['low_energy'] = bool(low_energy_flags[i]['is_low'])
         for i, item in enumerate(zero_based_results):
             item['low_energy'] = bool(low_energy_flags[i]['is_low'])
+
+        # cleanup
+        del rms1, rms2, rms1_norm, rms2_norm
+        del y1, y2
+        gc.collect()
         
 
         
@@ -228,6 +256,11 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         
         # Build backward mapper: Rec2 frame -> Rec1 frame
         path_bwd_arr = np.array(path_bwd)
+        
+        # Cleanup backward path source features
+        del f1_coarse, f2_coarse, path_bwd
+        gc.collect()
+        
         bwd_u_i, bwd_u_idx = np.unique(path_bwd_arr[:, 0], return_index=True)
         bwd_u_j = path_bwd_arr[bwd_u_idx, 1]
         bwd_mapper = interp1d(bwd_u_i, bwd_u_j, kind='linear', fill_value="extrapolate")
@@ -241,7 +274,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             # Map t_rec2 through backward path -> t_rec1_back
             frame_rec2 = int(t_rec2_forward * sr / hop_length)
             frame_rec1_back = bwd_mapper(frame_rec2)
-            t_rec1_back = float(frame_rec1_back * hop_length / sr)
+            t_rec1_back = float(frame_rec1_back * hop_length / sr) + offset1
             
             rt_err = abs(t_rec1_original - t_rec1_back)
             rt_errors.append(rt_err)
@@ -363,7 +396,10 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             # LOW: Tempo anomaly or gap anomaly (actual jump detected in FINAL result)
             # DYNAMIC TRUST: If RT error is low (< 0.1s), we trust the sync completely even if tempo is wild (rubato).
             # We only flag gap/tempo anomalies if the sync itself is uncertain (RT error >= 0.1s).
-            if (is_tempo_anomaly or is_gap_anomaly) and rt_err >= 0.1:
+            # UPDATE: If gap_dev > 1.0s or tempo_dev > 0.5, flag regardless of RT error.
+            if gap_deviations[i] > 1.0 or tempo_deviations[i] > 0.5:
+                confidence = "LOW"
+            elif (is_tempo_anomaly or is_gap_anomaly) and rt_err >= 0.1:
                 confidence = "LOW"
             # MEDIUM: High RT error
             elif rt_err >= 0.5:
@@ -377,8 +413,10 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             elif smooth_delta > 0.25 and rt_err >= 0.1:
                 confidence = "MEDIUM"
             # MEDIUM (B3): Offset trend deviation (on FINAL result)
+            # STRICT FLAGGING: Deviating from the trend is a major red flag in Rubato pieces.
+            # We want to review these manually.
             elif is_offset_anomaly:
-                 confidence = "MEDIUM"
+                 confidence = "LOW"
             # HIGH: Everything else (including successful smoothing fixes)
             else:
                 confidence = "HIGH"
@@ -455,10 +493,12 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                       f"but Ground Truth has {len(timestamps_list_rec2)} points.")
             
             # --- Per-Stage Diagnostic Table ---
-            print("\n  PER-STAGE ERROR ANALYSIS (Coarse → Refined → Smoothed vs Ground Truth):")
-            print("  " + "-" * 105)
-            print(f"  {'Idx':>4} | {'Mix':>5} | {'Coarse':>8} | {'Refined':>8} | {'Smoothed':>8} | {'GT':>8} | {'Err(C)':>7} | {'Err(R)':>7} | {'Err(Sm)':>7} | {'Refine':>6} | {'Smooth':>6}")
-            print("  " + "-" * 105)
+            # --- Per-Stage Diagnostic Table (HIDDEN BY DEFAULT) ---
+            # User requested to hide the giant list. Only showing summary and unflagged errors.
+            # print("\n  PER-STAGE ERROR ANALYSIS (Coarse → Refined → Smoothed vs Ground Truth):")
+            # print("  " + "-" * 105)
+            # print(f"  {'Idx':>4} | {'Mix':>5} | {'Coarse':>8} | {'Refined':>8} | {'Smoothed':>8} | {'GT':>8} | {'Err(C)':>7} | {'Err(R)':>7} | {'Err(Sm)':>7} | {'Refine':>6} | {'Smooth':>6}")
+            # print("  " + "-" * 105)
             
             high_error_count = 0
             refine_helped = 0
@@ -467,10 +507,15 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             snap_hurt = 0
             snap_nochange = 0
             
+            false_negatives = []
+            false_positives = []
+
             for i in range(num_points):
-                p_t = final_results[i]['t']
-                t_coarse = final_results[i].get('t_coarse', p_t)
-                t_refined = final_results[i].get('t_refined', p_t)
+                # final_results are relative to Rec2 cropped start (offset2).
+                # adjusting them to global time allows fair comparison with m_t.
+                p_t = final_results[i]['t'] + offset2
+                t_coarse = final_results[i].get('t_coarse', final_results[i]['t']) + offset2
+                t_refined = final_results[i].get('t_refined', final_results[i]['t']) + offset2
                 m_t = float(timestamps_list_rec2[i]['t']) + rec2_timestamps_offset
                 
                 err_coarse = abs(t_coarse - m_t)
@@ -485,38 +530,52 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                     max_err = err_snapped
                     max_err_idx = i
                 
-                if err_snapped >= 0.1:
+                # Threshold raised to 0.15s per user request (0.1s was too strict)
+                ERROR_THRESHOLD = 0.15
+                
+                if err_snapped >= ERROR_THRESHOLD:
                     high_error_count += 1
+                    
+                    # Check for False Negative (High Error but High Confidence)
+                    if final_results[i].get('confidence') == 'HIGH':
+                        false_negatives.append({
+                            'index': i,
+                            'mix': final_results[i]['mix'],
+                            'error': err_snapped,
+                            't_pred': p_t,
+                            't_gt': m_t
+                        })
+                else:
+                    # Check for False Positive (Low Error but Flagged for Review)
+                    if final_results[i].get('confidence') in ['LOW', 'MEDIUM']:
+                        false_positives.append({
+                            'index': i,
+                            'mix': final_results[i]['mix'],
+                            'error': err_snapped,
+                            'conf': final_results[i].get('confidence')
+                        })
                 
                 # Did refinement help or hurt?
                 if err_refined < err_coarse - 0.001:
                     refine_helped += 1
-                    refine_flag = "  ✓"
                 elif err_refined > err_coarse + 0.001:
                     refine_hurt += 1
-                    refine_flag = "  ✗"
-                else:
-                    refine_flag = "  ="
                 
                 # Did snapping/smoothing help or hurt?
                 # Fix: Check smooth_delta (actual correction) instead of snap_delta
                 smooth_d = final_results[i].get('smooth_delta', 0)
                 if abs(smooth_d) < 0.001:
-                    snap_flag = "  -"
                     snap_nochange += 1
                 elif err_snapped < err_refined - 0.001:
                     snap_helped += 1
-                    snap_flag = "  ✓"
                 elif err_snapped > err_refined + 0.001:
                     snap_hurt += 1
-                    snap_flag = "  ✗"
                 else:
-                    snap_flag = "  ="
                     snap_nochange += 1
                 
-                # Print rows with any significant error or first few rows
-                if err_snapped >= 0.1 or err_coarse >= 0.1 or i < 5:
-                    print(f"  {i:4d} | {final_results[i]['mix']:5d} | {t_coarse:8.3f} | {t_refined:8.3f} | {p_t:8.3f} | {m_t:8.3f} | {err_coarse:6.3f}s | {err_refined:6.3f}s | {err_snapped:6.3f}s | {refine_flag} | {snap_flag}")
+                # Print rows only if explicitly debug mode enabled (omitted for now)
+                # if err_snapped >= 0.1 or err_coarse >= 0.1 or i < 5:
+                #     print(f"  {i:4d} | {final_results[i]['mix']:5d} | {t_coarse:8.3f} | {t_refined:8.3f} | {p_t:8.3f} | {m_t:8.3f} | {err_coarse:6.3f}s | {err_refined:6.3f}s | {err_snapped:6.3f}s | {refine_flag} | {snap_flag}")
 
             if not errors:
                 print("  No comparison possible (zero points).")
@@ -530,7 +589,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 print(f"    MAE (After Local Refinement): {mae_refined:.4f}s  {'↓ improved' if mae_refined < mae_coarse else '↑ DEGRADED'}")
                 print(f"    MAE (After Smoothing):        {mae:.4f}s  {'↓ improved' if mae < mae_refined else '↑ DEGRADED'}")
                 print(f"    Max Absolute Error: {max_err:.4f}s at index {max_err_idx}")
-                print(f"    Total points with error >= 0.1s: {high_error_count} ({high_error_count/num_points*100:.1f}%)")
+                print(f"    Total points with error >= {ERROR_THRESHOLD}s: {high_error_count} ({high_error_count/num_points*100:.1f}%)")
                 print(f"")
                 print(f"    Local Refinement:  helped {refine_helped}, hurt {refine_hurt}, neutral {num_points - refine_helped - refine_hurt}")
                 print(f"    Smoothing:         helped {snap_helped}, hurt {snap_hurt}, not applied {snap_nochange}")
@@ -542,6 +601,27 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                     max_high = max(high_conf_errors)
                     print(f"    MAE (High Confidence points only): {mae_high:.4f}s")
                     print(f"    Max Error (High Confidence points): {max_high:.4f}s")
+                
+                if false_negatives:
+                    print(f"\n  ⚠️  UNFLAGGED ERRORS (False Negatives): {len(false_negatives)}")
+                    print(f"      Measurements with significant error (>{ERROR_THRESHOLD}s) but marked HIGH confidence.")
+                    print(f"      These were MISSED by the internal flagging logic.")
+                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'Pred':>8} | {'GT':>8}")
+                    print("  " + "-" * 50)
+                    for fn in false_negatives:
+                        print(f"  {fn['index']:4d} | {fn['mix']:5d} | {fn['error']:8.3f}s | {fn['t_pred']:8.3f}s | {fn['t_gt']:8.3f}s")
+
+                if false_positives:
+                    print(f"\n  ⚠️  OVER-FLAGGED (False Positives): {len(false_positives)}")
+                    print(f"      Measurements that are highly accurate (<{ERROR_THRESHOLD}s) but were flagged for review anyway.")
+                    print(f"      This indicates the 'anomaly' thresholds (e.g. gap deviation) are too strict for normal rubato.")
+                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'Conf':>6}")
+                    print("  " + "-" * 50)
+                    for fp in false_positives:
+                        print(f"  {fp['index']:4d} | {fp['mix']:5d} | {fp['error']:8.3f}s | {fp['conf']:>6}")
+                else:
+                    print(f"\n  ✅  Zero False Negatives! All high errors were correctly flagged as LOW/MEDIUM confidence.")
+
                 print(f"    (Final timestamp excluded from all stats above)")
 
         print("\n" + "=" * 60)
