@@ -127,9 +127,37 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         # Filter by max_duration if set
         if max_duration:
             input_timestamps = [t for t in input_timestamps if t['t'] < max_duration]
+            
+        print("\n[STEP 2/3] Running Backward DTW Pass for Bi-directional Anchoring...")
+        import numpy as np
+        from scipy.interpolate import interp1d
+        
+        # Run DTW in reverse direction: Rec2 -> Rec1
+        print("  Running backward DTW (reusing features — no re-extraction)...")
+        path_bwd = syncer.run_hybrid_sync(f2_coarse, f1_coarse)
+        print(f"  Backward path points: {len(path_bwd)}")
+        
+        # Build backward mapper: Rec2 frame -> Rec1 frame
+        path_bwd_arr = np.array(path_bwd)
+        
+        # Cleanup backward path source features
+        del path_bwd
+        gc.collect()
+        
+        from collections import defaultdict
+        bwd_frame_map = defaultdict(list)
+        for i_frame, j_frame in path_bwd_arr:
+            bwd_frame_map[i_frame].append(j_frame)
+            
+        bwd_u_i = np.array(sorted(bwd_frame_map.keys()))
+        bwd_u_j = np.array([np.mean(bwd_frame_map[k]) for k in bwd_u_i])
+        bwd_mapper = interp1d(bwd_u_i, bwd_u_j, kind='linear', fill_value="extrapolate")
+        
+        print("\n  [Mapping Timestamps with Bi-directional Anchors]...")
         
         refined_results_rel = syncer.map_timestamps(path, input_timestamps, y1, y2,
                                                      y1_harmonic=y1_harmonic, y2_harmonic=y2_harmonic,
+                                                     bwd_mapper=bwd_mapper,
                                                      offset1=offset1)
         
         # Cleanup large path and harmonics immediately
@@ -145,7 +173,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 "t": round(item['t'], 3),
             }
             # Carry through diagnostic fields from map_timestamps
-            for k in ('t_coarse', 't_refined', 'refine_delta', 'snap_delta', 'smoothed', 'smooth_delta'):
+            for k in ('t_coarse', 't_refined', 'refine_delta', 'snap_delta', 'smoothed', 'smooth_delta', 'feature_distance'):
                 if k in item:
                     entry[k] = item[k]
             final_results.append(entry)
@@ -243,36 +271,19 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
 
         
         # ========================================================================
-        # Step 2.5: Round-Trip Verification (Backward Pass)
+        # Step 2.5: Round-Trip Verification (Statistics)
         # ========================================================================
-        print("\n[STEP 2.5/3] Running Round-Trip Verification (Backward Pass)...")
+        print("\n[STEP 2.5/3] Running Round-Trip Verification (Statistics)...")
         import numpy as np
-        from scipy.interpolate import interp1d
-        
-        # Run DTW in reverse direction: Rec2 -> Rec1
-        print("  Running backward DTW (reusing features — no re-extraction)...")
-        path_bwd = syncer.run_hybrid_sync(f2_coarse, f1_coarse)
-        print(f"  Backward path points: {len(path_bwd)}")
-        
-        # Build backward mapper: Rec2 frame -> Rec1 frame
-        path_bwd_arr = np.array(path_bwd)
-        
-        # Cleanup backward path source features
-        del f1_coarse, f2_coarse, path_bwd
-        gc.collect()
-        
-        bwd_u_i, bwd_u_idx = np.unique(path_bwd_arr[:, 0], return_index=True)
-        bwd_u_j = path_bwd_arr[bwd_u_idx, 1]
-        bwd_mapper = interp1d(bwd_u_i, bwd_u_j, kind='linear', fill_value="extrapolate")
         
         # Calculate round-trip error for each timestamp
         rt_errors = []
         for i, item in enumerate(final_results):
             t_rec1_original = input_timestamps[i]['t'] if i < len(input_timestamps) else 0
-            t_rec2_forward = item['t']
+            t_rec2_coarse = item.get('t_coarse', item['t'])
             
-            # Map t_rec2 through backward path -> t_rec1_back
-            frame_rec2 = int(t_rec2_forward * sr / hop_length)
+            # Map t_rec2_coarse through backward path -> t_rec1_back
+            frame_rec2 = int(t_rec2_coarse * sr / hop_length)
             frame_rec1_back = bwd_mapper(frame_rec2)
             t_rec1_back = float(frame_rec1_back * hop_length / sr) + offset1
             
@@ -365,7 +376,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         coarse_offsets = np.array(t2_vals) - np.array(t1_vals)
         
         # Piecewise linear fit of offsets
-        # Fix: interp1d fitting to self produces 0 deviation. Use median filter.
+        # Use median filter to form the local trend
         from scipy.ndimage import median_filter
         
         # Window size 15 for trend detection in the flagging stage
@@ -380,53 +391,57 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         print(f"    Offset trend anomalies: {num_offset_anomalies} (deviation > {OFFSET_TREND_THRESHOLD}s)")
         
         # ================================================================
+        # Feature Distance Anomaly Detection (The Big Win)
+        # ================================================================
+        print("\n  [FEATURE DISTANCE ANALYSIS]")
+        feature_dists = [item.get('feature_distance', 0.0) for item in final_results]
+        valid_dists = [d for d in feature_dists if d > 0]
+        median_dist = float(np.median(valid_dists)) if valid_dists else 0.5
+        
+        # Determine Anomaly Threshold for Feature Distance
+        # Cosine distance variance is very high across different textures (e.g., silence vs tutti).
+        # We only want to flag EXTREME anomalies (distance approaching maximum possible error).
+        # Cosine distance = 1 - cosine_similarity. Max is 2.0 (opposite vectors).
+        # Since median is around 0.64, we flag values significantly higher than typical variance.
+        FEATURE_DIST_THRESHOLD = 1.05
+        
+        feature_anomalies = [d > FEATURE_DIST_THRESHOLD for d in feature_dists]
+        num_feature_anomalies = sum(feature_anomalies)
+        print(f"    Median Feature Distance: {median_dist:.4f}")
+        print(f"    Audio Match Anomalies detected: {num_feature_anomalies} (distance > {FEATURE_DIST_THRESHOLD:.4f})")
+        
+        # ================================================================
         # Combined Confidence Assignment
         # ================================================================
-        # PRIMARY: Tempo ratio anomaly OR gap deviation (catches actual jumps)
-        # SECONDARY: RT error + low energy (catches uncertain silence regions)
+        # PRIMARY: Round Trip Error (The most reliable metric now that Feature Stacking is active)
+        # SECONDARY: Extreme Local Feature Distance
+        # We no longer punish valid musical interpretation (Gap/Tempo/Offset deviation).
         
         for i, item in enumerate(final_results):
             rt_err = rt_errors[i]
-            is_low_energy = item.get('low_energy', False)
-            is_tempo_anomaly = tempo_anomalies[i]
-            is_gap_anomaly = gap_anomalies[i]
-            is_offset_anomaly = offset_anomalies[i]
-            smooth_delta = abs(item.get('smooth_delta', 0))
+            feat_dist = item.get('feature_distance', 0.0)
+            is_feature_anomaly = feature_anomalies[i]
+            refine_delta = item.get('refine_delta', 0.0)
             
-            # LOW: Tempo anomaly or gap anomaly (actual jump detected in FINAL result)
-            # DYNAMIC TRUST: If RT error is low (< 0.1s), we trust the sync completely even if tempo is wild (rubato).
-            # We only flag gap/tempo anomalies if the sync itself is uncertain (RT error >= 0.1s).
-            # UPDATE: If gap_dev > 1.0s or tempo_dev > 0.5, flag regardless of RT error.
-            if gap_deviations[i] > 1.0 or tempo_deviations[i] > 0.5:
+            # LOW: The audio is completely different (Feature Anomaly) OR DTW is deeply confused (RT Error > 0.45s)
+            if rt_err >= 0.45 or is_feature_anomaly:
                 confidence = "LOW"
-            elif (is_tempo_anomaly or is_gap_anomaly) and rt_err >= 0.1:
+            # LOW (Refinement Failed): It moved a lot, but didn't find a good audio match
+            elif abs(refine_delta) > 0.15 and feat_dist > 0.6:
                 confidence = "LOW"
-            # MEDIUM: High RT error
-            elif rt_err >= 0.5:
+            # MEDIUM: DTW has moderate structural variance (RT Error > 0.20s)
+            elif rt_err >= 0.20:
                 confidence = "MEDIUM"
-            # MEDIUM (B2): Moderate RT error in low energy zone
-            elif is_low_energy and rt_err >= 0.3:
-                confidence = "MEDIUM"
-            # SMOOTHING LOGIC UPDATE:
-            # - If smooth_delta is large (>0.25s) BUT rt_error is low (<0.1s), trust the fix → HIGH confidence
-            # - If smooth_delta is large AND rt_error is high, then it's suspicious → MEDIUM
-            elif smooth_delta > 0.25 and rt_err >= 0.1:
-                confidence = "MEDIUM"
-            # MEDIUM (B3): Offset trend deviation (on FINAL result)
-            # STRICT FLAGGING: Deviating from the trend is a major red flag in Rubato pieces.
-            # We want to review these manually.
-            elif is_offset_anomaly:
-                 confidence = "LOW"
-            # HIGH: Everything else (including successful smoothing fixes)
+            # HIGH: Stable DTW, decent audio match.
             else:
                 confidence = "HIGH"
 
-            
             item['rt_error'] = round(rt_err, 4)
             item['tempo_dev'] = tempo_deviations[i]
             item['gap_dev'] = gap_deviations[i]
             item['offset_trend_dev'] = round(offset_deviations[i], 4)
             item['confidence'] = confidence
+
         
         # Mirror onto zero-based results
         for i, item in enumerate(zero_based_results):
@@ -456,18 +471,22 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             print(f"    Max RT Error:  {max_rt:.4f}s at index {max_rt_idx} (mix={final_results[max_rt_idx]['mix']})")
         
         # Print LOW and MEDIUM confidence offenders (these need manual review)
-        offenders = [(i, final_results[i]) for i in range(len(final_results)) 
+        manual_review = [(i, final_results[i]) for i in range(len(final_results)) 
                      if final_results[i]['confidence'] in ('LOW', 'MEDIUM')]
-        if offenders:
-            # Sort: LOW first, then by worst metric within each group
-            offenders.sort(key=lambda x: (0 if x[1]['confidence'] == 'LOW' else 1, 
-                                          -max(x[1].get('tempo_dev', 0), x[1].get('gap_dev', 0))))
-            print(f"\n  🚩 Timestamps Needing Manual Review ({len(offenders)} items):")
-            print(f"  {'Index':>5} | {'Mix':>5} | {'Conf':>6} | {'Tempo Dev':>10} | {'Gap Dev':>10} | {'RT Error':>10} | {'T (Rec2)':>10}")
-            print("  " + "-" * 78)
-            for idx, item in offenders:
-                print(f"  {idx:5d} | {item['mix']:5d} | {item['confidence']:>6} | {item.get('tempo_dev', 0):10.4f} | {item.get('gap_dev', 0):10.4f}s | {item['rt_error']:10.4f}s | {item['t']:10.3f}s")
-        
+        if manual_review:
+            # Sort: LOW first, then by worst feature distance
+            manual_review.sort(key=lambda x: (0 if x[1]['confidence'] == 'LOW' else 1, 
+                                          -x[1].get('feature_distance', 0.0)))
+            print(f"\n  🚩 Timestamps Needing Manual Review ({len(manual_review)} items):")
+            print(f"  {'Index':>5} | {'Mix':>5} | {'Conf':>6} | {'Feat Dist':>10} | {'RT Error':>10} | {'Gap Dev':>8} | {'Off Dev':>8} | {'T (Rec2)':>10}")
+            print("  " + "-" * 85)
+            for idx, item_data in manual_review:
+                item = item_data # Unpack the tuple to get the dictionary
+                # Add safely getting gap_dev and offset_trend_dev
+                gap_dev = item.get('gap_dev', 0.0)
+                off_dev = item.get('offset_trend_dev', 0.0)
+                print(f"  {idx:5d} | {item['mix']:5d} | {item['confidence']:>6} | {item.get('feature_distance', 0.0):10.4f} | {item.get('rt_error', 0.0):9.4f}s | {gap_dev:7.3f}s | {off_dev:7.3f}s | {item['t']:10.3f}s")
+            print("\n")
         # ========================================================================
         # Step 3: Ground Truth Comparison (Optional)
         # ========================================================================
@@ -522,6 +541,15 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 err_refined = abs(t_refined - m_t)
                 err_snapped = abs(p_t - m_t)
                 
+                # Calculate True Measure Duration
+                m_duration = 1.0 # default fallback
+                if i < len(timestamps_list_rec2) - 1:
+                    m_duration = float(timestamps_list_rec2[i+1]['t']) + rec2_timestamps_offset - m_t
+                elif i > 0:
+                    m_duration = m_t - (float(timestamps_list_rec2[i-1]['t']) + rec2_timestamps_offset)
+                
+                prop_err = err_snapped / m_duration if m_duration > 0 else 0.0
+                
                 errors_coarse.append(err_coarse)
                 errors_refined.append(err_refined)
                 errors.append(err_snapped)
@@ -530,10 +558,10 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                     max_err = err_snapped
                     max_err_idx = i
                 
-                # Threshold raised to 0.15s per user request (0.1s was too strict)
-                ERROR_THRESHOLD = 0.15
+                # Threshold changed from absolute (0.15s) to proportional (15% + 0.05s min)
+                # ERROR_THRESHOLD = 0.15
                 
-                if err_snapped >= ERROR_THRESHOLD:
+                if prop_err >= 0.15 and err_snapped >= 0.05:
                     high_error_count += 1
                     
                     # Check for False Negative (High Error but High Confidence)
@@ -542,8 +570,13 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                             'index': i,
                             'mix': final_results[i]['mix'],
                             'error': err_snapped,
+                            'prop_err': prop_err,
                             't_pred': p_t,
-                            't_gt': m_t
+                            't_gt': m_t,
+                            'rt_error': final_results[i].get('rt_error', 0.0),
+                            'feat_dist': final_results[i].get('feature_distance', 0.0),
+                            'gap_dev': final_results[i].get('gap_dev', 0.0),
+                            'offset_dev': final_results[i].get('offset_trend_dev', 0.0)
                         })
                 else:
                     # Check for False Positive (Low Error but Flagged for Review)
@@ -552,6 +585,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                             'index': i,
                             'mix': final_results[i]['mix'],
                             'error': err_snapped,
+                            'prop_err': prop_err,
                             'conf': final_results[i].get('confidence')
                         })
                 
@@ -589,7 +623,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 print(f"    MAE (After Local Refinement): {mae_refined:.4f}s  {'↓ improved' if mae_refined < mae_coarse else '↑ DEGRADED'}")
                 print(f"    MAE (After Smoothing):        {mae:.4f}s  {'↓ improved' if mae < mae_refined else '↑ DEGRADED'}")
                 print(f"    Max Absolute Error: {max_err:.4f}s at index {max_err_idx}")
-                print(f"    Total points with error >= {ERROR_THRESHOLD}s: {high_error_count} ({high_error_count/num_points*100:.1f}%)")
+                print(f"    Total points with error >= 15%: {high_error_count} ({high_error_count/num_points*100:.1f}%)")
                 print(f"")
                 print(f"    Local Refinement:  helped {refine_helped}, hurt {refine_hurt}, neutral {num_points - refine_helped - refine_hurt}")
                 print(f"    Smoothing:         helped {snap_helped}, hurt {snap_hurt}, not applied {snap_nochange}")
@@ -604,21 +638,21 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 
                 if false_negatives:
                     print(f"\n  ⚠️  UNFLAGGED ERRORS (False Negatives): {len(false_negatives)}")
-                    print(f"      Measurements with significant error (>{ERROR_THRESHOLD}s) but marked HIGH confidence.")
+                    print(f"      Measurements with significant error (>15% and >0.05s) but marked HIGH confidence.")
                     print(f"      These were MISSED by the internal flagging logic.")
-                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'Pred':>8} | {'GT':>8}")
-                    print("  " + "-" * 50)
+                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Pred':>8} | {'GT':>8} | {'RT Err':>8} | {'FeatDst':>8} | {'GapDev':>8} | {'OffDev':>8}")
+                    print("  " + "-" * 110)
                     for fn in false_negatives:
-                        print(f"  {fn['index']:4d} | {fn['mix']:5d} | {fn['error']:8.3f}s | {fn['t_pred']:8.3f}s | {fn['t_gt']:8.3f}s")
+                        print(f"  {fn['index']:4d} | {fn['mix']:5d} | {fn['error']:8.3f}s | {fn['prop_err']*100:7.1f}% | {fn['t_pred']:8.3f}s | {fn['t_gt']:8.3f}s | {fn['rt_error']:8.3f} | {fn['feat_dist']:8.3f} | {fn['gap_dev']:8.3f} | {fn['offset_dev']:8.3f}")
 
                 if false_positives:
                     print(f"\n  ⚠️  OVER-FLAGGED (False Positives): {len(false_positives)}")
-                    print(f"      Measurements that are highly accurate (<{ERROR_THRESHOLD}s) but were flagged for review anyway.")
+                    print(f"      Measurements that are highly accurate (<15% error) but were flagged for review anyway.")
                     print(f"      This indicates the 'anomaly' thresholds (e.g. gap deviation) are too strict for normal rubato.")
-                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'Conf':>6}")
-                    print("  " + "-" * 50)
+                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Conf':>6}")
+                    print("  " + "-" * 60)
                     for fp in false_positives:
-                        print(f"  {fp['index']:4d} | {fp['mix']:5d} | {fp['error']:8.3f}s | {fp['conf']:>6}")
+                        print(f"  {fp['index']:4d} | {fp['mix']:5d} | {fp['error']:8.3f}s | {fp['prop_err']*100:7.1f}% | {fp['conf']:>6}")
                 else:
                     print(f"\n  ✅  Zero False Negatives! All high errors were correctly flagged as LOW/MEDIUM confidence.")
 

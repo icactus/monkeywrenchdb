@@ -12,6 +12,82 @@ import multiprocessing
 #_pool_f1_hires = None
 #_pool_f2_hires = None
 
+
+def _micro_refine_core(y1_slice, y2_slice, t1_local_sec, t2_est_local_sec, y1_start_sec, y2_start_sec, sr):
+    """
+    Stage 3: Ultra-High-Res Micro-Refinement (1.5ms resolution)
+    Operates on very small (e.g. 0.6s) raw audio slices.
+    """
+    # If the slice is empty or too short, fallback
+    if len(y1_slice) < 512 or len(y2_slice) < 512:
+        return t2_est_local_sec, 1.0
+        
+    micro_hop = 32  # ~1.45ms resolution
+    n_fft = 2048    # Keep high freq res
+    
+    # Extract Log-Mel Spectrograms on the fly (much faster than CQT for tiny slices)
+    # Mel captures timbre/attacks better than chroma for sub-frame matching
+    try:
+        S1 = librosa.feature.melspectrogram(y=y1_slice, sr=sr, n_fft=n_fft, hop_length=micro_hop, n_mels=128)
+        S2 = librosa.feature.melspectrogram(y=y2_slice, sr=sr, n_fft=n_fft, hop_length=micro_hop, n_mels=128)
+        
+        # Log scale
+        f1_micro = librosa.power_to_db(S1, ref=np.max).T
+        f2_micro = librosa.power_to_db(S2, ref=np.max).T
+        
+        # Normalize
+        f1_micro = f1_micro / (np.linalg.norm(f1_micro, axis=1, keepdims=True) + 1e-8)
+        f2_micro = f2_micro / (np.linalg.norm(f2_micro, axis=1, keepdims=True) + 1e-8)
+        
+    except Exception as e:
+        print(f"Micro-refine feature extraction failed: {e}")
+        return t2_est_local_sec, 1.0
+
+    # Ensure minimum frames
+    if len(f1_micro) < 5 or len(f2_micro) < 5:
+        return t2_est_local_sec, 1.0
+
+    from dtaidistance import dtw_ndim
+    f1_c = np.ascontiguousarray(f1_micro, dtype=np.float64)
+    f2_c = np.ascontiguousarray(f2_micro, dtype=np.float64)
+    
+    micro_path = dtw_ndim.warping_path(f1_c, f2_c, use_c=True)
+    
+    # Convert absolute request time to relative frame inside the STFT slice
+    t1_relative_sec = t1_local_sec - y1_start_sec
+    t1_micro_frame = int(t1_relative_sec * sr / micro_hop)
+    t1_micro_frame = max(0, min(t1_micro_frame, len(f1_micro) - 1))
+    
+    path_arr = np.array(micro_path)
+    mask = path_arr[:, 0] == t1_micro_frame
+    
+    if mask.any():
+        t2_micro_frame = int(np.mean(path_arr[mask, 1]))
+    else:
+        diffs = np.abs(path_arr[:, 0] - t1_micro_frame)
+        nearest_idx = np.argmin(diffs)
+        t2_micro_frame = int(path_arr[nearest_idx, 1])
+        
+    t2_micro_frame = max(0, min(t2_micro_frame, len(f2_micro) - 1))
+    
+    # Convert relative mapped frame back to absolute seconds
+    t2_micro_relative_sec = t2_micro_frame * micro_hop / sr
+    t2_micro_absolute_sec = y2_start_sec + t2_micro_relative_sec
+    
+    # Distance calculation
+    u = f1_micro[t1_micro_frame]
+    v = f2_micro[t2_micro_frame]
+    u_norm = np.linalg.norm(u)
+    v_norm = np.linalg.norm(v)
+    if u_norm < 1e-8 or v_norm < 1e-8:
+        dist = 1.0
+    else:
+        cos_sim = np.dot(u, v) / (u_norm * v_norm)
+        cos_sim = max(-1.0, min(1.0, cos_sim))
+        dist = float(1.0 - cos_sim)
+        
+    return t2_micro_absolute_sec, dist
+
 def _local_refine_core(f1, f2, t1_sec, t2_est_sec, window_sec, local_hop, sr):
     """
     Core static logic for local refinement (no self, no side effects).
@@ -35,7 +111,7 @@ def _local_refine_core(f1, f2, t1_sec, t2_est_sec, window_sec, local_hop, sr):
     
     # Need minimum frames for meaningful DTW
     if len(seg1) < 20 or len(seg2) < 20:
-        return t2_est_sec
+        return t2_est_sec, 1.0  # Return high distance if failed
     
     # Run local DTW (small matrix, no window constraint needed)
     # Use dtaidistance fast C implementation for small matrices
@@ -59,21 +135,49 @@ def _local_refine_core(f1, f2, t1_sec, t2_est_sec, window_sec, local_hop, sr):
         nearest_idx = np.argmin(diffs)
         t2_local_frame = int(path_arr[nearest_idx, 1])
     
+    # Safe bounds check
+    t2_local_frame = max(0, min(t2_local_frame, len(seg2) - 1))
+    
     # Convert back to absolute seconds
     t2_refined = (start2 + t2_local_frame) / local_frame_rate
     
-    return t2_refined
+    # THE BIG WIN: Calculate actual feature distance (Cosine) at the matched frames
+    u = seg1[t1_local_frame]
+    v = seg2[t2_local_frame]
+    u_norm = np.linalg.norm(u)
+    v_norm = np.linalg.norm(v)
+    
+    if u_norm < 1e-8 or v_norm < 1e-8:
+        feature_distance = 1.0
+    else:
+        cos_sim = np.dot(u, v) / (u_norm * v_norm)
+        # Handle floating point inaccuracies
+        cos_sim = max(-1.0, min(1.0, cos_sim))
+        feature_distance = float(1.0 - cos_sim)
+    
+    return t2_refined, feature_distance
 
 
 def _worker_task(args):
     """Worker function for ProcessPoolExecutor using memmap files"""
-    t1, t2_est, win, hop, sr, f1_shape, f1_path, f2_shape, f2_path = args
+    t1, t2_est, win, hop, sr, f1_shape, f1_path, f2_shape, f2_path, y1_slice, y2_slice, y1_start_sec, y2_start_sec = args
     
     # Load read-only memmap using shapes passed
     f1_mmap = np.memmap(f1_path, dtype='float32', mode='r', shape=f1_shape)
     f2_mmap = np.memmap(f2_path, dtype='float32', mode='r', shape=f2_shape)
     
-    return _local_refine_core(f1_mmap, f2_mmap, t1, t2_est, win, hop, sr)
+    # Stage 2: Local Refinement (11ms resolution)
+    t2_local_refined, feature_dist = _local_refine_core(f1_mmap, f2_mmap, t1, t2_est, win, hop, sr)
+    
+    # Stage 3: Ultra-High-Res Micro-Refinement (1.5ms resolution)
+    t2_final = t2_local_refined
+    micro_dist = feature_dist
+    
+    if y1_slice is not None and len(y1_slice) > 0 and len(y2_slice) > 0:
+        # Extract the micro-slice of time
+        t2_final, micro_dist = _micro_refine_core(y1_slice, y2_slice, t1, t2_local_refined, y1_start_sec, y2_start_sec, sr)
+        
+    return t2_final, micro_dist
 
 
 
@@ -456,97 +560,17 @@ class AudioSync:
         
         return features, onset[:min_len]
 
-    def onset_envelope_refine(self, onset_env1, onset_env2, t1_sec, t2_est_sec,
-                              template_sec=2.0, search_sec=0.5, local_hop=256):
-        """
-        Refine timestamp using sliding-window normalized cross-correlation of 
-        onset envelopes.
-        """
-        frame_rate = self.sr / local_hop
-        
-        # Template: ±template_sec around t1 in rec1
-        t1_frame = int(t1_sec * frame_rate)
-        tmpl_half = int(template_sec * frame_rate)
-        tmpl_start = max(0, t1_frame - tmpl_half)
-        tmpl_end = min(len(onset_env1), t1_frame + tmpl_half)
-        template = onset_env1[tmpl_start:tmpl_end]
-        
-        # Search region: ±(template_sec + search_sec) around coarse estimate in rec2
-        t2_frame = int(t2_est_sec * frame_rate)
-        search_half = int((template_sec + search_sec) * frame_rate)
-        search_start = max(0, t2_frame - search_half)
-        search_end = min(len(onset_env2), t2_frame + search_half)
-        search_region = onset_env2[search_start:search_end]
-        
-        if len(template) < 10 or len(search_region) < len(template):
-            return t2_est_sec, 0.0
-
-        # Run normalized cross-correlation
-        tmpl_mean = np.mean(template)
-        tmpl_std = np.std(template)
-        if tmpl_std < 1e-8:
-             return t2_est_sec, 0.0
-             
-        # Normalize template
-        t_norm = (template - tmpl_mean) / tmpl_std
-        
-        # Prepare sliding windows
-        # Vectorized sliding window view would be faster but for simplicity/clarity loop is ok
-        # for this many points? It's called per timestamp. Needs to be reasonably fast.
-        # Let's use simple loop with numpy ops, it's ~40-100 iterations.
-        
-        num_positions = len(search_region) - len(template) + 1
-        scores = np.zeros(num_positions)
-        
-        for i in range(num_positions):
-            window = search_region[i : i+len(template)]
-            w_mean = np.mean(window)
-            w_std = np.std(window)
-            
-            if w_std < 1e-8:
-                scores[i] = 0.0
-            else:
-                # NCC
-                w_norm = (window - w_mean) / w_std
-                scores[i] = np.mean(t_norm * w_norm)
-        
-        # Find peak
-        peak_idx = np.argmax(scores)
-        peak_val = scores[peak_idx]
-        
-        # Second peak
-        min_sep_frames = int(0.1 * frame_rate)
-        mask = np.ones(num_positions, dtype=bool)
-        mask[max(0, peak_idx - min_sep_frames):min(num_positions, peak_idx + min_sep_frames + 1)] = False
-        
-        if mask.any():
-            second_peak_val = np.max(scores[mask])
-        else:
-            second_peak_val = 0.0
-            
-        confidence_ratio = (peak_val + 1.0) / (second_peak_val + 1.0) # Shift to positive for ratio
-        # Or just return peak_val as confidence?
-        # User requested "Peak-to-sidelobe confidence check"
-        confidence_ratio = peak_val / (second_peak_val + 1e-8) if second_peak_val > 0 else peak_val * 10
-        
-        # Map back to time
-        # The peak corresponds to the start of the window in search_region
-        # The "center" of the match is offset by how far t1 was into the template
-        tmpl_center_offset = t1_frame - tmpl_start
-        matched_frame = search_start + peak_idx + tmpl_center_offset
-        t2_refined = matched_frame / frame_rate
-        
-        return t2_refined, confidence_ratio
 
 
-    def map_timestamps(self, coarse_path, manual_timestamps_list, y1, y2, y1_harmonic=None, y2_harmonic=None, snap_enabled=False, offset1=0):
+
+    def map_timestamps(self, coarse_path, manual_timestamps_list, y1, y2, y1_harmonic=None, y2_harmonic=None, bwd_mapper=None, offset1=0):
         """
-        Maps timestamps using Global Path + Local Refinement + Onset Snapping.
+        Maps timestamps using Global Path + Multi-Scale Local Refinement.
         
         Process:
         1. Global DTW path -> Coarse estimate
-        2. Local Refinement -> Sub-frame accuracy using high-res DTW
-        3. Onset Snapping -> Snap to nearest note attack if musically appropriate
+        2. Local Refinement (1024-hop) -> High-res structural anchoring
+        3. Micro-Refinement (32-hop) -> Sub-frame acoustic texture matching
         
         TERMINOLOGY NOTE:
         - mix: The measure number (e.g. 100). NOT UNIQUE if there are repeats.
@@ -554,26 +578,17 @@ class AudioSync:
           ALWAYS use the index/detix for alignment verification and mapping
           to avoid ambiguity during repeated sections.
         """
-        print(f"\\n--- Mapping Timestamps (Global + Local + Onset) ---")
+        print(f"\\n--- Mapping Timestamps (Global + Multi-Scale Refinement) ---")
         
         # Pre-compute high-res features ONCE for both recordings
-        local_hop = 256
+        local_hop = 1024
         import time
         t_start = time.time()
         print("  [Pre-computing high-res features for local refinement]")
-        f1_hires, onset_env1 = self.extract_features_hires(y1, local_hop=local_hop, y_harmonic=y1_harmonic)
-        f2_hires, onset_env2 = self.extract_features_hires(y2, local_hop=local_hop, y_harmonic=y2_harmonic)
+        f1_hires, _ = self.extract_features_hires(y1, local_hop=local_hop, y_harmonic=y1_harmonic)
+        f2_hires, _ = self.extract_features_hires(y2, local_hop=local_hop, y_harmonic=y2_harmonic)
         
-        # Pre-compute onsets for snapping (using standard librosa detection)
-        print("  [Detecting onsets for snapping]")
-        
-        # Use librosa's built-in onset detection which includes adaptive thresholding
-        # backtrack=False ensures we get the peak, not the start of the attack (better for alignment)
-        onsets1_sec = librosa.onset.onset_detect(onset_envelope=onset_env1, sr=self.sr, hop_length=local_hop, units='time')
-        onsets2_sec = librosa.onset.onset_detect(onset_envelope=onset_env2, sr=self.sr, hop_length=local_hop, units='time')
-        
-        print(f"  Feature & Onset computation: {time.time() - t_start:.1f}s")
-        print(f"  Detected Onsets: Rec1={len(onsets1_sec)}, Rec2={len(onsets2_sec)}")
+        print(f"  Feature computation: {time.time() - t_start:.1f}s")
         
         # Create interpolation function from global path
         # Average all rec2 frames mapped to each rec1 frame (many-to-one DTW)
@@ -582,11 +597,60 @@ class AudioSync:
         frame_map = defaultdict(list)
         for i_frame, j_frame in coarse_path:
             frame_map[i_frame].append(j_frame)
+        
         u_i = np.array(sorted(frame_map.keys()))
-        u_j = np.array([np.mean(frame_map[k]) for k in u_i])
+        u_j_avg = np.array([np.mean(frame_map[k]) for k in u_i])
         
         from scipy.interpolate import interp1d
-        coarse_mapper = interp1d(u_i, u_j, kind='linear', fill_value="extrapolate")
+        coarse_mapper = interp1d(u_i, u_j_avg, kind='linear', fill_value="extrapolate")
+        
+        # --- BI-DIRECTIONAL ANCHOR INTERPOLATION ---
+        if bwd_mapper is not None:
+            import time
+            print("  [Computing Bi-directional Anchors]")
+            interp_start = time.time()
+            
+            anchor_indices = []
+            MAX_RT_ERR_FRAMES = 1.0  # Allow half-frame rounding in both directions
+            
+            for idx, i_frame in enumerate(u_i):
+                # 1. Forward map
+                j_frame_fwd = u_j_avg[idx]
+                
+                # 2. Backward map
+                # Ensure j_frame_fwd is within the domain of bwd_mapper to avoid extrapolation issues
+                try:
+                    i_frame_bwd = bwd_mapper(j_frame_fwd)
+                    
+                    # 3. Calculate Round Trip Error in frames
+                    rt_err_frames = abs(i_frame - i_frame_bwd)
+                    
+                    if rt_err_frames <= MAX_RT_ERR_FRAMES:
+                        anchor_indices.append(idx)
+                except ValueError:
+                    # Extrapolation error out of bounds
+                    pass
+            
+            # Ensure we have at least some anchors
+            if len(anchor_indices) < 2:
+                print(f"  Warning: Found too few true anchors ({len(anchor_indices)}). Falling back to standard mapper.")
+                anchor_u_i = u_i
+                anchor_u_j = u_j_avg
+            else:
+                print(f"  Anchor Analysis: Found {len(anchor_indices)} absolute physics anchors out of {len(u_i)} points.")
+                anchor_u_i = u_i[anchor_indices]
+                anchor_u_j = u_j_avg[anchor_indices]
+                
+            # Create the extremely stable Anchor Mapper
+            # We use kind='linear' to bridge any flat-valley gaps between the anchors
+            anchor_mapper_func = interp1d(anchor_u_i, anchor_u_j, kind='linear', fill_value="extrapolate")
+            
+            # Override local_coarse_mapper alias for use below
+            local_coarse_mapper = anchor_mapper_func
+            print(f"  Bi-directional anchor compute: {time.time() - interp_start:.2f}s")
+        else:
+            print("  Warning: bwd_mapper not provided. Using raw coarse mapper.")
+            local_coarse_mapper = coarse_mapper
         
         results = []
         mapped_count = 0
@@ -639,7 +703,9 @@ class AudioSync:
                  t1_rel = 0
                  
             t1_frame = int(t1_rel * self.sr / self.hop_length)
-            t2_frame_est = coarse_mapper(t1_frame)
+            
+            # Use the BI-DIRECTIONAL ANCHOR MAPPER instead of the raw coarse mapper
+            t2_frame_est = local_coarse_mapper(t1_frame)
             t2_coarse = float(t2_frame_est * self.hop_length / self.sr)
             
             # Store coarse for later
@@ -647,7 +713,21 @@ class AudioSync:
             
             # Task: (t1, t2_coarse, window, hop, sr, shapes, paths)
             # Optimized Window: 0.3s (Coarse path is accurate, search only local error)
-            tasks.append((t1, t2_coarse, 0.3, local_hop, self.sr, f1_shape, f1_path, f2_shape, f2_path))
+            
+            # --- MICRO-REFINE SLICE EXTRACTION ---
+            # Extract 0.6s of raw audio around t1 and t2_coarse
+            micro_win_sec = 0.3
+            y1_start_sec = max(0, t1_rel - micro_win_sec)
+            y1_start_frame = int(y1_start_sec * self.sr)
+            y1_end_frame = int(min(len(y1), (t1_rel + micro_win_sec) * self.sr))
+            y1_slice = y1[y1_start_frame:y1_end_frame]
+            
+            y2_start_sec = max(0, t2_coarse - micro_win_sec)
+            y2_start_frame = int(y2_start_sec * self.sr)
+            y2_end_frame = int(min(len(y2), (t2_coarse + micro_win_sec) * self.sr))
+            y2_slice = y2[y2_start_frame:y2_end_frame]
+            
+            tasks.append((t1, t2_coarse, 0.3, local_hop, self.sr, f1_shape, f1_path, f2_shape, f2_path, y1_slice, y2_slice, y1_start_sec, y2_start_sec))
             
         # Run Parallel Refinement
         t_refine_start = time.time()
@@ -671,75 +751,26 @@ class AudioSync:
             t1 = record['t']
             mix_num = record.get('mix', 0)
             t2_coarse = record['_t2_coarse']
-            t2_refined = refined_results[i]
+            t2_refined, feature_dist = refined_results[i]
 
 
                 
-            # --- ONSET SNAPPING LOGIC ---
-            # Disabled by default: diagnostic testing (447 measures, classical orchestral)
-            # showed snapping hurts 2:1 (88 hurt vs 49 helped), degrading MAE from
-            # 0.0873 → 0.0915. Many "onsets" in orchestral music are soft entries or
-            # swells — snapping to them pulls timestamps away from the correct position.
-            # Set snap_enabled=True to re-enable for recordings with clear transients.
-            t2_final = t2_refined
-            
-            # 1. Check if t1 is near an onset in Rec 1
-            # Find nearest onset in Rec 1
-            nearest_idx1 = np.searchsorted(onsets1_sec, t1)
-            dist_to_onset1 = float('inf')
-            
-            # Check left and right neighbors
-            candidates1 = []
-            if nearest_idx1 < len(onsets1_sec):
-                candidates1.append(onsets1_sec[nearest_idx1])
-            if nearest_idx1 > 0:
-                candidates1.append(onsets1_sec[nearest_idx1 - 1])
-                
-            if candidates1:
-                 # Find closest candidate
-                closest_onset1 = min(candidates1, key=lambda x: abs(x - t1))
-                dist_to_onset1 = abs(closest_onset1 - t1)
-                
-            # If t1 is "on a beat" (nearby onset), try to snap t2
-            if snap_enabled and dist_to_onset1 < SNAP_THRESHOLD_REC1:
-                eligible_for_snap += 1
-                
-                # Find nearest onset in Rec 2 to our refined estimate
-                nearest_idx2 = np.searchsorted(onsets2_sec, t2_refined)
-                candidates2 = []
-                if nearest_idx2 < len(onsets2_sec):
-                    candidates2.append(onsets2_sec[nearest_idx2])
-                if nearest_idx2 > 0:
-                    candidates2.append(onsets2_sec[nearest_idx2 - 1])
-                
-                if candidates2:
-                    closest_onset2 = min(candidates2, key=lambda x: abs(x - t2_refined))
-                    dist_to_onset2 = abs(closest_onset2 - t2_refined)
-                    
-                    # Snap if within threshold
-                    if dist_to_onset2 < SNAP_THRESHOLD_REC2:
-                        t2_final = float(closest_onset2)
-                        snapped_count += 1
-            
             # Diagnostic deltas for per-stage error analysis
             refine_delta = round(t2_refined - t2_coarse, 6)
-            snap_delta = round(t2_final - t2_refined, 6)
             
             results.append({
                 "index": i,
                 "mix": mix_num,
-                "t": t2_final,
+                "t": t2_refined,
                 "t_coarse": round(t2_coarse, 6),
                 "t_refined": round(t2_refined, 6),
                 "refine_delta": refine_delta,
-                "snap_delta": snap_delta,
-
+                "feature_distance": round(feature_dist, 4)
             })
             mapped_count += 1
         
         refine_elapsed = time.time() - t_refine_start
         print(f"  Mapped {mapped_count} timestamps")
-        print(f"  Onset Snapping:   snapped {snapped_count}/{eligible_for_snap} eligible points (Rec1 on beat)")
         print(f"  Total Time: {refine_elapsed:.1f}s ({refine_elapsed/max(mapped_count,1)*1000:.0f}ms/point)")
         
         # ----- REFINEMENT DAMAGE GUARD -----
@@ -778,105 +809,6 @@ class AudioSync:
         
         print(f"  Refinement Damage Guard: kept {refine_kept}, reverted {refine_reverted}")
         
-        # ----- SMARTER SMOOTHING (Two-Pass + Damage Guard) -----
-        
-        # Helper for Weighted Median
-        def get_weighted_median(vals, weights):
-            sorted_indices = np.argsort(vals)
-            vals_sorted = np.array(vals)[sorted_indices]
-            weights_sorted = np.array(weights)[sorted_indices]
-            cw = np.cumsum(weights_sorted)
-            total_w = cw[-1]
-            idx = np.searchsorted(cw, total_w / 2.0)
-            return vals_sorted[idx]
-            
-        # Global Trend Interpolator for Damage Guard
-        # Fix: interp1d on self fits noise exactly. Use median filter for robust trend.
-        from scipy.ndimage import median_filter
-        all_t1 = [r['t_original_rec1'] for r in results] if 't_original_rec1' in results[0] else [manual_timestamps_list[i]['t'] for i in range(len(results))]
-        all_offsets = np.array([r['t'] - t1 for r, t1 in zip(results, all_t1)])
-        
-        # Window size 11 (approx 5-10s depending on density) captures local trend while ignoring single outliers
-        trend_offsets = median_filter(all_offsets, size=11)
-        
-        DENSITY_GATE_SEC = 2.5  # Only smooth in dense sections (avg gap < this)
-        
-        def run_smoothing_pass(current_results, threshold_sec, neighbor_radius=3):
-            sm_count = 0
-            sm_skipped_sparse = 0
-            
-            for i in range(len(current_results)):
-                t1_self = manual_timestamps_list[i]['t']
-                offset_self = current_results[i]['t'] - t1_self
-                
-                # DENSITY GATE: compute average gap of nearby rec1 timestamps
-                # If timestamps are sparse (slow section), skip smoothing
-                local_gaps = []
-                for j in range(max(0, i - 2), min(len(manual_timestamps_list) - 1, i + 2)):
-                    gap = manual_timestamps_list[j + 1]['t'] - manual_timestamps_list[j]['t']
-                    local_gaps.append(gap)
-                if local_gaps and np.mean(local_gaps) > DENSITY_GATE_SEC:
-                    sm_skipped_sparse += 1
-                    continue
-                
-                # Gather neighbors
-                neighbor_indices = []
-                for j in range(max(0, i - neighbor_radius), min(len(current_results), i + neighbor_radius + 1)):
-                    if j != i:
-                        neighbor_indices.append(j)
-                
-                if len(neighbor_indices) < 2:
-                    continue
-                    
-                neighbor_offsets = []
-                weights = []
-                for j in neighbor_indices:
-                    t1_j = manual_timestamps_list[j]['t']
-                    offset_j = current_results[j]['t'] - t1_j
-                    neighbor_offsets.append(offset_j)
-                    # A3: Weighted median by distance
-                    dist = abs(j - i)
-                    weights.append(1.0 / (dist + 0.5))
-                
-                expected_offset = get_weighted_median(neighbor_offsets, weights)
-                
-                # A1: Damage Guard
-                # Check if smoothing would move us AWAY from the global trend
-                global_trend_offset = float(trend_offsets[i])
-                current_dev_from_trend = abs(offset_self - global_trend_offset)
-                proposed_dev_from_trend = abs(expected_offset - global_trend_offset)
-                
-                # If the proposed "correction" is further from the global trend than we already are,
-                # AND we are decently close to the trend (within 2x threshold), skip it.
-                # RELAXED GUARD: Allow +0.1s leeway for local smoothing to deviate
-                if (proposed_dev_from_trend > current_dev_from_trend + 0.1) and (current_dev_from_trend < threshold_sec * 2):
-                    continue
-                
-                deviation = abs(offset_self - expected_offset)
-                
-                if deviation > threshold_sec:
-                    # Apply correction
-                    old_t = current_results[i]['t']
-                    new_t = round(t1_self + expected_offset, 6)
-                    current_results[i]['t'] = new_t
-                    current_results[i]['smoothed'] = True
-                    # Accumulate smooth_delta if multiple passes
-                    prev_delta = current_results[i].get('smooth_delta', 0.0)
-                    current_results[i]['smooth_delta'] = round(prev_delta + (new_t - old_t), 6)
-                    sm_count += 1
-
-            return sm_count, sm_skipped_sparse
-
-        # Pass 1: Large outliers (>0.3s)
-        c1, s1 = run_smoothing_pass(results, 0.3)
-        # Pass 2: Subtle outliers (>0.15s) - DISABLED per user request to favor accuracy over smoothness
-        # c2, s2 = run_smoothing_pass(results, 0.15)
-        c2, s2 = 0, 0
-        # Pass 3: Fine-grained (>0.10s) - DISABLED
-        # c3, s3 = run_smoothing_pass(results, 0.10, neighbor_radius=5)
-        c3, s3 = 0, 0
-        
-        print(f"  Smarter Smoothing: Pass 1 corrected {c1}, Pass 2 corrected {c2}, Pass 3 corrected {c3} (skipped {s1+s2+s3} sparse-section points)")
         
         # ----- MONOTONICITY ENFORCEMENT -----
         # Ensure timestamps are strictly increasing after smoothing
@@ -903,7 +835,7 @@ class AudioSync:
             print(f"  Monotonicity: fixed {mono_fixes} inversions")
             
         # Explicit cleanup of high-res features
-        del f1_hires, f2_hires, onset_env1, onset_env2, coarse_path
+        del f1_hires, f2_hires, coarse_path
         gc.collect()
         
         return results

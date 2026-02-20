@@ -43,8 +43,26 @@ The Python pipeline (located in `scripts/`) is designed for local use to generat
 | **Bidirectional Path Fusion** | Average forward+backward DTW mappers. Zero effect — paths too correlated (same features/algo), errors don't cancel | ❌ NO EFFECT |
 | **Feature Augmentation (+Tonnetz +Spectral Contrast)** | 26→39 dims. Coarse MAE degraded 0.0983→0.1013, max error 0.478→0.924. Timbral features capture performer differences, dilute chroma signal | ❌ REVERTED |
 | **Density-Gated Smoothing** | Skip smoothing when local rec1 gaps avg > 2.5s (slow/sparse sections). Help:hurt 28:5 (5.6:1). Eliminates smoothing damage in fermatas/slow passages | ✅ KEPT |
-| **2x Downsampling (Coarse)** | Coarse DTW at ~10.8Hz instead of 21.5Hz. MAE 0.078→0.081 (slight loss) but Max Error 1.15s→0.49s (huge win). Fixes index 20 outlier. | ✅ KEPT |
+| **2x Downsampling (Coarse)** | Coarse DTW at ~10.8Hz instead of 21.5Hz. MAE 0.078→0.081 (slight loss) but Max Error 1.15s→0.49s (huge win). Fixes index 20 outlier. | ❌ REVERTED (See "Big Win" below) |
 | **Onset snapping** | Hurt 2:1 (88 hurt vs 49 helped), MAE 0.087→0.092 — orchestral "onsets" are soft entries/swells | ❌ DISABLED for orchestral/classical |
+
+### Big Win Architecture Shift (Feb 2026)
+We discovered that **Timing-based Flagging** (Gap Deviation, Tempo Deviation) was generating hundreds of "False Positives" because rubbing/stretching tempo is normal in classical music (Rubato).
+
+**New Approach to reduce False Positives:**
+1. **Feature Stacking (`n_stack=15`)**: Stacking ~1.4s of historical audio frames into the feature vector allows DTW to distinguish identical repeating notes.
+2. **Round-Trip Driven Confidence**: With stacking active, Round-Trip Error (Forward path vs Backward path) became highly reliable. We abolished timing penalties and solely use RT Error (>0.3s) and Extreme Feature Distance (>1.05) to flag `LOW` confidence.
+3. **High-Res Global Pass (Hop 2048, Downsample 1)**: Instead of blurring via decimation (Downsample=2), we generate inherently smooth features by using a massive STFT window (`hop_length=2048`). This gives the same ~10Hz resolution and memory footprint, but integrates 100% of the audio data, eliminating drift.
+4. **Decoupling Refinement Error (`t_coarse` vs `t_refined`)**: RT Error is now calculated purely on the `t_coarse` DTW prediction. Previously, using the local `t_refined` prediction resulted in false positives because accurate sub-frame shifts were being flagged as "errors" by the coarse reverse path.
+5. **Symmetrical Mappers (`bwd_mapper` Fix)**: The forward and backward DTW mappers must be symmetrical. Previously, `bwd_mapper` took the first identical index (`np.unique`), while forward took the `np.mean`. This structural difference injected up to 0.1s of phantom RT error. Both now use `np.mean`.
+6. **Grid-Aware Confidence Thresholds**: Coarse `hop_length=2048` produces a `~10.8Hz` resolution (`~0.092s/frame`). A standard algorithmic variance of 2-frames between the Forward and Backward paths mathematically produces `~0.185s` of Round-Trip Error. Therefore, the **MEDIUM** threshold must be `0.20s` (2 frames) and **LOW** at `0.45s` (~5 frames) to avoid flagging normal 10.8Hz computational variance.
+   *   *Result (2/20/26)*: False Positives plummeted from 124 -> 15. The pipeline is no longer penalizing true alignments.
+
+**Resolution for False Negatives (0.3s - 0.6s local smudges):**
+1. **The Structural Jump Hypothesis vs Reality**: We initially suspected the 190 "False Negatives" were massive 10+ second structural jumps caused by repeats. We attempted to catch these using a rigid 71-point `savgol_filter` for `offset_trend_dev`. This completely failed, creating 506 False Positives because the rigid filter mathematically penalized normal musical rubato (which sways gracefully). We reverted to a wide `median_filter`, which naturally follows rubato curves while ignoring jumps.
+2. **The Damage Guard Experiment**: We identified that the `Refinement Damage Guard` was aggressively rejecting 455 high-res DTW corrections because they deviated from the coarse trend by `>0.02s`. We theorized the high-res pass had the "correct" mapping for the 0.4s smudges, and loosened the guard to `0.15s`.
+3. **The Mathematical Floor**: Loosening the guard *degraded* the overall MAE (0.1441s -> 0.1511s) and *increased* False Negatives (190 -> 258). This proved our theory wrong: The high-resolution feature pass (`hop=256`, ~86Hz) is actually **less stable** than the coarse pass (`hop=2048`, ~10Hz) when dealing with complex orchestral/piano textures. Given freedom, the high-res DTW drags the timestamp away from the true beat and anchors onto irrelevant acoustic phenomena (like a pedal release or harmonic swell). 
+4. **Conclusion**: The strict `+0.02s` Damage Guard is absolutely necessary. The remaining 190 False Negatives (which are localized 0.3s-0.5s smudges) represent the **fundamental mathematical floor** of algorithmic audio alignment for these highly interpreted, rubato-heavy classical performances. They cannot be identified securely without introducing massive false positive rates, because the internal mathematical signals (RT Error, Feature Distance) for these small smudges are indistinguishable from a perfect mapping.
 
 ### Key Constraints
 - **~46ms frame resolution** is the hard accuracy floor with hop=1024 — no post-processing can fix what the DTW path gets wrong
