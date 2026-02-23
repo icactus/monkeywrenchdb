@@ -352,8 +352,8 @@ HTML_TEMPLATE = '''
                     
                     <div class="row">
                         <div class="form-group">
-                            <label for="offset1">Rec 1 Start (seconds)</label>
-                            <input type="number" id="offset1" name="offset1" value="0" step="0.01">
+                            <label for="offset1">Rec 1 Start (HH:MM:SS or seconds)</label>
+                            <input type="text" id="offset1" name="offset1" value="0" placeholder="0:00 or 0">
                         </div>
                         <div class="form-group">
                             <label for="end1">Rec 1 End (HH:MM:SS or empty)</label>
@@ -510,7 +510,7 @@ HTML_TEMPLATE = '''
             // Get form data
             const url1 = document.getElementById('url1').value;
             const url2 = document.getElementById('url2').value;
-            const offset1 = parseFloat(document.getElementById('offset1').value) || 0;
+            const offset1 = parseTimeToSeconds(document.getElementById('offset1').value);
             const end1 = parseTimeToSeconds(document.getElementById('end1').value);
             const offset2 = parseTimeToSeconds(document.getElementById('offset2').value);
             const end2 = parseTimeToSeconds(document.getElementById('end2').value);
@@ -520,6 +520,10 @@ HTML_TEMPLATE = '''
             const rec2TimestampsOffset = parseFloat(document.getElementById('rec2_timestamps_offset').value) || 0;
             
             // Validate time parsing
+            if (offset1 === null) {
+                showStatus('error', 'Invalid Rec 1 Start Time format. Use HH:MM:SS, MM:SS, or seconds.');
+                return;
+            }
             if (offset2 === null) {
                 showStatus('error', 'Invalid Rec 2 Start Time format. Use HH:MM:SS, MM:SS, or seconds.');
                 return;
@@ -827,7 +831,7 @@ HTML_TEMPLATE = '''
                 id, name,
                 url1: document.getElementById('url1').value,
                 url2: document.getElementById('url2').value,
-                offset1: parseFloat(document.getElementById('offset1').value) || 0,
+                offset1: document.getElementById('offset1').value,
                 end1: document.getElementById('end1').value,
                 offset2: document.getElementById('offset2').value,
                 end2: document.getElementById('end2').value,
