@@ -170,7 +170,9 @@
 
             const label = document.createElement('span');
             label.className = 'quickfix-label';
-            const devText = item.gap_dev ? `gap: ${item.gap_dev.toFixed(2)}s` : `tempo: ${item.tempo_dev?.toFixed(2) || '?'}`;
+            const rtErr = item.rt_error ? `rt:${item.rt_error.toFixed(2)}s` : '';
+            const featDist = item.feature_distance ? `dist:${item.feature_distance.toFixed(2)}` : '';
+            const devText = [rtErr, featDist].filter(Boolean).join(' ');
             label.innerHTML = `detix ${item.detix} <small>(${devText})</small>`;
 
             row.appendChild(checkbox);

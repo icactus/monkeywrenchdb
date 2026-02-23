@@ -341,7 +341,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         # ================================================================
         # Gap Deviation Detection (catches single-point jumps)
         # ================================================================
-        GAP_DEVIATION_THRESHOLD = 0.4  # Flag if |Δt_rec2 - Δt_rec1| > 0.4s (tightened from 0.8s; 0.25s was too tight for rubato)
+        GAP_DEVIATION_THRESHOLD = 0.4  # Flag if |Δt_rec2 - expected_Δt_rec2| > 0.4s
         
         gap_deviations = [0.0] * len(final_results)
         gap_anomalies = [False] * len(final_results)
@@ -349,7 +349,11 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         for i in range(1, len(final_results)):
             dt_rec1 = input_timestamps[i]['t'] - input_timestamps[i-1]['t'] if i < len(input_timestamps) else 0
             dt_rec2 = final_results[i]['t'] - final_results[i-1]['t']
-            gap_dev = abs(dt_rec2 - dt_rec1)
+            # Scale dt_rec1 by the global tempo ratio so that a consistently
+            # slower/faster recording doesn't cause false gap deviations.
+            # Only true structural jumps (freezes, skips) will exceed threshold.
+            expected_dt_rec2 = dt_rec1 / max(global_median, 0.01)
+            gap_dev = abs(dt_rec2 - expected_dt_rec2)
             gap_deviations[i] = round(gap_dev, 4)
         
         # A point is a gap anomaly if the gap BEFORE it or AFTER it is large
@@ -361,8 +365,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 gap_anomalies[i] = True
         
         num_gap_anomalies = sum(gap_anomalies)
-        num_gap_anomalies = sum(gap_anomalies)
-        print(f"    Gap anomalies detected: {num_gap_anomalies} (|Δt_rec2 - Δt_rec1| > {GAP_DEVIATION_THRESHOLD}s)")
+        print(f"    Gap anomalies detected: {num_gap_anomalies} (|Δt_rec2 - Δt_rec1*tempo| > {GAP_DEVIATION_THRESHOLD}s)")
 
         # ================================================================
         # Offset Trend Deviation (Systematic Drift Detection)
@@ -420,16 +423,16 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         for i, item in enumerate(final_results):
             rt_err = rt_errors[i]
             feat_dist = item.get('feature_distance', 0.0)
+            gap = gap_deviations[i]
             is_feature_anomaly = feature_anomalies[i]
             refine_delta = item.get('refine_delta', 0.0)
             
-            # LOW: The audio is completely different (Feature Anomaly) OR DTW is deeply confused (RT Error > 0.45s)
+            # LOW: Audio completely different OR DTW deeply confused
             if rt_err >= 0.45 or is_feature_anomaly:
                 confidence = "LOW"
-            # LOW (Refinement Failed): It moved a lot, but didn't find a good audio match
             elif abs(refine_delta) > 0.15 and feat_dist > 0.6:
                 confidence = "LOW"
-            # MEDIUM: DTW has moderate structural variance (RT Error > 0.20s)
+            # MEDIUM: Moderate structural variance
             elif rt_err >= 0.20:
                 confidence = "MEDIUM"
             # HIGH: Stable DTW, decent audio match.
@@ -474,9 +477,8 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         manual_review = [(i, final_results[i]) for i in range(len(final_results)) 
                      if final_results[i]['confidence'] in ('LOW', 'MEDIUM')]
         if manual_review:
-            # Sort: LOW first, then by worst feature distance
-            manual_review.sort(key=lambda x: (0 if x[1]['confidence'] == 'LOW' else 1, 
-                                          -x[1].get('feature_distance', 0.0)))
+            # Sort by index for easy sequential review
+            manual_review.sort(key=lambda x: x[0])
             print(f"\n  🚩 Timestamps Needing Manual Review ({len(manual_review)} items):")
             print(f"  {'Index':>5} | {'Mix':>5} | {'Conf':>6} | {'Feat Dist':>10} | {'RT Error':>10} | {'Gap Dev':>8} | {'Off Dev':>8} | {'T (Rec2)':>10}")
             print("  " + "-" * 85)
@@ -665,7 +667,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
     # Create final clean output array with diagnostic fields
     diag_keys = ['rt_error', 'tempo_dev', 'gap_dev', 'offset_trend_dev', 'low_energy', 'confidence',
                  't_coarse', 't_refined', 'refine_delta', 'snap_delta',
-                 'smoothed', 'smooth_delta']
+                 'smoothed', 'smooth_delta', 'feature_distance']
     def _clean(r):
         d = {'t': r['t'], 'mix': r['mix'], 'index': r['index']}
         for k in diag_keys:

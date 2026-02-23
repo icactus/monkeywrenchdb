@@ -79,6 +79,7 @@ def _micro_refine_core(y1_slice, y2_slice, t1_local_sec, t2_est_local_sec, y1_st
     v = f2_micro[t2_micro_frame]
     u_norm = np.linalg.norm(u)
     v_norm = np.linalg.norm(v)
+
     if u_norm < 1e-8 or v_norm < 1e-8:
         dist = 1.0
     else:
@@ -110,7 +111,7 @@ def _local_refine_core(f1, f2, t1_sec, t2_est_sec, window_sec, local_hop, sr):
     seg2 = f2[start2:end2_idx]
     
     # Need minimum frames for meaningful DTW
-    if len(seg1) < 20 or len(seg2) < 20:
+    if len(seg1) < 5 or len(seg2) < 5:
         return t2_est_sec, 1.0  # Return high distance if failed
     
     # Run local DTW (small matrix, no window constraint needed)
@@ -175,9 +176,9 @@ def _worker_task(args):
     
     if y1_slice is not None and len(y1_slice) > 0 and len(y2_slice) > 0:
         # Extract the micro-slice of time
-        t2_final, micro_dist = _micro_refine_core(y1_slice, y2_slice, t1, t2_local_refined, y1_start_sec, y2_start_sec, sr)
+        t2_final, _ = _micro_refine_core(y1_slice, y2_slice, t1, t2_local_refined, y1_start_sec, y2_start_sec, sr)
         
-    return t2_final, micro_dist
+    return t2_final, feature_dist
 
 
 
@@ -299,16 +300,18 @@ class AudioSync:
         onset_env = onset_env[:, :min_len]
         rms_norm = rms_norm[:min_len].reshape(1, -1)
         
+        # Energy scaling REMOVED — the SILENCE_THRESHOLD (0.02) already zeroes
+        # fermata decays. Continuous RMS scaling was crushing quiet musical
+        # passages (pp strings, soft woodwinds) making DTW unable to distinguish
+        # frames and causing diagonal wandering in soft sections.
+        
         # Stack: (12+12+1+1, frames) -> (26, frames)
         features = np.vstack([chroma, chroma_delta, onset_env, rms_norm])
         
-        # ZERO-COST SILENCE: Set silent frames to identical zero vectors
-        SILENCE_THRESHOLD = 0.02
-        silent_mask = rms_norm.flatten() < SILENCE_THRESHOLD
-        num_silent = np.sum(silent_mask)
-        features[:, silent_mask] = 0.0
-        
-        print(f"  Zero-cost silence: {num_silent} frames ({100*num_silent/min_len:.1f}%) set to zero")
+        # Silence zeroing REMOVED — normalized chroma already distinguishes
+        # pitched content (clear harmonic peaks) from ambient noise (featureless).
+        # Artificial zeroing was causing DTW to skip over soft musical passages
+        # where RMS momentarily dipped below threshold.
         
         # 5. Feature Stacking (Timbre Context)
         # Adds temporal context to each frame to distinguish identical notes
@@ -386,7 +389,7 @@ class AudioSync:
         return path_coarse
 
     def local_refine(self, f1_hires, f2_hires, t1_sec, t2_est_sec, 
-                      window_sec=5.0, local_hop=256):
+                      window_sec=2.0, local_hop=256):
         """
         Refine a single timestamp using pre-computed high-res features.
         
@@ -398,7 +401,7 @@ class AudioSync:
             f2_hires: Pre-computed high-res features for rec2 (frames, dims)
             t1_sec: Timestamp in rec1 (seconds)
             t2_est_sec: Global DTW estimate for rec2 (seconds)
-            window_sec: Half-window size in seconds (default 5.0)
+            window_sec: Half-window size in seconds (default 2.0)
             local_hop: Hop length used for the high-res features (default 256)
             
         Returns:
@@ -412,7 +415,7 @@ class AudioSync:
                                 window_sec, local_hop, self.sr)
 
     def cross_correlate_refine(self, f1_hires, f2_hires, t1_sec, t2_est_sec,
-                                window_sec=1.0, search_sec=0.5, local_hop=256):
+                                window_sec=1.5, search_sec=0.5, local_hop=256):
         """
         Refine a single timestamp using sliding-window cosine similarity on
         pre-computed high-resolution chroma features.
@@ -424,14 +427,14 @@ class AudioSync:
           converges to wrong local minima in dense textures (hurt 215/446 points).
         - Rigid sliding-window correlation on chroma uses the SAME pitch-class
           features but forces a fixed alignment — no warping to wrong minima.
-          The wider template (±1s) provides enough context to discriminate measures.
+        - The wider template (±1.5s) provides enough context to discriminate measures.
         
         Args:
             f1_hires: Pre-computed high-res features for rec1 (frames, 26)
             f2_hires: Pre-computed high-res features for rec2 (frames, 26)
             t1_sec: Timestamp in rec1 (seconds)
             t2_est_sec: Coarse DTW estimate for rec2 (seconds)
-            window_sec: Half-window for template in rec1 (default ±1.0s)
+            window_sec: Half-window for template in rec1 (default ±1.5s)
             search_sec: Half-window for search in rec2 (default ±0.5s)
             local_hop: Hop length of the high-res features (default 256)
             
@@ -715,8 +718,8 @@ class AudioSync:
             # Optimized Window: 0.3s (Coarse path is accurate, search only local error)
             
             # --- MICRO-REFINE SLICE EXTRACTION ---
-            # Extract 0.6s of raw audio around t1 and t2_coarse
-            micro_win_sec = 0.3
+            # Extract a 4-second total window (2s each way) for high-res snapping
+            micro_win_sec = 2.0
             y1_start_sec = max(0, t1_rel - micro_win_sec)
             y1_start_frame = int(y1_start_sec * self.sr)
             y1_end_frame = int(min(len(y1), (t1_rel + micro_win_sec) * self.sr))
@@ -727,19 +730,48 @@ class AudioSync:
             y2_end_frame = int(min(len(y2), (t2_coarse + micro_win_sec) * self.sr))
             y2_slice = y2[y2_start_frame:y2_end_frame]
             
-            tasks.append((t1, t2_coarse, 0.3, local_hop, self.sr, f1_shape, f1_path, f2_shape, f2_path, y1_slice, y2_slice, y1_start_sec, y2_start_sec))
+            tasks.append((t1, t2_coarse, 2.0, local_hop, self.sr, f1_shape, f1_path, f2_shape, f2_path, y1_slice, y2_slice, y1_start_sec, y2_start_sec))
             
         # Run Parallel Refinement
         t_refine_start = time.time()
+        total_tasks = len(tasks)
         print(f"  [Running Parallel Refinement on {multiprocessing.cpu_count()} cores using memmap]")
+        print(f"  [Refining {total_tasks} timestamps...]")
         
         try:
             # Use process pool with SPAWN context to avoid memory duplication
             # This ensures workers start fresh (~50MB) instead of cloning parent (~6GB)
             ctx = multiprocessing.get_context('spawn')
             with concurrent.futures.ProcessPoolExecutor(mp_context=ctx) as executor:
-                # Map returns results in order
-                refined_results = list(executor.map(_worker_task, tasks))
+                # Submit all tasks and track by index for ordered results
+                future_to_idx = {}
+                for idx, task in enumerate(tasks):
+                    future = executor.submit(_worker_task, task)
+                    future_to_idx[future] = idx
+                
+                # Collect results in order, with progress reporting
+                refined_results = [None] * total_tasks
+                completed = 0
+                last_report_pct = -1
+                
+                for future in concurrent.futures.as_completed(future_to_idx):
+                    idx = future_to_idx[future]
+                    refined_results[idx] = future.result()
+                    completed += 1
+                    
+                    # Report progress every 5% or every 10 items for small sets
+                    pct = int(100 * completed / total_tasks)
+                    elapsed = time.time() - t_refine_start
+                    
+                    report_interval = max(1, total_tasks // 20)  # ~5% intervals
+                    if completed % report_interval == 0 or completed == total_tasks:
+                        if pct != last_report_pct or completed == total_tasks:
+                            rate = completed / max(elapsed, 0.001)
+                            remaining = (total_tasks - completed) / max(rate, 0.001)
+                            mins_left = int(remaining // 60)
+                            secs_left = int(remaining % 60)
+                            print(f"  [{completed}/{total_tasks}] {pct}% — {elapsed:.0f}s elapsed, ~{mins_left}m{secs_left:02d}s remaining")
+                            last_report_pct = pct
         finally:
             # Cleanup temp files
             if os.path.exists(f1_path): os.remove(f1_path)
@@ -773,41 +805,13 @@ class AudioSync:
         print(f"  Mapped {mapped_count} timestamps")
         print(f"  Total Time: {refine_elapsed:.1f}s ({refine_elapsed/max(mapped_count,1)*1000:.0f}ms/point)")
         
-        # ----- REFINEMENT DAMAGE GUARD -----
-        # Reject local refinement if it moves the point AWAY from the global 
-        # coarse offset trend. Same principle as smoothing damage guard.
-        from scipy.ndimage import median_filter
-        
-        all_t1_vals = [manual_timestamps_list[i]['t'] for i in range(len(results))]
-        coarse_offsets = np.array([r['t_coarse'] - t1 for r, t1 in zip(results, all_t1_vals)])
-        refined_offsets = np.array([r['t_refined'] - t1 for r, t1 in zip(results, all_t1_vals)])
-        
-        # Robust trend from coarse offsets (median filter, window=11)
-        coarse_trend = median_filter(coarse_offsets, size=11)
-        
-        refine_kept = 0
+        # ----- REFINEMENT DAMAGE GUARD (DISABLED) -----
+        # Previously rejected refinements that moved away from the median coarse trend.
+        # DISABLED: The coarse trend is corrupted by fermatas, causing the guard to
+        # revert CORRECT refinements. Trust the DTW refinement instead.
+        refine_kept = len([r for r in results if abs(r['t_refined'] - r['t_coarse']) >= 0.001])
         refine_reverted = 0
-        for i, r in enumerate(results):
-            if abs(r['t_refined'] - r['t_coarse']) < 0.001:
-                # No meaningful refinement happened, skip
-                continue
-            
-            coarse_dev = abs(coarse_offsets[i] - coarse_trend[i])
-            refined_dev = abs(refined_offsets[i] - coarse_trend[i])
-            
-            # Refinement Damage Guard: Only allow refinement if it doesn't make things SIGNIFICANTLY worse
-            # TIGHTENED to +0.02s (from +0.1s) to prevent degradation while allowing micro-fixes
-            if refined_dev > coarse_dev + 0.02:
-                # Refinement moved us AWAY from trend — revert
-                r['t'] = r['t_coarse']
-                r['t_refined'] = r['t_coarse']
-                r['refine_delta'] = 0.0
-                r['refine_reverted'] = True
-                refine_reverted += 1
-            else:
-                refine_kept += 1
-        
-        print(f"  Refinement Damage Guard: kept {refine_kept}, reverted {refine_reverted}")
+        print(f"  Refinement Damage Guard: DISABLED (all {refine_kept} refinements kept)")
         
         
         # ----- MONOTONICITY ENFORCEMENT -----
