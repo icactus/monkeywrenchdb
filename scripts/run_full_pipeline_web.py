@@ -159,7 +159,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                                                      bwd_mapper=bwd_mapper,
                                                      offset1=offset1)
         
-        # Cleanup
+        # Cleanup path and harmonics
         del path, y1_harmonic, y2_harmonic
         gc.collect()
         
@@ -182,8 +182,6 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         # ========================================================================
         # Calculate Total Offset for Rec2
         # ========================================================================
-        # The first mapped timestamp (index 0) gives us the relative position in rec2
-        # Total offset = offset2 + t_of_index_0
         first_mapped_t = final_results[0]['t'] if final_results else 0.0
         total_offset_rec2 = offset2 + first_mapped_t
         
@@ -202,7 +200,6 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 "index": item['index'],
                 "t": round(item['t'] - first_mapped_t, 3),
             }
-            # Carry through diagnostic fields
             for k in ('t_coarse', 't_refined', 'refine_delta', 'snap_delta', 'smoothed', 'smooth_delta'):
                 if k in item:
                     entry[k] = item[k]
@@ -210,16 +207,77 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         
         print(f"\n[ZERO-BASED OUTPUT]")
         print(f"  Shifted all timestamps so Index 0 starts at t=0")
+        # Multi-Feature DTW Verification (Chroma vs MFCC)
+        # ========================================================================
+        # Run a SECOND DTW with independent features (MFCCs = timbral shape).
+        # Where the chroma path and MFCC path DISAGREE, the alignment is ambiguous.
+        # This is genuinely independent — chroma captures pitch class, MFCCs
+        # capture spectral envelope. They CAN find different paths.
+        print("\n[CROSS-FEATURE VERIFICATION] Running MFCC DTW for independent verification...")
+        import numpy as np
+        from scipy.interpolate import interp1d
+        from collections import defaultdict
+        
+        print("  Extracting MFCC features...")
+        f1_mfcc = syncer.extract_features_mfcc(y1, syncer.hop_length)
+        f2_mfcc = syncer.extract_features_mfcc(y2, syncer.hop_length)
+        print(f"  MFCC features: {f1_mfcc.shape[0]} x {f2_mfcc.shape[0]} frames, {f1_mfcc.shape[1]} dims")
+        
+        print("  Running MFCC DTW...")
+        path_mfcc = syncer.run_hybrid_sync(f1_mfcc, f2_mfcc)
+        
+        # Build MFCC mapper (simple forward mapper, no bi-directional needed —
+        # we're just comparing with the chroma path, not using this for output)
+        mfcc_frame_map = defaultdict(list)
+        for i_frame, j_frame in path_mfcc:
+            mfcc_frame_map[i_frame].append(j_frame)
+        
+        mfcc_u_i = np.array(sorted(mfcc_frame_map.keys()))
+        mfcc_u_j = np.array([np.mean(mfcc_frame_map[k]) for k in mfcc_u_i])
+        mfcc_mapper = interp1d(mfcc_u_i, mfcc_u_j, kind='linear', fill_value="extrapolate")
+        
+        # Compare: for each timestamp, how much do chroma and MFCC paths disagree?
+        hop_length = syncer.hop_length
+        sr = syncer.sr
+        
+        disagreements = []
+        for i, item in enumerate(final_results):
+            t1 = input_timestamps[i]['t'] if i < len(input_timestamps) else 0
+            t1_rel = t1 - offset1
+            if t1_rel < 0:
+                t1_rel = 0
+            t1_frame = int(t1_rel * sr / hop_length)
+            
+            # Chroma-based t2 (what we're using)
+            t2_chroma = item['t']
+            
+            # MFCC-based t2
+            t2_frame_mfcc = float(mfcc_mapper(t1_frame))
+            t2_mfcc = t2_frame_mfcc * hop_length / sr
+            
+            disagree = abs(t2_chroma - t2_mfcc)
+            disagreements.append(disagree)
+            item['cross_feature_disagree'] = round(disagree, 4)
+        
+        # Statistics
+        median_disagree = float(np.median(disagreements))
+        max_disagree = max(disagreements)
+        max_disagree_idx = disagreements.index(max_disagree)
+        high_disagree_count = sum(1 for d in disagreements if d > 1.0)
+        
+        print(f"  Median disagreement: {median_disagree:.3f}s")
+        print(f"  Max disagreement: {max_disagree:.3f}s at index {max_disagree_idx}")
+        print(f"  Points with disagreement > 1.0s: {high_disagree_count}")
+        
+        # Cleanup MFCC data
+        del f1_mfcc, f2_mfcc, path_mfcc, mfcc_frame_map
+        gc.collect()
         
         # ========================================================================
         # Step 2.5: Low-Energy Flagging
         # ========================================================================
         print("\n[LOW ENERGY ANALYSIS] Flagging timestamps during silence/quiet passages...")
         import librosa
-        import numpy as np
-        
-        hop_length = syncer.hop_length
-        sr = syncer.sr
         
         rms1 = librosa.feature.rms(y=y1, hop_length=hop_length)[0]
         rms2 = librosa.feature.rms(y=y2, hop_length=hop_length)[0]
@@ -422,25 +480,23 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         for i, item in enumerate(final_results):
             rt_err = rt_errors[i]
             feat_dist = item.get('feature_distance', 0.0)
-            off_dev = float(offset_deviations[i])
+            disagree = item.get('cross_feature_disagree', 0.0)
             is_feature_anomaly = feature_anomalies[i]
             
             # LOW: Audio completely different OR DTW deeply confused
             if rt_err >= 0.45 or is_feature_anomaly:
                 confidence = "LOW"
-            # LOW: Point drifted significantly from overall alignment trend
-            # offset_trend_dev measures deviation from the median-filtered
-            # offset curve — high values mean THIS point diverged from its
-            # neighbors, which is a real DTW mistracking signal.
-            # (Unlike gap_dev, which just measures rubato and is always large.)
-            elif off_dev > 0.4:
+            # LOW: Chroma and MFCC paths disagree significantly.
+            # This is the strongest signal — two independent feature sets
+            # found different alignments, meaning the region is ambiguous.
+            elif disagree > 1.0:
                 confidence = "LOW"
-            # MEDIUM: Moderate structural variance
+            # MEDIUM: Moderate disagreement or structural variance
             elif rt_err >= 0.20:
                 confidence = "MEDIUM"
-            elif off_dev > 0.25:
+            elif disagree > 0.5:
                 confidence = "MEDIUM"
-            # HIGH: Stable DTW, decent audio match.
+            # HIGH: Both feature sets agree, stable DTW.
             else:
                 confidence = "HIGH"
 
@@ -457,6 +513,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             item['tempo_dev'] = final_results[i]['tempo_dev']
             item['gap_dev'] = final_results[i]['gap_dev']
             item['offset_trend_dev'] = final_results[i]['offset_trend_dev']
+            item['cross_feature_disagree'] = final_results[i].get('cross_feature_disagree', 0.0)
             item['confidence'] = final_results[i]['confidence']
         
         # Print summary
@@ -485,14 +542,13 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             # Sort by index for easy sequential review
             manual_review.sort(key=lambda x: x[0])
             print(f"\n  🚩 Timestamps Needing Manual Review ({len(manual_review)} items):")
-            print(f"  {'Index':>5} | {'Mix':>5} | {'Conf':>6} | {'Feat Dist':>10} | {'RT Error':>10} | {'Gap Dev':>8} | {'Off Dev':>8} | {'T (Rec2)':>10}")
-            print("  " + "-" * 85)
+            print(f"  {'Index':>5} | {'Mix':>5} | {'Conf':>6} | {'Feat Dist':>10} | {'RT Error':>10} | {'XF Disagr':>10} | {'Gap Dev':>8} | {'T (Rec2)':>10}")
+            print("  " + "-" * 95)
             for idx, item_data in manual_review:
-                item = item_data # Unpack the tuple to get the dictionary
-                # Add safely getting gap_dev and offset_trend_dev
+                item = item_data
                 gap_dev = item.get('gap_dev', 0.0)
-                off_dev = item.get('offset_trend_dev', 0.0)
-                print(f"  {idx:5d} | {item['mix']:5d} | {item['confidence']:>6} | {item.get('feature_distance', 0.0):10.4f} | {item.get('rt_error', 0.0):9.4f}s | {gap_dev:7.3f}s | {off_dev:7.3f}s | {item['t']:10.3f}s")
+                xf_disagree = item.get('cross_feature_disagree', 0.0)
+                print(f"  {idx:5d} | {item['mix']:5d} | {item['confidence']:>6} | {item.get('feature_distance', 0.0):10.4f} | {item.get('rt_error', 0.0):9.4f}s | {xf_disagree:9.3f}s | {gap_dev:7.3f}s | {item['t']:10.3f}s")
             print("\n")
         # ========================================================================
         # Step 3: Ground Truth Comparison (Optional)
@@ -583,7 +639,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                             'rt_error': final_results[i].get('rt_error', 0.0),
                             'feat_dist': final_results[i].get('feature_distance', 0.0),
                             'gap_dev': final_results[i].get('gap_dev', 0.0),
-                            'offset_dev': final_results[i].get('offset_trend_dev', 0.0)
+                            'xf_disagree': final_results[i].get('cross_feature_disagree', 0.0)
                         })
                 else:
                     # Check for False Positive (Low Error but Flagged for Review)
@@ -647,10 +703,10 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                     print(f"\n  ⚠️  UNFLAGGED ERRORS (False Negatives): {len(false_negatives)}")
                     print(f"      Measurements with significant error (>15% and >0.05s) but marked HIGH confidence.")
                     print(f"      These were MISSED by the internal flagging logic.")
-                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Pred':>8} | {'GT':>8} | {'RT Err':>8} | {'FeatDst':>8} | {'GapDev':>8} | {'OffDev':>8}")
+                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Pred':>8} | {'GT':>8} | {'RT Err':>8} | {'FeatDst':>8} | {'XF Dis':>8} | {'GapDev':>8}")
                     print("  " + "-" * 110)
                     for fn in false_negatives:
-                        print(f"  {fn['index']:4d} | {fn['mix']:5d} | {fn['error']:8.3f}s | {fn['prop_err']*100:7.1f}% | {fn['t_pred']:8.3f}s | {fn['t_gt']:8.3f}s | {fn['rt_error']:8.3f} | {fn['feat_dist']:8.3f} | {fn['gap_dev']:8.3f} | {fn['offset_dev']:8.3f}")
+                        print(f"  {fn['index']:4d} | {fn['mix']:5d} | {fn['error']:8.3f}s | {fn['prop_err']*100:7.1f}% | {fn['t_pred']:8.3f}s | {fn['t_gt']:8.3f}s | {fn['rt_error']:8.3f} | {fn['feat_dist']:8.3f} | {fn['xf_disagree']:8.3f} | {fn['gap_dev']:8.3f}")
 
                 if false_positives:
                     print(f"\n  ⚠️  OVER-FLAGGED (False Positives): {len(false_positives)}")

@@ -392,6 +392,37 @@ class AudioSync:
 
         return features.T  # Return (frames, 26 * n_stack)
 
+    def extract_features_mfcc(self, y, hop_length, n_mfcc=20, n_stack=15):
+        """
+        Extract MFCC-based features for multi-feature DTW verification.
+        
+        MFCCs capture timbral spectral shape — genuinely independent from
+        chroma (pitch class). By running DTW with both feature sets and
+        comparing, we can detect ambiguous regions where the path is uncertain.
+        
+        Uses MFCCs 1-19 (coeff 0 is just loudness, not useful for matching
+        across different recordings/pianos).
+        """
+        # MFCCs: spectral envelope shape
+        mfcc = librosa.feature.mfcc(y=y, sr=self.sr, hop_length=hop_length, n_mfcc=n_mfcc)
+        # Skip coeff 0 (energy) — varies too much across recordings
+        mfcc = mfcc[1:]  # (n_mfcc-1, frames)
+        mfcc = librosa.util.normalize(mfcc, axis=0)
+        
+        # MFCC delta (temporal dynamics)
+        mfcc_delta = librosa.feature.delta(mfcc)
+        mfcc_delta = librosa.util.normalize(mfcc_delta, axis=0)
+        
+        # Ensure same length
+        min_len = min(mfcc.shape[1], mfcc_delta.shape[1])
+        features = np.vstack([mfcc[:, :min_len], mfcc_delta[:, :min_len]])
+        
+        # Stack memory for temporal context (same as chroma features)
+        if n_stack > 1:
+            features = librosa.feature.stack_memory(features, n_steps=n_stack, delay=1)
+        
+        return features.T  # (frames, dims)
+
     def run_hybrid_sync(self, f1, f2):
         """
         Memory-efficient DTW using dtaidistance C backend.
