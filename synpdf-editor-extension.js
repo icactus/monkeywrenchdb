@@ -959,10 +959,7 @@
     }
 
     function playMetronomeClick() {
-        if (!window.metronomeEnabled || !metronomeInitialized || !metronomeAudioContext) {
-            log('Metronome click blocked: enabled=' + window.metronomeEnabled + ' initialized=' + metronomeInitialized + ' ctx=' + !!metronomeAudioContext);
-            return;
-        }
+        if (!window.metronomeEnabled || !metronomeInitialized || !metronomeAudioContext) return;
 
         try {
             // Resume if suspended
@@ -985,9 +982,8 @@
             
             osc.start(metronomeAudioContext.currentTime);
             osc.stop(metronomeAudioContext.currentTime + 0.05);
-            log('Click played');
         } catch (e) {
-            log('Click error: ' + e.message);
+            // Ignore audio errors
         }
     }
 
@@ -1000,16 +996,11 @@
         const originalTime2x = window.msc_wz$$module$synpdf.time2x;
         
         window.msc_wz$$module$synpdf.time2x = function(t) {
-            // Debug: log every call
-            if (window.metronomeEnabled) {
-                log('time2x called with t=' + t + ', demix=' + getDemix() + ', last=' + lastMetronomeDemix);
-            }
             originalTime2x.apply(this, arguments);
             
             if (window.metronomeEnabled) {
                 const currentDemix = getDemix();
                 if (currentDemix !== lastMetronomeDemix && currentDemix >= 0) {
-                    log('Metronome: demix changed from ' + lastMetronomeDemix + ' to ' + currentDemix);
                     playMetronomeClick();
                     lastMetronomeDemix = currentDemix;
                 }
