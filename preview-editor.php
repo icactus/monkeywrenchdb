@@ -754,7 +754,7 @@ $is_share_link = isset($_GET['share']);
             });
         }
     </script>
-    <script src="synpdf-editor-extension.js?v=10"></script>
+    <script src="synpdf-editor-extension.js?v=11"></script>
 </body>
 
 </html>

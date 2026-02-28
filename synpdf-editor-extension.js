@@ -959,10 +959,16 @@
     }
 
     function playMetronomeClick() {
-        if (!window.metronomeEnabled || !metronomeInitialized || !metronomeAudioContext) return;
+        if (!window.metronomeEnabled) return;
+
+        // Ensure audio context is ready
+        if (!metronomeInitialized || !metronomeAudioContext) {
+            initMetronomeAudio();
+        }
+        if (!metronomeAudioContext) return;
 
         try {
-            // Resume if suspended
+            // Resume if suspended (can happen when pausing or opening devtools)
             if (metronomeAudioContext.state === 'suspended') {
                 metronomeAudioContext.resume();
             }
@@ -973,7 +979,7 @@
             osc.connect(gain);
             gain.connect(metronomeAudioContext.destination);
             
-            // Short click sound - louder
+            // Short click sound
             osc.frequency.value = 880;
             osc.type = 'square';
             
