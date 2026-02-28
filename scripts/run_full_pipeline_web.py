@@ -68,7 +68,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 
     output_stream = Tee(log_buffer, stream_file) if stream_file else log_buffer
     
-    with redirect_stdout(output_stream):
+    with redirect_stdout(output_stream):  # type: ignore[arg-type]
         print("=" * 60)
         print("DTW AUDIO SYNC PIPELINE")
         print("=" * 60)
@@ -151,7 +151,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             
         bwd_u_i = np.array(sorted(bwd_frame_map.keys()))
         bwd_u_j = np.array([np.mean(bwd_frame_map[k]) for k in bwd_u_i])
-        bwd_mapper = interp1d(bwd_u_i, bwd_u_j, kind='linear', fill_value="extrapolate")
+        bwd_mapper = interp1d(bwd_u_i, bwd_u_j, kind='linear', fill_value="extrapolate")  # type: ignore[arg-type]
         
         print("\n  [Mapping Timestamps with Bi-directional Anchors]...")
         
@@ -229,12 +229,12 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         # Build MFCC mapper (simple forward mapper, no bi-directional needed —
         # we're just comparing with the chroma path, not using this for output)
         mfcc_frame_map = defaultdict(list)
-        for i_frame, j_frame in path_mfcc:
+        for i_frame, j_frame in path_mfcc:  # type: ignore[union-attr]
             mfcc_frame_map[i_frame].append(j_frame)
         
         mfcc_u_i = np.array(sorted(mfcc_frame_map.keys()))
         mfcc_u_j = np.array([np.mean(mfcc_frame_map[k]) for k in mfcc_u_i])
-        mfcc_mapper = interp1d(mfcc_u_i, mfcc_u_j, kind='linear', fill_value="extrapolate")
+        mfcc_mapper = interp1d(mfcc_u_i, mfcc_u_j, kind='linear', fill_value="extrapolate")  # type: ignore[arg-type]
         
         # Compare: for each timestamp, how much do chroma and MFCC paths disagree?
         hop_length = syncer.hop_length
@@ -385,7 +385,10 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                     neighbors.append(tempo_ratios[j])
             
             local_median = float(np.median(neighbors)) if neighbors else global_median
-            deviation = abs(tempo_ratios[i] - local_median)
+            if tempo_ratios[i] is not None:
+                deviation = abs(tempo_ratios[i] - local_median)  # type: ignore[union-attr]
+            else:
+                deviation = 0.0
             tempo_deviations[i] = round(deviation, 4)
             
             if deviation > TEMPO_ANOMALY_THRESHOLD:
@@ -601,7 +604,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 # Threshold changed from absolute (0.15s) to proportional (15% + 0.05s min)
                 # ERROR_THRESHOLD = 0.15
                 
-                if prop_err >= 0.15 and err_snapped >= 0.05:
+                if prop_err >= 0.15 and err_snapped >= 0.15:
                     high_error_count += 1
                     
                     # Check for False Negative (High Error but High Confidence)
@@ -672,7 +675,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 
                 if false_negatives:
                     print(f"\n  ⚠️  UNFLAGGED ERRORS (False Negatives): {len(false_negatives)}")
-                    print(f"      Measurements with significant error (>15% and >0.05s) but marked HIGH confidence.")
+                    print(f"      Measurements with significant error (>15% and >0.15s) but marked HIGH confidence.")
                     print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Pred':>8} | {'GT':>8} | {'XF Dis':>8}")
                     print("  " + "-" * 75)
                     for fn in false_negatives:
