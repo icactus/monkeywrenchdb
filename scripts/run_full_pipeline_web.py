@@ -155,12 +155,11 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         
         print("\n  [Mapping Timestamps with Bi-directional Anchors]...")
         
-        refined_results_rel = syncer.map_timestamps(path, input_timestamps, y1, y2,
-                                                     y1_harmonic=y1_harmonic, y2_harmonic=y2_harmonic,
+        refined_results_rel = syncer.map_timestamps(path, input_timestamps, f1_coarse, f2_coarse,
                                                      bwd_mapper=bwd_mapper,
                                                      offset1=offset1)
         
-        # Cleanup large path and harmonics immediately
+        # Cleanup
         del path, y1_harmonic, y2_harmonic
         gc.collect()
         
@@ -423,17 +422,23 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         for i, item in enumerate(final_results):
             rt_err = rt_errors[i]
             feat_dist = item.get('feature_distance', 0.0)
-            gap = gap_deviations[i]
+            off_dev = float(offset_deviations[i])
             is_feature_anomaly = feature_anomalies[i]
-            refine_delta = item.get('refine_delta', 0.0)
             
             # LOW: Audio completely different OR DTW deeply confused
             if rt_err >= 0.45 or is_feature_anomaly:
                 confidence = "LOW"
-            elif abs(refine_delta) > 0.15 and feat_dist > 0.6:
+            # LOW: Point drifted significantly from overall alignment trend
+            # offset_trend_dev measures deviation from the median-filtered
+            # offset curve — high values mean THIS point diverged from its
+            # neighbors, which is a real DTW mistracking signal.
+            # (Unlike gap_dev, which just measures rubato and is always large.)
+            elif off_dev > 0.4:
                 confidence = "LOW"
             # MEDIUM: Moderate structural variance
             elif rt_err >= 0.20:
+                confidence = "MEDIUM"
+            elif off_dev > 0.25:
                 confidence = "MEDIUM"
             # HIGH: Stable DTW, decent audio match.
             else:
@@ -656,7 +661,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                     for fp in false_positives:
                         print(f"  {fp['index']:4d} | {fp['mix']:5d} | {fp['error']:8.3f}s | {fp['prop_err']*100:7.1f}% | {fp['conf']:>6}")
                 else:
-                    print(f"\n  ✅  Zero False Negatives! All high errors were correctly flagged as LOW/MEDIUM confidence.")
+                    print(f"\n  ✅  Zero Over-flagged! All flagged points have genuine errors.")
 
                 print(f"    (Final timestamp excluded from all stats above)")
 

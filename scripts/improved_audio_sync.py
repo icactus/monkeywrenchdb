@@ -1,4 +1,5 @@
 import os
+import subprocess
 import numpy as np
 import librosa
 import yt_dlp
@@ -91,70 +92,114 @@ def _micro_refine_core(y1_slice, y2_slice, t1_local_sec, t2_est_local_sec, y1_st
 
 def _local_refine_core(f1, f2, t1_sec, t2_est_sec, window_sec, local_hop, sr):
     """
-    Core static logic for local refinement (no self, no side effects).
+    Refine a single timestamp using rigid sliding-window cross-correlation.
+    
+    Design for rubato-heavy music:
+    - SHORT template (±0.5s): Rubato stretches inter-note timing. A ±2s
+      template encompasses a full phrase, which is shaped differently in each
+      performance. A ±0.5s window covers ~1 beat — too short for rubato to
+      distort meaningfully.
+    - TIGHT search (±0.2s): The coarse DTW at ~93ms resolution only needs
+      sub-frame corrections. Searching ±0.2s prevents the xcorr from
+      "discovering" a wrong match further away.
+    - CONFIDENCE GATE: Only accept the shift if the peak is clearly dominant
+      (peak/second_peak > 1.15). Otherwise, trust the coarse estimate.
+    
+    Args:
+        f1, f2: High-res feature arrays (frames, dims)
+        t1_sec: Timestamp in rec1 (seconds)
+        t2_est_sec: Coarse DTW estimate for rec2 (seconds)
+        window_sec: IGNORED (kept for API compat). Template uses TEMPLATE_HALF_SEC.
+        local_hop: Hop length of the high-res features
+        sr: Sample rate
+        
+    Returns:
+        (t2_refined, feature_distance)
     """
+    frame_rate = sr / local_hop
     
-    local_frame_rate = sr / local_hop
-    win_frames = int(window_sec * local_frame_rate)
+    # --- Template: short window around t1 in rec1 ---
+    # ±0.5s ≈ 1 beat at ♩=60. Short enough to survive rubato intact.
+    TEMPLATE_HALF_SEC = 0.5
+    t1_frame = int(t1_sec * frame_rate)
+    tmpl_half = int(TEMPLATE_HALF_SEC * frame_rate)
+    tmpl_start = max(0, t1_frame - tmpl_half)
+    tmpl_end = min(len(f1), t1_frame + tmpl_half)
+    template = f1[tmpl_start:tmpl_end]
     
-    # Convert timestamps to high-res frame indices
-    t1_frame = int(t1_sec * local_frame_rate)
-    t2_frame = int(t2_est_sec * local_frame_rate)
+    # --- Search region: tight margin around coarse estimate in rec2 ---
+    # Coarse DTW resolution ~93ms, so ±0.2s covers the quantization error
+    # plus a small margin. Any larger and we start finding wrong matches.
+    SEARCH_MARGIN_SEC = 0.2
+    t2_frame = int(t2_est_sec * frame_rate)
+    search_half = int((TEMPLATE_HALF_SEC + SEARCH_MARGIN_SEC) * frame_rate)
+    search_start = max(0, t2_frame - search_half)
+    search_end = min(len(f2), t2_frame + search_half)
+    search_region = f2[search_start:search_end]
     
-    # Extract windows (clamped to array boundaries)
-    start1 = max(0, t1_frame - win_frames)
-    end1_idx = min(len(f1), t1_frame + win_frames)
-    start2 = max(0, t2_frame - win_frames)
-    end2_idx = min(len(f2), t2_frame + win_frames)
+    # Need enough frames
+    tmpl_len = len(template)
+    if tmpl_len < 5 or len(search_region) < tmpl_len:
+        return t2_est_sec, 1.0
     
-    seg1 = f1[start1:end1_idx]
-    seg2 = f2[start2:end2_idx]
+    num_positions = len(search_region) - tmpl_len + 1
+    if num_positions <= 1:
+        # Only one position = no meaningful search, keep coarse
+        return t2_est_sec, 1.0
     
-    # Need minimum frames for meaningful DTW
-    if len(seg1) < 5 or len(seg2) < 5:
-        return t2_est_sec, 1.0  # Return high distance if failed
+    # Flatten template for efficient dot product
+    tmpl_flat = template.flatten()
+    tmpl_norm = np.linalg.norm(tmpl_flat)
+    if tmpl_norm < 1e-8:
+        return t2_est_sec, 1.0
+    tmpl_flat = tmpl_flat / tmpl_norm
     
-    # Run local DTW (small matrix, no window constraint needed)
-    # Use dtaidistance fast C implementation for small matrices
-    from dtaidistance import dtw_ndim
-    f1_c = np.ascontiguousarray(seg1, dtype=np.float64)
-    f2_c = np.ascontiguousarray(seg2, dtype=np.float64)
+    # Sliding-window cosine similarity
+    similarities = np.zeros(num_positions)
+    for p in range(num_positions):
+        win = search_region[p:p + tmpl_len].flatten()
+        win_norm = np.linalg.norm(win)
+        if win_norm < 1e-8:
+            similarities[p] = 0.0
+        else:
+            similarities[p] = np.dot(tmpl_flat, win / win_norm)
     
-    local_path = dtw_ndim.warping_path(f1_c, f2_c, use_c=True)
+    # Find primary peak
+    peak_idx = np.argmax(similarities)
+    peak_val = float(similarities[peak_idx])
     
-    # Find where t1 maps in the local path
-    t1_local_frame = t1_frame - start1
-    t1_local_frame = max(0, min(t1_local_frame, len(seg1) - 1))
+    # --- Confidence gate ---
+    # Find second-highest peak (at least 50ms away from primary)
+    min_sep_frames = max(1, int(0.05 * frame_rate))
+    mask = np.ones(num_positions, dtype=bool)
+    mask[max(0, peak_idx - min_sep_frames):min(num_positions, peak_idx + min_sep_frames + 1)] = False
     
-    # Find the path entry closest to t1_local_frame in the rec1 axis
-    path_arr = np.array(local_path)
-    mask = path_arr[:, 0] == t1_local_frame
     if mask.any():
-        t2_local_frame = int(np.mean(path_arr[mask, 1]))
+        second_peak_val = float(np.max(similarities[mask]))
     else:
-        diffs = np.abs(path_arr[:, 0] - t1_local_frame)
-        nearest_idx = np.argmin(diffs)
-        t2_local_frame = int(path_arr[nearest_idx, 1])
+        second_peak_val = 0.0
     
-    # Safe bounds check
-    t2_local_frame = max(0, min(t2_local_frame, len(seg2) - 1))
+    confidence_ratio = peak_val / max(second_peak_val, 1e-8)
     
-    # Convert back to absolute seconds
-    t2_refined = (start2 + t2_local_frame) / local_frame_rate
+    # Only accept if the peak is clearly dominant.
+    # With a ±0.5s template, similar regions will all score ~0.95+.
+    # A ratio of 1.15 means the peak is 15% better than the next candidate.
+    MIN_CONFIDENCE_RATIO = 1.15
     
-    # THE BIG WIN: Calculate actual feature distance (Cosine) at the matched frames
-    u = seg1[t1_local_frame]
-    v = seg2[t2_local_frame]
-    u_norm = np.linalg.norm(u)
-    v_norm = np.linalg.norm(v)
+    if confidence_ratio < MIN_CONFIDENCE_RATIO:
+        # Not confident — trust the coarse estimate
+        # Still compute feature distance at the coarse position for diagnostics
+        coarse_local_frame = t2_frame - search_start
+        coarse_local_frame = max(0, min(coarse_local_frame, num_positions - 1))
+        feature_distance = float(1.0 - similarities[coarse_local_frame]) if coarse_local_frame < num_positions else 1.0
+        return t2_est_sec, feature_distance
     
-    if u_norm < 1e-8 or v_norm < 1e-8:
-        feature_distance = 1.0
-    else:
-        cos_sim = np.dot(u, v) / (u_norm * v_norm)
-        # Handle floating point inaccuracies
-        cos_sim = max(-1.0, min(1.0, cos_sim))
-        feature_distance = float(1.0 - cos_sim)
+    # Convert peak position to absolute time
+    tmpl_center_offset = t1_frame - tmpl_start
+    matched_frame = search_start + peak_idx + tmpl_center_offset
+    t2_refined = matched_frame / frame_rate
+    
+    feature_distance = float(1.0 - peak_val)
     
     return t2_refined, feature_distance
 
@@ -170,15 +215,11 @@ def _worker_task(args):
     # Stage 2: Local Refinement (11ms resolution)
     t2_local_refined, feature_dist = _local_refine_core(f1_mmap, f2_mmap, t1, t2_est, win, hop, sr)
     
-    # Stage 3: Ultra-High-Res Micro-Refinement (1.5ms resolution)
-    t2_final = t2_local_refined
-    micro_dist = feature_dist
-    
-    if y1_slice is not None and len(y1_slice) > 0 and len(y2_slice) > 0:
-        # Extract the micro-slice of time
-        t2_final, _ = _micro_refine_core(y1_slice, y2_slice, t1, t2_local_refined, y1_start_sec, y2_start_sec, sr)
+    # Micro-refinement DISABLED: compounds errors from local refinement in
+    # rubato-heavy music where the local DTW can converge on wrong patterns.
+    # The coarse+local pipeline is sufficient.
         
-    return t2_final, feature_dist
+    return t2_local_refined, feature_dist
 
 
 
@@ -219,15 +260,15 @@ class AudioSync:
     Uses Sakoe-Chiba band constraint for memory efficiency.
     """
     
-    def __init__(self, sr=22050, hop_length=2048, cache_dir="audio_cache"):
+    def __init__(self, sr=22050, hop_length=1024, cache_dir="audio_cache"):
         self.sr = sr
         self.hop_length = hop_length
         self.cache_dir = cache_dir
         self.frame_time = hop_length / sr  # ~46ms per frame @ 1024 hop
         
         # DTW Parameter Notes:
-        # - sr=22050, hop_length=1024 (~21.5Hz): Sweet spot for chroma-based DTW.
-        #   See agents.md for full experiment log of alternatives tested.
+        # - sr=22050, hop_length=1024 (~21.5Hz): Best resolution we can run
+        #   without excessive DTW computation time. Gives ~46ms frame accuracy.
         # - penalty=0.0: Crucial. Additive penalty in dtaidistance forces a linear path.
         #   normalized features (0.0-1.0) need 0.0 penalty to allow warping around fermatas.
         
@@ -258,6 +299,28 @@ class AudioSync:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([youtube_url])
         return output_path
+
+    def _ensure_wav(self, m4a_path):
+        """Convert m4a to wav if not already done. Returns wav path.
+        
+        wav files are natively supported by soundfile/librosa, avoiding the
+        audioread/ffmpeg pipe fallback which times out on large files (>1hr).
+        We also resample to self.sr and convert to mono here so librosa.load()
+        doesn't have to.
+        """
+        wav_path = m4a_path.rsplit('.', 1)[0] + '.wav'
+        if not os.path.exists(wav_path):
+            print(f"  Converting {m4a_path} → {wav_path}...")
+            subprocess.run([
+                'ffmpeg', '-i', m4a_path,
+                '-ar', str(self.sr), '-ac', '1',
+                '-sample_fmt', 's16',
+                wav_path, '-y'
+            ], capture_output=True, check=True)
+            print(f"  Conversion complete.")
+        else:
+            print(f"  [Cache hit] {wav_path}")
+        return wav_path
 
     def extract_features(self, y, hop_length, saliency_threshold=0.05, y_harmonic=None, n_stack=15):
         """
@@ -339,54 +402,38 @@ class AudioSync:
         from dtaidistance import dtw_ndim
         
         print(f"\n--- DTW Alignment (dtaidistance C backend) ---")
-        print(f"  Sample Rate: {self.sr} Hz")
+        print(f"  Sample Rate: {self.sr} Hz, Hop: {self.hop_length}")
         
-        # Resolution determined by __init__ (Hop 2048 @ 22050Hz ~ 10.7Hz)
+        frame_rate = self.sr / self.hop_length
         
-        # COARSE-TO-FINE STRATEGY (Optimization)
-        # We use a larger hop length (2048) to get ~10Hz resolution natively.
-        # This is better than Hop 1024 + Downsample 2 because it integrates
-        # all audio data (windowing) rather than discarding half (decimation).
-        
-        DOWNSAMPLE_FACTOR = 1
-        
-        # No downsampling (f_coarse is just f)
-        f1_coarse = f1
-        f2_coarse = f2
-        
-        frame_rate = self.sr / self.hop_length  # ~10.7 Hz
-        coarse_frame_rate = frame_rate
-        
-        print(f"  Coarse resolution: {len(f1_coarse)} x {len(f2_coarse)} frames (~{coarse_frame_rate:.1f}Hz)")
+        print(f"  Resolution: {len(f1)} x {len(f2)} frames (~{frame_rate:.1f}Hz, ~{self.hop_length/self.sr*1000:.0f}ms/frame)")
         
         # Sakoe-Chiba window: 30 seconds
         window_sec = 30.0
-        window_frames_coarse = int(window_sec * coarse_frame_rate)
+        window_frames = int(window_sec * frame_rate)
         
-        print(f"  Sakoe-Chiba window: {window_frames_coarse} coarse frames ({window_sec}s)")
-        print(f"  Computing DTW (dtaidistance C backend) on Native 10Hz features...")
+        print(f"  Sakoe-Chiba window: {window_frames} frames ({window_sec}s)")
+        print(f"  Computing DTW...")
         
         import time
         start = time.time()
         
         # Ensure contiguous float64 arrays for C backend
-        f1_c = np.ascontiguousarray(f1_coarse, dtype=np.float64)
-        f2_c = np.ascontiguousarray(f2_coarse, dtype=np.float64)
+        f1_c = np.ascontiguousarray(f1, dtype=np.float64)
+        f2_c = np.ascontiguousarray(f2, dtype=np.float64)
         
-        # Use dtw_ndim for multi-dimensional features
-        path_coarse = dtw_ndim.warping_path(
+        path = dtw_ndim.warping_path(
             f1_c, f2_c,
-            window=window_frames_coarse,
+            window=window_frames,
             penalty=0.0,  # Zero penalty to allow free warping
             use_c=True
         )
         
         elapsed = time.time() - start
-        print(f"  Coarse path length: {len(path_coarse)}")
+        print(f"  Path length: {len(path)}")
         print(f"  Computation time: {elapsed:.2f}s")
         
-        # Returns path directly (no upscaling needed)
-        return path_coarse
+        return path
 
     def local_refine(self, f1_hires, f2_hires, t1_sec, t2_est_sec, 
                       window_sec=2.0, local_hop=256):
@@ -566,14 +613,14 @@ class AudioSync:
 
 
 
-    def map_timestamps(self, coarse_path, manual_timestamps_list, y1, y2, y1_harmonic=None, y2_harmonic=None, bwd_mapper=None, offset1=0):
+    def map_timestamps(self, coarse_path, manual_timestamps_list, f1_coarse, f2_coarse, bwd_mapper=None, offset1=0):
         """
-        Maps timestamps using Global Path + Multi-Scale Local Refinement.
+        Maps timestamps using the Global DTW Path + Bi-directional Anchoring.
         
-        Process:
-        1. Global DTW path -> Coarse estimate
-        2. Local Refinement (1024-hop) -> High-res structural anchoring
-        3. Micro-Refinement (32-hop) -> Sub-frame acoustic texture matching
+        No local refinement — the coarse DTW with bi-directional anchoring
+        is globally consistent and gives the best results for rubato-heavy
+        music. Local refinement (DTW or cross-correlation) systematically
+        degrades accuracy by converging on wrong local minima.
         
         TERMINOLOGY NOTE:
         - mix: The measure number (e.g. 100). NOT UNIQUE if there are repeats.
@@ -581,17 +628,10 @@ class AudioSync:
           ALWAYS use the index/detix for alignment verification and mapping
           to avoid ambiguity during repeated sections.
         """
-        print(f"\\n--- Mapping Timestamps (Global + Multi-Scale Refinement) ---")
+        print(f"\n--- Mapping Timestamps (Global DTW + Bi-directional Anchors) ---")
         
-        # Pre-compute high-res features ONCE for both recordings
-        local_hop = 1024
         import time
         t_start = time.time()
-        print("  [Pre-computing high-res features for local refinement]")
-        f1_hires, _ = self.extract_features_hires(y1, local_hop=local_hop, y_harmonic=y1_harmonic)
-        f2_hires, _ = self.extract_features_hires(y2, local_hop=local_hop, y_harmonic=y2_harmonic)
-        
-        print(f"  Feature computation: {time.time() - t_start:.1f}s")
         
         # Create interpolation function from global path
         # Average all rec2 frames mapped to each rec1 frame (many-to-one DTW)
@@ -609,7 +649,6 @@ class AudioSync:
         
         # --- BI-DIRECTIONAL ANCHOR INTERPOLATION ---
         if bwd_mapper is not None:
-            import time
             print("  [Computing Bi-directional Anchors]")
             interp_start = time.time()
             
@@ -617,211 +656,83 @@ class AudioSync:
             MAX_RT_ERR_FRAMES = 1.0  # Allow half-frame rounding in both directions
             
             for idx, i_frame in enumerate(u_i):
-                # 1. Forward map
                 j_frame_fwd = u_j_avg[idx]
-                
-                # 2. Backward map
-                # Ensure j_frame_fwd is within the domain of bwd_mapper to avoid extrapolation issues
                 try:
                     i_frame_bwd = bwd_mapper(j_frame_fwd)
-                    
-                    # 3. Calculate Round Trip Error in frames
                     rt_err_frames = abs(i_frame - i_frame_bwd)
-                    
                     if rt_err_frames <= MAX_RT_ERR_FRAMES:
                         anchor_indices.append(idx)
                 except ValueError:
-                    # Extrapolation error out of bounds
                     pass
             
-            # Ensure we have at least some anchors
             if len(anchor_indices) < 2:
                 print(f"  Warning: Found too few true anchors ({len(anchor_indices)}). Falling back to standard mapper.")
                 anchor_u_i = u_i
                 anchor_u_j = u_j_avg
             else:
-                print(f"  Anchor Analysis: Found {len(anchor_indices)} absolute physics anchors out of {len(u_i)} points.")
+                print(f"  Anchor Analysis: Found {len(anchor_indices)} anchors out of {len(u_i)} points.")
                 anchor_u_i = u_i[anchor_indices]
                 anchor_u_j = u_j_avg[anchor_indices]
                 
-            # Create the extremely stable Anchor Mapper
-            # We use kind='linear' to bridge any flat-valley gaps between the anchors
-            anchor_mapper_func = interp1d(anchor_u_i, anchor_u_j, kind='linear', fill_value="extrapolate")
-            
-            # Override local_coarse_mapper alias for use below
-            local_coarse_mapper = anchor_mapper_func
+            mapper = interp1d(anchor_u_i, anchor_u_j, kind='linear', fill_value="extrapolate")
             print(f"  Bi-directional anchor compute: {time.time() - interp_start:.2f}s")
         else:
             print("  Warning: bwd_mapper not provided. Using raw coarse mapper.")
-            local_coarse_mapper = coarse_mapper
+            mapper = coarse_mapper
         
+        # --- Map each timestamp and compute feature distance ---
         results = []
-        mapped_count = 0
-        snapped_count = 0
-        eligible_for_snap = 0
-        
-        SNAP_THRESHOLD_REC1 = 0.10  # Only snap if Rec1 t is within 100ms of a real onset
-        SNAP_THRESHOLD_REC2 = 0.15  # Search radius in Rec2
-        
-        
-        # Prepare memmap files for parallel workers to avoid RAM duplication
-        import tempfile
-        import os
-        
-        # Create temp files
-        fd1, f1_path = tempfile.mkstemp(suffix='.dat')
-        fd2, f2_path = tempfile.mkstemp(suffix='.dat')
-        os.close(fd1)
-        os.close(fd2)
-        
-        # Write data to memmap files
-        f1_shape = f1_hires.shape
-        f2_shape = f2_hires.shape
-        
-        # Create writeable memmap
-        fp1 = np.memmap(f1_path, dtype='float32', mode='w+', shape=f1_shape)
-        fp1[:] = f1_hires[:]
-        fp1.flush()
-        del fp1  # close write handle
-        
-        fp2 = np.memmap(f2_path, dtype='float32', mode='w+', shape=f2_shape)
-        fp2[:] = f2_hires[:]
-        fp2.flush()
-        del fp2 # close write handle
-        
-        
-        # Prepare parallel tasks
-        tasks = []
-        for i, record in enumerate(manual_timestamps_list):
-            t1 = record['t']
-            
-            # Map using global path (coarse estimate)
-            # t1 is global time. y1 is cropped starting at offset1.
-            # Convert t1 to relative time within y1 buffer.
-            t1_rel = t1 - offset1
-            
-            # If t1 < offset1, we can't map it properly to this buffer. Clamp to 0?
-            if t1_rel < 0:
-                 # print(f"Warning: Timestamp {t1} is before buffer start {offset1}")
-                 t1_rel = 0
-                 
-            t1_frame = int(t1_rel * self.sr / self.hop_length)
-            
-            # Use the BI-DIRECTIONAL ANCHOR MAPPER instead of the raw coarse mapper
-            t2_frame_est = local_coarse_mapper(t1_frame)
-            t2_coarse = float(t2_frame_est * self.hop_length / self.sr)
-            
-            # Store coarse for later
-            record['_t2_coarse'] = t2_coarse
-            
-            # Task: (t1, t2_coarse, window, hop, sr, shapes, paths)
-            # Optimized Window: 0.3s (Coarse path is accurate, search only local error)
-            
-            # --- MICRO-REFINE SLICE EXTRACTION ---
-            # Extract a 4-second total window (2s each way) for high-res snapping
-            micro_win_sec = 2.0
-            y1_start_sec = max(0, t1_rel - micro_win_sec)
-            y1_start_frame = int(y1_start_sec * self.sr)
-            y1_end_frame = int(min(len(y1), (t1_rel + micro_win_sec) * self.sr))
-            y1_slice = y1[y1_start_frame:y1_end_frame]
-            
-            y2_start_sec = max(0, t2_coarse - micro_win_sec)
-            y2_start_frame = int(y2_start_sec * self.sr)
-            y2_end_frame = int(min(len(y2), (t2_coarse + micro_win_sec) * self.sr))
-            y2_slice = y2[y2_start_frame:y2_end_frame]
-            
-            tasks.append((t1, t2_coarse, 2.0, local_hop, self.sr, f1_shape, f1_path, f2_shape, f2_path, y1_slice, y2_slice, y1_start_sec, y2_start_sec))
-            
-        # Run Parallel Refinement
-        t_refine_start = time.time()
-        total_tasks = len(tasks)
-        print(f"  [Running Parallel Refinement on {multiprocessing.cpu_count()} cores using memmap]")
-        print(f"  [Refining {total_tasks} timestamps...]")
-        
-        try:
-            # Use process pool with SPAWN context to avoid memory duplication
-            # This ensures workers start fresh (~50MB) instead of cloning parent (~6GB)
-            ctx = multiprocessing.get_context('spawn')
-            with concurrent.futures.ProcessPoolExecutor(mp_context=ctx) as executor:
-                # Submit all tasks and track by index for ordered results
-                future_to_idx = {}
-                for idx, task in enumerate(tasks):
-                    future = executor.submit(_worker_task, task)
-                    future_to_idx[future] = idx
-                
-                # Collect results in order, with progress reporting
-                refined_results = [None] * total_tasks
-                completed = 0
-                last_report_pct = -1
-                
-                for future in concurrent.futures.as_completed(future_to_idx):
-                    idx = future_to_idx[future]
-                    refined_results[idx] = future.result()
-                    completed += 1
-                    
-                    # Report progress every 5% or every 10 items for small sets
-                    pct = int(100 * completed / total_tasks)
-                    elapsed = time.time() - t_refine_start
-                    
-                    report_interval = max(1, total_tasks // 20)  # ~5% intervals
-                    if completed % report_interval == 0 or completed == total_tasks:
-                        if pct != last_report_pct or completed == total_tasks:
-                            rate = completed / max(elapsed, 0.001)
-                            remaining = (total_tasks - completed) / max(rate, 0.001)
-                            mins_left = int(remaining // 60)
-                            secs_left = int(remaining % 60)
-                            print(f"  [{completed}/{total_tasks}] {pct}% — {elapsed:.0f}s elapsed, ~{mins_left}m{secs_left:02d}s remaining")
-                            last_report_pct = pct
-        finally:
-            # Cleanup temp files
-            if os.path.exists(f1_path): os.remove(f1_path)
-            if os.path.exists(f2_path): os.remove(f2_path)
-            # Explicit GC
-            gc.collect()
-            
         for i, record in enumerate(manual_timestamps_list):
             t1 = record['t']
             mix_num = record.get('mix', 0)
-            t2_coarse = record['_t2_coarse']
-            t2_refined, feature_dist = refined_results[i]
-
-
+            
+            # Convert t1 to relative time within the audio buffer
+            t1_rel = t1 - offset1
+            if t1_rel < 0:
+                t1_rel = 0
                 
-            # Diagnostic deltas for per-stage error analysis
-            refine_delta = round(t2_refined - t2_coarse, 6)
+            t1_frame = int(t1_rel * self.sr / self.hop_length)
+            
+            # Map via anchor mapper
+            t2_frame_est = mapper(t1_frame)
+            t2_mapped = float(t2_frame_est * self.hop_length / self.sr)
+            
+            # Compute feature distance at mapped position (for confidence scoring)
+            t1_frame_idx = max(0, min(int(t1_frame), len(f1_coarse) - 1))
+            t2_frame_idx = max(0, min(int(t2_frame_est), len(f2_coarse) - 1))
+            
+            u = f1_coarse[t1_frame_idx]
+            v = f2_coarse[t2_frame_idx]
+            u_norm = np.linalg.norm(u)
+            v_norm = np.linalg.norm(v)
+            
+            if u_norm < 1e-8 or v_norm < 1e-8:
+                feature_dist = 1.0
+            else:
+                cos_sim = np.dot(u, v) / (u_norm * v_norm)
+                cos_sim = max(-1.0, min(1.0, cos_sim))
+                feature_dist = float(1.0 - cos_sim)
             
             results.append({
                 "index": i,
                 "mix": mix_num,
-                "t": t2_refined,
-                "t_coarse": round(t2_coarse, 6),
-                "t_refined": round(t2_refined, 6),
-                "refine_delta": refine_delta,
+                "t": t2_mapped,
+                "t_coarse": round(t2_mapped, 6),
+                "t_refined": round(t2_mapped, 6),
+                "refine_delta": 0.0,
                 "feature_distance": round(feature_dist, 4)
             })
-            mapped_count += 1
         
-        refine_elapsed = time.time() - t_refine_start
-        print(f"  Mapped {mapped_count} timestamps")
-        print(f"  Total Time: {refine_elapsed:.1f}s ({refine_elapsed/max(mapped_count,1)*1000:.0f}ms/point)")
-        
-        # ----- REFINEMENT DAMAGE GUARD (DISABLED) -----
-        # Previously rejected refinements that moved away from the median coarse trend.
-        # DISABLED: The coarse trend is corrupted by fermatas, causing the guard to
-        # revert CORRECT refinements. Trust the DTW refinement instead.
-        refine_kept = len([r for r in results if abs(r['t_refined'] - r['t_coarse']) >= 0.001])
-        refine_reverted = 0
-        print(f"  Refinement Damage Guard: DISABLED (all {refine_kept} refinements kept)")
-        
+        elapsed = time.time() - t_start
+        print(f"  Mapped {len(results)} timestamps")
+        print(f"  Total Time: {elapsed:.1f}s ({elapsed/max(len(results),1)*1000:.0f}ms/point)")
         
         # ----- MONOTONICITY ENFORCEMENT -----
-        # Ensure timestamps are strictly increasing after smoothing
+        # Ensure timestamps are strictly increasing
         mono_fixes = 0
         for i in range(1, len(results)):
             if results[i]['t'] <= results[i-1]['t']:
-                # Clamp to midpoint between prev and next valid neighbor
                 prev_t = results[i-1]['t']
-                # Find next valid (higher) timestamp
                 next_t = None
                 for k in range(i+1, len(results)):
                     if results[k]['t'] > prev_t:
@@ -830,17 +741,12 @@ class AudioSync:
                 if next_t is not None:
                     results[i]['t'] = round((prev_t + next_t) / 2, 6)
                 else:
-                    # Last resort: add a small epsilon
                     results[i]['t'] = round(prev_t + 0.001, 6)
                 results[i]['smoothed'] = True
                 mono_fixes += 1
         
         if mono_fixes > 0:
             print(f"  Monotonicity: fixed {mono_fixes} inversions")
-            
-        # Explicit cleanup of high-res features
-        del f1_hires, f2_hires, coarse_path
-        gc.collect()
         
         return results
 
@@ -944,6 +850,11 @@ class AudioSync:
             self.download_audio(url2, id2)
         else:
             print(f"  [Cache hit] {f2_path}")
+        
+        # Convert m4a to wav (soundfile can read wav natively, avoiding
+        # audioread/ffmpeg pipe timeout on large files)
+        f1_wav = self._ensure_wav(f1_path)
+        f2_wav = self._ensure_wav(f2_path)
             
         print(f"\n[2/3] Loading audio...")
         
@@ -960,8 +871,8 @@ class AudioSync:
         # 3. Load y1_harmonic/y2_harmonic from cache.
         
         hpss_inputs = [
-            (id1, f1_path, offset1, duration1),
-            (id2, f2_path, offset2, duration2)
+            (id1, f1_wav, offset1, duration1),
+            (id2, f2_wav, offset2, duration2)
         ]
         
         # This will block until HPSS is done and loaded
@@ -972,8 +883,8 @@ class AudioSync:
         
         # Load raw audio (fast compared to HPSS)
         print("  Loading raw audio waveforms...")
-        y1, sr = librosa.load(f1_path, sr=self.sr, offset=offset1, duration=duration1)
-        y2, sr = librosa.load(f2_path, sr=self.sr, offset=offset2, duration=duration2)
+        y1, sr = librosa.load(f1_wav, sr=self.sr, offset=offset1, duration=duration1)
+        y2, sr = librosa.load(f2_wav, sr=self.sr, offset=offset2, duration=duration2)
         
         print(f"  Recording 1: {len(y1)/sr:.1f}s (offset={offset1}s, end={end1 or 'full'})")
         print(f"  Recording 2: {len(y2)/sr:.1f}s (offset={offset2}s, end={end2 or 'full'})")
