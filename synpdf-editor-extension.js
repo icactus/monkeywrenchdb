@@ -860,6 +860,143 @@
         return "";
     }
 
+    // --- METRONOME CLICK ---
+    
+    // State
+    window.metronomeEnabled = false;
+    window.metronomeVolume = 0.5;
+    let metronomeAudioContext = null;
+    let lastMetronomeDemix = -1;
+    let metronomeInitialized = false;
+
+    function initMetronome() {
+        // Check for preview mode
+        const previewIndicator = document.querySelector('div[style*="PREVIEW MODE"]');
+        if (!previewIndicator) {
+            // Not in preview mode, don't inject metronome
+            return;
+        }
+
+        // Create container next to PREVIEW MODE indicator
+        const container = document.createElement('div');
+        container.id = 'metronome-controls';
+        container.style.cssText = 'position:fixed;top:10px;right:10px;background:#333;color:white;padding:8px 12px;border-radius:4px;z-index:10000;display:flex;align-items:center;gap:8px;font-size:12px;';
+
+        // Toggle checkbox
+        const toggle = document.createElement('input');
+        toggle.type = 'checkbox';
+        toggle.id = 'metronome-toggle';
+        toggle.checked = window.metronomeEnabled;
+        toggle.style.margin = '0';
+        toggle.onchange = (e) => {
+            window.metronomeEnabled = e.target.checked;
+            lastMetronomeDemix = -1; // Reset to avoid double-click on toggle
+            // Initialize audio context on first enable
+            if (window.metronomeEnabled && !metronomeInitialized) {
+                initMetronomeAudio();
+            }
+        };
+
+        const toggleLabel = document.createElement('label');
+        toggleLabel.htmlFor = 'metronome-toggle';
+        toggleLabel.innerHTML = '🔔 Click';
+        toggleLabel.style.margin = '0';
+        toggleLabel.style.cursor = 'pointer';
+
+        // Volume slider
+        const volumeLabel = document.createElement('span');
+        volumeLabel.innerHTML = 'Vol:';
+
+        const volumeSlider = document.createElement('input');
+        volumeSlider.type = 'range';
+        volumeSlider.min = '0';
+        volumeSlider.max = '100';
+        volumeSlider.value = window.metronomeVolume * 100;
+        volumeSlider.style.width = '60px';
+        volumeSlider.oninput = (e) => {
+            window.metronomeVolume = e.target.value / 100;
+            try {
+                localStorage.setItem('metronomeVolume', window.metronomeVolume);
+            } catch (e) { }
+        };
+
+        // Load saved volume
+        try {
+            const saved = localStorage.getItem('metronomeVolume');
+            if (saved !== null) {
+                window.metronomeVolume = parseFloat(saved);
+                volumeSlider.value = window.metronomeVolume * 100;
+            }
+        } catch (e) { }
+
+        container.appendChild(toggle);
+        container.appendChild(toggleLabel);
+        container.appendChild(volumeLabel);
+        container.appendChild(volumeSlider);
+
+        // Insert after PREVIEW MODE indicator
+        previewIndicator.insertAdjacentElement('afterend', container);
+        
+        log('Metronome controls injected');
+    }
+
+    function initMetronomeAudio() {
+        try {
+            metronomeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+            metronomeInitialized = true;
+            log('Metronome audio context initialized');
+        } catch (e) {
+            log('Failed to init metronome audio: ' + e.message);
+        }
+    }
+
+    function playMetronomeClick() {
+        if (!window.metronomeEnabled || !metronomeInitialized || !metronomeAudioContext) return;
+
+        try {
+            const osc = metronomeAudioContext.createOscillator();
+            const gain = metronomeAudioContext.createGain();
+            
+            osc.connect(gain);
+            gain.connect(metronomeAudioContext.destination);
+            
+            // Short click sound
+            osc.frequency.value = 1000;
+            osc.type = 'sine';
+            
+            gain.gain.setValueAtTime(window.metronomeVolume * 0.3, metronomeAudioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, metronomeAudioContext.currentTime + 0.05);
+            
+            osc.start(metronomeAudioContext.currentTime);
+            osc.stop(metronomeAudioContext.currentTime + 0.05);
+        } catch (e) {
+            // Ignore audio errors
+        }
+    }
+
+    function installMetronomeHook() {
+        if (!window.msc_wz$$module$synpdf) {
+            setTimeout(installMetronomeHook, 500);
+            return;
+        }
+
+        const originalTime2x = window.msc_wz$$module$synpdf.time2x;
+        
+        window.msc_wz$$module$synpdf.time2x = function(t) {
+            originalTime2x.apply(this, arguments);
+            
+            if (window.metronomeEnabled) {
+                const currentDemix = getDemix();
+                if (currentDemix !== lastMetronomeDemix && currentDemix >= 0) {
+                    playMetronomeClick();
+                    lastMetronomeDemix = currentDemix;
+                }
+            }
+        };
+
+        log('Metronome hook installed');
+    }
+
     // --- INITIALIZATION ---
 
     // Wait for DOM and Scripts
@@ -869,6 +1006,12 @@
             log('Initializing extension...');
             injectEditButton();
             initQuickFix();
+            
+            // Initialize metronome after a delay to ensure PREVIEW MODE indicator exists
+            setTimeout(() => {
+                initMetronome();
+                installMetronomeHook();
+            }, 1500);
         }, 1000);
     });
 

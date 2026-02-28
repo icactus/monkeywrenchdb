@@ -473,47 +473,33 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         # ================================================================
         # Combined Confidence Assignment
         # ================================================================
-        # PRIMARY: Round Trip Error (The most reliable metric now that Feature Stacking is active)
-        # SECONDARY: Extreme Local Feature Distance
-        # We no longer punish valid musical interpretation (Gap/Tempo/Offset deviation).
+        # PRIMARY: Cross-Feature Disagreement (Chroma vs MFCC DTW)
+        # This is the only independent verification signal - MFCC and Chroma use
+        # fundamentally different features (timbral shape vs pitch class).
+        # RT Error is DISABLED - forward/backward paths agree on wrong answers.
+        # Feature Distance is DISABLED - confirms DTW found similar audio, not correct audio.
         
         for i, item in enumerate(final_results):
-            rt_err = rt_errors[i]
-            feat_dist = item.get('feature_distance', 0.0)
             disagree = item.get('cross_feature_disagree', 0.0)
-            is_feature_anomaly = feature_anomalies[i]
+            is_low_energy = item.get('low_energy', False)
             
-            # LOW: Audio completely different OR DTW deeply confused
-            if rt_err >= 0.45 or is_feature_anomaly:
+            # LOW: Strong disagreement or low energy region
+            if disagree > 0.6 or is_low_energy:
                 confidence = "LOW"
-            # LOW: Chroma and MFCC paths disagree significantly.
-            # This is the strongest signal — two independent feature sets
-            # found different alignments, meaning the region is ambiguous.
-            elif disagree > 1.0:
-                confidence = "LOW"
-            # MEDIUM: Moderate disagreement or structural variance
-            elif rt_err >= 0.20:
+            # MEDIUM: Moderate disagreement
+            elif disagree > 0.3:
                 confidence = "MEDIUM"
-            elif disagree > 0.5:
-                confidence = "MEDIUM"
-            # HIGH: Both feature sets agree, stable DTW.
+            # HIGH: Both feature sets agree
             else:
                 confidence = "HIGH"
 
-            item['rt_error'] = round(rt_err, 4)
-            item['tempo_dev'] = tempo_deviations[i]
-            item['gap_dev'] = gap_deviations[i]
-            item['offset_trend_dev'] = round(offset_deviations[i], 4)
             item['confidence'] = confidence
 
         
         # Mirror onto zero-based results
         for i, item in enumerate(zero_based_results):
-            item['rt_error'] = final_results[i]['rt_error']
-            item['tempo_dev'] = final_results[i]['tempo_dev']
-            item['gap_dev'] = final_results[i]['gap_dev']
-            item['offset_trend_dev'] = final_results[i]['offset_trend_dev']
             item['cross_feature_disagree'] = final_results[i].get('cross_feature_disagree', 0.0)
+            item['low_energy'] = final_results[i].get('low_energy', False)
             item['confidence'] = final_results[i]['confidence']
         
         # Print summary
@@ -523,17 +509,8 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         
         print(f"\n  [CONFIDENCE SUMMARY]")
         print(f"    HIGH:   {high_count}")
-        print(f"    MEDIUM: {med_count} (high RT error — worth checking)")
-        print(f"    LOW:    {low_count} (tempo/gap anomaly — likely needs correction)")
-        
-        if rt_errors:
-            # Exclude final timestamp from stats (often marks end-of-video, not precise audio)
-            rt_errors_trimmed = rt_errors[:-1] if len(rt_errors) > 1 else rt_errors
-            mean_rt = sum(rt_errors_trimmed) / len(rt_errors_trimmed)
-            max_rt = max(rt_errors_trimmed)
-            max_rt_idx = rt_errors_trimmed.index(max_rt)
-            print(f"    Mean RT Error: {mean_rt:.4f}s (excluding final timestamp)")
-            print(f"    Max RT Error:  {max_rt:.4f}s at index {max_rt_idx} (mix={final_results[max_rt_idx]['mix']})")
+        print(f"    MEDIUM: {med_count} (XF disagreement 0.3-0.6s)")
+        print(f"    LOW:    {low_count} (XF disagreement >0.6s or low energy)")
         
         # Print LOW and MEDIUM confidence offenders (these need manual review)
         manual_review = [(i, final_results[i]) for i in range(len(final_results)) 
@@ -678,18 +655,12 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 print("  No comparison possible (zero points).")
             else:
                 mae_coarse = sum(errors_coarse) / len(errors_coarse)
-                mae_refined = sum(errors_refined) / len(errors_refined)
                 mae = sum(errors) / len(errors)
-                print("  " + "-" * 105)
+                print("  " + "-" * 80)
                 print(f"  SUMMARY STATISTICS:")
-                print(f"    MAE (Coarse DTW only):       {mae_coarse:.4f}s")
-                print(f"    MAE (After Local Refinement): {mae_refined:.4f}s  {'↓ improved' if mae_refined < mae_coarse else '↑ DEGRADED'}")
-                print(f"    MAE (After Smoothing):        {mae:.4f}s  {'↓ improved' if mae < mae_refined else '↑ DEGRADED'}")
+                print(f"    MAE (Coarse DTW):   {mae_coarse:.4f}s")
                 print(f"    Max Absolute Error: {max_err:.4f}s at index {max_err_idx}")
                 print(f"    Total points with error >= 15%: {high_error_count} ({high_error_count/num_points*100:.1f}%)")
-                print(f"")
-                print(f"    Local Refinement:  helped {refine_helped}, hurt {refine_hurt}, neutral {num_points - refine_helped - refine_hurt}")
-                print(f"    Smoothing:         helped {snap_helped}, hurt {snap_hurt}, not applied {snap_nochange}")
                 
                 # Check if "HIGH" confidence points have high error
                 high_conf_errors = [e for i, e in enumerate(errors) if final_results[i].get('confidence') == 'HIGH']
@@ -702,16 +673,14 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 if false_negatives:
                     print(f"\n  ⚠️  UNFLAGGED ERRORS (False Negatives): {len(false_negatives)}")
                     print(f"      Measurements with significant error (>15% and >0.05s) but marked HIGH confidence.")
-                    print(f"      These were MISSED by the internal flagging logic.")
-                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Pred':>8} | {'GT':>8} | {'RT Err':>8} | {'FeatDst':>8} | {'XF Dis':>8} | {'GapDev':>8}")
-                    print("  " + "-" * 110)
+                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Pred':>8} | {'GT':>8} | {'XF Dis':>8}")
+                    print("  " + "-" * 75)
                     for fn in false_negatives:
-                        print(f"  {fn['index']:4d} | {fn['mix']:5d} | {fn['error']:8.3f}s | {fn['prop_err']*100:7.1f}% | {fn['t_pred']:8.3f}s | {fn['t_gt']:8.3f}s | {fn['rt_error']:8.3f} | {fn['feat_dist']:8.3f} | {fn['xf_disagree']:8.3f} | {fn['gap_dev']:8.3f}")
+                        print(f"  {fn['index']:4d} | {fn['mix']:5d} | {fn['error']:8.3f}s | {fn['prop_err']*100:7.1f}% | {fn['t_pred']:8.3f}s | {fn['t_gt']:8.3f}s | {fn['xf_disagree']:8.3f}")
 
                 if false_positives:
                     print(f"\n  ⚠️  OVER-FLAGGED (False Positives): {len(false_positives)}")
-                    print(f"      Measurements that are highly accurate (<15% error) but were flagged for review anyway.")
-                    print(f"      This indicates the 'anomaly' thresholds (e.g. gap deviation) are too strict for normal rubato.")
+                    print(f"      Measurements that are highly accurate (<15% error) but flagged anyway.")
                     print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Conf':>6}")
                     print("  " + "-" * 60)
                     for fp in false_positives:
@@ -726,9 +695,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         print("=" * 60)
     
     # Create final clean output array with diagnostic fields
-    diag_keys = ['rt_error', 'tempo_dev', 'gap_dev', 'offset_trend_dev', 'low_energy', 'confidence',
-                 't_coarse', 't_refined', 'refine_delta', 'snap_delta',
-                 'smoothed', 'smooth_delta', 'feature_distance']
+    diag_keys = ['cross_feature_disagree', 'low_energy', 'confidence', 'feature_distance']
     def _clean(r):
         d = {'t': r['t'], 'mix': r['mix'], 'index': r['index']}
         for k in diag_keys:

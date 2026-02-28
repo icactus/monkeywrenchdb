@@ -21,59 +21,41 @@ The Python pipeline (located in `scripts/`) is designed for local use to generat
 
 ### Architecture (improved_audio_sync.py)
 - **Features**: Chroma (12) + Chroma Delta (12) + Onset (1, 5x boosted) + Energy (1) = 26 dimensions
+- **Native Resolution**: `hop_length=1024` (~21.5Hz / ~46ms per frame).
 - **DTW Backend**: dtaidistance C backend with Sakoe-Chiba band (30s window), penalty=0.0
-- **Path Mapping**: Averaged many-to-one DTW mappings → linear interpolation → local refinement (1.5s, damage guarded) → 3-pass smoothing → monotonicity enforcement
-- **Refinement**: Local DTW (1.5s window) with damage guard. Cross-correlation and onset envelope methods DISABLED (different performers = different audio)
-- **Flagging** (run_full_pipeline_web.py): Tempo ratio, gap deviation (0.4s), offset trend (0.25s), RT error, low energy
+- **Path Mapping**: Averaged many-to-one DTW mappings → linear interpolation → Monotonicity enforcement.
+- **Refinement**: **DISABLED**. Local DTW and cross-correlation systematically degrade accuracy on rubato-heavy music by converging on wrong local minima. Accurate point alignment for different performers is a feature-ambiguity problem that cannot be solved by local search.
+- **Verification**: **Cross-Feature DTW**. Runs a second independent pass using MFCCs. Disagreement between Chroma and MFCC paths is the strongest signal of alignment ambiguity.
+- **Flagging** (run_full_pipeline_web.py): Cross-feature disagreement (>1.0s), RT error (>0.45s), low energy. Timing-based flags (Gap/Tempo dev) are DISABLED as they measure rubato (interpretation), not error.
 
 ### Experiment Log (Feb 2026)
 
-**Current Best**: sr=22050, hop=1024, Local Refine (1.5s) + Damage Guard → MAE 0.0778s, ~24 flagged / ~447 points
+**Current Best**: hop=1024, No Refinement, Cross-Feature verification → MAE 0.42s (on Claire de Lune rubato test), ~11 items flagged.
 
 | Experiment | Result | Verdict |
 |---|---|---|
-| **sr=22050, hop=512** | MAE degraded 0.085→0.155, max error 0.5→5.1s | ❌ FAILED — doubles frame count, noisier DTW cost matrix |
-| **sr=44100, hop=2048** | MAE essentially unchanged (0.0850), 2x slower feature computation (43s vs 18s) | ❌ NOT WORTH IT — CQT already captures full pitch range at 22050Hz |
-| **Cross-correlation refinement** | Previously hurt accuracy — different performers have different audio, waveform/chroma matching fails | ❌ DISABLED — do not re-enable for cross-performer alignment |
-| **Onset envelope refinement** | MAE degraded 0.099→0.129 | ❌ DISABLED |
-| **Local DTW refinement** | Converges to wrong local minima in dense textures (hurt 215/446 points) | ❌ DISABLED (Old 5.0s window) |
-| **Local DTW (Window=1.5s)** | Re-enabled with tight 1.5s constraint. Reduced flags 56->32, improved MAE -> 0.0838s | ✅ KEPT |
-| **Refinement Damage Guard** | Rejects refinement moving away from coarse trend. MAE 0.0838→0.0778, help:hurt 2.5:1, flags 32→24 | ✅ KEPT |
-| **Local DTW (Window=1.0s)** | Tighter window: identical MAE (0.0778), 2.5x faster (0.8s vs 2.1s) but 4 more flags (28 vs 24). Damage guard makes window size moot | ❌ NOT WORTH IT — kept 1.5s |
-| **Bidirectional Path Fusion** | Average forward+backward DTW mappers. Zero effect — paths too correlated (same features/algo), errors don't cancel | ❌ NO EFFECT |
-| **Feature Augmentation (+Tonnetz +Spectral Contrast)** | 26→39 dims. Coarse MAE degraded 0.0983→0.1013, max error 0.478→0.924. Timbral features capture performer differences, dilute chroma signal | ❌ REVERTED |
-| **Density-Gated Smoothing** | Skip smoothing when local rec1 gaps avg > 2.5s (slow/sparse sections). Help:hurt 28:5 (5.6:1). Eliminates smoothing damage in fermatas/slow passages | ✅ KEPT |
-| **2x Downsampling (Coarse)** | Coarse DTW at ~10.8Hz instead of 21.5Hz. MAE 0.078→0.081 (slight loss) but Max Error 1.15s→0.49s (huge win). Fixes index 20 outlier. | ❌ REVERTED (See "Big Win" below) |
-| **Onset snapping** | Hurt 2:1 (88 hurt vs 49 helped), MAE 0.087→0.092 — orchestral "onsets" are soft entries/swells | ❌ DISABLED for orchestral/classical |
+| **Local DTW refinement** | MAE degraded from 0.45s → 1.81s (on rubato test) | ❌ DISABLED — Converges to wrong local minima in ambiguous textures |
+| **hop=1024 (Native)** | MAE improved 0.45s → 0.42s vs hop=2048 | ✅ KEPT — Finer resolution reduces quantization error |
+| **Cross-Feature Pass** | Disagreement signals ambiguity. Caught 4/8 hidden errors | ✅ KEPT — MFCC vs Chroma is a genuinely independent verification |
+| **RT Error Independence** | RT Error is tiny (<50ms) even when actual error is >2s | ℹ️ TRAP — Forward/Backward paths use same costs, they agree on wrong answers |
+| **Gap Deviation Analysis** | Values of 2-4s are normal for rubato; 26 false positives | ❌ IGNORED — Gap dev measures interpretation, not DTW error |
+| **Refinement Damage Guard** | Rejects refinement moving away from coarse trend. | ℹ️ OBSOLETE — Refinement dropped entirely |
+| **Onset snapping** | Hurt 2:1 (88 hurt vs 49 helped), MAE 0.087→0.092 | ❌ DISABLED for orchestral/classical |
 
-### Big Win Architecture Shift (Feb 2026)
-We discovered that **Timing-based Flagging** (Gap Deviation, Tempo Deviation) was generating hundreds of "False Positives" because rubbing/stretching tempo is normal in classical music (Rubato).
+### The "End of Refinement" Architecture (Feb 2026)
+1. **The Refinement Trap**: We spent weeks tuning local DTW refinement only to discover it **systematically degrades accuracy** on high-rubato music (like Claire de Lune). Because music between two performers is non-rigid, local DTW often "prefers" a slightly mismatched harmonic stack over the true temporal position. Moving to a "simpler" path-only architecture improved MAE from 1.81s to 0.42s.
+2. **RT Error is not Independent Verification**: We initially believed Round-Trip Error (Forward vs Backward agreement) was a strong confidence signal. **It is not.** Because both paths use the same cost matrix, they often "agree" on the same wrong answer (e.g., matching a repeating measure 10s too early).
+3. **Cross-Feature Verification is Essential**: To get a truly independent verification, we now run a second DTW using **MFCCs** (timbral shape). Unlike Chroma (pitch), MFCCs look at the spectral envelope. Where Chroma and MFCC paths disagree, the alignment is objectively ambiguous. This caught 4 previously "invisible" errors in the rubato test set.
+4. **Gap Deviation = Rubato Noise**: We abolished `gap_dev` and `tempo_dev` as confidence signals. In rubato-heavy music, gap deviations of 2-4s are completely normal interpretations and produce massive false positive rates if used as "error" flags.
+5. **Increasing Native Resolution**: Accuracy is won at the feature level. We moved from `hop=2048` (~93ms) to `hop=1024` (~46ms). This doubling of coarse resolution minimizes the quantization floor and makes the global path fine enough that no refinement is needed.
+6. **Feature Stacking (`n_stack=15`)**: Essential. Stacking ~0.7s of historical context (at hop=1024) allows the DTW to distinguish identical repeating notes (e.g., m.81 vs m.82) by looking at the *history* of how it got there.
 
-**New Approach to reduce False Positives:**
-1. **Feature Stacking (`n_stack=15`)**: Stacking ~1.4s of historical audio frames into the feature vector allows DTW to distinguish identical repeating notes.
-2. **Round-Trip Driven Confidence**: With stacking active, Round-Trip Error (Forward path vs Backward path) became highly reliable. We abolished timing penalties and solely use RT Error (>0.3s) and Extreme Feature Distance (>1.05) to flag `LOW` confidence.
-3. **High-Res Global Pass (Hop 2048, Downsample 1)**: Instead of blurring via decimation (Downsample=2), we generate inherently smooth features by using a massive STFT window (`hop_length=2048`). This gives the same ~10Hz resolution and memory footprint, but integrates 100% of the audio data, eliminating drift.
-4. **Decoupling Refinement Error (`t_coarse` vs `t_refined`)**: RT Error is now calculated purely on the `t_coarse` DTW prediction. Previously, using the local `t_refined` prediction resulted in false positives because accurate sub-frame shifts were being flagged as "errors" by the coarse reverse path.
-5. **Symmetrical Mappers (`bwd_mapper` Fix)**: The forward and backward DTW mappers must be symmetrical. Previously, `bwd_mapper` took the first identical index (`np.unique`), while forward took the `np.mean`. This structural difference injected up to 0.1s of phantom RT error. Both now use `np.mean`.
-6. **Grid-Aware Confidence Thresholds**: Coarse `hop_length=2048` produces a `~10.8Hz` resolution (`~0.092s/frame`). A standard algorithmic variance of 2-frames between the Forward and Backward paths mathematically produces `~0.185s` of Round-Trip Error. Therefore, the **MEDIUM** threshold must be `0.20s` (2 frames) and **LOW** at `0.45s` (~5 frames) to avoid flagging normal 10.8Hz computational variance.
-   *   *Result (2/20/26)*: False Positives plummeted from 124 -> 15. The pipeline is no longer penalizing true alignments.
-
-**Resolution for False Negatives (0.3s - 0.6s local smudges):**
-1. **The Structural Jump Hypothesis vs Reality**: We initially suspected the 190 "False Negatives" were massive 10+ second structural jumps caused by repeats. We attempted to catch these using a rigid 71-point `savgol_filter` for `offset_trend_dev`. This completely failed, creating 506 False Positives because the rigid filter mathematically penalized normal musical rubato (which sways gracefully). We reverted to a wide `median_filter`, which naturally follows rubato curves while ignoring jumps.
-2. **The Damage Guard Experiment**: We identified that the `Refinement Damage Guard` was aggressively rejecting 455 high-res DTW corrections because they deviated from the coarse trend by `>0.02s`. We theorized the high-res pass had the "correct" mapping for the 0.4s smudges, and loosened the guard to `0.15s`.
-3. **The Mathematical Floor**: Loosening the guard *degraded* the overall MAE (0.1441s -> 0.1511s) and *increased* False Negatives (190 -> 258). This proved our theory wrong: The high-resolution feature pass (`hop=256`, ~86Hz) is actually **less stable** than the coarse pass (`hop=2048`, ~10Hz) when dealing with complex orchestral/piano textures. Given freedom, the high-res DTW drags the timestamp away from the true beat and anchors onto irrelevant acoustic phenomena (like a pedal release or harmonic swell). 
-4. **Conclusion**: The strict `+0.02s` Damage Guard is absolutely necessary. The remaining 190 False Negatives (which are localized 0.3s-0.5s smudges) represent the **fundamental mathematical floor** of algorithmic audio alignment for these highly interpreted, rubato-heavy classical performances. They cannot be identified securely without introducing massive false positive rates, because the internal mathematical signals (RT Error, Feature Distance) for these small smudges are indistinguishable from a perfect mapping.
-
-**Handling Fermatas and Silence (Large DTW Skips):**
-1. **The Fermata Rip**: Because DTW (with `penalty=0.0`) handles long segments of matching features (or identical silence) by travelling diagonally, a true extra-long fermata in Recording 1 will cause the DTW path to simply "wait" at the onset of the next note. When it finally aligns, the timestamps abruptly jump, causing massive, unflagged 0.5s+ errors if we only check RT Error.
-2. **Gap Deviation is Essential**: We had previously removed `gap_dev` from confidence thresholds to permit rubato. However, to catch these rigid DTW fermata jumps, we strictly need to check `gap_dev > 0.4s` for `LOW` confidence and `gap_dev > 0.25s` for `MEDIUM`.
-3. **Log-Mel Spectrogram Normalization Bug**: We discovered `_micro_refine_core` using log-Mel spectrogram slices was normalizing tape hiss to match the broadband energy of loud orchestral hits! This output a near-perfect Cosine distance of `0.008`. We now use the robust chroma-onset features from `_local_refine_core` for reporting True Feature Distance to the anomaly detection loop.
-4. **Local Refine Array Guard Limit**: Make sure the `len(seg1) < 5` guard in local refinement isn't set too high (e.g. 20) for small 0.3s windows, otherwise it will prematurely bail and return 1.0 distances.
 ### Key Constraints
-- **~46ms frame resolution** is the hard accuracy floor with hop=1024 — no post-processing can fix what the DTW path gets wrong
-- **~10% flag rate** (~45-56 out of ~450) appears close to the floor for different classical performances
-- **penalty=0.0 is crucial** — any positive penalty forces too-linear paths, can't handle fermatas/rubato
-- Different performers = fundamentally different audio → all audio-content-matching refinement methods fail
+- **~46ms frame resolution** is the hard accuracy floor with hop=1024
+- **Refinement is Harmful**: Do not attempt to add local DTW or CC-refinement; they do more harm than good in non-rigid cross-performer alignment.
+- **Ambiguity Floor**: There is a floor of ~5% unflaggable errors where all features (Chroma, MFCC) agree on a path that is musically "wrong" but acoustically plausible vs ground truth.
+- **penalty=0.0 is crucial** — allows the path to warp around fermatas/rubato without artificial linear pressure.
+- Different performers = fundamentally different audio → rigid waveform matching is impossible.
 
 
 ## Database Compatibility
