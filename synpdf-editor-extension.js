@@ -948,32 +948,46 @@
             metronomeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
             metronomeInitialized = true;
             log('Metronome audio context initialized');
+            
+            // Resume if suspended (browser autoplay policy)
+            if (metronomeAudioContext.state === 'suspended') {
+                metronomeAudioContext.resume();
+            }
         } catch (e) {
             log('Failed to init metronome audio: ' + e.message);
         }
     }
 
     function playMetronomeClick() {
-        if (!window.metronomeEnabled || !metronomeInitialized || !metronomeAudioContext) return;
+        if (!window.metronomeEnabled || !metronomeInitialized || !metronomeAudioContext) {
+            log('Metronome click blocked: enabled=' + window.metronomeEnabled + ' initialized=' + metronomeInitialized + ' ctx=' + !!metronomeAudioContext);
+            return;
+        }
 
         try {
+            // Resume if suspended
+            if (metronomeAudioContext.state === 'suspended') {
+                metronomeAudioContext.resume();
+            }
+            
             const osc = metronomeAudioContext.createOscillator();
             const gain = metronomeAudioContext.createGain();
             
             osc.connect(gain);
             gain.connect(metronomeAudioContext.destination);
             
-            // Short click sound
-            osc.frequency.value = 1000;
-            osc.type = 'sine';
+            // Short click sound - louder
+            osc.frequency.value = 880;
+            osc.type = 'square';
             
-            gain.gain.setValueAtTime(window.metronomeVolume * 0.3, metronomeAudioContext.currentTime);
+            gain.gain.setValueAtTime(window.metronomeVolume * 0.5, metronomeAudioContext.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, metronomeAudioContext.currentTime + 0.05);
             
             osc.start(metronomeAudioContext.currentTime);
             osc.stop(metronomeAudioContext.currentTime + 0.05);
+            log('Click played');
         } catch (e) {
-            // Ignore audio errors
+            log('Click error: ' + e.message);
         }
     }
 
@@ -991,6 +1005,7 @@
             if (window.metronomeEnabled) {
                 const currentDemix = getDemix();
                 if (currentDemix !== lastMetronomeDemix && currentDemix >= 0) {
+                    log('Metronome: demix changed from ' + lastMetronomeDemix + ' to ' + currentDemix);
                     playMetronomeClick();
                     lastMetronomeDemix = currentDemix;
                 }
