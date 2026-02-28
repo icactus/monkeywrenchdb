@@ -870,10 +870,13 @@
     let metronomeInitialized = false;
 
     function initMetronome() {
-        // Check for preview mode
-        const previewIndicator = document.querySelector('div[style*="PREVIEW MODE"]');
+        // Check for preview mode - look for element containing "PREVIEW MODE" text
+        const previewIndicator = Array.from(document.querySelectorAll('div')).find(el => 
+            el.innerText === 'PREVIEW MODE'
+        );
         if (!previewIndicator) {
             // Not in preview mode, don't inject metronome
+            console.log('[Metronome] No PREVIEW MODE indicator found');
             return;
         }
 
