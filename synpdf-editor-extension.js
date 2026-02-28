@@ -1000,6 +1000,10 @@
         const originalTime2x = window.msc_wz$$module$synpdf.time2x;
         
         window.msc_wz$$module$synpdf.time2x = function(t) {
+            // Debug: log every call
+            if (window.metronomeEnabled) {
+                log('time2x called with t=' + t + ', demix=' + getDemix() + ', last=' + lastMetronomeDemix);
+            }
             originalTime2x.apply(this, arguments);
             
             if (window.metronomeEnabled) {
