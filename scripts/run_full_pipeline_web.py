@@ -18,34 +18,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from improved_audio_sync import AudioSync
 
 
-def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_list, max_duration=None, timestamps_list_rec2=None, rec1_timestamps_offset=0, rec2_timestamps_offset=0, stream_file=None):
+def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_list, max_duration=None, timestamps_list_rec2=None, rec1_timestamps_offset=0.0, rec2_timestamps_offset=0.0, stream_file=None, feature_mode="chroma_onset20"):
     """
     Run the DTW sync pipeline with custom parameters.
     
     Args:
-        url1: URL for Recording 1
-        url2: URL for Recording 2
-        offset1: Start offset for Recording 1 (seconds)
-        end1: End time for Recording 1 (seconds)
-        offset2: Start offset for Recording 2 (seconds)
-        end2: End time for Recording 2 (seconds)
-        timestamps_list: List of dicts with 'mix' and 't' keys for Recording 1 timestamps
-        max_duration: Optional max duration override
-        timestamps_list_rec2: Optional ground truth timestamps
-        rec1_timestamps_offset: Offset to add to all Rec 1 timestamps (seconds)
-        rec2_timestamps_offset: Offset to add to all Rec 2 ground truth timestamps (seconds)
-        stream_file: Optional file-like object to write logs to (for real-time streaming)
-        
-    TERMINOLOGY:
-        - mix: Measure number (e.g., 50, 100). Non-unique due to repeats.
-        - detix / index: Unique sequential identifier for each measure encounter in the score.
-          Crucial for disambiguating which instance of a repeated measure we are aligning.
-        
-    Returns:
-        dict with keys:
-            - final_results: List of mapped timestamps for Rec2
-            - total_offset_rec2: The total offset for Rec2 (offset2 + first mapped timestamp)
-            - logs: Captured console output
+        feature_mode: "chroma_onset20" (13 dims: pure pitch + rhythm), "full" (26 dims)
     """
     
     # Capture all stdout (either to buffer or custom stream)
@@ -84,6 +62,19 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         
         syncer = AudioSync()  # Initialize BEFORE calculation
         
+        def parse_time(t):
+            if t is None: return None
+            t = str(t)
+            if ':' in t:
+                m, s = t.split(':')
+                return float(m) * 60 + float(s)
+            return float(t)
+            
+        offset1 = parse_time(offset1) or 0.0
+        offset2 = parse_time(offset2) or 0.0
+        end1 = parse_time(end1)
+        end2 = parse_time(end2)
+        
         effective_end1 = end1
         effective_end2 = end2
         
@@ -95,6 +86,10 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         print(f"  Effective End1: {effective_end1}")
         print(f"  Effective End2: {effective_end2}")
         
+        # Feature mode: "full", "chroma", "chroma_delta", "chroma_onset"
+        FEATURE_MODE = feature_mode if feature_mode else "chroma_onset20"
+        print(f"  Feature Mode: {FEATURE_MODE}")
+        
         # Run Sync (returns path and raw audio)
         path, y1, y2, f1_coarse, f2_coarse, y1_harmonic, y2_harmonic = syncer.run_sync(
             url1=url1, 
@@ -103,7 +98,8 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             offset1=offset1,
             end1=effective_end1,
             offset2=offset2,
-            end2=effective_end2
+            end2=effective_end2,
+            feature_mode=FEATURE_MODE
         )
         
         print(f"  Path points: {len(path)}")
@@ -128,15 +124,44 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         if max_duration:
             input_timestamps = [t for t in input_timestamps if t['t'] < max_duration]
             
-        print("\n[STEP 2/3] Running Backward DTW Pass for Bi-directional Anchoring...")
+        # We will compute the three side-channels immediately *before* mapping,
+        # but we must preserve `path` first since Numba arrays don't appreciate hanging references.
         import numpy as np
         from scipy.interpolate import interp1d
+        import concurrent.futures
+        from collections import defaultdict
         
-        # Run DTW in reverse direction: Rec2 -> Rec1
-        print("  Running backward DTW (reusing features — no re-extraction)...")
-        path_bwd = syncer.run_hybrid_sync(f2_coarse, f1_coarse)
-        print(f"  Backward path points: {len(path_bwd)}")
+        print("\n[STEP 2/3] Extracting Verification Features & Running Parallel DTW Passes...")
         
+        def compute_bwd():
+            return syncer.run_hybrid_sync(f2_coarse, f1_coarse)
+
+        def compute_mfcc():
+            f1_m = syncer.extract_features_mfcc(y1, syncer.hop_length)
+            f2_m = syncer.extract_features_mfcc(y2, syncer.hop_length)
+            p = syncer.run_hybrid_sync(f1_m, f2_m)
+            return p, f1_m, f2_m
+
+        def compute_rev():
+            y1_r = y1[::-1]
+            y2_r = y2[::-1]
+            y1_h_r = y1_harmonic[::-1]
+            y2_h_r = y2_harmonic[::-1]
+            f1_r = syncer.extract_features(y1_r, syncer.hop_length, y_harmonic=y1_h_r, feature_mode=FEATURE_MODE)
+            f2_r = syncer.extract_features(y2_r, syncer.hop_length, y_harmonic=y2_h_r, feature_mode=FEATURE_MODE)
+            p = syncer.run_hybrid_sync(f1_r, f2_r)
+            return p, f1_r, f2_r, y1_r, y2_r
+
+        print("  Launching 3 parallel DTW verification passes (Backward, MFCC, Reversed)...")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            future_bwd = executor.submit(compute_bwd)
+            future_mfcc = executor.submit(compute_mfcc)
+            future_rev = executor.submit(compute_rev)
+            
+            path_bwd = future_bwd.result()
+            path_mfcc, f1_mfcc, f2_mfcc = future_mfcc.result()
+            path_rev, f1_rev, f2_rev, y1_rev, y2_rev = future_rev.result()
+
         # Build backward mapper: Rec2 frame -> Rec1 frame
         path_bwd_arr = np.array(path_bwd)
         
@@ -153,14 +178,23 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         bwd_u_j = np.array([np.mean(bwd_frame_map[k]) for k in bwd_u_i])
         bwd_mapper = interp1d(bwd_u_i, bwd_u_j, kind='linear', fill_value="extrapolate")  # type: ignore[arg-type]
         
-        print("\n  [Mapping Timestamps with Bi-directional Anchors]...")
+        print("\n  [Mapping Timestamps with Bi-directional Anchors + Local Refinement]...")
+        
+        # High-res features for local refinement (reuse existing HPSS harmonics)
+        print("\n  [Extracting High-Res Features for Local Refinement]...")
+        LOCAL_HOP = 256
+        f1_hires, _ = syncer.extract_features_hires(y1, local_hop=LOCAL_HOP, y_harmonic=y1_harmonic)
+        f2_hires, _ = syncer.extract_features_hires(y2, local_hop=LOCAL_HOP, y_harmonic=y2_harmonic)
         
         refined_results_rel = syncer.map_timestamps(path, input_timestamps, f1_coarse, f2_coarse,
                                                      bwd_mapper=bwd_mapper,
-                                                     offset1=offset1)
+                                                     offset1=offset1,
+                                                     f1_hires=f1_hires,
+                                                     f2_hires=f2_hires,
+                                                     local_hop=LOCAL_HOP)
         
-        # Cleanup path and harmonics
-        del path, y1_harmonic, y2_harmonic
+        # Cleanup path, harmonics, and hires features
+        del path, y1_harmonic, y2_harmonic, f1_hires, f2_hires
         gc.collect()
         
         final_results = []
@@ -207,24 +241,12 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         
         print(f"\n[ZERO-BASED OUTPUT]")
         print(f"  Shifted all timestamps so Index 0 starts at t=0")
+        
         # Multi-Feature DTW Verification (Chroma vs MFCC)
         # ========================================================================
-        # Run a SECOND DTW with independent features (MFCCs = timbral shape).
         # Where the chroma path and MFCC path DISAGREE, the alignment is ambiguous.
-        # This is genuinely independent — chroma captures pitch class, MFCCs
-        # capture spectral envelope. They CAN find different paths.
-        print("\n[CROSS-FEATURE VERIFICATION] Running MFCC DTW for independent verification...")
-        import numpy as np
-        from scipy.interpolate import interp1d
-        from collections import defaultdict
-        
-        print("  Extracting MFCC features...")
-        f1_mfcc = syncer.extract_features_mfcc(y1, syncer.hop_length)
-        f2_mfcc = syncer.extract_features_mfcc(y2, syncer.hop_length)
+        print("\n  Evaluating independent MFCC DTW...")
         print(f"  MFCC features: {f1_mfcc.shape[0]} x {f2_mfcc.shape[0]} frames, {f1_mfcc.shape[1]} dims")
-        
-        print("  Running MFCC DTW...")
-        path_mfcc = syncer.run_hybrid_sync(f1_mfcc, f2_mfcc)
         
         # Build MFCC mapper (simple forward mapper, no bi-directional needed —
         # we're just comparing with the chroma path, not using this for output)
@@ -274,7 +296,65 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         gc.collect()
         
         # ========================================================================
-        # Step 2.5: Low-Energy Flagging
+        # Step 2.6: Time-Reversed DTW Verification (Genuinely Independent)
+        # ========================================================================
+        print("\n[TIME-REVERSED VERIFICATION] Evaluating DTW on reversed audio...")
+        print(f"  Reversed features: {f1_rev.shape[0]} x {f2_rev.shape[0]} frames")
+        print(f"  Reversed path points: {len(path_rev)}")
+        
+        # Build reversed mapper: f1_rev frame -> f2_rev frame
+        rev_frame_map = defaultdict(list)
+        for i_frame, j_frame in path_rev:  # type: ignore[union-attr]
+            rev_frame_map[i_frame].append(j_frame)
+        
+        rev_u_i = np.array(sorted(rev_frame_map.keys()))
+        rev_u_j = np.array([np.mean(rev_frame_map[k]) for k in rev_u_i])
+        rev_mapper = interp1d(rev_u_i, rev_u_j, kind='linear', fill_value="extrapolate")  # type: ignore[arg-type]
+        
+        # Compare: for each timestamp, what does reversed DTW predict?
+        # Reversed DTW: f1_rev → f2_rev maps position in y1_rev → position in y2_rev
+        # Position p in y1_rev corresponds to position (dur1 - p) in original y1
+        # Position q in y2_rev corresponds to position (dur2 - q) in original y2
+        # So: t1_rel in original y1 → (dur1 - t1_rel) in y1_rev → DTW → position in y2_rev
+        #     → convert to original: dur2 - that_position
+        dur1 = len(y1) / sr
+        dur2 = len(y2) / sr
+        
+        rev_disagreements = []
+        for i, item in enumerate(final_results):
+            t1 = input_timestamps[i]['t'] if i < len(input_timestamps) else 0
+            t1_rel = t1 - offset1
+            if t1_rel < 0:
+                t1_rel = 0
+            
+            # Original prediction
+            t2_pred = item['t']
+            
+            # Reversed prediction:
+            # 1. Position in y1_rev (reversed) corresponding to t1_rel in original y1
+            pos_in_y1_rev = dur1 - t1_rel
+            frame_in_y1_rev = int(pos_in_y1_rev * sr / hop_length)
+            frame_in_y1_rev = max(0, min(frame_in_y1_rev, len(rev_u_i) - 1))
+            
+            # 2. Query DTW mapper: what position in y2_rev does this map to?
+            frame_in_y2_rev = float(rev_mapper(frame_in_y1_rev))
+            
+            # 3. Convert back to original y2 time
+            pos_in_y2_original = dur2 - (frame_in_y2_rev * hop_length / sr)
+            
+            disagree = abs(t2_pred - pos_in_y2_original)
+            rev_disagreements.append(disagree)
+            item['reverse_disagree'] = round(disagree, 4)
+        
+        rev_median = float(np.median(rev_disagreements))
+        rev_max = max(rev_disagreements)
+        print(f"  Reversed disagreement median: {rev_median:.3f}s, max: {rev_max:.3f}s")
+        
+        del f1_rev, f2_rev, path_rev, rev_frame_map
+        gc.collect()
+        
+        # ========================================================================
+        # Step 2.7: Low-Energy Flagging
         # ========================================================================
         print("\n[LOW ENERGY ANALYSIS] Flagging timestamps during silence/quiet passages...")
         import librosa
@@ -346,6 +426,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             
             rt_err = abs(t_rec1_original - t_rec1_back)
             rt_errors.append(rt_err)
+            final_results[i]['rt_error'] = round(rt_err, 4)
         
         # ================================================================
         # Tempo Ratio Anomaly Detection (Primary Confidence Signal)
@@ -484,15 +565,18 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         
         for i, item in enumerate(final_results):
             disagree = item.get('cross_feature_disagree', 0.0)
-            is_low_energy = item.get('low_energy', False)
+            rev_disagree = item.get('reverse_disagree', 0.0)
             
-            # LOW: Strong disagreement or low energy region
-            if disagree > 0.6 or is_low_energy:
+            # Use maximum of both disagreement measures
+            max_disagree = max(disagree, rev_disagree)
+            
+            # LOW: Strong disagreement (approx > 10 frames)
+            if max_disagree > 1.2:
                 confidence = "LOW"
-            # MEDIUM: Moderate disagreement
-            elif disagree > 0.3:
+            # MEDIUM: Moderate disagreement (approx > 6 frames)
+            elif max_disagree > 0.6:
                 confidence = "MEDIUM"
-            # HIGH: Both feature sets agree
+            # HIGH: Both forward and reversed DTW agree
             else:
                 confidence = "HIGH"
 
@@ -502,8 +586,9 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         # Mirror onto zero-based results
         for i, item in enumerate(zero_based_results):
             item['cross_feature_disagree'] = final_results[i].get('cross_feature_disagree', 0.0)
-            item['low_energy'] = final_results[i].get('low_energy', False)
+            item['reverse_disagree'] = final_results[i].get('reverse_disagree', 0.0)
             item['confidence'] = final_results[i]['confidence']
+            item['rt_error'] = final_results[i].get('rt_error', 0.0)
         
         # Print summary
         high_count = sum(1 for item in final_results if item['confidence'] == 'HIGH')
@@ -512,8 +597,8 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         
         print(f"\n  [CONFIDENCE SUMMARY]")
         print(f"    HIGH:   {high_count}")
-        print(f"    MEDIUM: {med_count} (XF disagreement 0.3-0.6s)")
-        print(f"    LOW:    {low_count} (XF disagreement >0.6s or low energy)")
+        print(f"    MEDIUM: {med_count} (max(XF, Rev) disagreement 0.6-1.2s)")
+        print(f"    LOW:    {low_count} (max(XF, Rev) disagreement >1.2s)")
         
         # Print LOW and MEDIUM confidence offenders (these need manual review)
         manual_review = [(i, final_results[i]) for i in range(len(final_results)) 
@@ -522,13 +607,13 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             # Sort by index for easy sequential review
             manual_review.sort(key=lambda x: x[0])
             print(f"\n  🚩 Timestamps Needing Manual Review ({len(manual_review)} items):")
-            print(f"  {'Index':>5} | {'Mix':>5} | {'Conf':>6} | {'Feat Dist':>10} | {'RT Error':>10} | {'XF Disagr':>10} | {'Gap Dev':>8} | {'T (Rec2)':>10}")
-            print("  " + "-" * 95)
+            print(f"  {'Index':>5} | {'Mix':>5} | {'Conf':>6} | {'Feat Dist':>10} | {'RT Error':>10} | {'XF Disagr':>10} | {'Rev Disag':>10} | {'T (Rec2)':>10}")
+            print("  " + "-" * 105)
             for idx, item_data in manual_review:
                 item = item_data
-                gap_dev = item.get('gap_dev', 0.0)
                 xf_disagree = item.get('cross_feature_disagree', 0.0)
-                print(f"  {idx:5d} | {item['mix']:5d} | {item['confidence']:>6} | {item.get('feature_distance', 0.0):10.4f} | {item.get('rt_error', 0.0):9.4f}s | {xf_disagree:9.3f}s | {gap_dev:7.3f}s | {item['t']:10.3f}s")
+                rev_disagree = item.get('reverse_disagree', 0.0)
+                print(f"  {idx:5d} | {item['mix']:5d} | {item['confidence']:>6} | {item.get('feature_distance', 0.0):10.4f} | {item.get('rt_error', 0.0):9.4f}s | {xf_disagree:9.3f}s | {rev_disagree:9.3f}s | {item['t']:10.3f}s")
             print("\n")
         # ========================================================================
         # Step 3: Ground Truth Comparison (Optional)
@@ -609,6 +694,8 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                     
                     # Check for False Negative (High Error but High Confidence)
                     if final_results[i].get('confidence') == 'HIGH':
+                        xf = final_results[i].get('cross_feature_disagree', 0.0)
+                        rev = final_results[i].get('reverse_disagree', 0.0)
                         false_negatives.append({
                             'index': i,
                             'mix': final_results[i]['mix'],
@@ -619,7 +706,8 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                             'rt_error': final_results[i].get('rt_error', 0.0),
                             'feat_dist': final_results[i].get('feature_distance', 0.0),
                             'gap_dev': final_results[i].get('gap_dev', 0.0),
-                            'xf_disagree': final_results[i].get('cross_feature_disagree', 0.0)
+                            'xf_disagree': xf,
+                            'max_disagree': max(xf, rev)
                         })
                 else:
                     # Check for False Positive (Low Error but Flagged for Review)
@@ -676,10 +764,10 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 if false_negatives:
                     print(f"\n  ⚠️  UNFLAGGED ERRORS (False Negatives): {len(false_negatives)}")
                     print(f"      Measurements with significant error (>15% and >0.15s) but marked HIGH confidence.")
-                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Pred':>8} | {'GT':>8} | {'XF Dis':>8}")
+                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Pred':>8} | {'GT':>8} | {'Max Dis':>8}")
                     print("  " + "-" * 75)
                     for fn in false_negatives:
-                        print(f"  {fn['index']:4d} | {fn['mix']:5d} | {fn['error']:8.3f}s | {fn['prop_err']*100:7.1f}% | {fn['t_pred']:8.3f}s | {fn['t_gt']:8.3f}s | {fn['xf_disagree']:8.3f}")
+                        print(f"  {fn['index']:4d} | {fn['mix']:5d} | {fn['error']:8.3f}s | {fn['prop_err']*100:7.1f}% | {fn['t_pred']:8.3f}s | {fn['t_gt']:8.3f}s | {fn['max_disagree']:8.3f}")
 
                 if false_positives:
                     print(f"\n  ⚠️  OVER-FLAGGED (False Positives): {len(false_positives)}")

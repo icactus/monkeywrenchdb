@@ -13,6 +13,8 @@ import multiprocessing
 #_pool_f1_hires = None
 #_pool_f2_hires = None
 
+from dtaidistance import dtw_ndim
+
 
 def _micro_refine_core(y1_slice, y2_slice, t1_local_sec, t2_est_local_sec, y1_start_sec, y2_start_sec, sr):
     """
@@ -260,15 +262,15 @@ class AudioSync:
     Uses Sakoe-Chiba band constraint for memory efficiency.
     """
     
-    def __init__(self, sr=22050, hop_length=1024, cache_dir="audio_cache"):
+    def __init__(self, sr=22050, hop_length=2048, cache_dir="audio_cache"):
         self.sr = sr
         self.hop_length = hop_length
         self.cache_dir = cache_dir
-        self.frame_time = hop_length / sr  # ~46ms per frame @ 1024 hop
+        self.frame_time = hop_length / sr  # ~93ms per frame @ 2048 hop
         
         # DTW Parameter Notes:
-        # - sr=22050, hop_length=1024 (~21.5Hz): Best resolution we can run
-        #   without excessive DTW computation time. Gives ~46ms frame accuracy.
+        # - sr=22050, hop_length=2048 (~10.7Hz): Default to prevent O(N^2) memory 
+        #   blowout in dtaidistance while maintaining sub-100ms accuracy.
         # - penalty=0.0: Crucial. Additive penalty in dtaidistance forces a linear path.
         #   normalized features (0.0-1.0) need 0.0 penalty to allow warping around fermatas.
         
@@ -322,54 +324,88 @@ class AudioSync:
             print(f"  [Cache hit] {wav_path}")
         return wav_path
 
-    def extract_features(self, y, hop_length, saliency_threshold=0.05, y_harmonic=None, n_stack=15):
+    def extract_features(self, y, hop_length, saliency_threshold=0.05, y_harmonic=None, n_stack=15, feature_mode="chroma_onset20"):
         """
         Extracts features with zero-cost silence matching.
         
-        Features: Chroma (12) + Chroma Delta (12) + Onset (1) + Energy (1) = 26 dimensions
-        Silent frames are set to identical zero vectors for free DTW traversal.
+        feature_mode options:
+        - "full": Chroma (12) + Chroma Delta (12) + Onset (1x5) + Energy (1) = 26 dims
+        - "chroma": Just chroma = 12 dims
+        - "chroma_delta": Chroma + delta = 24 dims
+        - "chroma_onset": Chroma + onset (5x) = 13 dims
+        - "chroma_onset1": Chroma + onset (1x) = 13 dims
+        - "chroma_onset10": Chroma + onset (10x) = 13 dims
         """
         # 1. HPSS: Separate harmonic content from percussive noise
-        # This cleans chroma in dense orchestral textures
         if y_harmonic is None:
             y_harmonic, _ = librosa.effects.hpss(y)
         
-        # 2. Chroma (Harmonic content) - KEY for music alignment
-        chroma = librosa.feature.chroma_cqt(y=y_harmonic, sr=self.sr, hop_length=self.hop_length)
+        # 2. Pitch content (Chroma or CQT)
+        if feature_mode.startswith("cqt_onset"):
+            # Compute Constant-Q transform (60 bins = 5 octaves)
+            cqt_raw = np.abs(librosa.cqt(y=y_harmonic, sr=self.sr, hop_length=self.hop_length, n_bins=60))
+            # Normalize log-scaled CQT
+            cqt_db = librosa.amplitude_to_db(cqt_raw, ref=np.max)
+            # Normalize to 0..1 scale so it balances with onset like chroma does
+            cqt_db = cqt_db - cqt_db.min()
+            pitch_feature = cqt_db / (cqt_db.max() + 1e-8)
+        else:
+            # Standard Chroma (Harmonic content) - KEY for music alignment
+            chroma_raw = librosa.feature.chroma_cqt(y=y_harmonic, sr=self.sr, hop_length=self.hop_length)
+            # Normalize chroma
+            pitch_feature = librosa.util.normalize(chroma_raw, axis=0)
         
         # Compute RMS energy for silence detection
         rms = librosa.feature.rms(y=y, hop_length=self.hop_length)[0]
         rms_norm = rms / (rms.max() + 1e-8)
-        
-        # Normalize chroma
-        chroma = librosa.util.normalize(chroma, axis=0)
-        
-        # 3. Chroma Delta (Rate of change)
-        chroma_delta = librosa.feature.delta(chroma)
-        chroma_delta = librosa.util.normalize(chroma_delta, axis=0)
-        
 
-        
-        # 4. Onset Strength (Rhythmic articulation)
-        # BOOST WEIGHT: Multiply by 5.0 to make skipping note attacks expensive
-        onset_env = librosa.onset.onset_strength(y=y, sr=self.sr, hop_length=self.hop_length)
-        onset_env = onset_env / (onset_env.max() + 1e-8)
-        onset_env = onset_env.reshape(1, -1) * 5.0
-        
-        # Ensure same length
-        min_len = min(chroma.shape[1], chroma_delta.shape[1], onset_env.shape[1], len(rms_norm))
-        chroma = chroma[:, :min_len]
-        chroma_delta = chroma_delta[:, :min_len]
-        onset_env = onset_env[:, :min_len]
-        rms_norm = rms_norm[:min_len].reshape(1, -1)
-        
-        # Energy scaling REMOVED — the SILENCE_THRESHOLD (0.02) already zeroes
-        # fermata decays. Continuous RMS scaling was crushing quiet musical
-        # passages (pp strings, soft woodwinds) making DTW unable to distinguish
-        # frames and causing diagonal wandering in soft sections.
-        
-        # Stack: (12+12+1+1, frames) -> (26, frames)
-        features = np.vstack([chroma, chroma_delta, onset_env, rms_norm])
+        # Build features based on mode
+        if feature_mode == "chroma":
+            min_len = pitch_feature.shape[1]
+            features = pitch_feature[:, :min_len]
+        else:
+            # don't compute delta for modes that don't need it
+            chroma_delta = librosa.feature.delta(pitch_feature)
+            chroma_delta = librosa.util.normalize(chroma_delta, axis=0)
+            
+            if feature_mode == "chroma_delta":
+                min_len = min(pitch_feature.shape[1], chroma_delta.shape[1])
+                features = np.vstack([pitch_feature[:, :min_len], chroma_delta[:, :min_len]])
+            else:
+                # 4. Onset Strength (Rhythmic articulation)
+                onset_env = librosa.onset.onset_strength(y=y, sr=self.sr, hop_length=self.hop_length)
+                onset_env = onset_env / (onset_env.max() + 1e-8)
+                
+                # Different weightings for onset
+                if feature_mode.startswith("chroma_onset"):
+                    weight_str = feature_mode[12:] # len("chroma_onset")
+                    onset_weight = float(weight_str) if weight_str else 5.0
+                elif feature_mode.startswith("chroma_delta_onset"):
+                    weight_str = feature_mode[18:] # len("chroma_delta_onset")
+                    onset_weight = float(weight_str) if weight_str else 5.0
+                elif feature_mode.startswith("cqt_onset"):
+                    weight_str = feature_mode[9:] # len("cqt_onset")
+                    onset_weight = float(weight_str) if weight_str else 5.0
+                else:  # full
+                    onset_weight = 5.0
+                onset_env = onset_env.reshape(1, -1) * onset_weight
+                
+                # Ensure same length
+                min_len = min(pitch_feature.shape[1], chroma_delta.shape[1], onset_env.shape[1], len(rms_norm))
+                pitch_feature = pitch_feature[:, :min_len]
+                chroma_delta = chroma_delta[:, :min_len]
+                onset_env = onset_env[:, :min_len]
+                rms_norm = rms_norm[:min_len].reshape(1, -1)
+                
+                if feature_mode.startswith("chroma_onset"):
+                    features = np.vstack([pitch_feature, onset_env])
+                elif feature_mode.startswith("chroma_delta_onset"):
+                    features = np.vstack([pitch_feature, chroma_delta, onset_env])
+                elif feature_mode.startswith("cqt_onset"):
+                    features = np.vstack([pitch_feature, onset_env])
+                else:  # full
+                    # Stack: (pitch+delta+1+1, frames)
+                    features = np.vstack([pitch_feature, chroma_delta, onset_env, rms_norm])
         
         # Silence zeroing REMOVED — normalized chroma already distinguishes
         # pitched content (clear harmonic peaks) from ambient noise (featureless).
@@ -425,14 +461,13 @@ class AudioSync:
 
     def run_hybrid_sync(self, f1, f2):
         """
-        Memory-efficient DTW using dtaidistance C backend.
+        Calculates optimal DTW mapping using dtaidistance.
         
-        dtaidistance properly implements Sakoe-Chiba band constraint,
-        allocating only O(n * window) memory instead of O(n²).
+        Due to the O(N^2) memory scaling of the dtaidistance C-backend underlying matrix, 
+        this uses a larger hop_length (2048) by default, requiring ~4.3 GB of RAM
+        for a 35 minute track rather than 17.2 GB.
         """
-        from dtaidistance import dtw_ndim
-        
-        print(f"\n--- DTW Alignment (dtaidistance C backend) ---")
+        print(f"\n--- DTW Alignment (dtaidistance C-backend) ---")
         print(f"  Sample Rate: {self.sr} Hz, Hop: {self.hop_length}")
         
         frame_rate = self.sr / self.hop_length
@@ -444,21 +479,16 @@ class AudioSync:
         window_frames = int(window_sec * frame_rate)
         
         print(f"  Sakoe-Chiba window: {window_frames} frames ({window_sec}s)")
-        print(f"  Computing DTW...")
+        print(f"  Computing DTW (dtaidistance)...")
         
         import time
         start = time.time()
         
-        # Ensure contiguous float64 arrays for C backend
+        # Ensure contiguous arrays just in case
         f1_c = np.ascontiguousarray(f1, dtype=np.float64)
         f2_c = np.ascontiguousarray(f2, dtype=np.float64)
         
-        path = dtw_ndim.warping_path(
-            f1_c, f2_c,
-            window=window_frames,
-            penalty=0.0,  # Zero penalty to allow free warping
-            use_c=True
-        )
+        path = dtw_ndim.warping_path(f1_c, f2_c, window=window_frames, penalty=0.0, use_c=True)
         
         elapsed = time.time() - start
         print(f"  Path length: {len(path)}")
@@ -644,14 +674,15 @@ class AudioSync:
 
 
 
-    def map_timestamps(self, coarse_path, manual_timestamps_list, f1_coarse, f2_coarse, bwd_mapper=None, offset1=0):
+    def map_timestamps(self, coarse_path, manual_timestamps_list, f1_coarse, f2_coarse, bwd_mapper=None, offset1=0, f1_hires=None, f2_hires=None, local_hop=256):
         """
-        Maps timestamps using the Global DTW Path + Bi-directional Anchoring.
+        Maps timestamps using the Global DTW Path + Bi-directional Anchoring,
+        with optional high-resolution local cross-correlation refinement.
         
-        No local refinement — the coarse DTW with bi-directional anchoring
-        is globally consistent and gives the best results for rubato-heavy
-        music. Local refinement (DTW or cross-correlation) systematically
-        degrades accuracy by converging on wrong local minima.
+        When f1_hires/f2_hires are provided (hop=256, ~11ms), each coarse
+        estimate is refined via _local_refine_core which searches ±200ms
+        around the coarse position using rigid sliding-window xcorr.
+        A confidence gate (peak/second_peak > 1.15) prevents bad refinements.
         
         TERMINOLOGY NOTE:
         - mix: The measure number (e.g. 100). NOT UNIQUE if there are repeats.
@@ -659,7 +690,12 @@ class AudioSync:
           ALWAYS use the index/detix for alignment verification and mapping
           to avoid ambiguity during repeated sections.
         """
-        print(f"\n--- Mapping Timestamps (Global DTW + Bi-directional Anchors) ---")
+        do_refine = f1_hires is not None and f2_hires is not None
+        if do_refine:
+            print(f"\n--- Mapping Timestamps (Global DTW + Bi-directional Anchors + Local Refinement) ---")
+            print(f"  Local refinement: hop={local_hop} (~{self.sr/local_hop:.0f}Hz, ~{local_hop/self.sr*1000:.1f}ms/frame)")
+        else:
+            print(f"\n--- Mapping Timestamps (Global DTW + Bi-directional Anchors) ---")
         
         import time
         t_start = time.time()
@@ -728,29 +764,40 @@ class AudioSync:
             t2_frame_est = mapper(t1_frame)
             t2_mapped = float(t2_frame_est * self.hop_length / self.sr)
             
-            # Compute feature distance at mapped position (for confidence scoring)
-            t1_frame_idx = max(0, min(int(t1_frame), len(f1_coarse) - 1))
-            t2_frame_idx = max(0, min(int(t2_frame_est), len(f2_coarse) - 1))
-            
-            u = f1_coarse[t1_frame_idx]
-            v = f2_coarse[t2_frame_idx]
-            u_norm = np.linalg.norm(u)
-            v_norm = np.linalg.norm(v)
-            
-            if u_norm < 1e-8 or v_norm < 1e-8:
-                feature_dist = 1.0
+            # --- Local Cross-Correlation Refinement ---
+            if do_refine:
+                t2_refined, feature_dist = _local_refine_core(
+                    f1_hires, f2_hires, t1_rel, t2_mapped,
+                    0.5,  # window_sec (ignored inside, kept for API compat)
+                    local_hop, self.sr
+                )
+                refine_delta = t2_refined - t2_mapped
             else:
-                cos_sim = np.dot(u, v) / (u_norm * v_norm)
-                cos_sim = max(-1.0, min(1.0, cos_sim))
-                feature_dist = float(1.0 - cos_sim)
+                t2_refined = t2_mapped
+                refine_delta = 0.0
+                # Compute feature distance at mapped position (for confidence scoring)
+                t1_frame_idx = max(0, min(int(t1_frame), len(f1_coarse) - 1))
+                t2_frame_idx = max(0, min(int(t2_frame_est), len(f2_coarse) - 1))
+                
+                u = f1_coarse[t1_frame_idx]
+                v = f2_coarse[t2_frame_idx]
+                u_norm = np.linalg.norm(u)
+                v_norm = np.linalg.norm(v)
+                
+                if u_norm < 1e-8 or v_norm < 1e-8:
+                    feature_dist = 1.0
+                else:
+                    cos_sim = np.dot(u, v) / (u_norm * v_norm)
+                    cos_sim = max(-1.0, min(1.0, cos_sim))
+                    feature_dist = float(1.0 - cos_sim)
             
             results.append({
                 "index": i,
                 "mix": mix_num,
-                "t": t2_mapped,
+                "t": t2_refined,
                 "t_coarse": round(t2_mapped, 6),
-                "t_refined": round(t2_mapped, 6),
-                "refine_delta": 0.0,
+                "t_refined": round(t2_refined, 6),
+                "refine_delta": round(refine_delta, 6),
                 "feature_distance": round(feature_dist, 4)
             })
         
@@ -848,7 +895,7 @@ class AudioSync:
         return results
 
     def run_sync(self, url1, url2, output_json="sync_path.json", 
-                 offset1=0, end1=None, offset2=0, end2=None):
+                 offset1=0, end1=None, offset2=0, end2=None, feature_mode="chroma_onset20"):
         """
         Main execution pipeline using Hybrid 2-Pass DTW.
         """
@@ -921,8 +968,8 @@ class AudioSync:
         print(f"  Recording 2: {len(y2)/sr:.1f}s (offset={offset2}s, end={end2 or 'full'})")
         
         # Extract features using pre-computed harmonics
-        f1 = self.extract_features(y1, self.hop_length, y_harmonic=y1_harmonic)
-        f2 = self.extract_features(y2, self.hop_length, y_harmonic=y2_harmonic)
+        f1 = self.extract_features(y1, self.hop_length, y_harmonic=y1_harmonic, feature_mode=feature_mode)
+        f2 = self.extract_features(y2, self.hop_length, y_harmonic=y2_harmonic, feature_mode=feature_mode)
         
         print(f"\n[3/3] Running Hybrid 2-Pass Sync...")
         path = self.run_hybrid_sync(f1, f2)

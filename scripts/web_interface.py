@@ -385,6 +385,8 @@ HTML_TEMPLATE = '''
                         </p>
                     </div>
 
+
+
                     <div class="form-group" style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
                         <label for="timestamps_rec2">Recording 2 Manual Timestamps (Ground Truth - Optional)</label>
                         <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
@@ -1021,7 +1023,7 @@ def run_pipeline_thread(job_id, data):
             rec1_timestamps_offset=rec1_timestamps_offset,
             timestamps_list_rec2=timestamps_rec2,
             rec2_timestamps_offset=rec2_timestamps_offset,
-            stream_file=logger 
+            stream_file=logger
         )
         
         JOBS[job_id]['result'] = result

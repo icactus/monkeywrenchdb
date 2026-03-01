@@ -367,6 +367,7 @@
 
     // --- HOOK INTO SYNPDF LOGIC ---
     let isHooked = false;
+    let metronomeHooked = false;
     function installTime2xHook() {
         if (isHooked) return;
 
@@ -399,11 +400,15 @@
     if (typeof _originalToggleTwoUpMode === 'function') {
         window.toggleTwoUpMode = function (on) {
             _originalToggleTwoUpMode(on);
-            // The rebuild replaces msc_wz, so we must re-hook
+            // The rebuild replaces msc_wz, so we must re-hook both
             isHooked = false;
-            setTimeout(installTime2xHook, 200);
+            metronomeHooked = false;
+            setTimeout(() => {
+                installTime2xHook();
+                installMetronomeHook();
+            }, 200);
         };
-        log('Patched toggleTwoUpMode to preserve UI updates.');
+        log('Patched toggleTwoUpMode to preserve UI updates + metronome.');
     }
 
     // --- SYNC INFO DISPLAY ---
@@ -861,7 +866,7 @@
     }
 
     // --- METRONOME CLICK ---
-    
+
     // State
     window.metronomeEnabled = false;
     window.metronomeVolume = 0.5;
@@ -871,7 +876,7 @@
 
     function initMetronome() {
         // Check for preview mode - look for element containing "PREVIEW MODE" text
-        const previewIndicator = Array.from(document.querySelectorAll('div')).find(el => 
+        const previewIndicator = Array.from(document.querySelectorAll('div')).find(el =>
             el.innerText === 'PREVIEW MODE'
         );
         if (!previewIndicator) {
@@ -939,7 +944,7 @@
 
         // Insert after PREVIEW MODE indicator
         previewIndicator.insertAdjacentElement('afterend', container);
-        
+
         log('Metronome controls injected');
     }
 
@@ -948,7 +953,7 @@
             metronomeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
             metronomeInitialized = true;
             log('Metronome audio context initialized');
-            
+
             // Resume if suspended (browser autoplay policy)
             if (metronomeAudioContext.state === 'suspended') {
                 metronomeAudioContext.resume();
@@ -972,20 +977,20 @@
             if (metronomeAudioContext.state === 'suspended') {
                 metronomeAudioContext.resume();
             }
-            
+
             const osc = metronomeAudioContext.createOscillator();
             const gain = metronomeAudioContext.createGain();
-            
+
             osc.connect(gain);
             gain.connect(metronomeAudioContext.destination);
-            
+
             // Short click sound
             osc.frequency.value = 880;
             osc.type = 'square';
-            
+
             gain.gain.setValueAtTime(window.metronomeVolume * 0.5, metronomeAudioContext.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, metronomeAudioContext.currentTime + 0.05);
-            
+
             osc.start(metronomeAudioContext.currentTime);
             osc.stop(metronomeAudioContext.currentTime + 0.05);
         } catch (e) {
@@ -994,16 +999,14 @@
     }
 
     function installMetronomeHook() {
-        if (!window.msc_wz$$module$synpdf) {
-            setTimeout(installMetronomeHook, 500);
-            return;
-        }
+        if (!window.msc_wz$$module$synpdf) return false;
+        if (metronomeHooked) return true;
 
         const originalTime2x = window.msc_wz$$module$synpdf.time2x;
-        
-        window.msc_wz$$module$synpdf.time2x = function(t) {
+
+        const wrappedTime2x = function (t) {
             originalTime2x.apply(this, arguments);
-            
+
             if (window.metronomeEnabled) {
                 const currentDemix = getDemix();
                 if (currentDemix !== lastMetronomeDemix && currentDemix >= 0) {
@@ -1012,8 +1015,28 @@
                 }
             }
         };
+        // Stamp so the watchdog can verify this wrapper is still active
+        wrappedTime2x.__metronomeHooked = true;
 
+        window.msc_wz$$module$synpdf.time2x = wrappedTime2x;
+
+        metronomeHooked = true;
         log('Metronome hook installed');
+        return true;
+    }
+
+    // Watchdog: re-installs the metronome hook whenever msc_wz is rebuilt
+    // (2-up toggle, recording switch, resize, instrument change, etc.)
+    // More robust than patching every individual code path.
+    function startMetronomeWatchdog() {
+        setInterval(() => {
+            if (!window.msc_wz$$module$synpdf) return;
+            // Check if our stamped wrapper is still the active time2x
+            if (!window.msc_wz$$module$synpdf.time2x?.__metronomeHooked) {
+                metronomeHooked = false;
+                installMetronomeHook();
+            }
+        }, 500);
     }
 
     // --- INITIALIZATION ---
@@ -1025,11 +1048,12 @@
             log('Initializing extension...');
             injectEditButton();
             initQuickFix();
-            
+
             // Initialize metronome after a delay to ensure PREVIEW MODE indicator exists
             setTimeout(() => {
                 initMetronome();
                 installMetronomeHook();
+                startMetronomeWatchdog();
             }, 1500);
         }, 1000);
     });
