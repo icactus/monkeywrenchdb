@@ -1,8 +1,20 @@
 # Static JSON data files — served directly by Apache
-# Cache for 1 year (immutable content, busted via Cloudflare purge on update)
+# Disable directory browsing
+Options -Indexes
 
+# Only allow requests from our own site (blocks casual scraping)
+RewriteEngine On
+RewriteCond %{HTTP_REFERER} !^https?://(www\.)?monkeywrenchdb\.org [NC]
+RewriteCond %{HTTP_REFERER} !^$
+RewriteRule \.json$ - [F,L]
+
+# Caching and content type for .json files
 <FilesMatch "\.json$">
     Header set Cache-Control "public, max-age=31536000, immutable"
     Header set Content-Type "application/json; charset=utf-8"
-    Header set Access-Control-Allow-Origin "*"
+</FilesMatch>
+
+# Block access to all non-json files
+<FilesMatch "^(?!.*\.json$)">
+    Require all denied
 </FilesMatch>
