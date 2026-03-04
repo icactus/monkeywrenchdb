@@ -78,6 +78,9 @@ function purgeMetricArrCache(int $metricArrId, int $pieceId, int $instrumentId):
         "{$baseUrl}/fetchrecordings_data.php?metricArrId={$metricArrId}",
         "{$baseUrl}/get_new_instrument_data.php?metricId={$metricArrId}",
 
+        // Static JSON file
+        "{$baseUrl}/data/metrics/{$metricArrId}.json",
+
         // Pieces list (will include this metric_arr in parts)
         "{$baseUrl}/fetch_pieces.php?instrumentIds={$instrumentId}",
 

@@ -715,63 +715,69 @@ function fetchRecordings(metricArrId) {
 
 
 let recordingCache = {};
-function loadRecording(recordingFullData) {
-    return new Promise(function (resolve, reject) {
-        console.log(recordingFullData);
+async function loadRecording(recordingFullData) {
+    console.log(recordingFullData);
 
-        // Update the document title
-        let newTitle = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`;
-        document.title = newTitle;
+    // Update the document title
+    let newTitle = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`;
+    document.title = newTitle;
 
-        // Add title to composer-piece-name Div
-        let targetDiv = document.getElementById('composer-piece-name');
-        targetDiv.innerHTML = `<h3> ${newTitle}</h3> `;
+    // Add title to composer-piece-name Div
+    let targetDiv = document.getElementById('composer-piece-name');
+    targetDiv.innerHTML = `<h3> ${newTitle}</h3> `;
 
-        // Track History
-        if (typeof addToHistory === 'function') {
-            addToHistory(recordingFullData.piece_id, recordingFullData.metric_arr_id, recordingFullData.recording_id);
-        }
+    // Track History
+    if (typeof addToHistory === 'function') {
+        addToHistory(recordingFullData.piece_id, recordingFullData.metric_arr_id, recordingFullData.recording_id);
+    }
 
-        // Create a unique ID for the recording
-        let metricId = recordingFullData.metric_arr_id;
-        let recordingId = recordingFullData.recording_id;
-        currentRecordingFullData = recordingFullData; // Global variable for testing
-        let storedId = metricId + '-' + recordingId;
+    // Create a unique ID for the recording
+    let metricId = recordingFullData.metric_arr_id;
+    let recordingId = recordingFullData.recording_id;
+    currentRecordingFullData = recordingFullData; // Global variable for testing
+    let storedId = metricId + '-' + recordingId;
 
-        // Check if the data is already stored in the cache
-        let storedData = recordingCache[storedId];
-        // If data exists in cache, refresh its pdf path to match current mode
-        if (storedData) {
-            storedData.pdf_file_name = `${getPdfBaseDir()}${buildPdfFilename(storedData.piece_id, storedData.instrument_id, storedData.edition_label)}`;
-            sendVarToSynpdf(storedData);
-            resolve();
-        } else {
-            // If data does not exist in cache, create it with the correct base dir
-            console.log('Building PDF filename:', { piece: recordingFullData.piece_id, inst: recordingFullData.instrument_id, edition: recordingFullData.edition_label });
-            const pdfFileName = `${getPdfBaseDir()}${buildPdfFilename(recordingFullData.piece_id, recordingFullData.instrument_id, recordingFullData.edition_label)}`;
-            console.log('Result PDF filename:', pdfFileName);
-            recordingFullData.pdf_file_name = pdfFileName;
-            recordingFullData.timestamp = Date.now();
-            recordingCache[storedId] = recordingFullData;
-            sendVarToSynpdf(recordingFullData);
-            resolve();
-        }
+    // Check if the data is already stored in the cache
+    let storedData = recordingCache[storedId];
+    // If data exists in cache, refresh its pdf path to match current mode
+    if (storedData) {
+        storedData.pdf_file_name = `${getPdfBaseDir()}${buildPdfFilename(storedData.piece_id, storedData.instrument_id, storedData.edition_label)}`;
+        await sendVarToSynpdf(storedData);
+    } else {
+        // If data does not exist in cache, create it with the correct base dir
+        console.log('Building PDF filename:', { piece: recordingFullData.piece_id, inst: recordingFullData.instrument_id, edition: recordingFullData.edition_label });
+        const pdfFileName = `${getPdfBaseDir()}${buildPdfFilename(recordingFullData.piece_id, recordingFullData.instrument_id, recordingFullData.edition_label)}`;
+        console.log('Result PDF filename:', pdfFileName);
+        recordingFullData.pdf_file_name = pdfFileName;
+        recordingFullData.timestamp = Date.now();
+        recordingCache[storedId] = recordingFullData;
+        await sendVarToSynpdf(recordingFullData);
+    }
 
-        // Send a page view event to Google Analytics with the updated title
-        gtag('event', 'page_view', {
-            'page_title': newTitle,
-            'page_path': window.location.pathname
-        });
+    // Send a page view event to Google Analytics with the updated title
+    gtag('event', 'page_view', {
+        'page_title': newTitle,
+        'page_path': window.location.pathname
     });
 }
 
 
-function sendVarToSynpdf(recordingFullData) {
+// Fetch metric_arr and times_arr from static JSON files in parallel
+async function sendVarToSynpdf(recordingFullData) {
     pdf_file$$module$synpdf = recordingFullData.pdf_file_name;
-    deMetriek$$module$synpdf = metric_arr$$module$synpdf = JSON.parse(recordingFullData.metric_arr_data);
-    deTijden$$module$synpdf = times_arr$$module$synpdf = JSON.parse(recordingFullData.times_arr_data);
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
+
+    const metricId = recordingFullData.metric_arr_id;
+    const recordingId = recordingFullData.recording_id;
+
+    const [metricData, timesData] = await Promise.all([
+        fetch(`data/metrics/${metricId}.json`).then(r => r.json()),
+        fetch(`data/times/${recordingId}.json`).then(r => r.json())
+    ]);
+
+    deMetriek$$module$synpdf = metric_arr$$module$synpdf = metricData;
+    deTijden$$module$synpdf = times_arr$$module$synpdf = timesData;
 }
 
 
@@ -826,11 +832,10 @@ $('#instruments-dropdown').change(function () {
             renderingQueue.clear();
             canShowDemaat = false;
 
-            // Update only part-specific data
+            // Update only part-specific data (metric_arr_data fetched from static file by sendVarToSynpdf)
             const updatedRecordingFullData = {
                 ...recordingFullData,
                 metric_arr_id: partData.metric_arr_id,
-                metric_arr_data: partData.metric_arr_data,
                 instrument_id: instrumentData.instrument_id,
                 instrument_name: instrumentData.displayText,
                 edition_label: instrumentData.edition_label,
@@ -857,7 +862,7 @@ $('#instruments-dropdown').change(function () {
 });
 
 
-$('#recordings-dropdown').change(function () {
+$('#recordings-dropdown').change(async function () {
     const selectedOption = $(this).find('option:selected');
     const recordingFullData = selectedOption.data('recordingFullData');
     currentRecordingGlobal = recordingFullData.recording_id;
@@ -865,7 +870,9 @@ $('#recordings-dropdown').change(function () {
     blockTime2x = true;
     isSwitchingRecording = true; // Set flag during switch
 
-    deTijden$$module$synpdf = metric_arr$$module$synpdf = JSON.parse(recordingFullData.times_arr_data);
+    // Fetch times_arr from static file
+    const timesData = await fetch(`data/times/${recordingFullData.recording_id}.json`).then(r => r.json());
+    deTijden$$module$synpdf = times_arr$$module$synpdf = timesData;
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
 

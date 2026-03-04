@@ -71,7 +71,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($stmt->execute()) {
         if ($stmt->affected_rows >= 0) {
-            echo json_encode(['success' => true, 'message' => 'Updated successfully.']);
+            // Also write the static JSON file
+            $staticDir = __DIR__ . '/data/metrics';
+            if (!is_dir($staticDir))
+                mkdir($staticDir, 0755, true);
+            $staticFile = "$staticDir/$metricArrId.json";
+            $writeOk = file_put_contents($staticFile, $metricArrData);
+
+            if ($writeOk === false) {
+                echo json_encode(['success' => true, 'message' => 'DB updated but static file write failed.']);
+            } else {
+                echo json_encode(['success' => true, 'message' => 'Updated successfully.']);
+            }
         } else {
             // Should not happen if execute returns true, but safe fallback
             echo json_encode(['success' => false, 'message' => 'No changes made.']);

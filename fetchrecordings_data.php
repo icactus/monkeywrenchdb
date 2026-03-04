@@ -17,7 +17,8 @@ if ($conn->connect_error) {
 // Get the metricArrId from the AJAX request parameter
 $metricArrId = $_GET['metricArrId'];
 
-// Prepare the SQL query without the measures_version CASE logic
+// Query returns lightweight metadata only.
+// metric_arr_data and times_arr_data are now served as static JSON files.
 $stmt = $conn->prepare("
     SELECT 
         metric_arr.metric_arr_id, 
@@ -32,8 +33,7 @@ $stmt = $conn->prepare("
         metric_arr.edition_label,
         recordings.youtube_id, 
         recordings.recording_id,
-        recordings.offset_js,       -- Standard offset
-        recordings.times_arr_data   -- Standard times array
+        recordings.offset_js
     FROM metric_arr
     JOIN pieces ON metric_arr.piece_id = pieces.piece_id
     JOIN instruments ON metric_arr.instrument_id = instruments.instrument_id
@@ -51,27 +51,10 @@ $stmt->execute();
 // Get the result
 $result = $stmt->get_result();
 
-// Prepare the second SQL query to fetch metric_arr_data (this remains the same)
-$stmt2 = $conn->prepare("
-    SELECT metric_arr.metric_arr_data
-    FROM metric_arr
-    WHERE metric_arr.metric_arr_id = ?
-    LIMIT 1
-");
-$stmt2->bind_param('i', $metricArrId);
-$stmt2->execute();
-$result2 = $stmt2->get_result();
-$metric_arr_data = mysqli_fetch_assoc($result2)['metric_arr_data'];
-
-// Check if the first query was successful
+// Check if the query was successful
 if ($result) {
     // Fetch all rows
     $rows = mysqli_fetch_all($result, MYSQLI_ASSOC);
-
-    // Add metric_arr_data to each row
-    foreach ($rows as &$row) {
-        $row['metric_arr_data'] = $metric_arr_data;
-    }
 
     // Check if any rows were returned
     if (count($rows) > 0) {
@@ -85,3 +68,4 @@ if ($result) {
 
 // Close the database connection
 $conn->close();
+

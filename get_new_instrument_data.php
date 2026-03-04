@@ -14,7 +14,8 @@ if ($conn->connect_error) {
 
 $metricId = $_GET['metricId'];
 
-$stmt = $conn->prepare("SELECT metric_arr_data, metric_arr_id, edition_label 
+// metric_arr_data is now served as a static JSON file at /data/metrics/{id}.json
+$stmt = $conn->prepare("SELECT metric_arr_id, edition_label 
                         FROM metric_arr 
                         WHERE metric_arr_id = ?");
 
