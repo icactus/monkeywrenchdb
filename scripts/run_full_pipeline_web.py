@@ -178,23 +178,14 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         bwd_u_j = np.array([np.mean(bwd_frame_map[k]) for k in bwd_u_i])
         bwd_mapper = interp1d(bwd_u_i, bwd_u_j, kind='linear', fill_value="extrapolate")  # type: ignore[arg-type]
         
-        print("\n  [Mapping Timestamps with Bi-directional Anchors + Local Refinement]...")
-        
-        # High-res features for local refinement (reuse existing HPSS harmonics)
-        print("\n  [Extracting High-Res Features for Local Refinement]...")
-        LOCAL_HOP = 256
-        f1_hires, _ = syncer.extract_features_hires(y1, local_hop=LOCAL_HOP, y_harmonic=y1_harmonic)
-        f2_hires, _ = syncer.extract_features_hires(y2, local_hop=LOCAL_HOP, y_harmonic=y2_harmonic)
+        print("\n  [Mapping Timestamps with Bi-directional Anchors]...")
         
         refined_results_rel = syncer.map_timestamps(path, input_timestamps, f1_coarse, f2_coarse,
                                                      bwd_mapper=bwd_mapper,
-                                                     offset1=offset1,
-                                                     f1_hires=f1_hires,
-                                                     f2_hires=f2_hires,
-                                                     local_hop=LOCAL_HOP)
+                                                     offset1=offset1)
         
-        # Cleanup path, harmonics, and hires features
-        del path, y1_harmonic, y2_harmonic, f1_hires, f2_hires
+        # Cleanup path and harmonics
+        del path, y1_harmonic, y2_harmonic
         gc.collect()
         
         final_results = []

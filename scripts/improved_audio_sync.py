@@ -846,7 +846,10 @@ class AudioSync:
         print(f"  [Parallel HPSS] Checking cache for {len(inputs)} items...")
         
         for i, (id_str, audio_path, offset, duration) in enumerate(inputs):
-            cache_path = os.path.join(self.cache_dir, f"{id_str}_harmonic.npy")
+            # Include offset/duration in cache key so different trim ranges
+            # of the same YouTube video don't collide (e.g. short test vs full run)
+            cache_suffix = f"_{offset}_{duration}" if (offset or duration) else ""
+            cache_path = os.path.join(self.cache_dir, f"{id_str}{cache_suffix}_harmonic.npy")
             
             if os.path.exists(cache_path):
                 print(f"    [Cache hit] {cache_path}")
@@ -866,7 +869,8 @@ class AudioSync:
         # Prepare tasks for missing items
         for i in missing_indices:
             id_str, audio_path, offset, duration = inputs[i]
-            cache_path = os.path.join(self.cache_dir, f"{id_str}_harmonic.npy")
+            cache_suffix = f"_{offset}_{duration}" if (offset or duration) else ""
+            cache_path = os.path.join(self.cache_dir, f"{id_str}{cache_suffix}_harmonic.npy")
             tasks.append((audio_path, offset, duration, self.sr, cache_path))
             
         # Run parallel
@@ -888,8 +892,9 @@ class AudioSync:
         
         # Load newly computed results
         for i in missing_indices:
-            id_str = inputs[i][0]
-            cache_path = os.path.join(self.cache_dir, f"{id_str}_harmonic.npy")
+            id_str, audio_path, offset, duration = inputs[i]
+            cache_suffix = f"_{offset}_{duration}" if (offset or duration) else ""
+            cache_path = os.path.join(self.cache_dir, f"{id_str}{cache_suffix}_harmonic.npy")
             results[i] = np.load(cache_path)
             
         return results
