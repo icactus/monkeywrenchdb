@@ -2,10 +2,9 @@
 # Disable directory browsing
 Options -Indexes
 
-# Only allow requests from our own site (blocks casual scraping)
+# Only allow requests from our own site (blocks direct visits and scraping)
 RewriteEngine On
 RewriteCond %{HTTP_REFERER} !^https?://(www\.)?monkeywrenchdb\.org [NC]
-RewriteCond %{HTTP_REFERER} !^$
 RewriteRule \.json$ - [F,L]
 
 # Caching and content type for .json files
