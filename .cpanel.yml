@@ -32,8 +32,12 @@ deployment:
     - /bin/cp sw.js $DEPLOYPATH
 
     - /bin/cp annotations_api.php $DEPLOYPATH
+    - /bin/cp export_static_json.php $DEPLOYPATH
     - /bin/cp -R assets $DEPLOYPATH
     - /bin/cp -R js $DEPLOYPATH
+    - /bin/mkdir -p ${DEPLOYPATH}data/metrics
+    - /bin/mkdir -p ${DEPLOYPATH}data/times
+    - /bin/cp data/.htaccess ${DEPLOYPATH}data/.htaccess
 
     - export DEPLOYPATH2=/home/monkcdmb/phpfiles/
     - /bin/cp phpfiles/composers-addnew.php $DEPLOYPATH2
