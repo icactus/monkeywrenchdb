@@ -2,28 +2,22 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/monkcdmb/public_html/
-    - /bin/cp fetch_new_recording.php $DEPLOYPATH
     - /bin/cp fetch_pieces.php $DEPLOYPATH
     - /bin/cp fetchinstruments_data.php $DEPLOYPATH
     - /bin/cp fetchrecordings_data.php $DEPLOYPATH
-    - /bin/cp get_monkeywrench_metric_arr.php $DEPLOYPATH
     - /bin/cp get_new_instrument_data.php $DEPLOYPATH
     - /bin/cp get_preload.php $DEPLOYPATH
     - /bin/cp get_recording_instruments.php $DEPLOYPATH
     - /bin/cp index.php $DEPLOYPATH
-    - /bin/cp mysql-metric-arr-submit.php $DEPLOYPATH
-    - /bin/cp phpinfo.php $DEPLOYPATH
     - /bin/cp stripped-synpdf-extras.js $DEPLOYPATH
     - /bin/cp stripped-synpdf.js $DEPLOYPATH
     - /bin/cp preview-editor.php $DEPLOYPATH
     - /bin/cp synpdf-editor-extension.js $DEPLOYPATH
-    - /bin/cp check_multiple_parts.php $DEPLOYPATH
     - /bin/cp auth_login.php $DEPLOYPATH
     - /bin/cp auth_callback.php $DEPLOYPATH
     - /bin/cp auth_logout.php $DEPLOYPATH
     - /bin/cp session_config.php $DEPLOYPATH
     - /bin/cp get_recording_from_url.php $DEPLOYPATH
-    - /bin/cp get_youtube_ids.php $DEPLOYPATH
     - /bin/cp history_api.php $DEPLOYPATH
     - /bin/cp favorites_api.php $DEPLOYPATH
     - /bin/cp admin-live-edit.js $DEPLOYPATH

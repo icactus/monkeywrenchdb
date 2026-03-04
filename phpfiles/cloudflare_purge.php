@@ -74,7 +74,6 @@ function purgeMetricArrCache(int $metricArrId, int $pieceId, int $instrumentId):
 
     $urlsToPurge = [
         // Direct metric arr endpoints
-        "{$baseUrl}/get_monkeywrench_metric_arr.php?metricId={$metricArrId}",
         "{$baseUrl}/fetchrecordings_data.php?metricArrId={$metricArrId}",
         "{$baseUrl}/get_new_instrument_data.php?metricId={$metricArrId}",
 

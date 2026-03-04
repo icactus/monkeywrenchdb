@@ -151,7 +151,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $mysqli->begin_transaction();
 
     // Check if record already exists (match on piece_id + instrument_id + edition_label)
-    $checkQuery = "SELECT metric_arr_data FROM metric_arr WHERE piece_id = ? AND instrument_id = ? AND (edition_label = ? OR (edition_label IS NULL AND ? IS NULL))";
+    $checkQuery = "SELECT metric_arr_id, metric_arr_data FROM metric_arr WHERE piece_id = ? AND instrument_id = ? AND (edition_label = ? OR (edition_label IS NULL AND ? IS NULL))";
     $stmt = $mysqli->prepare($checkQuery);
     $recordExists = false;
     $existingData = null;
@@ -208,8 +208,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt_update->execute();
             $mysqli->commit();
 
+            // Write static JSON file
+            $existingMetricArrId = $row['metric_arr_id'] ?? 0;
+            $staticDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/data/metrics';
+            if (!is_dir($staticDir))
+                mkdir($staticDir, 0755, true);
+            file_put_contents("$staticDir/$existingMetricArrId.json", $metric_arr_data_processed);
+
             // Purge Cloudflare cache for this metric_arr
-            $purgeResult = purgeMetricArrCache($row['metric_arr_id'] ?? 0, $piece_id, $instrument_id);
+            $purgeResult = purgeMetricArrCache($existingMetricArrId, $piece_id, $instrument_id);
 
             $response .= "The data has been updated.<br>";
             $stmt_update->close();
@@ -268,6 +275,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if ($stmt->affected_rows > 0) {
                     $newMetricArrId = $mysqli->insert_id;
                     $mysqli->commit();
+
+                    // Write static JSON file
+                    $staticDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/data/metrics';
+                    if (!is_dir($staticDir))
+                        mkdir($staticDir, 0755, true);
+                    file_put_contents("$staticDir/$newMetricArrId.json", $metric_arr_data_processed);
 
                     // Purge Cloudflare cache for related endpoints
                     $purgeResult = purgeMetricArrCache($newMetricArrId, $piece_id, $instrument_id);
