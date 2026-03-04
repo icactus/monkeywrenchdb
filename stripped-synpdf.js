@@ -2245,7 +2245,7 @@ async function onPlayerStateChange(event) {
     }
 
     if (event.data == YT.PlayerState.PLAYING) {
-        dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100);
+        dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 50);
         setPauseState$$module$synpdf(false);
     } else {
         dummyPlayer$$module$synpdf.clearKlok();
