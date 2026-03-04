@@ -1766,6 +1766,8 @@ function retryPdfLoad$$module$synpdf() {
         let pdfUrl = lastPdfLoadParams$$module$synpdf.pdfData;
         // Add cache-busting timestamp to bypass CDN cached partial downloads
         if (typeof pdfUrl === 'string') {
+            // Strip any existing _cb param first to avoid duplicates on re-retry
+            pdfUrl = pdfUrl.replace(/[?&]_cb=\d+/g, '');
             const separator = pdfUrl.includes('?') ? '&' : '?';
             pdfUrl = pdfUrl + separator + '_cb=' + Date.now();
         }
