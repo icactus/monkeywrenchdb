@@ -2,7 +2,7 @@
 // Version 108 - Added timeout and better error handling
 // Bump this version number to force update on all clients
 
-const SW_VERSION = 108;
+const SW_VERSION = 109;
 const FETCH_TIMEOUT_MS = 10000; // 10 second timeout
 
 // Install event - activate immediately
@@ -53,11 +53,26 @@ function fetchWithTimeout(request, timeoutMs) {
     });
 }
 
-// Fetch event - always go to network with timeout
+// Fetch event - pass through static assets, timeout-wrap everything else
 self.addEventListener('fetch', (event) => {
     // Skip non-HTTP requests (e.g., chrome-extension://)
     if (!event.request.url.startsWith('http')) {
         return;
+    }
+
+    const url = new URL(event.request.url);
+
+    // Let the browser handle static assets directly (enables HTTP cache + Cloudflare edge cache)
+    // Don't intercept: /data/ JSON files, PDFs, images, fonts, external CDNs
+    if (url.pathname.startsWith('/data/') ||
+        url.pathname.endsWith('.pdf') ||
+        url.pathname.endsWith('.json') ||
+        url.pathname.endsWith('.png') ||
+        url.pathname.endsWith('.jpg') ||
+        url.pathname.endsWith('.svg') ||
+        url.pathname.endsWith('.woff2') ||
+        url.origin !== self.location.origin) {
+        return; // browser handles natively
     }
 
     event.respondWith(
