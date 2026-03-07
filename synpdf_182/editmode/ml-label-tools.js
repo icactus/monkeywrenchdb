@@ -260,8 +260,25 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.getElementById('export-ml-btn').addEventListener('click', function () {
-        if (!window.deMetriek$$module$synpdf || window.deMetriek$$module$synpdf.length === 0) {
-            alert("No metric data to export. Please load a PDF first.");
+        // The true state of all pages is kept in localStorage by edit-mode-tools.js
+        let jsonStringStr = localStorage.getItem('jsonString');
+
+        let allPagesData = null;
+        if (jsonStringStr) {
+            try {
+                allPagesData = JSON.parse(jsonStringStr);
+            } catch (e) {
+                console.error("Could not parse jsonString from localStorage", e);
+            }
+        }
+
+        // Fallback to memory if localStorage is empty or corrupted
+        if (!allPagesData && window.deMetriek$$module$synpdf) {
+            allPagesData = window.deMetriek$$module$synpdf;
+        }
+
+        if (!allPagesData || allPagesData.length === 0) {
+            alert("No metric data found in memory or localStorage. Please load a PDF and try again.");
             return;
         }
 
@@ -275,9 +292,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // The ML training script expects the data in the exact format stored in deMetriek
         // We just need to prepend the width scaling factor (usually 1000)
-        // Note: deMetriek starts at index 1 for page 1, so index 0 is currently null/undefined in memory
+        // Note: deMetriek/jsonString starts at index 1 for page 1, so index 0 is currently null/undefined
 
-        let exportData = [...window.deMetriek$$module$synpdf];
+        let exportData = [...allPagesData];
 
         // Ensure index 0 has the expected width scale factor for the ML scripts
         exportData[0] = 1000;

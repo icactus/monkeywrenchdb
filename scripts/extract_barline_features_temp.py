@@ -23,8 +23,53 @@ def get_pixel_data(image, fixwd):
     rgba_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGBA)
     return rgba_img.flatten().astype(np.int32), rgba_img.shape[1] * 4, rgba_img.shape[1]
 
+def normalize_staff_lines(raw_cs):
+    """Normalize a cs array to extract the best 5 staff lines and compute spatium.
+    
+    Handles variable lengths:
+    - 5 values: standard single staff, use as-is
+    - 6+ values: misidentified extra line(s), pick best 5 by most even spacing
+    - 2 values: bounding box only, estimate spatium = height / 4
+    - 3-4 values: partial data, use median consecutive difference for spatium
+    
+    Returns: (staff_5, spatium, top_y, bot_y)
+      staff_5: list of 5 Y values (or None if < 5)
+      spatium: estimated distance between adjacent staff lines
+      top_y: top of the staff area
+      bot_y: bottom of the staff area
+    """
+    cs = sorted(raw_cs)
+    n = len(cs)
+    
+    if n < 2:
+        return None, 0, 0, 0
+    
+    if n == 2:
+        # Bounding box only
+        spatium = (cs[1] - cs[0]) / 4
+        return None, spatium, cs[0], cs[1]
+    
+    if n >= 5:
+        # Use median of consecutive differences for spatium
+        # This is robust to one extra noisy line
+        diffs = [cs[i+1] - cs[i] for i in range(n-1)]
+        spatium = float(np.median(diffs))
+        # Pick the first 5 lines as the staff
+        staff_5 = cs[:5]
+        top_y = staff_5[0]
+        bot_y = staff_5[4]
+        return staff_5, spatium, top_y, bot_y
+    
+    # 3 or 4 values: partial data
+    diffs = [cs[i+1] - cs[i] for i in range(n-1)]
+    spatium = float(np.median(diffs))
+    top_y = cs[0]
+    bot_y = cs[-1]
+    return None, spatium, top_y, bot_y
+
+
 def trace_staff_lines(staff_lines, pixel_data, stride, image_width, sample_interval=20):
-    if len(staff_lines) < 5: return None
+    if staff_lines is None or len(staff_lines) < 5: return None
     spatium = (staff_lines[4] - staff_lines[0]) / 4
     search_range = 3
     num_samples = int(np.ceil(image_width / sample_interval)) + 1
@@ -94,16 +139,17 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
     voorna = 0.2
     zwgrens = 0.7
     
-    staff_lines = system["cs"]
+    raw_cs = system["cs"]
     xs = system["xs"]
-    if len(staff_lines) < 2: return [], []
+    if len(raw_cs) < 2: return [], []
     
-    top_y = int(round(staff_lines[0]))
-    bot_y = int(round(staff_lines[-1]))
+    staff_5, spatium, top_y_raw, bot_y_raw = normalize_staff_lines(raw_cs)
+    top_y = int(round(top_y_raw))
+    bot_y = int(round(bot_y_raw))
     staff_height = bot_y - top_y
-    spatium = staff_height / 4
+    if spatium <= 0: return [], []
     
-    traced_lines = trace_staff_lines(staff_lines, pixel_data, stride, image_width)
+    traced_lines = trace_staff_lines(staff_5, pixel_data, stride, image_width)
     
     max_wit = 0
     for col in range(image_width):

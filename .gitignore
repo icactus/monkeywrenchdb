@@ -33,3 +33,6 @@ manual_rec2.json
 notebooks/.ipynb_checkpoints/
 notebooks/improved-dtw.ipynb
 scripts/__pycache__/
+
+# Training data and extracted features
+synpdf_182/editmode/training-folder/

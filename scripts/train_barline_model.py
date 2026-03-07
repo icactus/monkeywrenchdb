@@ -29,8 +29,8 @@ def train_and_export(csv_path, js_path):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
     
     # Define model
-    # Removing class_weight='balanced' so probabilities represent true likelihoods
-    model = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
+    # Use class_weight='balanced' to compensate for extreme class imbalance (~0.9% positives)
+    model = RandomForestClassifier(n_estimators=100, max_depth=15, random_state=42, class_weight='balanced')
     
     # Cross Validation to check stability
     cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='f1')
@@ -153,67 +153,56 @@ if __name__ == "__main__":
     import shutil
     
     if args.data_dir:
-        json_files = glob.glob(os.path.join(args.data_dir, "*.json"))
-        if not json_files:
-            print(f"No JSON files found in {args.data_dir}")
-            exit(1)
-            
         pdf_dir = args.pdf_dir if args.pdf_dir else os.path.join(script_dir, "../pdfs")
         processed_dir = os.path.join(args.data_dir, "processed")
         os.makedirs(processed_dir, exist_ok=True)
         
-        temp_csvs = []
-        jsons_to_move = []
+        # Step 1: Extract features from any NEW json files in the data dir
+        json_files = glob.glob(os.path.join(args.data_dir, "*.json"))
         
-        for json_path in json_files:
-            # e.g., "100-82-td.json" -> "100-82.pdf"
-            base_name = os.path.basename(json_path).replace("-td.json", "").replace(".json", "")
-            pdf_path = os.path.join(pdf_dir, f"{base_name}.pdf")
-            
-            if not os.path.exists(pdf_path):
-                print(f"Warning: PDF not found for {json_path} (Expected {pdf_path}). Skipping.")
-                continue
+        if json_files:
+            print(f"Found {len(json_files)} new JSON file(s) to process...")
+            for json_path in json_files:
+                base_name = os.path.basename(json_path).replace("-td.json", "").replace(".json", "")
+                pdf_path = os.path.join(pdf_dir, f"{base_name}.pdf")
                 
-            out_csv = json_path.replace(".json", "_features.csv")
-            print(f"Extracting features for {base_name}...")
-            
-            result = subprocess.run([
-                "python3", extractor,
-                "--pdf", pdf_path,
-                "--json", json_path,
-                "--out", out_csv
-            ])
-            
-            if result.returncode == 0:
-                temp_csvs.append(out_csv)
-                jsons_to_move.append(json_path)
-            else:
-                print(f"Failed to extract features for {base_name}.")
+                if not os.path.exists(pdf_path):
+                    print(f"Warning: PDF not found for {json_path} (Expected {pdf_path}). Skipping.")
+                    continue
+                    
+                out_csv = os.path.join(args.data_dir, os.path.basename(json_path).replace(".json", "_features.csv"))
+                print(f"Extracting features for {base_name}...")
                 
-        if not temp_csvs:
-            print("No features extracted. Exiting.")
+                result = subprocess.run([
+                    "python3", extractor,
+                    "--pdf", pdf_path,
+                    "--json", json_path,
+                    "--out", out_csv
+                ])
+                
+                if result.returncode == 0:
+                    # Move both JSON and CSV to processed/
+                    shutil.move(json_path, os.path.join(processed_dir, os.path.basename(json_path)))
+                    shutil.move(out_csv, os.path.join(processed_dir, os.path.basename(out_csv)))
+                else:
+                    print(f"Failed to extract features for {base_name}.")
+        else:
+            print("No new JSON files to process.")
+        
+        # Step 2: Combine ALL feature CSVs from processed/ (old + newly extracted)
+        all_csvs = glob.glob(os.path.join(processed_dir, "*_features.csv"))
+        
+        if not all_csvs:
+            print("No feature CSVs found in processed/. Nothing to train on.")
             exit(1)
             
-        # Combine all temp CSVs
-        print(f"Combining {len(temp_csvs)} feature files...")
-        combined_df = pd.concat([pd.read_csv(f) for f in temp_csvs], ignore_index=True)
+        print(f"Combining {len(all_csvs)} feature file(s) from processed/...")
+        combined_df = pd.concat([pd.read_csv(f) for f in sorted(all_csvs)], ignore_index=True)
         csv_path = os.path.join(args.data_dir, "combined_features.csv")
         combined_df.to_csv(csv_path, index=False)
         
-        # Train model
+        # Step 3: Train model on combined data
         train_and_export(csv_path, args.js)
-        
-        # Move processed JSONs
-        print("Moving processed JSON files...")
-        for j in jsons_to_move:
-            shutil.move(j, os.path.join(processed_dir, os.path.basename(j)))
-            
-        # Optional cleanup of temp CSVs
-        for c in temp_csvs:
-            try:
-                os.remove(c)
-            except:
-                pass
                 
     elif args.json and args.pdf:
         print(f"Extracting features from {args.json} and {args.pdf}...")
