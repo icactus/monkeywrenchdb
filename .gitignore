@@ -34,5 +34,5 @@ notebooks/.ipynb_checkpoints/
 notebooks/improved-dtw.ipynb
 scripts/__pycache__/
 
-# Training data and extracted features
-synpdf_182/editmode/training-folder/
+# Training data - track JSONs and feature CSVs, but not the combined file (regenerated each run)
+synpdf_182/editmode/training-folder/combined_features.csv

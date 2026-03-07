@@ -135,7 +135,7 @@ def trace_staff_lines(staff_lines, pixel_data, stride, image_width, sample_inter
 def generate_candidates_and_features(system, stride, pixel_data, image_width):
     drift = 2
     dx = 3
-    mtdrmpl = 0.1
+    mtdrmpl = 0.5
     voorna = 0.2
     zwgrens = 0.7
     
@@ -262,7 +262,7 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
             else:
                 consec_dark = 0
                 
-        if local_height > 0 and (max_consec / local_height) < 0.2: continue
+        if local_height > 0 and (max_consec / local_height) < 0.7: continue
         
         blackness = y_arr[col] / local_height if local_height > 0 else 0
         connectivity = max_consec / local_height if local_height > 0 else 0
@@ -372,7 +372,10 @@ def process_page(args):
     
     for sys_idx, system in enumerate(cxs):
         if sys_idx >= len(bxs): break
-        gt_barlines = bxs[sys_idx]
+        # Skip bxs[0] — it's always the staff-line start (x1), not a real barline.
+        # The algorithm can trivially find the staff start, so including it
+        # as a positive just pollutes the training data.
+        gt_barlines = bxs[sys_idx][1:] if len(bxs[sys_idx]) > 1 else []
         
         candidates, features = generate_candidates_and_features(system, stride, pixel_data, image_width)
         
