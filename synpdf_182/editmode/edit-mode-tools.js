@@ -416,7 +416,8 @@ function roundValuesInArray(obj) {
 }
 
 document.addEventListener('keydown', function (event) {
-    if (document.querySelector('#synbox').checked) {
+    const synbox = document.querySelector('#synbox');
+    if (synbox && synbox.checked) {
         return;
     }
     switch (event.key) {
@@ -1048,89 +1049,107 @@ function populateRecordingsDropdown(recordings) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    document.getElementById('goto-measure-form').addEventListener('submit', function (event) {
+    const gotoForm = document.getElementById('goto-measure-form');
+    if (gotoForm) gotoForm.addEventListener('submit', function (event) {
         event.preventDefault();
         return gotoMeasure();
     });
-    document.getElementById('check-timing-btn').addEventListener('click', checkTiming);
-    document.getElementById('prev-timing-btn').addEventListener('click', prevTiming);
-    document.getElementById('refresh-btn').addEventListener('click', refreshMatches);
+
+    const checkTimingBtn = document.getElementById('check-timing-btn');
+    if (checkTimingBtn) checkTimingBtn.addEventListener('click', checkTiming);
+
+    const prevTimingBtn = document.getElementById('prev-timing-btn');
+    if (prevTimingBtn) prevTimingBtn.addEventListener('click', prevTiming);
+
+    const refreshBtn = document.getElementById('refresh-btn');
+    if (refreshBtn) refreshBtn.addEventListener('click', refreshMatches);
+
     var form = document.getElementById('addnewrecordingform');
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevent the default form submission
 
-    form.addEventListener('submit', function (event) {
-        event.preventDefault(); // Prevent the default form submission
+            // Update form data with dynamically modified values
+            var updatedJsonData = JSON.stringify(deTijden$$module$synpdf);
+            document.getElementById('times_arr_data').value = updatedJsonData;
 
-        // Update form data with dynamically modified values
-        var updatedJsonData = JSON.stringify(deTijden$$module$synpdf);
-        document.getElementById('times_arr_data').value = updatedJsonData;
+            var youtubeId = opt$$module$synpdf.yubvid;
+            if (!youtubeId || youtubeId.trim() === '') {
+                alert("YouTube ID is missing");
+                return;
+            }
+            document.getElementById('youtube_id').value = youtubeId;
 
-        var youtubeId = opt$$module$synpdf.yubvid;
-        if (!youtubeId || youtubeId.trim() === '') {
-            alert("YouTube ID is missing");
-            return;
-        }
-        document.getElementById('youtube_id').value = youtubeId;
+            var offsetJs = (offset$$module$synpdf);
+            document.getElementById('offset_js').value = offsetJs;
 
-        var offsetJs = (offset$$module$synpdf);
-        document.getElementById('offset_js').value = offsetJs;
+            var scoreFnm = scoreFnm$$module$synpdf;
+            if (!scoreFnm || !scoreFnm.includes('-')) {
+                alert("No file selected or filename is incorrectly formatted.");
+                return;
+            }
+            var pieceId = scoreFnm.split('-')[0];
+            document.getElementById('piece_id').value = pieceId;
 
-        var scoreFnm = scoreFnm$$module$synpdf;
-        if (!scoreFnm || !scoreFnm.includes('-')) {
-            alert("No file selected or filename is incorrectly formatted.");
-            return;
-        }
-        var pieceId = scoreFnm.split('-')[0];
-        document.getElementById('piece_id').value = pieceId;
+            // Prepare FormData object for AJAX request
+            const formData = new FormData(form);
+            formData.append('action', 'add_recording');
 
-        // Prepare FormData object for AJAX request
-        const formData = new FormData(form);
-        formData.append('action', 'add_recording');
-
-        // Perform the AJAX request
-        fetch('./dispatcher.php', {
-            method: "POST",
-            body: formData
-        })
-            .then(response => response.text())  // Assuming the server responds with plain text
-            .then(data => {
-                console.log(data);  // Log server response to the console
-                if (data.startsWith('Error')) {
-                    alert("Form submission failed: " + data);  // Show error if starts with 'Error'
-                } else if (data === "success") {
-                    alert("Form submitted successfully");
-                    // Optionally reset the form or redirect the user
-                    // form.reset();
-                    // window.location.href = 'some-confirmation-page.html';
-                }
+            // Perform the AJAX request
+            fetch('./dispatcher.php', {
+                method: "POST",
+                body: formData
             })
-            .catch(error => {
-                console.error("Error during form submission: ", error);
-                alert("An error occurred: " + error.message);
-            });
-    });
+                .then(response => response.text())  // Assuming the server responds with plain text
+                .then(data => {
+                    console.log(data);  // Log server response to the console
+                    if (data.startsWith('Error')) {
+                        alert("Form submission failed: " + data);  // Show error if starts with 'Error'
+                    } else if (data === "success") {
+                        alert("Form submitted successfully");
+                        // Optionally reset the form or redirect the user
+                        // form.reset();
+                        // window.location.href = 'some-confirmation-page.html';
+                    }
+                })
+                .catch(error => {
+                    console.error("Error during form submission: ", error);
+                    alert("An error occurred: " + error.message);
+                });
+        });
+    }
+
     const loadBtn = document.getElementById('loadBtn');
     const pieceSelect = document.getElementById('piece_id1');
+    if (loadBtn && pieceSelect) {
+        // Only attach if it's the intended load button on the normal edit mode
+        // In ML labeler, ML label tools handles this
+        if (!window.location.href.includes('ml-label')) {
+            loadBtn.addEventListener('click', function () {
+                const pieceId = pieceSelect.value.trim();
 
-    loadBtn.addEventListener('click', function () {
-        const pieceId = pieceSelect.value.trim();
+                if (!pieceId) {
+                    alert('Please select a piece.');
+                    return;
+                }
 
-        if (!pieceId) {
-            alert('Please select a piece.');
-            return;
+                fetchAndLoadJsFile(pieceId);
+                loadAlreadySyncedRecordings(pieceId);
+            });
         }
+    }
 
-        fetchAndLoadJsFile(pieceId);
-        loadAlreadySyncedRecordings(pieceId);
-    });
     const rewindBtn = document.getElementById('rewind');
-    rewindBtn.addEventListener('click', function () {
-        lastSynced$$module$synpdf = -1;
-        detix$$module$synpdf = 0;
-        demix$$module$synpdf = 0;
-        opt$$module$synpdf.pagenum = 1;
-        msc_wz$$module$synpdf.time2x(0);
-        resetTiming$$module$synpdf();
-    });
+    if (rewindBtn) {
+        rewindBtn.addEventListener('click', function () {
+            lastSynced$$module$synpdf = -1;
+            detix$$module$synpdf = 0;
+            demix$$module$synpdf = 0;
+            opt$$module$synpdf.pagenum = 1;
+            msc_wz$$module$synpdf.time2x(0);
+            resetTiming$$module$synpdf();
+        });
+    }
 });
 
 document.querySelectorAll('input[type="text"], textarea').forEach(function (input) {
@@ -1146,7 +1165,10 @@ function stopWheelZoom(event) {
         event.preventDefault();
     }
 }
-document.getElementById('notation').addEventListener('mousewheel', stopWheelZoom);
+const notContainer = document.getElementById('notation');
+if (notContainer) {
+    notContainer.addEventListener('mousewheel', stopWheelZoom);
+}
 
 //hide database tools on page load
 $('#database-menus').hide()

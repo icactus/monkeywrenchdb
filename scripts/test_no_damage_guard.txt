@@ -1,0 +1,185 @@
+============================================================
+DTW AUDIO SYNC PIPELINE
+============================================================
+
+[STEP 1/3] Running DTW Alignment...
+  Recording 1: https://www.youtube.com/watch?v=7eOaIiHB58U
+  Recording 2: https://www.youtube.com/watch?v=A-JNkYpT-as
+  Rec1: offset=0.0s, end=43.0
+  Rec2: offset=0.0s, end=44.0
+  Effective End1: 43.0
+  Effective End2: 44.0
+
+[1/3] Downloading audio...
+  Rec 1 ID: fa6d59c5df
+  Rec 2 ID: 5b6433f414
+  [Cache hit] audio_cache/fa6d59c5df.m4a
+  [Cache hit] audio_cache/5b6433f414.m4a
+
+[2/3] Loading audio...
+  Computing HPSS (harmonic separation) in parallel...
+  [Parallel HPSS] Checking cache for 2 items...
+    [Cache hit] audio_cache/fa6d59c5df_harmonic.npy
+    [Cache hit] audio_cache/5b6433f414_harmonic.npy
+  Loading raw audio waveforms...
+  Recording 1: 43.0s (offset=0.0s, end=43.0)
+  Recording 2: 44.0s (offset=0.0s, end=44.0)
+  Zero-cost silence: 18 frames (3.9%) set to zero
+  Zero-cost silence: 41 frames (8.6%) set to zero
+
+[3/3] Running Hybrid 2-Pass Sync...
+
+--- DTW Alignment (dtaidistance C backend) ---
+  Sample Rate: 22050 Hz
+  Coarse resolution: 463 x 474 frames (~10.8Hz)
+  Sakoe-Chiba window: 322 coarse frames (30.0s)
+  Computing DTW (dtaidistance C backend) on Native 10Hz features...
+  Coarse path length: 510
+  Computation time: 0.16s
+Results saved to sync_path_test.json
+  Path points: 510
+
+[STEP 2/3] Mapping Timestamps (Global + Local Refinement)...
+  Rec1 Timestamps Offset: 0.13s
+
+[STEP 2/3] Running Backward DTW Pass for Bi-directional Anchoring...
+  Running backward DTW (reusing features — no re-extraction)...
+
+--- DTW Alignment (dtaidistance C backend) ---
+  Sample Rate: 22050 Hz
+  Coarse resolution: 474 x 463 frames (~10.8Hz)
+  Sakoe-Chiba window: 322 coarse frames (30.0s)
+  Computing DTW (dtaidistance C backend) on Native 10Hz features...
+  Coarse path length: 510
+  Computation time: 0.11s
+  Backward path points: 510
+
+  [Mapping Timestamps with Bi-directional Anchors]...
+\n--- Mapping Timestamps (Global + Multi-Scale Refinement) ---
+  [Pre-computing high-res features for local refinement]
+  Computing high-res features (hop=1024, ~22Hz)...
+  High-res features: 926 frames (43.0s)
+  Computing high-res features (hop=1024, ~22Hz)...
+  High-res features: 948 frames (44.0s)
+  Feature computation: 1.0s
+  [Computing Bi-directional Anchors]
+  Anchor Analysis: Found 445 absolute physics anchors out of 463 points.
+  Bi-directional anchor compute: 0.02s
+  [Running Parallel Refinement on 8 cores using memmap]
+  Mapped 58 timestamps
+  Total Time: 40.6s (700ms/point)
+  Refinement Damage Guard: DISABLED (all 58 refinements kept)
+  Monotonicity: fixed 1 inversions
+  Mapped 58 timestamps
+
+[OFFSET CALCULATION]
+  Rec2 Start Offset (input): 0.0s
+  Mapped time of Index 0: 2.978s
+  Total Offset for Rec2: 2.978s
+
+[ZERO-BASED OUTPUT]
+  Shifted all timestamps so Index 0 starts at t=0
+
+[LOW ENERGY ANALYSIS] Flagging timestamps during silence/quiet passages...
+  Found 11 timestamps in low-energy (silence) zones
+
+[STEP 2.5/3] Running Round-Trip Verification (Statistics)...
+
+  [TEMPO RATIO ANALYSIS]
+    Global median tempo ratio: 0.9612
+    Tempo anomalies detected: 5
+    Gap anomalies detected: 12 (|Δt_rec2 - Δt_rec1| > 0.4s)
+
+  [OFFSET TREND ANALYSIS]
+    Offset trend anomalies: 12 (deviation > 0.25s)
+
+  [FEATURE DISTANCE ANALYSIS]
+    Median Feature Distance: 0.3004
+    Audio Match Anomalies detected: 0 (distance > 1.0500)
+
+  [CONFIDENCE SUMMARY]
+    HIGH:   48
+    MEDIUM: 3 (high RT error — worth checking)
+    LOW:    7 (tempo/gap anomaly — likely needs correction)
+    Mean RT Error: 0.1110s (excluding final timestamp)
+    Max RT Error:  0.7443s at index 21 (mix=21)
+
+  🚩 Timestamps Needing Manual Review (10 items):
+  Index |   Mix |   Conf |  Feat Dist |   RT Error |  Gap Dev |  Off Dev |   T (Rec2)
+  -------------------------------------------------------------------------------------
+     25 |    25 |    LOW |     0.5687 |    0.1056s |   0.850s |   0.105s |     26.269s
+      1 |     1 |    LOW |     0.5551 |    0.1854s |   1.590s |   0.477s |      3.301s
+     22 |    22 |    LOW |     0.5099 |    0.1166s |   0.427s |   0.833s |     22.255s
+      4 |     4 |    LOW |     0.3624 |    0.0382s |   0.411s |   1.113s |      7.346s
+     21 |    21 |    LOW |     0.3447 |    0.7443s |   1.012s |   0.440s |     21.545s
+     57 |    57 |    LOW |     0.3207 |    0.9613s |   0.588s |   1.176s |     44.000s
+      5 |     5 |    LOW |     0.1103 |    0.0229s |   0.918s |   0.195s |      9.549s
+      6 |     6 | MEDIUM |     0.4197 |    0.0289s |   0.331s |   0.000s |     10.629s
+     56 |    56 | MEDIUM |     0.3207 |    0.3723s |   0.216s |   0.588s |     43.999s
+     55 |    55 | MEDIUM |     0.1310 |    0.0006s |   0.372s |   0.372s |     43.517s
+
+
+
+[STEP 3/3] Comparing with Ground Truth (Rec 2 Manual Timestamps)...
+  Comparing 57 indices (excluding final timestamp)...
+  ---------------------------------------------------------------------------------------------------------
+  SUMMARY STATISTICS:
+    MAE (Coarse DTW only):       0.2271s
+    MAE (After Local Refinement): 0.1150s  ↓ improved
+    MAE (After Smoothing):        0.1151s  ↑ DEGRADED
+    Max Absolute Error: 0.8670s at index 24
+    Total points with error >= 15%: 12 (21.1%)
+
+    Local Refinement:  helped 41, hurt 16, neutral 0
+    Smoothing:         helped 0, hurt 0, not applied 57
+    MAE (High Confidence points only): 0.0825s
+    Max Error (High Confidence points): 0.8670s
+
+  ⚠️  UNFLAGGED ERRORS (False Negatives): 8
+      Measurements with significant error (>15% and >0.05s) but marked HIGH confidence.
+      These were MISSED by the internal flagging logic.
+   Idx |   Mix |    Error |    % Err |     Pred |       GT |   RT Err |  FeatDst |   GapDev |   OffDev
+  --------------------------------------------------------------------------------------------------------------
+     0 |     0 |    0.628s |    67.9% |    2.978s |    2.350s |    0.130 |    0.279 |    0.000 |    1.113
+    18 |    18 |    0.101s |    15.8% |   18.063s |   18.164s |    0.047 |    0.348 |    0.035 |    0.001
+    23 |    23 |    0.453s |    17.5% |   23.464s |   23.011s |    0.006 |    0.195 |    0.074 |    0.889
+    24 |    24 |    0.867s |   117.8% |   24.728s |   25.595s |    0.065 |    0.300 |    0.091 |    0.745
+    27 |    27 |    0.103s |    17.8% |   27.428s |   27.531s |    0.109 |    0.167 |    0.018 |    0.116
+    28 |    28 |    0.109s |    18.0% |   28.000s |   28.109s |    0.177 |    0.407 |    0.053 |    0.074
+    31 |    31 |    0.103s |    18.5% |   29.781s |   29.884s |    0.070 |    0.198 |    0.038 |    0.011
+    54 |    54 |    0.136s |    23.4% |   43.260s |   43.396s |    0.067 |    0.563 |    0.117 |    0.000
+
+  ⚠️  OVER-FLAGGED (False Positives): 5
+      Measurements that are highly accurate (<15% error) but were flagged for review anyway.
+      This indicates the 'anomaly' thresholds (e.g. gap deviation) are too strict for normal rubato.
+   Idx |   Mix |    Error |    % Err |   Conf
+  ------------------------------------------------------------
+     1 |     1 |    0.026s |     1.3% |    LOW
+     4 |     4 |    0.491s |    14.8% |    LOW
+    21 |    21 |    0.038s |     4.9% |    LOW
+    22 |    22 |    0.035s |     4.9% |    LOW
+    25 |    25 |    0.062s |    10.6% |    LOW
+    (Final timestamp excluded from all stats above)
+
+============================================================
+PIPELINE COMPLETE
+============================================================
+
+
+--- Summary ---
+Idx 0 (Mix 0) at t_rec1=0s -> t_coarse=1.49s | t_rec2=2.98s (conf: HIGH, rt_err: 0.13, dist: 0.2785, gap: 0.0)
+Idx 1 (Mix 1) at t_rec1=1.913s -> t_coarse=3.34s | t_rec2=3.30s (conf: LOW, rt_err: 0.1854, dist: 0.5551, gap: 1.59)
+Idx 2 (Mix 2) at t_rec1=3.729s -> t_coarse=5.11s | t_rec2=5.33s (conf: HIGH, rt_err: 0.1438, dist: 0.3808, gap: 0.209)
+Idx 3 (Mix 3) at t_rec1=4.606s -> t_coarse=5.94s | t_rec2=6.06s (conf: HIGH, rt_err: 0.1849, dist: 0.294, gap: 0.143)
+Idx 4 (Mix 4) at t_rec1=5.481s -> t_coarse=6.87s | t_rec2=7.35s (conf: LOW, rt_err: 0.0382, dist: 0.3624, gap: 0.411)
+Idx 5 (Mix 5) at t_rec1=6.766s -> t_coarse=8.73s | t_rec2=9.55s (conf: LOW, rt_err: 0.0229, dist: 0.1103, gap: 0.918)
+Idx 6 (Mix 6) at t_rec1=7.515s -> t_coarse=9.85s | t_rec2=10.63s (conf: MEDIUM, rt_err: 0.0289, dist: 0.4197, gap: 0.331)
+Idx 7 (Mix 7) at t_rec1=8.132s -> t_coarse=10.50s | t_rec2=11.38s (conf: HIGH, rt_err: 0.0886, dist: 0.3084, gap: 0.137)
+Idx 8 (Mix 8) at t_rec1=8.831s -> t_coarse=11.42s | t_rec2=12.09s (conf: HIGH, rt_err: 0.0445, dist: 0.5456, gap: 0.011)
+Idx 9 (Mix 9) at t_rec1=9.41s -> t_coarse=11.98s | t_rec2=12.67s (conf: HIGH, rt_err: 0.0663, dist: 0.4585, gap: 0.002)
+Idx 10 (Mix 10) at t_rec1=10.018s -> t_coarse=13.37s | t_rec2=13.28s (conf: HIGH, rt_err: 0.0241, dist: 0.3469, gap: 0.005)
+Idx 11 (Mix 11) at t_rec1=10.622s -> t_coarse=13.93s | t_rec2=13.86s (conf: HIGH, rt_err: 0.0708, dist: 0.1099, gap: 0.023)
+Idx 12 (Mix 12) at t_rec1=11.258s -> t_coarse=14.58s | t_rec2=14.49s (conf: HIGH, rt_err: 0.0567, dist: 0.333, gap: 0.001)
+Idx 13 (Mix 13) at t_rec1=11.844s -> t_coarse=14.86s | t_rec2=15.08s (conf: HIGH, rt_err: 0.0854, dist: 0.3269, gap: 0.003)
+Idx 14 (Mix 14) at t_rec1=12.408s -> t_coarse=15.42s | t_rec2=15.64s (conf: HIGH, rt_err: 0.0921, dist: 0.2043, gap: 0.005)
+Idx 15 (Mix 15) at t_rec1=13.037s -> t_coarse=16.16s | t_rec2=16.26s (conf: HIGH, rt_err: 0.1638, dist: 0.2023, gap: 0.01)

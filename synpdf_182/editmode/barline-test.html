@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barline Detection v1 vs v2 — Test Harness</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #00d4ff;
+            font-size: 1.5em;
+        }
+
+        .controls {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .controls label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85em;
+        }
+
+        .controls input[type="number"] {
+            width: 60px;
+            background: #0f3460;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 3px 6px;
+            border-radius: 4px;
+        }
+
+        .controls input[type="range"] {
+            width: 100px;
+        }
+
+        .controls button {
+            background: #00d4ff;
+            color: #1a1a2e;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .controls button:hover {
+            background: #00b8d4;
+        }
+
+        .controls button.danger {
+            background: #ff4444;
+            color: white;
+        }
+
+        .controls select {
+            background: #0f3460;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        #file-input {
+            background: #0f3460;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .canvas-container {
+            position: relative;
+            margin-bottom: 20px;
+            background: white;
+            display: inline-block;
+        }
+
+        #pdf-canvas {
+            display: block;
+        }
+
+        #overlay-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .results-panel {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .results-panel h2 {
+            color: #00d4ff;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .system-result {
+            background: #0f3460;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+        }
+
+        .system-result .label {
+            color: #aaa;
+        }
+
+        .match {
+            color: #4caf50;
+        }
+
+        .mismatch {
+            color: #ff9800;
+        }
+
+        .missing {
+            color: #f44336;
+        }
+
+        .extra {
+            color: #2196f3;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+        }
+
+        .legend span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend .swatch {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        .diag-canvas {
+            background: #111;
+            border-radius: 6px;
+            margin-top: 8px;
+            display: block;
+        }
+
+        .toggle-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .toggle-row label {
+            cursor: pointer;
+        }
+
+        .stats {
+            color: #aaa;
+            font-size: 0.85em;
+            margin-left: auto;
+        }
+
+        .output-panel {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .output-panel h2 {
+            color: #00d4ff;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .output-panel textarea {
+            width: 100%;
+            height: 200px;
+            background: #0a0a1a;
+            color: #0f0;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            resize: vertical;
+        }
+
+        .output-panel .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .output-panel button {
+            background: #00d4ff;
+            color: #1a1a2e;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+
+        .output-panel button:hover {
+            background: #00b8d4;
+        }
+
+        .output-panel button.secondary {
+            background: #444;
+            color: #ddd;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🎵 Barline Detection — v1 vs v2 Comparison</h1>
+
+    <div class="controls">
+        <label>PDF: <input type="file" id="file-input" accept=".pdf"></label>
+        <label>Page Width: <input type="number" id="fixwd" value="1000" step="10" min="500" max="2000"></label>
+        <label>Page: <input type="number" id="pagenum" value="1" min="1" max="100"></label>
+        <button id="run-btn">▶ Detect</button>
+        <button id="run-both-btn">⚡ Compare v1 vs v2</button>
+    </div>
+
+    <div class="controls">
+        <span style="color:#888;font-size:0.8em;">v1 Params:</span>
+        <label>drmpl: <input type="number" id="drmpl" value="0.4" step="0.05" min="0" max="1"></label>
+        <label>drmpl2: <input type="number" id="drmpl2" value="0.1" step="0.05" min="0" max="2"></label>
+        <label>zwgrens: <input type="number" id="zwgrens" value="0.7" step="0.05" min="0" max="1"></label>
+        <label>voorna: <input type="number" id="voorna" value="0.95" step="0.05" min="0" max="1"></label>
+        <label>mtdrmpl: <input type="number" id="mtdrmpl" value="0.8" step="0.05" min="0" max="1"></label>
+        <label>dx: <input type="number" id="dx" value="3" step="1" min="1" max="20"></label>
+    </div>
+
+    <div class="controls">
+        <span style="color:#888;font-size:0.8em;">v2 Params:</span>
+        <label>Drift: <input type="number" id="v2-drift" value="2" step="1" min="0" max="5"></label>
+        <label>Connectivity: <input type="number" id="v2-connect" value="0.85" step="0.05" min="0" max="1"></label>
+        <label>Min Measure (spatiums): <input type="number" id="v2-minmsr" value="3" step="0.5" min="1"
+                max="10"></label>
+    </div>
+
+    <div class="controls toggle-row">
+        <label><input type="checkbox" id="show-v1" checked> Show v1 (red)</label>
+        <label><input type="checkbox" id="show-v2" checked> Show v2 (blue)</label>
+        <label><input type="checkbox" id="show-staff" checked> Show staff lines</label>
+        <label><input type="checkbox" id="show-traced"> Show traced lines (green)</label>
+        <label><input type="checkbox" id="show-diag"> Show diagnostics</label>
+        <span class="stats" id="stats"></span>
+    </div>
+
+    <div class="legend">
+        <span><span class="swatch" style="background:rgba(255,0,0,0.5)"></span> v1 barlines</span>
+        <span><span class="swatch" style="background:rgba(0,100,255,0.5)"></span> v2 barlines</span>
+        <span><span class="swatch" style="background:rgba(0,200,0,0.3)"></span> traced staff lines</span>
+        <span><span class="swatch" style="background:rgba(255,0,255,0.5)"></span> v1-only (missed by v2)</span>
+        <span><span class="swatch" style="background:rgba(0,255,255,0.5)"></span> v2-only (new detection)</span>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="pdf-canvas"></canvas>
+        <canvas id="overlay-canvas"></canvas>
+    </div>
+
+    <div id="diag-area"></div>
+    <div id="results" class="results-panel" style="display:none;"></div>
+
+    <div class="output-panel">
+        <h2>📋 JSON Output — Copy and paste this to share results</h2>
+        <textarea id="json-output" readonly placeholder="Run detection to populate this..."></textarea>
+        <div class="btn-row">
+            <button id="copy-json">📋 Copy to Clipboard</button>
+            <button id="copy-compact" class="secondary">Copy Compact</button>
+        </div>
+    </div>
+
+    <div class="output-panel">
+        <h2>🎯 Ground Truth — Paste correct barline positions here (optional)</h2>
+        <textarea id="ground-truth"
+            placeholder='Paste ground truth JSON here, e.g.:\n{"systems": [{"barlines": [45, 200, 350, 500, 650]}]}\n\nOr paste metric_arr data from the real editor.'></textarea>
+        <div class="btn-row">
+            <button id="compare-gt">⚖️ Compare vs Ground Truth</button>
+            <button id="diagnose-gt" class="secondary">🔍 Diagnose Missed Barlines</button>
+            <button id="grid-search" style="background:#ff9800;color:#000;font-weight:bold;">🔎 Grid Search
+                (auto-tune)</button>
+        </div>
+        <div id="gt-results" style="margin-top:10px;font-size:0.85em;"></div>
+        <div id="grid-results" style="margin-top:10px;font-size:0.85em;"></div>
+        <div id="diagnose-results" style="margin-top:10px;font-size:0.85em;"></div>
+    </div>
+
+    <!-- Dependencies -->
+    <script src="pdf.min.js"></script>
+    <script src="barline-model.js"></script>
+    <script src="barline-detect-v2.js"></script>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
+
+        var pdfDoc = null;
+        var currentPage = null;
+        var currentPixelData = null;
+        var currentWidth = 0;
+        var currentHeight = 0;
+        var currentStride = 0;
+        var lastSystems = null;
+        var lastV1Results = null;
+        var lastV2Results = null;
+        var lastDiagnostics = null;
+
+        // =====================================================================
+        // PDF Loading
+        // =====================================================================
+
+        document.getElementById('file-input').addEventListener('change', function (e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function (evt) {
+                var data = new Uint8Array(evt.target.result);
+                pdfjsLib.getDocument({ data: data }).promise.then(function (pdf) {
+                    pdfDoc = pdf;
+                    document.getElementById('pagenum').max = pdf.numPages;
+                    renderPage();
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function renderPage() {
+            if (!pdfDoc) return;
+            var pageNum = parseInt(document.getElementById('pagenum').value);
+            var fixwd = parseInt(document.getElementById('fixwd').value);
+
+            pdfDoc.getPage(pageNum).then(function (page) {
+                var viewport = page.getViewport({ scale: 1 });
+                var scale = fixwd / viewport.width;
+                var scaledViewport = page.getViewport({ scale: scale });
+
+                var canvas = document.getElementById('pdf-canvas');
+                var ctx = canvas.getContext('2d');
+                canvas.height = scaledViewport.height;
+                canvas.width = scaledViewport.width;
+
+                var overlay = document.getElementById('overlay-canvas');
+                overlay.width = canvas.width;
+                overlay.height = canvas.height;
+
+                page.render({ canvasContext: ctx, viewport: scaledViewport }).promise.then(function () {
+                    // Extract pixel data
+                    currentWidth = canvas.width;
+                    currentHeight = canvas.height;
+                    currentStride = 4 * currentWidth;
+                    currentPixelData = ctx.getImageData(0, 0, currentWidth, currentHeight).data;
+                    currentPage = page;
+                    document.getElementById('stats').textContent =
+                        'Image: ' + currentWidth + '×' + currentHeight + 'px';
+                });
+            });
+        }
+
+        document.getElementById('fixwd').addEventListener('change', renderPage);
+        document.getElementById('pagenum').addEventListener('change', renderPage);
+
+        // =====================================================================
+        // V1 DETECTION — Reimplemented from synpdf-edit-mode.js
+        // =====================================================================
+
+        /**
+         * Minimal reimplementation of the v1 pipeline:
+         * countPix -> drawRes -> countVsys -> findBarLines
+         * Extracted and cleaned for comparison testing.
+         */
+        function runV1Detection(pixelData, imgWidth, imgHeight, opts) {
+            var stride = 4 * imgWidth;
+
+            // --- Stage 1: Horizontal intensity scan (from countPix) ---
+            var colorArr = [];
+            var loopStart = 3 * stride / 4;
+            var loopEnd = stride;
+            if (opts.eerst) { loopStart = 0; loopEnd = stride / 4; }
+
+            var offset = 0;
+            for (var row = 0; row < imgHeight; row++) {
+                var sum = 0;
+                for (var pi = offset + loopStart; pi < offset + loopEnd; pi += 4) {
+                    sum += pixelData[pi] + pixelData[pi + 1] + pixelData[pi + 2];
+                }
+                colorArr.push(sum / (3 * (loopEnd - loopStart)));
+                offset += stride;
+            }
+
+            // --- Stage 2: Find staff lines (from drawRes) ---
+            var peaks = findPeaks(colorArr);
+            var drmpl = opts.drmpl;
+            var topPeaks = peaks.map(function (p) { return p.t; })
+                .sort(function (a, b) { return b - a; })
+                .slice(0, 10);
+            var threshold = topPeaks.reduce(function (a, b) { return a + b; }, 0) / topPeaks.length * drmpl;
+            peaks = peaks.filter(function (p) { return p.t >= threshold; });
+
+            // Find spatium
+            var spatium = findSpatium(peaks);
+
+            // Group into staves
+            var staves = groupIntoStaves(peaks, spatium);
+
+            // Enforce 5 lines
+            staves = enforce5Lines(staves, spatium, imgWidth, pixelData, stride);
+
+            // --- Stage 3: Group into systems (from countVsys) ---
+            var systems = groupIntoSystems(staves, stride, pixelData, opts, imgWidth);
+
+            // --- Stage 4: Find barlines (from findBarLines) ---
+            var witArr = [];
+            for (var i = 0; i < systems.length; i++) {
+                witArr.push(computeWitArr(systems[i], stride, pixelData, imgWidth, opts.zwgrens));
+            }
+
+            var barlines = findBarLinesV1(systems, stride, pixelData, witArr, spatium, opts);
+
+            return { cxs: systems, bxs: barlines, spatium: spatium };
+        }
+
+        function findPeaks(arr) {
+            var peaks = [];
+            var prev = arr[0], maxUp = 0, maxDown = 0, peakIdx = 0, valleyIdx = 0;
+            arr.push(arr[arr.length - 1] - 2);
+            for (var i = 0; i < arr.length; i++) {
+                var val = arr[i];
+                var diff = val - prev;
+                if (diff > 1 || diff < -1) {
+                    if (diff > 0) {
+                        if (diff > maxUp) { maxUp = diff; peakIdx = i; }
+                    } else {
+                        if (maxUp === 0 && diff < maxDown) { maxDown = diff; valleyIdx = i; }
+                        if (maxUp > 0) {
+                            if (-maxDown > maxUp) maxUp = -maxDown;
+                            peaks.push({ y: peakIdx, t: maxUp, d: peakIdx - valleyIdx });
+                            maxUp = 0; maxDown = diff; peakIdx = valleyIdx = i;
+                        }
+                    }
+                    prev = val;
+                }
+            }
+            return peaks;
+        }
+
+        function findSpatium(peaks) {
+            var counts = {};
+            var prev = 0;
+            for (var i = 0; i < peaks.length; i++) {
+                var gap = peaks[i].y - prev;
+                counts[gap] = (counts[gap] || 0) + 1;
+                prev = peaks[i].y;
+            }
+            var keys = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+            return parseInt(keys[0]) || 10;
+        }
+
+        function trimStaff(lines, spatium) {
+            while (lines.length > 5) {
+                var gapFirst = lines[1] - lines[0];
+                var gapLast = lines[lines.length - 1] - lines[lines.length - 2];
+                if (gapFirst > spatium + 1 || gapFirst < spatium - 1) lines.shift();
+                else if (gapLast > spatium + 1 || gapLast < spatium - 1) lines.pop();
+                else break;
+            }
+            if (lines[lines.length - 1] - lines[0] < 2 * spatium) return [];
+            return lines;
+        }
+
+        function groupIntoStaves(peaks, spatium) {
+            var staves = [];
+            var current = [peaks[0].y];
+            var maxGap = 4;
+
+            for (var i = 1; i < peaks.length; i++) {
+                var y = peaks[i].y;
+                if (y - current[current.length - 1] <= maxGap * spatium + 2) {
+                    current.push(y);
+                    if (current.length === 2) maxGap = 3;
+                    else if (current.length === 3) maxGap = 2;
+                    else maxGap = 1;
+                } else {
+                    var trimmed = trimStaff(current, spatium);
+                    if (trimmed.length) staves.push(trimmed);
+                    maxGap = 3;
+                    current = [y];
+                }
+            }
+            var trimmed = trimStaff(current, spatium);
+            if (trimmed.length) staves.push(trimmed);
+            return staves;
+        }
+
+        function enforce5Lines(staves, spatium, imgWidth, pixelData, stride) {
+            // Simplified version - just pad/trim to 5 lines
+            var result = [];
+            for (var i = 0; i < staves.length; i++) {
+                var s = staves[i].slice();
+                if (s.length === 5) { result.push(s); continue; }
+                if (s.length > 5) { s = s.slice(0, 5); result.push(s); continue; }
+
+                // Calculate local spatium
+                var spacings = [];
+                for (var j = 0; j < s.length - 1; j++) spacings.push(s[j + 1] - s[j]);
+                var avgSp = spacings.reduce(function (a, b) { return a + b; }, 0) / spacings.length;
+
+                // Build 5 lines from first position
+                var built = [s[0]];
+                for (var k = 1; k < 5; k++) built.push(s[0] + k * avgSp);
+                result.push(built);
+            }
+            return result;
+        }
+
+        function computeWitArr(system, stride, pixelData, imgWidth, zwgrens) {
+            var cs = system.cs;
+            var top = Math.round(cs[0]);
+            var bot = Math.round(cs[cs.length - 1]);
+            var maxWit = 0;
+
+            for (var d = 0; d < stride; d += 4) {
+                var sum = 0;
+                for (var e = top * stride + d; e < bot * stride + d; e += stride) {
+                    sum += pixelData[e] + pixelData[e + 1] + pixelData[e + 2];
+                }
+                var avg = sum / (3 * (bot - top));
+                if (avg > maxWit) maxWit = avg;
+            }
+            return maxWit * zwgrens;
+        }
+
+        function groupIntoSystems(staves, stride, pixelData, opts, imgWidth) {
+            // Simplified: treat each staff as its own system for now
+            // Full implementation would replicate countVsys clustering
+            var systems = [];
+
+            // First, compute the x-bounds for each staff
+            for (var f = 0; f < staves.length; f++) {
+                var top = Math.round(staves[f][0]);
+                var bot = Math.round(staves[f][staves[f].length - 1]);
+                var h = [];
+
+                for (var d = 0; d < stride; d += 4) {
+                    var sum = 0;
+                    for (var e = top * stride + d; e < bot * stride + d; e += stride) {
+                        sum += pixelData[e] + pixelData[e + 1] + pixelData[e + 2];
+                    }
+                    h.push(sum / (3 * (bot - top)));
+                }
+
+                var maxH = 0;
+                for (var d = 0; d < h.length; d++) if (h[d] > maxH) maxH = h[d];
+
+                // Find music region (non-white columns)
+                var regions = [];
+                for (var d = 0; d < h.length;) {
+                    if (h[d] > maxH - 15) { d++; continue; }
+                    var start = d;
+                    while (d < h.length && h[d] <= maxH - 5) d++;
+                    regions.push([start, d - 1]);
+                }
+                regions.sort(function (a, b) { return (b[1] - b[0]) - (a[1] - a[0]); });
+
+                var x1 = regions[0] ? regions[0][0] : 0;
+                var x2 = regions[0] ? regions[0][1] : imgWidth - 1;
+
+                systems.push({
+                    cs: staves[f],
+                    xs: { x1: x1, x2: x2 }
+                });
+            }
+
+            // TODO: System clustering (grouping staves into multi-staff systems)
+            // For now, each staff = one system. Full clustering would use
+            // drmpl2 and gap analysis from countVsys.
+
+            return systems;
+        }
+
+        function findBarLinesV1(systems, stride, pixelData, witArr, spatium, opts) {
+            var mtdrmpl = opts.mtdrmpl;
+            var voorna = opts.voorna;
+            var dx = opts.dx;
+            var l = 2 * spatium;
+            var allBarlines = [];
+
+            for (var d = 0; d < systems.length; d++) {
+                var k = 3 * witArr[d];
+                var r = systems[d].xs;
+                var q = r.x1 + 50;
+                var u = r.x2 - 20;
+                if (q >= u) { q = r.x1; u = r.x2; }
+                var cs = systems[d].cs;
+                var v = Math.round(cs[0]);
+                var w = Math.round(cs[cs.length - 1]);
+                var C = (v - l) * stride;
+                var z = v * stride;
+                var A = w * stride;
+                var D = (w + l) * stride;
+
+                var t = [];
+                var y = [];
+
+                for (var f = 0; f < stride; f += 4) {
+                    var B = 0, e = 0;
+                    for (var g = C + f; g < z + f; g += stride) {
+                        var x_val = pixelData[g] + pixelData[g + 1] + pixelData[g + 2];
+                        e += x_val;
+                    }
+                    for (var g = z + f; g < A + f; g += stride) {
+                        var x_val = pixelData[g] + pixelData[g + 1] + pixelData[g + 2];
+                        var E_val = (g + 4 < pixelData.length) ?
+                            pixelData[g + 4] + pixelData[g + 5] + pixelData[g + 6] : 765;
+                        B += Math.min(x_val, E_val) < k ? 1 : 0;
+                        e += x_val;
+                    }
+                    for (var g = A + f; g < D + f; g += stride) {
+                        var x_val = pixelData[g] + pixelData[g + 1] + pixelData[g + 2];
+                        e += x_val;
+                    }
+                    t.push(e / (3 * (w - v + 2 * l)));
+                    y.push(B);
+                }
+
+                var fSlice = y.slice(q, u);
+                fSlice.sort(function (a, b) { return b - a; });
+                var maxY = fSlice[0] || 0;
+
+                var vBase = 0, wBase = 0;
+                for (var f = q; f < u; f++) {
+                    if (y[f] > maxY * mtdrmpl) {
+                        if (f - dx >= 0 && t[f - dx] > vBase) vBase = t[f - dx];
+                        if (f + dx < t.length && t[f + dx] > wBase) wBase = t[f + dx];
+                    }
+                }
+
+                var barlines = [r.x1];
+                var lastBar = barlines[0];
+                for (var f = 5; f < t.length - 5; f++) {
+                    if (y[f] > maxY * mtdrmpl &&
+                        f - dx >= 0 && t[f - dx] > vBase * voorna &&
+                        f + dx < t.length && t[f + dx] > wBase * voorna &&
+                        f - lastBar > 3 * spatium) {
+                        barlines.push(f);
+                        lastBar = f;
+                    }
+                }
+                if (r.x2 - lastBar > 3 * spatium) barlines.push(r.x2);
+                allBarlines.push(barlines);
+            }
+            return allBarlines;
+        }
+
+        // =====================================================================
+        // VISUALIZATION
+        // =====================================================================
+
+        function drawOverlay() {
+            var overlay = document.getElementById('overlay-canvas');
+            var ctx = overlay.getContext('2d');
+            ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+            if (!lastSystems) return;
+
+            var showV1 = document.getElementById('show-v1').checked;
+            var showV2 = document.getElementById('show-v2').checked;
+            var showStaff = document.getElementById('show-staff').checked;
+            var showTraced = document.getElementById('show-traced').checked;
+
+            // Draw staff lines
+            if (showStaff) {
+                ctx.strokeStyle = 'rgba(255, 200, 0, 0.3)';
+                ctx.lineWidth = 1;
+                for (var i = 0; i < lastSystems.length; i++) {
+                    var cs = lastSystems[i].cs;
+                    for (var j = 0; j < cs.length; j++) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, cs[j]);
+                        ctx.lineTo(overlay.width, cs[j]);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw traced lines
+            if (showTraced && lastDiagnostics) {
+                ctx.strokeStyle = 'rgba(0, 200, 0, 0.4)';
+                ctx.lineWidth = 1;
+                for (var si = 0; si < lastDiagnostics.length; si++) {
+                    var traced = lastDiagnostics[si].tracedLines;
+                    if (!traced) continue;
+                    for (var line = 0; line < traced.length; line++) {
+                        ctx.beginPath();
+                        for (var x = 0; x < traced[line].length; x++) {
+                            if (x === 0) ctx.moveTo(x, traced[line][x]);
+                            else ctx.lineTo(x, traced[line][x]);
+                        }
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Compute matches and mismatches
+            var v1Only = [], v2Only = [], matched = [];
+            for (var si = 0; si < lastSystems.length; si++) {
+                var v1 = lastV1Results ? lastV1Results[si] : [];
+                var v2 = lastV2Results ? lastV2Results[si] : [];
+                var cs = lastSystems[si].cs;
+                var top = cs[0];
+                var bot = cs[cs.length - 1];
+
+                for (var i = 0; i < v1.length; i++) {
+                    var hasMatch = v2.some(function (bx) { return Math.abs(bx - v1[i]) < 5; });
+                    if (hasMatch) matched.push({ x: v1[i], top: top, bot: bot });
+                    else v1Only.push({ x: v1[i], top: top, bot: bot });
+                }
+                for (var i = 0; i < v2.length; i++) {
+                    var hasMatch = v1.some(function (bx) { return Math.abs(bx - v2[i]) < 5; });
+                    if (!hasMatch) v2Only.push({ x: v2[i], top: top, bot: bot });
+                }
+            }
+
+            var extend = 10; // Draw barlines extending past staff
+
+            // Draw v1 barlines
+            if (showV1 && lastV1Results) {
+                ctx.lineWidth = 2;
+                for (var si = 0; si < lastSystems.length; si++) {
+                    var cs = lastSystems[si].cs;
+                    var top = cs[0] - extend;
+                    var bot = cs[cs.length - 1] + extend;
+                    var v1 = lastV1Results[si];
+                    for (var i = 0; i < v1.length; i++) {
+                        var isOnlyV1 = !lastV2Results ||
+                            !lastV2Results[si].some(function (bx) { return Math.abs(bx - v1[i]) < 5; });
+                        ctx.strokeStyle = isOnlyV1 ? 'rgba(255, 0, 255, 0.7)' : 'rgba(255, 0, 0, 0.5)';
+                        ctx.beginPath();
+                        ctx.moveTo(v1[i], top);
+                        ctx.lineTo(v1[i], bot);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw v2 barlines
+            if (showV2 && lastV2Results) {
+                ctx.lineWidth = 2;
+                for (var si = 0; si < lastSystems.length; si++) {
+                    var cs = lastSystems[si].cs;
+                    var top = cs[0] - extend;
+                    var bot = cs[cs.length - 1] + extend;
+                    var v2 = lastV2Results[si];
+                    for (var i = 0; i < v2.length; i++) {
+                        var isOnlyV2 = !lastV1Results ||
+                            !lastV1Results[si].some(function (bx) { return Math.abs(bx - v2[i]) < 5; });
+                        ctx.strokeStyle = isOnlyV2 ? 'rgba(0, 255, 255, 0.7)' : 'rgba(0, 100, 255, 0.5)';
+                        ctx.setLineDash(isOnlyV2 ? [4, 2] : []);
+                        ctx.beginPath();
+                        ctx.moveTo(v2[i], top);
+                        ctx.lineTo(v2[i], bot);
+                        ctx.stroke();
+                    }
+                }
+                ctx.setLineDash([]);
+            }
+
+            // Update stats
+            updateStats(matched, v1Only, v2Only);
+        }
+
+        function updateStats(matched, v1Only, v2Only) {
+            var total = matched.length + v1Only.length + v2Only.length;
+            var statsEl = document.getElementById('stats');
+            statsEl.innerHTML =
+                '<span class="match">Matched: ' + matched.length + '</span> &nbsp; ' +
+                '<span class="missing">v1-only: ' + v1Only.length + '</span> &nbsp; ' +
+                '<span class="extra">v2-only: ' + v2Only.length + '</span>';
+        }
+
+        function drawDiagnostics() {
+            var diagArea = document.getElementById('diag-area');
+            diagArea.innerHTML = '';
+            if (!document.getElementById('show-diag').checked || !lastDiagnostics) return;
+
+            for (var si = 0; si < lastDiagnostics.length; si++) {
+                var diag = lastDiagnostics[si];
+                var canvas = document.createElement('canvas');
+                canvas.width = currentWidth;
+                canvas.height = 60;
+                canvas.className = 'diag-canvas';
+                diagArea.appendChild(canvas);
+
+                // Label
+                var label = document.createElement('div');
+                label.style.cssText = 'color:#888;font-size:0.75em;margin-bottom:5px;';
+                label.textContent = 'System ' + si + ': blackScore (red), connectivity (green), whiteScore (blue)';
+                diagArea.insertBefore(label, canvas);
+
+                var ctx = canvas.getContext('2d');
+
+                // Draw blackScore
+                ctx.strokeStyle = 'rgba(255, 80, 80, 0.8)';
+                ctx.beginPath();
+                for (var x = 0; x < diag.blackScore.length; x++) {
+                    var y = 58 - diag.blackScore[x] * 55;
+                    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // Draw connectivity
+                ctx.strokeStyle = 'rgba(80, 255, 80, 0.8)';
+                ctx.beginPath();
+                for (var x = 0; x < diag.connectivity.length; x++) {
+                    var y = 58 - diag.connectivity[x] * 55;
+                    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // Draw whiteScore (normalized to 0-255)
+                ctx.strokeStyle = 'rgba(80, 80, 255, 0.5)';
+                ctx.beginPath();
+                for (var x = 0; x < diag.whiteScore.length; x++) {
+                    var y = 58 - (diag.whiteScore[x] / 255) * 55;
+                    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+        }
+
+        function showResultsPanel() {
+            var panel = document.getElementById('results');
+            if (!lastSystems) { panel.style.display = 'none'; return; }
+            panel.style.display = 'block';
+
+            var html = '<h2>Detection Results</h2>';
+            for (var i = 0; i < lastSystems.length; i++) {
+                var v1 = lastV1Results ? lastV1Results[i] : [];
+                var v2 = lastV2Results ? lastV2Results[i] : [];
+
+                html += '<div class="system-result">';
+                html += '<strong>System ' + i + '</strong> ';
+                html += '<span class="label">Staff: y=' + Math.round(lastSystems[i].cs[0]) +
+                    '→' + Math.round(lastSystems[i].cs[lastSystems[i].cs.length - 1]) + '</span><br>';
+                html += '<span style="color:#ff6666">v1: ' + v1.length + ' barlines</span> [' +
+                    v1.map(Math.round).join(', ') + ']<br>';
+                html += '<span style="color:#6666ff">v2: ' + v2.length + ' barlines</span> [' +
+                    v2.map(Math.round).join(', ') + ']';
+
+                // Differences
+                var onlyV1 = v1.filter(function (x) {
+                    return !v2.some(function (v) { return Math.abs(v - x) < 5; });
+                });
+                var onlyV2 = v2.filter(function (x) {
+                    return !v1.some(function (v) { return Math.abs(v - x) < 5; });
+                });
+                if (onlyV1.length) html += '<br><span class="missing">v1-only: [' + onlyV1.map(Math.round).join(', ') + ']</span>';
+                if (onlyV2.length) html += '<br><span class="extra">v2-only: [' + onlyV2.map(Math.round).join(', ') + ']</span>';
+                if (!onlyV1.length && !onlyV2.length && v1.length > 0) html += '<br><span class="match">✓ Perfect match</span>';
+                html += '</div>';
+            }
+            panel.innerHTML = html;
+        }
+
+        // =====================================================================
+        // RUN DETECTION
+        // =====================================================================
+
+        function getOpts() {
+            return {
+                drmpl: parseFloat(document.getElementById('drmpl').value),
+                drmpl2: parseFloat(document.getElementById('drmpl2').value),
+                zwgrens: parseFloat(document.getElementById('zwgrens').value),
+                voorna: parseFloat(document.getElementById('voorna').value),
+                mtdrmpl: parseFloat(document.getElementById('mtdrmpl').value),
+                dx: parseInt(document.getElementById('dx').value),
+                eerst: 0,
+                onestf: 0,
+                driftTolerance: parseInt(document.getElementById('v2-drift').value),
+                connectivityThreshold: parseFloat(document.getElementById('v2-connect').value),
+                minMeasureWidth: parseFloat(document.getElementById('v2-minmsr').value)
+            };
+        }
+
+        document.getElementById('run-btn').addEventListener('click', function () {
+            if (!currentPixelData) { alert('Load a PDF first'); return; }
+            var opts = getOpts();
+
+            // Run v1
+            var t0 = performance.now();
+            var result = runV1Detection(currentPixelData, currentWidth, currentHeight, opts);
+            var v1Time = performance.now() - t0;
+            lastSystems = result.cxs;
+            lastV1Results = result.bxs;
+
+            // Run v2
+            var t1 = performance.now();
+            lastV2Results = [];
+            lastDiagnostics = [];
+            for (var i = 0; i < lastSystems.length; i++) {
+                lastV2Results.push(
+                    BarlineDetectV2.findBarLinesV2(lastSystems[i], currentStride, currentPixelData, currentWidth, opts)
+                );
+                lastDiagnostics.push(
+                    BarlineDetectV2.getDiagnostics(lastSystems[i], currentStride, currentPixelData, currentWidth, opts)
+                );
+            }
+            var v2Time = performance.now() - t1;
+
+            drawOverlay();
+            drawDiagnostics();
+            showResultsPanel();
+            populateJsonOutput(opts, v1Time, v2Time);
+        });
+
+        document.getElementById('run-both-btn').addEventListener('click', function () {
+            document.getElementById('run-btn').click();
+        });
+
+        function populateJsonOutput(opts, v1Time, v2Time) {
+            var output = {
+                timestamp: new Date().toISOString(),
+                imageSize: { width: currentWidth, height: currentHeight },
+                pageNum: parseInt(document.getElementById('pagenum').value),
+                params: opts,
+                timing: { v1_ms: Math.round(v1Time), v2_ms: Math.round(v2Time) },
+                systems: []
+            };
+
+            for (var i = 0; i < lastSystems.length; i++) {
+                var sys = lastSystems[i];
+                var v1 = lastV1Results ? lastV1Results[i] : [];
+                var v2 = lastV2Results ? lastV2Results[i] : [];
+
+                var onlyV1 = v1.filter(function (x) {
+                    return !v2.some(function (v) { return Math.abs(v - x) < 5; });
+                });
+                var onlyV2 = v2.filter(function (x) {
+                    return !v1.some(function (v) { return Math.abs(v - x) < 5; });
+                });
+
+                output.systems.push({
+                    index: i,
+                    staffLines: sys.cs.map(Math.round),
+                    bounds: sys.xs,
+                    v1Barlines: v1.map(Math.round),
+                    v2Barlines: v2.map(Math.round),
+                    v1Only: onlyV1.map(Math.round),
+                    v2Only: onlyV2.map(Math.round),
+                    v1Count: v1.length,
+                    v2Count: v2.length
+                });
+            }
+
+            document.getElementById('json-output').value = JSON.stringify(output, null, 2);
+        }
+
+        document.getElementById('copy-json').addEventListener('click', function () {
+            var ta = document.getElementById('json-output');
+            navigator.clipboard.writeText(ta.value).then(function () {
+                document.getElementById('copy-json').textContent = '✓ Copied!';
+                setTimeout(function () { document.getElementById('copy-json').textContent = '📋 Copy to Clipboard'; }, 2000);
+            });
+        });
+
+        document.getElementById('copy-compact').addEventListener('click', function () {
+            try {
+                var data = JSON.parse(document.getElementById('json-output').value);
+                navigator.clipboard.writeText(JSON.stringify(data));
+                document.getElementById('copy-compact').textContent = '✓ Copied!';
+                setTimeout(function () { document.getElementById('copy-compact').textContent = 'Copy Compact'; }, 2000);
+            } catch (e) { alert('No valid JSON to copy'); }
+        });
+
+        document.getElementById('compare-gt').addEventListener('click', function () {
+            var gtText = document.getElementById('ground-truth').value.trim();
+            if (!gtText || !lastSystems) { alert('Need detection results and ground truth data'); return; }
+            try {
+                var gt = JSON.parse(gtText);
+                var resultsEl = document.getElementById('gt-results');
+                var html = '';
+
+                // Parse production format: [fixwd, {cxs, bxs}]
+                var gtBxs;
+                if (Array.isArray(gt) && gt.length === 2 && gt[1].bxs) {
+                    gtBxs = gt[1].bxs;
+                } else if (gt.bxs) {
+                    gtBxs = gt.bxs;
+                } else if (gt.systems) {
+                    gtBxs = gt.systems.map(function (s) { return s.barlines; });
+                } else {
+                    gtBxs = gt;
+                }
+
+                if (!Array.isArray(gtBxs)) { alert('Could not find barline data in ground truth'); return; }
+
+                // Compare both v1 and v2 against ground truth
+                var v1TotalTP = 0, v1TotalFP = 0, v1TotalFN = 0;
+                var v2TotalTP = 0, v2TotalFP = 0, v2TotalFN = 0;
+
+                html += '<table style="width:100%;border-collapse:collapse;font-size:0.85em;">';
+                html += '<tr style="border-bottom:1px solid #444;"><th>System</th><th>GT</th>';
+                html += '<th style="color:#ff6666">v1 TP/FP/FN</th><th style="color:#ff6666">v1 F1</th>';
+                html += '<th style="color:#6666ff">v2 TP/FP/FN</th><th style="color:#6666ff">v2 F1</th></tr>';
+
+                for (var i = 0; i < Math.min(gtBxs.length, lastSystems.length); i++) {
+                    var gtBars = gtBxs[i];
+                    var v1 = lastV1Results ? lastV1Results[i] : [];
+                    var v2 = lastV2Results ? lastV2Results[i] : [];
+
+                    // Compare v1 to GT
+                    var v1r = compareToGT(v1, gtBars, 8);
+                    v1TotalTP += v1r.tp; v1TotalFP += v1r.fp; v1TotalFN += v1r.fn;
+
+                    // Compare v2 to GT
+                    var v2r = compareToGT(v2, gtBars, 8);
+                    v2TotalTP += v2r.tp; v2TotalFP += v2r.fp; v2TotalFN += v2r.fn;
+
+                    var v1f1 = calcF1(v1r.tp, v1r.fp, v1r.fn);
+                    var v2f1 = calcF1(v2r.tp, v2r.fp, v2r.fn);
+                    var better = v2f1 > v1f1 ? 'color:#4caf50' : (v2f1 < v1f1 ? 'color:#f44336' : '');
+
+                    html += '<tr style="border-bottom:1px solid #333;">';
+                    html += '<td>System ' + i + '</td>';
+                    html += '<td>' + gtBars.length + '</td>';
+                    html += '<td style="color:#ff6666">' + v1r.tp + '/' + v1r.fp + '/' + v1r.fn + '</td>';
+                    html += '<td style="color:#ff6666">' + (v1f1 * 100).toFixed(0) + '%</td>';
+                    html += '<td style="color:#6666ff">' + v2r.tp + '/' + v2r.fp + '/' + v2r.fn + '</td>';
+                    html += '<td style="' + better + ';font-weight:bold">' + (v2f1 * 100).toFixed(0) + '%</td>';
+                    html += '</tr>';
+                }
+
+                var v1F1 = calcF1(v1TotalTP, v1TotalFP, v1TotalFN);
+                var v2F1 = calcF1(v2TotalTP, v2TotalFP, v2TotalFN);
+                var totalBetter = v2F1 > v1F1 ? 'color:#4caf50' : (v2F1 < v1F1 ? 'color:#f44336' : '');
+
+                html += '<tr style="border-top:2px solid #666;font-weight:bold;">';
+                html += '<td>TOTAL</td><td></td>';
+                html += '<td style="color:#ff6666">' + v1TotalTP + '/' + v1TotalFP + '/' + v1TotalFN + '</td>';
+                html += '<td style="color:#ff6666">' + (v1F1 * 100).toFixed(1) + '%</td>';
+                html += '<td style="color:#6666ff">' + v2TotalTP + '/' + v2TotalFP + '/' + v2TotalFN + '</td>';
+                html += '<td style="' + totalBetter + '">' + (v2F1 * 100).toFixed(1) + '%</td>';
+                html += '</tr></table>';
+
+                resultsEl.innerHTML = html;
+            } catch (e) {
+                alert('Invalid JSON in ground truth: ' + e.message);
+            }
+        });
+
+        function compareToGT(detected, groundTruth, tolerance) {
+            var tp = 0, fp = 0, fn = 0;
+            var matched = new Array(detected.length).fill(false);
+            for (var g = 0; g < groundTruth.length; g++) {
+                var found = false;
+                for (var d = 0; d < detected.length; d++) {
+                    if (!matched[d] && Math.abs(detected[d] - groundTruth[g]) < tolerance) {
+                        tp++; matched[d] = true; found = true; break;
+                    }
+                }
+                if (!found) fn++;
+            }
+            fp = matched.filter(function (m) { return !m; }).length;
+            return { tp: tp, fp: fp, fn: fn };
+        }
+
+        function calcF1(tp, fp, fn) {
+            var p = tp / (tp + fp) || 0;
+            var r = tp / (tp + fn) || 0;
+            return 2 * p * r / (p + r) || 0;
+        }
+
+        function parseGTBxs() {
+            var gtText = document.getElementById('ground-truth').value.trim();
+            if (!gtText) return null;
+            var gt = JSON.parse(gtText);
+            if (Array.isArray(gt) && gt.length === 2 && gt[1].bxs) return gt[1].bxs;
+            if (gt.bxs) return gt.bxs;
+            if (gt.systems) return gt.systems.map(function (s) { return s.barlines; });
+            return gt;
+        }
+
+        document.getElementById('grid-search').addEventListener('click', function () {
+            if (!currentPixelData || !lastSystems) { alert('Run detection first'); return; }
+            var gtBxs = parseGTBxs();
+            if (!gtBxs) { alert('Need ground truth data'); return; }
+
+            var btn = document.getElementById('grid-search');
+            btn.textContent = '⏳ Running...';
+            btn.disabled = true;
+
+            setTimeout(function () {
+                var baseOpts = getOpts();
+                var result = BarlineDetectV2.gridSearch(
+                    lastSystems, currentStride, currentPixelData, currentWidth, gtBxs, baseOpts
+                );
+
+                var html = '<h3 style="color:#ff9800;">Grid Search Results (' + result.totalTrials + ' combinations tested)</h3>';
+                html += '<table style="width:100%;border-collapse:collapse;font-size:0.85em;">';
+                html += '<tr style="border-bottom:1px solid #444;"><th>#</th><th>dx</th><th>voorna</th>';
+                html += '<th>connect</th><th>extThresh</th><th>widthThresh</th>';
+                html += '<th>TP</th><th>FP</th><th>FN</th><th>F1</th></tr>';
+
+                for (var i = 0; i < result.top10.length; i++) {
+                    var t = result.top10[i];
+                    var rowStyle = i === 0 ? 'background:#2a3a2a;font-weight:bold;' : '';
+                    html += '<tr style="border-bottom:1px solid #333;' + rowStyle + '">';
+                    html += '<td>' + (i + 1) + '</td>';
+                    html += '<td>' + t.dx + '</td>';
+                    html += '<td>' + t.voorna + '</td>';
+                    html += '<td>' + t.connect + '</td>';
+                    html += '<td>' + (t.extThresh >= 999 ? 'OFF' : t.extThresh) + '</td>';
+                    html += '<td>' + (t.widthThresh >= 999 ? 'OFF' : t.widthThresh) + '</td>';
+                    html += '<td style="color:#4caf50">' + t.tp + '</td>';
+                    html += '<td style="color:#f44336">' + t.fp + '</td>';
+                    html += '<td style="color:#ff9800">' + t.fn + '</td>';
+                    html += '<td style="font-weight:bold;color:' + (t.f1 > 0.95 ? '#4caf50' : t.f1 > 0.85 ? '#ff9800' : '#f44336') + '">';
+                    html += (t.f1 * 100).toFixed(1) + '%</td></tr>';
+                }
+                html += '</table>';
+
+                if (result.best.opts) {
+                    html += '<p style="margin-top:10px;color:#4caf50;">🏆 Best: dx=' + result.best.opts.dx;
+                    html += ' voorna=' + result.best.opts.voorna;
+                    html += ' connect=' + result.best.opts.connectivityThreshold;
+                    html += ' ext=' + (result.best.opts._extThreshold >= 999 ? 'OFF' : result.best.opts._extThreshold);
+                    html += ' width=' + (result.best.opts._widthThreshold >= 999 ? 'OFF' : result.best.opts._widthThreshold);
+                    html += ' → F1=' + (result.best.f1 * 100).toFixed(1) + '%</p>';
+                }
+
+                document.getElementById('grid-results').innerHTML = html;
+                btn.textContent = '🔎 Grid Search (auto-tune)';
+                btn.disabled = false;
+            }, 50);
+        });
+
+        document.getElementById('diagnose-gt').addEventListener('click', function () {
+            if (!currentPixelData || !lastSystems) { alert('Run detection first'); return; }
+            var gtBxs = parseGTBxs();
+            if (!gtBxs) { alert('Need ground truth data'); return; }
+
+            var opts = getOpts();
+            var html = '<h3 style="color:#00d4ff;">Per-Barline Diagnosis</h3>';
+
+            for (var s = 0; s < Math.min(lastSystems.length, gtBxs.length); s++) {
+                var diag = BarlineDetectV2.diagnoseGT(
+                    lastSystems[s], currentStride, currentPixelData, currentWidth, gtBxs[s], opts
+                );
+
+                html += '<div style="margin-bottom:8px;"><strong>System ' + s + ':</strong> ';
+                for (var d = 0; d < diag.length; d++) {
+                    var item = diag[d];
+                    if (item.status === 'detected') {
+                        html += '<span style="color:#4caf50">x=' + item.x + '✓</span> ';
+                    } else {
+                        html += '<span style="color:#f44336;cursor:pointer" title="';
+                        html += 'black=' + item.blackCount + '/' + item.staffHeight;
+                        html += ' conn=' + item.connectivity;
+                        html += ' extAbove=' + item.extAbove + ' extBelow=' + item.extBelow;
+                        html += ' maxWidth=' + item.maxWidth;
+                        html += '">x=' + item.x + '✗ [' + item.reason + ']</span> ';
+                    }
+                }
+                html += '</div>';
+            }
+
+            document.getElementById('diagnose-results').innerHTML = html;
+        });
+
+        // Redraw when toggling overlays
+        ['show-v1', 'show-v2', 'show-staff', 'show-traced', 'show-diag'].forEach(function (id) {
+            document.getElementById(id).addEventListener('change', function () {
+                drawOverlay();
+                drawDiagnostics();
+            });
+        });
+
+        // Auto-load test-page.pdf if present
+        (function () {
+            fetch('../test-page.pdf').then(function (resp) {
+                if (resp.ok) return resp.arrayBuffer();
+                throw new Error('not found');
+            }).then(function (data) {
+                pdfjsLib.getDocument({ data: new Uint8Array(data) }).promise.then(function (pdf) {
+                    pdfDoc = pdf;
+                    document.getElementById('pagenum').max = pdf.numPages;
+                    renderPage();
+                    document.getElementById('stats').textContent += ' (auto-loaded test-page.pdf)';
+                });
+            }).catch(function () {
+                // No auto-load, user must select file
+            });
+
+            // Auto-load ground truth if present
+            fetch('test-page-ground-truth-barlines.json').then(function (resp) {
+                if (resp.ok) return resp.text();
+                throw new Error('not found');
+            }).then(function (text) {
+                document.getElementById('ground-truth').value = text.trim();
+                document.getElementById('ground-truth').style.borderColor = '#4caf50';
+            }).catch(function () { /* no auto-load */ });
+        })();
+    </script>
+</body>
+
+</html>

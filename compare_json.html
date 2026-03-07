@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Comparison Tool</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .inputs {
+            display: flex;
+            gap: 20px;
+        }
+
+        .input-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        textarea {
+            height: 300px;
+            background-color: #2b2b2b;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 10px;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        button {
+            padding: 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #444;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #333;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th:hover {
+            background-color: #444;
+        }
+
+        tr:nth-child(even) {
+            background-color: #252525;
+        }
+
+        .error {
+            color: #ff6b6b;
+            margin-top: 10px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>JSON Timestamp Comparison</h1>
+        <div class="inputs">
+            <div class="input-group">
+                <label>JSON Object 1 (Baseline)</label>
+                <textarea id="json1" placeholder='[{"t": 0, "mix": 0}, ...]'></textarea>
+            </div>
+            <div class="input-group">
+                <label>JSON Object 2 (Comparison)</label>
+                <textarea id="json2" placeholder='[{"t": 0, "mix": 0}, ...]'></textarea>
+            </div>
+        </div>
+        <button onclick="compareJSON()">Compare</button>
+        <div id="error" class="error"></div>
+        <div class="controls">* Click headers to sort by Index or Δt. Highlights trigger at > 0.2s.</div>
+        <table id="resultsTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th onclick="sortTable('index')">Index ↕</th>
+                    <th>Mix Value</th>
+                    <th>t (Object 1)</th>
+                    <th>t (Object 2)</th>
+                    <th onclick="sortTable('diff')">Δt (Abs Diff) ↕</th>
+                </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        let currentData = [];
+        let sortDirections = { index: 1, diff: 1 };
+
+        function compareJSON() {
+            const json1Str = document.getElementById('json1').value;
+            const json2Str = document.getElementById('json2').value;
+            const errorDiv = document.getElementById('error');
+            const table = document.getElementById('resultsTable');
+
+            errorDiv.innerText = '';
+            table.style.display = 'none';
+            currentData = [];
+
+            try {
+                const arr1 = JSON.parse(json1Str);
+                const arr2 = JSON.parse(json2Str);
+
+                if (!Array.isArray(arr1) || !Array.isArray(arr2)) {
+                    throw new Error("Input must be JSON arrays.");
+                }
+
+                const length = Math.min(arr1.length, arr2.length);
+
+                for (let i = 0; i < length; i++) {
+                    const item1 = arr1[i];
+                    const item2 = arr2[i];
+                    const diff = Math.abs(item2.t - item1.t);
+
+                    currentData.push({
+                        index: i,
+                        mix: item1.mix,
+                        t1: item1.t,
+                        t2: item2.t,
+                        diff: diff
+                    });
+                }
+
+                renderTable();
+                table.style.display = 'table';
+
+                if (arr1.length !== arr2.length) {
+                    errorDiv.innerText = `Warning: Array lengths differ (${arr1.length} vs ${arr2.length}). Showing first ${length} matches.`;
+                }
+
+            } catch (e) {
+                errorDiv.innerText = "Error parsing JSON: " + e.message;
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+
+            currentData.forEach(item => {
+                const bgColor = getHeatmapColor(item.diff);
+                const style = bgColor ? `style="background-color: ${bgColor}; color: #000;"` : '';
+
+                const row = `<tr ${style}>
+                    <td>${item.index}</td>
+                    <td>${item.mix}</td>
+                    <td>${item.t1.toFixed(4)}</td>
+                    <td>${item.t2.toFixed(4)}</td>
+                    <td>${item.diff.toFixed(4)}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function getHeatmapColor(diff) {
+            if (diff < 0.2) return null;
+            const minVal = 0.2;
+            const maxVal = 1.5;
+            const ratio = Math.min(1, (diff - minVal) / (maxVal - minVal));
+
+            // Interpolate from light red (255, 200, 200) to deep red (200, 0, 0)
+            const r = Math.floor(255 - (55 * ratio));
+            const g = Math.floor(200 * (1 - ratio));
+            const b = Math.floor(200 * (1 - ratio));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function sortTable(key) {
+            sortDirections[key] *= -1;
+            currentData.sort((a, b) => {
+                return (a[key] - b[key]) * sortDirections[key];
+            });
+            renderTable();
+        }
+    </script>
+</body>
+
+</html>

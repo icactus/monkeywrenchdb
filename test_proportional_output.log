@@ -1,0 +1,257 @@
+Running pipeline for preset: Beethoven Piano Concerto 4
+============================================================
+DTW AUDIO SYNC PIPELINE
+============================================================
+
+[STEP 1/3] Running DTW Alignment...
+  Recording 1: https://www.youtube.com/watch?v=2360gtWBFeA
+  Recording 2: https://www.youtube.com/watch?v=R56ERxHtvkI
+  Rec1: offset=54.35s, end=500
+  Rec2: offset=33.03s, end=500
+  Duration override: 600s
+  Effective End1: 654.35
+  Effective End2: 633.03
+
+[1/3] Downloading audio...
+  Rec 1 ID: 3b6f73ee5e
+  Rec 2 ID: 4ffc14bf8e
+  [Cache hit] audio_cache/3b6f73ee5e.m4a
+  [Cache hit] audio_cache/4ffc14bf8e.m4a
+
+[2/3] Loading audio...
+  Computing HPSS (harmonic separation) in parallel...
+  [Parallel HPSS] Checking cache for 2 items...
+    [Cache hit] audio_cache/3b6f73ee5e_harmonic.npy
+    [Cache hit] audio_cache/4ffc14bf8e_harmonic.npy
+  Loading raw audio waveforms...
+  Recording 1: 600.0s (offset=54.35s, end=654.35)
+  Recording 2: 600.0s (offset=33.03s, end=633.03)
+  Zero-cost silence: 152 frames (2.4%) set to zero
+  Zero-cost silence: 52 frames (0.8%) set to zero
+
+[3/3] Running Hybrid 2-Pass Sync...
+
+--- DTW Alignment (dtaidistance C backend) ---
+  Sample Rate: 22050 Hz
+  Coarse resolution: 6460 x 6460 frames (~10.8Hz)
+  Sakoe-Chiba window: 322 coarse frames (30.0s)
+  Computing DTW (dtaidistance C backend) on Native 10Hz features...
+  Coarse path length: 6819
+  Computation time: 2.46s
+Results saved to sync_path_test.json
+  Path points: 6819
+
+[STEP 2/3] Mapping Timestamps (Global + Local Refinement)...
+  Rec1 Timestamps Offset: 54.35s
+\n--- Mapping Timestamps (Global + Local + Onset) ---
+  [Pre-computing high-res features for local refinement]
+  Computing high-res features (hop=256, ~86Hz)...
+  High-res features: 51680 frames (600.0s)
+  Computing high-res features (hop=256, ~86Hz)...
+  High-res features: 51680 frames (600.0s)
+  [Detecting onsets for snapping]
+  Feature & Onset computation: 75.1s
+  Detected Onsets: Rec1=1855, Rec2=1657
+  [Running Parallel Refinement on 8 cores using memmap]
+  Mapped 226 timestamps
+  Onset Snapping:   snapped 0/0 eligible points (Rec1 on beat)
+  Total Time: 1.8s (8ms/point)
+  Refinement Damage Guard: kept 54, reverted 114
+  Smarter Smoothing: Pass 1 corrected 2, Pass 2 corrected 0, Pass 3 corrected 0 (skipped 57 sparse-section points)
+  Mapped 226 timestamps
+
+[OFFSET CALCULATION]
+  Rec2 Start Offset (input): 33.03s
+  Mapped time of Index 0: 0.0s
+  Total Offset for Rec2: 33.03s
+
+[ZERO-BASED OUTPUT]
+  Shifted all timestamps so Index 0 starts at t=0
+
+[LOW ENERGY ANALYSIS] Flagging timestamps during silence/quiet passages...
+  Found 14 timestamps in low-energy (silence) zones
+
+[STEP 2.5/3] Running Round-Trip Verification (Backward Pass)...
+  Running backward DTW (reusing features — no re-extraction)...
+
+--- DTW Alignment (dtaidistance C backend) ---
+  Sample Rate: 22050 Hz
+  Coarse resolution: 6460 x 6460 frames (~10.8Hz)
+  Sakoe-Chiba window: 322 coarse frames (30.0s)
+  Computing DTW (dtaidistance C backend) on Native 10Hz features...
+  Coarse path length: 6819
+  Computation time: 2.23s
+  Backward path points: 6819
+
+  [TEMPO RATIO ANALYSIS]
+    Global median tempo ratio: 1.0369
+    Tempo anomalies detected: 0
+    Gap anomalies detected: 51 (|Δt_rec2 - Δt_rec1| > 0.4s)
+
+  [OFFSET TREND ANALYSIS]
+    Offset trend anomalies: 156 (deviation > 0.25s)
+
+  [FEATURE DISTANCE ANALYSIS]
+    Median Feature Distance: 0.6022
+    Audio Match Anomalies detected: 1 (distance > 1.0500)
+
+  [CONFIDENCE SUMMARY]
+    HIGH:   83
+    MEDIUM: 52 (high RT error — worth checking)
+    LOW:    91 (tempo/gap anomaly — likely needs correction)
+    Mean RT Error: 0.0914s (excluding final timestamp)
+    Max RT Error:  0.4547s at index 5 (mix=5)
+
+  🚩 Timestamps Needing Manual Review (143 items):
+  Index |   Mix |   Conf |  Feat Dist |   RT Error |  Gap Dev |  Off Dev |   T (Rec2)
+  -------------------------------------------------------------------------------------
+    159 |   159 |    LOW |     1.0817 |    0.1373s |   0.043s |   0.188s |    393.718s
+    198 |   198 |    LOW |     0.9371 |    0.0960s |   0.528s |   1.042s |    495.514s
+     75 |    75 |    LOW |     0.9196 |    0.2070s |   0.078s |   0.790s |    191.332s
+     21 |    21 |    LOW |     0.9068 |    0.1756s |   0.028s |   1.154s |     58.236s
+     50 |    50 |    LOW |     0.9053 |    0.0820s |   0.002s |   1.074s |    130.125s
+    188 |   188 |    LOW |     0.8927 |    0.0268s |   0.438s |   0.692s |    468.207s
+     40 |    40 |    LOW |     0.8703 |    0.1023s |   0.472s |   0.711s |    105.233s
+    133 |   133 |    LOW |     0.8680 |    0.0028s |   0.148s |   0.992s |    330.931s
+     32 |    32 |    LOW |     0.8262 |    0.0685s |   0.418s |   1.338s |     85.217s
+    117 |   117 |    LOW |     0.8165 |    0.0141s |   0.144s |   0.952s |    292.351s
+     31 |    31 |    LOW |     0.8062 |    0.0219s |   0.205s |   1.624s |     82.709s
+     18 |    18 |    LOW |     0.7999 |    0.0799s |   0.094s |   1.064s |     51.455s
+     44 |    44 |    LOW |     0.7959 |    0.0332s |   0.032s |   1.556s |    115.821s
+     30 |    30 |    LOW |     0.7871 |    0.1347s |   0.287s |   1.700s |     80.527s
+    136 |   136 |    LOW |     0.7841 |    0.0711s |   0.285s |   0.783s |    337.978s
+     17 |    17 |    LOW |     0.7833 |    0.1746s |   0.146s |   1.162s |     48.948s
+     15 |    15 |    LOW |     0.7822 |    0.1536s |   0.040s |   1.056s |     44.397s
+     76 |    76 |    LOW |     0.7694 |    0.1031s |   0.023s |   0.902s |    193.620s
+    107 |   107 |    LOW |     0.7684 |    0.0972s |   0.807s |   0.577s |    268.608s
+     77 |    77 |    LOW |     0.7667 |    0.1145s |   0.081s |   0.915s |    195.895s
+      4 |     4 |    LOW |     0.7599 |    0.0189s |   0.544s |   0.889s |     12.446s
+    156 |   156 |    LOW |     0.7599 |    0.0491s |   0.333s |   0.856s |    386.101s
+     41 |    41 |    LOW |     0.7508 |    0.1212s |   0.352s |   0.914s |    107.833s
+    119 |   119 |    LOW |     0.7462 |    0.1226s |   0.205s |   1.063s |    297.842s
+     43 |    43 |    LOW |     0.7399 |    0.1581s |   0.739s |   1.682s |    113.499s
+     16 |    16 |    LOW |     0.7327 |    0.0279s |   0.032s |   1.020s |     46.811s
+    169 |   169 |    LOW |     0.7268 |    0.0166s |   0.874s |   0.371s |    420.095s
+     45 |    45 |    LOW |     0.7228 |    0.1459s |   0.166s |   1.559s |    118.236s
+    201 |   201 |    LOW |     0.7216 |    0.0408s |   0.296s |   0.700s |    504.384s
+    114 |   114 |    LOW |     0.7192 |    0.0275s |   0.157s |   0.960s |    285.420s
+     14 |    14 |    LOW |     0.7159 |    0.1129s |   0.190s |   1.021s |     42.260s
+    200 |   200 |    LOW |     0.7096 |    0.0115s |   0.224s |   0.920s |    501.458s
+    118 |   118 |    LOW |     0.7095 |    0.1656s |   0.162s |   0.989s |    295.358s
+     27 |    27 |    LOW |     0.7068 |    0.2582s |   0.541s |   2.424s |     72.667s
+     11 |    11 |    LOW |     0.7018 |    0.0216s |   0.246s |   0.663s |     33.808s
+    172 |   172 |    LOW |     0.6993 |    0.0500s |   0.073s |   0.714s |    428.640s
+    130 |   130 |    LOW |     0.6968 |    0.1139s |   0.021s |   0.724s |    324.058s
+    199 |   199 |    LOW |     0.6886 |    0.1591s |   0.494s |   0.613s |    498.486s
+    115 |   115 |    LOW |     0.6491 |    0.0164s |   0.197s |   1.040s |    287.835s
+    135 |   135 |    LOW |     0.6469 |    0.1824s |   0.239s |   0.947s |    335.668s
+      3 |     3 |    LOW |     0.6355 |    0.1246s |   0.836s |   1.429s |      9.009s
+    109 |   109 |    LOW |     0.6339 |    0.1029s |   0.194s |   0.667s |    273.310s
+     47 |    47 |    LOW |     0.6185 |    0.0516s |   0.049s |   1.775s |    123.066s
+     80 |    80 |    LOW |     0.6176 |    0.0365s |   0.138s |   0.856s |    202.385s
+     34 |    34 |    LOW |     0.6122 |    0.0591s |   0.406s |   0.800s |     90.279s
+    134 |   134 |    LOW |     0.6053 |    0.0608s |   0.046s |   1.068s |    333.357s
+    196 |   196 |    LOW |     0.6040 |    0.1514s |   0.042s |   0.677s |    489.976s
+     35 |    35 |    LOW |     0.6004 |    0.1386s |   0.292s |   0.649s |     92.601s
+     42 |    42 |    LOW |     0.5967 |    0.1542s |   0.339s |   1.099s |    110.527s
+     52 |    52 |    LOW |     0.5966 |    0.0810s |   0.093s |   0.683s |    134.676s
+     29 |    29 |    LOW |     0.5954 |    0.0794s |   0.991s |   1.295s |     78.576s
+    120 |   120 |    LOW |     0.5932 |    0.0166s |   0.069s |   0.859s |    300.188s
+     24 |    24 |    LOW |     0.5926 |    0.0531s |   0.135s |   1.557s |     65.202s
+    111 |   111 |    LOW |     0.5659 |    0.0839s |   0.311s |   0.769s |    278.268s
+    116 |   116 |    LOW |     0.5657 |    0.0072s |   0.009s |   0.930s |    289.971s
+     23 |    23 |    LOW |     0.5558 |    0.0103s |   0.087s |   1.352s |     63.065s
+     51 |    51 |    LOW |     0.5506 |    0.1739s |   0.001s |   0.923s |    132.447s
+    151 |   151 |    LOW |     0.5423 |    0.1454s |   0.225s |   0.661s |    374.027s
+    132 |   132 |    LOW |     0.5212 |    0.0696s |   0.046s |   1.011s |    328.342s
+    112 |   112 |    LOW |     0.5089 |    0.0778s |   0.087s |   0.748s |    280.578s
+    171 |   171 |    LOW |     0.5060 |    0.0707s |   0.290s |   0.805s |    426.133s
+    203 |   203 |    LOW |     0.5030 |    0.0314s |   0.149s |   0.715s |    509.632s
+    113 |   113 |    LOW |     0.4957 |    0.0447s |   0.277s |   0.914s |    283.051s
+    131 |   131 |    LOW |     0.4920 |    0.1051s |   0.009s |   0.841s |    326.473s
+     26 |    26 |    LOW |     0.4909 |    0.0540s |   0.002s |   1.765s |     69.753s
+    168 |   168 |    LOW |     0.4852 |    0.1650s |   0.847s |   1.290s |    416.009s
+     25 |    25 |    LOW |     0.4789 |    0.1598s |   0.003s |   1.648s |     67.349s
+     49 |    49 |    LOW |     0.4729 |    0.1768s |   0.087s |   1.215s |    127.803s
+      0 |     0 |    LOW |     0.4708 |    0.0000s |   0.000s |   3.028s |      0.000s
+    152 |   152 |    LOW |     0.4662 |    0.0124s |   0.226s |   0.750s |    376.442s
+      2 |     2 |    LOW |     0.4593 |    0.1367s |   0.152s |   2.261s |      6.049s
+    202 |   202 |    LOW |     0.4592 |    0.1563s |   0.000s |   0.778s |    507.193s
+     48 |    48 |    LOW |     0.4568 |    0.2752s |   0.131s |   1.471s |    125.202s
+     22 |    22 |    LOW |     0.4479 |    0.1090s |   0.027s |   1.216s |     60.743s
+     28 |    28 |    LOW |     0.4469 |    0.1417s |   0.360s |   2.178s |     75.604s
+    153 |   153 |    LOW |     0.4469 |    0.1091s |   0.275s |   0.893s |    378.857s
+     79 |    79 |    LOW |     0.4132 |    0.0821s |   0.150s |   0.897s |    200.435s
+      5 |     5 |    LOW |     0.4113 |    0.4547s |   0.807s |   0.087s |     15.790s
+    101 |   101 |    LOW |     0.4061 |    0.0609s |   0.108s |   0.617s |    251.611s
+     46 |    46 |    LOW |     0.3919 |    0.0078s |   0.510s |   1.894s |    120.837s
+    137 |   137 |    LOW |     0.3907 |    0.0808s |   0.188s |   0.710s |    340.219s
+    129 |   129 |    LOW |     0.3748 |    0.0419s |   0.026s |   0.624s |    321.643s
+     19 |    19 |    LOW |     0.3634 |    0.1766s |   0.096s |   1.156s |     53.592s
+     78 |    78 |    LOW |     0.3530 |    0.1392s |   0.057s |   0.952s |    198.113s
+    155 |   155 |    LOW |     0.3485 |    0.0978s |   0.000s |   0.644s |    383.309s
+    154 |   154 |    LOW |     0.3270 |    0.0918s |   0.005s |   0.771s |    380.981s
+     74 |    74 |    LOW |     0.2727 |    0.1757s |   0.043s |   0.624s |    189.196s
+     20 |    20 |    LOW |     0.2685 |    0.0549s |   0.029s |   1.122s |     56.007s
+     13 |    13 |    LOW |     0.2082 |    0.0157s |   0.381s |   0.835s |     39.938s
+     33 |    33 |    LOW |     0.1670 |    0.0004s |   0.393s |   1.071s |     87.771s
+      1 |     1 |    LOW |     0.1358 |    0.0792s |   0.927s |   2.105s |      3.146s
+    177 |   177 | MEDIUM |     0.9837 |    0.0461s |   0.010s |   0.397s |    439.972s
+    178 |   178 | MEDIUM |     0.9745 |    0.3624s |   0.224s |   0.174s |    442.665s
+    192 |   192 | MEDIUM |     0.9506 |    0.0537s |   0.389s |   0.543s |    478.424s
+    174 |   174 | MEDIUM |     0.8833 |    0.0864s |   0.071s |   0.375s |    433.284s
+    166 |   166 | MEDIUM |     0.8661 |    0.1612s |   0.054s |   0.354s |    410.529s
+     12 |    12 | MEDIUM |     0.8649 |    0.0063s |   0.201s |   0.458s |     36.873s
+     66 |    66 | MEDIUM |     0.8415 |    0.1142s |   0.500s |   0.397s |    169.877s
+    186 |   186 | MEDIUM |     0.8119 |    0.1726s |   0.076s |   0.411s |    462.263s
+    195 |   195 | MEDIUM |     0.8025 |    0.0748s |   0.012s |   0.587s |    487.155s
+     71 |    71 | MEDIUM |     0.7860 |    0.0030s |   0.053s |   0.391s |    182.323s
+    197 |   197 | MEDIUM |     0.7722 |    0.1021s |   0.270s |   0.458s |    492.983s
+    206 |   206 | MEDIUM |     0.7652 |    0.0389s |   0.402s |   0.011s |    517.143s
+    103 |   103 | MEDIUM |     0.7366 |    0.0056s |   0.157s |   0.525s |    256.395s
+    149 |   149 | MEDIUM |     0.7360 |    0.0935s |   0.452s |   0.521s |    369.012s
+     37 |    37 | MEDIUM |     0.7282 |    0.0012s |   0.514s |   0.040s |     97.802s
+    110 |   110 | MEDIUM |     0.6989 |    0.0349s |   0.022s |   0.572s |    275.586s
+    128 |   128 | MEDIUM |     0.6853 |    0.1603s |   0.021s |   0.528s |    318.949s
+     70 |    70 | MEDIUM |     0.6771 |    0.1489s |   0.049s |   0.366s |    180.001s
+    108 |   108 | MEDIUM |     0.6768 |    0.0531s |   0.137s |   0.591s |    270.930s
+    182 |   182 | MEDIUM |     0.6731 |    0.1050s |   0.186s |   0.354s |    452.418s
+    189 |   189 | MEDIUM |     0.6449 |    0.0028s |   0.489s |   0.211s |    470.994s
+     73 |    73 | MEDIUM |     0.6447 |    0.0910s |   0.051s |   0.583s |    187.025s
+    121 |   121 | MEDIUM |     0.6370 |    0.0874s |   0.430s |   0.292s |    302.602s
+    104 |   104 | MEDIUM |     0.6278 |    0.1051s |   0.225s |   0.435s |    259.413s
+     53 |    53 | MEDIUM |     0.6188 |    0.1570s |   0.076s |   0.471s |    136.998s
+    204 |   204 | MEDIUM |     0.6173 |    0.0392s |   0.468s |   0.330s |    512.244s
+     98 |    98 | MEDIUM |     0.6157 |    0.1161s |   0.055s |   0.424s |    244.553s
+    173 |   173 | MEDIUM |     0.5859 |    0.1082s |   0.244s |   0.454s |    430.869s
+    147 |   147 | MEDIUM |     0.5816 |    0.0980s |   0.345s |   0.423s |    364.368s
+    138 |   138 | MEDIUM |     0.5794 |    0.0536s |   0.306s |   0.514s |    342.727s
+     36 |    36 | MEDIUM |     0.5687 |    0.1443s |   0.459s |   0.332s |     95.202s
+     99 |    99 | MEDIUM |     0.5680 |    0.0811s |   0.035s |   0.573s |    246.875s
+     81 |    81 | MEDIUM |     0.5502 |    0.1112s |   0.576s |   0.381s |    205.079s
+    167 |   167 | MEDIUM |     0.5196 |    0.0361s |   0.171s |   0.475s |    412.804s
+     10 |    10 | MEDIUM |     0.5101 |    0.1477s |   0.416s |   0.421s |     31.208s
+    194 |   194 | MEDIUM |     0.5026 |    0.1554s |   0.044s |   0.530s |    483.811s
+    176 |   176 | MEDIUM |     0.5008 |    0.1051s |   0.026s |   0.412s |    437.719s
+    164 |   164 | MEDIUM |     0.4886 |    0.1673s |   0.202s |   0.358s |    405.885s
+    100 |   100 | MEDIUM |     0.4784 |    0.1698s |   0.190s |   0.561s |    249.197s
+    157 |   157 | MEDIUM |     0.4782 |    0.0517s |   0.281s |   0.461s |    388.609s
+      9 |     9 | MEDIUM |     0.4732 |    0.1033s |   0.413s |   0.009s |     28.143s
+    193 |   193 | MEDIUM |     0.4570 |    0.0534s |   0.128s |   0.445s |    481.431s
+    102 |   102 | MEDIUM |     0.4478 |    0.0228s |   0.224s |   0.541s |    254.026s
+    170 |   170 | MEDIUM |     0.4457 |    0.0002s |   0.214s |   0.548s |    423.079s
+    175 |   175 | MEDIUM |     0.4447 |    0.0622s |   0.025s |   0.393s |    435.421s
+    179 |   179 | MEDIUM |     0.4267 |    0.0179s |   0.561s |   0.399s |    445.196s
+     72 |    72 | MEDIUM |     0.3962 |    0.1099s |   0.021s |   0.450s |    184.680s
+    150 |   150 | MEDIUM |     0.3617 |    0.1035s |   0.187s |   0.576s |    371.531s
+     39 |    39 | MEDIUM |     0.3597 |    0.0635s |   0.280s |   0.385s |    102.586s
+    127 |   127 | MEDIUM |     0.3571 |    0.1586s |   0.028s |   0.436s |    316.790s
+     54 |    54 | MEDIUM |     0.3561 |    0.0532s |   0.045s |   0.389s |    139.447s
+      8 |     8 | MEDIUM |     0.3441 |    0.1546s |   0.166s |   0.399s |     24.985s
+
+
+
+============================================================
+PIPELINE COMPLETE
+============================================================
+
