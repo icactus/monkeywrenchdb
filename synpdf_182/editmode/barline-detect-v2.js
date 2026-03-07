@@ -249,13 +249,13 @@ var BarlineDetectV2 = (function () {
      */
     function findBarLinesV2(system, stride, pixelData, imageWidth, opts) {
         opts = opts || {};
-        // RELAXED CANDIDATE GENERATION PARAMS (Significantly lowered to let ML do the work)
-        var mtdrmpl = 0.1;
+        // CANDIDATE GENERATION PARAMS — Must match training pipeline thresholds
+        var mtdrmpl = 0.5;
         var voorna = 0.2;
         var dx = 3;
         var zwgrens = 0.7;
         var drift = 2;
-        var connectMin = 0.2; // We lower this since ML will do the heavy lifting
+        var connectMin = 0.7; // Must match extract_barline_features_temp.py
         var minMsrWidth = opts.minMeasureWidth !== undefined ? opts.minMeasureWidth : 3;
 
         // ML Threshold - Relaxed to roughly F1 crossover point
@@ -266,8 +266,9 @@ var BarlineDetectV2 = (function () {
 
         if (!staffLines || staffLines.length < 2) return [xs.x1];
 
+        // Use first 5 cs values to match normalize_staff_lines in training
         var topY = Math.round(staffLines[0]);
-        var botY = Math.round(staffLines[staffLines.length - 1]);
+        var botY = Math.round(staffLines[Math.min(4, staffLines.length - 1)]);
         var staffHeight = botY - topY;
 
         // Parse sub-staves and compute robust spatium
@@ -458,25 +459,37 @@ var BarlineDetectV2 = (function () {
 
             var candSpatium = getSpatiumForY(subStaves, localTop);
             var halfSp = Math.round(0.5 * candSpatium);
-            var checkRange = 5;
+            var checkRange = 15;
             var maxImgRow = Math.floor(pixelData.length / stride) - 1;
 
             var aboveStart = (tracedLines ? Math.round(tracedLines[0][col]) : topY) - halfSp;
             var extAbove = 0;
+            var whiteGap = 0;
             for (var row = aboveStart; row >= Math.max(0, aboveStart - checkRange); row--) {
                 var idx = row * stride + col * 4;
                 if (idx < 0 || idx + 2 >= pixelData.length) break;
-                if ((pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3 < 128) extAbove++;
-                else break;
+                if ((pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3 < 128) {
+                    extAbove += 1 + whiteGap;
+                    whiteGap = 0;
+                } else {
+                    whiteGap++;
+                    if (whiteGap >= 2) break;
+                }
             }
 
             var belowStart = (tracedLines ? Math.round(tracedLines[4][col]) : botY) + halfSp;
             var extBelow = 0;
+            whiteGap = 0;
             for (var row = belowStart; row <= Math.min(maxImgRow, belowStart + checkRange); row++) {
                 var idx = row * stride + col * 4;
                 if (idx < 0 || idx + 2 >= pixelData.length) break;
-                if ((pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3 < 128) extBelow++;
-                else break;
+                if ((pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3 < 128) {
+                    extBelow += 1 + whiteGap;
+                    whiteGap = 0;
+                } else {
+                    whiteGap++;
+                    if (whiteGap >= 2) break;
+                }
             }
 
             var widths = [];
@@ -499,13 +512,13 @@ var BarlineDetectV2 = (function () {
                 if ((pixelData[ci] + pixelData[ci + 1] + pixelData[ci + 2]) / 3 >= 128) continue;
 
                 var le = 0;
-                for (var xx = col - 1; xx >= Math.max(0, col - 8); xx--) {
+                for (var xx = col - 1; xx >= Math.max(0, col - 5); xx--) {
                     var pi = ro + xx * 4;
                     if (pi < 0 || pi + 2 >= pixelData.length) break;
                     if ((pixelData[pi] + pixelData[pi + 1] + pixelData[pi + 2]) / 3 < 128) le++; else break;
                 }
                 var re = 0;
-                for (var xx = col + 1; xx <= Math.min(numCols - 1, col + 8); xx++) {
+                for (var xx = col + 1; xx <= Math.min(numCols - 1, col + 5); xx++) {
                     var pi = ro + xx * 4;
                     if (pi < 0 || pi + 2 >= pixelData.length) break;
                     if ((pixelData[pi] + pixelData[pi + 1] + pixelData[pi + 2]) / 3 < 128) re++; else break;

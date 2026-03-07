@@ -272,20 +272,30 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
         
         above_start = int(round(traced_lines[0][col])) - half_sp if traced_lines else top_y - half_sp
         ext_above = 0
+        white_gap = 0
         for row in range(above_start, max(0, above_start - check_range) - 1, -1):
             idx = row * stride + col * 4
             if idx < 0 or idx + 2 >= len(pixel_data): break
-            if (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3 < 128: ext_above += 1
-            else: break
+            if (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3 < 128:
+                ext_above += 1 + white_gap  # count the gap pixels too
+                white_gap = 0
+            else:
+                white_gap += 1
+                if white_gap >= 2: break
             
         below_start = int(round(traced_lines[4][col])) + half_sp if traced_lines else bot_y + half_sp
         ext_below = 0
+        white_gap = 0
         max_img_row = len(pixel_data) // stride - 1
         for row in range(below_start, min(max_img_row, below_start + check_range) + 1):
             idx = row * stride + col * 4
             if idx < 0 or idx + 2 >= len(pixel_data): break
-            if (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3 < 128: ext_below += 1
-            else: break
+            if (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3 < 128:
+                ext_below += 1 + white_gap
+                white_gap = 0
+            else:
+                white_gap += 1
+                if white_gap >= 2: break
             
         widths = []
         staff_line_ys = set()
