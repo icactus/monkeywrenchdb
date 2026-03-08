@@ -1,0 +1,23 @@
+/home/jengaship/anaconda3/lib/python3.11/site-packages/pandas/core/computation/expressions.py:22: UserWarning: Pandas requires version '2.10.2' or newer of 'numexpr' (version '2.8.7' currently installed).
+  from pandas.core.computation.check import NUMEXPR_INSTALLED
+/home/jengaship/anaconda3/lib/python3.11/site-packages/pandas/core/arrays/masked.py:56: UserWarning: Pandas requires version '1.4.2' or newer of 'bottleneck' (version '1.3.7' currently installed).
+  from pandas.core import (
+Traceback (most recent call last):
+  File "/home/jengaship/anaconda3/lib/python3.11/site-packages/pdf2image/pdf2image.py", line 602, in pdfinfo_from_path
+    raise ValueError
+ValueError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jengaship/monkeywrenchdb/test_diag.py", line 17, in <module>
+    images = convert_from_path('pdfs/test-page.pdf', dpi=130, thread_count=1)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jengaship/anaconda3/lib/python3.11/site-packages/pdf2image/pdf2image.py", line 127, in convert_from_path
+    page_count = pdfinfo_from_path(
+                 ^^^^^^^^^^^^^^^^^^
+  File "/home/jengaship/anaconda3/lib/python3.11/site-packages/pdf2image/pdf2image.py", line 611, in pdfinfo_from_path
+    raise PDFPageCountError(
+pdf2image.exceptions.PDFPageCountError: Unable to get page count.
+I/O Error: Couldn't open file 'pdfs/test-page.pdf': No such file or directory.
+

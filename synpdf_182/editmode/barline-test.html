@@ -280,8 +280,9 @@
     <div class="controls toggle-row">
         <label><input type="checkbox" id="show-v1" checked> Show v1 (red)</label>
         <label><input type="checkbox" id="show-v2" checked> Show v2 (blue)</label>
+        <label><input type="checkbox" id="show-gt"> Show Ground Truth (green)</label>
         <label><input type="checkbox" id="show-staff" checked> Show staff lines</label>
-        <label><input type="checkbox" id="show-traced"> Show traced lines (green)</label>
+        <label><input type="checkbox" id="show-traced"> Show traced lines (yellow)</label>
         <label><input type="checkbox" id="show-diag"> Show diagnostics</label>
         <span class="stats" id="stats"></span>
     </div>
@@ -328,8 +329,8 @@
 
     <!-- Dependencies -->
     <script src="pdf.min.js"></script>
-    <script src="barline-model.js"></script>
-    <script src="barline-detect-v2.js"></script>
+    <script src="../models/ml-barline-model.js?v=26"></script>
+    <script src="barline-detect-v2.js?v=26"></script>
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
@@ -804,6 +805,28 @@
                 ctx.setLineDash([]);
             }
 
+            var showGT = document.getElementById('show-gt').checked;
+            if (showGT) {
+                var gtBxs = parseGTBxs();
+                if (gtBxs) {
+                    ctx.lineWidth = 3;
+                    for (var si = 0; si < Math.min(lastSystems.length, gtBxs.length); si++) {
+                        var cs = lastSystems[si].cs;
+                        var top = cs[0] - extend;
+                        var bot = cs[cs.length - 1] + extend;
+                        var gtBars = gtBxs[si];
+                        for (var i = 0; i < gtBars.length; i++) {
+                            ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)'; // bright green, semi-transparent
+                            ctx.setLineDash([]);
+                            ctx.beginPath();
+                            ctx.moveTo(gtBars[i], top);
+                            ctx.lineTo(gtBars[i], bot);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
             // Update stats
             updateStats(matched, v1Only, v2Only);
         }
@@ -1179,35 +1202,128 @@
             if (!gtBxs) { alert('Need ground truth data'); return; }
 
             var opts = getOpts();
-            var html = '<h3 style="color:#00d4ff;">Per-Barline Diagnosis</h3>';
+            var html = '<h3 style="color:#00d4ff;">Detailed FP/FN Diagnostics</h3>';
 
             for (var s = 0; s < Math.min(lastSystems.length, gtBxs.length); s++) {
-                var diag = BarlineDetectV2.diagnoseGT(
-                    lastSystems[s], currentStride, currentPixelData, currentWidth, gtBxs[s], opts
+                var gtBars = gtBxs[s];
+
+                // 1. Run inference just for this system to capture raw `diagnostics` array
+                opts.diagnostics = []; // Mount directly on the main options object
+                var sysDetected = BarlineDetectV2.findBarLinesV2(
+                    lastSystems[s], currentStride, currentPixelData, currentWidth, opts
                 );
 
-                html += '<div style="margin-bottom:8px;"><strong>System ' + s + ':</strong> ';
-                for (var d = 0; d < diag.length; d++) {
-                    var item = diag[d];
-                    if (item.status === 'detected') {
-                        html += '<span style="color:#4caf50">x=' + item.x + '✓</span> ';
-                    } else {
-                        html += '<span style="color:#f44336;cursor:pointer" title="';
-                        html += 'black=' + item.blackCount + '/' + item.staffHeight;
-                        html += ' conn=' + item.connectivity;
-                        html += ' extAbove=' + item.extAbove + ' extBelow=' + item.extBelow;
-                        html += ' maxWidth=' + item.maxWidth;
-                        html += '">x=' + item.x + '✗ [' + item.reason + ']</span> ';
+                // 2. Identify FPs and FNs
+                var tp = [], fp = [], fn = [];
+                var matched = new Array(sysDetected.length).fill(false);
+
+                for (var g = 0; g < gtBars.length; g++) {
+                    var found = false;
+                    for (var d = 0; d < sysDetected.length; d++) {
+                        if (!matched[d] && Math.abs(sysDetected[d] - gtBars[g]) < 8) {
+                            tp.push(gtBars[g]); matched[d] = true; found = true; break;
+                        }
                     }
+                    if (!found) fn.push(gtBars[g]);
                 }
+                for (var d = 0; d < sysDetected.length; d++) {
+                    if (!matched[d]) fp.push(sysDetected[d]);
+                }
+
+                if (fp.length === 0 && fn.length === 0) continue; // Perfect system!
+
+                html += '<div style="margin-top:15px; border-bottom: 1px solid #333; padding-bottom: 10px;">';
+                html += '<strong style="font-size:1.1em; color:#fff;">System ' + s + '</strong><br>';
+
+                // Helper to find the matching diagnostic footprint
+                function getDiag(xTarget) {
+                    var best = null;
+                    var minDist = Infinity;
+                    for (var i = 0; i < opts.diagnostics.length; i++) {
+                        var d = Math.abs(opts.diagnostics[i].x - xTarget);
+                        if (d < minDist && d <= 5) {
+                            minDist = d;
+                            best = opts.diagnostics[i];
+                        }
+                    }
+                    return best;
+                }
+
+                for (var i = 0; i < fp.length; i++) {
+                    html += '<div style="color:#f44336; margin-left:15px; margin-top:5px; font-family:monospace;">';
+                    html += '<b>[FP] x=' + fp[i] + '</b>: ';
+                    var d = getDiag(fp[i]);
+                    if (d) {
+                        html += 'ML: ' + d.score.toFixed(3) + ' | Veto: ' + d.vetoReason + '<br>';
+                        html += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Feats: bDenA=' + (d.features.boxDensA || 0).toFixed(2) + ', bDenB=' + (d.features.boxDensB || 0).toFixed(2);
+                        if (d.featuresArr && typeof BarlineML !== 'undefined') {
+                            html += '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ All ML Feats: ';
+                            var arrStr = [];
+                            for (var fi = 0; fi < d.featuresArr.length; fi++) {
+                                arrStr.push(BarlineML.FEATURE_NAMES[fi] + '=' + Number(d.featuresArr[fi]).toFixed(3));
+                            }
+                            html += arrStr.join(', ');
+                        }
+                    } else {
+                        html += 'No candidate generated (darkness/connectivity too low).';
+                    }
+                    html += '</div>';
+                }
+
+                for (var i = 0; i < fn.length; i++) {
+                    html += '<div style="color:#ff9800; margin-left:15px; margin-top:5px; font-family:monospace;">';
+                    html += '<b>[FN] x=' + fn[i] + '</b>: ';
+                    var d = getDiag(fn[i]);
+                    if (d) {
+                        html += 'ML: ' + d.score.toFixed(3) + ' | Veto: ' + d.vetoReason + '<br>';
+                        html += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Feats: bDenA=' + (d.features.boxDensA || 0).toFixed(2) + ', bDenB=' + (d.features.boxDensB || 0).toFixed(2);
+                        if (d.featuresArr && typeof BarlineML !== 'undefined') {
+                            html += '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ All ML Feats: ';
+                            var arrStr = [];
+                            for (var fi = 0; fi < d.featuresArr.length; fi++) {
+                                arrStr.push(BarlineML.FEATURE_NAMES[fi] + '=' + Number(d.featuresArr[fi]).toFixed(3));
+                            }
+                            html += arrStr.join(', ');
+                        }
+                    } else {
+                        html += 'No candidate generated (darkness/connectivity too low).';
+                    }
+                    html += '</div>';
+                }
+
+                for (var i = 0; i < tp.length; i++) {
+                    html += '<div style="color:#4caf50; margin-left:15px; margin-top:5px; font-family:monospace;">';
+                    html += '<b>[TP] x=' + tp[i] + '</b>: ';
+                    var d = getDiag(tp[i]);
+                    if (d) {
+                        html += 'ML: ' + d.score.toFixed(3) + ' | Veto: ' + d.vetoReason + '<br>';
+                        html += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Feats: bDenA=' + (d.features.boxDensA || 0).toFixed(2) + ', bDenB=' + (d.features.boxDensB || 0).toFixed(2);
+                        if (d.featuresArr && typeof BarlineML !== 'undefined') {
+                            html += '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ All ML Feats: ';
+                            var arrStr = [];
+                            for (var fi = 0; fi < d.featuresArr.length; fi++) {
+                                arrStr.push(BarlineML.FEATURE_NAMES[fi] + '=' + Number(d.featuresArr[fi]).toFixed(3));
+                            }
+                            html += arrStr.join(', ');
+                        }
+                    } else {
+                        html += 'Ground truth matched but no candidate generated (unlikely).';
+                    }
+                    html += '</div>';
+                }
+
                 html += '</div>';
+            }
+
+            if (html.indexOf('System') === -1) {
+                html += '<p style="color:#4caf50;">Perfect score! No FPs or FNs to diagnose.</p>';
             }
 
             document.getElementById('diagnose-results').innerHTML = html;
         });
 
         // Redraw when toggling overlays
-        ['show-v1', 'show-v2', 'show-staff', 'show-traced', 'show-diag'].forEach(function (id) {
+        ['show-v1', 'show-v2', 'show-gt', 'show-staff', 'show-traced', 'show-diag'].forEach(function (id) {
             document.getElementById(id).addEventListener('change', function () {
                 drawOverlay();
                 drawDiagnostics();

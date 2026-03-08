@@ -241,26 +241,42 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
         local_bot = int(round(traced_lines[4][col])) if traced_lines else bot_y
         local_height = local_bot - local_top
         
-        consec_dark = 0
-        max_consec = 0
-        for row in range(local_top, local_bot + 1):
-            row_off = row * stride
-            if row_off < 0 or row_off + num_cols * 4 > len(pixel_data): continue
-            is_dark = False
-            for dx_off in range(-drift, drift + 1):
-                cx = col + dx_off
-                if cx < 0 or cx >= num_cols: continue
-                p_idx = row_off + cx * 4
-                if p_idx + 2 >= len(pixel_data) or p_idx < 0: continue
-                b = (pixel_data[p_idx] + pixel_data[p_idx+1] + pixel_data[p_idx+2]) / 3
-                if b < 128:
-                    is_dark = True
-                    break
-            if is_dark:
-                consec_dark += 1
-                if consec_dark > max_consec: max_consec = consec_dark
-            else:
-                consec_dark = 0
+        # --- Center on the actual black peak ---
+        # Find the plateau of maximum darkness and pick the absolute middle column.
+        col_scores = []
+        
+        for tc in range(col - 2, col + 3):
+            if tc < 0 or tc >= num_cols: continue
+            
+            tc_max_consec = 0
+            tc_consec = 0
+            for r in range(local_top, local_bot + 1):
+                row_off = r * stride
+                if row_off < 0 or row_off + num_cols * 4 > len(pixel_data): continue
+                is_dark_tc = False
+                p_idx = row_off + tc * 4
+                if p_idx + 2 < len(pixel_data) and p_idx >= 0:
+                    if (pixel_data[p_idx] + pixel_data[p_idx+1] + pixel_data[p_idx+2]) / 3 < 128:
+                        is_dark_tc = True
+                
+                if is_dark_tc:
+                    tc_consec += 1
+                    if tc_consec > tc_max_consec: tc_max_consec = tc_consec
+                else:
+                    tc_consec = 0
+            
+            col_scores.append((tc, tc_max_consec))
+            
+        col_scores.sort(key=lambda x: x[1], reverse=True)
+        absolute_max = col_scores[0][1]
+        best_cols = [x[0] for x in col_scores if x[1] >= absolute_max - 2]
+        best_cols.sort()
+        
+        best_col = best_cols[len(best_cols) // 2]
+        best_max_consec = absolute_max
+        
+        col = best_col
+        max_consec = best_max_consec
                 
         if local_height > 0 and (max_consec / local_height) < 0.7: continue
         
@@ -269,33 +285,7 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
         
         half_sp = int(round(0.5 * spatium))
         check_range = 15
-        
-        above_start = int(round(traced_lines[0][col])) - half_sp if traced_lines else top_y - half_sp
-        ext_above = 0
-        white_gap = 0
-        for row in range(above_start, max(0, above_start - check_range) - 1, -1):
-            idx = row * stride + col * 4
-            if idx < 0 or idx + 2 >= len(pixel_data): break
-            if (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3 < 128:
-                ext_above += 1 + white_gap  # count the gap pixels too
-                white_gap = 0
-            else:
-                white_gap += 1
-                if white_gap >= 2: break
-            
-        below_start = int(round(traced_lines[4][col])) + half_sp if traced_lines else bot_y + half_sp
-        ext_below = 0
-        white_gap = 0
         max_img_row = len(pixel_data) // stride - 1
-        for row in range(below_start, min(max_img_row, below_start + check_range) + 1):
-            idx = row * stride + col * 4
-            if idx < 0 or idx + 2 >= len(pixel_data): break
-            if (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3 < 128:
-                ext_below += 1 + white_gap
-                white_gap = 0
-            else:
-                white_gap += 1
-                if white_gap >= 2: break
             
         widths = []
         staff_line_ys = set()
@@ -330,6 +320,37 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
         median_width = float(np.median(widths)) if widths else 0
         pct_wide = sum(1 for w in widths if w > 3) / len(widths) if widths else 0
         
+        above_start = int(round(traced_lines[0][col])) - 1 if traced_lines else top_y - 1
+        below_start = int(round(traced_lines[4][col])) + 1 if traced_lines else bot_y + 1
+        max_img_row = len(pixel_data) // stride - 1
+        
+        bw = max(1, int(round(median_width)))
+        half_w = bw // 2
+        
+        # 5-pixel deep box ABOVE
+        box_px, black_px = 0, 0
+        for r in range(above_start, max(0, above_start - 5) - 1, -1):
+            ro = r * stride
+            for c in range(max(0, col - half_w), min(num_cols - 1, col + bw - half_w)):
+                idx = ro + c * 4
+                if 0 <= idx and idx + 2 < len(pixel_data):
+                    box_px += 1
+                    if (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3 < 128:
+                        black_px += 1
+        box_density_above = black_px / box_px if box_px > 0 else 0.0
+
+        # 5-pixel deep box BELOW
+        box_px, black_px = 0, 0
+        for r in range(below_start, min(max_img_row, below_start + 5) + 1):
+            ro = r * stride
+            for c in range(max(0, col - half_w), min(num_cols - 1, col + bw - half_w)):
+                idx = ro + c * 4
+                if 0 <= idx and idx + 2 < len(pixel_data):
+                    box_px += 1
+                    if (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3 < 128:
+                        black_px += 1
+        box_density_below = black_px / box_px if box_px > 0 else 0.0
+        
         lw_sum, rw_sum = 0, 0
         for i in range(3, 6):
             if col - i >= 0: lw_sum += t_arr[col - i]
@@ -359,11 +380,46 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
                         black_px += 1
         local_density = black_px / total_px if total_px > 0 else 0
         
+        # Spatial Density Grid (12 zones)
+        grid_features = [0.0] * 12
+        sp = int(spatium)
+        mid_y = local_top + (local_height // 2)
+        
+        y_zones = [
+            (max(0, local_top - int(2.5*sp)), max(0, local_top - int(0.5*sp))), # Above
+            (max(0, local_top - int(0.5*sp)), mid_y),                           # Top Half
+            (mid_y, min(max_img_row, local_bot + int(0.5*sp))),                 # Bot Half
+            (min(max_img_row, local_bot + int(0.5*sp)), min(max_img_row, local_bot + int(2.5*sp))) # Below
+        ]
+        
+        x_zones = [
+            (max(0, col - 10), max(0, col - 3)),                                # Left
+            (max(0, col - 2), min(num_cols - 1, col + 2)),                      # Center
+            (min(num_cols - 1, col + 3), min(num_cols - 1, col + 10))           # Right
+        ]
+        
+        zone_idx = 0
+        for y0, y1 in y_zones:
+            for x0, x1 in x_zones:
+                b_px, t_px = 0, 0
+                for r in range(y0, y1 + 1):
+                    if r in staff_line_ys: continue
+                    ro = r * stride
+                    for c in range(x0, x1 + 1):
+                        idx = ro + c * 4
+                        if 0 <= idx and idx + 2 < len(pixel_data):
+                            t_px += 1
+                            if (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3 < 128:
+                                b_px += 1
+                grid_features[zone_idx] = b_px / t_px if t_px > 0 else 0.0
+                zone_idx += 1
+                
         candidates.append(col)
         features_list.append([
-            blackness, connectivity, ext_above, ext_below, max_width, median_width,
-            pct_wide, left_white, right_white, left_contrast, right_contrast, local_density
-        ])
+            blackness, connectivity, box_density_above, box_density_below,
+            median_width,
+            left_white, right_white, left_contrast, right_contrast, local_density
+        ] + grid_features)
         
     return candidates, features_list
 
@@ -397,6 +453,8 @@ def process_page(args):
                 actual_positives.add(best_cand)
                 
         for i, cand in enumerate(candidates):
+
+
             is_near_gt = any(abs(cand - gt) <= 6 for gt in gt_barlines)
             if is_near_gt and cand not in actual_positives:
                 continue # Skip ambiguous near-misses during training
@@ -441,9 +499,14 @@ def process_file(pdf_path, json_path, output_csv):
     with open(output_csv, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow([
-            "blackness", "connectivity", "ext_above", "ext_below", 
-            "max_width", "median_width", "pct_wide", "left_white", 
-            "right_white", "left_contrast", "right_contrast", "local_density", "label"
+            "blackness", "connectivity", "box_density_above", "box_density_below", 
+            "median_width", "left_white", 
+            "right_white", "left_contrast", "right_contrast", "local_density",
+            "grid_above_left", "grid_above_center", "grid_above_right",
+            "grid_top_left", "grid_top_center", "grid_top_right",
+            "grid_bot_left", "grid_bot_center", "grid_bot_right",
+            "grid_below_left", "grid_below_center", "grid_below_right",
+            "label"
         ])
         for ftrs, lbl in zip(features_all, labels_all):
             writer.writerow(ftrs + [lbl])
