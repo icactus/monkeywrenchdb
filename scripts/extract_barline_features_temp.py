@@ -30,11 +30,44 @@ def normalize_staff_lines(raw_cs, pixel_data, stride, image_width):
     """
     cs = sorted(raw_cs)
     n = len(cs)
+
+    def expand_sparse_staff_lines(lines):
+        if len(lines) < 2:
+            return None, 0, 0, 0, False
+
+        top_y = float(lines[0])
+        bot_y = float(lines[-1])
+        span = bot_y - top_y
+        if span <= 0:
+            return None, 0, 0, 0, False
+
+        base_gap = span / 4.0
+        if base_gap < 4 or base_gap > 40:
+            return None, 0, 0, 0, False
+
+        anchors = {0: top_y, 4: bot_y}
+        for y in lines[1:-1]:
+            slot = int(round(((y - top_y) / span) * 4))
+            slot = min(3, max(1, slot))
+            anchors[slot] = float(y)
+
+        filled = []
+        for idx in range(5):
+            if idx in anchors:
+                filled.append(anchors[idx])
+                continue
+
+            prev_idx = max(k for k in anchors if k < idx)
+            next_idx = min(k for k in anchors if k > idx)
+            prev_y = anchors[prev_idx]
+            next_y = anchors[next_idx]
+            interp = prev_y + ((next_y - prev_y) * (idx - prev_idx) / (next_idx - prev_idx))
+            filled.append(interp)
+
+        return filled, base_gap, filled[0], filled[4], True
     
     if n < 5:
-        if n >= 2:
-            return cs, float(cs[-1] - cs[0]) / (n - 1), cs[0], cs[-1], False
-        return None, 0, 0, 0, False
+        return expand_sparse_staff_lines(cs)
         
     score_cache = {}
     def score_y(y):
@@ -319,6 +352,7 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
         max_img_row = len(pixel_data) // stride - 1
             
         widths = []
+        bound_widths = []
         staff_line_ys = set()
         if traced_lines:
             for sl in range(5):
@@ -346,10 +380,25 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
                 if (pixel_data[pi] + pixel_data[pi+1] + pixel_data[pi+2]) / 3 < 128: re += 1
                 else: break
             widths.append(le + 1 + re)
+
+            furthest_left = col
+            for xx in range(col - 1, max(0, col - int(round(2.5 * spatium))) - 1, -1):
+                pi = ro + xx * 4
+                if pi < 0 or pi + 2 >= len(pixel_data): break
+                if (pixel_data[pi] + pixel_data[pi+1] + pixel_data[pi+2]) / 3 < 128:
+                    furthest_left = xx
+            furthest_right = col
+            for xx in range(col + 1, min(num_cols - 1, col + int(round(2.5 * spatium))) + 1):
+                pi = ro + xx * 4
+                if pi < 0 or pi + 2 >= len(pixel_data): break
+                if (pixel_data[pi] + pixel_data[pi+1] + pixel_data[pi+2]) / 3 < 128:
+                    furthest_right = xx
+            bound_widths.append(furthest_right - furthest_left + 1)
             
         max_width = max(widths) if widths else 0
         median_width = float(np.median(widths)) if widths else 0
         pct_wide = sum(1 for w in widths if w > 3) / len(widths) if widths else 0
+        max_bound_width = max(bound_widths) if bound_widths else 0
         
         above_start = int(round(traced_lines[0][col])) - 1 if traced_lines else top_y - 1
         below_start = int(round(traced_lines[4][col])) + 1 if traced_lines else bot_y + 1
@@ -444,13 +493,47 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
                                 b_px += 1
                 grid_features[zone_idx] = b_px / t_px if t_px > 0 else 0.0
                 zone_idx += 1
+
+        # Staff-relative notehead ring (8 zones): 4 space neighborhoods x left/right.
+        notehead_features = [0.0] * 8
+        traced_or_norm_lines = [traced_lines[sl][col] for sl in range(5)] if traced_lines else norm_lines
+        if traced_or_norm_lines and len(traced_or_norm_lines) >= 5:
+            band_half_height = max(2, int(round(0.6 * spatium)))
+            side_inner = max(1, int(round(0.35 * spatium)))
+            side_outer = max(side_inner + 1, int(round(1.75 * spatium)))
+            note_zone_idx = 0
+
+            for space_idx in range(4):
+                space_center = int(round((traced_or_norm_lines[space_idx] + traced_or_norm_lines[space_idx + 1]) / 2))
+                y0 = max(0, space_center - band_half_height)
+                y1 = min(max_img_row, space_center + band_half_height)
+                side_zones = [
+                    (max(0, col - side_outer), max(0, col - side_inner)),
+                    (min(num_cols - 1, col + side_inner), min(num_cols - 1, col + side_outer))
+                ]
+
+                for x0, x1 in side_zones:
+                    b_px, t_px = 0, 0
+                    if x0 <= x1:
+                        for r in range(y0, y1 + 1):
+                            if r in staff_line_ys:
+                                continue
+                            ro = r * stride
+                            for c in range(x0, x1 + 1):
+                                idx = ro + c * 4
+                                if 0 <= idx and idx + 2 < len(pixel_data):
+                                    t_px += 1
+                                    if (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3 < 128:
+                                        b_px += 1
+                    notehead_features[note_zone_idx] = b_px / t_px if t_px > 0 else 0.0
+                    note_zone_idx += 1
                 
         candidates.append(col)
         features_list.append([
             blackness, connectivity, box_density_above, box_density_below,
-            median_width,
+            median_width, max_width, pct_wide, max_bound_width,
             left_white, right_white, left_contrast, right_contrast, local_density
-        ] + grid_features)
+        ] + grid_features + notehead_features)
         
     return candidates, features_list
 
@@ -515,9 +598,14 @@ def process_file(pdf_path, json_path, output_csv):
         if page_idx >= len(images): break
         args_list.append((page_idx, page_data, images[page_idx], fixwd))
 
-    # Process pages in parallel
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        results = list(executor.map(process_page, args_list))
+    # Process pages in parallel when the environment allows it. Sandboxed runs may
+    # block process semaphores, so fall back to sequential extraction.
+    try:
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            results = list(executor.map(process_page, args_list))
+    except (PermissionError, OSError) as error:
+        print(f"Process pool unavailable ({error}). Falling back to sequential extraction.")
+        results = [process_page(args) for args in args_list]
         
     # Re-assemble in order
     results.sort(key=lambda x: x[0])
@@ -531,12 +619,16 @@ def process_file(pdf_path, json_path, output_csv):
         writer = csv.writer(f)
         writer.writerow([
             "blackness", "connectivity", "box_density_above", "box_density_below", 
-            "median_width", "left_white", 
+            "median_width", "max_width", "pct_wide", "max_bound_width", "left_white", 
             "right_white", "left_contrast", "right_contrast", "local_density",
             "grid_above_left", "grid_above_center", "grid_above_right",
             "grid_top_left", "grid_top_center", "grid_top_right",
             "grid_bot_left", "grid_bot_center", "grid_bot_right",
             "grid_below_left", "grid_below_center", "grid_below_right",
+            "space_blob_left_1", "space_blob_right_1",
+            "space_blob_left_2", "space_blob_right_2",
+            "space_blob_left_3", "space_blob_right_3",
+            "space_blob_left_4", "space_blob_right_4",
             "label"
         ])
         for ftrs, lbl in zip(features_all, labels_all):

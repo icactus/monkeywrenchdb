@@ -28,7 +28,9 @@
     <script src="pdf.min.js"></script>
 
     <script src="synpdf-edit-mode.js?v=76"></script>
-    <script src="edit-mode-tools.js?v=91"></script>
+    <script src="edit-mode-tools.js?v=92"></script>
+    <script src="../models/ml-barline-model.js?v=26"></script>
+    <script src="barline-detect-v2.js?v=32"></script>
     <style>
         html {
             width: 100%;
@@ -893,6 +895,10 @@
                             <button id="check-timing-btn">Next</button>
                             <button id="refresh-btn">Refresh</button>
                             <span id="match-info"></span>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <button id="run-v2-btn" type="button"
+                                style="background:#00d4ff; color:#000; font-weight:bold;">Run V2 ML Detection</button>
                         </div>
                         <div style="margin-top: 8px;">
                             <div id="detix-box" style="font-size: 11px; color: #666;"></div>

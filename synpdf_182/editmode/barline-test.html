@@ -860,6 +860,9 @@
                 diagArea.insertBefore(label, canvas);
 
                 var ctx = canvas.getContext('2d');
+                if (diag.normalizationReason) {
+                    label.textContent += ' | norm=' + diag.normalizationReason;
+                }
 
                 // Draw blackScore
                 ctx.strokeStyle = 'rgba(255, 80, 80, 0.8)';
@@ -899,11 +902,15 @@
             for (var i = 0; i < lastSystems.length; i++) {
                 var v1 = lastV1Results ? lastV1Results[i] : [];
                 var v2 = lastV2Results ? lastV2Results[i] : [];
+                var diag = lastDiagnostics ? lastDiagnostics[i] : null;
 
                 html += '<div class="system-result">';
                 html += '<strong>System ' + i + '</strong> ';
                 html += '<span class="label">Staff: y=' + Math.round(lastSystems[i].cs[0]) +
                     '→' + Math.round(lastSystems[i].cs[lastSystems[i].cs.length - 1]) + '</span><br>';
+                if (diag && diag.normalizationReason) {
+                    html += '<span class="label">norm: ' + diag.normalizationReason + '</span><br>';
+                }
                 html += '<span style="color:#ff6666">v1: ' + v1.length + ' barlines</span> [' +
                     v1.map(Math.round).join(', ') + ']<br>';
                 html += '<span style="color:#6666ff">v2: ' + v2.length + ' barlines</span> [' +
@@ -1249,24 +1256,32 @@
                     return best;
                 }
 
+                function renderDiagDetails(d, fallbackLabel) {
+                    if (!d) {
+                        return fallbackLabel || 'No candidate generated (darkness/connectivity too low).';
+                    }
+                    if (d.source === 'v1_fallback' || (d.features && d.features.fallbackV1)) {
+                        return 'Accepted by V1 fallback (' + d.vetoReason + ').';
+                    }
+
+                    var html = 'ML: ' + d.score.toFixed(3) + ' | Veto: ' + d.vetoReason + '<br>';
+                    html += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Feats: bDenA=' + (d.features.boxDensA || 0).toFixed(2) + ', bDenB=' + (d.features.boxDensB || 0).toFixed(2);
+                    if (d.featuresArr && typeof BarlineML !== 'undefined') {
+                        html += '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ All ML Feats: ';
+                        var arrStr = [];
+                        for (var fi = 0; fi < d.featuresArr.length; fi++) {
+                            arrStr.push(BarlineML.FEATURE_NAMES[fi] + '=' + Number(d.featuresArr[fi]).toFixed(3));
+                        }
+                        html += arrStr.join(', ');
+                    }
+                    return html;
+                }
+
                 for (var i = 0; i < fp.length; i++) {
                     html += '<div style="color:#f44336; margin-left:15px; margin-top:5px; font-family:monospace;">';
                     html += '<b>[FP] x=' + fp[i] + '</b>: ';
                     var d = getDiag(fp[i]);
-                    if (d) {
-                        html += 'ML: ' + d.score.toFixed(3) + ' | Veto: ' + d.vetoReason + '<br>';
-                        html += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Feats: bDenA=' + (d.features.boxDensA || 0).toFixed(2) + ', bDenB=' + (d.features.boxDensB || 0).toFixed(2);
-                        if (d.featuresArr && typeof BarlineML !== 'undefined') {
-                            html += '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ All ML Feats: ';
-                            var arrStr = [];
-                            for (var fi = 0; fi < d.featuresArr.length; fi++) {
-                                arrStr.push(BarlineML.FEATURE_NAMES[fi] + '=' + Number(d.featuresArr[fi]).toFixed(3));
-                            }
-                            html += arrStr.join(', ');
-                        }
-                    } else {
-                        html += 'No candidate generated (darkness/connectivity too low).';
-                    }
+                    html += renderDiagDetails(d, 'No candidate generated (darkness/connectivity too low).');
                     html += '</div>';
                 }
 
@@ -1274,20 +1289,7 @@
                     html += '<div style="color:#ff9800; margin-left:15px; margin-top:5px; font-family:monospace;">';
                     html += '<b>[FN] x=' + fn[i] + '</b>: ';
                     var d = getDiag(fn[i]);
-                    if (d) {
-                        html += 'ML: ' + d.score.toFixed(3) + ' | Veto: ' + d.vetoReason + '<br>';
-                        html += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Feats: bDenA=' + (d.features.boxDensA || 0).toFixed(2) + ', bDenB=' + (d.features.boxDensB || 0).toFixed(2);
-                        if (d.featuresArr && typeof BarlineML !== 'undefined') {
-                            html += '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ All ML Feats: ';
-                            var arrStr = [];
-                            for (var fi = 0; fi < d.featuresArr.length; fi++) {
-                                arrStr.push(BarlineML.FEATURE_NAMES[fi] + '=' + Number(d.featuresArr[fi]).toFixed(3));
-                            }
-                            html += arrStr.join(', ');
-                        }
-                    } else {
-                        html += 'No candidate generated (darkness/connectivity too low).';
-                    }
+                    html += renderDiagDetails(d, 'No candidate generated (darkness/connectivity too low).');
                     html += '</div>';
                 }
 
@@ -1295,20 +1297,7 @@
                     html += '<div style="color:#4caf50; margin-left:15px; margin-top:5px; font-family:monospace;">';
                     html += '<b>[TP] x=' + tp[i] + '</b>: ';
                     var d = getDiag(tp[i]);
-                    if (d) {
-                        html += 'ML: ' + d.score.toFixed(3) + ' | Veto: ' + d.vetoReason + '<br>';
-                        html += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Feats: bDenA=' + (d.features.boxDensA || 0).toFixed(2) + ', bDenB=' + (d.features.boxDensB || 0).toFixed(2);
-                        if (d.featuresArr && typeof BarlineML !== 'undefined') {
-                            html += '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ All ML Feats: ';
-                            var arrStr = [];
-                            for (var fi = 0; fi < d.featuresArr.length; fi++) {
-                                arrStr.push(BarlineML.FEATURE_NAMES[fi] + '=' + Number(d.featuresArr[fi]).toFixed(3));
-                            }
-                            html += arrStr.join(', ');
-                        }
-                    } else {
-                        html += 'Ground truth matched but no candidate generated (unlikely).';
-                    }
+                    html += renderDiagDetails(d, 'Ground truth matched but no candidate generated (unlikely).');
                     html += '</div>';
                 }
 

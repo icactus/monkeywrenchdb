@@ -415,6 +415,109 @@ function roundValuesInArray(obj) {
     }
 }
 
+function getStoredMetricData() {
+    const jsonString = localStorage.getItem('jsonString');
+    if (!jsonString) {
+        return null;
+    }
+
+    try {
+        const parsed = JSON.parse(jsonString);
+        return Array.isArray(parsed) ? parsed : null;
+    } catch (error) {
+        console.error('Failed to parse localStorage jsonString:', error);
+        return null;
+    }
+}
+
+function persistMetricData(metricData) {
+    const dataToPersist = metricData || deMetriek$$module$synpdf;
+
+    if (!Array.isArray(dataToPersist) || dataToPersist.length === 0) {
+        console.warn('Metric data is not ready to persist.');
+        return false;
+    }
+
+    roundValuesInArray(dataToPersist);
+    localStorage.setItem('jsonString', JSON.stringify(dataToPersist));
+    return true;
+}
+
+function seedMetricStorageFromMemory() {
+    if (getStoredMetricData()) {
+        return true;
+    }
+
+    if (!persistMetricData()) {
+        console.warn('Unable to seed localStorage from live deMetriek state.');
+        return false;
+    }
+
+    console.log('Seeded localStorage jsonString from live deMetriek state.');
+    return true;
+}
+
+function getCurrentPageImageData() {
+    const canvas = document.querySelector('#notation canvas') || document.querySelector('canvas');
+    if (!canvas) {
+        return null;
+    }
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+        return null;
+    }
+
+    return {
+        pixelData: context.getImageData(0, 0, canvas.width, canvas.height).data,
+        stride: canvas.width * 4,
+        width: canvas.width
+    };
+}
+
+function normalizeDetectedSystemBarlines(system, detectedBarlines, existingBarlines) {
+    const currentBarlines = Array.isArray(existingBarlines) ? existingBarlines.slice() : [];
+    const leftBoundary = currentBarlines.length > 0 ? currentBarlines[0] : system.xs.x1;
+    const rightBoundary = currentBarlines.length > 0 ? currentBarlines[currentBarlines.length - 1] : system.xs.x2;
+    const leftAbs = Math.abs(leftBoundary);
+    const rightAbs = Math.abs(rightBoundary);
+    const byKey = new Map();
+
+    function addBarline(value) {
+        if (typeof value !== 'number' || !isFinite(value)) {
+            return;
+        }
+
+        const rounded = Math.round(Math.abs(value));
+        if (!byKey.has(rounded)) {
+            byKey.set(rounded, Math.abs(value));
+        }
+    }
+
+    addBarline(leftAbs);
+    if (Array.isArray(detectedBarlines)) {
+        detectedBarlines.forEach(addBarline);
+    }
+    addBarline(rightAbs);
+
+    const normalized = Array.from(byKey.values()).sort(function (a, b) {
+        return a - b;
+    });
+
+    if (normalized.length < 2) {
+        return currentBarlines;
+    }
+
+    if (leftBoundary < 0) {
+        normalized[0] = -Math.abs(normalized[0]);
+    }
+    if (rightBoundary < 0) {
+        normalized[normalized.length - 1] = -Math.abs(normalized[normalized.length - 1]);
+    }
+
+    return normalized;
+}
+
 document.addEventListener('keydown', function (event) {
     const synbox = document.querySelector('#synbox');
     if (synbox && synbox.checked) {
@@ -466,24 +569,20 @@ document.addEventListener('keydown', function (event) {
                 key: "PageDown"
             });
             // Auto-save metric data after page change (same as 'p' key)
-            roundValuesInArray(deMetriek$$module$synpdf);
-            localStorage.setItem('jsonString', JSON.stringify(deMetriek$$module$synpdf));
+            persistMetricData();
             break;
         case '.':
             keyDown$$module$synpdf({
                 key: "PageUp"
             });
             // Auto-save metric data after page change (same as 'p' key)
-            roundValuesInArray(deMetriek$$module$synpdf);
-            localStorage.setItem('jsonString', JSON.stringify(deMetriek$$module$synpdf));
+            persistMetricData();
             break;
         case 'o':
             resizePdfSyn$$module$synpdf();
             break;
         case 'p': // Puts current shaded measures into memory
-            var jsonString = deMetriek$$module$synpdf;
-            roundValuesInArray(jsonString);
-            localStorage.setItem('jsonString', JSON.stringify(jsonString));
+            persistMetricData();
             break;
 
         case 'j':
@@ -761,7 +860,8 @@ function editCxsGroups$$module$synpdf(event) {
     }
 }
 
-function requestRefresh() {
+function requestRefresh(options) {
+    options = options || {};
 
     setTimeout(function () {
         if (typeof disableScrollingCheck !== 'undefined') disableScrollingCheck = 1;
@@ -773,8 +873,14 @@ function requestRefresh() {
             element.style.overflowX = 'visible';
         }
 
-        // Reload data and refresh page
-        deMetriek$$module$synpdf = JSON.parse(localStorage.getItem('jsonString'));
+        // Reload data and refresh page, but do not wipe valid in-memory data with empty storage.
+        const storedMetricData = getStoredMetricData();
+        if (!options.preferLiveData && storedMetricData) {
+            deMetriek$$module$synpdf = storedMetricData;
+        } else if (!storedMetricData) {
+            console.warn('Skipping metric reload because localStorage jsonString is empty or invalid.');
+        }
+
         if (typeof setPagenum$$module$synpdf === 'function') {
             setPagenum$$module$synpdf(opt$$module$synpdf.pagenum);
         }
@@ -1172,3 +1278,82 @@ if (notContainer) {
 
 //hide database tools on page load
 $('#database-menus').hide()
+
+// --- Barline Detect V2 Integration ---
+$(document).ready(function () {
+    $('#advncd').on('change', function () {
+        if (!this.checked) {
+            return;
+        }
+
+        seedMetricStorageFromMemory();
+    });
+
+    $('#run-v2-btn').on('click', function () {
+        if (typeof BarlineDetectV2 === 'undefined') {
+            alert("V2 Detection module is not loaded.");
+            return;
+        }
+
+        const pageImageData = getCurrentPageImageData();
+        if (!pageImageData) {
+            alert("No page pixel data available from the current canvas. Please reload the page.");
+            return;
+        }
+
+        // Validate the page number
+        let pagenumElement = document.getElementById('pagenum');
+        let pagenum = pagenumElement ? parseInt(pagenumElement.value) : opt$$module$synpdf.pagenum;
+
+        if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || pagenum < 0 || pagenum >= deMetriek$$module$synpdf.length) {
+            alert('Invalid page number or deMetriek data missing.');
+            return;
+        }
+
+        let pageData = deMetriek$$module$synpdf[pagenum];
+        if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
+            alert("No staff systems found on this page to detect barlines for.");
+            return;
+        }
+
+        let pixelData = pageImageData.pixelData;
+        let stride = pageImageData.stride;
+        let width = pageImageData.width;
+
+        // Ensure pixelData dimension sanity
+        if (!pixelData || pixelData.length === 0) {
+            alert('Pixel data extraction failed. Please reload the page.');
+            return;
+        }
+
+        console.log("Running V2 ML Detection on page " + pagenum + " for " + pageData.cxs.length + " systems...");
+
+        // Process all systems against the current rendered canvas, not cached page pixels.
+        const systemsForDetection = JSON.parse(JSON.stringify(pageData.cxs));
+        const detectionOpts = {
+            allowV1Fallback: false
+        };
+        let v2Barlines = systemsForDetection.map(function (system) {
+            return BarlineDetectV2.findBarLinesV2(system, stride, pixelData, width, detectionOpts);
+        });
+
+        if (v2Barlines && v2Barlines.length === pageData.cxs.length) {
+            pageData.bxs = v2Barlines.map(function (detectedBarlines, index) {
+                return normalizeDetectedSystemBarlines(pageData.cxs[index], detectedBarlines, pageData.bxs[index]);
+            });
+            deMetriek$$module$synpdf[pagenum] = pageData;
+
+            // Persist the updated live metric array before re-rendering.
+            if (!persistMetricData()) {
+                alert("Could not save updated barlines. Aborting refresh.");
+                return;
+            }
+
+            // Re-render and apply the new barline values onto the page 
+            requestRefresh({ preferLiveData: true });
+            console.log("V2 Barline Detection completed and saved.");
+        } else {
+            alert("V2 Detection failed to return valid barlines for all systems. Aborting update.");
+        }
+    });
+});

@@ -18,12 +18,16 @@ def train_and_export(csv_path, js_path):
     # Feature columns
     feature_cols = [
         "blackness", "connectivity", "box_density_above", "box_density_below", 
-        "median_width", "left_white", 
+        "median_width", "max_width", "pct_wide", "max_bound_width", "left_white", 
         "right_white", "left_contrast", "right_contrast", "local_density",
         "grid_above_left", "grid_above_center", "grid_above_right",
         "grid_top_left", "grid_top_center", "grid_top_right",
         "grid_bot_left", "grid_bot_center", "grid_bot_right",
-        "grid_below_left", "grid_below_center", "grid_below_right"
+        "grid_below_left", "grid_below_center", "grid_below_right",
+        "space_blob_left_1", "space_blob_right_1",
+        "space_blob_left_2", "space_blob_right_2",
+        "space_blob_left_3", "space_blob_right_3",
+        "space_blob_left_4", "space_blob_right_4"
     ]
     
     X = df[feature_cols]

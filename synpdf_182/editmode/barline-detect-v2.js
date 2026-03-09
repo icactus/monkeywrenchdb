@@ -32,29 +32,84 @@ var BarlineDetectV2 = (function () {
      *   (both produce moderate average blackness across the full width)
      * - Its whitespace penalty (midpoint blackness × 2) killed busy staves with lots of notes
      */
-    function normalizeStaffLines(rawCs, pixelData, stride, imageWidth) {
+    function normalizeStaffLines(rawCs, pixelData, stride, imageWidth, xs) {
         var cs = rawCs.slice().sort(function (a, b) { return a - b; });
         var n = cs.length;
 
-        if (n < 5) {
-            if (n >= 2) {
-                return { lines: cs, spatium: (cs[n - 1] - cs[0]) / (n - 1), topY: cs[0], botY: cs[n - 1], isValid: false };
+        function expandSparseStaffLines(lines) {
+            if (lines.length < 2) {
+                return { lines: null, spatium: 0, topY: 0, botY: 0, isValid: false, reason: "too_few_lines" };
             }
-            return { lines: null, spatium: 0, topY: 0, botY: 0, isValid: false };
+
+            var topY = lines[0];
+            var botY = lines[lines.length - 1];
+            var span = botY - topY;
+            if (span <= 0) {
+                return { lines: null, spatium: 0, topY: 0, botY: 0, isValid: false, reason: "non_positive_span" };
+            }
+
+            var baseGap = span / 4;
+            if (baseGap < 4 || baseGap > 40) {
+                return { lines: null, spatium: 0, topY: 0, botY: 0, isValid: false, reason: "sparse_gap_out_of_range" };
+            }
+
+            var anchors = { 0: topY, 4: botY };
+            for (var i = 1; i < lines.length - 1; i++) {
+                var slot = Math.round(((lines[i] - topY) / span) * 4);
+                slot = Math.max(1, Math.min(3, slot));
+                anchors[slot] = lines[i];
+            }
+
+            var filled = [];
+            for (var idx = 0; idx < 5; idx++) {
+                if (anchors[idx] !== undefined) {
+                    filled.push(anchors[idx]);
+                    continue;
+                }
+
+                var prevIdx = idx - 1;
+                while (anchors[prevIdx] === undefined) prevIdx--;
+                var nextIdx = idx + 1;
+                while (anchors[nextIdx] === undefined) nextIdx++;
+
+                var prevY = anchors[prevIdx];
+                var nextY = anchors[nextIdx];
+                var interp = prevY + ((nextY - prevY) * (idx - prevIdx) / (nextIdx - prevIdx));
+                filled.push(interp);
+            }
+
+            return { lines: filled, spatium: baseGap, topY: filled[0], botY: filled[4], isValid: true, reason: "expanded_sparse_staff" };
+        }
+
+        if (n < 5) {
+            return expandSparseStaffLines(cs);
         }
 
         // Coverage scorer: returns fraction of sampled x-positions with a dark pixel at y (±1 row).
         // Uses binary threshold (dark or not) instead of averaging brightness values.
         // This is the key insight: a real staff line has CONSISTENT coverage across the page,
         // while text/noise only covers a small portion.
+        var estimatedSpatium = n >= 2 ? (cs[n - 1] - cs[0]) / Math.max(1, Math.min(4, n - 1)) : 8;
+        var systemMargin = Math.max(15, Math.round(1.5 * estimatedSpatium));
+        var systemStart = xs && xs.x1 !== undefined ? Math.max(0, Math.round(xs.x1 - systemMargin)) : 0;
+        var systemEnd = xs && xs.x2 !== undefined ? Math.min(imageWidth - 1, Math.round(xs.x2 + systemMargin)) : (imageWidth - 1);
+        if (systemStart >= systemEnd) {
+            systemStart = 0;
+            systemEnd = imageWidth - 1;
+        }
+        var systemMid = Math.round((systemStart + systemEnd) / 2);
+
         var coverageCache = {};
-        function coverageAtY(y) {
+        function coverageAtY(y, xStart, xEnd, bucket) {
             var yInt = Math.round(y);
-            if (coverageCache[yInt] !== undefined) return coverageCache[yInt];
+            var cacheKey = yInt + "|" + bucket;
+            if (coverageCache[cacheKey] !== undefined) return coverageCache[cacheKey];
 
             var darkCount = 0;
             var samples = 0;
-            for (var x = 0; x < imageWidth; x += 5) {
+            var startX = Math.max(0, xStart);
+            var endX = Math.min(imageWidth - 1, xEnd);
+            for (var x = startX; x <= endX; x += 5) {
                 samples++;
                 var isDark = false;
                 for (var dy = -1; dy <= 1; dy++) {
@@ -68,7 +123,7 @@ var BarlineDetectV2 = (function () {
                 if (isDark) darkCount++;
             }
             var result = samples > 0 ? darkCount / samples : 0;
-            coverageCache[yInt] = result;
+            coverageCache[cacheKey] = result;
             return result;
         }
 
@@ -78,6 +133,7 @@ var BarlineDetectV2 = (function () {
         var bestScore = -Infinity;
         var best5Lines = null;
         var bestSpatium = 0;
+        var bestReason = "no_combo";
 
         for (var i = 0; i < sn - 4; i++) {
             for (var j = i + 1; j < sn - 3; j++) {
@@ -104,36 +160,47 @@ var BarlineDetectV2 = (function () {
 
                             if (variance > 50) continue;
 
-                            // Measure horizontal coverage for each of the 5 candidate lines
-                            var lineCoverages = [];
-                            var totalCoverage = 0;
-                            for (var c = 0; c < 5; c++) {
-                                var cov = coverageAtY(combo[c]);
-                                lineCoverages.push(cov);
-                                totalCoverage += cov;
+                            var regions = [
+                                { key: "full", x0: systemStart, x1: systemEnd },
+                                { key: "left", x0: systemStart, x1: systemMid },
+                                { key: "right", x0: systemMid, x1: systemEnd }
+                            ];
+                            var regionBest = null;
+
+                            for (var ri = 0; ri < regions.length; ri++) {
+                                var region = regions[ri];
+                                var lineCoverages = [];
+                                var totalCoverage = 0;
+                                var sufficientCount = 0;
+                                var strongCount = 0;
+
+                                for (var c = 0; c < 5; c++) {
+                                    var cov = coverageAtY(combo[c], region.x0, region.x1, region.key);
+                                    lineCoverages.push(cov);
+                                    totalCoverage += cov;
+                                    if (cov >= 0.25) sufficientCount++;
+                                    if (cov >= 0.18) strongCount++;
+                                }
+
+                                var passesRegion = sufficientCount >= 3 || (n === 5 && strongCount >= 4);
+                                if (!passesRegion) continue;
+
+                                var score = totalCoverage - (variance * 0.05);
+                                if (!regionBest || score > regionBest.score) {
+                                    regionBest = {
+                                        score: score,
+                                        reason: region.key === "full" ? "accepted_full_span" : (region.key === "left" ? "accepted_left_half" : "accepted_right_half")
+                                    };
+                                }
                             }
 
-                            // COVERAGE GATE: At least 3 of 5 lines must have >= 25% horizontal coverage.
-                            // Real staff lines: 50-90% coverage. Phantom lines through empty space: <5%.
-                            // Right-aligned text characters averaged over page width: ~10-20%.
-                            // This single check kills phantom staves without penalizing busy music.
-                            var sufficientCount = 0;
-                            for (var c = 0; c < 5; c++) {
-                                if (lineCoverages[c] >= 0.25) sufficientCount++;
-                            }
-                            if (sufficientCount < 3) continue;
+                            if (!regionBest) continue;
 
-                            // Score: total line coverage, penalized mildly by geometric variance.
-                            // NO whitespace penalty — coverage already discriminates staves from solid
-                            // blocks because staff lines have inherently higher coverage than the gaps.
-                            // The old whitespace penalty (midpointBlackness × 2) was the direct cause
-                            // of busy staves being rejected.
-                            var score = totalCoverage - (variance * 0.05);
-
-                            if (score > bestScore) {
-                                bestScore = score;
+                            if (regionBest.score > bestScore) {
+                                bestScore = regionBest.score;
                                 best5Lines = combo;
                                 bestSpatium = meanGap;
+                                bestReason = regionBest.reason;
                             }
                         }
                     }
@@ -142,12 +209,37 @@ var BarlineDetectV2 = (function () {
         }
 
         if (!best5Lines) {
+            if (n === 5) {
+                var upstreamGaps = [
+                    cs[1] - cs[0],
+                    cs[2] - cs[1],
+                    cs[3] - cs[2],
+                    cs[4] - cs[3]
+                ];
+                var upstreamMeanGap = (upstreamGaps[0] + upstreamGaps[1] + upstreamGaps[2] + upstreamGaps[3]) / 4;
+                var upstreamVariance =
+                    (upstreamGaps[0] - upstreamMeanGap) * (upstreamGaps[0] - upstreamMeanGap) +
+                    (upstreamGaps[1] - upstreamMeanGap) * (upstreamGaps[1] - upstreamMeanGap) +
+                    (upstreamGaps[2] - upstreamMeanGap) * (upstreamGaps[2] - upstreamMeanGap) +
+                    (upstreamGaps[3] - upstreamMeanGap) * (upstreamGaps[3] - upstreamMeanGap);
+                if (upstreamMeanGap >= 4 && upstreamMeanGap <= 40 && upstreamVariance <= 80) {
+                    return {
+                        lines: cs.slice(0, 5),
+                        spatium: upstreamMeanGap,
+                        topY: cs[0],
+                        botY: cs[4],
+                        isValid: true,
+                        reason: "trusted_upstream_five_lines"
+                    };
+                }
+            }
             return {
                 lines: cs.slice(0, 5),
                 spatium: (cs[Math.min(4, n - 1)] - cs[0]) / Math.min(4, n - 1),
                 topY: cs[0],
                 botY: cs[Math.min(4, n - 1)],
-                isValid: false
+                isValid: false,
+                reason: "coverage_gate_failed"
             };
         }
 
@@ -156,7 +248,8 @@ var BarlineDetectV2 = (function () {
             spatium: bestSpatium,
             topY: best5Lines[0],
             botY: best5Lines[4],
-            isValid: true
+            isValid: true,
+            reason: bestReason
         };
     }
 
@@ -366,6 +459,152 @@ var BarlineDetectV2 = (function () {
         return maxSp;
     }
 
+    function findBarLinesV1Single(system, stride, pixelData, imageWidth, opts) {
+        opts = opts || {};
+        var p = opts.mtdrmpl !== undefined ? opts.mtdrmpl : 0.5;
+        var m = opts.voorna !== undefined ? opts.voorna : 0.2;
+        var dx = opts.dx !== undefined ? opts.dx : 3;
+
+        if (!system || !system.xs || !system.cs || system.cs.length < 2) return [];
+
+        var xs = system.xs;
+        var norm = normalizeStaffLines(system.cs, pixelData, stride, imageWidth, system.xs);
+        var subStaves = parseSubStaves(system.cs);
+        var spatium = getDominantSpatium(subStaves);
+        if (!isFinite(spatium) || spatium <= 0) {
+            spatium = norm && norm.spatium ? norm.spatium : 8;
+        }
+
+        var normLines = (norm && norm.lines && norm.lines.length >= 2) ? norm.lines : system.cs.slice().sort(function (a, b) { return a - b; });
+        var topY = Math.round(norm.topY !== undefined ? norm.topY : normLines[0]);
+        var botY = Math.round(norm.botY !== undefined ? norm.botY : normLines[normLines.length - 1]);
+        var localExt = Math.max(1, Math.round(2 * spatium));
+        var maxImgRow = Math.floor(pixelData.length / stride) - 1;
+        var numCols = imageWidth;
+
+        var maxWit = 0;
+        for (var col = 0; col < imageWidth; col++) {
+            var localTop = topY;
+            var localBot = botY;
+            var colSum = 0;
+            var rowCount = 0;
+            for (var row = localTop; row < localBot; row++) {
+                var idx = row * stride + col * 4;
+                if (idx + 2 >= pixelData.length || idx < 0) continue;
+                colSum += pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2];
+                rowCount++;
+            }
+            var avg = rowCount > 0 ? colSum / (3 * rowCount) : 0;
+            if (avg > maxWit) maxWit = avg;
+        }
+
+        var k = 3 * maxWit * 0.7;
+        var q = xs.x1 + 50;
+        var u = xs.x2 - 20;
+        if (q >= u) { q = xs.x1; u = xs.x2; }
+
+        var t = [];
+        var y = [];
+        for (var f = 0; f < numCols; f++) {
+            var brightnessSum = 0;
+            var blackCount = 0;
+            var brightRows = 0;
+
+            for (var row = Math.max(0, topY - localExt); row < Math.min(maxImgRow, topY) + 1; row++) {
+                var g = row * stride + f * 4;
+                if (g < 0 || g + 2 >= pixelData.length) continue;
+                brightnessSum += pixelData[g] + pixelData[g + 1] + pixelData[g + 2];
+                brightRows++;
+            }
+            for (var row = topY; row < botY; row++) {
+                var centerIdx = row * stride + f * 4;
+                if (centerIdx < 0 || centerIdx + 6 >= pixelData.length) continue;
+                var x = pixelData[centerIdx] + pixelData[centerIdx + 1] + pixelData[centerIdx + 2];
+                var e = 765;
+                if (f + 1 < numCols) {
+                    e = pixelData[centerIdx + 4] + pixelData[centerIdx + 5] + pixelData[centerIdx + 6];
+                }
+                if (Math.min(x, e) < k) blackCount++;
+                brightnessSum += x;
+                brightRows++;
+            }
+            for (var row = botY; row < Math.min(maxImgRow, botY + localExt) + 1; row++) {
+                var belowIdx = row * stride + f * 4;
+                if (belowIdx < 0 || belowIdx + 2 >= pixelData.length) continue;
+                brightnessSum += pixelData[belowIdx] + pixelData[belowIdx + 1] + pixelData[belowIdx + 2];
+                brightRows++;
+            }
+
+            t.push(brightRows > 0 ? brightnessSum / (3 * brightRows) : 0);
+            y.push(blackCount);
+        }
+
+        var ySlice = y.slice(q, u).sort(function (a, b) { return b - a; });
+        var maxBlack = ySlice[0] || 0;
+        var leftBase = 0;
+        var rightBase = 0;
+        for (var xCol = q; xCol < u; xCol++) {
+            var qVal = y[xCol];
+            if (qVal > maxBlack * p) {
+                if (xCol - dx >= 0 && t[xCol - dx] > leftBase) leftBase = t[xCol - dx];
+                if (xCol + dx < numCols && t[xCol + dx] > rightBase) rightBase = t[xCol + dx];
+            }
+        }
+
+        var result = [xs.x1];
+        var lastBar = result[0];
+        for (var cand = 5; cand < t.length - 5; cand++) {
+            var blackness = y[cand];
+            if (blackness > maxBlack * p &&
+                cand - dx >= 0 && t[cand - dx] > leftBase * m &&
+                cand + dx < numCols && t[cand + dx] > rightBase * m &&
+                cand - lastBar > 3 * spatium) {
+                result.push(cand);
+                lastBar = cand;
+            }
+        }
+        if (xs.x2 - lastBar > 3 * spatium) result.push(xs.x2);
+        return result;
+    }
+
+    function pushFallbackDiagnostics(diagArr, fallbackBars, reason, existingBars) {
+        if (!diagArr || !fallbackBars) return;
+        existingBars = existingBars || [];
+
+        for (var i = 0; i < fallbackBars.length; i++) {
+            var x = fallbackBars[i];
+            var alreadyLogged = false;
+
+            for (var j = 0; j < diagArr.length; j++) {
+                if (Math.abs(diagArr[j].x - x) <= 3) {
+                    alreadyLogged = true;
+                    break;
+                }
+            }
+            if (alreadyLogged) continue;
+
+            var existedInV2 = false;
+            for (var k = 0; k < existingBars.length; k++) {
+                if (Math.abs(existingBars[k] - x) <= 3) {
+                    existedInV2 = true;
+                    break;
+                }
+            }
+
+            diagArr.push({
+                x: x,
+                score: 1.0,
+                featuresArr: null,
+                features: {
+                    fallbackV1: true,
+                    existedInV2: existedInV2
+                },
+                vetoReason: reason || "fallback_v1",
+                source: "v1_fallback"
+            });
+        }
+    }
+
 
     // =========================================================================
     // 2. IMPROVED BARLINE DETECTION
@@ -402,6 +641,7 @@ var BarlineDetectV2 = (function () {
 
         // ML Threshold - Lowered to 0.20 as the 22-feature model scores clean barlines lower without width modifiers.
         var mlThreshold = opts.mlThreshold !== undefined ? opts.mlThreshold : 0.20;
+        var allowV1Fallback = opts.allowV1Fallback !== undefined ? opts.allowV1Fallback : true;
 
         var staffLines = system.cs;
         var xs = system.xs;
@@ -409,8 +649,15 @@ var BarlineDetectV2 = (function () {
 
         if (!staffLines || staffLines.length < 2) return [xs.x1];
 
-        var norm = normalizeStaffLines(staffLines, pixelData, stride, imageWidth);
-        if (!norm.isValid) return [];
+        var norm = normalizeStaffLines(staffLines, pixelData, stride, imageWidth, xs);
+        if (!norm.isValid) {
+            var invalidNormFallback = findBarLinesV1Single(system, stride, pixelData, imageWidth, opts);
+            if (allowV1Fallback) {
+                pushFallbackDiagnostics(opts.diagnostics, invalidNormFallback, "fallback_v1_invalid_staff:" + (norm.reason || "invalid_staff"));
+                return invalidNormFallback.length > 0 ? invalidNormFallback : [xs.x1];
+            }
+            return [xs.x1];
+        }
 
         var normLines = norm.lines || staffLines;
         var topY = Math.round(norm.topY);
@@ -424,12 +671,59 @@ var BarlineDetectV2 = (function () {
         // --- Trace staff lines for adaptive per-column bounds ---
         var tracedLines = traceStaffLines(normLines, pixelData, stride, imageWidth, 20);
 
+        var staffGeomCache = new Array(imageWidth);
+        function getStaffGeometry(col) {
+            if (staffGeomCache[col]) return staffGeomCache[col];
+
+            var effectiveLines = [];
+            var usedTraceFallback = false;
+            var maxLineOffset = Math.max(2, Math.round(0.45 * spatium));
+            var minStaffHeight = Math.max(4, Math.round(staffHeight * 0.82));
+            var maxStaffHeight = Math.max(minStaffHeight + 2, Math.round(staffHeight * 1.18));
+
+            if (tracedLines) {
+                for (var lineIdx = 0; lineIdx < 5; lineIdx++) {
+                    var baseY = Math.round(normLines[lineIdx]);
+                    var tracedY = Math.round(tracedLines[lineIdx][col]);
+                    effectiveLines.push(Math.max(baseY - maxLineOffset, Math.min(baseY + maxLineOffset, tracedY)));
+                }
+
+                for (var clampIdx = 1; clampIdx < effectiveLines.length; clampIdx++) {
+                    if (effectiveLines[clampIdx] <= effectiveLines[clampIdx - 1]) {
+                        effectiveLines[clampIdx] = effectiveLines[clampIdx - 1] + 1;
+                    }
+                }
+
+                var tracedHeight = effectiveLines[4] - effectiveLines[0];
+                if (tracedHeight < minStaffHeight || tracedHeight > maxStaffHeight) {
+                    usedTraceFallback = true;
+                    effectiveLines = normLines.map(function (y) { return Math.round(y); });
+                }
+            } else {
+                usedTraceFallback = true;
+                effectiveLines = normLines.map(function (y) { return Math.round(y); });
+            }
+
+            var localTop = effectiveLines[0];
+            var localBot = effectiveLines[4];
+            var geom = {
+                lines: effectiveLines,
+                top: localTop,
+                bot: localBot,
+                height: localBot - localTop,
+                usedTraceFallback: usedTraceFallback
+            };
+            staffGeomCache[col] = geom;
+            return geom;
+        }
+
         // --- Compute witArr equivalent (whiteness threshold) ---
         // Same logic as v1's countVsys: find max column brightness within staff
         var maxWit = 0;
         for (var col = 0; col < imageWidth; col++) {
-            var localTop = tracedLines ? Math.round(tracedLines[0][col]) : topY;
-            var localBot = tracedLines ? Math.round(tracedLines[4][col]) : botY;
+            var geom = getStaffGeometry(col);
+            var localTop = geom.top;
+            var localBot = geom.bot;
             var colSum = 0;
             var rowCount = 0;
             for (var row = localTop; row < localBot; row++) {
@@ -454,9 +748,10 @@ var BarlineDetectV2 = (function () {
         var ext = Math.round(1 * spatium);      // ±1×spatium extension for whiteness
 
         for (var col = 0; col < numCols; col++) {
-            var localTop = tracedLines ? Math.round(tracedLines[0][col]) : topY;
-            var localBot = tracedLines ? Math.round(tracedLines[4][col]) : botY;
-            var localHeight = localBot - localTop;
+            var geom = getStaffGeometry(col);
+            var localTop = geom.top;
+            var localBot = geom.bot;
+            var localHeight = geom.height;
             if (localHeight <= 0) continue;
 
             // Extended region for whiteness (±1×spatium)
@@ -568,9 +863,11 @@ var BarlineDetectV2 = (function () {
             // Test 3: CONNECTIVITY CHECK (Lowered to 0.6)
             var consecutiveDark = 0;
             var maxConsecutive = 0;
-            var localTop = tracedLines ? Math.round(tracedLines[0][col]) : topY;
-            var localBot = tracedLines ? Math.round(tracedLines[4][col]) : botY;
-            var localHeight = localBot - localTop;
+            var geom = getStaffGeometry(col);
+            var localTop = geom.top;
+            var localBot = geom.bot;
+            var localHeight = geom.height;
+            var effectiveLines = geom.lines;
 
             for (var row = localTop; row <= localBot; row++) {
                 var rowOffset = row * stride;
@@ -594,7 +891,8 @@ var BarlineDetectV2 = (function () {
                 }
             }
 
-            if (localHeight > 0 && (maxConsecutive / localHeight) < connectMin) continue;
+            var effectiveConnectMin = geom.usedTraceFallback ? Math.max(0.62, connectMin - 0.08) : connectMin;
+            if (localHeight > 0 && (maxConsecutive / localHeight) < effectiveConnectMin) continue;
 
             // --- USER FIX: Center on the actual black peak ---
             // Often the left-most edge passes the test first, meaning we extract
@@ -671,13 +969,11 @@ var BarlineDetectV2 = (function () {
             var widths = [];
             var boundWidths = []; // To check for hollow noteheads
             var staffLineYs = {};
-            if (tracedLines) {
-                for (var sl = 0; sl < 5; sl++) {
-                    var sly = Math.round(tracedLines[sl][col]);
-                    staffLineYs[sly - 1] = true;
-                    staffLineYs[sly] = true;
-                    staffLineYs[sly + 1] = true;
-                }
+            for (var sl = 0; sl < effectiveLines.length; sl++) {
+                var sly = Math.round(effectiveLines[sl]);
+                staffLineYs[sly - 1] = true;
+                staffLineYs[sly] = true;
+                staffLineYs[sly + 1] = true;
             }
 
             var maxSearchX = Math.round(2.5 * candSpatium); // Look far enough to see a whole notehead
@@ -746,7 +1042,7 @@ var BarlineDetectV2 = (function () {
             var bw = Math.max(1, Math.round(medianWidth));
             var halfW = Math.floor(bw / 2);
 
-            var aboveStart = (tracedLines ? Math.round(tracedLines[0][col]) : topY) - 1;
+            var aboveStart = Math.round(effectiveLines[0]) - 1;
             var boxPx = 0, blackPx = 0;
             for (var r = aboveStart; r >= Math.max(0, aboveStart - 5); r--) {
                 var ro = r * stride;
@@ -762,7 +1058,7 @@ var BarlineDetectV2 = (function () {
             }
             var boxDensityAbove = boxPx > 0 ? blackPx / boxPx : 0.0;
 
-            var belowStart = (tracedLines ? Math.round(tracedLines[4][col]) : botY) + 1;
+            var belowStart = Math.round(effectiveLines[4]) + 1;
             boxPx = 0; blackPx = 0;
             for (var r = belowStart; r <= Math.min(maxImgRow, belowStart + 5); r++) {
                 var ro = r * stride;
@@ -850,10 +1146,56 @@ var BarlineDetectV2 = (function () {
                 }
             }
 
+            // Staff-relative notehead ring (8 zones): 4 staff-space neighborhoods x left/right.
+            var noteheadFeatures = [0, 0, 0, 0, 0, 0, 0, 0];
+            var tracedOrNormLines = effectiveLines;
+            if (tracedOrNormLines && tracedOrNormLines.length >= 5) {
+                var bandHalfHeight = Math.max(2, Math.round(0.6 * candSpatium));
+                var sideInner = Math.max(1, Math.round(0.35 * candSpatium));
+                var sideOuter = Math.max(sideInner + 1, Math.round(1.75 * candSpatium));
+                var noteZoneIdx = 0;
+
+                for (var spaceIdx = 0; spaceIdx < 4; spaceIdx++) {
+                    var spaceCenter = Math.round((tracedOrNormLines[spaceIdx] + tracedOrNormLines[spaceIdx + 1]) / 2);
+                    var y0 = Math.max(0, spaceCenter - bandHalfHeight);
+                    var y1 = Math.min(maxImgRow, spaceCenter + bandHalfHeight);
+                    var sideZones = [
+                        [Math.max(0, col - sideOuter), Math.max(0, col - sideInner)],
+                        [Math.min(numCols - 1, col + sideInner), Math.min(numCols - 1, col + sideOuter)]
+                    ];
+
+                    for (var sideIdx = 0; sideIdx < sideZones.length; sideIdx++) {
+                        var sx0 = sideZones[sideIdx][0];
+                        var sx1 = sideZones[sideIdx][1];
+                        var ringBlack = 0;
+                        var ringTotal = 0;
+
+                        if (sx0 <= sx1) {
+                            for (var ringY = y0; ringY <= y1; ringY++) {
+                                if (staffLineYs[ringY]) continue;
+                                var ringRow = ringY * stride;
+                                for (var ringX = sx0; ringX <= sx1; ringX++) {
+                                    var ringIdx = ringRow + ringX * 4;
+                                    if (ringIdx >= 0 && ringIdx + 2 < pixelData.length) {
+                                        ringTotal++;
+                                        if ((pixelData[ringIdx] + pixelData[ringIdx + 1] + pixelData[ringIdx + 2]) / 3 < 128) {
+                                            ringBlack++;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        noteheadFeatures[noteZoneIdx++] = ringTotal > 0 ? ringBlack / ringTotal : 0.0;
+                    }
+                }
+            }
+
             var features = [
                 blackness, connectivity, boxDensityAbove, boxDensityBelow, medianWidth,
+                maxWidth, pctWide, maxBoundWidth,
                 leftWhite, rightWhite, leftContrast, rightContrast, localDensity
-            ].concat(gridFeatures);
+            ].concat(gridFeatures, noteheadFeatures);
 
             // =========================================================
             // ML INFERENCE & HYBRID LOGIC
@@ -862,6 +1204,44 @@ var BarlineDetectV2 = (function () {
             if (typeof BarlineML !== 'undefined') {
                 mlScore = BarlineML.predictProbability(features);
             }
+
+            var leftNoteheadBands = [noteheadFeatures[0], noteheadFeatures[2], noteheadFeatures[4], noteheadFeatures[6]];
+            var rightNoteheadBands = [noteheadFeatures[1], noteheadFeatures[3], noteheadFeatures[5], noteheadFeatures[7]];
+            var leftNoteheadAvg = (leftNoteheadBands[0] + leftNoteheadBands[1] + leftNoteheadBands[2] + leftNoteheadBands[3]) / 4;
+            var rightNoteheadAvg = (rightNoteheadBands[0] + rightNoteheadBands[1] + rightNoteheadBands[2] + rightNoteheadBands[3]) / 4;
+            var dominantNoteheadSide = leftNoteheadAvg >= rightNoteheadAvg ? "left" : "right";
+            var dominantNoteheadBands = dominantNoteheadSide === "left" ? leftNoteheadBands : rightNoteheadBands;
+            var oppositeNoteheadBands = dominantNoteheadSide === "left" ? rightNoteheadBands : leftNoteheadBands;
+            var dominantSingleBand = 0;
+            var dominantAdjacentBands = 0;
+            var oppositeSingleBand = 0;
+
+            for (var nh = 0; nh < dominantNoteheadBands.length; nh++) {
+                if (dominantNoteheadBands[nh] > dominantSingleBand) dominantSingleBand = dominantNoteheadBands[nh];
+                if (oppositeNoteheadBands[nh] > oppositeSingleBand) oppositeSingleBand = oppositeNoteheadBands[nh];
+                if (nh < dominantNoteheadBands.length - 1) {
+                    var adjacentBlob = dominantNoteheadBands[nh] + dominantNoteheadBands[nh + 1];
+                    if (adjacentBlob > dominantAdjacentBands) dominantAdjacentBands = adjacentBlob;
+                }
+            }
+
+            var widthExpansion = maxWidth > 0 ? maxBoundWidth / maxWidth : 1.0;
+            var noteheadSideGap = Math.abs(leftNoteheadAvg - rightNoteheadAvg);
+            var noteheadBlobVeto =
+                widthExpansion >= 2.0 &&
+                dominantSingleBand >= 0.28 &&
+                dominantAdjacentBands >= 0.60 &&
+                noteheadSideGap >= 0.12 &&
+                oppositeSingleBand <= 0.22 &&
+                Math.max(boxDensityAbove, boxDensityBelow) < 0.45;
+            var rightBoundaryMargin = Math.max(12, Math.round(1.5 * candSpatium));
+            var isNearRightBoundary = col >= xs.x2 - rightBoundaryMargin;
+            var strongStructuralBarline =
+                connectivity >= 0.99 &&
+                Math.min(leftContrast, rightContrast) >= 96 &&
+                Math.max(boxDensityAbove, boxDensityBelow) <= 0.35;
+            var noteheadVetoThreshold = opts.noteheadVetoThreshold !== undefined ? opts.noteheadVetoThreshold : 0.80;
+            var hardNoteheadBlobVeto = noteheadBlobVeto && !isNearRightBoundary && mlScore < noteheadVetoThreshold && !strongStructuralBarline;
 
             // USER'S MUSIC LOGIC:
             // 1. Slurs/ties crossing above/below cause minor density clutter. But they usually
@@ -874,24 +1254,32 @@ var BarlineDetectV2 = (function () {
             // 3. To compensate for the loss of width modifiers in the ML model, we explicitly
             //    boost candidates that perfectly span the staff, since stems usually have <1.0 
             //    connectivity due to noteheads terminating short of the full height.
-            if (mlScore < 0.55 && connectivity >= 0.99) {
-                mlScore += 0.15; // Rescue structurally perfect lines from the 'unsure' tier
+            if (mlScore < 0.55 && connectivity >= 0.99 && !hardNoteheadBlobVeto) {
+                mlScore += 0.10; // Rescue structurally perfect lines, but not stem+notehead blobs
             }
 
             var isValid = false;
             var vetoReason = "";
+            var highScoreThreshold = opts.highScoreThreshold !== undefined ? opts.highScoreThreshold : 0.72;
+            var moderateExtensionThreshold = opts.moderateExtensionThreshold !== undefined ? opts.moderateExtensionThreshold : 0.70;
 
             if (boxDensityAbove > 0.85 || boxDensityBelow > 0.85) {
                 // HARDEST VETO: Barlines never extend continuously as an 85% solid block this far past the staff.
                 isValid = false;
                 vetoReason = "hardExtVeto";
-            } else if (mlScore >= 0.65) {
-                // High confidence -> accept (handles crossing slurs if space is clean)
+            } else if (hardNoteheadBlobVeto) {
+                vetoReason = "notehead_blob_veto";
+            } else if (mlScore >= highScoreThreshold) {
+                // High confidence survives notehead-blob signals unless the explicit hard veto fired.
                 isValid = true;
-                vetoReason = "accepted_high_score";
+                vetoReason = noteheadBlobVeto ? "accepted_high_score_with_notehead_blob_signal" : "accepted_high_score";
             } else if (mlScore >= mlThreshold) {
                 // Moderate confidence -> accept ONLY IF structural heuristics are near perfect
-                if (boxDensityAbove > 0.40 || boxDensityBelow > 0.40) {
+                if (noteheadBlobVeto && !isNearRightBoundary && !strongStructuralBarline) {
+                    vetoReason = "moderate_score_notehead_blob_signal";
+                } else if (boxDensityAbove > moderateExtensionThreshold || boxDensityBelow > moderateExtensionThreshold) {
+                    vetoReason = "moderate_score_but_extensions";
+                } else if (mlScore < 0.60 && (boxDensityAbove > 0.40 || boxDensityBelow > 0.40)) {
                     vetoReason = "moderate_score_but_extensions";
                 } else if (mlScore < 0.60 && Math.min(leftContrast, rightContrast) < 92) {
                     // Stems bound to noteheads naturally lack clean white margins
@@ -929,9 +1317,19 @@ var BarlineDetectV2 = (function () {
                         boxDensA: boxDensityAbove,
                         boxDensB: boxDensityBelow,
                         maxWidth: maxWidth,
+                        maxBoundWidth: maxBoundWidth,
+                        pctWide: pctWide,
                         blackness: blackness,
                         leftWhite: leftWhite,
-                        rightWhite: rightWhite
+                        rightWhite: rightWhite,
+                        noteheadBlobVeto: noteheadBlobVeto,
+                        hardNoteheadBlobVeto: hardNoteheadBlobVeto,
+                        strongStructuralBarline: strongStructuralBarline,
+                        isNearRightBoundary: isNearRightBoundary,
+                        widthExpansion: widthExpansion,
+                        dominantNoteheadBand: dominantSingleBand,
+                        dominantAdjacentBands: dominantAdjacentBands,
+                        usedTraceFallback: geom.usedTraceFallback
                     },
                     vetoReason: vetoReason
                 });
@@ -989,10 +1387,10 @@ var BarlineDetectV2 = (function () {
             barlines.push(acceptedObjects[i].x);
         }
 
-        // Add system end if far enough from last accepted barline
-        var finalLastX = barlines[barlines.length - 1];
-        if (xs.x2 - finalLastX > minGap) {
-            barlines.push(xs.x2);
+        var fallbackV1 = findBarLinesV1Single(system, stride, pixelData, imageWidth, opts);
+        if (allowV1Fallback && fallbackV1.length > barlines.length && (barlines.length <= 1 || fallbackV1.length - barlines.length >= 2)) {
+            pushFallbackDiagnostics(opts.diagnostics, fallbackV1, "fallback_v1_system", barlines);
+            return fallbackV1;
         }
 
         return barlines;
@@ -1022,12 +1420,13 @@ var BarlineDetectV2 = (function () {
         var drift = opts.driftTolerance !== undefined ? opts.driftTolerance : 2;
 
         var staffLines = system.cs;
-        var norm = normalizeStaffLines(staffLines, pixelData, stride, imageWidth);
+        var norm = normalizeStaffLines(staffLines, pixelData, stride, imageWidth, system.xs);
         if (!norm.isValid) return {
             blackScore: new Float32Array(imageWidth),
             connect: new Float32Array(imageWidth),
             whiteScore: new Float32Array(imageWidth),
-            tracedLines: null
+            tracedLines: null,
+            normalizationReason: norm.reason || "invalid_staff"
         };
 
         var normLines = norm.lines || staffLines;
@@ -1088,7 +1487,8 @@ var BarlineDetectV2 = (function () {
             blackScore: blackScoreArr,
             connectivity: connectArr,
             whiteScore: whiteArr,
-            tracedLines: tracedLines
+            tracedLines: tracedLines,
+            normalizationReason: norm.reason || "accepted_full_span"
         };
     }
 
@@ -1112,9 +1512,9 @@ var BarlineDetectV2 = (function () {
             }
 
             var staffLines = system.cs;
-            var norm = normalizeStaffLines(staffLines, pixelData, stride, imageWidth);
+            var norm = normalizeStaffLines(staffLines, pixelData, stride, imageWidth, system.xs);
             if (!norm.isValid) {
-                results.push({ x: gtX, status: 'missed', reason: 'Invalid staff detected (likely text block)' });
+                results.push({ x: gtX, status: 'missed', reason: 'Invalid staff detected: ' + (norm.reason || 'unknown') });
                 continue;
             }
 
@@ -1271,4 +1671,3 @@ var BarlineDetectV2 = (function () {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = BarlineDetectV2;
 }
-
