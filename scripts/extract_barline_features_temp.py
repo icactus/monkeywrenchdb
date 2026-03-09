@@ -23,49 +23,79 @@ def get_pixel_data(image, fixwd):
     rgba_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGBA)
     return rgba_img.flatten().astype(np.int32), rgba_img.shape[1] * 4, rgba_img.shape[1]
 
-def normalize_staff_lines(raw_cs):
+def normalize_staff_lines(raw_cs, pixel_data, stride, image_width):
     """Normalize a cs array to extract the best 5 staff lines and compute spatium.
-    
-    Handles variable lengths:
-    - 5 values: standard single staff, use as-is
-    - 6+ values: misidentified extra line(s), pick best 5 by most even spacing
-    - 2 values: bounding box only, estimate spatium = height / 4
-    - 3-4 values: partial data, use median consecutive difference for spatium
-    
-    Returns: (staff_5, spatium, top_y, bot_y)
-      staff_5: list of 5 Y values (or None if < 5)
-      spatium: estimated distance between adjacent staff lines
-      top_y: top of the staff area
-      bot_y: bottom of the staff area
+    Uses a combinatorial approach to find the 5 lines with the most uniform spacing
+    and the highest actual pixel blackness.
     """
     cs = sorted(raw_cs)
     n = len(cs)
     
-    if n < 2:
-        return None, 0, 0, 0
+    if n < 5:
+        if n >= 2:
+            return cs, float(cs[-1] - cs[0]) / (n - 1), cs[0], cs[-1], False
+        return None, 0, 0, 0, False
+        
+    score_cache = {}
+    def score_y(y):
+        y_int = int(round(y))
+        if y_int in score_cache:
+            return score_cache[y_int]
+            
+        black_count = 0
+        samples = 0
+        for x in range(0, image_width, 5):
+            samples += 1
+            max_black = 0
+            for dy in range(-1, 2):
+                sy = y_int + dy
+                if sy < 0 or sy * stride >= len(pixel_data): continue
+                idx = sy * stride + x * 4
+                if idx < 0 or idx + 2 >= len(pixel_data): continue
+                brightness = (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3.0
+                black = 255.0 - brightness
+                if black > max_black: max_black = black
+            black_count += max_black
+            
+        res = black_count / max(1, samples)
+        score_cache[y_int] = res
+        return res
+
+    search_cs = cs[:min(15, n)]
+    best_score = float('-inf')
+    best_5 = None
+    best_spatium = 0
     
-    if n == 2:
-        # Bounding box only
-        spatium = (cs[1] - cs[0]) / 4
-        return None, spatium, cs[0], cs[1]
-    
-    if n >= 5:
-        # Use median of consecutive differences for spatium
-        # This is robust to one extra noisy line
-        diffs = [cs[i+1] - cs[i] for i in range(n-1)]
-        spatium = float(np.median(diffs))
-        # Pick the first 5 lines as the staff
-        staff_5 = cs[:5]
-        top_y = staff_5[0]
-        bot_y = staff_5[4]
-        return staff_5, spatium, top_y, bot_y
-    
-    # 3 or 4 values: partial data
-    diffs = [cs[i+1] - cs[i] for i in range(n-1)]
-    spatium = float(np.median(diffs))
-    top_y = cs[0]
-    bot_y = cs[-1]
-    return None, spatium, top_y, bot_y
+    import itertools
+    for combo in itertools.combinations(search_cs, 5):
+        gaps = [combo[i+1] - combo[i] for i in range(4)]
+        mean_gap = sum(gaps) / 4.0
+        
+        if mean_gap < 4 or mean_gap > 40:
+            continue
+            
+        variance = sum((g - mean_gap) ** 2 for g in gaps)
+        
+        if variance > 50:
+            continue
+            
+        total_blackness = sum(score_y(y) for y in combo)
+        
+        # Check white space BETWEEN lines to reject thick solid blocks of ink
+        total_whitespace = sum(score_y((combo[i] + combo[i+1]) / 2.0) for i in range(4))
+        
+        # If the space between lines is also black, it's not a staff, it's a solid line/box
+        score = total_blackness - (variance * 10) - (total_whitespace * 2)
+        
+        if score > best_score:
+            best_score = score
+            best_5 = list(combo)
+            best_spatium = mean_gap
+            
+    if best_score < 0 or best_5 is None:
+        return cs[:5], float(cs[min(4, n-1)] - cs[0]) / max(1, min(4, n-1)), cs[0], cs[min(4, n-1)], False
+        
+    return best_5, best_spatium, best_5[0], best_5[4], True
 
 
 def trace_staff_lines(staff_lines, pixel_data, stride, image_width, sample_interval=20):
@@ -143,7 +173,8 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
     xs = system["xs"]
     if len(raw_cs) < 2: return [], []
     
-    staff_5, spatium, top_y_raw, bot_y_raw = normalize_staff_lines(raw_cs)
+    staff_5, spatium, top_y_raw, bot_y_raw, is_valid = normalize_staff_lines(raw_cs, pixel_data, stride, image_width)
+    if not is_valid: return [], []
     top_y = int(round(top_y_raw))
     bot_y = int(round(bot_y_raw))
     staff_height = bot_y - top_y

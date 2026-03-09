@@ -19,6 +19,148 @@ var BarlineDetectV2 = (function () {
     // =========================================================================
 
     /**
+     * Normalize a cs array to extract the best 5 staff lines and compute spatium.
+     * Uses a combinatorial approach to find the 5 lines with the most uniform spacing.
+     *
+     * Scoring is COVERAGE-BASED: for each candidate Y, we measure what fraction of
+     * x-positions across the page have a dark pixel (binary threshold). This directly
+     * discriminates real staff lines (60-90% horizontal coverage spanning the page)
+     * from phantom lines through empty space (<5%) and text characters (~15%).
+     *
+     * The old average-brightness approach failed because:
+     * - It couldn't distinguish "thin line spanning 90% of page" from "thick text covering 20%"
+     *   (both produce moderate average blackness across the full width)
+     * - Its whitespace penalty (midpoint blackness × 2) killed busy staves with lots of notes
+     */
+    function normalizeStaffLines(rawCs, pixelData, stride, imageWidth) {
+        var cs = rawCs.slice().sort(function (a, b) { return a - b; });
+        var n = cs.length;
+
+        if (n < 5) {
+            if (n >= 2) {
+                return { lines: cs, spatium: (cs[n - 1] - cs[0]) / (n - 1), topY: cs[0], botY: cs[n - 1], isValid: false };
+            }
+            return { lines: null, spatium: 0, topY: 0, botY: 0, isValid: false };
+        }
+
+        // Coverage scorer: returns fraction of sampled x-positions with a dark pixel at y (±1 row).
+        // Uses binary threshold (dark or not) instead of averaging brightness values.
+        // This is the key insight: a real staff line has CONSISTENT coverage across the page,
+        // while text/noise only covers a small portion.
+        var coverageCache = {};
+        function coverageAtY(y) {
+            var yInt = Math.round(y);
+            if (coverageCache[yInt] !== undefined) return coverageCache[yInt];
+
+            var darkCount = 0;
+            var samples = 0;
+            for (var x = 0; x < imageWidth; x += 5) {
+                samples++;
+                var isDark = false;
+                for (var dy = -1; dy <= 1; dy++) {
+                    var sy = yInt + dy;
+                    if (sy < 0 || sy * stride >= pixelData.length) continue;
+                    var idx = sy * stride + x * 4;
+                    if (idx < 0 || idx + 2 >= pixelData.length) continue;
+                    var brightness = (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+                    if (brightness < 128) { isDark = true; break; }
+                }
+                if (isDark) darkCount++;
+            }
+            var result = samples > 0 ? darkCount / samples : 0;
+            coverageCache[yInt] = result;
+            return result;
+        }
+
+        var searchCs = cs.slice(0, Math.min(15, n));
+        var sn = searchCs.length;
+
+        var bestScore = -Infinity;
+        var best5Lines = null;
+        var bestSpatium = 0;
+
+        for (var i = 0; i < sn - 4; i++) {
+            for (var j = i + 1; j < sn - 3; j++) {
+                for (var k = j + 1; k < sn - 2; k++) {
+                    for (var l = k + 1; l < sn - 1; l++) {
+                        for (var m = l + 1; m < sn; m++) {
+                            var combo = [searchCs[i], searchCs[j], searchCs[k], searchCs[l], searchCs[m]];
+                            var gaps = [
+                                combo[1] - combo[0],
+                                combo[2] - combo[1],
+                                combo[3] - combo[2],
+                                combo[4] - combo[3]
+                            ];
+
+                            var meanGap = (gaps[0] + gaps[1] + gaps[2] + gaps[3]) / 4;
+
+                            if (meanGap < 4 || meanGap > 40) continue;
+
+                            var variance =
+                                (gaps[0] - meanGap) * (gaps[0] - meanGap) +
+                                (gaps[1] - meanGap) * (gaps[1] - meanGap) +
+                                (gaps[2] - meanGap) * (gaps[2] - meanGap) +
+                                (gaps[3] - meanGap) * (gaps[3] - meanGap);
+
+                            if (variance > 50) continue;
+
+                            // Measure horizontal coverage for each of the 5 candidate lines
+                            var lineCoverages = [];
+                            var totalCoverage = 0;
+                            for (var c = 0; c < 5; c++) {
+                                var cov = coverageAtY(combo[c]);
+                                lineCoverages.push(cov);
+                                totalCoverage += cov;
+                            }
+
+                            // COVERAGE GATE: At least 3 of 5 lines must have >= 25% horizontal coverage.
+                            // Real staff lines: 50-90% coverage. Phantom lines through empty space: <5%.
+                            // Right-aligned text characters averaged over page width: ~10-20%.
+                            // This single check kills phantom staves without penalizing busy music.
+                            var sufficientCount = 0;
+                            for (var c = 0; c < 5; c++) {
+                                if (lineCoverages[c] >= 0.25) sufficientCount++;
+                            }
+                            if (sufficientCount < 3) continue;
+
+                            // Score: total line coverage, penalized mildly by geometric variance.
+                            // NO whitespace penalty — coverage already discriminates staves from solid
+                            // blocks because staff lines have inherently higher coverage than the gaps.
+                            // The old whitespace penalty (midpointBlackness × 2) was the direct cause
+                            // of busy staves being rejected.
+                            var score = totalCoverage - (variance * 0.05);
+
+                            if (score > bestScore) {
+                                bestScore = score;
+                                best5Lines = combo;
+                                bestSpatium = meanGap;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!best5Lines) {
+            return {
+                lines: cs.slice(0, 5),
+                spatium: (cs[Math.min(4, n - 1)] - cs[0]) / Math.min(4, n - 1),
+                topY: cs[0],
+                botY: cs[Math.min(4, n - 1)],
+                isValid: false
+            };
+        }
+
+        return {
+            lines: best5Lines,
+            spatium: bestSpatium,
+            topY: best5Lines[0],
+            botY: best5Lines[4],
+            isValid: true
+        };
+    }
+
+    /**
      * Trace staff lines across the page width by sliding a 5-line template.
      * Returns per-column y-offsets interpolated between sample points.
      */
@@ -267,9 +409,12 @@ var BarlineDetectV2 = (function () {
 
         if (!staffLines || staffLines.length < 2) return [xs.x1];
 
-        // Use first 5 cs values to match normalize_staff_lines in training
-        var topY = Math.round(staffLines[0]);
-        var botY = Math.round(staffLines[Math.min(4, staffLines.length - 1)]);
+        var norm = normalizeStaffLines(staffLines, pixelData, stride, imageWidth);
+        if (!norm.isValid) return [];
+
+        var normLines = norm.lines || staffLines;
+        var topY = Math.round(norm.topY);
+        var botY = Math.round(norm.botY);
         var staffHeight = botY - topY;
 
         // Parse sub-staves and compute robust spatium
@@ -277,7 +422,7 @@ var BarlineDetectV2 = (function () {
         var spatium = getDominantSpatium(subStaves);
 
         // --- Trace staff lines for adaptive per-column bounds ---
-        var tracedLines = traceStaffLines(staffLines, pixelData, stride, imageWidth, 20);
+        var tracedLines = traceStaffLines(normLines, pixelData, stride, imageWidth, 20);
 
         // --- Compute witArr equivalent (whiteness threshold) ---
         // Same logic as v1's countVsys: find max column brightness within staff
@@ -877,10 +1022,19 @@ var BarlineDetectV2 = (function () {
         var drift = opts.driftTolerance !== undefined ? opts.driftTolerance : 2;
 
         var staffLines = system.cs;
-        var topY = Math.round(staffLines[0]);
-        var botY = Math.round(staffLines[staffLines.length - 1]);
+        var norm = normalizeStaffLines(staffLines, pixelData, stride, imageWidth);
+        if (!norm.isValid) return {
+            blackScore: new Float32Array(imageWidth),
+            connect: new Float32Array(imageWidth),
+            whiteScore: new Float32Array(imageWidth),
+            tracedLines: null
+        };
 
-        var tracedLines = traceStaffLines(staffLines, pixelData, stride, imageWidth, 20);
+        var normLines = norm.lines || staffLines;
+        var topY = Math.round(norm.topY);
+        var botY = Math.round(norm.botY);
+
+        var tracedLines = traceStaffLines(normLines, pixelData, stride, imageWidth, 20);
 
         var numCols = imageWidth;
         var blackScoreArr = new Float32Array(numCols);
@@ -958,11 +1112,18 @@ var BarlineDetectV2 = (function () {
             }
 
             var staffLines = system.cs;
-            var topY = Math.round(staffLines[0]);
-            var botY = Math.round(staffLines[staffLines.length - 1]);
+            var norm = normalizeStaffLines(staffLines, pixelData, stride, imageWidth);
+            if (!norm.isValid) {
+                results.push({ x: gtX, status: 'missed', reason: 'Invalid staff detected (likely text block)' });
+                continue;
+            }
+
+            var normLines = norm.lines || staffLines;
+            var topY = Math.round(norm.topY);
+            var botY = Math.round(norm.botY);
             var diagSubStaves = parseSubStaves(staffLines);
             var spatium = getDominantSpatium(diagSubStaves);
-            var tracedLines = traceStaffLines(staffLines, pixelData, stride, imageWidth, 20);
+            var tracedLines = traceStaffLines(normLines, pixelData, stride, imageWidth, 20);
             var col = gtX;
             var numCols = imageWidth;
 

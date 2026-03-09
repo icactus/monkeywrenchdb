@@ -7,6 +7,80 @@ import argparse
 import csv
 import concurrent.futures
 
+def normalize_staff_lines(raw_cs, pixel_data, stride, image_width):
+    """Normalize a cs array to extract the best 5 staff lines and compute spatium.
+    Uses a combinatorial approach to find the 5 lines with the most uniform spacing
+    and the highest actual pixel blackness.
+    """
+    cs = sorted(raw_cs)
+    n = len(cs)
+    
+    if n < 5:
+        if n >= 2:
+            return cs, float(cs[-1] - cs[0]) / (n - 1), cs[0], cs[-1], False
+        return None, 0, 0, 0, False
+        
+    score_cache = {}
+    def score_y(y):
+        y_int = int(round(y))
+        if y_int in score_cache:
+            return score_cache[y_int]
+            
+        black_count = 0
+        samples = 0
+        for x in range(0, image_width, 5):
+            samples += 1
+            max_black = 0
+            for dy in range(-1, 2):
+                sy = y_int + dy
+                if sy < 0 or sy * stride >= len(pixel_data): continue
+                idx = sy * stride + x * 4
+                if idx < 0 or idx + 2 >= len(pixel_data): continue
+                brightness = (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3.0
+                black = 255.0 - brightness
+                if black > max_black: max_black = black
+            black_count += max_black
+            
+        res = black_count / max(1, samples)
+        score_cache[y_int] = res
+        return res
+
+    search_cs = cs[:min(15, n)]
+    best_score = float('-inf')
+    best_5 = None
+    best_spatium = 0
+    
+    import itertools
+    for combo in itertools.combinations(search_cs, 5):
+        gaps = [combo[i+1] - combo[i] for i in range(4)]
+        mean_gap = sum(gaps) / 4.0
+        
+        if mean_gap < 4 or mean_gap > 40:
+            continue
+            
+        variance = sum((g - mean_gap) ** 2 for g in gaps)
+        
+        if variance > 50:
+            continue
+            
+        total_blackness = sum(score_y(y) for y in combo)
+        
+        # Check white space BETWEEN lines to reject thick solid blocks of ink
+        total_whitespace = sum(score_y((combo[i] + combo[i+1]) / 2.0) for i in range(4))
+        
+        # If the space between lines is also black, it's not a staff, it's a solid line/box
+        score = total_blackness - (variance * 10) - (total_whitespace * 2)
+        
+        if score > best_score:
+            best_score = score
+            best_5 = list(combo)
+            best_spatium = mean_gap
+            
+    if best_score < 0 or best_5 is None:
+        return cs[:5], float(cs[min(4, n-1)] - cs[0]) / max(1, min(4, n-1)), cs[0], cs[min(4, n-1)], False
+        
+    return best_5, best_spatium, best_5[0], best_5[4], True
+
 def parse_sub_staves(staff_lines):
     """Parse a flat staff_lines list into individual sub-staves.
     Uses gap analysis: any gap > 2x the median adjacent gap is an inter-staff break.
@@ -175,13 +249,17 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
     xs = system["xs"]
     if len(staff_lines) < 2: return [], []
 
-    top_y = int(round(staff_lines[0]))
-    bot_y = int(round(staff_lines[-1]))
+    norm_lines, spatium, top_y_raw, bot_y_raw, is_valid = normalize_staff_lines(staff_lines, pixel_data, stride, image_width)
+    if not is_valid: return [], []
+    
+    norm_lines = norm_lines if norm_lines is not None else staff_lines
+    top_y = int(round(top_y_raw))
+    bot_y = int(round(bot_y_raw))
     # Parse sub-staves and compute robust spatium
     sub_staves = parse_sub_staves(staff_lines)
     spatium = get_dominant_spatium(sub_staves)
     
-    traced_lines = trace_staff_lines(staff_lines, pixel_data, stride, image_width)
+    traced_lines = trace_staff_lines(norm_lines, pixel_data, stride, image_width)
     
     max_wit = 0
     for col in range(image_width):
