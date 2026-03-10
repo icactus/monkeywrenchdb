@@ -137,7 +137,8 @@ def build_examples_for_page(source_id, page_index, page_data, crop_binary_img, c
             continue
 
         candidates, _ = generate_candidates_and_features(system, stride, pixel_data, image_width)
-        gt_barlines = bxs[system_index][1:] if len(bxs[system_index]) > 1 else []
+        # Exclude both system boundary anchors (xs.x1 / xs.x2) from patch labels.
+        gt_barlines = bxs[system_index][1:-1] if len(bxs[system_index]) > 2 else []
 
         actual_positives = set()
         for gt in gt_barlines:

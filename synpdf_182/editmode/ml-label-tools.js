@@ -38,6 +38,34 @@ function roundValuesInArray(obj) {
     }
 }
 
+function cloneMetricData(metricArr) {
+    return JSON.parse(JSON.stringify(metricArr || []));
+}
+
+function seedMetricStateFromLoadedData(metricArr) {
+    const cloned = cloneMetricData(metricArr);
+    window.deMetriek$$module$synpdf = cloned;
+    localStorage.setItem('jsonString', JSON.stringify(cloned));
+    return cloned;
+}
+
+function getLiveMetricData() {
+    if (Array.isArray(window.deMetriek$$module$synpdf) && window.deMetriek$$module$synpdf.length > 0) {
+        return cloneMetricData(window.deMetriek$$module$synpdf);
+    }
+
+    const jsonStringStr = localStorage.getItem('jsonString');
+    if (!jsonStringStr) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(jsonStringStr);
+    } catch (error) {
+        console.error('Could not parse jsonString from localStorage', error);
+        return null;
+    }
+}
 
 
 // Modified notation click listener to remove calls to measure editing handlers
@@ -169,6 +197,9 @@ async function bootFromDB(pieceId, partId) {
 
     // Keep existing downstream code happy (add recording form expects this):
     window.scoreFnm$$module$synpdf = data.pdf_file;
+    window.mlLoadedMetricContext = { pieceId: String(pieceId), partId: String(partId) };
+
+    seedMetricStateFromLoadedData(data.metric_arr);
 
     if (typeof window.msc_check_preload$$module$synpdf === 'function') {
         window.msc_check_preload$$module$synpdf();
@@ -260,30 +291,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.getElementById('export-ml-btn').addEventListener('click', function () {
-        // The true state of all pages is kept in localStorage by edit-mode-tools.js
-        let jsonStringStr = localStorage.getItem('jsonString');
-
-        let allPagesData = null;
-        if (jsonStringStr) {
-            try {
-                allPagesData = JSON.parse(jsonStringStr);
-            } catch (e) {
-                console.error("Could not parse jsonString from localStorage", e);
-            }
-        }
-
-        // Fallback to memory if localStorage is empty or corrupted
-        if (!allPagesData && window.deMetriek$$module$synpdf) {
-            allPagesData = window.deMetriek$$module$synpdf;
-        }
+        const loadedContext = window.mlLoadedMetricContext || null;
+        const allPagesData = getLiveMetricData();
 
         if (!allPagesData || allPagesData.length === 0) {
             alert("No metric data found in memory or localStorage. Please load a PDF and try again.");
             return;
         }
 
-        const pieceId = document.getElementById('piece_id1').value;
-        const partId = document.getElementById('sync-part').value;
+        const pieceId = loadedContext?.pieceId || document.getElementById('piece_id1').value;
+        const partId = loadedContext?.partId || document.getElementById('sync-part').value;
 
         if (!pieceId || !partId) {
             alert("Please load a piece and part first.");

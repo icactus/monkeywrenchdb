@@ -117,7 +117,7 @@ function initPreload$$module$synpdf() {
     elmed$$module$synpdf = null;
     annots$$module$synpdf = [];
     initLoopRec$$module$synpdf();
-    deMetriek$$module$synpdf[0] = opt$$module$synpdf.pagewd
+    deMetriek$$module$synpdf = [opt$$module$synpdf.pagewd]
 }
 
 function initGlobals$$module$synpdf() {

@@ -552,10 +552,11 @@ def process_page(args):
     
     for sys_idx, system in enumerate(cxs):
         if sys_idx >= len(bxs): break
-        # Skip bxs[0] — it's always the staff-line start (x1), not a real barline.
-        # The algorithm can trivially find the staff start, so including it
-        # as a positive just pollutes the training data.
-        gt_barlines = bxs[sys_idx][1:] if len(bxs[sys_idx]) > 1 else []
+        # Skip both boundary anchors:
+        # - bxs[0] is always the system start (xs.x1)
+        # - bxs[-1] is always the system end (xs.x2)
+        # Those are structural bounds, not trainable interior barlines.
+        gt_barlines = bxs[sys_idx][1:-1] if len(bxs[sys_idx]) > 2 else []
         
         candidates, features = generate_candidates_and_features(system, stride, pixel_data, image_width)
         
@@ -586,10 +587,16 @@ def process_file(pdf_path, json_path, output_csv):
     images = convert_from_path(pdf_path, dpi=130, thread_count=4)
     print(f"Rendered {len(images)} pages.")
     
+    pages_data = data[1:]
+    if len(images) != len(pages_data):
+        print(
+            f"Error: page count mismatch for {os.path.basename(json_path)} "
+            f"(pdf={len(images)}, json={len(pages_data)})."
+        )
+        return False
+
     features_all = []
     labels_all = []
-    
-    pages_data = data[1:]
     
     fixwd = data[0] if isinstance(data[0], int) else 1000
     
@@ -636,6 +643,7 @@ def process_file(pdf_path, json_path, output_csv):
             
     num_pos = sum(labels_all)
     print(f"Extracted {len(features_all)} rows ({num_pos} positives, {len(features_all)-num_pos} negatives) to {output_csv}")
+    return True
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -644,4 +652,5 @@ if __name__ == "__main__":
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     
-    process_file(args.pdf, args.json, args.out)
+    success = process_file(args.pdf, args.json, args.out)
+    raise SystemExit(0 if success else 1)

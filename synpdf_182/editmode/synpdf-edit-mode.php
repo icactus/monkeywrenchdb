@@ -28,7 +28,7 @@
     <script src="pdf.min.js"></script>
 
     <script src="synpdf-edit-mode.js?v=76"></script>
-    <script src="edit-mode-tools.js?v=92"></script>
+    <script src="edit-mode-tools.js?v=93"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="barline-detect-v2.js?v=32"></script>
     <style>
@@ -669,6 +669,27 @@
             font-size: 12px;
         }
 
+        #advanced-tools select,
+        #advanced-tools textarea {
+            font-size: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        #advanced-tools select {
+            padding: 5px 8px;
+            background: #fff;
+        }
+
+        #advanced-tools textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 8px 10px;
+            font-family: monospace;
+            resize: vertical;
+            background: #fff;
+        }
+
         #advanced-tools button {
             background: #777;
             color: white;
@@ -899,6 +920,35 @@
                         <div style="margin-top: 8px;">
                             <button id="run-v2-btn" type="button"
                                 style="background:#00d4ff; color:#000; font-weight:bold;">Run V2 ML Detection</button>
+                        </div>
+                        <div style="margin-top: 8px; min-width: 260px;">
+                            <label style="display:flex;align-items:center;gap:6px;">
+                                <input id="show-v2-candidates" type="checkbox" />
+                                <span>Show V2 candidates</span>
+                            </label>
+                        </div>
+                        <div style="margin-top: 8px; min-width: 260px;">
+                            <label for="correction-reason">Correction reason</label>
+                            <select id="correction-reason">
+                                <option value="">Unspecified</option>
+                                <option value="stem_or_notehead">Stem / notehead</option>
+                                <option value="half_note">Half note</option>
+                                <option value="repeat_sign">Repeat sign</option>
+                                <option value="rehearsal_text">Rehearsal text / number</option>
+                                <option value="final_barline_edge">Final barline edge case</option>
+                                <option value="weak_print">Weak / broken print</option>
+                                <option value="candidate_missing">No nearby candidate</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div style="margin-top: 8px; min-width: 100%;">
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                                <button id="copy-correction-log" type="button">Copy corrections</button>
+                                <button id="clear-correction-log" type="button">Clear current PDF corrections</button>
+                                <span id="correction-log-status" style="font-size:11px;color:#666;"></span>
+                            </div>
+                            <textarea id="correction-log-output" readonly
+                                placeholder="Manual barline corrections for the current PDF will appear here after you run V2 and use Q mode."></textarea>
                         </div>
                         <div style="margin-top: 8px;">
                             <div id="detix-box" style="font-size: 11px; color: #666;"></div>
