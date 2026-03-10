@@ -1295,7 +1295,13 @@ var BarlineDetectV2 = (function () {
                     } else if (boxDensityAbove === 0 || boxDensityBelow === 0) {
                         // All stems have 0 extension on one side. If it's borderline confident AND looks like a stem, veto it.
                         // (True barlines scoring < 0.40 are typically thick, cluttered, and extend on both sides!).
-                        vetoReason = "moderate_score_but_looks_like_stem";
+                        var hasMeaningfulSingleSideExtension = Math.max(boxDensityAbove, boxDensityBelow) >= 0.18;
+                        if (strongStructuralBarline && hasMeaningfulSingleSideExtension) {
+                            isValid = true;
+                            vetoReason = "accepted_low_score_structural";
+                        } else {
+                            vetoReason = "moderate_score_but_looks_like_stem";
+                        }
                     } else {
                         isValid = true;
                         vetoReason = "accepted_moderate_clean";

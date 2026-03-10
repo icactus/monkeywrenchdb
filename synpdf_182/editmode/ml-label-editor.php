@@ -27,9 +27,9 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 
-    <script src="synpdf-edit-mode.js?v=76"></script>
-    <script src="edit-mode-tools.js?v=91"></script>
-    <script src="ml-label-tools.js?v=91"></script>
+    <script src="synpdf-edit-mode.js?v=77"></script>
+    <script src="edit-mode-tools.js?v=94"></script>
+    <script src="ml-label-tools.js?v=92"></script>
     <style>
         html {
             width: 100%;

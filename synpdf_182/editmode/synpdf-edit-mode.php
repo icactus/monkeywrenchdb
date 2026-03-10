@@ -27,10 +27,10 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 
-    <script src="synpdf-edit-mode.js?v=76"></script>
-    <script src="edit-mode-tools.js?v=93"></script>
+    <script src="synpdf-edit-mode.js?v=77"></script>
+    <script src="edit-mode-tools.js?v=94"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
-    <script src="barline-detect-v2.js?v=32"></script>
+    <script src="barline-detect-v2.js?v=35"></script>
     <style>
         html {
             width: 100%;

@@ -329,8 +329,8 @@
 
     <!-- Dependencies -->
     <script src="pdf.min.js"></script>
-    <script src="../models/ml-barline-model.js?v=26"></script>
-    <script src="barline-detect-v2.js?v=30"></script>
+    <script src="../models/ml-barline-model.js?v=27"></script>
+    <script src="barline-detect-v2.js?v=35"></script>
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
@@ -814,7 +814,7 @@
                         var cs = lastSystems[si].cs;
                         var top = cs[0] - extend;
                         var bot = cs[cs.length - 1] + extend;
-                        var gtBars = gtBxs[si];
+                        var gtBars = getComparableGTBars(gtBxs[si], lastSystems[si]);
                         for (var i = 0; i < gtBars.length; i++) {
                             ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)'; // bright green, semi-transparent
                             ctx.setLineDash([]);
@@ -1073,9 +1073,9 @@
                 html += '<th style="color:#6666ff">v2 TP/FP/FN</th><th style="color:#6666ff">v2 F1</th></tr>';
 
                 for (var i = 0; i < Math.min(gtBxs.length, lastSystems.length); i++) {
-                    var gtBars = gtBxs[i];
-                    var v1 = lastV1Results ? lastV1Results[i] : [];
-                    var v2 = lastV2Results ? lastV2Results[i] : [];
+                    var gtBars = getComparableGTBars(gtBxs[i], lastSystems[i]);
+                    var v1 = getComparableDetectedBars(lastV1Results ? lastV1Results[i] : [], lastSystems[i]);
+                    var v2 = getComparableDetectedBars(lastV2Results ? lastV2Results[i] : [], lastSystems[i]);
 
                     // Compare v1 to GT
                     var v1r = compareToGT(v1, gtBars, 8);
@@ -1139,6 +1139,21 @@
             return 2 * p * r / (p + r) || 0;
         }
 
+        function getComparableGTBars(gtBars, system) {
+            if (!Array.isArray(gtBars)) return [];
+            if (gtBars.length <= 2) return [];
+            return gtBars.slice(1, -1);
+        }
+
+        function getComparableDetectedBars(detectedBars, system) {
+            if (!Array.isArray(detectedBars)) return [];
+            var comparable = detectedBars.slice();
+            if (!system || !system.xs || comparable.length === 0) return comparable;
+            if (Math.abs(comparable[0] - system.xs.x1) < 8) comparable = comparable.slice(1);
+            if (comparable.length && Math.abs(comparable[comparable.length - 1] - system.xs.x2) < 8) comparable = comparable.slice(0, -1);
+            return comparable;
+        }
+
         function parseGTBxs() {
             var gtText = document.getElementById('ground-truth').value.trim();
             if (!gtText) return null;
@@ -1160,8 +1175,12 @@
 
             setTimeout(function () {
                 var baseOpts = getOpts();
+                var comparableGtBxs = [];
+                for (var i = 0; i < Math.min(lastSystems.length, gtBxs.length); i++) {
+                    comparableGtBxs.push(getComparableGTBars(gtBxs[i], lastSystems[i]));
+                }
                 var result = BarlineDetectV2.gridSearch(
-                    lastSystems, currentStride, currentPixelData, currentWidth, gtBxs, baseOpts
+                    lastSystems, currentStride, currentPixelData, currentWidth, comparableGtBxs, baseOpts
                 );
 
                 var html = '<h3 style="color:#ff9800;">Grid Search Results (' + result.totalTrials + ' combinations tested)</h3>';
@@ -1212,12 +1231,15 @@
             var html = '<h3 style="color:#00d4ff;">Detailed FP/FN Diagnostics</h3>';
 
             for (var s = 0; s < Math.min(lastSystems.length, gtBxs.length); s++) {
-                var gtBars = gtBxs[s];
+                var gtBars = getComparableGTBars(gtBxs[s], lastSystems[s]);
 
                 // 1. Run inference just for this system to capture raw `diagnostics` array
                 opts.diagnostics = []; // Mount directly on the main options object
-                var sysDetected = BarlineDetectV2.findBarLinesV2(
-                    lastSystems[s], currentStride, currentPixelData, currentWidth, opts
+                var sysDetected = getComparableDetectedBars(
+                    BarlineDetectV2.findBarLinesV2(
+                        lastSystems[s], currentStride, currentPixelData, currentWidth, opts
+                    ),
+                    lastSystems[s]
                 );
 
                 // 2. Identify FPs and FNs
