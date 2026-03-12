@@ -27,9 +27,11 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 
-    <script src="synpdf-edit-mode.js?v=77"></script>
-    <script src="edit-mode-tools.js?v=94"></script>
-    <script src="ml-label-tools.js?v=92"></script>
+    <script src="metric-store.js?v=2"></script>
+    <script src="correction-log-tools.js?v=1"></script>
+    <script src="synpdf-edit-mode.js?v=78"></script>
+    <script src="edit-mode-tools.js?v=96"></script>
+    <script src="ml-label-tools.js?v=93"></script>
     <style>
         html {
             width: 100%;

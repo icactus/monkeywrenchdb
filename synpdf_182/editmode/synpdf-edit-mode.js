@@ -2116,7 +2116,10 @@ function keyDown$$module$synpdf(a) {
             element = document.getElementById('notation');
             element.style.overflowY = 'visible';
             element.style.overflowX = 'visible';
-            deMetriek$$module$synpdf = JSON.parse(localStorage.getItem('jsonString'));
+            var storedMetricData = MetricStore.getStoredMetricData();
+            if (storedMetricData) {
+                deMetriek$$module$synpdf = storedMetricData;
+            }
             setPagenum$$module$synpdf(opt$$module$synpdf.pagenum);
             break;
 
@@ -2288,7 +2291,7 @@ function evalPreload$$module$synpdf(a) {
             case "metric_arr":
                 metric_arr$$module$synpdf = b; // in the future set b to whatever variable will have the cxsbxs array and it will use that instead.
                 jsonString = JSON.stringify(b);
-                localStorage.setItem('jsonString', jsonString);
+                MetricStore.setMetricData(b);
                 break;
             case "pdf_data":
                 pdf_data$$module$synpdf = b

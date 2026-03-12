@@ -44,27 +44,12 @@ function cloneMetricData(metricArr) {
 
 function seedMetricStateFromLoadedData(metricArr) {
     const cloned = cloneMetricData(metricArr);
-    window.deMetriek$$module$synpdf = cloned;
-    localStorage.setItem('jsonString', JSON.stringify(cloned));
+    MetricStore.setMetricData(cloned);
     return cloned;
 }
 
 function getLiveMetricData() {
-    if (Array.isArray(window.deMetriek$$module$synpdf) && window.deMetriek$$module$synpdf.length > 0) {
-        return cloneMetricData(window.deMetriek$$module$synpdf);
-    }
-
-    const jsonStringStr = localStorage.getItem('jsonString');
-    if (!jsonStringStr) {
-        return null;
-    }
-
-    try {
-        return JSON.parse(jsonStringStr);
-    } catch (error) {
-        console.error('Could not parse jsonString from localStorage', error);
-        return null;
-    }
+    return MetricStore.getMetricData();
 }
 
 

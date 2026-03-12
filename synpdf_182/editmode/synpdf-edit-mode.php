@@ -27,10 +27,12 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 
-    <script src="synpdf-edit-mode.js?v=77"></script>
-    <script src="edit-mode-tools.js?v=94"></script>
+    <script src="metric-store.js?v=2"></script>
+    <script src="correction-log-tools.js?v=1"></script>
+    <script src="synpdf-edit-mode.js?v=78"></script>
+    <script src="edit-mode-tools.js?v=96"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
-    <script src="barline-detect-v2.js?v=35"></script>
+    <script src="barline-detect-v2.js?v=37"></script>
     <style>
         html {
             width: 100%;
@@ -934,7 +936,11 @@
                                 <option value="stem_or_notehead">Stem / notehead</option>
                                 <option value="half_note">Half note</option>
                                 <option value="repeat_sign">Repeat sign</option>
+                                <option value="double_barline">Double barline</option>
                                 <option value="rehearsal_text">Rehearsal text / number</option>
+                                <option value="fn_no_apparent_reason">FN: no apparent reason</option>
+                                <option value="fn_object_close">FN: object close by</option>
+                                <option value="end_of_line_no_barline">End of line / no terminal barline</option>
                                 <option value="final_barline_edge">Final barline edge case</option>
                                 <option value="weak_print">Weak / broken print</option>
                                 <option value="candidate_missing">No nearby candidate</option>

@@ -4,11 +4,6 @@ var SplitclickCoordinates = [];
 var SplitclickY = 0;
 var QisActive = false;
 var WisActive = false;
-var synpdfV2BaselinesByPage = {};
-var synpdfV2CorrectionLog = [];
-var synpdfV2OverlayRenderToken = null;
-var SYNPDF_V2_CORRECTION_LOG_KEY = 'synpdfV2CorrectionLog';
-var SYNPDF_CANDIDATE_MATCH_TOLERANCE = 6;
 
 let indicatorElement;
 let notation;
@@ -16,9 +11,7 @@ let notation;
 document.addEventListener("DOMContentLoaded", function () {
     indicatorElement = document.getElementById('indicator');
     notation = document.getElementById('notation');
-    loadCorrectionLogState();
-    ensureV2CandidateOverlay();
-    bindCorrectionLogControls();
+    SynpdfCorrectionTools.init({ notation: notation });
 
     if (notation) {
         notation.addEventListener('click', function handleClick(event) {
@@ -134,7 +127,8 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             // Auto-grab metric data from localStorage (same as 'j' key copies)
-            const metricData = localStorage.getItem('jsonString');
+            const metricArray = MetricStore.getMetricData();
+            const metricData = metricArray ? JSON.stringify(metricArray) : null;
             if (metricData) {
                 const formattedData = formatCode(metricData);
                 formData.set('metric_arr_data', formattedData);
@@ -203,7 +197,7 @@ function handleSplit(event) {
 
 function SplitgenerateCoordinates(clickCoords) {
     console.log(clickCoords);
-    let cxsBxsData = JSON.parse(localStorage.getItem('jsonString'));
+    let cxsBxsData = MetricStore.getMetricData();
     let pagenum = parseInt(document.getElementById('pagenum').value);
 
     if (pagenum < 1 || pagenum >= cxsBxsData.length) {
@@ -266,7 +260,7 @@ function SplitgenerateCoordinates(clickCoords) {
             // Sort 'bxs' group from low to high
             cxsBxsData[pagenum].bxs[j].sort((a, b) => Math.abs(a) - Math.abs(b));
 
-            localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
+            MetricStore.setMetricData(cxsBxsData, { clone: false });
             requestRefresh();
             return;
         }
@@ -278,7 +272,7 @@ function SplitgenerateCoordinates(clickCoords) {
 // Marks BOTH: the clicked barline AND the first barline of the next staff
 // This links both halves of a split measure so they share one detix/demix
 function handleSplitMark(event) {
-    let cxsBxsData = JSON.parse(localStorage.getItem('jsonString'));
+    let cxsBxsData = MetricStore.getMetricData();
     let pagenum = parseInt(document.getElementById('pagenum').value);
 
     if (pagenum < 1 || pagenum >= cxsBxsData.length) {
@@ -356,7 +350,7 @@ function handleSplitMark(event) {
                     // Re-sort current staff by ABSOLUTE value to maintain position
                     cxsBxsData[pagenum].bxs[j].sort((a, b) => Math.abs(a) - Math.abs(b));
 
-                    localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
+                    MetricStore.setMetricData(cxsBxsData, { clone: false });
                     requestRefresh();
                     return;
                 }
@@ -424,18 +418,7 @@ function roundValuesInArray(obj) {
 }
 
 function getStoredMetricData() {
-    const jsonString = localStorage.getItem('jsonString');
-    if (!jsonString) {
-        return null;
-    }
-
-    try {
-        const parsed = JSON.parse(jsonString);
-        return Array.isArray(parsed) ? parsed : null;
-    } catch (error) {
-        console.error('Failed to parse localStorage jsonString:', error);
-        return null;
-    }
+    return MetricStore.getStoredMetricData();
 }
 
 function persistMetricData(metricData) {
@@ -447,16 +430,11 @@ function persistMetricData(metricData) {
     }
 
     roundValuesInArray(dataToPersist);
-    localStorage.setItem('jsonString', JSON.stringify(dataToPersist));
-    return true;
+    return MetricStore.setMetricData(dataToPersist, { clone: false });
 }
 
 function seedMetricStorageFromMemory() {
-    if (getStoredMetricData()) {
-        return true;
-    }
-
-    if (!persistMetricData()) {
+    if (!MetricStore.seedMetricDataFromMemory()) {
         console.warn('Unable to seed localStorage from live deMetriek state.');
         return false;
     }
@@ -481,339 +459,6 @@ function getCurrentPageImageData() {
         stride: canvas.width * 4,
         width: canvas.width
     };
-}
-
-function getCurrentPdfName() {
-    if (typeof scoreFnm$$module$synpdf === 'string' && scoreFnm$$module$synpdf.length) {
-        return scoreFnm$$module$synpdf;
-    }
-
-    const loadedPdfFile = document.getElementById('fknp')?.files?.[0];
-    if (loadedPdfFile && loadedPdfFile.name) {
-        return loadedPdfFile.name.replace(/\.[^.]+$/, '');
-    }
-
-    return 'unknown-pdf';
-}
-
-function getCurrentFixwdValue() {
-    if (typeof deMetriek$$module$synpdf !== 'undefined' && Array.isArray(deMetriek$$module$synpdf) && typeof deMetriek$$module$synpdf[0] === 'number') {
-        return deMetriek$$module$synpdf[0];
-    }
-
-    const fixwdInput = document.getElementById('fixwd');
-    return fixwdInput ? parseInt(fixwdInput.value, 10) : 1000;
-}
-
-function loadCorrectionLogState() {
-    try {
-        const raw = localStorage.getItem(SYNPDF_V2_CORRECTION_LOG_KEY);
-        synpdfV2CorrectionLog = raw ? JSON.parse(raw) : [];
-        if (!Array.isArray(synpdfV2CorrectionLog)) {
-            synpdfV2CorrectionLog = [];
-        }
-    } catch (error) {
-        console.warn('Failed to load V2 correction log state:', error);
-        synpdfV2CorrectionLog = [];
-    }
-
-    updateCorrectionLogUI();
-}
-
-function persistCorrectionLogState() {
-    localStorage.setItem(SYNPDF_V2_CORRECTION_LOG_KEY, JSON.stringify(synpdfV2CorrectionLog));
-    updateCorrectionLogUI();
-}
-
-function getCurrentPdfCorrections() {
-    const pdfName = getCurrentPdfName();
-    return synpdfV2CorrectionLog.filter(function (entry) {
-        return entry && entry.sourcePdf === pdfName;
-    });
-}
-
-function updateCorrectionLogUI() {
-    const output = document.getElementById('correction-log-output');
-    const status = document.getElementById('correction-log-status');
-    const currentPdfCorrections = getCurrentPdfCorrections();
-    const payload = {
-        sourcePdf: getCurrentPdfName(),
-        fixwd: getCurrentFixwdValue(),
-        corrections: currentPdfCorrections
-    };
-
-    if (output) {
-        output.value = JSON.stringify(payload, null, 2);
-    }
-
-    if (status) {
-        status.textContent = currentPdfCorrections.length + ' corrections for ' + payload.sourcePdf + ' (' + synpdfV2CorrectionLog.length + ' total cached)';
-    }
-}
-
-function bindCorrectionLogControls() {
-    const copyBtn = document.getElementById('copy-correction-log');
-    const clearBtn = document.getElementById('clear-correction-log');
-    const showCandidates = document.getElementById('show-v2-candidates');
-    const pageInput = document.getElementById('pagenum');
-    const pdfInput = document.getElementById('fknp');
-
-    if (copyBtn) {
-        copyBtn.addEventListener('click', function () {
-            const output = document.getElementById('correction-log-output');
-            if (output && output.value) {
-                copyToClipboard(output.value);
-            }
-        });
-    }
-
-    if (clearBtn) {
-        clearBtn.addEventListener('click', function () {
-            const pdfName = getCurrentPdfName();
-            synpdfV2CorrectionLog = synpdfV2CorrectionLog.filter(function (entry) {
-                return entry.sourcePdf !== pdfName;
-            });
-            persistCorrectionLogState();
-        });
-    }
-
-    if (showCandidates) {
-        showCandidates.addEventListener('change', function () {
-            scheduleV2CandidateOverlayRender();
-        });
-    }
-
-    if (pageInput) {
-        pageInput.addEventListener('change', function () {
-            scheduleV2CandidateOverlayRender();
-        });
-    }
-
-    if (pdfInput) {
-        pdfInput.addEventListener('change', function () {
-            synpdfV2BaselinesByPage = {};
-            updateCorrectionLogUI();
-            scheduleV2CandidateOverlayRender();
-        });
-    }
-}
-
-function ensureV2CandidateOverlay() {
-    if (!notation) {
-        notation = document.getElementById('notation');
-    }
-    if (!notation) {
-        return null;
-    }
-
-    let overlay = document.getElementById('v2-candidate-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'v2-candidate-overlay';
-        overlay.style.position = 'absolute';
-        overlay.style.left = '0';
-        overlay.style.top = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.pointerEvents = 'none';
-        overlay.style.zIndex = '35';
-        notation.appendChild(overlay);
-    }
-    return overlay;
-}
-
-function scheduleV2CandidateOverlayRender() {
-    if (synpdfV2OverlayRenderToken) {
-        clearTimeout(synpdfV2OverlayRenderToken);
-    }
-
-    synpdfV2OverlayRenderToken = setTimeout(function () {
-        synpdfV2OverlayRenderToken = null;
-        renderV2CandidateOverlay();
-    }, 120);
-}
-
-function renderV2CandidateOverlay() {
-    const overlay = ensureV2CandidateOverlay();
-    const toggle = document.getElementById('show-v2-candidates');
-    if (!overlay) {
-        return;
-    }
-
-    overlay.innerHTML = '';
-    if (!toggle || !toggle.checked) {
-        overlay.style.display = 'none';
-        return;
-    }
-
-    overlay.style.display = 'block';
-    overlay.style.height = notation.scrollHeight + 'px';
-    overlay.style.width = notation.scrollWidth + 'px';
-
-    const pagenumElement = document.getElementById('pagenum');
-    const pagenum = pagenumElement ? parseInt(pagenumElement.value, 10) : opt$$module$synpdf.pagenum;
-    const baseline = synpdfV2BaselinesByPage[pagenum];
-    if (!baseline || !baseline.systems) {
-        return;
-    }
-
-    baseline.systems.forEach(function (systemBaseline) {
-        if (!systemBaseline || !Array.isArray(systemBaseline.candidates)) {
-            return;
-        }
-
-        const acceptedSet = new Set((systemBaseline.acceptedBarlines || []).map(function (value) {
-            return Math.round(Math.abs(value));
-        }));
-        const sysTop = Math.max(0, Math.round(systemBaseline.cs[0]) - 6);
-        const sysBottom = Math.round(systemBaseline.cs[systemBaseline.cs.length - 1]) + 6;
-        const sysHeight = Math.max(8, sysBottom - sysTop);
-
-        systemBaseline.candidates.forEach(function (candidate) {
-            const line = document.createElement('div');
-            const x = Math.round(candidate.x);
-            const isAccepted = acceptedSet.has(x);
-            const opacity = Math.max(0.16, Math.min(0.9, isAccepted ? 0.9 : (candidate.score || 0.25)));
-
-            line.style.position = 'absolute';
-            line.style.left = x + 'px';
-            line.style.top = sysTop + 'px';
-            line.style.height = sysHeight + 'px';
-            line.style.width = isAccepted ? '2px' : '1px';
-            line.style.background = isAccepted ? 'rgba(0, 190, 255, ' + opacity + ')' : 'rgba(255, 0, 180, ' + opacity + ')';
-            line.style.borderLeft = isAccepted ? 'none' : '1px dashed rgba(255, 0, 180, ' + opacity + ')';
-            overlay.appendChild(line);
-        });
-    });
-}
-
-function cloneSimpleArray(values) {
-    return Array.isArray(values) ? values.slice() : [];
-}
-
-function snapshotV2BaselineForPage(pagenum, pageData, systemDiagnostics) {
-    if (!pageData || !Array.isArray(pageData.cxs) || !Array.isArray(pageData.bxs)) {
-        return;
-    }
-
-    synpdfV2BaselinesByPage[pagenum] = {
-        sourcePdf: getCurrentPdfName(),
-        pageNumber: pagenum,
-        pageIndex: pagenum - 1,
-        fixwd: getCurrentFixwdValue(),
-        generatedAt: new Date().toISOString(),
-        systems: pageData.cxs.map(function (system, index) {
-            const diagnostics = Array.isArray(systemDiagnostics[index]) ? systemDiagnostics[index] : [];
-            return {
-                systemIndex: index,
-                xs: system && system.xs ? { x1: system.xs.x1, x2: system.xs.x2 } : null,
-                cs: cloneSimpleArray(system && system.cs),
-                acceptedBarlines: cloneSimpleArray(pageData.bxs[index]).map(function (value) {
-                    return Math.round(Math.abs(value));
-                }),
-                candidates: diagnostics.map(function (diag) {
-                    return {
-                        x: Math.round(diag.x),
-                        score: typeof diag.score === 'number' ? diag.score : null,
-                        vetoReason: diag.vetoReason || '',
-                        features: diag.features || {}
-                    };
-                })
-            };
-        })
-    };
-
-    scheduleV2CandidateOverlayRender();
-    updateCorrectionLogUI();
-}
-
-function getNearestBaselineCandidate(pageNum, systemIndex, xJson) {
-    const baseline = synpdfV2BaselinesByPage[pageNum];
-    if (!baseline || !baseline.systems || !baseline.systems[systemIndex]) {
-        return null;
-    }
-
-    const systemBaseline = baseline.systems[systemIndex];
-    if (!Array.isArray(systemBaseline.candidates) || systemBaseline.candidates.length === 0) {
-        return {
-            baselineAvailable: true,
-            hadNearbyCandidate: false,
-            nearestCandidate: null,
-            acceptedNearby: false
-        };
-    }
-
-    let nearest = systemBaseline.candidates[0];
-    let nearestDistance = Math.abs(nearest.x - xJson);
-    for (let i = 1; i < systemBaseline.candidates.length; i++) {
-        const candidate = systemBaseline.candidates[i];
-        const dist = Math.abs(candidate.x - xJson);
-        if (dist < nearestDistance) {
-            nearest = candidate;
-            nearestDistance = dist;
-        }
-    }
-
-    const acceptedNearby = Array.isArray(systemBaseline.acceptedBarlines) && systemBaseline.acceptedBarlines.some(function (acceptedX) {
-        return Math.abs(acceptedX - xJson) <= SYNPDF_CANDIDATE_MATCH_TOLERANCE;
-    });
-
-    return {
-        baselineAvailable: true,
-        hadNearbyCandidate: nearestDistance <= SYNPDF_CANDIDATE_MATCH_TOLERANCE,
-        acceptedNearby: acceptedNearby,
-        nearestCandidate: {
-            x: nearest.x,
-            distance: nearestDistance,
-            score: nearest.score,
-            vetoReason: nearest.vetoReason || '',
-            accepted: Array.isArray(systemBaseline.acceptedBarlines) && systemBaseline.acceptedBarlines.indexOf(nearest.x) !== -1
-        }
-    };
-}
-
-function classifyCorrectionAction(action, nearestInfo) {
-    if (action === 'delete') {
-        return nearestInfo && nearestInfo.acceptedNearby ? 'false_positive_v2' : 'false_positive_manual';
-    }
-
-    if (action === 'add') {
-        return nearestInfo && nearestInfo.hadNearbyCandidate ? 'false_negative_with_candidate' : 'false_negative_no_candidate';
-    }
-
-    return 'manual_edit';
-}
-
-function recordBarlineCorrection(eventData) {
-    const reasonSelect = document.getElementById('correction-reason');
-    const nearestInfo = getNearestBaselineCandidate(eventData.pageNumber, eventData.systemIndex, eventData.xJson);
-    const baseline = synpdfV2BaselinesByPage[eventData.pageNumber];
-    const systemBaseline = baseline && baseline.systems ? baseline.systems[eventData.systemIndex] : null;
-
-    synpdfV2CorrectionLog.push({
-        id: Date.now() + '-' + Math.random().toString(16).slice(2, 8),
-        timestamp: new Date().toISOString(),
-        sourcePdf: getCurrentPdfName(),
-        pageNumber: eventData.pageNumber,
-        pageIndex: eventData.pageNumber - 1,
-        systemIndex: eventData.systemIndex,
-        action: eventData.action,
-        classification: classifyCorrectionAction(eventData.action, nearestInfo),
-        xJson: Math.round(eventData.xJson),
-        yJson: Math.round(eventData.yJson),
-        fixwd: getCurrentFixwdValue(),
-        canvasWidth: notation ? notation.scrollWidth : null,
-        systemXs: systemBaseline && systemBaseline.xs ? systemBaseline.xs : null,
-        systemCs: systemBaseline ? cloneSimpleArray(systemBaseline.cs) : null,
-        baselineAvailable: !!baseline,
-        nearestCandidate: nearestInfo ? nearestInfo.nearestCandidate : null,
-        hadNearbyCandidate: nearestInfo ? nearestInfo.hadNearbyCandidate : false,
-        acceptedNearby: nearestInfo ? nearestInfo.acceptedNearby : false,
-        reason: reasonSelect ? reasonSelect.value : '',
-        note: ''
-    });
-
-    persistCorrectionLogState();
 }
 
 function normalizeDetectedSystemBarlines(system, detectedBarlines, existingBarlines) {
@@ -927,12 +572,13 @@ document.addEventListener('keydown', function (event) {
             break;
 
         case 'j':
-            let jsonCode = localStorage.getItem('jsonString');
+            let metricData = MetricStore.getMetricData();
+            let jsonCode = metricData ? JSON.stringify(metricData) : '';
             let formattedCode = formatCode(jsonCode);
             navigator.clipboard.writeText(formattedCode)
                 .then(() => {
                     console.log("bxscxs copied to clipboard");
-                    console.log(JSON.parse(localStorage.getItem('jsonString')));
+                    console.log(MetricStore.getMetricData());
                 })
                 .catch((error) => {
                     console.error('Failed to copy coordinates to clipboard:', error);
@@ -1010,7 +656,7 @@ function copyToClipboard(text) {
 
 function addRemoveBxs$$module$synpdf(event) {
     // Retrieve and parse data from local storage
-    let cxsBxsData = JSON.parse(localStorage.getItem('jsonString'));
+    let cxsBxsData = MetricStore.getMetricData();
 
     // Validate the page number
     let pagenum = parseInt(document.getElementById('pagenum').value);
@@ -1050,7 +696,7 @@ function addRemoveBxs$$module$synpdf(event) {
                 cxsBxsData[pagenum].bxs[j].push(x);
                 // Sort the 'bxs' group from low to high
                 cxsBxsData[pagenum].bxs[j].sort((a, b) => Math.abs(a) - Math.abs(b));
-                recordBarlineCorrection({
+                SynpdfCorrectionTools.recordBarlineCorrection({
                     pageNumber: pagenum,
                     systemIndex: j,
                     action: 'add',
@@ -1058,7 +704,7 @@ function addRemoveBxs$$module$synpdf(event) {
                     yJson: y
                 });
             } else {
-                recordBarlineCorrection({
+                SynpdfCorrectionTools.recordBarlineCorrection({
                     pageNumber: pagenum,
                     systemIndex: j,
                     action: 'delete',
@@ -1067,7 +713,7 @@ function addRemoveBxs$$module$synpdf(event) {
                 });
             }
 
-            localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
+            MetricStore.setMetricData(cxsBxsData, { clone: false });
             //deMetriek$$module$synpdf = JSON.parse(localStorage.getItem('jsonString'));  /*this works but scrolls page on refresh*/
             //setPagenum$$module$synpdf(opt$$module$synpdf.pagenum);
             requestRefresh();
@@ -1120,7 +766,7 @@ function editCxsGroups$$module$synpdf(event) {
             shiftKey: event.shiftKey  // Track if shift was held for snapping
         };
         console.log(startPoint.y, endPoint.y, 'shift:', endPoint.shiftKey);
-        let cxsBxsData = JSON.parse(localStorage.getItem('jsonString') || '[]');
+        let cxsBxsData = MetricStore.getMetricData() || [];
 
         let pagenum = parseInt(document.getElementById('pagenum').value);
         if (pagenum < 0 || pagenum >= cxsBxsData.length) {
@@ -1206,7 +852,7 @@ function editCxsGroups$$module$synpdf(event) {
         }
         cxsBxsData[pagenum].bxs = newBxsOrder;
 
-        localStorage.setItem('jsonString', JSON.stringify(cxsBxsData));
+        MetricStore.setMetricData(cxsBxsData, { clone: false });
         console.log("System saved to localStorage.");
 
         // Reset the start and end points
@@ -1243,7 +889,7 @@ function requestRefresh(options) {
             setPagenum$$module$synpdf(opt$$module$synpdf.pagenum);
         }
 
-        scheduleV2CandidateOverlayRender();
+        SynpdfCorrectionTools.scheduleV2CandidateOverlayRender();
     }, 50);
 }
 
@@ -1706,7 +1352,7 @@ $(document).ready(function () {
                 return normalizeDetectedSystemBarlines(pageData.cxs[index], detectedBarlines, pageData.bxs[index]);
             });
             deMetriek$$module$synpdf[pagenum] = pageData;
-            snapshotV2BaselineForPage(pagenum, pageData, systemDiagnostics);
+            SynpdfCorrectionTools.snapshotV2BaselineForPage(pagenum, pageData, systemDiagnostics);
 
             // Persist the updated live metric array before re-rendering.
             if (!persistMetricData()) {
