@@ -651,11 +651,42 @@ function knip$$module$synpdf(a, b, c) {
     d.forEach(function (a) {
         a.cs = a.cs.map(function (a) {
             return 1 * a + c;
-        })
+        });
+        if (Array.isArray(a.csl)) {
+            a.csl = a.csl.map(function (y) {
+                return 1 * y + c;
+            });
+        }
+        if (Array.isArray(a.csr)) {
+            a.csr = a.csr.map(function (y) {
+                return 1 * y + c;
+            });
+        }
     });
+    function getSystemEdgeLines(system) {
+        var cs = Array.isArray(system.cs) ? system.cs.slice() : [];
+        var csl = Array.isArray(system.csl) && system.csl.length === cs.length ? system.csl.slice() : cs.slice();
+        var csr = Array.isArray(system.csr) && system.csr.length === cs.length ? system.csr.slice() : cs.slice();
+        return {
+            left: csl,
+            right: csr
+        };
+    }
+    function interpolateSystemLine(system, lineIndex, x) {
+        var xs = system.xs || { x1: 0, x2: 0 };
+        var edges = getSystemEdgeLines(system);
+        var left = edges.left[lineIndex];
+        var right = edges.right[lineIndex];
+        if (typeof left !== "number" || typeof right !== "number") return null;
+        if (xs.x2 === xs.x1) return left;
+        var t = (x - xs.x1) / (xs.x2 - xs.x1);
+        t = Math.max(0, Math.min(1, t));
+        return left + t * (right - left);
+    }
     var e;
     for (e = 0; e < d.length; ++e) {
-        var f = d[e].cs;
+        var system = d[e];
+        var f = system.cs;
         var g = f[0];
         var p = f[f.length - 1];
         var m = b[e];
@@ -663,6 +694,16 @@ function knip$$module$synpdf(a, b, c) {
             // Use absolute values for coordinates (negative = split marker)
             var n = Math.abs(m[f]);
             var l = Math.abs(m[f + 1]);
+            var topLeft = interpolateSystemLine(system, 0, n);
+            var topRight = interpolateSystemLine(system, 0, l);
+            var bottomLeft = interpolateSystemLine(system, system.cs.length - 1, n);
+            var bottomRight = interpolateSystemLine(system, system.cs.length - 1, l);
+            if ([topLeft, topRight, bottomLeft, bottomRight].some(function (v) { return typeof v !== "number"; })) {
+                topLeft = topRight = g;
+                bottomLeft = bottomRight = p;
+            }
+            var boxTop = Math.min(topLeft, topRight, bottomLeft, bottomRight);
+            var boxBottom = Math.max(topLeft, topRight, bottomLeft, bottomRight);
 
             // If LEFT barline is negative, this is a continuation segment
             // Add it to the previous measure's linkedBoxes instead of creating new entry
@@ -673,9 +714,13 @@ function knip$$module$synpdf(a, b, c) {
                 }
                 prevMeasure.linkedBoxes.push({
                     x: n,
-                    y: g,
+                    y: boxTop,
                     w: l - n,
-                    h: p - g
+                    h: boxBottom - boxTop,
+                    ytl: topLeft,
+                    ytr: topRight,
+                    ybl: bottomLeft,
+                    ybr: bottomRight
                 });
                 prevMeasure.split = true;  // Mark as split
                 continue;  // Don't create separate deMaten entry
@@ -686,9 +731,13 @@ function knip$$module$synpdf(a, b, c) {
             var isSplit = m[f + 1] < 0;
             deMaten$$module$synpdf.push({
                 x: n,
-                y: g,
+                y: boxTop,
                 w: l - n,
-                h: p - g,
+                h: boxBottom - boxTop,
+                ytl: topLeft,
+                ytr: topRight,
+                ybl: bottomLeft,
+                ybr: bottomRight,
                 split: isSplit
             })
         }
@@ -706,6 +755,8 @@ function addDummySys$$module$synpdf() {
         b = a.xs.x2;
     Cs$$module$synpdf.push({
         cs: [a.cs[0], a.cs[a.cs.length - 1]],
+        csl: Array.isArray(a.csl) ? a.csl.slice() : [a.cs[0], a.cs[a.cs.length - 1]],
+        csr: Array.isArray(a.csr) ? a.csr.slice() : [a.cs[0], a.cs[a.cs.length - 1]],
         xs: {
             x1: b,
             x2: b - 4
@@ -1643,6 +1694,15 @@ function maatStrepen$$module$synpdf() {
                 width: b.w,
                 height: b.h
             });
+            if ([b.ytl, b.ytr, b.ybl, b.ybr].every(function (v) { return typeof v === "number"; })) {
+                box.css({
+                    clipPath: 'polygon(' +
+                        '0px ' + (b.ytl - b.y) + 'px,' +
+                        b.w + 'px ' + (b.ytr - b.y) + 'px,' +
+                        b.w + 'px ' + (b.ybr - b.y) + 'px,' +
+                        '0px ' + (b.ybl - b.y) + 'px)'
+                });
+            }
             $("#notation").append(box);
 
             // Also draw linkedBoxes for split measures (second half)
@@ -1656,6 +1716,15 @@ function maatStrepen$$module$synpdf() {
                         width: lbox.w,
                         height: lbox.h
                     });
+                    if ([lbox.ytl, lbox.ytr, lbox.ybl, lbox.ybr].every(function (v) { return typeof v === "number"; })) {
+                        linkedEl.css({
+                            clipPath: 'polygon(' +
+                                '0px ' + (lbox.ytl - lbox.y) + 'px,' +
+                                lbox.w + 'px ' + (lbox.ytr - lbox.y) + 'px,' +
+                                lbox.w + 'px ' + (lbox.ybr - lbox.y) + 'px,' +
+                                '0px ' + (lbox.ybl - lbox.y) + 'px)'
+                        });
+                    }
                     $("#notation").append(linkedEl);
                 }
             }
@@ -2623,6 +2692,7 @@ function checkMenu$$module$synpdf(a) {
                 if (!opt$$module$synpdf.advncd) {
                     try {
                         if (typeof QisActive !== "undefined" && QisActive) { toggleQActivity(); }
+                        if (typeof NisActive !== "undefined" && NisActive) { toggleNActivity(); }
                         if (typeof SisActive !== "undefined" && SisActive) { toggleSActivity(); }
                         if (typeof WisActive !== "undefined" && WisActive) { toggleWActivity(); }
                     } catch (e) { /* edit-mode-tools may not be loaded yet; ignore */ }

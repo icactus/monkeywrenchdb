@@ -28,9 +28,13 @@
     <script src="pdf.min.js"></script>
 
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=1"></script>
+    <script src="correction-log-tools.js?v=8"></script>
+    <script src="barline-patch-cnn-runtime.js?v=1"></script>
     <script src="synpdf-edit-mode.js?v=78"></script>
-    <script src="edit-mode-tools.js?v=96"></script>
+    <script src="edit-mode-tools.js?v=109"></script>
+    <?php $barlineCnnBrowserJsVer = file_exists('../models/barline-patch-cnn-3x6-browser.js') ? filemtime('../models/barline-patch-cnn-3x6-browser.js') : time(); ?>
+    <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
+    <script src="barline-detect-v2.js?v=58"></script>
     <script src="ml-label-tools.js?v=93"></script>
     <style>
         html {
@@ -818,35 +822,58 @@
                         style="background:#4caf50; color:white; width:100%; padding:10px; font-weight:bold; cursor:pointer; border:none; border-radius:4px;">📥
                         Export ML Data (JSON)</button>
                 </div>
+                <!-- Advanced Tools (collapsed) -->
+                <details id="advanced-tools">
+                    <summary>Advanced Tools</summary>
+                    <div class="tools-content">
+                        <div>
+                            <label for="detix-input">Goto detix</label>
+                            <form id="goto-measure-form" style="display:inline;">
+                                <input id="detix-input" type="number" name="detix-input" placeholder="0" min="0" max="9999"
+                                    oninput="limitInputLength(this)" />
+                                <button type="submit">Go</button>
+                            </form>
+                        </div>
+                        <div>
+                            <label for="threshold-input">Short M Threshold</label>
+                            <input id="threshold-input" type="number" step="0.01" value="0.35">
+                            <button id="prev-timing-btn">Prev</button>
+                            <button id="check-timing-btn">Next</button>
+                            <button id="refresh-btn">Refresh</button>
+                            <span id="match-info"></span>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <button id="run-geom-btn" type="button"
+                                style="background:#7fd37f; color:#000; font-weight:bold;">Fit Staff Geometry Only</button>
+                            <button id="run-v2-btn" type="button"
+                                style="background:#00d4ff; color:#000; font-weight:bold; margin-left:8px;">Run V2 ML Detection</button>
+                            <button id="run-cnn-btn" type="button"
+                                style="background:#ffb000; color:#000; font-weight:bold; margin-left:8px;">Run CNN-only (dev)</button>
+                        </div>
+                        <div style="margin-top: 8px; min-width: 260px;">
+                            <label style="display:flex;align-items:center;gap:6px;">
+                                <input id="show-v2-candidates" type="checkbox" />
+                                <span>Show V2 candidates</span>
+                            </label>
+                        </div>
+                        <div style="margin-top: 8px; min-width: 100%;">
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                                <button id="copy-correction-log" type="button">Copy corrections</button>
+                                <button id="save-correction-log" type="button">Save corrections file</button>
+                                <button id="clear-correction-log" type="button">Clear current PDF corrections</button>
+                                <span id="correction-log-status" style="font-size:11px;color:#666;"></span>
+                            </div>
+                            <textarea id="correction-log-output" readonly
+                                placeholder="Manual barline corrections for the current PDF will appear here after you run detection and use Q mode."></textarea>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <div id="detix-box" style="font-size: 11px; color: #666;"></div>
+                            <div id="demix-box" style="font-size: 11px; color: #666;"></div>
+                        </div>
+                    </div>
+                </details>
             </div>
         </div>
-
-        <!-- Advanced Tools (collapsed) -->
-        <details id="advanced-tools">
-            <summary>Advanced Tools</summary>
-            <div class="tools-content">
-                <div>
-                    <label for="detix-input">Goto detix</label>
-                    <form id="goto-measure-form" style="display:inline;">
-                        <input id="detix-input" type="number" name="detix-input" placeholder="0" min="0" max="9999"
-                            oninput="limitInputLength(this)" />
-                        <button type="submit">Go</button>
-                    </form>
-                </div>
-                <div>
-                    <label for="threshold-input">Short M Threshold</label>
-                    <input id="threshold-input" type="number" step="0.01" value="0.35">
-                    <button id="prev-timing-btn">Prev</button>
-                    <button id="check-timing-btn">Next</button>
-                    <button id="refresh-btn">Refresh</button>
-                    <span id="match-info"></span>
-                </div>
-                <div style="margin-top: 8px;">
-                    <div id="detix-box" style="font-size: 11px; color: #666;"></div>
-                    <div id="demix-box" style="font-size: 11px; color: #666;"></div>
-                </div>
-            </div>
-        </details>
         </div>
         </div>
     </section1>

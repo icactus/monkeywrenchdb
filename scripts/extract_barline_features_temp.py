@@ -6,6 +6,7 @@ import os
 import argparse
 import csv
 import concurrent.futures
+from collections import deque
 
 def get_pixel_data(image, fixwd):
     cv_img = np.array(image)
@@ -22,6 +23,46 @@ def get_pixel_data(image, fixwd):
         
     rgba_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGBA)
     return rgba_img.flatten().astype(np.int32), rgba_img.shape[1] * 4, rgba_img.shape[1]
+
+def get_system_endpoint_lines(system):
+    csl = system.get("csl")
+    csr = system.get("csr")
+    if isinstance(csl, list) and isinstance(csr, list) and len(csl) >= 2 and len(csl) == len(csr):
+        try:
+            left = [float(v) for v in csl]
+            right = [float(v) for v in csr]
+            return left, right
+        except (TypeError, ValueError):
+            return None, None
+    return None, None
+
+def get_system_seed_lines(system):
+    left, right = get_system_endpoint_lines(system)
+    if left and right:
+        return [(left[idx] + right[idx]) / 2.0 for idx in range(len(left))]
+    raw_cs = system.get("cs", [])
+    try:
+        return [float(v) for v in raw_cs]
+    except (TypeError, ValueError):
+        return []
+
+def build_effective_traced_lines(system, staff_5, pixel_data, stride, image_width):
+    left, right = get_system_endpoint_lines(system)
+    xs = system.get("xs", {})
+    if left and right and len(left) == 5 and "x1" in xs and "x2" in xs:
+        x1 = float(xs["x1"])
+        x2 = float(xs["x2"])
+        denom = x2 - x1
+        traced_lines = []
+        for line_idx in range(5):
+            line_y = np.zeros(image_width)
+            for px in range(image_width):
+                t = ((px - x1) / denom) if abs(denom) > 1e-6 else 0.0
+                t = max(0.0, min(1.0, t))
+                line_y[px] = left[line_idx] + t * (right[line_idx] - left[line_idx])
+            traced_lines.append(line_y)
+        return traced_lines
+    return trace_staff_lines(staff_5, pixel_data, stride, image_width)
 
 def normalize_staff_lines(raw_cs, pixel_data, stride, image_width):
     """Normalize a cs array to extract the best 5 staff lines and compute spatium.
@@ -195,6 +236,224 @@ def trace_staff_lines(staff_lines, pixel_data, stride, image_width, sample_inter
         traced_lines.append(line_y)
     return traced_lines
 
+def build_staff_line_mask(effective_lines, spatium):
+    line_radius = max(2, int(round(0.28 * spatium)))
+    staff_line_ys = set()
+    for line_y in effective_lines:
+        sly = int(round(line_y))
+        for dy in range(-line_radius, line_radius + 1):
+            staff_line_ys.add(sly + dy)
+    return staff_line_ys
+
+def extract_component_features(col, local_top, local_bot, effective_lines, spatium, pixel_data, stride, num_cols):
+    max_img_row = len(pixel_data) // stride - 1
+    x_margin = max(6, int(round(2.0 * spatium)))
+    y_margin = max(4, int(round(1.5 * spatium)))
+    side_margin = max(1, int(round(0.35 * spatium)))
+    dot_box_max = max(3, int(round(0.9 * spatium)))
+    patch_left = max(0, col - x_margin)
+    patch_right = min(num_cols - 1, col + x_margin)
+    patch_top = max(0, local_top - y_margin)
+    patch_bot = min(max_img_row, local_bot + y_margin)
+    patch_w = patch_right - patch_left + 1
+    patch_h = patch_bot - patch_top + 1
+
+    if patch_w <= 0 or patch_h <= 0:
+        return [0.0] * 6
+
+    staff_line_ys = build_staff_line_mask(effective_lines, spatium)
+
+    dark_mask = [[False] * patch_w for _ in range(patch_h)]
+    for py in range(patch_h):
+        gy = patch_top + py
+        if gy in staff_line_ys:
+            continue
+        ro = gy * stride
+        for px in range(patch_w):
+            gx = patch_left + px
+            idx = ro + gx * 4
+            if 0 <= idx and idx + 2 < len(pixel_data):
+                if (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3 < 128:
+                    dark_mask[py][px] = True
+
+    visited = [[False] * patch_w for _ in range(patch_h)]
+    components = []
+    neighbors = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
+
+    for py in range(patch_h):
+        for px in range(patch_w):
+            if not dark_mask[py][px] or visited[py][px]:
+                continue
+            q = deque([(px, py)])
+            visited[py][px] = True
+            area = 0
+            minx = maxx = px
+            miny = maxy = py
+            touch_center = False
+            left_pixels = 0
+            right_pixels = 0
+
+            while q:
+                cx, cy = q.popleft()
+                gx = patch_left + cx
+                gy = patch_top + cy
+                area += 1
+                if cx < minx: minx = cx
+                if cx > maxx: maxx = cx
+                if cy < miny: miny = cy
+                if cy > maxy: maxy = cy
+                if local_top <= gy <= local_bot and abs(gx - col) <= 1:
+                    touch_center = True
+                if gx <= col - side_margin:
+                    left_pixels += 1
+                if gx >= col + side_margin:
+                    right_pixels += 1
+
+                for dx_off, dy_off in neighbors:
+                    nx, ny = cx + dx_off, cy + dy_off
+                    if 0 <= nx < patch_w and 0 <= ny < patch_h and dark_mask[ny][nx] and not visited[ny][nx]:
+                        visited[ny][nx] = True
+                        q.append((nx, ny))
+
+            components.append({
+                "area": area,
+                "minx": minx,
+                "maxx": maxx,
+                "miny": miny,
+                "maxy": maxy,
+                "touch_center": touch_center,
+                "left_pixels": left_pixels,
+                "right_pixels": right_pixels,
+            })
+
+    if not components:
+        return [0.0] * 6
+
+    main_comp = None
+    for comp in components:
+        if not comp["touch_center"]:
+            continue
+        comp_h = comp["maxy"] - comp["miny"] + 1
+        if main_comp is None:
+            main_comp = comp
+            continue
+        main_h = main_comp["maxy"] - main_comp["miny"] + 1
+        if comp_h > main_h or (comp_h == main_h and comp["area"] > main_comp["area"]):
+            main_comp = comp
+
+    if main_comp is None:
+        main_comp = max(components, key=lambda comp: comp["area"])
+
+    main_area = max(1, main_comp["area"])
+    main_bbox_w = main_comp["maxx"] - main_comp["minx"] + 1
+    main_bbox_h = main_comp["maxy"] - main_comp["miny"] + 1
+    main_bbox_area = max(1, main_bbox_w * main_bbox_h)
+    left_attach_ratio = main_comp["left_pixels"] / main_area
+    right_attach_ratio = main_comp["right_pixels"] / main_area
+    attached_span_ratio = max(col - (patch_left + main_comp["minx"]), (patch_left + main_comp["maxx"]) - col) / max(1.0, float(spatium))
+    main_fill_ratio = main_area / main_bbox_area
+
+    detached_dot_count = 0
+    tall_companion_count = 0
+    for comp in components:
+        if comp is main_comp:
+            continue
+        comp_w = comp["maxx"] - comp["minx"] + 1
+        comp_h = comp["maxy"] - comp["miny"] + 1
+        comp_center_x = patch_left + (comp["minx"] + comp["maxx"]) / 2.0
+        x_dist = abs(comp_center_x - col)
+
+        if x_dist <= 1.8 * spatium and comp["area"] <= dot_box_max * dot_box_max and comp_w <= dot_box_max and comp_h <= dot_box_max:
+            detached_dot_count += 1
+
+        if x_dist <= 1.4 * spatium and comp_h >= 0.72 * (local_bot - local_top + 1) and comp_w <= max(2, int(round(0.65 * spatium))):
+            tall_companion_count += 1
+
+    return [
+        left_attach_ratio,
+        right_attach_ratio,
+        attached_span_ratio,
+        main_fill_ratio,
+        float(detached_dot_count),
+        float(tall_companion_count),
+    ]
+
+def extract_gap_and_attachment_features(col, local_top, local_bot, effective_lines, spatium, pixel_data, stride, num_cols):
+    max_img_row = len(pixel_data) // stride - 1
+    staff_line_ys = build_staff_line_mask(effective_lines, spatium)
+
+    def is_dark(x, y):
+        if x < 0 or x >= num_cols or y < 0 or y > max_img_row:
+            return False
+        idx = y * stride + x * 4
+        if idx < 0 or idx + 2 >= len(pixel_data):
+            return False
+        return (pixel_data[idx] + pixel_data[idx+1] + pixel_data[idx+2]) / 3 < 128
+
+    # Above/below disconnect: look for a full white row across a centered 2-spatium window.
+    gap_half_width = max(1, int(round(spatium)))
+    gap_x0 = max(0, col - gap_half_width)
+    gap_x1 = min(num_cols - 1, col + gap_half_width)
+    gap_band = max(3, int(round(1.2 * spatium)))
+
+    white_gap_above = 0.0
+    for y in range(max(0, local_top - gap_band), local_top):
+        has_full_white_row = True
+        for x in range(gap_x0, gap_x1 + 1):
+            if is_dark(x, y):
+                has_full_white_row = False
+                break
+        if has_full_white_row:
+            white_gap_above = 1.0
+            break
+
+    white_gap_below = 0.0
+    for y in range(local_bot + 1, min(max_img_row, local_bot + gap_band) + 1):
+        has_full_white_row = True
+        for x in range(gap_x0, gap_x1 + 1):
+            if is_dark(x, y):
+                has_full_white_row = False
+                break
+        if has_full_white_row:
+            white_gap_below = 1.0
+            break
+
+    # Lateral attachment: max contiguous non-staffline black reach from the candidate core
+    # into each of the 4 staff-space bands on each side, normalized by spatium.
+    attachment_features = [0.0] * 8
+    band_half_height = max(1, int(round(0.35 * spatium)))
+    max_attach_reach = max(1, int(round(2.0 * spatium)))
+    attachment_idx = 0
+
+    for space_idx in range(4):
+        space_center = int(round((effective_lines[space_idx] + effective_lines[space_idx + 1]) / 2.0))
+        y0 = max(0, space_center - band_half_height)
+        y1 = min(max_img_row, space_center + band_half_height)
+
+        for side in (-1, 1):
+            best_reach = 0
+            for y in range(y0, y1 + 1):
+                if y in staff_line_ys:
+                    continue
+                core_dark = is_dark(col, y) or is_dark(col - 1, y) or is_dark(col + 1, y)
+                if not core_dark:
+                    continue
+
+                reach = 0
+                for step in range(1, max_attach_reach + 1):
+                    x = col + side * step
+                    if is_dark(x, y):
+                        reach = step
+                    else:
+                        break
+                if reach > best_reach:
+                    best_reach = reach
+
+            attachment_features[attachment_idx] = best_reach / max(1.0, float(spatium))
+            attachment_idx += 1
+
+    return [white_gap_above, white_gap_below] + attachment_features
+
 def generate_candidates_and_features(system, stride, pixel_data, image_width):
     drift = 2
     dx = 3
@@ -202,7 +461,7 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
     voorna = 0.2
     zwgrens = 0.7
     
-    raw_cs = system["cs"]
+    raw_cs = get_system_seed_lines(system)
     xs = system["xs"]
     if len(raw_cs) < 2: return [], []
     
@@ -213,7 +472,7 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
     staff_height = bot_y - top_y
     if spatium <= 0: return [], []
     
-    traced_lines = trace_staff_lines(staff_5, pixel_data, stride, image_width)
+    traced_lines = build_effective_traced_lines(system, staff_5, pixel_data, stride, image_width)
     
     max_wit = 0
     for col in range(image_width):
@@ -353,11 +612,8 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
             
         widths = []
         bound_widths = []
-        staff_line_ys = set()
-        if traced_lines:
-            for sl in range(5):
-                sly = int(round(traced_lines[sl][col]))
-                staff_line_ys.update([sly - 1, sly, sly + 1])
+        effective_line_positions = [traced_lines[sl][col] for sl in range(5)] if traced_lines else staff_5
+        staff_line_ys = build_staff_line_mask(effective_line_positions, spatium)
                 
         for sy in range(max(0, local_top), min(max_img_row, local_bot) + 1, 2):
             if sy in staff_line_ys: continue
@@ -527,13 +783,34 @@ def generate_candidates_and_features(system, stride, pixel_data, image_width):
                                         b_px += 1
                     notehead_features[note_zone_idx] = b_px / t_px if t_px > 0 else 0.0
                     note_zone_idx += 1
+
+        component_features = extract_component_features(
+            col,
+            local_top,
+            local_bot,
+            traced_or_norm_lines if traced_or_norm_lines and len(traced_or_norm_lines) >= 5 else staff_5,
+            spatium,
+            pixel_data,
+            stride,
+            num_cols
+        )
+        gap_and_attachment_features = extract_gap_and_attachment_features(
+            col,
+            local_top,
+            local_bot,
+            traced_or_norm_lines if traced_or_norm_lines and len(traced_or_norm_lines) >= 5 else staff_5,
+            spatium,
+            pixel_data,
+            stride,
+            num_cols
+        )
                 
         candidates.append(col)
         features_list.append([
             blackness, connectivity, box_density_above, box_density_below,
             median_width, max_width, pct_wide, max_bound_width,
             left_white, right_white, left_contrast, right_contrast, local_density
-        ] + grid_features + notehead_features)
+        ] + grid_features + notehead_features + component_features + gap_and_attachment_features)
         
     return candidates, features_list
 
@@ -636,6 +913,13 @@ def process_file(pdf_path, json_path, output_csv):
             "space_blob_left_2", "space_blob_right_2",
             "space_blob_left_3", "space_blob_right_3",
             "space_blob_left_4", "space_blob_right_4",
+            "attach_left_ratio", "attach_right_ratio", "attach_span_ratio",
+            "main_component_fill", "detached_dot_count", "tall_companion_count",
+            "white_gap_above", "white_gap_below",
+            "lat_attach_left_1", "lat_attach_right_1",
+            "lat_attach_left_2", "lat_attach_right_2",
+            "lat_attach_left_3", "lat_attach_right_3",
+            "lat_attach_left_4", "lat_attach_right_4",
             "label"
         ])
         for ftrs, lbl in zip(features_all, labels_all):

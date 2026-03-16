@@ -28,11 +28,14 @@
     <script src="pdf.min.js"></script>
 
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=1"></script>
+    <script src="correction-log-tools.js?v=8"></script>
+    <script src="barline-patch-cnn-runtime.js?v=1"></script>
     <script src="synpdf-edit-mode.js?v=78"></script>
-    <script src="edit-mode-tools.js?v=96"></script>
+    <script src="edit-mode-tools.js?v=109"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
-    <script src="barline-detect-v2.js?v=37"></script>
+    <?php $barlineCnnBrowserJsVer = file_exists('../models/barline-patch-cnn-3x6-browser.js') ? filemtime('../models/barline-patch-cnn-3x6-browser.js') : time(); ?>
+    <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
+    <script src="barline-detect-v2.js?v=58"></script>
     <style>
         html {
             width: 100%;
@@ -920,8 +923,12 @@
                             <span id="match-info"></span>
                         </div>
                         <div style="margin-top: 8px;">
+                            <button id="run-geom-btn" type="button"
+                                style="background:#7fd37f; color:#000; font-weight:bold;">Fit Staff Geometry Only</button>
                             <button id="run-v2-btn" type="button"
-                                style="background:#00d4ff; color:#000; font-weight:bold;">Run V2 ML Detection</button>
+                                style="background:#00d4ff; color:#000; font-weight:bold; margin-left:8px;">Run V2 ML Detection</button>
+                            <button id="run-cnn-btn" type="button"
+                                style="background:#ffb000; color:#000; font-weight:bold; margin-left:8px;">Run CNN-only (dev)</button>
                         </div>
                         <div style="margin-top: 8px; min-width: 260px;">
                             <label style="display:flex;align-items:center;gap:6px;">
@@ -929,27 +936,10 @@
                                 <span>Show V2 candidates</span>
                             </label>
                         </div>
-                        <div style="margin-top: 8px; min-width: 260px;">
-                            <label for="correction-reason">Correction reason</label>
-                            <select id="correction-reason">
-                                <option value="">Unspecified</option>
-                                <option value="stem_or_notehead">Stem / notehead</option>
-                                <option value="half_note">Half note</option>
-                                <option value="repeat_sign">Repeat sign</option>
-                                <option value="double_barline">Double barline</option>
-                                <option value="rehearsal_text">Rehearsal text / number</option>
-                                <option value="fn_no_apparent_reason">FN: no apparent reason</option>
-                                <option value="fn_object_close">FN: object close by</option>
-                                <option value="end_of_line_no_barline">End of line / no terminal barline</option>
-                                <option value="final_barline_edge">Final barline edge case</option>
-                                <option value="weak_print">Weak / broken print</option>
-                                <option value="candidate_missing">No nearby candidate</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
                         <div style="margin-top: 8px; min-width: 100%;">
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
                                 <button id="copy-correction-log" type="button">Copy corrections</button>
+                                <button id="save-correction-log" type="button">Save corrections file</button>
                                 <button id="clear-correction-log" type="button">Clear current PDF corrections</button>
                                 <span id="correction-log-status" style="font-size:11px;color:#666;"></span>
                             </div>

@@ -7,9 +7,10 @@ import numpy as np
 from pdf2image import convert_from_path
 
 from extract_barline_features_temp import (
+    build_effective_traced_lines,
     generate_candidates_and_features,
+    get_system_seed_lines,
     normalize_staff_lines,
-    trace_staff_lines,
 )
 
 
@@ -56,12 +57,13 @@ def pixel_data_to_binary_image(pixel_data, stride):
     return (rgba[:, :, 0] < 128).astype(np.uint8)
 
 
-def get_local_staff_bounds(raw_cs, pixel_data, stride, image_width, x_col):
+def get_local_staff_bounds(system, pixel_data, stride, image_width, x_col):
+    raw_cs = get_system_seed_lines(system)
     staff_5, spatium, top_y_raw, bot_y_raw, is_valid = normalize_staff_lines(raw_cs, pixel_data, stride, image_width)
     if staff_5 is None or spatium <= 0:
         return None
 
-    traced_lines = trace_staff_lines(staff_5, pixel_data, stride, image_width)
+    traced_lines = build_effective_traced_lines(system, staff_5, pixel_data, stride, image_width)
     if traced_lines is not None and len(traced_lines) >= 5:
         local_top = int(round(traced_lines[0][x_col]))
         local_bot = int(round(traced_lines[4][x_col]))
@@ -131,7 +133,7 @@ def build_examples_for_page(source_id, page_index, page_data, crop_binary_img, c
         if system_index >= len(bxs):
             break
 
-        raw_cs = system.get("cs", [])
+        raw_cs = get_system_seed_lines(system)
         xs = system.get("xs", {})
         if len(raw_cs) < 2 or "x1" not in xs or "x2" not in xs:
             continue
@@ -179,7 +181,7 @@ def build_examples_for_page(source_id, page_index, page_data, crop_binary_img, c
             if x_col < 0 or x_col >= image_width:
                 continue
 
-            bounds = get_local_staff_bounds(raw_cs, pixel_data, stride, image_width, x_col)
+            bounds = get_local_staff_bounds(system, pixel_data, stride, image_width, x_col)
             if not bounds:
                 continue
 
@@ -214,13 +216,13 @@ def build_examples_for_page(source_id, page_index, page_data, crop_binary_img, c
 
 
 def process_pdf(pdf_path, json_path, output_npz, patch_width, patch_height, x_spatiums, y_spatiums, dpi,
-                render_width, include_gt_rescue, include_near_gt_duplicates):
+                render_width, include_gt_rescue, include_near_gt_duplicates, render_threads):
     with open(json_path) as f:
         data = json.load(f)
 
     fixwd = data[0] if isinstance(data[0], int) else 1000
     pages_data = data[1:]
-    images = convert_from_path(str(pdf_path), dpi=dpi, thread_count=4)
+    images = convert_from_path(str(pdf_path), dpi=dpi, thread_count=render_threads)
 
     source_id = json_path.stem.replace("-td", "")
     examples = []
@@ -314,10 +316,11 @@ def main():
     parser.add_argument("--out-dir", help="Directory to write per-source .npz shards")
     parser.add_argument("--patch-width", type=int, default=32)
     parser.add_argument("--patch-height", type=int, default=64)
-    parser.add_argument("--x-spatiums", type=float, default=2.0)
-    parser.add_argument("--y-spatiums", type=float, default=2.0)
+    parser.add_argument("--x-spatiums", type=float, default=1.5)
+    parser.add_argument("--y-spatiums", type=float, default=1.0)
     parser.add_argument("--dpi", type=int, default=130)
     parser.add_argument("--render-width", type=int, default=2000)
+    parser.add_argument("--render-threads", type=int, default=2)
     parser.add_argument("--no-gt-rescue", action="store_true")
     parser.add_argument("--include-near-gt-duplicates", action="store_true")
     args = parser.parse_args()
@@ -337,6 +340,7 @@ def main():
             args.render_width,
             include_gt_rescue,
             args.include_near_gt_duplicates,
+            args.render_threads,
         )
         print(f"Wrote {count} examples to {args.out}")
         return
@@ -358,6 +362,7 @@ def main():
                 args.render_width,
                 include_gt_rescue,
                 args.include_near_gt_duplicates,
+                args.render_threads,
             )
             shard_count += 1
             total += count

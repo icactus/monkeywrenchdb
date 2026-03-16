@@ -27,7 +27,14 @@ def train_and_export(csv_path, js_path):
         "space_blob_left_1", "space_blob_right_1",
         "space_blob_left_2", "space_blob_right_2",
         "space_blob_left_3", "space_blob_right_3",
-        "space_blob_left_4", "space_blob_right_4"
+        "space_blob_left_4", "space_blob_right_4",
+        "attach_left_ratio", "attach_right_ratio", "attach_span_ratio",
+        "main_component_fill", "detached_dot_count", "tall_companion_count",
+        "white_gap_above", "white_gap_below",
+        "lat_attach_left_1", "lat_attach_right_1",
+        "lat_attach_left_2", "lat_attach_right_2",
+        "lat_attach_left_3", "lat_attach_right_3",
+        "lat_attach_left_4", "lat_attach_right_4"
     ]
     
     X = df[feature_cols]

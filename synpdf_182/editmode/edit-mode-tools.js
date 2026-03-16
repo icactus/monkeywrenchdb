@@ -3,10 +3,25 @@
 var SplitclickCoordinates = [];
 var SplitclickY = 0;
 var QisActive = false;
+var NisActive = false;
+var SisActive = false;
 var WisActive = false;
 
 let indicatorElement;
 let notation;
+
+function getSystemHitBounds(pageNumber, systemIndex, csGroup, xJson) {
+    if (window.SynpdfCorrectionTools && typeof SynpdfCorrectionTools.getSystemVerticalBounds === 'function') {
+        var bounds = SynpdfCorrectionTools.getSystemVerticalBounds(pageNumber, systemIndex, xJson, csGroup);
+        if (bounds) {
+            return bounds;
+        }
+    }
+    return {
+        top: Math.min.apply(null, csGroup),
+        bottom: Math.max.apply(null, csGroup)
+    };
+}
 
 document.addEventListener("DOMContentLoaded", function () {
     indicatorElement = document.getElementById('indicator');
@@ -22,8 +37,9 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             if (handleSplit(event)) return;
             if (handleWCxs(event)) return;
-            else if (!QisActive) return;
-            if (addRemoveBxs$$module$synpdf(event)) return;
+            if (handleSCxs(event)) return;
+            else if (!QisActive && !NisActive) return;
+            if (addRemoveBxs$$module$synpdf(event, { logForCnn: NisActive })) return;
         });
 
         notation.addEventListener('mousemove', function (e) {
@@ -38,8 +54,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (QisActive) {
                     tooltip.innerHTML = "Q";
                 }
+                if (NisActive) {
+                    tooltip.innerHTML = "N";
+                }
                 if (WisActive) {
                     tooltip.innerHTML = "W";
+                }
+                if (SisActive) {
+                    tooltip.innerHTML = "$";
                 }
             }
         });
@@ -210,9 +232,10 @@ function SplitgenerateCoordinates(clickCoords) {
     let y = Math.round(SplitclickY - rect.top + notation.scrollTop);
     for (let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
         let cs_group = cxsBxsData[pagenum].cxs[j].cs;
+        let hitBounds = getSystemHitBounds(pagenum, j, cs_group, x);
 
         // Check if y falls within this range
-        if (y >= Math.min(...cs_group) && y <= Math.max(...cs_group)) {
+        if (y >= hitBounds.top && y <= hitBounds.bottom) {
             let bxs_group = cxsBxsData[pagenum].bxs[j];
             let closestLeft = null;
             let closestRight = null;
@@ -286,9 +309,10 @@ function handleSplitMark(event) {
 
     for (let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
         let cs_group = cxsBxsData[pagenum].cxs[j].cs;
+        let hitBounds = getSystemHitBounds(pagenum, j, cs_group, x);
 
         // Check if y falls within this staff
-        if (y >= Math.min(...cs_group) && y <= Math.max(...cs_group)) {
+        if (y >= hitBounds.top && y <= hitBounds.bottom) {
             let bxs_group = cxsBxsData[pagenum].bxs[j];
 
             // Find nearest barline within 10px
@@ -367,8 +391,8 @@ function toggleQActivity() {
     QisActive = !QisActive;
 
     if (QisActive) {
-        console.log('Coordinate logging is ON');
-        indicatorElement.innerText = 'ON';
+        console.log('Q mode is ON');
+        indicatorElement.innerText = 'Q';
         indicatorElement.classList.remove('inactive-indicator');
         indicatorElement.classList.add('active-indicator');
         indicatorElement.classList.add('crosshair-cursor');
@@ -376,8 +400,14 @@ function toggleQActivity() {
         if (WisActive) {
             toggleWActivity();
         }
+        if (NisActive) {
+            toggleNActivity();
+        }
+        if (SisActive) {
+            toggleSActivity();
+        }
     } else {
-        console.log('Coordinate logging is OFF');
+        console.log('Q mode is OFF');
         indicatorElement.innerText = 'OFF';
         indicatorElement.classList.remove('active-indicator');
         indicatorElement.classList.add('inactive-indicator');
@@ -400,6 +430,12 @@ function toggleWActivity() {
         if (QisActive) {
             toggleQActivity();
         }
+        if (NisActive) {
+            toggleNActivity();
+        }
+        if (SisActive) {
+            toggleSActivity();
+        }
     } else {
         console.log('W mode is OFF');
         exactBoundariesMode = false; // Reset when turning off
@@ -414,6 +450,64 @@ function roundValuesInArray(obj) {
         } else if (typeof obj[k] === 'number') {
             obj[k] = Math.round(obj[k]);
         }
+    }
+}
+
+function toggleNActivity() {
+    NisActive = !NisActive;
+
+    if (NisActive) {
+        console.log('N mode is ON');
+        indicatorElement.innerText = 'N';
+        indicatorElement.classList.remove('inactive-indicator');
+        indicatorElement.classList.add('active-indicator');
+        indicatorElement.classList.add('crosshair-cursor');
+        document.body.style.cursor = 'crosshair';
+        if (WisActive) {
+            toggleWActivity();
+        }
+        if (QisActive) {
+            toggleQActivity();
+        }
+        if (SisActive) {
+            toggleSActivity();
+        }
+    } else {
+        console.log('N mode is OFF');
+        indicatorElement.innerText = 'OFF';
+        indicatorElement.classList.remove('active-indicator');
+        indicatorElement.classList.add('inactive-indicator');
+        indicatorElement.classList.remove('crosshair-cursor');
+        document.body.style.cursor = 'default';
+    }
+}
+
+function toggleSActivity() {
+    SisActive = !SisActive;
+
+    if (SisActive) {
+        console.log('$ mode is ON');
+        indicatorElement.innerText = '$';
+        indicatorElement.classList.remove('inactive-indicator');
+        indicatorElement.classList.add('active-indicator');
+        indicatorElement.classList.add('crosshair-cursor');
+        document.body.style.cursor = 'crosshair';
+        if (WisActive) {
+            toggleWActivity();
+        }
+        if (QisActive) {
+            toggleQActivity();
+        }
+        if (NisActive) {
+            toggleNActivity();
+        }
+    } else {
+        console.log('$ mode is OFF');
+        indicatorElement.innerText = 'OFF';
+        indicatorElement.classList.remove('active-indicator');
+        indicatorElement.classList.add('inactive-indicator');
+        indicatorElement.classList.remove('crosshair-cursor');
+        document.body.style.cursor = 'default';
     }
 }
 
@@ -504,6 +598,94 @@ function normalizeDetectedSystemBarlines(system, detectedBarlines, existingBarli
     return normalized;
 }
 
+function getSystemBoundaryXs(system, existingBarlines) {
+    var fallbackXs = system && system.xs ? system.xs : { x1: 0, x2: 0 };
+    if (Array.isArray(existingBarlines) && existingBarlines.length >= 2) {
+        return {
+            x1: Math.round(Math.abs(existingBarlines[0])),
+            x2: Math.round(Math.abs(existingBarlines[existingBarlines.length - 1]))
+        };
+    }
+    return {
+        x1: Math.round(fallbackXs.x1 || 0),
+        x2: Math.round(fallbackXs.x2 || 0)
+    };
+}
+
+function applyExistingBoundaryXs(system, existingBarlines) {
+    if (!system) return system;
+    var fixedXs = getSystemBoundaryXs(system, existingBarlines);
+    system.xs = {
+        x1: fixedXs.x1,
+        x2: fixedXs.x2
+    };
+    return system;
+}
+
+function applyRenderGeometryToSystem(system, renderGeometry, options) {
+    options = options || {};
+    if (!system || !renderGeometry || !renderGeometry.left || !renderGeometry.right) {
+        return system;
+    }
+
+    const leftLines = Array.isArray(renderGeometry.left.lines) ? renderGeometry.left.lines.slice() : null;
+    const rightLines = Array.isArray(renderGeometry.right.lines) ? renderGeometry.right.lines.slice() : null;
+    if (!leftLines || !rightLines || leftLines.length < 2 || leftLines.length !== rightLines.length) {
+        return system;
+    }
+
+    if (options.fixedXs && typeof options.fixedXs.x1 === 'number' && typeof options.fixedXs.x2 === 'number') {
+        system.xs = {
+            x1: Math.round(options.fixedXs.x1),
+            x2: Math.round(options.fixedXs.x2)
+        };
+    } else if (renderGeometry.xs && typeof renderGeometry.xs.x1 === 'number' && typeof renderGeometry.xs.x2 === 'number') {
+        system.xs = {
+            x1: Math.round(renderGeometry.xs.x1),
+            x2: Math.round(renderGeometry.xs.x2)
+        };
+    }
+
+    var originalCs = Array.isArray(system.cs) ? system.cs.slice() : [];
+    var sparseBoundsMode = originalCs.length === 2 && !options.expandSparse;
+
+    if (sparseBoundsMode) {
+        system.csl = [leftLines[0], leftLines[leftLines.length - 1]];
+        system.csr = [rightLines[0], rightLines[rightLines.length - 1]];
+        system.cs = [
+            Math.round((system.csl[0] + system.csr[0]) / 2),
+            Math.round((system.csl[1] + system.csr[1]) / 2)
+        ];
+        return system;
+    }
+
+    system.csl = leftLines;
+    system.csr = rightLines;
+    if (!Array.isArray(system.cs) || system.cs.length !== leftLines.length) {
+        system.cs = leftLines.map(function (leftY, index) {
+            return Math.round((leftY + rightLines[index]) / 2);
+        });
+    }
+    return system;
+}
+
+function systemSupportsRenderGeometryFit(system) {
+    if (!system) return false;
+    if (Array.isArray(system.cs) && system.cs.length >= 2) return true;
+    if (Array.isArray(system.csl) && Array.isArray(system.csr) &&
+        system.csl.length >= 2 && system.csl.length === system.csr.length) {
+        return true;
+    }
+    return false;
+}
+
+function getSystemSortTop(system) {
+    if (system && Array.isArray(system.csl) && system.csl.length) return system.csl[0];
+    if (system && Array.isArray(system.csr) && system.csr.length) return system.csr[0];
+    if (system && Array.isArray(system.cs) && system.cs.length) return system.cs[0];
+    return 0;
+}
+
 document.addEventListener('keydown', function (event) {
     const synbox = document.querySelector('#synbox');
     if (synbox && synbox.checked) {
@@ -524,6 +706,12 @@ document.addEventListener('keydown', function (event) {
             break;
         case 'q':
             toggleQActivity();
+            break;
+        case 'n':
+            toggleNActivity();
+            break;
+        case '$':
+            toggleSActivity();
             break;
         case 'S':
             saveTiming$$module$synpdf();
@@ -654,7 +842,9 @@ function copyToClipboard(text) {
     });
 }
 
-function addRemoveBxs$$module$synpdf(event) {
+function addRemoveBxs$$module$synpdf(event, options) {
+    options = options || {};
+    const shouldLogForCnn = !!options.logForCnn;
     // Retrieve and parse data from local storage
     let cxsBxsData = MetricStore.getMetricData();
 
@@ -672,9 +862,10 @@ function addRemoveBxs$$module$synpdf(event) {
 
     for (let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
         let cs_group = cxsBxsData[pagenum].cxs[j].cs;
+        let hitBounds = getSystemHitBounds(pagenum, j, cs_group, x);
 
         // Check if y falls within this range
-        if (y >= Math.min(...cs_group) && y <= Math.max(...cs_group)) {
+        if (y >= hitBounds.top && y <= hitBounds.bottom) {
             let isValueRemoved = false;
             let removedX = null;
 
@@ -696,24 +887,29 @@ function addRemoveBxs$$module$synpdf(event) {
                 cxsBxsData[pagenum].bxs[j].push(x);
                 // Sort the 'bxs' group from low to high
                 cxsBxsData[pagenum].bxs[j].sort((a, b) => Math.abs(a) - Math.abs(b));
-                SynpdfCorrectionTools.recordBarlineCorrection({
-                    pageNumber: pagenum,
-                    systemIndex: j,
-                    action: 'add',
-                    xJson: x,
-                    yJson: y
-                });
+                if (shouldLogForCnn) {
+                    SynpdfCorrectionTools.recordBarlineCorrection({
+                        pageNumber: pagenum,
+                        systemIndex: j,
+                        action: 'add',
+                        xJson: x,
+                        yJson: y
+                    });
+                }
             } else {
-                SynpdfCorrectionTools.recordBarlineCorrection({
-                    pageNumber: pagenum,
-                    systemIndex: j,
-                    action: 'delete',
-                    xJson: removedX,
-                    yJson: y
-                });
+                if (shouldLogForCnn) {
+                    SynpdfCorrectionTools.recordBarlineCorrection({
+                        pageNumber: pagenum,
+                        systemIndex: j,
+                        action: 'delete',
+                        xJson: removedX,
+                        yJson: y
+                    });
+                }
             }
 
             MetricStore.setMetricData(cxsBxsData, { clone: false });
+            SynpdfCorrectionTools.updateAcceptedBarlinesForPage(pagenum, cxsBxsData[pagenum]);
             //deMetriek$$module$synpdf = JSON.parse(localStorage.getItem('jsonString'));  /*this works but scrolls page on refresh*/
             //setPagenum$$module$synpdf(opt$$module$synpdf.pagenum);
             requestRefresh();
@@ -785,8 +981,10 @@ function editCxsGroups$$module$synpdf(event) {
 
         for (let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
             let cs_group = cxsBxsData[pagenum].cxs[j].cs;
+            let midX = Math.round((startPoint.x + endPoint.x) / 2);
+            let hitBounds = getSystemHitBounds(pagenum, j, cs_group, midX);
 
-            if (Math.max(...cs_group) >= startPoint.y && Math.min(...cs_group) <= endPoint.y) {
+            if (hitBounds.bottom >= startPoint.y && hitBounds.top <= endPoint.y) {
                 overlappingGroupsIndexes.push(j);
             }
         }
@@ -834,7 +1032,12 @@ function editCxsGroups$$module$synpdf(event) {
             finalCs = optimizedCs; // Use optimized staff line positions
         }
 
-        cxsBxsData[pagenum].cxs.push({ cs: finalCs, xs: { x1: startPoint.x, x2: endPoint.x } });
+        cxsBxsData[pagenum].cxs.push({
+            cs: finalCs,
+            csl: finalCs.slice(),
+            csr: finalCs.slice(),
+            xs: { x1: startPoint.x, x2: endPoint.x }
+        });
 
         // If detection returned lines, use them. Otherwise fallback to start/end.
         if (newBarlines && newBarlines.length > 0) {
@@ -844,7 +1047,7 @@ function editCxsGroups$$module$synpdf(event) {
         }
 
         let oldCxsOrder = [...cxsBxsData[pagenum].cxs];
-        cxsBxsData[pagenum].cxs.sort((a, b) => a.cs[0] - b.cs[0]);
+        cxsBxsData[pagenum].cxs.sort((a, b) => getSystemSortTop(a) - getSystemSortTop(b));
         let newBxsOrder = [];
         for (let i = 0; i < cxsBxsData[pagenum].cxs.length; i++) {
             let oldIndex = oldCxsOrder.indexOf(cxsBxsData[pagenum].cxs[i]);
@@ -891,6 +1094,129 @@ function requestRefresh(options) {
 
         SynpdfCorrectionTools.scheduleV2CandidateOverlayRender();
     }, 50);
+}
+
+function cloneSystemForGeometrySeed(system) {
+    return JSON.parse(JSON.stringify(system));
+}
+
+function getSystemTopSeedY(system, xJson) {
+    var bounds = getSystemHitBounds(
+        parseInt(document.getElementById('pagenum').value),
+        -1,
+        Array.isArray(system.cs) ? system.cs : [],
+        xJson
+    );
+    if (bounds && typeof bounds.top === 'number') {
+        return bounds.top;
+    }
+    if (Array.isArray(system.csl) && system.csl.length) return system.csl[0];
+    if (Array.isArray(system.cs) && system.cs.length) return system.cs[0];
+    return null;
+}
+
+function shiftSystemSeedToTopLine(system, targetTopY) {
+    var shifted = cloneSystemForGeometrySeed(system);
+    var currentTopY = null;
+
+    if (Array.isArray(shifted.csl) && shifted.csl.length) {
+        currentTopY = shifted.csl[0];
+    } else if (Array.isArray(shifted.cs) && shifted.cs.length) {
+        currentTopY = shifted.cs[0];
+    }
+    if (typeof currentTopY !== 'number' || !isFinite(currentTopY)) {
+        return shifted;
+    }
+
+    var delta = Math.round(targetTopY - currentTopY);
+    if (!delta) return shifted;
+
+    if (Array.isArray(shifted.cs)) {
+        shifted.cs = shifted.cs.map(function (y) { return Math.round(y + delta); });
+    }
+    if (Array.isArray(shifted.csl)) {
+        shifted.csl = shifted.csl.map(function (y) { return Math.round(y + delta); });
+    }
+    if (Array.isArray(shifted.csr)) {
+        shifted.csr = shifted.csr.map(function (y) { return Math.round(y + delta); });
+    }
+
+    return shifted;
+}
+
+function findNearestSystemIndexForPoint(pageData, pagenum, x, y) {
+    var bestIndex = -1;
+    var bestDistance = Infinity;
+    for (let j = 0; j < pageData.cxs.length; j++) {
+        let cs_group = pageData.cxs[j].cs;
+        let hitBounds = getSystemHitBounds(pagenum, j, cs_group, x);
+        if (y >= hitBounds.top && y <= hitBounds.bottom) {
+            return j;
+        }
+        var dist = 0;
+        if (y < hitBounds.top) dist = hitBounds.top - y;
+        else if (y > hitBounds.bottom) dist = y - hitBounds.bottom;
+        if (dist < bestDistance) {
+            bestDistance = dist;
+            bestIndex = j;
+        }
+    }
+    return bestIndex;
+}
+
+function handleSCxs(event) {
+    if (!SisActive) {
+        return false;
+    }
+    if (typeof BarlineDetectV2 === 'undefined') {
+        alert("V2 Detection module is not loaded.");
+        return true;
+    }
+
+    let pageData = MetricStore.getMetricData();
+    let pagenum = parseInt(document.getElementById('pagenum').value);
+    if (!pageData || pagenum < 1 || pagenum >= pageData.length || !pageData[pagenum] || !Array.isArray(pageData[pagenum].cxs)) {
+        return true;
+    }
+
+    const pageImageData = getCurrentPageImageData();
+    if (!pageImageData) {
+        alert("No page pixel data available from the current canvas. Please reload the page.");
+        return true;
+    }
+
+    var rect = notation.getBoundingClientRect();
+    var x = Math.round(event.clientX - rect.left);
+    var y = Math.round(event.clientY - rect.top + notation.scrollTop);
+    var systemIndex = findNearestSystemIndexForPoint(pageData[pagenum], pagenum, x, y);
+    if (systemIndex < 0) {
+        return true;
+    }
+
+    var system = pageData[pagenum].cxs[systemIndex];
+    var existingBarlines = pageData[pagenum].bxs && pageData[pagenum].bxs[systemIndex];
+    var seededSystem = shiftSystemSeedToTopLine(
+        applyExistingBoundaryXs(cloneSystemForGeometrySeed(system), existingBarlines),
+        y
+    );
+    var renderGeometry = BarlineDetectV2.buildRenderGeometry(
+        seededSystem,
+        pageImageData.pixelData,
+        pageImageData.stride,
+        pageImageData.width
+    );
+
+    if (!renderGeometry) {
+        alert("Could not fit staff geometry for that system.");
+        return true;
+    }
+
+    pageData[pagenum].cxs[systemIndex] = applyRenderGeometryToSystem(system, renderGeometry, {
+        fixedXs: getSystemBoundaryXs(system, existingBarlines)
+    });
+    MetricStore.setMetricData(pageData, { clone: false });
+    requestRefresh({ preferLiveData: true });
+    return true;
 }
 
 // Example: Submitting the "Add Composer" form
@@ -1295,9 +1621,13 @@ $(document).ready(function () {
         seedMetricStorageFromMemory();
     });
 
-    $('#run-v2-btn').on('click', function () {
+    function runPageBarlineDetection(runMode) {
         if (typeof BarlineDetectV2 === 'undefined') {
             alert("V2 Detection module is not loaded.");
+            return;
+        }
+        if (runMode === 'cnn_only' && (typeof BarlinePatchCNN === 'undefined' || typeof BarlinePatchCnnModelData === 'undefined')) {
+            alert("CNN runtime/model is not loaded.");
             return;
         }
 
@@ -1332,27 +1662,57 @@ $(document).ready(function () {
             return;
         }
 
-        console.log("Running V2 ML Detection on page " + pagenum + " for " + pageData.cxs.length + " systems...");
+        const pagePerfStart = performance.now();
+        console.log("Running " + (runMode === 'cnn_only' ? 'CNN-only dev detection' : 'V2 ML Detection') + " on page " + pagenum + " for " + pageData.cxs.length + " systems...");
 
-        // Process all systems against the current rendered canvas, not cached page pixels.
+        // Pre-fit page-local system geometry from the current rendered canvas so the
+        // first V2 run uses the corrected skewed staff seed instead of stale flat cs.
         const systemsForDetection = JSON.parse(JSON.stringify(pageData.cxs));
+        systemsForDetection.forEach(function (system, index) {
+            applyExistingBoundaryXs(system, pageData.bxs && pageData.bxs[index]);
+        });
+        const prefitStart = performance.now();
+        const initialRenderGeometry = systemsForDetection.map(function (system) {
+            if (!systemSupportsRenderGeometryFit(system)) return null;
+            return BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width);
+        });
+        initialRenderGeometry.forEach(function (renderGeometry, index) {
+            applyRenderGeometryToSystem(systemsForDetection[index], renderGeometry, {
+                expandSparse: true,
+                fixedXs: getSystemBoundaryXs(systemsForDetection[index], pageData.bxs && pageData.bxs[index])
+            });
+        });
+        const prefitMs = performance.now() - prefitStart;
+
         const detectionOpts = {
-            allowV1Fallback: false
+            allowV1Fallback: false,
+            classifierMode: runMode === 'cnn_only' ? 'cnn_only' : 'rf'
         };
         const systemDiagnostics = [];
+        const systemRenderGeometry = [];
+        const systemPerf = [];
         let v2Barlines = systemsForDetection.map(function (system, index) {
-            const perSystemOpts = Object.assign({}, detectionOpts, { diagnostics: [] });
+            const perSystemOpts = Object.assign({}, detectionOpts, { diagnostics: [], perfStats: {} });
             const detected = BarlineDetectV2.findBarLinesV2(system, stride, pixelData, width, perSystemOpts);
             systemDiagnostics[index] = perSystemOpts.diagnostics.slice();
+            systemPerf[index] = perSystemOpts.perfStats;
+            systemRenderGeometry[index] = systemSupportsRenderGeometryFit(system)
+                ? BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width)
+                : null;
             return detected;
         });
 
         if (v2Barlines && v2Barlines.length === pageData.cxs.length) {
+            pageData.cxs = systemsForDetection.map(function (system, index) {
+                return applyRenderGeometryToSystem(system, systemRenderGeometry[index], {
+                    fixedXs: getSystemBoundaryXs(system, pageData.bxs && pageData.bxs[index])
+                });
+            });
             pageData.bxs = v2Barlines.map(function (detectedBarlines, index) {
                 return normalizeDetectedSystemBarlines(pageData.cxs[index], detectedBarlines, pageData.bxs[index]);
             });
             deMetriek$$module$synpdf[pagenum] = pageData;
-            SynpdfCorrectionTools.snapshotV2BaselineForPage(pagenum, pageData, systemDiagnostics);
+            SynpdfCorrectionTools.snapshotV2BaselineForPage(pagenum, pageData, systemDiagnostics, systemRenderGeometry);
 
             // Persist the updated live metric array before re-rendering.
             if (!persistMetricData()) {
@@ -1362,9 +1722,122 @@ $(document).ready(function () {
 
             // Re-render and apply the new barline values onto the page 
             requestRefresh({ preferLiveData: true });
-            console.log("V2 Barline Detection completed and saved.");
+            const totalMs = performance.now() - pagePerfStart;
+            const perfSummary = systemPerf.reduce(function (acc, entry) {
+                if (!entry) return acc;
+                acc.systems++;
+                acc.scanMs += entry.scanMs || 0;
+                acc.cnnTimeMs += entry.cnnTimeMs || 0;
+                acc.nmsMs += entry.nmsMs || 0;
+                acc.detectMs += entry.totalMs || 0;
+                acc.candidateCount += entry.candidateCount || 0;
+                acc.cnnCalls += entry.cnnCalls || 0;
+                acc.acceptedCount += entry.acceptedCount || 0;
+                return acc;
+            }, { systems: 0, scanMs: 0, cnnTimeMs: 0, nmsMs: 0, detectMs: 0, candidateCount: 0, cnnCalls: 0, acceptedCount: 0 });
+            console.log("[BarlineDetectPerf]", {
+                mode: runMode,
+                page: pagenum,
+                systems: perfSummary.systems,
+                prefitMs: Math.round(prefitMs * 10) / 10,
+                detectMs: Math.round(perfSummary.detectMs * 10) / 10,
+                scanMs: Math.round(perfSummary.scanMs * 10) / 10,
+                cnnTimeMs: Math.round(perfSummary.cnnTimeMs * 10) / 10,
+                nmsMs: Math.round(perfSummary.nmsMs * 10) / 10,
+                candidateCount: perfSummary.candidateCount,
+                cnnCalls: perfSummary.cnnCalls,
+                acceptedCount: perfSummary.acceptedCount,
+                totalMs: Math.round(totalMs * 10) / 10,
+                perSystem: systemPerf.map(function (entry, idx) {
+                    return entry ? {
+                        systemIndex: idx,
+                        totalMs: Math.round((entry.totalMs || 0) * 10) / 10,
+                        scanMs: Math.round((entry.scanMs || 0) * 10) / 10,
+                        cnnTimeMs: Math.round((entry.cnnTimeMs || 0) * 10) / 10,
+                        nmsMs: Math.round((entry.nmsMs || 0) * 10) / 10,
+                        candidateCount: entry.candidateCount || 0,
+                        cnnCalls: entry.cnnCalls || 0,
+                        acceptedCount: entry.acceptedCount || 0
+                    } : null;
+                }).filter(Boolean)
+            });
+            console.log((runMode === 'cnn_only' ? "CNN-only dev detection" : "V2 Barline Detection") + " completed and saved.");
         } else {
             alert("V2 Detection failed to return valid barlines for all systems. Aborting update.");
         }
+    }
+
+    function runPageGeometryOnly() {
+        if (typeof BarlineDetectV2 === 'undefined') {
+            alert("V2 Detection module is not loaded.");
+            return;
+        }
+
+        const pageImageData = getCurrentPageImageData();
+        if (!pageImageData) {
+            alert("No page pixel data available from the current canvas. Please reload the page.");
+            return;
+        }
+
+        let pagenumElement = document.getElementById('pagenum');
+        let pagenum = pagenumElement ? parseInt(pagenumElement.value) : opt$$module$synpdf.pagenum;
+
+        if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || pagenum < 0 || pagenum >= deMetriek$$module$synpdf.length) {
+            alert('Invalid page number or deMetriek data missing.');
+            return;
+        }
+
+        let pageData = deMetriek$$module$synpdf[pagenum];
+        if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
+            alert("No staff systems found on this page to fit geometry for.");
+            return;
+        }
+
+        let pixelData = pageImageData.pixelData;
+        let stride = pageImageData.stride;
+        let width = pageImageData.width;
+        if (!pixelData || pixelData.length === 0) {
+            alert('Pixel data extraction failed. Please reload the page.');
+            return;
+        }
+
+        console.log("Running staff geometry fit on page " + pagenum + " for " + pageData.cxs.length + " systems...");
+
+        const fittedSystems = JSON.parse(JSON.stringify(pageData.cxs));
+        fittedSystems.forEach(function (system, index) {
+            applyExistingBoundaryXs(system, pageData.bxs && pageData.bxs[index]);
+        });
+        const systemRenderGeometry = fittedSystems.map(function (system) {
+            if (!systemSupportsRenderGeometryFit(system)) return null;
+            return BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width);
+        });
+
+        pageData.cxs = fittedSystems.map(function (system, index) {
+            if (!systemRenderGeometry[index]) return system;
+            return applyRenderGeometryToSystem(system, systemRenderGeometry[index], {
+                fixedXs: getSystemBoundaryXs(system, pageData.bxs && pageData.bxs[index])
+            });
+        });
+        deMetriek$$module$synpdf[pagenum] = pageData;
+
+        if (!persistMetricData()) {
+            alert("Could not save updated staff geometry. Aborting refresh.");
+            return;
+        }
+
+        requestRefresh({ preferLiveData: true });
+        console.log("Staff geometry fit completed and saved.");
+    }
+
+    $('#run-v2-btn').on('click', function () {
+        runPageBarlineDetection('rf');
+    });
+
+    $('#run-cnn-btn').on('click', function () {
+        runPageBarlineDetection('cnn_only');
+    });
+
+    $('#run-geom-btn').on('click', function () {
+        runPageGeometryOnly();
     });
 });

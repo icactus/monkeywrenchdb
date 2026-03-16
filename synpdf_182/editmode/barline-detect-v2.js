@@ -36,6 +36,44 @@ var BarlineDetectV2 = (function () {
         var cs = rawCs.slice().sort(function (a, b) { return a - b; });
         var n = cs.length;
 
+        var estimatedSpatium = n >= 2 ? (cs[n - 1] - cs[0]) / Math.max(1, Math.min(4, n - 1)) : 8;
+        var systemMargin = Math.max(15, Math.round(1.5 * estimatedSpatium));
+        var systemStart = xs && xs.x1 !== undefined ? Math.max(0, Math.round(xs.x1 - systemMargin)) : 0;
+        var systemEnd = xs && xs.x2 !== undefined ? Math.min(imageWidth - 1, Math.round(xs.x2 + systemMargin)) : (imageWidth - 1);
+        if (systemStart >= systemEnd) {
+            systemStart = 0;
+            systemEnd = imageWidth - 1;
+        }
+        var systemMid = Math.round((systemStart + systemEnd) / 2);
+
+        var coverageCache = {};
+        function coverageAtY(y, xStart, xEnd, bucket) {
+            var yInt = Math.round(y);
+            var cacheKey = yInt + "|" + bucket;
+            if (coverageCache[cacheKey] !== undefined) return coverageCache[cacheKey];
+
+            var darkCount = 0;
+            var samples = 0;
+            var startX = Math.max(0, xStart);
+            var endX = Math.min(imageWidth - 1, xEnd);
+            for (var x = startX; x <= endX; x += 5) {
+                samples++;
+                var isDark = false;
+                for (var dy = -1; dy <= 1; dy++) {
+                    var sy = yInt + dy;
+                    if (sy < 0 || sy * stride >= pixelData.length) continue;
+                    var idx = sy * stride + x * 4;
+                    if (idx < 0 || idx + 2 >= pixelData.length) continue;
+                    var brightness = (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+                    if (brightness < 128) { isDark = true; break; }
+                }
+                if (isDark) darkCount++;
+            }
+            var result = samples > 0 ? darkCount / samples : 0;
+            coverageCache[cacheKey] = result;
+            return result;
+        }
+
         function expandSparseStaffLines(lines) {
             if (lines.length < 2) {
                 return { lines: null, spatium: 0, topY: 0, botY: 0, isValid: false, reason: "too_few_lines" };
@@ -81,50 +119,78 @@ var BarlineDetectV2 = (function () {
             return { lines: filled, spatium: baseGap, topY: filled[0], botY: filled[4], isValid: true, reason: "expanded_sparse_staff" };
         }
 
+        function fitStaffBundleFromBounds(topBound, botBound) {
+            var boxHeight = botBound - topBound;
+            if (boxHeight <= 0) {
+                return { lines: null, spatium: 0, topY: 0, botY: 0, isValid: false, reason: "invalid_sparse_box" };
+            }
+
+            var searchMargin = Math.max(4, Math.round(0.35 * boxHeight));
+            var minSpatium = Math.max(4, Math.round(boxHeight / 8));
+            var maxSpatium = Math.min(40, Math.max(minSpatium, Math.round(boxHeight / 3)));
+            var bestScore = -Infinity;
+            var bestLines = null;
+            var bestSpatium = 0;
+
+            for (var spatium = minSpatium; spatium <= maxSpatium; spatium++) {
+                var minTop = Math.round(topBound - searchMargin);
+                var maxTop = Math.round(topBound + searchMargin);
+                for (var topLine = minTop; topLine <= maxTop; topLine++) {
+                    var bottomLine = topLine + 4 * spatium;
+                    if (bottomLine < botBound - searchMargin || bottomLine > botBound + searchMargin) continue;
+
+                    var lines = [
+                        topLine,
+                        topLine + spatium,
+                        topLine + 2 * spatium,
+                        topLine + 3 * spatium,
+                        bottomLine
+                    ];
+
+                    var lineCoverage = 0;
+                    var midpointPenalty = 0;
+                    var sufficientCount = 0;
+                    for (var li = 0; li < 5; li++) {
+                        var cov = coverageAtY(lines[li], systemStart, systemEnd, "sparse_full_" + spatium + "_" + topLine);
+                        lineCoverage += cov;
+                        if (cov >= 0.18) sufficientCount++;
+                        if (li < 4) {
+                            midpointPenalty += coverageAtY((lines[li] + lines[li + 1]) / 2, systemStart, systemEnd, "sparse_mid_" + spatium + "_" + topLine + "_" + li);
+                        }
+                    }
+
+                    if (sufficientCount < 3) continue;
+
+                    var boxPenalty = (Math.abs(lines[0] - topBound) + Math.abs(lines[4] - botBound)) * 0.01;
+                    var score = lineCoverage - (midpointPenalty * 0.55) - boxPenalty;
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestLines = lines;
+                        bestSpatium = spatium;
+                    }
+                }
+            }
+
+            if (!bestLines) {
+                return expandSparseStaffLines([topBound, botBound]);
+            }
+
+            return {
+                lines: bestLines,
+                spatium: bestSpatium,
+                topY: bestLines[0],
+                botY: bestLines[4],
+                isValid: true,
+                reason: "fit_sparse_bounds_box"
+            };
+        }
+
+        if (n === 2) {
+            return fitStaffBundleFromBounds(cs[0], cs[1]);
+        }
+
         if (n < 5) {
             return expandSparseStaffLines(cs);
-        }
-
-        // Coverage scorer: returns fraction of sampled x-positions with a dark pixel at y (±1 row).
-        // Uses binary threshold (dark or not) instead of averaging brightness values.
-        // This is the key insight: a real staff line has CONSISTENT coverage across the page,
-        // while text/noise only covers a small portion.
-        var estimatedSpatium = n >= 2 ? (cs[n - 1] - cs[0]) / Math.max(1, Math.min(4, n - 1)) : 8;
-        var systemMargin = Math.max(15, Math.round(1.5 * estimatedSpatium));
-        var systemStart = xs && xs.x1 !== undefined ? Math.max(0, Math.round(xs.x1 - systemMargin)) : 0;
-        var systemEnd = xs && xs.x2 !== undefined ? Math.min(imageWidth - 1, Math.round(xs.x2 + systemMargin)) : (imageWidth - 1);
-        if (systemStart >= systemEnd) {
-            systemStart = 0;
-            systemEnd = imageWidth - 1;
-        }
-        var systemMid = Math.round((systemStart + systemEnd) / 2);
-
-        var coverageCache = {};
-        function coverageAtY(y, xStart, xEnd, bucket) {
-            var yInt = Math.round(y);
-            var cacheKey = yInt + "|" + bucket;
-            if (coverageCache[cacheKey] !== undefined) return coverageCache[cacheKey];
-
-            var darkCount = 0;
-            var samples = 0;
-            var startX = Math.max(0, xStart);
-            var endX = Math.min(imageWidth - 1, xEnd);
-            for (var x = startX; x <= endX; x += 5) {
-                samples++;
-                var isDark = false;
-                for (var dy = -1; dy <= 1; dy++) {
-                    var sy = yInt + dy;
-                    if (sy < 0 || sy * stride >= pixelData.length) continue;
-                    var idx = sy * stride + x * 4;
-                    if (idx < 0 || idx + 2 >= pixelData.length) continue;
-                    var brightness = (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
-                    if (brightness < 128) { isDark = true; break; }
-                }
-                if (isDark) darkCount++;
-            }
-            var result = samples > 0 ? darkCount / samples : 0;
-            coverageCache[cacheKey] = result;
-            return result;
         }
 
         var searchCs = cs.slice(0, Math.min(15, n));
@@ -262,7 +328,7 @@ var BarlineDetectV2 = (function () {
         sampleInterval = sampleInterval || 20;
 
         var spatium = (staffLines[4] - staffLines[0]) / 4;
-        var searchRange = 3;
+        var searchRange = Math.max(3, Math.round(0.85 * spatium));
         var numSamples = Math.ceil(imageWidth / sampleInterval) + 1;
 
         var samples = [];
@@ -335,6 +401,451 @@ var BarlineDetectV2 = (function () {
         }
         result.push(samples[samples.length - 1]);
         return result;
+    }
+
+    function getSystemSeedLines(system) {
+        if (!system) return null;
+        if (Array.isArray(system.cs) && system.cs.length >= 2) {
+            return system.cs.slice();
+        }
+        if (Array.isArray(system.csl) && Array.isArray(system.csr) &&
+            system.csl.length >= 2 && system.csl.length === system.csr.length) {
+            return system.csl.map(function (leftY, index) {
+                return (leftY + system.csr[index]) / 2;
+            });
+        }
+        return null;
+    }
+
+    function buildRenderGeometry(system, pixelData, stride, imageWidth) {
+        var seedLines = getSystemSeedLines(system);
+        if (!system || !system.xs || !seedLines || seedLines.length < 2) return null;
+
+        var xs = system.xs;
+        var hasSparseBoundsSeed = Array.isArray(system.cs) && system.cs.length === 2;
+        var sparseTopBound = hasSparseBoundsSeed ? Math.min(system.cs[0], system.cs[1]) : null;
+        var sparseBotBound = hasSparseBoundsSeed ? Math.max(system.cs[0], system.cs[1]) : null;
+        var staffLines = seedLines;
+        var norm = null;
+        var normLines = null;
+        var topY = 0;
+        var botY = 0;
+        var staffHeight = 0;
+        var spatium = 8;
+        var tracedLines = null;
+        var maxLineOffset = 4;
+        var minStaffHeight = 4;
+        var maxStaffHeight = 40;
+        var edgeProbeInset = 1;
+        var edgeProbeWidth = 8;
+        var edgeSearchRange = 6;
+        var sparseBoundsMargin = 0;
+        var sparseXSearchRange = 0;
+        var normalizationReason = "";
+
+        function scoreBundleInBand(lines, bandStart, bandEnd) {
+            var lineCoverage = 0;
+            var midpointPenalty = 0;
+            var sufficientCount = 0;
+            for (var li = 0; li < 5; li++) {
+                var hits = 0;
+                var samples = 0;
+                for (var x = bandStart; x <= bandEnd; x += 2) {
+                    var dark = false;
+                    for (var dy = -2; dy <= 2; dy++) {
+                        var sy = Math.round(lines[li] + dy);
+                        if (sy < 0) continue;
+                        var idx = sy * stride + x * 4;
+                        if (idx < 0 || idx + 2 >= pixelData.length) continue;
+                        var brightness = (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+                        if (brightness < 128) {
+                            dark = true;
+                            break;
+                        }
+                    }
+                    samples++;
+                    if (dark) hits++;
+                }
+                var cov = samples > 0 ? hits / samples : 0;
+                lineCoverage += cov;
+                if (cov >= 0.18) sufficientCount++;
+                if (li < 4) {
+                    var midHits = 0;
+                    var midSamples = 0;
+                    var midY = (lines[li] + lines[li + 1]) / 2;
+                    for (var mx = bandStart; mx <= bandEnd; mx += 2) {
+                        var midDark = false;
+                        for (var mdy = -2; mdy <= 2; mdy++) {
+                            var msy = Math.round(midY + mdy);
+                            if (msy < 0) continue;
+                            var midIdx = msy * stride + mx * 4;
+                            if (midIdx < 0 || midIdx + 2 >= pixelData.length) continue;
+                            var midBrightness = (pixelData[midIdx] + pixelData[midIdx + 1] + pixelData[midIdx + 2]) / 3;
+                            if (midBrightness < 128) {
+                                midDark = true;
+                                break;
+                            }
+                        }
+                        midSamples++;
+                        if (midDark) midHits++;
+                    }
+                    midpointPenalty += midSamples > 0 ? (midHits / midSamples) : 0;
+                }
+            }
+            if (sufficientCount < 3) return -Infinity;
+            return lineCoverage - (midpointPenalty * 0.55);
+        }
+
+        function fitSparseBundleAtEdge(anchorX, direction) {
+            var sparseSpan = sparseBotBound - sparseTopBound;
+            var baseSpatium = sparseSpan / 4;
+            var spatiumMin = Math.max(4, Math.round(baseSpatium * 0.82));
+            var spatiumMax = Math.max(spatiumMin, Math.round(baseSpatium * 1.18));
+            var bandAnchorMin = Math.max(0, Math.round(anchorX - sparseXSearchRange));
+            var bandAnchorMax = Math.min(imageWidth - 1, Math.round(anchorX + sparseXSearchRange));
+            var localBest = null;
+
+            for (var candidateAnchorX = bandAnchorMin; candidateAnchorX <= bandAnchorMax; candidateAnchorX++) {
+                var bandStart;
+                var bandEnd;
+                if (direction < 0) {
+                    bandEnd = Math.min(imageWidth - 1, Math.round(candidateAnchorX - edgeProbeInset));
+                    bandStart = Math.max(0, Math.round(bandEnd - edgeProbeWidth));
+                } else {
+                    bandStart = Math.max(0, Math.round(candidateAnchorX + edgeProbeInset));
+                    bandEnd = Math.min(imageWidth - 1, Math.round(bandStart + edgeProbeWidth));
+                }
+                if (bandEnd <= bandStart) continue;
+
+                for (var sp = spatiumMin; sp <= spatiumMax; sp++) {
+                    var topMin = Math.round(sparseTopBound - sparseBoundsMargin);
+                    var topMax = Math.round(sparseTopBound + sparseBoundsMargin);
+                    for (var topLine = topMin; topLine <= topMax; topLine++) {
+                        var bottomLine = topLine + 4 * sp;
+                        if (bottomLine < sparseBotBound - sparseBoundsMargin || bottomLine > sparseBotBound + sparseBoundsMargin) continue;
+                        var lines = [
+                            topLine,
+                            topLine + sp,
+                            topLine + 2 * sp,
+                            topLine + 3 * sp,
+                            bottomLine
+                        ];
+                        var score = scoreBundleInBand(lines, bandStart, bandEnd);
+                        if (!isFinite(score)) continue;
+                        var boxPenalty = (Math.abs(lines[0] - sparseTopBound) + Math.abs(lines[4] - sparseBotBound)) * 0.02;
+                        var totalScore = score - boxPenalty;
+                        if (!localBest || totalScore > localBest.score) {
+                            localBest = {
+                                score: totalScore,
+                                x: candidateAnchorX,
+                                lines: lines,
+                                spatium: sp
+                            };
+                        }
+                    }
+                }
+            }
+
+            return localBest;
+        }
+
+        if (hasSparseBoundsSeed) {
+            spatium = Math.max(4, Math.round((sparseBotBound - sparseTopBound) / 4));
+            sparseBoundsMargin = Math.max(2, Math.round(0.35 * spatium));
+            sparseXSearchRange = Math.max(3, Math.round(1.25 * spatium));
+            edgeProbeInset = Math.max(1, Math.round(0.15 * spatium));
+            edgeProbeWidth = Math.max(8, Math.round(0.95 * spatium));
+            edgeSearchRange = Math.max(6, Math.round(2.0 * spatium));
+
+            var sparseLeft = fitSparseBundleAtEdge(xs.x1, 1);
+            var sparseRight = fitSparseBundleAtEdge(xs.x2, -1);
+            if (sparseLeft && sparseRight) {
+                var avgLines = sparseLeft.lines.map(function (leftY, index) {
+                    return Math.round((leftY + sparseRight.lines[index]) / 2);
+                });
+                normLines = avgLines;
+                topY = avgLines[0];
+                botY = avgLines[4];
+                staffHeight = botY - topY;
+                spatium = Math.max(4, Math.round((staffHeight) / 4));
+                tracedLines = traceStaffLines(normLines, pixelData, stride, imageWidth, 20);
+                maxLineOffset = Math.max(4, Math.round(1.15 * spatium));
+                minStaffHeight = Math.max(4, Math.round(staffHeight * 0.82));
+                maxStaffHeight = Math.max(minStaffHeight + 2, Math.round(staffHeight * 1.18));
+                normalizationReason = "fit_sparse_bounds_edges";
+            } else {
+                norm = normalizeStaffLines(staffLines, pixelData, stride, imageWidth, xs);
+            }
+        } else {
+            norm = normalizeStaffLines(staffLines, pixelData, stride, imageWidth, xs);
+        }
+
+        if (!normLines) {
+            if (!norm || !norm.lines || norm.lines.length < 2) return null;
+            normLines = (norm && norm.lines && norm.lines.length >= 2)
+                ? norm.lines
+                : staffLines.slice().sort(function (a, b) { return a - b; });
+            topY = Math.round(norm.topY);
+            botY = Math.round(norm.botY);
+            staffHeight = botY - topY;
+            var subStaves = parseSubStaves(staffLines);
+            spatium = getDominantSpatium(subStaves);
+            tracedLines = traceStaffLines(normLines, pixelData, stride, imageWidth, 20);
+            maxLineOffset = Math.max(4, Math.round(1.15 * spatium));
+            minStaffHeight = Math.max(4, Math.round(staffHeight * 0.82));
+            maxStaffHeight = Math.max(minStaffHeight + 2, Math.round(staffHeight * 1.18));
+            edgeProbeInset = Math.max(1, Math.round(0.15 * spatium));
+            edgeProbeWidth = Math.max(8, Math.round(0.95 * spatium));
+            edgeSearchRange = Math.max(6, Math.round(2.0 * spatium));
+            sparseBoundsMargin = hasSparseBoundsSeed ? Math.max(3, Math.round(0.65 * spatium)) : 0;
+            sparseXSearchRange = hasSparseBoundsSeed ? Math.max(4, Math.round(1.5 * spatium)) : 0;
+            normalizationReason = norm.reason || "";
+        }
+
+        function buildGeometryFromLines(anchorX, fittedLines) {
+            return {
+                x: Math.max(0, Math.min(imageWidth - 1, Math.round(anchorX))),
+                lines: fittedLines,
+                top: fittedLines[0],
+                bot: fittedLines[4],
+                height: fittedLines[4] - fittedLines[0],
+                usedTraceFallback: false
+            };
+        }
+
+        function scoreOffsetAtAnchor(anchorX, direction, offset) {
+            var bandStart;
+            var bandEnd;
+            if (direction < 0) {
+                bandEnd = Math.min(imageWidth - 1, Math.round(anchorX - edgeProbeInset));
+                bandStart = Math.max(0, Math.round(bandEnd - edgeProbeWidth));
+            } else {
+                bandStart = Math.max(0, Math.round(anchorX + edgeProbeInset));
+                bandEnd = Math.min(imageWidth - 1, Math.round(bandStart + edgeProbeWidth));
+            }
+            if (bandEnd <= bandStart) {
+                var fallbackHalfWidth = Math.max(10, Math.round(1.25 * spatium));
+                bandStart = Math.max(0, Math.round(anchorX - fallbackHalfWidth));
+                bandEnd = Math.min(imageWidth - 1, Math.round(anchorX + fallbackHalfWidth));
+            }
+
+            var score = 0;
+            var samples = 0;
+            for (var lineIdx = 0; lineIdx < 5; lineIdx++) {
+                var y = Math.round(normLines[lineIdx] + offset);
+                if (y < 0) continue;
+
+                for (var x = bandStart; x <= bandEnd; x += 2) {
+                    for (var dy = -2; dy <= 2; dy++) {
+                        var sy = y + dy;
+                        if (sy < 0) continue;
+                        var idx = sy * stride + x * 4;
+                        if (idx < 0 || idx + 2 >= pixelData.length) continue;
+                        var brightness = (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+                        score += (255 - brightness);
+                        samples++;
+                    }
+                }
+            }
+
+            return samples > 0 ? (score / samples) : -1;
+        }
+
+        function fitLinesAtEdge(anchorX, direction) {
+            var minAnchorX = Math.max(0, Math.round(anchorX - sparseXSearchRange));
+            var maxAnchorX = Math.min(imageWidth - 1, Math.round(anchorX + sparseXSearchRange));
+            var bestAnchorX = Math.max(0, Math.min(imageWidth - 1, Math.round(anchorX)));
+            var bestOffset = 0;
+            var bestScore = -1;
+            var bestCandidateFits = [];
+
+            for (var candidateAnchorX = minAnchorX; candidateAnchorX <= maxAnchorX; candidateAnchorX++) {
+                var candidateFits = [];
+                var candidateBestOffset = 0;
+                var candidateBestScore = -1;
+
+                for (var offset = -edgeSearchRange; offset <= edgeSearchRange; offset++) {
+                    var score = scoreOffsetAtAnchor(candidateAnchorX, direction, offset);
+                    if (score > candidateBestScore) {
+                        candidateBestScore = score;
+                        candidateBestOffset = offset;
+                    }
+                    candidateFits.push({ offset: offset, score: score });
+                }
+
+                if (candidateBestScore > bestScore) {
+                    bestScore = candidateBestScore;
+                    bestOffset = candidateBestOffset;
+                    bestAnchorX = candidateAnchorX;
+                    bestCandidateFits = candidateFits;
+                }
+            }
+
+            return {
+                x: bestAnchorX,
+                candidateFits: bestCandidateFits,
+                bestOffset: bestOffset
+            };
+        }
+
+        function linesFromOffset(offset) {
+            var fittedLines = normLines.map(function (y) {
+                return Math.round(y + offset);
+            });
+            for (var i = 1; i < fittedLines.length; i++) {
+                if (fittedLines[i] <= fittedLines[i - 1]) {
+                    fittedLines[i] = fittedLines[i - 1] + 1;
+                }
+            }
+            var fitHeight = fittedLines[4] - fittedLines[0];
+            if (hasSparseBoundsSeed) {
+                var topLimit = sparseTopBound - sparseBoundsMargin;
+                var botLimit = sparseBotBound + sparseBoundsMargin;
+                if (fittedLines[0] < topLimit || fittedLines[4] > botLimit) {
+                    return null;
+                }
+            }
+            var isValid = fitHeight >= minStaffHeight && fitHeight <= maxStaffHeight;
+            return isValid ? fittedLines : null;
+        }
+
+        function scoreEndpointGeometry(leftGeom, rightGeom) {
+            if (!leftGeom || !rightGeom || !leftGeom.lines || !rightGeom.lines) return null;
+
+            var startX = Math.max(0, Math.round(Math.min(leftGeom.x, rightGeom.x)));
+            var endX = Math.min(imageWidth - 1, Math.round(Math.max(leftGeom.x, rightGeom.x)));
+            if (endX <= startX) return null;
+
+            var lineCoverages = [];
+            for (var lineIdx = 0; lineIdx < 5; lineIdx++) {
+                var hits = 0;
+                var samples = 0;
+                var leftY = leftGeom.lines[lineIdx];
+                var rightY = rightGeom.lines[lineIdx];
+
+                for (var x = startX; x <= endX; x += 6) {
+                    var t = (endX !== startX) ? (x - startX) / (endX - startX) : 0;
+                    var y = Math.round(leftY + t * (rightY - leftY));
+                    var dark = false;
+                    for (var dy = -2; dy <= 2; dy++) {
+                        var sy = y + dy;
+                        if (sy < 0) continue;
+                        var idx = sy * stride + x * 4;
+                        if (idx < 0 || idx + 2 >= pixelData.length) continue;
+                        var brightness = (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+                        if (brightness < 128) {
+                            dark = true;
+                            break;
+                        }
+                    }
+                    samples++;
+                    if (dark) hits++;
+                }
+
+                lineCoverages.push(samples > 0 ? hits / samples : 0);
+            }
+
+            var total = lineCoverages.reduce(function (sum, cov) { return sum + cov; }, 0);
+            var minCoverage = Math.min.apply(null, lineCoverages);
+            return {
+                lineCoverages: lineCoverages,
+                avgCoverage: total / lineCoverages.length,
+                minCoverage: minCoverage,
+                isUsable: minCoverage >= 0.22 && total / lineCoverages.length >= 0.36
+            };
+        }
+
+        function getEffectiveLinesAtCol(col) {
+            var x = Math.max(0, Math.min(imageWidth - 1, Math.round(col)));
+            var effectiveLines = [];
+            var usedTraceFallback = false;
+
+            if (tracedLines) {
+                for (var lineIdx = 0; lineIdx < 5; lineIdx++) {
+                    var baseY = Math.round(normLines[lineIdx]);
+                    var tracedY = Math.round(tracedLines[lineIdx][x]);
+                    effectiveLines.push(Math.max(baseY - maxLineOffset, Math.min(baseY + maxLineOffset, tracedY)));
+                }
+
+                for (var clampIdx = 1; clampIdx < effectiveLines.length; clampIdx++) {
+                    if (effectiveLines[clampIdx] <= effectiveLines[clampIdx - 1]) {
+                        effectiveLines[clampIdx] = effectiveLines[clampIdx - 1] + 1;
+                    }
+                }
+
+                var tracedHeight = effectiveLines[4] - effectiveLines[0];
+                if (tracedHeight < minStaffHeight || tracedHeight > maxStaffHeight) {
+                    usedTraceFallback = true;
+                    effectiveLines = normLines.map(function (y) { return Math.round(y); });
+                }
+            } else {
+                usedTraceFallback = true;
+                effectiveLines = normLines.map(function (y) { return Math.round(y); });
+            }
+
+            return {
+                x: x,
+                lines: effectiveLines,
+                top: effectiveLines[0],
+                bot: effectiveLines[4],
+                height: effectiveLines[4] - effectiveLines[0],
+                usedTraceFallback: usedTraceFallback
+            };
+        }
+
+        var leftFit = fitLinesAtEdge(xs.x1, 1);
+        var rightFit = fitLinesAtEdge(xs.x2, -1);
+
+        var leftGeom = null;
+        var rightGeom = null;
+        var bestPairScore = -Infinity;
+
+        for (var lf = 0; lf < leftFit.candidateFits.length; lf++) {
+            var leftLines = linesFromOffset(leftFit.candidateFits[lf].offset);
+            if (!leftLines) continue;
+            var testLeftGeom = buildGeometryFromLines(leftFit.x, leftLines);
+
+            for (var rf = 0; rf < rightFit.candidateFits.length; rf++) {
+                var rightLines = linesFromOffset(rightFit.candidateFits[rf].offset);
+                if (!rightLines) continue;
+                var testRightGeom = buildGeometryFromLines(rightFit.x, rightLines);
+                var pairEdgeScore = scoreEndpointGeometry(testLeftGeom, testRightGeom);
+                if (!pairEdgeScore || !pairEdgeScore.isUsable) continue;
+
+                var combinedScore = (
+                    pairEdgeScore.avgCoverage * 1000 +
+                    pairEdgeScore.minCoverage * 250 +
+                    leftFit.candidateFits[lf].score +
+                    rightFit.candidateFits[rf].score
+                );
+                if (combinedScore > bestPairScore) {
+                    bestPairScore = combinedScore;
+                    leftGeom = testLeftGeom;
+                    rightGeom = testRightGeom;
+                }
+            }
+        }
+
+        if (!leftGeom || !rightGeom) {
+            var defaultLeftLines = linesFromOffset(leftFit.bestOffset);
+            var defaultRightLines = linesFromOffset(rightFit.bestOffset);
+            leftGeom = defaultLeftLines ? buildGeometryFromLines(leftFit.x, defaultLeftLines) : getEffectiveLinesAtCol(xs.x1);
+            rightGeom = defaultRightLines ? buildGeometryFromLines(rightFit.x, defaultRightLines) : getEffectiveLinesAtCol(xs.x2);
+        }
+
+        var edgeScore = scoreEndpointGeometry(leftGeom, rightGeom);
+        if (!edgeScore || !edgeScore.isUsable) {
+            leftGeom = getEffectiveLinesAtCol(xs.x1);
+            rightGeom = getEffectiveLinesAtCol(xs.x2);
+        }
+
+        return {
+            xs: { x1: Math.round(leftGeom.x), x2: Math.round(rightGeom.x) },
+            spatium: spatium,
+            normalizationReason: normalizationReason,
+            left: leftGeom,
+            right: rightGeom
+        };
     }
 
 
@@ -465,17 +976,18 @@ var BarlineDetectV2 = (function () {
         var m = opts.voorna !== undefined ? opts.voorna : 0.2;
         var dx = opts.dx !== undefined ? opts.dx : 3;
 
-        if (!system || !system.xs || !system.cs || system.cs.length < 2) return [];
+        var seedLines = getSystemSeedLines(system);
+        if (!system || !system.xs || !seedLines || seedLines.length < 2) return [];
 
         var xs = system.xs;
-        var norm = normalizeStaffLines(system.cs, pixelData, stride, imageWidth, system.xs);
-        var subStaves = parseSubStaves(system.cs);
+        var norm = normalizeStaffLines(seedLines, pixelData, stride, imageWidth, system.xs);
+        var subStaves = parseSubStaves(seedLines);
         var spatium = getDominantSpatium(subStaves);
         if (!isFinite(spatium) || spatium <= 0) {
             spatium = norm && norm.spatium ? norm.spatium : 8;
         }
 
-        var normLines = (norm && norm.lines && norm.lines.length >= 2) ? norm.lines : system.cs.slice().sort(function (a, b) { return a - b; });
+        var normLines = (norm && norm.lines && norm.lines.length >= 2) ? norm.lines : seedLines.slice().sort(function (a, b) { return a - b; });
         var topY = Math.round(norm.topY !== undefined ? norm.topY : normLines[0]);
         var botY = Math.round(norm.botY !== undefined ? norm.botY : normLines[normLines.length - 1]);
         var localExt = Math.max(1, Math.round(2 * spatium));
@@ -630,6 +1142,13 @@ var BarlineDetectV2 = (function () {
      */
     function findBarLinesV2(system, stride, pixelData, imageWidth, opts) {
         opts = opts || {};
+        var classifierMode = opts.classifierMode || "rf";
+        var perfStats = opts.perfStats || null;
+        var perfStart = perfStats ? performance.now() : 0;
+        var scanStart = perfStats ? performance.now() : 0;
+        var cnnTimeMs = 0;
+        var cnnCalls = 0;
+        var candidateCount = 0;
         // CANDIDATE GENERATION PARAMS — Must match training pipeline thresholds
         var mtdrmpl = 0.5;
         var voorna = 0.2;
@@ -643,7 +1162,7 @@ var BarlineDetectV2 = (function () {
         var mlThreshold = opts.mlThreshold !== undefined ? opts.mlThreshold : 0.20;
         var allowV1Fallback = opts.allowV1Fallback !== undefined ? opts.allowV1Fallback : true;
 
-        var staffLines = system.cs;
+        var staffLines = getSystemSeedLines(system);
         var xs = system.xs;
         var seenCols = new Set(); // Track extracted cols to avoid duplicates
 
@@ -677,7 +1196,7 @@ var BarlineDetectV2 = (function () {
 
             var effectiveLines = [];
             var usedTraceFallback = false;
-            var maxLineOffset = Math.max(2, Math.round(0.45 * spatium));
+            var maxLineOffset = Math.max(4, Math.round(1.15 * spatium));
             var minStaffHeight = Math.max(4, Math.round(staffHeight * 0.82));
             var maxStaffHeight = Math.max(minStaffHeight + 2, Math.round(staffHeight * 1.18));
 
@@ -746,6 +1265,7 @@ var BarlineDetectV2 = (function () {
         var tArr = new Float32Array(numCols);   // whiteness profile
         var yArr = new Float32Array(numCols);   // blackness count
         var ext = Math.round(1 * spatium);      // ±1×spatium extension for whiteness
+        var strokeStatsCache = new Array(numCols);
 
         for (var col = 0; col < numCols; col++) {
             var geom = getStaffGeometry(col);
@@ -842,12 +1362,362 @@ var BarlineDetectV2 = (function () {
             wBase = rightWhites.length > 0 ? rightWhites[0] : 0;
         }
 
+        function getStrokeStats(targetCol) {
+            if (strokeStatsCache[targetCol]) return strokeStatsCache[targetCol];
+
+            var geom = getStaffGeometry(targetCol);
+            var localTop = geom.top;
+            var localBot = geom.bot;
+            var localHeight = geom.height;
+            var maxConsecutive = 0;
+            var consecutiveDark = 0;
+
+            for (var row = localTop; row <= localBot; row++) {
+                var rowOffset = row * stride;
+                if (rowOffset < 0 || rowOffset + (numCols * 4) > pixelData.length) continue;
+
+                var isDark = false;
+                for (var dxOff = -1; dxOff <= 1; dxOff++) {
+                    var cx = targetCol + dxOff;
+                    if (cx < 0 || cx >= numCols) continue;
+                    var pIdx = rowOffset + cx * 4;
+                    if (pIdx + 2 >= pixelData.length || pIdx < 0) continue;
+                    if ((pixelData[pIdx] + pixelData[pIdx + 1] + pixelData[pIdx + 2]) / 3 < 128) {
+                        isDark = true;
+                        break;
+                    }
+                }
+
+                if (isDark) {
+                    consecutiveDark++;
+                    if (consecutiveDark > maxConsecutive) maxConsecutive = consecutiveDark;
+                } else {
+                    consecutiveDark = 0;
+                }
+            }
+
+            var leftBright = targetCol - dx >= 0 ? tArr[targetCol - dx] : 0;
+            var rightBright = targetCol + dx < numCols ? tArr[targetCol + dx] : 0;
+            var stats = {
+                geom: geom,
+                maxConsecutive: maxConsecutive,
+                connectivity: localHeight > 0 ? maxConsecutive / localHeight : 0,
+                blackness: localHeight > 0 ? yArr[targetCol] / localHeight : 0,
+                leftContrast: leftBright - tArr[targetCol],
+                rightContrast: rightBright - tArr[targetCol]
+            };
+            strokeStatsCache[targetCol] = stats;
+            return stats;
+        }
+
+        function findCloseDoubleBarCompanion(targetCol, candSpatium, baseGeom, baseConnectivity) {
+            var minGapPx = Math.max(2, Math.round(0.16 * candSpatium));
+            var maxGapPx = Math.max(minGapPx + 1, Math.round(1.35 * candSpatium));
+            var bestMatch = null;
+            var blacknessFloor = maxBlackCount * Math.max(0.34, mtdrmpl * 0.70);
+
+            for (var offset = minGapPx; offset <= maxGapPx; offset++) {
+                for (var dirIdx = 0; dirIdx < 2; dirIdx++) {
+                    var candidateCol = dirIdx === 0 ? targetCol - offset : targetCol + offset;
+                    if (candidateCol < 0 || candidateCol >= numCols) continue;
+
+                    if (yArr[candidateCol] < blacknessFloor) continue;
+
+                    var companionStats = getStrokeStats(candidateCol);
+                    var companionGeom = companionStats.geom;
+                    if (Math.abs(companionGeom.top - baseGeom.top) > Math.max(5, Math.round(0.55 * candSpatium))) continue;
+                    if (Math.abs(companionGeom.bot - baseGeom.bot) > Math.max(5, Math.round(0.55 * candSpatium))) continue;
+
+                    var companionConnectivityFloor = Math.max(0.72, baseConnectivity - 0.18);
+                    if (companionStats.connectivity < companionConnectivityFloor) continue;
+                    if (Math.min(companionStats.leftContrast, companionStats.rightContrast) < 58) continue;
+
+                    var candidateScore = companionStats.connectivity * 0.7 + Math.min(1, companionStats.blackness) * 0.3;
+                    if (!bestMatch || candidateScore > bestMatch.score) {
+                        bestMatch = {
+                            x: candidateCol,
+                            gap: offset,
+                            score: candidateScore,
+                            connectivity: companionStats.connectivity,
+                            leftContrast: companionStats.leftContrast,
+                            rightContrast: companionStats.rightContrast
+                        };
+                    }
+                }
+            }
+
+            return bestMatch;
+        }
+
+        function extractComponentFeatures(targetCol, localTop, localBot, effectiveLines, candSpatium) {
+            var maxImgRow = Math.floor(pixelData.length / stride) - 1;
+            var xMargin = Math.max(6, Math.round(2.0 * candSpatium));
+            var yMargin = Math.max(4, Math.round(1.5 * candSpatium));
+            var sideMargin = Math.max(1, Math.round(0.35 * candSpatium));
+            var dotBoxMax = Math.max(3, Math.round(0.9 * candSpatium));
+            var patchLeft = Math.max(0, targetCol - xMargin);
+            var patchRight = Math.min(numCols - 1, targetCol + xMargin);
+            var patchTop = Math.max(0, localTop - yMargin);
+            var patchBot = Math.min(maxImgRow, localBot + yMargin);
+            var patchW = patchRight - patchLeft + 1;
+            var patchH = patchBot - patchTop + 1;
+            if (patchW <= 0 || patchH <= 0) {
+                return [0, 0, 0, 0, 0, 0];
+            }
+
+            var staffLineMap = buildStaffLineMap(effectiveLines, candSpatium);
+
+            var darkMask = new Array(patchH);
+            var visited = new Array(patchH);
+            for (var py = 0; py < patchH; py++) {
+                darkMask[py] = new Array(patchW);
+                visited[py] = new Array(patchW);
+                var gy = patchTop + py;
+                var rowOffset = gy * stride;
+                for (var px = 0; px < patchW; px++) {
+                    darkMask[py][px] = false;
+                    visited[py][px] = false;
+                    if (staffLineMap[gy]) continue;
+                    var gx = patchLeft + px;
+                    var idx = rowOffset + gx * 4;
+                    if (idx >= 0 && idx + 2 < pixelData.length) {
+                        if ((pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3 < 128) {
+                            darkMask[py][px] = true;
+                        }
+                    }
+                }
+            }
+
+            var components = [];
+            var neighborOffsets = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1], [0, 1],
+                [1, -1], [1, 0], [1, 1]
+            ];
+
+            for (var startY = 0; startY < patchH; startY++) {
+                for (var startX = 0; startX < patchW; startX++) {
+                    if (!darkMask[startY][startX] || visited[startY][startX]) continue;
+
+                    var queue = [[startX, startY]];
+                    visited[startY][startX] = true;
+                    var area = 0;
+                    var minx = startX, maxx = startX, miny = startY, maxy = startY;
+                    var touchCenter = false;
+                    var leftPixels = 0, rightPixels = 0;
+
+                    while (queue.length > 0) {
+                        var node = queue.shift();
+                        var cx = node[0];
+                        var cy = node[1];
+                        var gx = patchLeft + cx;
+                        var gy = patchTop + cy;
+                        area += 1;
+                        if (cx < minx) minx = cx;
+                        if (cx > maxx) maxx = cx;
+                        if (cy < miny) miny = cy;
+                        if (cy > maxy) maxy = cy;
+                        if (gy >= localTop && gy <= localBot && Math.abs(gx - targetCol) <= 1) {
+                            touchCenter = true;
+                        }
+                        if (gx <= targetCol - sideMargin) leftPixels += 1;
+                        if (gx >= targetCol + sideMargin) rightPixels += 1;
+
+                        for (var ni = 0; ni < neighborOffsets.length; ni++) {
+                            var nx = cx + neighborOffsets[ni][0];
+                            var ny = cy + neighborOffsets[ni][1];
+                            if (nx < 0 || ny < 0 || nx >= patchW || ny >= patchH) continue;
+                            if (!darkMask[ny][nx] || visited[ny][nx]) continue;
+                            visited[ny][nx] = true;
+                            queue.push([nx, ny]);
+                        }
+                    }
+
+                    components.push({
+                        area: area,
+                        minx: minx,
+                        maxx: maxx,
+                        miny: miny,
+                        maxy: maxy,
+                        touchCenter: touchCenter,
+                        leftPixels: leftPixels,
+                        rightPixels: rightPixels
+                    });
+                }
+            }
+
+            if (components.length === 0) {
+                return [0, 0, 0, 0, 0, 0];
+            }
+
+            var mainComp = null;
+            for (var ci = 0; ci < components.length; ci++) {
+                var comp = components[ci];
+                if (!comp.touchCenter) continue;
+                if (!mainComp) {
+                    mainComp = comp;
+                    continue;
+                }
+                var compH = comp.maxy - comp.miny + 1;
+                var mainH = mainComp.maxy - mainComp.miny + 1;
+                if (compH > mainH || (compH === mainH && comp.area > mainComp.area)) {
+                    mainComp = comp;
+                }
+            }
+            if (!mainComp) {
+                mainComp = components[0];
+                for (var mi = 1; mi < components.length; mi++) {
+                    if (components[mi].area > mainComp.area) mainComp = components[mi];
+                }
+            }
+
+            var mainArea = Math.max(1, mainComp.area);
+            var mainBBoxW = mainComp.maxx - mainComp.minx + 1;
+            var mainBBoxH = mainComp.maxy - mainComp.miny + 1;
+            var mainBBoxArea = Math.max(1, mainBBoxW * mainBBoxH);
+            var attachLeftRatio = mainComp.leftPixels / mainArea;
+            var attachRightRatio = mainComp.rightPixels / mainArea;
+            var attachSpanRatio = Math.max(
+                targetCol - (patchLeft + mainComp.minx),
+                (patchLeft + mainComp.maxx) - targetCol
+            ) / Math.max(1, candSpatium);
+            var mainComponentFill = mainArea / mainBBoxArea;
+            var detachedDotCount = 0;
+            var tallCompanionCount = 0;
+            var localHeightForComponents = localBot - localTop + 1;
+
+            for (var cpi = 0; cpi < components.length; cpi++) {
+                var other = components[cpi];
+                if (other === mainComp) continue;
+                var otherW = other.maxx - other.minx + 1;
+                var otherH = other.maxy - other.miny + 1;
+                var otherCenterX = patchLeft + (other.minx + other.maxx) / 2;
+                var xDist = Math.abs(otherCenterX - targetCol);
+
+                if (xDist <= 1.8 * candSpatium &&
+                    other.area <= dotBoxMax * dotBoxMax &&
+                    otherW <= dotBoxMax &&
+                    otherH <= dotBoxMax) {
+                    detachedDotCount += 1;
+                }
+
+                if (xDist <= 1.4 * candSpatium &&
+                    otherH >= 0.72 * localHeightForComponents &&
+                    otherW <= Math.max(2, Math.round(0.65 * candSpatium))) {
+                    tallCompanionCount += 1;
+                }
+            }
+
+            return [
+                attachLeftRatio,
+                attachRightRatio,
+                attachSpanRatio,
+                mainComponentFill,
+                detachedDotCount,
+                tallCompanionCount
+            ];
+        }
+
+        function extractGapAndAttachmentFeatures(targetCol, localTop, localBot, effectiveLines, candSpatium) {
+            var maxImgRow = Math.floor(pixelData.length / stride) - 1;
+            var staffLineMap = buildStaffLineMap(effectiveLines, candSpatium);
+
+            function isDark(x, y) {
+                if (x < 0 || x >= numCols || y < 0 || y > maxImgRow) return false;
+                var idx = y * stride + x * 4;
+                if (idx < 0 || idx + 2 >= pixelData.length) return false;
+                return (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3 < 128;
+            }
+
+            var gapHalfWidth = Math.max(1, Math.round(candSpatium));
+            var gapX0 = Math.max(0, targetCol - gapHalfWidth);
+            var gapX1 = Math.min(numCols - 1, targetCol + gapHalfWidth);
+            var gapBand = Math.max(3, Math.round(1.2 * candSpatium));
+
+            var whiteGapAbove = 0;
+            for (var gapY = Math.max(0, localTop - gapBand); gapY < localTop; gapY++) {
+                var fullWhiteRowAbove = true;
+                for (var gapX = gapX0; gapX <= gapX1; gapX++) {
+                    if (isDark(gapX, gapY)) {
+                        fullWhiteRowAbove = false;
+                        break;
+                    }
+                }
+                if (fullWhiteRowAbove) {
+                    whiteGapAbove = 1;
+                    break;
+                }
+            }
+
+            var whiteGapBelow = 0;
+            for (var gapY2 = localBot + 1; gapY2 <= Math.min(maxImgRow, localBot + gapBand); gapY2++) {
+                var fullWhiteRowBelow = true;
+                for (var gapX2 = gapX0; gapX2 <= gapX1; gapX2++) {
+                    if (isDark(gapX2, gapY2)) {
+                        fullWhiteRowBelow = false;
+                        break;
+                    }
+                }
+                if (fullWhiteRowBelow) {
+                    whiteGapBelow = 1;
+                    break;
+                }
+            }
+
+            var attachmentFeatures = [0, 0, 0, 0, 0, 0, 0, 0];
+            var bandHalfHeight = Math.max(1, Math.round(0.35 * candSpatium));
+            var maxAttachReach = Math.max(1, Math.round(2.0 * candSpatium));
+            var attachmentIdx = 0;
+
+            for (var spaceIdx = 0; spaceIdx < 4; spaceIdx++) {
+                var spaceCenter = Math.round((effectiveLines[spaceIdx] + effectiveLines[spaceIdx + 1]) / 2);
+                var y0 = Math.max(0, spaceCenter - bandHalfHeight);
+                var y1 = Math.min(maxImgRow, spaceCenter + bandHalfHeight);
+
+                for (var sideDir = -1; sideDir <= 1; sideDir += 2) {
+                    var bestReach = 0;
+                    for (var bandY = y0; bandY <= y1; bandY++) {
+                        if (staffLineMap[bandY]) continue;
+                        var coreDark = isDark(targetCol, bandY) || isDark(targetCol - 1, bandY) || isDark(targetCol + 1, bandY);
+                        if (!coreDark) continue;
+
+                        var reach = 0;
+                        for (var step = 1; step <= maxAttachReach; step++) {
+                            var probeX = targetCol + sideDir * step;
+                            if (isDark(probeX, bandY)) {
+                                reach = step;
+                            } else {
+                                break;
+                            }
+                        }
+                        if (reach > bestReach) bestReach = reach;
+                    }
+                    attachmentFeatures[attachmentIdx++] = bestReach / Math.max(1, candSpatium);
+                }
+            }
+
+            return [whiteGapAbove, whiteGapBelow].concat(attachmentFeatures);
+        }
+
+        function buildStaffLineMap(effectiveLines, candSpatium) {
+            var lineRadius = Math.max(2, Math.round(0.28 * candSpatium));
+            var staffLineMap = {};
+            for (var lineIdx = 0; lineIdx < effectiveLines.length; lineIdx++) {
+                var sly = Math.round(effectiveLines[lineIdx]);
+                for (var dy = -lineRadius; dy <= lineRadius; dy++) {
+                    staffLineMap[sly + dy] = true;
+                }
+            }
+            return staffLineMap;
+        }
+
         // --- Step 4: Accept barline candidates (v1 logic + connectivity filter) ---
         var barlines = [xs.x1];
         var lastBarX = barlines[0];
         var minGap = minMsrWidth * spatium;
 
         var mlCandidates = [];
+        var isCnnOnlyMode = classifierMode === "cnn_only";
 
         for (var col = 5; col < numCols - 5; col++) {
             // Minimum spacing pre-check (we can remove the break now that NMS handles it at the end)
@@ -946,6 +1816,7 @@ var BarlineDetectV2 = (function () {
                 continue;
             }
             seenCols.add(bestCol);
+            candidateCount++;
 
             // Snap the feature extraction exactly to the centerline
             var originalCol = col;
@@ -964,17 +1835,52 @@ var BarlineDetectV2 = (function () {
             var checkRange = 15;
             var maxImgRow = Math.floor(pixelData.length / stride) - 1;
 
+            if (isCnnOnlyMode) {
+                var cnnOnlyScore = null;
+                var cnnOnlyStart = perfStats ? performance.now() : 0;
+                try {
+                    cnnOnlyScore = BarlinePatchCNN.predictCandidate(pixelData, stride, imageWidth, col, localTop, localBot, candSpatium);
+                } catch (cnnOnlyErr) {
+                    cnnOnlyScore = null;
+                }
+                if (perfStats) {
+                    cnnCalls++;
+                    cnnTimeMs += performance.now() - cnnOnlyStart;
+                }
+
+                var cnnOnlyFinalScore = cnnOnlyScore !== null ? cnnOnlyScore : 0;
+                var cnnOnlyValid = cnnOnlyScore !== null && cnnOnlyScore >= (opts.cnnThreshold !== undefined ? opts.cnnThreshold : 0.50);
+                var cnnOnlyVetoReason = cnnOnlyScore === null ? "cnn_unavailable" : (cnnOnlyValid ? "accepted_cnn_only" : "cnn_low_score");
+
+                if (opts.diagnostics) {
+                    opts.diagnostics.push({
+                        x: col,
+                        score: cnnOnlyFinalScore,
+                        mlScore: 1.0,
+                        cnnScore: cnnOnlyScore,
+                        featuresArr: null,
+                        features: {
+                            blackness: blackness,
+                            connectivity: connectivity,
+                            classifierMode: classifierMode
+                        },
+                        vetoReason: cnnOnlyVetoReason
+                    });
+                }
+
+                if (cnnOnlyValid) {
+                    mlCandidates.push({ x: col, score: cnnOnlyFinalScore });
+                }
+
+                col = originalCol;
+                continue;
+            }
+
 
 
             var widths = [];
             var boundWidths = []; // To check for hollow noteheads
-            var staffLineYs = {};
-            for (var sl = 0; sl < effectiveLines.length; sl++) {
-                var sly = Math.round(effectiveLines[sl]);
-                staffLineYs[sly - 1] = true;
-                staffLineYs[sly] = true;
-                staffLineYs[sly + 1] = true;
-            }
+            var staffLineYs = buildStaffLineMap(effectiveLines, candSpatium);
 
             var maxSearchX = Math.round(2.5 * candSpatium); // Look far enough to see a whole notehead
 
@@ -1191,11 +2097,36 @@ var BarlineDetectV2 = (function () {
                 }
             }
 
+            var componentFeatures = extractComponentFeatures(col, localTop, localBot, tracedOrNormLines && tracedOrNormLines.length >= 5 ? tracedOrNormLines : effectiveLines, candSpatium);
+            var attachLeftRatio = componentFeatures[0];
+            var attachRightRatio = componentFeatures[1];
+            var attachSpanRatio = componentFeatures[2];
+            var mainComponentFill = componentFeatures[3];
+            var detachedDotCount = componentFeatures[4];
+            var tallCompanionCount = componentFeatures[5];
+            var gapAndAttachmentFeatures = extractGapAndAttachmentFeatures(col, localTop, localBot, tracedOrNormLines && tracedOrNormLines.length >= 5 ? tracedOrNormLines : effectiveLines, candSpatium);
+            var whiteGapAbove = gapAndAttachmentFeatures[0];
+            var whiteGapBelow = gapAndAttachmentFeatures[1];
+            var lateralAttachLeft1 = gapAndAttachmentFeatures[2];
+            var lateralAttachRight1 = gapAndAttachmentFeatures[3];
+            var lateralAttachLeft2 = gapAndAttachmentFeatures[4];
+            var lateralAttachRight2 = gapAndAttachmentFeatures[5];
+            var lateralAttachLeft3 = gapAndAttachmentFeatures[6];
+            var lateralAttachRight3 = gapAndAttachmentFeatures[7];
+            var lateralAttachLeft4 = gapAndAttachmentFeatures[8];
+            var lateralAttachRight4 = gapAndAttachmentFeatures[9];
+            var maxLateralAttach = Math.max(
+                lateralAttachLeft1, lateralAttachRight1,
+                lateralAttachLeft2, lateralAttachRight2,
+                lateralAttachLeft3, lateralAttachRight3,
+                lateralAttachLeft4, lateralAttachRight4
+            );
+
             var features = [
                 blackness, connectivity, boxDensityAbove, boxDensityBelow, medianWidth,
                 maxWidth, pctWide, maxBoundWidth,
                 leftWhite, rightWhite, leftContrast, rightContrast, localDensity
-            ].concat(gridFeatures, noteheadFeatures);
+            ].concat(gridFeatures, noteheadFeatures, componentFeatures, gapAndAttachmentFeatures);
 
             // =========================================================
             // ML INFERENCE & HYBRID LOGIC
@@ -1203,6 +2134,14 @@ var BarlineDetectV2 = (function () {
             var mlScore = 1.0;
             if (typeof BarlineML !== 'undefined') {
                 mlScore = BarlineML.predictProbability(features);
+            }
+            var cnnScore = null;
+            if (typeof BarlinePatchCNN !== 'undefined') {
+                try {
+                    cnnScore = BarlinePatchCNN.predictCandidate(pixelData, stride, imageWidth, col, localTop, localBot, candSpatium);
+                } catch (cnnErr) {
+                    cnnScore = null;
+                }
             }
 
             var leftNoteheadBands = [noteheadFeatures[0], noteheadFeatures[2], noteheadFeatures[4], noteheadFeatures[6]];
@@ -1227,6 +2166,8 @@ var BarlineDetectV2 = (function () {
 
             var widthExpansion = maxWidth > 0 ? maxBoundWidth / maxWidth : 1.0;
             var noteheadSideGap = Math.abs(leftNoteheadAvg - rightNoteheadAvg);
+            var closeDoubleBarCompanion = findCloseDoubleBarCompanion(col, candSpatium, geom, connectivity);
+            var hasCloseDoubleBarCompanion = !!closeDoubleBarCompanion;
             var noteheadBlobVeto =
                 widthExpansion >= 2.0 &&
                 dominantSingleBand >= 0.28 &&
@@ -1240,8 +2181,53 @@ var BarlineDetectV2 = (function () {
                 connectivity >= 0.99 &&
                 Math.min(leftContrast, rightContrast) >= 96 &&
                 Math.max(boxDensityAbove, boxDensityBelow) <= 0.35;
+            var clutteredStructuralRescue =
+                connectivity >= 0.90 &&
+                Math.min(leftContrast, rightContrast) >= 84 &&
+                medianWidth <= 2.5 &&
+                maxWidth <= 6 &&
+                widthExpansion <= 2.8 &&
+                dominantSingleBand <= 0.42 &&
+                dominantAdjacentBands <= 0.74 &&
+                whiteGapAbove > 0 &&
+                whiteGapBelow > 0 &&
+                attachSpanRatio <= 1.15 &&
+                mainComponentFill >= 0.42;
+            var doubleBarlineRescue =
+                (hasCloseDoubleBarCompanion || tallCompanionCount >= 1) &&
+                connectivity >= 0.82 &&
+                Math.min(leftContrast, rightContrast) >= 68 &&
+                medianWidth <= 3.5 &&
+                maxWidth <= 7 &&
+                Math.max(boxDensityAbove, boxDensityBelow) <= 0.62;
+            var softStemSignal =
+                !hasCloseDoubleBarCompanion &&
+                widthExpansion >= 1.35 &&
+                dominantSingleBand >= 0.16 &&
+                dominantAdjacentBands >= 0.34 &&
+                noteheadSideGap >= 0.05 &&
+                oppositeSingleBand <= 0.30 &&
+                Math.max(boxDensityAbove, boxDensityBelow) <= 0.20 &&
+                (whiteGapAbove === 0 || whiteGapBelow === 0 || maxLateralAttach >= 0.65) &&
+                attachSpanRatio >= 1.05 &&
+                mainComponentFill <= 0.78;
+            var detachedDotSignal = detachedDotCount >= 2;
+            var moderateConnectivityRescue =
+                connectivity >= 0.84 &&
+                Math.min(leftContrast, rightContrast) >= 118 &&
+                Math.max(boxDensityAbove, boxDensityBelow) <= 0.35 &&
+                whiteGapAbove > 0 &&
+                whiteGapBelow > 0;
+            var hardExtensionRescue =
+                connectivity >= 0.95 &&
+                Math.min(leftContrast, rightContrast) >= 96 &&
+                whiteGapAbove > 0 &&
+                whiteGapBelow > 0 &&
+                maxLateralAttach <= 0.45 &&
+                attachSpanRatio <= 1.15 &&
+                mainComponentFill >= 0.45;
             var noteheadVetoThreshold = opts.noteheadVetoThreshold !== undefined ? opts.noteheadVetoThreshold : 0.80;
-            var hardNoteheadBlobVeto = noteheadBlobVeto && !isNearRightBoundary && mlScore < noteheadVetoThreshold && !strongStructuralBarline;
+            var hardNoteheadBlobVeto = noteheadBlobVeto && !isNearRightBoundary && mlScore < noteheadVetoThreshold && !strongStructuralBarline && !doubleBarlineRescue && !clutteredStructuralRescue;
 
             // USER'S MUSIC LOGIC:
             // 1. Slurs/ties crossing above/below cause minor density clutter. But they usually
@@ -1262,8 +2248,21 @@ var BarlineDetectV2 = (function () {
             var vetoReason = "";
             var highScoreThreshold = opts.highScoreThreshold !== undefined ? opts.highScoreThreshold : 0.72;
             var moderateExtensionThreshold = opts.moderateExtensionThreshold !== undefined ? opts.moderateExtensionThreshold : 0.70;
+            var finalScore = mlScore;
 
-            if (boxDensityAbove > 0.85 || boxDensityBelow > 0.85) {
+            if (classifierMode === "cnn_only") {
+                finalScore = cnnScore !== null ? cnnScore : 0;
+                if (cnnScore === null) {
+                    vetoReason = "cnn_unavailable";
+                    isValid = false;
+                } else if (cnnScore >= (opts.cnnThreshold !== undefined ? opts.cnnThreshold : 0.50)) {
+                    isValid = true;
+                    vetoReason = "accepted_cnn_only";
+                } else {
+                    vetoReason = "cnn_low_score";
+                    isValid = false;
+                }
+            } else if ((boxDensityAbove > 0.85 || boxDensityBelow > 0.85) && !hardExtensionRescue) {
                 // HARDEST VETO: Barlines never extend continuously as an 85% solid block this far past the staff.
                 isValid = false;
                 vetoReason = "hardExtVeto";
@@ -1275,16 +2274,18 @@ var BarlineDetectV2 = (function () {
                 vetoReason = noteheadBlobVeto ? "accepted_high_score_with_notehead_blob_signal" : "accepted_high_score";
             } else if (mlScore >= mlThreshold) {
                 // Moderate confidence -> accept ONLY IF structural heuristics are near perfect
-                if (noteheadBlobVeto && !isNearRightBoundary && !strongStructuralBarline) {
+                if (noteheadBlobVeto && !isNearRightBoundary && !strongStructuralBarline && !doubleBarlineRescue && !clutteredStructuralRescue) {
                     vetoReason = "moderate_score_notehead_blob_signal";
-                } else if (boxDensityAbove > moderateExtensionThreshold || boxDensityBelow > moderateExtensionThreshold) {
+                } else if ((boxDensityAbove > moderateExtensionThreshold || boxDensityBelow > moderateExtensionThreshold) && !doubleBarlineRescue && !(clutteredStructuralRescue && mlScore >= 0.45)) {
                     vetoReason = "moderate_score_but_extensions";
-                } else if (mlScore < 0.60 && (boxDensityAbove > 0.40 || boxDensityBelow > 0.40)) {
+                } else if (mlScore < 0.60 && (boxDensityAbove > 0.40 || boxDensityBelow > 0.40) && !doubleBarlineRescue && !(clutteredStructuralRescue && mlScore >= 0.45)) {
                     vetoReason = "moderate_score_but_extensions";
+                } else if (mlScore < 0.55 && softStemSignal && !detachedDotSignal) {
+                    vetoReason = "moderate_score_but_stem_blob_signal";
                 } else if (mlScore < 0.60 && Math.min(leftContrast, rightContrast) < 92) {
                     // Stems bound to noteheads naturally lack clean white margins
                     vetoReason = "moderate_score_but_low_contrast_stem";
-                } else if (mlScore < 0.60 && connectivity < 0.90) {
+                } else if (mlScore < 0.60 && connectivity < 0.90 && !moderateConnectivityRescue && !doubleBarlineRescue) {
                     // Mid-scoring candidates that fail to vertically span the staff are floating stems
                     vetoReason = "moderate_score_but_poor_connectivity";
                 } else if (mlScore < 0.40) {
@@ -1292,6 +2293,9 @@ var BarlineDetectV2 = (function () {
                     // and they are thick, they are definitely blobs/brackets, not barlines.
                     if (medianWidth > 3.5) {
                         vetoReason = "moderate_score_but_too_thick";
+                    } else if (doubleBarlineRescue && mlScore >= 0.05) {
+                        isValid = true;
+                        vetoReason = "accepted_double_barline_companion";
                     } else if (boxDensityAbove === 0 || boxDensityBelow === 0) {
                         // All stems have 0 extension on one side. If it's borderline confident AND looks like a stem, veto it.
                         // (True barlines scoring < 0.40 are typically thick, cluttered, and extend on both sides!).
@@ -1306,6 +2310,8 @@ var BarlineDetectV2 = (function () {
                         isValid = true;
                         vetoReason = "accepted_moderate_clean";
                     }
+                } else if (mlScore < 0.50 && softStemSignal && !doubleBarlineRescue && !clutteredStructuralRescue && !detachedDotSignal) {
+                    vetoReason = "moderate_score_but_stem_blob_signal";
                 } else {
                     isValid = true;
                     vetoReason = "accepted_moderate_clean";
@@ -1317,7 +2323,9 @@ var BarlineDetectV2 = (function () {
             if (opts.diagnostics) {
                 opts.diagnostics.push({
                     x: col,
-                    score: mlScore,
+                    score: finalScore,
+                    mlScore: mlScore,
+                    cnnScore: cnnScore,
                     featuresArr: features,
                     features: {
                         boxDensA: boxDensityAbove,
@@ -1331,25 +2339,50 @@ var BarlineDetectV2 = (function () {
                         noteheadBlobVeto: noteheadBlobVeto,
                         hardNoteheadBlobVeto: hardNoteheadBlobVeto,
                         strongStructuralBarline: strongStructuralBarline,
+                        clutteredStructuralRescue: clutteredStructuralRescue,
+                        doubleBarlineRescue: doubleBarlineRescue,
+                        hasCloseDoubleBarCompanion: hasCloseDoubleBarCompanion,
+                        companionGap: closeDoubleBarCompanion ? closeDoubleBarCompanion.gap : null,
+                        companionConnectivity: closeDoubleBarCompanion ? closeDoubleBarCompanion.connectivity : null,
+                        softStemSignal: softStemSignal,
+                        moderateConnectivityRescue: moderateConnectivityRescue,
                         isNearRightBoundary: isNearRightBoundary,
                         widthExpansion: widthExpansion,
                         dominantNoteheadBand: dominantSingleBand,
                         dominantAdjacentBands: dominantAdjacentBands,
-                        usedTraceFallback: geom.usedTraceFallback
+                        attachLeftRatio: attachLeftRatio,
+                        attachRightRatio: attachRightRatio,
+                        attachSpanRatio: attachSpanRatio,
+                        mainComponentFill: mainComponentFill,
+                        detachedDotCount: detachedDotCount,
+                        tallCompanionCount: tallCompanionCount,
+                        whiteGapAbove: whiteGapAbove,
+                        whiteGapBelow: whiteGapBelow,
+                        maxLateralAttach: maxLateralAttach,
+                        usedTraceFallback: geom.usedTraceFallback,
+                        classifierMode: classifierMode
                     },
                     vetoReason: vetoReason
                 });
             }
 
             if (isValid) {
-                mlCandidates.push({ x: col, score: mlScore });
+                mlCandidates.push({ x: col, score: finalScore });
             }
 
             // --- USER FIX: Restore the loop variable to prevent infinite loop ---
             col = originalCol;
         }
 
+        if (perfStats) {
+            perfStats.scanMs = performance.now() - scanStart;
+            perfStats.candidateCount = candidateCount;
+            perfStats.cnnCalls = cnnCalls;
+            perfStats.cnnTimeMs = cnnTimeMs;
+        }
+
         // --- Step 5: Non-Maximum Suppression to find peaks ---
+        var nmsStart = perfStats ? performance.now() : 0;
         mlCandidates.sort(function (a, b) { return b.score - a.score; }); // Sort descending by score
 
         var acceptedBarlines = [xs.x1];
@@ -1397,6 +2430,12 @@ var BarlineDetectV2 = (function () {
         if (allowV1Fallback && fallbackV1.length > barlines.length && (barlines.length <= 1 || fallbackV1.length - barlines.length >= 2)) {
             pushFallbackDiagnostics(opts.diagnostics, fallbackV1, "fallback_v1_system", barlines);
             return fallbackV1;
+        }
+
+        if (perfStats) {
+            perfStats.nmsMs = performance.now() - nmsStart;
+            perfStats.totalMs = performance.now() - perfStart;
+            perfStats.acceptedCount = barlines.length;
         }
 
         return barlines;
@@ -1662,6 +2701,7 @@ var BarlineDetectV2 = (function () {
 
     return {
         traceStaffLines: traceStaffLines,
+        buildRenderGeometry: buildRenderGeometry,
         parseSubStaves: parseSubStaves,
         getSpatiumForY: getSpatiumForY,
         getDominantSpatium: getDominantSpatium,
