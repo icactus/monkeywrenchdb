@@ -31,11 +31,11 @@
     <script src="correction-log-tools.js?v=8"></script>
     <script src="barline-patch-cnn-runtime.js?v=1"></script>
     <script src="synpdf-edit-mode.js?v=78"></script>
-    <script src="edit-mode-tools.js?v=109"></script>
+    <script src="edit-mode-tools.js?v=119"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <?php $barlineCnnBrowserJsVer = file_exists('../models/barline-patch-cnn-3x6-browser.js') ? filemtime('../models/barline-patch-cnn-3x6-browser.js') : time(); ?>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
-    <script src="barline-detect-v2.js?v=58"></script>
+    <script src="barline-detect-v2.js?v=61"></script>
     <style>
         html {
             width: 100%;
@@ -751,7 +751,7 @@
                 <p><!-- page coordinate editing section info -->Coordinate logging: <span id="indicator"
                         class="inactive-indicator">OFF</span> Q toggles on/off for adding or removing barlines
                     (shift-click to split multimeasure rests),<br> W draws a new staff (click top-left then
-                    bottom-right; shift-click for auto-snap to lines)</p>
+                    bottom-right; shift-click for auto-snap to lines), Y refits or merges staves</p>
             </div>
         </div>
         <div id="sync">
@@ -929,6 +929,10 @@
                                 style="background:#00d4ff; color:#000; font-weight:bold; margin-left:8px;">Run V2 ML Detection</button>
                             <button id="run-cnn-btn" type="button"
                                 style="background:#ffb000; color:#000; font-weight:bold; margin-left:8px;">Run CNN-only (dev)</button>
+                            <button id="run-cnn-all-btn" type="button"
+                                style="background:#ff8a00; color:#000; font-weight:bold; margin-left:8px;">Run CNN-only All Pages</button>
+                            <button id="run-piano-all-btn" type="button"
+                                style="background:#d7a6ff; color:#000; font-weight:bold; margin-left:8px;">Run Piano All Pages</button>
                         </div>
                         <div style="margin-top: 8px; min-width: 260px;">
                             <label style="display:flex;align-items:center;gap:6px;">

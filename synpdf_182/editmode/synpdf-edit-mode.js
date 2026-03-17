@@ -2694,6 +2694,8 @@ function checkMenu$$module$synpdf(a) {
                         if (typeof QisActive !== "undefined" && QisActive) { toggleQActivity(); }
                         if (typeof NisActive !== "undefined" && NisActive) { toggleNActivity(); }
                         if (typeof SisActive !== "undefined" && SisActive) { toggleSActivity(); }
+                        if (typeof YisActive !== "undefined" && YisActive) { toggleYActivity(); }
+                        if (typeof GeometryModeActive !== "undefined" && GeometryModeActive) { toggleGeometryModeActivity(); }
                         if (typeof WisActive !== "undefined" && WisActive) { toggleWActivity(); }
                     } catch (e) { /* edit-mode-tools may not be loaded yet; ignore */ }
                     schakelParms$$module$synpdf(opt$$module$synpdf.pagenum, -1);

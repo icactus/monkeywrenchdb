@@ -1715,6 +1715,8 @@ var BarlineDetectV2 = (function () {
         var barlines = [xs.x1];
         var lastBarX = barlines[0];
         var minGap = minMsrWidth * spatium;
+        var cnnOnlyMinGap = Math.max(3, Math.round(2.0 * spatium));
+        var effectiveMinGap = classifierMode === "cnn_only" ? cnnOnlyMinGap : minGap;
 
         var mlCandidates = [];
         var isCnnOnlyMode = classifierMode === "cnn_only";
@@ -2387,6 +2389,9 @@ var BarlineDetectV2 = (function () {
 
         var acceptedBarlines = [xs.x1];
         var acceptedObjects = [{ x: xs.x1, score: 1.0 }]; // Treat xs.x1 as absolute ground truth baseline
+        if (classifierMode === "cnn_only" && typeof xs.x2 === 'number' && isFinite(xs.x2) && Math.abs(xs.x2 - xs.x1) >= 1) {
+            acceptedObjects.push({ x: xs.x2, score: 1.0 });
+        }
 
         for (var i = 0; i < mlCandidates.length; i++) {
             var cand = mlCandidates[i];
@@ -2395,15 +2400,17 @@ var BarlineDetectV2 = (function () {
             var isTooClose = false;
             for (var j = 0; j < acceptedObjects.length; j++) {
                 var dist = Math.abs(cand.x - acceptedObjects[j].x);
-                if (dist < minGap) {
-                    // Double barline exception! If they are very close but distinct 
-                    // (>3px apart), and BOTH are extremely confident barlines, allow them.
-                    if (dist >= 3 && cand.score >= 0.45 && acceptedObjects[j].score >= 0.45) {
-                        isTooClose = false;
-                    } else {
-                        isTooClose = true;
-                        break;
+                if (dist < effectiveMinGap) {
+                    if (classifierMode !== "cnn_only") {
+                        // Double barline exception! If they are very close but distinct
+                        // (>3px apart), and BOTH are extremely confident barlines, allow them.
+                        if (dist >= 3 && cand.score >= 0.45 && acceptedObjects[j].score >= 0.45) {
+                            isTooClose = false;
+                            continue;
+                        }
                     }
+                    isTooClose = true;
+                    break;
                 }
             }
 
@@ -2422,7 +2429,39 @@ var BarlineDetectV2 = (function () {
 
         // Sort accepted back into left-to-right reading order
         acceptedObjects.sort(function (a, b) { return a.x - b.x; });
+
+        if (classifierMode === "cnn_only" && acceptedObjects.length > 1) {
+            var clusteredAccepted = [];
+            var activeCluster = [acceptedObjects[0]];
+
+            function flushAcceptedCluster() {
+                if (activeCluster.length === 0) return;
+                var best = activeCluster[0];
+                for (var ci = 1; ci < activeCluster.length; ci++) {
+                    if (activeCluster[ci].score > best.score) best = activeCluster[ci];
+                }
+                clusteredAccepted.push(best);
+                activeCluster = [];
+            }
+
+            for (var ao = 1; ao < acceptedObjects.length; ao++) {
+                var prev = activeCluster[activeCluster.length - 1];
+                var curr = acceptedObjects[ao];
+                if (Math.abs(curr.x - prev.x) < effectiveMinGap) {
+                    activeCluster.push(curr);
+                } else {
+                    flushAcceptedCluster();
+                    activeCluster.push(curr);
+                }
+            }
+            flushAcceptedCluster();
+            acceptedObjects = clusteredAccepted;
+        }
+
         for (var i = 1; i < acceptedObjects.length; i++) {
+            if (classifierMode === "cnn_only" && Math.abs(acceptedObjects[i].x - xs.x2) < 1) {
+                continue;
+            }
             barlines.push(acceptedObjects[i].x);
         }
 

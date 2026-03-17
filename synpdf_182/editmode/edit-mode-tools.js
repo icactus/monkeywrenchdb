@@ -5,7 +5,17 @@ var SplitclickY = 0;
 var QisActive = false;
 var NisActive = false;
 var SisActive = false;
+var YisActive = false;
+var GeometryModeActive = false;
 var WisActive = false;
+var splitInputPopup = null;
+var splitInputState = null;
+var splitSelectionBox = null;
+var splitDragState = null;
+var suppressNextSplitClick = false;
+var ySelectionBox = null;
+var yDragState = null;
+var suppressNextYClick = false;
 
 let indicatorElement;
 let notation;
@@ -27,8 +37,46 @@ document.addEventListener("DOMContentLoaded", function () {
     indicatorElement = document.getElementById('indicator');
     notation = document.getElementById('notation');
     SynpdfCorrectionTools.init({ notation: notation });
+    ensureSplitInputPopup();
+    ensureSplitSelectionBox();
+    ensureYSelectionBox();
 
     if (notation) {
+        notation.addEventListener('mousedown', function handleSplitMouseDown(event) {
+            if (!SisActive || event.button !== 0) {
+                return;
+            }
+
+            cancelPendingSplitInput();
+            const rect = notation.getBoundingClientRect();
+            splitDragState = {
+                startClientX: event.clientX,
+                startClientY: event.clientY,
+                startX: Math.round(event.clientX - rect.left + notation.scrollLeft),
+                startY: Math.round(event.clientY - rect.top + notation.scrollTop),
+                active: false
+            };
+            document.addEventListener('mousemove', handleActiveSplitDragMove, true);
+            document.addEventListener('mouseup', handleActiveSplitDragEnd, true);
+        }, true);
+
+        notation.addEventListener('mousedown', function handleYMouseDown(event) {
+            if (!YisActive || event.button !== 0) {
+                return;
+            }
+
+            const rect = notation.getBoundingClientRect();
+            yDragState = {
+                startClientX: event.clientX,
+                startClientY: event.clientY,
+                startX: Math.round(event.clientX - rect.left + notation.scrollLeft),
+                startY: Math.round(event.clientY - rect.top + notation.scrollTop),
+                active: false
+            };
+            document.addEventListener('mousemove', handleActiveYDragMove, true);
+            document.addEventListener('mouseup', handleActiveYDragEnd, true);
+        }, true);
+
         notation.addEventListener('click', function handleClick(event) {
             // Alt+Click: Mark/unmark barline as split continuation
             if (event.altKey && QisActive) {
@@ -37,6 +85,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             if (handleSplit(event)) return;
             if (handleWCxs(event)) return;
+            if (handleYCxs(event)) return;
             if (handleSCxs(event)) return;
             else if (!QisActive && !NisActive) return;
             if (addRemoveBxs$$module$synpdf(event, { logForCnn: NisActive })) return;
@@ -61,12 +110,17 @@ document.addEventListener("DOMContentLoaded", function () {
                     tooltip.innerHTML = "W";
                 }
                 if (SisActive) {
+                    tooltip.innerHTML = "S";
+                }
+                if (YisActive) {
+                    tooltip.innerHTML = "Y";
+                }
+                if (GeometryModeActive) {
                     tooltip.innerHTML = "$";
                 }
             }
         });
     }
-
 
     // Initialize Form Listeners
     const addNewComposerForm = document.getElementById('addnewcomposerform');
@@ -206,18 +260,336 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 function handleSplit(event) {
-    if (QisActive && event.shiftKey) {
+    if (SisActive || (QisActive && event.shiftKey)) {
+        if (suppressNextSplitClick) {
+            suppressNextSplitClick = false;
+            return true;
+        }
+        cancelPendingSplitInput();
         SplitclickCoordinates = [event.clientX];
         SplitclickY = event.clientY;
 
-        SplitgenerateCoordinates([...SplitclickCoordinates]);
+        SplitgenerateCoordinates([...SplitclickCoordinates], event);
         SplitclickCoordinates = [];
         return true;
     }
     return false;
 }
 
-function SplitgenerateCoordinates(clickCoords) {
+function ensureSplitInputPopup() {
+    if (splitInputPopup) {
+        return splitInputPopup;
+    }
+
+    splitInputPopup = document.createElement('div');
+    splitInputPopup.id = 'split-input-popup';
+    splitInputPopup.style.position = 'fixed';
+    splitInputPopup.style.display = 'none';
+    splitInputPopup.style.zIndex = '3000';
+    splitInputPopup.style.padding = '6px 8px';
+    splitInputPopup.style.border = '1px solid #333';
+    splitInputPopup.style.borderRadius = '4px';
+    splitInputPopup.style.background = '#fff';
+    splitInputPopup.style.color = '#111';
+    splitInputPopup.style.fontFamily = 'monospace';
+    splitInputPopup.style.fontSize = '14px';
+    splitInputPopup.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+    splitInputPopup.style.pointerEvents = 'none';
+    splitInputPopup.style.minWidth = '48px';
+    splitInputPopup.style.textAlign = 'center';
+    splitInputPopup.style.filter = 'invert(1)';
+    document.body.appendChild(splitInputPopup);
+    return splitInputPopup;
+}
+
+function ensureSplitSelectionBox() {
+    if (splitSelectionBox) {
+        return splitSelectionBox;
+    }
+
+    splitSelectionBox = document.createElement('div');
+    splitSelectionBox.className = 'selector';
+    splitSelectionBox.style.position = 'fixed';
+    splitSelectionBox.style.display = 'none';
+    splitSelectionBox.style.pointerEvents = 'none';
+    splitSelectionBox.style.zIndex = '2500';
+    document.body.appendChild(splitSelectionBox);
+    return splitSelectionBox;
+}
+
+function hideSplitSelectionBox() {
+    if (splitSelectionBox) {
+        splitSelectionBox.style.display = 'none';
+    }
+}
+
+function ensureYSelectionBox() {
+    if (ySelectionBox) {
+        return ySelectionBox;
+    }
+
+    ySelectionBox = document.createElement('div');
+    ySelectionBox.className = 'selector';
+    ySelectionBox.style.position = 'fixed';
+    ySelectionBox.style.display = 'none';
+    ySelectionBox.style.pointerEvents = 'none';
+    ySelectionBox.style.zIndex = '2501';
+    ySelectionBox.style.border = '1px solid #00aa00';
+    ySelectionBox.style.backgroundColor = 'rgba(0, 255, 0, 0.18)';
+    document.body.appendChild(ySelectionBox);
+    return ySelectionBox;
+}
+
+function hideYSelectionBox() {
+    if (ySelectionBox) {
+        ySelectionBox.style.display = 'none';
+    }
+}
+
+function updateYSelectionBox(event) {
+    if (!yDragState) {
+        return;
+    }
+
+    const left = Math.min(yDragState.startClientX, event.clientX);
+    const top = Math.min(yDragState.startClientY, event.clientY);
+    const width = Math.abs(event.clientX - yDragState.startClientX);
+    const height = Math.abs(event.clientY - yDragState.startClientY);
+    const box = ensureYSelectionBox();
+
+    box.style.left = left + 'px';
+    box.style.top = top + 'px';
+    box.style.width = Math.max(1, width) + 'px';
+    box.style.height = Math.max(1, height) + 'px';
+    box.style.display = 'block';
+}
+
+function updateSplitSelectionBox(event) {
+    if (!splitDragState) {
+        return;
+    }
+
+    const left = Math.min(splitDragState.startClientX, event.clientX);
+    const top = Math.min(splitDragState.startClientY, event.clientY);
+    const width = Math.abs(event.clientX - splitDragState.startClientX);
+    const height = Math.abs(event.clientY - splitDragState.startClientY);
+    const box = ensureSplitSelectionBox();
+
+    box.style.left = left + 'px';
+    box.style.top = top + 'px';
+    box.style.width = Math.max(1, width) + 'px';
+    box.style.height = Math.max(1, height) + 'px';
+    box.style.display = 'block';
+}
+
+function clearActiveSplitDragListeners() {
+    document.removeEventListener('mousemove', handleActiveSplitDragMove, true);
+    document.removeEventListener('mouseup', handleActiveSplitDragEnd, true);
+}
+
+function handleActiveSplitDragMove(event) {
+    if (!splitDragState) {
+        return;
+    }
+
+    const dragDx = event.clientX - splitDragState.startClientX;
+    const dragDy = event.clientY - splitDragState.startClientY;
+    if (!splitDragState.active && Math.hypot(dragDx, dragDy) >= 6) {
+        splitDragState.active = true;
+    }
+    if (splitDragState.active) {
+        updateSplitSelectionBox(event);
+    }
+}
+
+function handleActiveSplitDragEnd(event) {
+    if (!splitDragState) {
+        clearActiveSplitDragListeners();
+        return;
+    }
+
+    if (splitDragState.active) {
+        event.preventDefault();
+        removeBarlinesInSplitDrag(event);
+        suppressNextSplitClick = true;
+    }
+
+    splitDragState = null;
+    hideSplitSelectionBox();
+    clearActiveSplitDragListeners();
+}
+
+function clearActiveYDragListeners() {
+    document.removeEventListener('mousemove', handleActiveYDragMove, true);
+    document.removeEventListener('mouseup', handleActiveYDragEnd, true);
+}
+
+function handleActiveYDragMove(event) {
+    if (!yDragState) {
+        return;
+    }
+
+    const dragDx = event.clientX - yDragState.startClientX;
+    const dragDy = event.clientY - yDragState.startClientY;
+    if (!yDragState.active && Math.hypot(dragDx, dragDy) >= 6) {
+        yDragState.active = true;
+    }
+    if (yDragState.active) {
+        updateYSelectionBox(event);
+    }
+}
+
+function handleActiveYDragEnd(event) {
+    if (!yDragState) {
+        clearActiveYDragListeners();
+        return;
+    }
+
+    if (yDragState.active) {
+        event.preventDefault();
+        mergeSystemsInYDrag(event);
+        suppressNextYClick = true;
+    }
+
+    yDragState = null;
+    hideYSelectionBox();
+    clearActiveYDragListeners();
+}
+
+function removeBarlinesInSplitDrag(event) {
+    if (!splitDragState || !notation) {
+        return false;
+    }
+
+    let cxsBxsData = MetricStore.getMetricData();
+    let pagenum = parseInt(document.getElementById('pagenum').value);
+    if (!cxsBxsData || pagenum < 1 || pagenum >= cxsBxsData.length) {
+        return false;
+    }
+
+    const rect = notation.getBoundingClientRect();
+    const endX = Math.round(event.clientX - rect.left + notation.scrollLeft);
+    const endY = Math.round(event.clientY - rect.top + notation.scrollTop);
+    const minX = Math.min(splitDragState.startX, endX);
+    const maxX = Math.max(splitDragState.startX, endX);
+    const minY = Math.min(splitDragState.startY, endY);
+    const maxY = Math.max(splitDragState.startY, endY);
+    let removedAny = false;
+
+    for (let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
+        let cs_group = cxsBxsData[pagenum].cxs[j].cs;
+        let bxs_group = cxsBxsData[pagenum].bxs[j];
+        if (!Array.isArray(bxs_group) || bxs_group.length === 0) {
+            continue;
+        }
+
+        cxsBxsData[pagenum].bxs[j] = bxs_group.filter(function (barlineX) {
+            const absX = Math.abs(barlineX);
+            if (absX < minX || absX > maxX) {
+                return true;
+            }
+
+            const hitBounds = getSystemHitBounds(pagenum, j, cs_group, absX);
+            const intersectsY = !(hitBounds.bottom < minY || hitBounds.top > maxY);
+            if (intersectsY) {
+                removedAny = true;
+                return false;
+            }
+            return true;
+        });
+    }
+
+    if (removedAny) {
+        MetricStore.setMetricData(cxsBxsData, { clone: false });
+        requestRefresh();
+    }
+
+    return removedAny;
+}
+
+function showSplitInputPopup(clientX, clientY, value) {
+    var popup = ensureSplitInputPopup();
+    popup.textContent = value || '_';
+    popup.style.left = (clientX + 12) + 'px';
+    popup.style.top = (clientY + 12) + 'px';
+    popup.style.display = 'block';
+}
+
+function updateSplitInputPopup() {
+    if (!splitInputPopup || !splitInputState) {
+        return;
+    }
+    splitInputPopup.textContent = splitInputState.value || '_';
+}
+
+function hideSplitInputPopup() {
+    if (splitInputPopup) {
+        splitInputPopup.style.display = 'none';
+    }
+}
+
+function cancelPendingSplitInput() {
+    splitInputState = null;
+    hideSplitInputPopup();
+}
+
+function extractDigitKey(event) {
+    if (event.code && event.code.indexOf('Digit') === 0 && event.code.length === 6) {
+        return event.code.slice(5);
+    }
+    if (event.code && event.code.indexOf('Numpad') === 0 && event.code.length === 7) {
+        return event.code.slice(6);
+    }
+    if (/^[0-9]$/.test(event.key)) {
+        return event.key;
+    }
+    return null;
+}
+
+function applySplitCount(splitState, measureCount) {
+    if (!splitState || !Number.isInteger(measureCount) || measureCount < 1) {
+        alert('Invalid input for N');
+        return false;
+    }
+
+    let cxsBxsData = MetricStore.getMetricData();
+    if (!cxsBxsData || !cxsBxsData[splitState.pageNumber] || !cxsBxsData[splitState.pageNumber].bxs[splitState.systemIndex]) {
+        alert('Metric data is not available for this split.');
+        return false;
+    }
+
+    let bxs_group = cxsBxsData[splitState.pageNumber].bxs[splitState.systemIndex];
+    const startPoint = splitState.startPoint;
+    const endPoint = splitState.endPoint;
+    let count = measureCount + 1;
+    const step = (endPoint - startPoint) / (count - 1);
+
+    for (let i = 1; i < count - 1; i++) {
+        let coordinate = startPoint + i * step;
+        coordinate = Math.round(coordinate * 10) / 10;
+        if (!bxs_group.includes(coordinate)) {
+            bxs_group.push(coordinate);
+        }
+    }
+
+    bxs_group.sort((a, b) => Math.abs(a) - Math.abs(b));
+    MetricStore.setMetricData(cxsBxsData, { clone: false });
+    requestRefresh();
+    return true;
+}
+
+function commitPendingSplitInput(rawValue) {
+    if (!splitInputState) {
+        return false;
+    }
+
+    const parsed = parseInt(rawValue, 10);
+    const committed = applySplitCount(splitInputState, parsed);
+    cancelPendingSplitInput();
+    return committed;
+}
+
+function SplitgenerateCoordinates(clickCoords, clickEvent) {
     console.log(clickCoords);
     let cxsBxsData = MetricStore.getMetricData();
     let pagenum = parseInt(document.getElementById('pagenum').value);
@@ -258,33 +630,14 @@ function SplitgenerateCoordinates(clickCoords) {
             const endPoint = closestRight;
             console.log(startPoint, endPoint);
 
-            let count = parseInt(prompt("Enter the number of measures:"));
-
-            if (isNaN(count)) {
-                alert('Invalid input for N');
-                return;
-            }
-
-            // increment count by 1
-            count += 1;
-
-            const step = (endPoint - startPoint) / (count - 1);
-
-            for (let i = 1; i < count - 1; i++) {
-                let coordinate = startPoint + i * step;
-                coordinate = Math.round(coordinate * 10) / 10;
-                console.log(coordinate);
-                if (!bxs_group.includes(coordinate)) {
-                    // Push X to correct bxs group
-                    cxsBxsData[pagenum].bxs[j].push(coordinate);
-                }
-            }
-
-            // Sort 'bxs' group from low to high
-            cxsBxsData[pagenum].bxs[j].sort((a, b) => Math.abs(a) - Math.abs(b));
-
-            MetricStore.setMetricData(cxsBxsData, { clone: false });
-            requestRefresh();
+            splitInputState = {
+                pageNumber: pagenum,
+                systemIndex: j,
+                startPoint: startPoint,
+                endPoint: endPoint,
+                value: ''
+            };
+            showSplitInputPopup(clickEvent.clientX, clickEvent.clientY, '');
             return;
         }
     }
@@ -406,6 +759,12 @@ function toggleQActivity() {
         if (SisActive) {
             toggleSActivity();
         }
+        if (YisActive) {
+            toggleYActivity();
+        }
+        if (GeometryModeActive) {
+            toggleGeometryModeActivity();
+        }
     } else {
         console.log('Q mode is OFF');
         indicatorElement.innerText = 'OFF';
@@ -435,6 +794,12 @@ function toggleWActivity() {
         }
         if (SisActive) {
             toggleSActivity();
+        }
+        if (YisActive) {
+            toggleYActivity();
+        }
+        if (GeometryModeActive) {
+            toggleGeometryModeActivity();
         }
     } else {
         console.log('W mode is OFF');
@@ -472,6 +837,12 @@ function toggleNActivity() {
         if (SisActive) {
             toggleSActivity();
         }
+        if (YisActive) {
+            toggleYActivity();
+        }
+        if (GeometryModeActive) {
+            toggleGeometryModeActivity();
+        }
     } else {
         console.log('N mode is OFF');
         indicatorElement.innerText = 'OFF';
@@ -486,6 +857,77 @@ function toggleSActivity() {
     SisActive = !SisActive;
 
     if (SisActive) {
+        console.log('S mode is ON');
+        indicatorElement.innerText = 'S';
+        indicatorElement.classList.remove('inactive-indicator');
+        indicatorElement.classList.add('active-indicator');
+        indicatorElement.classList.add('crosshair-cursor');
+        document.body.style.cursor = 'crosshair';
+        if (WisActive) {
+            toggleWActivity();
+        }
+        if (QisActive) {
+            toggleQActivity();
+        }
+        if (NisActive) {
+            toggleNActivity();
+        }
+        if (YisActive) {
+            toggleYActivity();
+        }
+        if (GeometryModeActive) {
+            toggleGeometryModeActivity();
+        }
+    } else {
+        console.log('S mode is OFF');
+        indicatorElement.innerText = 'OFF';
+        indicatorElement.classList.remove('active-indicator');
+        indicatorElement.classList.add('inactive-indicator');
+        indicatorElement.classList.remove('crosshair-cursor');
+        document.body.style.cursor = 'default';
+    }
+}
+
+function toggleYActivity() {
+    YisActive = !YisActive;
+
+    if (YisActive) {
+        console.log('Y mode is ON');
+        indicatorElement.innerText = 'Y';
+        indicatorElement.classList.remove('inactive-indicator');
+        indicatorElement.classList.add('active-indicator');
+        indicatorElement.classList.add('crosshair-cursor');
+        document.body.style.cursor = 'crosshair';
+        if (WisActive) {
+            toggleWActivity();
+        }
+        if (QisActive) {
+            toggleQActivity();
+        }
+        if (NisActive) {
+            toggleNActivity();
+        }
+        if (SisActive) {
+            toggleSActivity();
+        }
+        if (GeometryModeActive) {
+            toggleGeometryModeActivity();
+        }
+    } else {
+        console.log('Y mode is OFF');
+        indicatorElement.innerText = 'OFF';
+        indicatorElement.classList.remove('active-indicator');
+        indicatorElement.classList.add('inactive-indicator');
+        indicatorElement.classList.remove('crosshair-cursor');
+        document.body.style.cursor = 'default';
+        hideYSelectionBox();
+    }
+}
+
+function toggleGeometryModeActivity() {
+    GeometryModeActive = !GeometryModeActive;
+
+    if (GeometryModeActive) {
         console.log('$ mode is ON');
         indicatorElement.innerText = '$';
         indicatorElement.classList.remove('inactive-indicator');
@@ -500,6 +942,12 @@ function toggleSActivity() {
         }
         if (NisActive) {
             toggleNActivity();
+        }
+        if (SisActive) {
+            toggleSActivity();
+        }
+        if (YisActive) {
+            toggleYActivity();
         }
     } else {
         console.log('$ mode is OFF');
@@ -691,6 +1139,39 @@ document.addEventListener('keydown', function (event) {
     if (synbox && synbox.checked) {
         return;
     }
+    if (splitInputState) {
+        const digit = extractDigitKey(event);
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            cancelPendingSplitInput();
+            return;
+        }
+        if (event.key === 'Backspace') {
+            event.preventDefault();
+            if (splitInputState.value.length > 0) {
+                splitInputState.value = splitInputState.value.slice(0, -1);
+                updateSplitInputPopup();
+            } else {
+                cancelPendingSplitInput();
+            }
+            return;
+        }
+        if (digit !== null) {
+            event.preventDefault();
+            if (event.shiftKey) {
+                splitInputState.value += digit;
+                updateSplitInputPopup();
+            } else {
+                commitPendingSplitInput(digit);
+            }
+            return;
+        }
+        if (event.key === 'Enter' && splitInputState.value) {
+            event.preventDefault();
+            commitPendingSplitInput(splitInputState.value);
+            return;
+        }
+    }
     switch (event.key) {
         case 'a':
             $("#menu input#advncd").click();
@@ -710,8 +1191,14 @@ document.addEventListener('keydown', function (event) {
         case 'n':
             toggleNActivity();
             break;
-        case '$':
+        case 's':
             toggleSActivity();
+            break;
+        case 'y':
+            toggleYActivity();
+            break;
+        case '$':
+            toggleGeometryModeActivity();
             break;
         case 'S':
             saveTiming$$module$synpdf();
@@ -1164,8 +1651,527 @@ function findNearestSystemIndexForPoint(pageData, pagenum, x, y) {
     return bestIndex;
 }
 
+function getRepresentativeSystemLines(system, side) {
+    if (!system) return null;
+
+    var source = null;
+    if (side === 'left' && Array.isArray(system.csl) && system.csl.length >= 2) {
+        source = system.csl.slice();
+    } else if (side === 'right' && Array.isArray(system.csr) && system.csr.length >= 2) {
+        source = system.csr.slice();
+    } else if (Array.isArray(system.cs) && system.cs.length >= 2) {
+        source = system.cs.slice();
+    } else if (Array.isArray(system.csl) && system.csl.length >= 2) {
+        source = system.csl.slice();
+    } else if (Array.isArray(system.csr) && system.csr.length >= 2) {
+        source = system.csr.slice();
+    }
+
+    if (!source) return null;
+    source.sort(function (a, b) { return a - b; });
+    if (source.length === 5) return source;
+    if (source.length === 2) {
+        var top = source[0];
+        var bot = source[1];
+        var sp = (bot - top) / 4;
+        return [top, top + sp, top + 2 * sp, top + 3 * sp, bot].map(function (v) { return Math.round(v); });
+    }
+    if (source.length > 5) {
+        return source.slice(0, 5);
+    }
+    return null;
+}
+
+function getSystemEstimatedSpatium(system) {
+    var lines = getRepresentativeSystemLines(system, 'left') || getRepresentativeSystemLines(system, 'right');
+    if (!lines || lines.length < 2) return 8;
+    return Math.max(4, (lines[lines.length - 1] - lines[0]) / (lines.length - 1));
+}
+
+function getSystemTopBottomAtX(system, x) {
+    var xs = system && system.xs ? system.xs : { x1: 0, x2: 1 };
+    var t = (xs.x2 !== xs.x1) ? (x - xs.x1) / (xs.x2 - xs.x1) : 0;
+    t = Math.max(0, Math.min(1, t));
+    var leftLines = getRepresentativeSystemLines(system, 'left');
+    var rightLines = getRepresentativeSystemLines(system, 'right');
+    if (!leftLines || !rightLines || leftLines.length !== rightLines.length) {
+        var fallback = getRepresentativeSystemLines(system, 'left') || getRepresentativeSystemLines(system, 'right');
+        if (!fallback) {
+            return { top: 0, bottom: 0 };
+        }
+        return { top: fallback[0], bottom: fallback[fallback.length - 1] };
+    }
+    var top = leftLines[0] + t * (rightLines[0] - leftLines[0]);
+    var bottom = leftLines[leftLines.length - 1] + t * (rightLines[rightLines.length - 1] - leftLines[leftLines.length - 1]);
+    return { top: top, bottom: bottom };
+}
+
+function getSystemVerticalEnvelope(system, sampleXs) {
+    if (!system) {
+        return { top: 0, bottom: 0 };
+    }
+
+    var xs = system.xs || { x1: 0, x2: 0 };
+    var top = Infinity;
+    var bottom = -Infinity;
+    for (var i = 0; i < sampleXs.length; i++) {
+        var probeX = Math.max(xs.x1, Math.min(xs.x2, sampleXs[i]));
+        var bounds = getSystemTopBottomAtX(system, probeX);
+        if (bounds.top < top) top = bounds.top;
+        if (bounds.bottom > bottom) bottom = bounds.bottom;
+    }
+    if (!isFinite(top) || !isFinite(bottom)) {
+        var fallback = getSystemTopBottomAtX(system, Math.round((xs.x1 + xs.x2) / 2));
+        top = fallback.top;
+        bottom = fallback.bottom;
+    }
+    return { top: top, bottom: bottom };
+}
+
+function scoreRowDarkness(pixelData, stride, width, row, x0, x1) {
+    var y = Math.round(row);
+    if (y < 1) y = 1;
+    var dark = 0;
+    var samples = 0;
+    for (var x = Math.max(0, x0); x <= Math.min(width - 1, x1); x += 2) {
+        var isDark = false;
+        for (var dy = -1; dy <= 1; dy++) {
+            var sy = y + dy;
+            var idx = sy * stride + x * 4;
+            if (idx < 0 || idx + 2 >= pixelData.length) continue;
+            var bright = (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+            if (bright < 150) {
+                isDark = true;
+                break;
+            }
+        }
+        samples++;
+        if (isDark) dark++;
+    }
+    return samples > 0 ? dark / samples : 0;
+}
+
+function detectStaffBundleAroundPoint(pixelData, stride, width, x, y, seedSpatium) {
+    var spatium = Math.max(4, Math.round(seedSpatium || 8));
+    var bandHalfWidth = Math.max(10, Math.round(1.7 * spatium));
+    var searchTop = Math.max(2, Math.round(y - 6 * spatium));
+    var searchBot = Math.min(Math.floor(pixelData.length / stride) - 3, Math.round(y + 6 * spatium));
+    var peaks = [];
+
+    for (var row = searchTop; row <= searchBot; row++) {
+        var score = scoreRowDarkness(pixelData, stride, width, row, x - bandHalfWidth, x + bandHalfWidth);
+        peaks.push({ y: row, score: score });
+    }
+
+    var candidateRows = [];
+    for (var i = 1; i < peaks.length - 1; i++) {
+        if (peaks[i].score < 0.12) continue;
+        if (peaks[i].score >= peaks[i - 1].score && peaks[i].score >= peaks[i + 1].score) {
+            candidateRows.push(peaks[i]);
+        }
+    }
+    candidateRows.sort(function (a, b) { return b.score - a.score; });
+    candidateRows = candidateRows.slice(0, 18).sort(function (a, b) { return a.y - b.y; });
+
+    var best = null;
+    for (var a = 0; a < candidateRows.length - 4; a++) {
+        for (var b = a + 1; b < candidateRows.length - 3; b++) {
+            for (var c = b + 1; c < candidateRows.length - 2; c++) {
+                for (var d = c + 1; d < candidateRows.length - 1; d++) {
+                    for (var e = d + 1; e < candidateRows.length; e++) {
+                        var lines = [candidateRows[a].y, candidateRows[b].y, candidateRows[c].y, candidateRows[d].y, candidateRows[e].y];
+                        var gaps = [lines[1] - lines[0], lines[2] - lines[1], lines[3] - lines[2], lines[4] - lines[3]];
+                        var meanGap = (gaps[0] + gaps[1] + gaps[2] + gaps[3]) / 4;
+                        if (meanGap < Math.max(4, spatium * 0.65) || meanGap > Math.max(40, spatium * 1.45)) continue;
+                        var variance =
+                            Math.pow(gaps[0] - meanGap, 2) +
+                            Math.pow(gaps[1] - meanGap, 2) +
+                            Math.pow(gaps[2] - meanGap, 2) +
+                            Math.pow(gaps[3] - meanGap, 2);
+                        if (variance > meanGap * meanGap * 0.55) continue;
+                        if (y < lines[0] - 0.9 * meanGap || y > lines[4] + 0.9 * meanGap) continue;
+                        var rowScore =
+                            candidateRows[a].score + candidateRows[b].score + candidateRows[c].score + candidateRows[d].score + candidateRows[e].score;
+                        var centerPenalty = Math.abs(((lines[0] + lines[4]) / 2) - y) / Math.max(1, meanGap);
+                        var total = rowScore - variance * 0.02 - centerPenalty * 0.15;
+                        if (!best || total > best.score) {
+                            best = { score: total, lines: lines.map(function (v) { return Math.round(v); }) };
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (best && best.lines) {
+        return best.lines;
+    }
+
+    var topGuess = Math.round(y - 2 * spatium);
+    return [topGuess, topGuess + spatium, topGuess + 2 * spatium, topGuess + 3 * spatium, topGuess + 4 * spatium];
+}
+
+function clusterBarlineXs(xsValues, minGap) {
+    var values = xsValues
+        .filter(function (x) { return typeof x === 'number' && isFinite(x); })
+        .map(function (x) { return Math.round(Math.abs(x)); })
+        .sort(function (a, b) { return a - b; });
+    if (!values.length) return [];
+
+    var clusters = [[values[0]]];
+    for (var i = 1; i < values.length; i++) {
+        if (values[i] - clusters[clusters.length - 1][clusters[clusters.length - 1].length - 1] < minGap) {
+            clusters[clusters.length - 1].push(values[i]);
+        } else {
+            clusters.push([values[i]]);
+        }
+    }
+    return clusters.map(function (cluster) {
+        return Math.round(cluster.reduce(function (sum, v) { return sum + v; }, 0) / cluster.length);
+    });
+}
+
+function detectMergedSystemBarlines(pageImageData, mergedSystem, dominantSpatium) {
+    var pixelData = pageImageData.pixelData;
+    var stride = pageImageData.stride;
+    var width = pageImageData.width;
+    var xs = mergedSystem.xs;
+    var spatium = Math.max(4, dominantSpatium || 8);
+    var dx = Math.max(2, Math.round(0.45 * spatium));
+    var candidates = [];
+
+    function avgBrightness(col, top, bot) {
+        var sum = 0;
+        var count = 0;
+        for (var row = top; row <= bot; row++) {
+            var idx = row * stride + col * 4;
+            if (idx < 0 || idx + 2 >= pixelData.length) continue;
+            sum += (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+            count++;
+        }
+        return count > 0 ? sum / count : 255;
+    }
+
+    for (var col = Math.max(5, xs.x1 + 2); col <= Math.min(width - 6, xs.x2 - 2); col++) {
+        var bounds = getSystemTopBottomAtX(mergedSystem, col);
+        var top = Math.max(0, Math.round(bounds.top));
+        var bot = Math.min(Math.floor(pixelData.length / stride) - 1, Math.round(bounds.bottom));
+        var height = bot - top + 1;
+        if (height < 12) continue;
+
+        var blackCount = 0;
+        var consecutiveDark = 0;
+        var maxConsecutive = 0;
+        for (var row = top; row <= bot; row++) {
+            var dark = false;
+            for (var drift = -1; drift <= 1; drift++) {
+                var cx = col + drift;
+                if (cx < 0 || cx >= width) continue;
+                var idx = row * stride + cx * 4;
+                if (idx < 0 || idx + 2 >= pixelData.length) continue;
+                if ((pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3 < 160) {
+                    dark = true;
+                    break;
+                }
+            }
+            if (dark) {
+                blackCount++;
+                consecutiveDark++;
+                if (consecutiveDark > maxConsecutive) maxConsecutive = consecutiveDark;
+            } else {
+                consecutiveDark = 0;
+            }
+        }
+
+        var centerBright = avgBrightness(col, top, bot);
+        var leftBright = avgBrightness(Math.max(0, col - dx), top, bot);
+        var rightBright = avgBrightness(Math.min(width - 1, col + dx), top, bot);
+        var connectivity = maxConsecutive / Math.max(1, height);
+        var blackRatio = blackCount / Math.max(1, height);
+        var contrast = ((leftBright + rightBright) * 0.5 - centerBright) / 255;
+
+        if (connectivity < 0.72 || blackRatio < 0.5 || contrast < 0.08) continue;
+        candidates.push({
+            x: col,
+            score: connectivity * 0.55 + blackRatio * 0.30 + contrast * 0.15
+        });
+    }
+
+    candidates.sort(function (a, b) { return b.score - a.score; });
+    var accepted = [Math.round(xs.x1), Math.round(xs.x2)];
+    var minGap = Math.max(3, Math.round(2.0 * spatium));
+    for (var i = 0; i < candidates.length; i++) {
+        var cand = candidates[i].x;
+        var tooClose = accepted.some(function (existing) { return Math.abs(existing - cand) < minGap; });
+        if (!tooClose) {
+            accepted.push(cand);
+        }
+    }
+    return accepted.sort(function (a, b) { return a - b; });
+}
+
+function systemLooksLikeMergedGrandStaff(system) {
+    if (!system) return false;
+    var xs = system.xs || { x1: 0, x2: 0 };
+    var midX = Math.round((xs.x1 + xs.x2) / 2);
+    var bounds = getSystemTopBottomAtX(system, midX);
+    var height = bounds.bottom - bounds.top;
+    var spatium = getSystemEstimatedSpatium(system);
+    if (!isFinite(height) || !isFinite(spatium) || spatium <= 0) return false;
+    return height >= 7.25 * spatium;
+}
+
+function buildMergedSystemFromSelection(selected) {
+    if (!selected || selected.length < 2) {
+        return null;
+    }
+
+    selected.sort(function (a, b) { return getSystemSortTop(a.system) - getSystemSortTop(b.system); });
+    var first = selected[0].system;
+    var last = selected[selected.length - 1].system;
+    var firstLeft = getRepresentativeSystemLines(first, 'left');
+    var firstRight = getRepresentativeSystemLines(first, 'right');
+    var lastLeft = getRepresentativeSystemLines(last, 'left');
+    var lastRight = getRepresentativeSystemLines(last, 'right');
+    if (!firstLeft || !firstRight || !lastLeft || !lastRight) {
+        return null;
+    }
+
+    var dominantSpatium = 0;
+    selected.forEach(function (item) {
+        dominantSpatium = Math.max(dominantSpatium, getSystemEstimatedSpatium(item.system));
+    });
+    if (!dominantSpatium) dominantSpatium = 8;
+
+    return {
+        system: {
+            cs: [
+                Math.round((firstLeft[0] + firstRight[0]) / 2),
+                Math.round((lastLeft[lastLeft.length - 1] + lastRight[lastRight.length - 1]) / 2)
+            ],
+            csl: [Math.round(firstLeft[0]), Math.round(lastLeft[lastLeft.length - 1])],
+            csr: [Math.round(firstRight[0]), Math.round(lastRight[lastRight.length - 1])],
+            xs: {
+                x1: Math.min.apply(null, selected.map(function (item) { return getSystemBoundaryXs(item.system, item.bxs).x1; })),
+                x2: Math.max.apply(null, selected.map(function (item) { return getSystemBoundaryXs(item.system, item.bxs).x2; }))
+            }
+        },
+        dominantSpatium: dominantSpatium
+    };
+}
+
+function normalizePageToPianoSystems(pageData, pageImageData) {
+    if (!pageData || !Array.isArray(pageData.cxs) || !Array.isArray(pageData.bxs) || pageData.cxs.length === 0) {
+        return false;
+    }
+
+    var items = pageData.cxs.map(function (system, index) {
+        return {
+            system: cloneSystemForGeometrySeed(system),
+            bxs: Array.isArray(pageData.bxs[index]) ? pageData.bxs[index].slice() : []
+        };
+    }).sort(function (a, b) {
+        return getSystemSortTop(a.system) - getSystemSortTop(b.system);
+    });
+
+    var normalizedCxs = [];
+    var normalizedBxs = [];
+    var changed = false;
+
+    for (var i = 0; i < items.length; i++) {
+        var current = items[i];
+        var currentMerged = systemLooksLikeMergedGrandStaff(current.system);
+        if (currentMerged || i === items.length - 1) {
+            normalizedCxs.push(current.system);
+            normalizedBxs.push(current.bxs);
+            continue;
+        }
+
+        var next = items[i + 1];
+        if (systemLooksLikeMergedGrandStaff(next.system)) {
+            normalizedCxs.push(current.system);
+            normalizedBxs.push(current.bxs);
+            continue;
+        }
+
+        var mergeInfo = buildMergedSystemFromSelection([current, next]);
+        if (!mergeInfo) {
+            normalizedCxs.push(current.system);
+            normalizedBxs.push(current.bxs);
+            continue;
+        }
+
+        normalizedCxs.push(mergeInfo.system);
+        normalizedBxs.push(detectMergedSystemBarlines(pageImageData, mergeInfo.system, mergeInfo.dominantSpatium));
+        changed = true;
+        i += 1;
+    }
+
+    if (!changed) {
+        return false;
+    }
+
+    pageData.cxs = normalizedCxs;
+    pageData.bxs = normalizedBxs;
+    return true;
+}
+
+function mergeSystemsInYDrag(event) {
+    let pageData = MetricStore.getMetricData();
+    let pagenum = parseInt(document.getElementById('pagenum').value);
+    if (!pageData || pagenum < 1 || pagenum >= pageData.length || !pageData[pagenum]) {
+        return false;
+    }
+
+    const pageImageData = getCurrentPageImageData();
+    if (!pageImageData) {
+        alert("No page pixel data available from the current canvas. Please reload the page.");
+        return false;
+    }
+
+    const rect = notation.getBoundingClientRect();
+    const endX = Math.round(event.clientX - rect.left + notation.scrollLeft);
+    const endY = Math.round(event.clientY - rect.top + notation.scrollTop);
+    const minX = Math.min(yDragState.startX, endX);
+    const maxX = Math.max(yDragState.startX, endX);
+    const minY = Math.min(yDragState.startY, endY);
+    const maxY = Math.max(yDragState.startY, endY);
+    const selected = [];
+
+    for (let j = 0; j < pageData[pagenum].cxs.length; j++) {
+        var sys = pageData[pagenum].cxs[j];
+        var bounds = getSystemVerticalEnvelope(sys, [
+            minX,
+            Math.round((minX + maxX) / 2),
+            maxX
+        ]);
+        if (!(bounds.bottom < minY || bounds.top > maxY)) {
+            selected.push({ index: j, system: sys, bxs: (pageData[pagenum].bxs[j] || []).slice() });
+        }
+    }
+
+    if (selected.length < 2) {
+        return false;
+    }
+
+    var mergeInfo = buildMergedSystemFromSelection(selected);
+    if (!mergeInfo) {
+        alert("Could not derive staff lines for the merged system.");
+        return false;
+    }
+    var mergedSystem = mergeInfo.system;
+    var mergedBxs = detectMergedSystemBarlines(pageImageData, mergedSystem, mergeInfo.dominantSpatium);
+
+    for (var ri = selected.length - 1; ri >= 0; ri--) {
+        pageData[pagenum].cxs.splice(selected[ri].index, 1);
+        pageData[pagenum].bxs.splice(selected[ri].index, 1);
+    }
+
+    pageData[pagenum].cxs.push(mergedSystem);
+    pageData[pagenum].bxs.push(mergedBxs);
+
+    var oldCxsOrder = pageData[pagenum].cxs.slice();
+    var oldBxsOrder = pageData[pagenum].bxs.slice();
+    pageData[pagenum].cxs.sort(function (a, b) { return getSystemSortTop(a) - getSystemSortTop(b); });
+    pageData[pagenum].bxs = pageData[pagenum].cxs.map(function (system) {
+        return oldBxsOrder[oldCxsOrder.indexOf(system)];
+    });
+
+    MetricStore.setMetricData(pageData, { clone: false });
+    requestRefresh({ preferLiveData: true });
+    return true;
+}
+
+function handleYCxs(event) {
+    if (!YisActive) {
+        return false;
+    }
+    if (suppressNextYClick) {
+        suppressNextYClick = false;
+        return true;
+    }
+
+    let pageData = MetricStore.getMetricData();
+    let pagenum = parseInt(document.getElementById('pagenum').value);
+    if (!pageData || pagenum < 1 || pagenum >= pageData.length || !pageData[pagenum] || !Array.isArray(pageData[pagenum].cxs)) {
+        return true;
+    }
+
+    const pageImageData = getCurrentPageImageData();
+    if (!pageImageData) {
+        alert("No page pixel data available from the current canvas. Please reload the page.");
+        return true;
+    }
+
+    var rect = notation.getBoundingClientRect();
+    var x = Math.round(event.clientX - rect.left + notation.scrollLeft);
+    var y = Math.round(event.clientY - rect.top + notation.scrollTop);
+    var systemIndex = findNearestSystemIndexForPoint(pageData[pagenum], pagenum, x, y);
+    var system = systemIndex >= 0 ? pageData[pagenum].cxs[systemIndex] : null;
+    var existingBarlines = systemIndex >= 0 && pageData[pagenum].bxs ? pageData[pagenum].bxs[systemIndex] : null;
+    if (!system) {
+        system = {
+            cs: [y - 16, y + 16],
+            xs: { x1: 0, x2: pageImageData.width - 1 }
+        };
+    }
+    var seedSpatium = getSystemEstimatedSpatium(system);
+    var localLines = detectStaffBundleAroundPoint(pageImageData.pixelData, pageImageData.stride, pageImageData.width, x, y, seedSpatium);
+    if (!localLines || localLines.length !== 5) {
+        alert("Could not fit staff lines for that click.");
+        return true;
+    }
+
+    var seededSystem = {
+        cs: localLines.slice(),
+        csl: localLines.slice(),
+        csr: localLines.slice(),
+        xs: getSystemBoundaryXs(system, existingBarlines)
+    };
+    var renderGeometry = BarlineDetectV2.buildRenderGeometry(
+        seededSystem,
+        pageImageData.pixelData,
+        pageImageData.stride,
+        pageImageData.width
+    );
+
+    var baseSystem = cloneSystemForGeometrySeed(system);
+    var newSystem = renderGeometry
+        ? applyRenderGeometryToSystem(baseSystem, renderGeometry, {
+            fixedXs: getSystemBoundaryXs(system, existingBarlines),
+            expandSparse: true
+        })
+        : applyRenderGeometryToSystem(baseSystem, {
+            left: { lines: localLines.slice() },
+            right: { lines: localLines.slice() },
+            xs: getSystemBoundaryXs(system, existingBarlines)
+        }, {
+            fixedXs: getSystemBoundaryXs(system, existingBarlines),
+            expandSparse: true
+        });
+
+    newSystem = cloneSystemForGeometrySeed(newSystem);
+    var newBarlines = Array.isArray(existingBarlines) && existingBarlines.length
+        ? existingBarlines.slice()
+        : [newSystem.xs.x1, newSystem.xs.x2];
+
+    pageData[pagenum].cxs.push(newSystem);
+    pageData[pagenum].bxs.push(newBarlines);
+
+    var oldCxsOrder = pageData[pagenum].cxs.slice();
+    var oldBxsOrder = pageData[pagenum].bxs.slice();
+    pageData[pagenum].cxs.sort(function (a, b) { return getSystemSortTop(a) - getSystemSortTop(b); });
+    pageData[pagenum].bxs = pageData[pagenum].cxs.map(function (systemEntry) {
+        return oldBxsOrder[oldCxsOrder.indexOf(systemEntry)];
+    });
+
+    MetricStore.setMetricData(pageData, { clone: false });
+    requestRefresh({ preferLiveData: true });
+    return true;
+}
+
 function handleSCxs(event) {
-    if (!SisActive) {
+    if (!GeometryModeActive) {
         return false;
     }
     if (typeof BarlineDetectV2 === 'undefined') {
@@ -1613,6 +2619,8 @@ $('#database-menus').hide()
 
 // --- Barline Detect V2 Integration ---
 $(document).ready(function () {
+    let batchDetectionInProgress = false;
+
     $('#advncd').on('change', function () {
         if (!this.checked) {
             return;
@@ -1621,20 +2629,21 @@ $(document).ready(function () {
         seedMetricStorageFromMemory();
     });
 
-    function runPageBarlineDetection(runMode) {
+    function runPageBarlineDetection(runMode, options) {
+        options = options || {};
         if (typeof BarlineDetectV2 === 'undefined') {
             alert("V2 Detection module is not loaded.");
-            return;
+            return false;
         }
         if (runMode === 'cnn_only' && (typeof BarlinePatchCNN === 'undefined' || typeof BarlinePatchCnnModelData === 'undefined')) {
             alert("CNN runtime/model is not loaded.");
-            return;
+            return false;
         }
 
         const pageImageData = getCurrentPageImageData();
         if (!pageImageData) {
             alert("No page pixel data available from the current canvas. Please reload the page.");
-            return;
+            return false;
         }
 
         // Validate the page number
@@ -1643,13 +2652,13 @@ $(document).ready(function () {
 
         if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || pagenum < 0 || pagenum >= deMetriek$$module$synpdf.length) {
             alert('Invalid page number or deMetriek data missing.');
-            return;
+            return false;
         }
 
         let pageData = deMetriek$$module$synpdf[pagenum];
         if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
             alert("No staff systems found on this page to detect barlines for.");
-            return;
+            return false;
         }
 
         let pixelData = pageImageData.pixelData;
@@ -1659,7 +2668,7 @@ $(document).ready(function () {
         // Ensure pixelData dimension sanity
         if (!pixelData || pixelData.length === 0) {
             alert('Pixel data extraction failed. Please reload the page.');
-            return;
+            return false;
         }
 
         const pagePerfStart = performance.now();
@@ -1717,11 +2726,13 @@ $(document).ready(function () {
             // Persist the updated live metric array before re-rendering.
             if (!persistMetricData()) {
                 alert("Could not save updated barlines. Aborting refresh.");
-                return;
+                return false;
             }
 
-            // Re-render and apply the new barline values onto the page 
-            requestRefresh({ preferLiveData: true });
+            if (!options.suppressRefresh) {
+                // Re-render and apply the new barline values onto the page
+                requestRefresh({ preferLiveData: true });
+            }
             const totalMs = performance.now() - pagePerfStart;
             const perfSummary = systemPerf.reduce(function (acc, entry) {
                 if (!entry) return acc;
@@ -1762,8 +2773,10 @@ $(document).ready(function () {
                 }).filter(Boolean)
             });
             console.log((runMode === 'cnn_only' ? "CNN-only dev detection" : "V2 Barline Detection") + " completed and saved.");
+            return true;
         } else {
             alert("V2 Detection failed to return valid barlines for all systems. Aborting update.");
+            return false;
         }
     }
 
@@ -1829,6 +2842,174 @@ $(document).ready(function () {
         console.log("Staff geometry fit completed and saved.");
     }
 
+    function setBatchButtonState(isRunning, currentPage, lastPage) {
+        var cnnAllBtn = $('#run-cnn-all-btn');
+        var pianoAllBtn = $('#run-piano-all-btn');
+        var cnnBtn = $('#run-cnn-btn');
+        var v2Btn = $('#run-v2-btn');
+        var geomBtn = $('#run-geom-btn');
+        if (isRunning) {
+            cnnAllBtn.prop('disabled', true).text('Running CNN All… ' + currentPage + '/' + lastPage);
+            pianoAllBtn.prop('disabled', true).text('Running Piano All… ' + currentPage + '/' + lastPage);
+            cnnBtn.prop('disabled', true);
+            v2Btn.prop('disabled', true);
+            geomBtn.prop('disabled', true);
+        } else {
+            cnnAllBtn.prop('disabled', false).text('Run CNN-only All Pages');
+            pianoAllBtn.prop('disabled', false).text('Run Piano All Pages');
+            cnnBtn.prop('disabled', false);
+            v2Btn.prop('disabled', false);
+            geomBtn.prop('disabled', false);
+        }
+    }
+
+    function waitForRenderedPage(targetPage) {
+        return new Promise(function (resolve, reject) {
+            var startedAt = performance.now();
+            function poll() {
+                if (typeof rendering$$module$synpdf !== 'undefined' && rendering$$module$synpdf) {
+                    if (performance.now() - startedAt > 30000) {
+                        reject(new Error('Timed out waiting for page render'));
+                        return;
+                    }
+                    setTimeout(poll, 50);
+                    return;
+                }
+
+                var pageInput = document.getElementById('pagenum');
+                var pageVal = pageInput ? parseInt(pageInput.value, 10) : opt$$module$synpdf.pagenum;
+                if (pageVal !== targetPage) {
+                    if (performance.now() - startedAt > 30000) {
+                        reject(new Error('Rendered page number did not update'));
+                        return;
+                    }
+                    setTimeout(poll, 50);
+                    return;
+                }
+
+                var imageData = getCurrentPageImageData();
+                if (!imageData || !imageData.pixelData || !imageData.pixelData.length) {
+                    if (performance.now() - startedAt > 30000) {
+                        reject(new Error('Rendered page image data unavailable'));
+                        return;
+                    }
+                    setTimeout(poll, 50);
+                    return;
+                }
+
+                setTimeout(resolve, 40);
+            }
+            poll();
+        });
+    }
+
+    async function goToRenderedPage(targetPage) {
+        var currentInput = document.getElementById('pagenum');
+        var previousPage = currentInput ? parseInt(currentInput.value, 10) : opt$$module$synpdf.pagenum;
+        opt$$module$synpdf.pagenum = targetPage;
+        if (typeof setPagenum$$module$synpdf === 'function') {
+            setPagenum$$module$synpdf(previousPage);
+        }
+        await waitForRenderedPage(targetPage);
+    }
+
+    async function runAllPagesBarlineDetection(runMode) {
+        if (batchDetectionInProgress) return;
+        if (runMode !== 'cnn_only') return;
+        if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
+            alert('No metric data loaded.');
+            return;
+        }
+
+        var lastPage = deMetriek$$module$synpdf.length - 1;
+        batchDetectionInProgress = true;
+        try {
+            for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
+                setBatchButtonState(true, pageNum, lastPage);
+                await goToRenderedPage(pageNum);
+                var ok = runPageBarlineDetection(runMode, { suppressRefresh: true });
+                if (!ok) {
+                    throw new Error('Detection failed on page ' + pageNum);
+                }
+            }
+            requestRefresh({ preferLiveData: true });
+            console.log('CNN-only dev detection completed for all pages.');
+        } catch (err) {
+            console.error('All-pages CNN detection aborted:', err);
+            alert('All-pages CNN detection stopped: ' + err.message);
+        } finally {
+            batchDetectionInProgress = false;
+            setBatchButtonState(false);
+        }
+    }
+
+    function runCurrentPagePianoNormalize() {
+        const pageImageData = getCurrentPageImageData();
+        if (!pageImageData) {
+            alert("No page pixel data available from the current canvas. Please reload the page.");
+            return false;
+        }
+
+        let pagenumElement = document.getElementById('pagenum');
+        let pagenum = pagenumElement ? parseInt(pagenumElement.value) : opt$$module$synpdf.pagenum;
+        if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || pagenum < 0 || pagenum >= deMetriek$$module$synpdf.length) {
+            alert('Invalid page number or deMetriek data missing.');
+            return false;
+        }
+
+        let pageData = deMetriek$$module$synpdf[pagenum];
+        if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
+            alert("No staff systems found on this page.");
+            return false;
+        }
+
+        var changed = normalizePageToPianoSystems(pageData, pageImageData);
+        deMetriek$$module$synpdf[pagenum] = pageData;
+
+        if (!changed) {
+            console.log('Piano normalization found nothing to merge on page ' + pagenum + '.');
+            return true;
+        }
+
+        if (!persistMetricData()) {
+            alert("Could not save piano-normalized systems.");
+            return false;
+        }
+
+        requestRefresh({ preferLiveData: true });
+        console.log('Piano normalization completed on page ' + pagenum + '.');
+        return true;
+    }
+
+    async function runAllPagesPianoNormalize() {
+        if (batchDetectionInProgress) return;
+        if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
+            alert('No metric data loaded.');
+            return;
+        }
+
+        var lastPage = deMetriek$$module$synpdf.length - 1;
+        batchDetectionInProgress = true;
+        try {
+            for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
+                setBatchButtonState(true, pageNum, lastPage);
+                await goToRenderedPage(pageNum);
+                var ok = runCurrentPagePianoNormalize();
+                if (!ok) {
+                    throw new Error('Piano normalization failed on page ' + pageNum);
+                }
+            }
+            requestRefresh({ preferLiveData: true });
+            console.log('Piano normalization completed for all pages.');
+        } catch (err) {
+            console.error('All-pages piano normalization aborted:', err);
+            alert('All-pages piano normalization stopped: ' + err.message);
+        } finally {
+            batchDetectionInProgress = false;
+            setBatchButtonState(false);
+        }
+    }
+
     $('#run-v2-btn').on('click', function () {
         runPageBarlineDetection('rf');
     });
@@ -1836,8 +3017,24 @@ $(document).ready(function () {
     $('#run-cnn-btn').on('click', function () {
         runPageBarlineDetection('cnn_only');
     });
+    $('#run-cnn-all-btn').on('click', function () {
+        runAllPagesBarlineDetection('cnn_only');
+    });
+    $('#run-piano-all-btn').on('click', function () {
+        runAllPagesPianoNormalize();
+    });
 
     $('#run-geom-btn').on('click', function () {
         runPageGeometryOnly();
     });
+});
+
+document.addEventListener('keyup', function (event) {
+    if (!splitInputState) {
+        return;
+    }
+    if (event.key === 'Shift' && splitInputState.value) {
+        event.preventDefault();
+        commitPendingSplitInput(splitInputState.value);
+    }
 });
