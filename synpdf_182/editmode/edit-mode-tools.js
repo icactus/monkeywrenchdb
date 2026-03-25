@@ -925,9 +925,41 @@ function getCurrentPageImageData() {
     };
 }
 
-function getCurrentPageCanvas() {
-    return document.querySelector('#notation canvas') || document.querySelector('canvas');
-}
+    function getCurrentPageCanvas() {
+        return document.querySelector('#notation canvas') || document.querySelector('canvas');
+    }
+
+    function rebuildCurrentPageMetricData(pagenum, forceSingleStaves) {
+        var canvas = getCurrentPageCanvas();
+        if (!canvas || typeof countPix$$module$synpdf !== 'function') {
+            return null;
+        }
+
+        var previousOnestf = opt$$module$synpdf.onestf;
+        if (forceSingleStaves) {
+            opt$$module$synpdf.onestf = 1;
+        }
+
+        try {
+            var pageData = countPix$$module$synpdf(canvas, parseInt(opt$$module$synpdf.seln));
+            if (!pageData || !pageData.cxs) {
+                return null;
+            }
+
+            deMetriek$$module$synpdf[pagenum] = pageData.cxs.length ? pageData : { cxs: [], bxs: [] };
+            MetricStore.setMetricData(deMetriek$$module$synpdf, { clone: false });
+
+            if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.snapshotV2BaselineForPage) {
+                SynpdfCorrectionTools.snapshotV2BaselineForPage(pagenum, deMetriek$$module$synpdf[pagenum], [], []);
+            }
+
+            return deMetriek$$module$synpdf[pagenum];
+        } finally {
+            if (forceSingleStaves) {
+                opt$$module$synpdf.onestf = previousOnestf;
+            }
+        }
+    }
 
 function normalizeDetectedSystemBarlines(system, detectedBarlines, existingBarlines) {
     const currentBarlines = Array.isArray(existingBarlines) ? existingBarlines.slice() : [];
@@ -4437,6 +4469,9 @@ $(document).ready(function () {
         }
 
         let pageData = deMetriek$$module$synpdf[pagenum];
+        if (runMode === 'cnn_only') {
+            pageData = rebuildCurrentPageMetricData(pagenum, true) || pageData;
+        }
         if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
             alert("No staff systems found on this page to detect barlines for.");
             return false;
