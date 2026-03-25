@@ -42,6 +42,8 @@ var msc_VERSION$$module$synpdf = 182,
     xcurprev$$module$synpdf = -1,
     ycurprev$$module$synpdf = -1,
     hasMixer$$module$synpdf = 0,
+    metricPrecomputeInProgress$$module$synpdf = 0,
+    metricPrecomputeToken$$module$synpdf = 0,
     dummyPlayer$$module$synpdf = new DummyPlayer$$module$synpdf,
     TOFF$$module$synpdf = .01,
     elmed$$module$synpdf, msc_wz$$module$synpdf, doReadPdf$$module$synpdf, skipn$$module$synpdf, sok$$module$synpdf = null,
@@ -77,6 +79,7 @@ var msc_VERSION$$module$synpdf = 182,
         dx: 5,
         fscr: 0,
         pagenum: 1,
+        advncd: 1,
         playbtn: 0,
         mmin: "",
         fixwd: 1E3,
@@ -138,6 +141,8 @@ function initGlobals$$module$synpdf() {
     lastSynced$$module$synpdf = -2 == opt$$module$synpdf.lastSynced ? deTijden$$module$synpdf.length - 1 : opt$$module$synpdf.lastSynced;
     doReadPdf$$module$synpdf = 0;
     repMaten$$module$synpdf = []
+    metricPrecomputeInProgress$$module$synpdf = 0;
+    metricPrecomputeToken$$module$synpdf += 1;
 }
 
 function initLoopRec$$module$synpdf() {
@@ -797,6 +802,74 @@ function readPdfdoc$$module$synpdf() {
         100) : goPage$$module$synpdf(1, 0)
 }
 
+function hasCompleteMetricPages$$module$synpdf() {
+    if (!pdfDoc$$module$synpdf || !pdfDoc$$module$synpdf.numPages) return false;
+    if (!Array.isArray(deMetriek$$module$synpdf) || deMetriek$$module$synpdf.length <= pdfDoc$$module$synpdf.numPages) {
+        return false;
+    }
+    for (var p = 1; p <= pdfDoc$$module$synpdf.numPages; p++) {
+        if (!deMetriek$$module$synpdf[p] || !Array.isArray(deMetriek$$module$synpdf[p].cxs) || !Array.isArray(deMetriek$$module$synpdf[p].bxs)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+async function precomputeAdvancedMetrics$$module$synpdf() {
+    if (!opt$$module$synpdf.advncd || !pdfDoc$$module$synpdf || !pdfDoc$$module$synpdf.getPage || metricPrecomputeInProgress$$module$synpdf) {
+        return;
+    }
+    if (hasCompleteMetricPages$$module$synpdf()) {
+        return;
+    }
+
+    metricPrecomputeInProgress$$module$synpdf = 1;
+    var token = ++metricPrecomputeToken$$module$synpdf;
+    try {
+        var totalPages = pdfDoc$$module$synpdf.numPages || 0;
+        await new Promise(function (resolve) { setTimeout(resolve, 80); });
+        for (var pageNum = 1; pageNum <= totalPages; pageNum++) {
+            if (token !== metricPrecomputeToken$$module$synpdf || !opt$$module$synpdf.advncd) {
+                break;
+            }
+            if (deMetriek$$module$synpdf[pageNum] && Array.isArray(deMetriek$$module$synpdf[pageNum].cxs) && Array.isArray(deMetriek$$module$synpdf[pageNum].bxs)) {
+                continue;
+            }
+
+            $("#wait").html("Computing page metrics: " + pageNum + "/" + totalPages).css({
+                display: "block",
+                background: "rgb(220,235,255)"
+            });
+
+            var page = await pdfDoc$$module$synpdf.getPage(pageNum);
+            var viewport = page.getViewport({ scale: (deMetriek$$module$synpdf[0] / page._pageInfo.view[2]) });
+            var canvas = document.createElement("canvas");
+            var ctx = canvas.getContext("2d");
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            await page.render({
+                canvasContext: ctx,
+                viewport: viewport
+            }).promise;
+
+            var metricPage = countPix$$module$synpdf(canvas, parseInt(opt$$module$synpdf.seln));
+            deMetriek$$module$synpdf[pageNum] = metricPage.cxs.length ? metricPage : { cxs: [], bxs: [] };
+            await new Promise(function (resolve) { setTimeout(resolve, 20); });
+        }
+
+        if (token === metricPrecomputeToken$$module$synpdf) {
+            MetricStore.setMetricData(deMetriek$$module$synpdf, { clone: false });
+        }
+    } catch (err) {
+        console.error("Advanced metric precompute failed:", err);
+    } finally {
+        if (token === metricPrecomputeToken$$module$synpdf) {
+            metricPrecomputeInProgress$$module$synpdf = 0;
+            $("#wait").css("display", "none");
+        }
+    }
+}
+
 function readPdf$$module$synpdf(a, b) {
     initGlobals$$module$synpdf();
 
@@ -851,6 +924,9 @@ function goPage$$module$synpdf(a, b) {
             if (opt$$module$synpdf.advncd) {  // Continue based on global condition variables
                 rendering$$module$synpdf = 0;
                 addDummySys$$module$synpdf();
+                setTimeout(function () {
+                    precomputeAdvancedMetrics$$module$synpdf();
+                }, 0);
             } else {
                 if (doresize$$module$synpdf) {
                     resizePdf$$module$synpdf();
@@ -2601,6 +2677,9 @@ function resetIntf$$module$synpdf(a) {
         "checkbox" == c && a.prop("checked", opt$$module$synpdf[b]);
         "number" == c && a.val(opt$$module$synpdf[b])
     }
+    $(".mexp").toggle(!!opt$$module$synpdf.advncd);
+    $(".mnrm").toggle(!opt$$module$synpdf.advncd);
+    $("#snclbl").toggle(!opt$$module$synpdf.advncd);
     toggleBtns$$module$synpdf();
     syncChk$$module$synpdf();
     hideSpeedChk$$module$synpdf();
@@ -2680,17 +2759,7 @@ function checkMenu$$module$synpdf(a) {
                 toggleScoreBtn$$module$synpdf();
                 break;
             case "onestf":
-                // Keep the full metric array so batch CNN can still process every page.
-                // Single-staff mode changes detection behavior, not the page list itself.
-                var storedMetricData = MetricStore.getStoredMetricData();
-                if (Array.isArray(storedMetricData) && storedMetricData.length > 1) {
-                    deMetriek$$module$synpdf = MetricStore.clone(storedMetricData);
-                    MetricStore.setMetricData(deMetriek$$module$synpdf, { clone: false });
-                } else if (Array.isArray(deMetriek$$module$synpdf) && deMetriek$$module$synpdf.length > 1) {
-                    MetricStore.setMetricData(deMetriek$$module$synpdf, { clone: false });
-                } else {
-                    seedMetricStorageFromMemory();
-                }
+                // Single-staff mode changes detection behavior only.
                 resizePdfSyn$$module$synpdf();
                 break;
             case "advncd":
