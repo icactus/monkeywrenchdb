@@ -33,6 +33,104 @@ function getSystemHitBounds(pageNumber, systemIndex, csGroup, xJson) {
     };
 }
 
+function clearExclusiveModeState() {
+    QisActive = false;
+    NisActive = false;
+    SisActive = false;
+    YisActive = false;
+    GeometryModeActive = false;
+    WisActive = false;
+    exactBoundariesMode = false;
+    hideSplitSelectionBox();
+    hideYSelectionBox();
+    cancelPendingSplitInput();
+    splitDragState = null;
+    yDragState = null;
+
+    if (indicatorElement) {
+        indicatorElement.innerText = 'OFF';
+        indicatorElement.classList.remove('active-indicator');
+        indicatorElement.classList.add('inactive-indicator');
+        indicatorElement.classList.remove('crosshair-cursor');
+    }
+    if (document && document.body) {
+        document.body.style.cursor = 'default';
+    }
+}
+
+function activateExclusiveMode(mode) {
+    clearExclusiveModeState();
+
+    switch (mode) {
+        case 'q':
+            QisActive = true;
+            break;
+        case 'n':
+            NisActive = true;
+            break;
+        case 's':
+            SisActive = true;
+            break;
+        case 'y':
+            YisActive = true;
+            break;
+        case '$':
+            GeometryModeActive = true;
+            break;
+        case 'w':
+            WisActive = true;
+            exactBoundariesMode = false;
+            break;
+        case 'W':
+            WisActive = true;
+            exactBoundariesMode = true;
+            break;
+        default:
+            return;
+    }
+
+    if (indicatorElement) {
+        indicatorElement.innerText = mode;
+        indicatorElement.classList.remove('inactive-indicator');
+        indicatorElement.classList.add('active-indicator');
+        indicatorElement.classList.add('crosshair-cursor');
+    }
+    if (document && document.body) {
+        document.body.style.cursor = 'crosshair';
+    }
+}
+
+function toggleExclusiveMode(mode) {
+    var isActive = false;
+    switch (mode) {
+        case 'q':
+            isActive = QisActive;
+            break;
+        case 'n':
+            isActive = NisActive;
+            break;
+        case 's':
+            isActive = SisActive;
+            break;
+        case 'y':
+            isActive = YisActive;
+            break;
+        case '$':
+            isActive = GeometryModeActive;
+            break;
+        case 'w':
+        case 'W':
+            isActive = WisActive && exactBoundariesMode === (mode === 'W');
+            break;
+    }
+
+    if (isActive) {
+        clearExclusiveModeState();
+    } else {
+        activateExclusiveMode(mode);
+    }
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     indicatorElement = document.getElementById('indicator');
     notation = document.getElementById('notation');
@@ -741,70 +839,15 @@ function handleSplitMark(event) {
 
 
 function toggleQActivity() {
-    QisActive = !QisActive;
-
-    if (QisActive) {
-        console.log('Q mode is ON');
-        indicatorElement.innerText = 'Q';
-        indicatorElement.classList.remove('inactive-indicator');
-        indicatorElement.classList.add('active-indicator');
-        indicatorElement.classList.add('crosshair-cursor');
-        document.body.style.cursor = 'crosshair';
-        if (WisActive) {
-            toggleWActivity();
-        }
-        if (NisActive) {
-            toggleNActivity();
-        }
-        if (SisActive) {
-            toggleSActivity();
-        }
-        if (YisActive) {
-            toggleYActivity();
-        }
-        if (GeometryModeActive) {
-            toggleGeometryModeActivity();
-        }
-    } else {
-        console.log('Q mode is OFF');
-        indicatorElement.innerText = 'OFF';
-        indicatorElement.classList.remove('active-indicator');
-        indicatorElement.classList.add('inactive-indicator');
-        // if (!SisActive) { // Removed check
-        indicatorElement.classList.remove('crosshair-cursor');
-        document.body.style.cursor = 'default';
-        // }
-    }
+    console.log(QisActive ? 'Q mode is OFF' : 'Q mode is ON');
+    toggleExclusiveMode('q');
 }
 
 // function toggleSActivity() { ... } Removed
 
 function toggleWActivity() {
-    WisActive = !WisActive;
-
-    if (WisActive) {
-        console.log('W mode is ON (auto-adjust:' + !exactBoundariesMode + ')');
-        // Add any visual indicator or behavior for 'W' being active
-
-        if (QisActive) {
-            toggleQActivity();
-        }
-        if (NisActive) {
-            toggleNActivity();
-        }
-        if (SisActive) {
-            toggleSActivity();
-        }
-        if (YisActive) {
-            toggleYActivity();
-        }
-        if (GeometryModeActive) {
-            toggleGeometryModeActivity();
-        }
-    } else {
-        console.log('W mode is OFF');
-        exactBoundariesMode = false; // Reset when turning off
-    }
+    console.log(WisActive ? 'W mode is OFF' : 'W mode is ON (auto-adjust:' + !exactBoundariesMode + ')');
+    toggleExclusiveMode(exactBoundariesMode ? 'W' : 'w');
 }
 
 //Makes sure deMetriek is only saving integers when using P
@@ -819,144 +862,23 @@ function roundValuesInArray(obj) {
 }
 
 function toggleNActivity() {
-    NisActive = !NisActive;
-
-    if (NisActive) {
-        console.log('N mode is ON');
-        indicatorElement.innerText = 'N';
-        indicatorElement.classList.remove('inactive-indicator');
-        indicatorElement.classList.add('active-indicator');
-        indicatorElement.classList.add('crosshair-cursor');
-        document.body.style.cursor = 'crosshair';
-        if (WisActive) {
-            toggleWActivity();
-        }
-        if (QisActive) {
-            toggleQActivity();
-        }
-        if (SisActive) {
-            toggleSActivity();
-        }
-        if (YisActive) {
-            toggleYActivity();
-        }
-        if (GeometryModeActive) {
-            toggleGeometryModeActivity();
-        }
-    } else {
-        console.log('N mode is OFF');
-        indicatorElement.innerText = 'OFF';
-        indicatorElement.classList.remove('active-indicator');
-        indicatorElement.classList.add('inactive-indicator');
-        indicatorElement.classList.remove('crosshair-cursor');
-        document.body.style.cursor = 'default';
-    }
+    console.log(NisActive ? 'N mode is OFF' : 'N mode is ON');
+    toggleExclusiveMode('n');
 }
 
 function toggleSActivity() {
-    SisActive = !SisActive;
-
-    if (SisActive) {
-        console.log('S mode is ON');
-        indicatorElement.innerText = 'S';
-        indicatorElement.classList.remove('inactive-indicator');
-        indicatorElement.classList.add('active-indicator');
-        indicatorElement.classList.add('crosshair-cursor');
-        document.body.style.cursor = 'crosshair';
-        if (WisActive) {
-            toggleWActivity();
-        }
-        if (QisActive) {
-            toggleQActivity();
-        }
-        if (NisActive) {
-            toggleNActivity();
-        }
-        if (YisActive) {
-            toggleYActivity();
-        }
-        if (GeometryModeActive) {
-            toggleGeometryModeActivity();
-        }
-    } else {
-        console.log('S mode is OFF');
-        indicatorElement.innerText = 'OFF';
-        indicatorElement.classList.remove('active-indicator');
-        indicatorElement.classList.add('inactive-indicator');
-        indicatorElement.classList.remove('crosshair-cursor');
-        document.body.style.cursor = 'default';
-    }
+    console.log(SisActive ? 'S mode is OFF' : 'S mode is ON');
+    toggleExclusiveMode('s');
 }
 
 function toggleYActivity() {
-    YisActive = !YisActive;
-
-    if (YisActive) {
-        console.log('Y mode is ON');
-        indicatorElement.innerText = 'Y';
-        indicatorElement.classList.remove('inactive-indicator');
-        indicatorElement.classList.add('active-indicator');
-        indicatorElement.classList.add('crosshair-cursor');
-        document.body.style.cursor = 'crosshair';
-        if (WisActive) {
-            toggleWActivity();
-        }
-        if (QisActive) {
-            toggleQActivity();
-        }
-        if (NisActive) {
-            toggleNActivity();
-        }
-        if (SisActive) {
-            toggleSActivity();
-        }
-        if (GeometryModeActive) {
-            toggleGeometryModeActivity();
-        }
-    } else {
-        console.log('Y mode is OFF');
-        indicatorElement.innerText = 'OFF';
-        indicatorElement.classList.remove('active-indicator');
-        indicatorElement.classList.add('inactive-indicator');
-        indicatorElement.classList.remove('crosshair-cursor');
-        document.body.style.cursor = 'default';
-        hideYSelectionBox();
-    }
+    console.log(YisActive ? 'Y mode is OFF' : 'Y mode is ON');
+    toggleExclusiveMode('y');
 }
 
 function toggleGeometryModeActivity() {
-    GeometryModeActive = !GeometryModeActive;
-
-    if (GeometryModeActive) {
-        console.log('$ mode is ON');
-        indicatorElement.innerText = '$';
-        indicatorElement.classList.remove('inactive-indicator');
-        indicatorElement.classList.add('active-indicator');
-        indicatorElement.classList.add('crosshair-cursor');
-        document.body.style.cursor = 'crosshair';
-        if (WisActive) {
-            toggleWActivity();
-        }
-        if (QisActive) {
-            toggleQActivity();
-        }
-        if (NisActive) {
-            toggleNActivity();
-        }
-        if (SisActive) {
-            toggleSActivity();
-        }
-        if (YisActive) {
-            toggleYActivity();
-        }
-    } else {
-        console.log('$ mode is OFF');
-        indicatorElement.innerText = 'OFF';
-        indicatorElement.classList.remove('active-indicator');
-        indicatorElement.classList.add('inactive-indicator');
-        indicatorElement.classList.remove('crosshair-cursor');
-        document.body.style.cursor = 'default';
-    }
+    console.log(GeometryModeActive ? '$ mode is OFF' : '$ mode is ON');
+    toggleExclusiveMode('$');
 }
 
 function getStoredMetricData() {
@@ -1001,6 +923,10 @@ function getCurrentPageImageData() {
         stride: canvas.width * 4,
         width: canvas.width
     };
+}
+
+function getCurrentPageCanvas() {
+    return document.querySelector('#notation canvas') || document.querySelector('canvas');
 }
 
 function normalizeDetectedSystemBarlines(system, detectedBarlines, existingBarlines) {
@@ -1682,20 +1608,768 @@ function getRepresentativeSystemLines(system, side) {
     return null;
 }
 
+function getSystemEnvelopeLines(system, side) {
+    if (!system) return null;
+
+    var source = null;
+    if (side === 'left' && Array.isArray(system.csl) && system.csl.length >= 2) {
+        source = system.csl.slice();
+    } else if (side === 'right' && Array.isArray(system.csr) && system.csr.length >= 2) {
+        source = system.csr.slice();
+    } else if (Array.isArray(system.cs) && system.cs.length >= 2) {
+        source = system.cs.slice();
+    } else if (Array.isArray(system.csl) && system.csl.length >= 2) {
+        source = system.csl.slice();
+    } else if (Array.isArray(system.csr) && system.csr.length >= 2) {
+        source = system.csr.slice();
+    }
+
+    if (!source) return null;
+    source.sort(function (a, b) { return a - b; });
+    if (source.length === 2) {
+        var top = source[0];
+        var bot = source[1];
+        var sp = (bot - top) / 4;
+        return [top, top + sp, top + 2 * sp, top + 3 * sp, bot].map(function (v) { return Math.round(v); });
+    }
+    return source;
+}
+
+function estimateSpatiumFromEnvelopeLines(lines) {
+    if (!Array.isArray(lines) || lines.length < 2) return 8;
+    var gaps = [];
+    for (var i = 1; i < lines.length; i++) {
+        var gap = lines[i] - lines[i - 1];
+        if (isFinite(gap) && gap > 0) gaps.push(gap);
+    }
+    if (!gaps.length) return 8;
+    gaps.sort(function (a, b) { return a - b; });
+    if (gaps.length >= 6) {
+        gaps = gaps.slice(0, gaps.length - 1);
+    }
+    var mid = Math.floor(gaps.length / 2);
+    var median = gaps.length % 2 ? gaps[mid] : (gaps[mid - 1] + gaps[mid]) / 2;
+    return Math.max(4, median);
+}
+
+function computeSubStaffIndexGroups(midLines) {
+    if (!Array.isArray(midLines) || midLines.length < 2) return [];
+    var sorted = midLines.slice().sort(function (a, b) { return a - b; });
+    if (sorted.length <= 5) {
+        return [{ start: 0, end: sorted.length - 1 }];
+    }
+
+    var gaps = [];
+    for (var i = 0; i < sorted.length - 1; i++) {
+        gaps.push(sorted[i + 1] - sorted[i]);
+    }
+    var sortedGaps = gaps.slice().sort(function (a, b) { return a - b; });
+    var medianGap = sortedGaps[Math.floor(sortedGaps.length / 2)] || 8;
+    var breakThreshold = medianGap * 2.0;
+
+    var groups = [];
+    var start = 0;
+    for (var gi = 0; gi < gaps.length; gi++) {
+        if (gaps[gi] > breakThreshold) {
+            groups.push({ start: start, end: gi });
+            start = gi + 1;
+        }
+    }
+    groups.push({ start: start, end: sorted.length - 1 });
+    return groups;
+}
+
+function getSortedSystemLineArrays(system) {
+    if (!system) return null;
+    var mid = Array.isArray(system.cs) ? system.cs.slice() : [];
+    var left = Array.isArray(system.csl) && system.csl.length === mid.length ? system.csl.slice() : mid.slice();
+    var right = Array.isArray(system.csr) && system.csr.length === mid.length ? system.csr.slice() : mid.slice();
+    if (!mid.length || left.length !== mid.length || right.length !== mid.length) return null;
+
+    var rows = mid.map(function (y, idx) {
+        return { mid: y, left: left[idx], right: right[idx] };
+    }).sort(function (a, b) { return a.mid - b.mid; });
+
+    return {
+        mid: rows.map(function (r) { return r.mid; }),
+        left: rows.map(function (r) { return r.left; }),
+        right: rows.map(function (r) { return r.right; })
+    };
+}
+
+function expandSystemsToStaffItems(cxs, bxsGroups) {
+    var items = [];
+    if (!Array.isArray(cxs)) return items;
+
+    for (var i = 0; i < cxs.length; i++) {
+        var system = cxs[i];
+        var lineArrays = getSortedSystemLineArrays(system);
+        var existingBxs = Array.isArray(bxsGroups && bxsGroups[i]) ? bxsGroups[i].slice() : [];
+        if (!lineArrays || lineArrays.mid.length < 2) {
+            items.push({ system: cloneSystemForGeometrySeed(system), bxs: existingBxs });
+            continue;
+        }
+
+        var groups = computeSubStaffIndexGroups(lineArrays.mid);
+        if (!groups.length) {
+            items.push({ system: cloneSystemForGeometrySeed(system), bxs: existingBxs });
+            continue;
+        }
+
+        for (var g = 0; g < groups.length; g++) {
+            var start = groups[g].start;
+            var end = groups[g].end;
+            items.push({
+                system: {
+                    cs: lineArrays.mid.slice(start, end + 1),
+                    csl: lineArrays.left.slice(start, end + 1),
+                    csr: lineArrays.right.slice(start, end + 1),
+                    xs: {
+                        x1: system.xs && typeof system.xs.x1 === 'number' ? Math.round(system.xs.x1) : 0,
+                        x2: system.xs && typeof system.xs.x2 === 'number' ? Math.round(system.xs.x2) : 0
+                    }
+                },
+                bxs: existingBxs.slice()
+            });
+        }
+    }
+
+    return items.sort(function (a, b) {
+        return getSystemSortTop(a.system) - getSystemSortTop(b.system);
+    });
+}
+
+function isDarkAtColumn(pageImageData, x, y, threshold) {
+    var pixelData = pageImageData.pixelData;
+    var stride = pageImageData.stride;
+    var width = pageImageData.width;
+    var col = Math.round(x);
+    var row = Math.round(y);
+    if (row < 0 || col < 0 || col >= width) return false;
+
+    for (var driftX = -1; driftX <= 1; driftX++) {
+        var cx = col + driftX;
+        if (cx < 0 || cx >= width) continue;
+        var idx = row * stride + cx * 4;
+        if (idx < 0 || idx + 2 >= pixelData.length) continue;
+        var brightness = (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+        if (brightness < threshold) return true;
+    }
+    return false;
+}
+
+function isDarkInVerticalBand(pageImageData, x, y, threshold, halfWidth, driftRadius) {
+    var pixelData = pageImageData.pixelData;
+    var stride = pageImageData.stride;
+    var width = pageImageData.width;
+    var row = Math.round(y);
+    if (row < 0) return false;
+
+    halfWidth = Math.max(0, Math.round(halfWidth || 0));
+    driftRadius = Math.max(0, Math.round(driftRadius || 0));
+
+    var dark = 0;
+    var total = 0;
+    for (var driftX = -driftRadius; driftX <= driftRadius; driftX++) {
+        var centerX = Math.round(x + driftX);
+        for (var bandX = -halfWidth; bandX <= halfWidth; bandX++) {
+            var cx = centerX + bandX;
+            if (cx < 0 || cx >= width) continue;
+            var idx = row * stride + cx * 4;
+            if (idx < 0 || idx + 2 >= pixelData.length) continue;
+            total++;
+            var brightness = (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+            if (brightness < threshold) dark++;
+        }
+    }
+    if (!total) return false;
+    return dark / total >= 0.26;
+}
+
+function averageColumnBrightness(pageImageData, x, y1, y2) {
+    var pixelData = pageImageData.pixelData;
+    var stride = pageImageData.stride;
+    var width = pageImageData.width;
+    var col = Math.round(x);
+    if (col < 0 || col >= width) return 255;
+    var top = Math.max(0, Math.round(y1));
+    var bottom = Math.min(Math.floor(pixelData.length / stride) - 1, Math.round(y2));
+    var sum = 0;
+    var count = 0;
+    for (var row = top; row <= bottom; row++) {
+        var idx = row * stride + col * 4;
+        if (idx < 0 || idx + 2 >= pixelData.length) continue;
+        sum += (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+        count++;
+    }
+    return count ? sum / count : 255;
+}
+
+function detectFullScoreVerticalClusters(pageImageData, staffItems) {
+    var width = pageImageData.width;
+    var height = Math.floor(pageImageData.pixelData.length / pageImageData.stride);
+    var dominantSp = staffItems.reduce(function (maxSp, item) {
+        return Math.max(maxSp, getSystemEstimatedSpatium(item.system));
+    }, 8);
+    var threshold = 170;
+    var maxHole = Math.max(2, Math.round(0.75 * dominantSp));
+    var minDensity = 0.28;
+    var minSegmentHeight = Math.max(Math.round(10 * dominantSp), Math.round(height * 0.08));
+    var xTolerance = Math.max(2, Math.round(0.45 * dominantSp));
+    var maxWidth = Math.max(3, Math.round(0.75 * dominantSp));
+    var bandHalfWidth = Math.max(1, Math.round(0.28 * dominantSp));
+    var driftRadius = Math.max(1, Math.round(0.35 * dominantSp));
+    var segments = [];
+
+    for (var x = 1; x < width - 1; x++) {
+        var y = 0;
+        while (y < height) {
+            while (y < height && !isDarkInVerticalBand(pageImageData, x, y, threshold, bandHalfWidth, driftRadius)) {
+                y++;
+            }
+            if (y >= height) break;
+
+            var startY = y;
+            var lastDarkY = y;
+            var darkCount = 0;
+            while (y < height && (y - lastDarkY) <= maxHole) {
+                if (isDarkInVerticalBand(pageImageData, x, y, threshold, bandHalfWidth, driftRadius)) {
+                    darkCount++;
+                    lastDarkY = y;
+                }
+                y++;
+            }
+
+            var endY = lastDarkY;
+            var runHeight = endY - startY + 1;
+            var density = darkCount / Math.max(1, runHeight);
+            if (runHeight >= minSegmentHeight && density >= minDensity) {
+                segments.push({
+                    x: x,
+                    y1: startY,
+                    y2: endY,
+                    height: runHeight,
+                    density: density
+                });
+            }
+        }
+    }
+
+    if (!segments.length) return [];
+
+    segments.sort(function (a, b) { return a.x - b.x || a.y1 - b.y1; });
+    var clusters = [];
+    var current = {
+        segments: [segments[0]],
+        xMin: segments[0].x,
+        xMax: segments[0].x
+    };
+
+    for (var i = 1; i < segments.length; i++) {
+        if (segments[i].x - current.xMax <= xTolerance) {
+            current.segments.push(segments[i]);
+            current.xMax = segments[i].x;
+        } else {
+            clusters.push(current);
+            current = {
+                segments: [segments[i]],
+                xMin: segments[i].x,
+                xMax: segments[i].x
+            };
+        }
+    }
+    clusters.push(current);
+
+    return clusters.map(function (cluster) {
+        var weightedX = 0;
+        var weightSum = 0;
+        var yMin = Infinity;
+        var yMax = -Infinity;
+        var strongestSeg = null;
+        cluster.segments.forEach(function (seg) {
+            weightedX += seg.x * seg.height;
+            weightSum += seg.height;
+            if (seg.y1 < yMin) yMin = seg.y1;
+            if (seg.y2 > yMax) yMax = seg.y2;
+            if (!strongestSeg || seg.height > strongestSeg.height) strongestSeg = seg;
+        });
+
+        var centerX = Math.round(weightedX / Math.max(1, weightSum));
+        var support = [];
+        for (var si = 0; si < staffItems.length; si++) {
+            var item = staffItems[si];
+            var score = scoreClusterSupportForStaff({
+                x: centerX,
+                segments: cluster.segments
+            }, item);
+            if (score >= 0.72) {
+                support.push({ index: si, score: score });
+            }
+        }
+
+        var longestContiguousRun = support.length ? 1 : 0;
+        var currentRun = support.length ? 1 : 0;
+        support.sort(function (a, b) { return a.index - b.index; });
+        for (var si = 1; si < support.length; si++) {
+            if (support[si].index === support[si - 1].index + 1) {
+                currentRun++;
+                if (currentRun > longestContiguousRun) longestContiguousRun = currentRun;
+            } else {
+                currentRun = 1;
+            }
+        }
+
+        return {
+            x: centerX,
+            xMin: cluster.xMin,
+            xMax: cluster.xMax,
+            yMin: yMin,
+            yMax: yMax,
+            totalHeight: yMax - yMin + 1,
+            width: cluster.xMax - cluster.xMin + 1,
+            strongSupportCount: support.length,
+            longestContiguousRun: longestContiguousRun,
+            support: support,
+            supportIndices: support.map(function (entry) { return entry.index; }),
+            segments: cluster.segments
+        };
+    }).filter(function (cluster) {
+        return cluster.width <= maxWidth
+            && cluster.totalHeight >= minSegmentHeight
+            && cluster.supportIndices.length >= 2
+            && cluster.longestContiguousRun >= 2;
+    });
+}
+
+function getVerticalOverlapLength(y1, y2, targetTop, targetBottom) {
+    return Math.max(0, Math.min(y2, targetBottom) - Math.max(y1, targetTop) + 1);
+}
+
+function getBestClusterSupportMetrics(cluster, item) {
+    var spatium = getSystemEstimatedSpatium(item.system);
+    var bounds = getSystemTopBottomAtX(item.system, cluster.x);
+    var targetTop = Math.round(bounds.top - 0.20 * spatium);
+    var targetBottom = Math.round(bounds.bottom + 0.20 * spatium);
+    var targetHeight = Math.max(1, targetBottom - targetTop + 1);
+    var edgeWindow = Math.max(2, Math.round(0.75 * spatium));
+    var topEdgeTop = Math.round(bounds.top - 0.35 * spatium);
+    var topEdgeBottom = topEdgeTop + edgeWindow - 1;
+    var bottomEdgeBottom = Math.round(bounds.bottom + 0.35 * spatium);
+    var bottomEdgeTop = bottomEdgeBottom - edgeWindow + 1;
+    var best = {
+        score: 0,
+        overlapRatio: 0,
+        segmentRatio: 0,
+        topTouch: 0,
+        bottomTouch: 0,
+        edgeCoverage: 0,
+        segmentHeight: 0
+    };
+
+    for (var i = 0; i < cluster.segments.length; i++) {
+        var seg = cluster.segments[i];
+        var overlap = getVerticalOverlapLength(seg.y1, seg.y2, targetTop, targetBottom);
+        if (overlap <= 0) continue;
+
+        var overlapRatio = overlap / targetHeight;
+        var segmentRatio = seg.height / targetHeight;
+        var topTouch = getVerticalOverlapLength(seg.y1, seg.y2, topEdgeTop, topEdgeBottom) / edgeWindow;
+        var bottomTouch = getVerticalOverlapLength(seg.y1, seg.y2, bottomEdgeTop, bottomEdgeBottom) / edgeWindow;
+        var edgeCoverage = Math.min(topTouch, bottomTouch);
+        var score = overlapRatio * 0.50 + Math.min(1, segmentRatio) * 0.15 + edgeCoverage * 0.35;
+
+        // Short aligned stems can overlap part of a staff, but they usually do not
+        // reach both outer staff edges the way a true barline does.
+        if (topTouch < 0.20 || bottomTouch < 0.20) {
+            score = Math.min(score, 0.54);
+        } else if (topTouch < 0.45 || bottomTouch < 0.45) {
+            score *= 0.85;
+        }
+
+        if (score > best.score) {
+            best = {
+                score: score,
+                overlapRatio: overlapRatio,
+                segmentRatio: segmentRatio,
+                topTouch: topTouch,
+                bottomTouch: bottomTouch,
+                edgeCoverage: edgeCoverage,
+                segmentHeight: seg.height
+            };
+        }
+    }
+
+    return best;
+}
+
+function scoreClusterSupportForStaff(cluster, item) {
+    return getBestClusterSupportMetrics(cluster, item).score;
+}
+
+function annotateFullScoreClusters(clusters, staffItems) {
+    return clusters.map(function (cluster) {
+        var support = [];
+        for (var i = 0; i < staffItems.length; i++) {
+            var score = scoreClusterSupportForStaff(cluster, staffItems[i]);
+            if (score >= 0.72) {
+                support.push({ index: i, score: score });
+            }
+        }
+        cluster.support = support;
+        cluster.supportIndices = support.map(function (s) { return s.index; });
+        cluster.strongSupportCount = support.length;
+        return cluster;
+    });
+}
+
+function getClusterSupportScore(cluster, staffIndex) {
+    if (!cluster || !Array.isArray(cluster.support)) return 0;
+    for (var i = 0; i < cluster.support.length; i++) {
+        if (cluster.support[i].index === staffIndex) {
+            return cluster.support[i].score || 0;
+        }
+    }
+    return 0;
+}
+
+function shouldMergeAdjacentFullScoreStaffsFromSegments(indexA, indexB, annotatedClusters, staffItems) {
+    var shared = 0;
+    var sharedStrong = 0;
+    var countA = 0;
+    var countB = 0;
+
+    for (var i = 0; i < annotatedClusters.length; i++) {
+        var cluster = annotatedClusters[i];
+        if ((cluster.strongSupportCount || 0) < 2) continue;
+        var scoreA = getClusterSupportScore(cluster, indexA);
+        var scoreB = getClusterSupportScore(cluster, indexB);
+        var hasA = scoreA >= 0.55;
+        var hasB = scoreB >= 0.55;
+        if (hasA) countA++;
+        if (hasB) countB++;
+        if (hasA && hasB) {
+            shared++;
+            if (Math.min(scoreA, scoreB) >= 0.72) {
+                sharedStrong++;
+            }
+        }
+    }
+
+    if (shared < 2) return false;
+    var ratio = shared / Math.max(1, Math.min(countA, countB));
+    if (ratio < 0.18) return false;
+    if (sharedStrong < 1 && shared < 3) return false;
+
+    var upper = staffItems[indexA].system;
+    var lower = staffItems[indexB].system;
+    var sampleX = Math.round((Math.max(upper.xs.x1, lower.xs.x1) + Math.min(upper.xs.x2, lower.xs.x2)) / 2);
+    var upperBounds = getSystemTopBottomAtX(upper, sampleX);
+    var lowerBounds = getSystemTopBottomAtX(lower, sampleX);
+    var dominantSp = Math.max(getSystemEstimatedSpatium(upper), getSystemEstimatedSpatium(lower), 4);
+    var gapSp = (lowerBounds.top - upperBounds.bottom) / dominantSp;
+    if (gapSp < -0.75 || gapSp > 18.0) return false;
+
+    return true;
+}
+
+function buildFullScoreBxsFromSegments(group, annotatedClusters, mergedSystem) {
+    return buildFullScoreBxsFromSegmentsWithDebug(group, annotatedClusters, mergedSystem, null);
+}
+
+function buildFullScoreBxsFromSegmentsWithDebug(group, annotatedClusters, mergedSystem, debugCollector) {
+    var dominantSp = group.reduce(function (maxSp, item) {
+        return Math.max(maxSp, getSystemEstimatedSpatium(item.system));
+    }, 4);
+
+    if (group.length === 1) {
+        if (debugCollector) {
+            debugCollector.push({
+                x: Math.round(mergedSystem.xs.x1),
+                decision: 'anchor_start',
+                groupSize: group.length
+            });
+            debugCollector.push({
+                x: Math.round(mergedSystem.xs.x2),
+                decision: 'anchor_end',
+                groupSize: group.length
+            });
+        }
+        return [
+            Math.round(mergedSystem.xs.x1),
+            Math.round(mergedSystem.xs.x2)
+        ];
+    }
+
+    var accepted = [Math.round(mergedSystem.xs.x1)];
+    if (debugCollector) {
+        debugCollector.push({
+            x: Math.round(mergedSystem.xs.x1),
+            decision: 'anchor_start',
+            groupSize: group.length
+        });
+    }
+
+    annotatedClusters.forEach(function (cluster) {
+        var entry = debugCollector ? {
+            x: Math.round(cluster.x),
+            strongSupportCount: cluster.strongSupportCount || 0,
+            supportIndices: Array.isArray(cluster.supportIndices) ? cluster.supportIndices.slice() : [],
+            groupSize: group.length
+        } : null;
+        if ((cluster.strongSupportCount || 0) < 2) {
+            if (entry) {
+                entry.decision = 'reject_not_multistaff';
+                debugCollector.push(entry);
+            }
+            return;
+        }
+        var supportedCount = 0;
+        var supportedStrong = 0;
+        var supportIndices = [];
+        for (var gi = 0; gi < group.length; gi++) {
+            var supportScore = getClusterSupportScore(cluster, group[gi].groupIndex);
+            if (supportScore >= 0.55) {
+                supportedCount++;
+                supportIndices.push(gi);
+            }
+            if (supportScore >= 0.72) {
+                supportedStrong++;
+            }
+        }
+        var longestRun = 0;
+        var currentRun = 0;
+        for (var si = 0; si < supportIndices.length; si++) {
+            if (si === 0 || supportIndices[si] === supportIndices[si - 1] + 1) {
+                currentRun++;
+            } else {
+                currentRun = 1;
+            }
+            if (currentRun > longestRun) longestRun = currentRun;
+        }
+        var requiredSupport = Math.max(2, Math.min(5, Math.ceil(group.length * 0.6)));
+        var requiredRun = Math.max(2, Math.min(3, Math.ceil(group.length * 0.5)));
+        if (entry) {
+            entry.supportedCount = supportedCount;
+            entry.supportedStrong = supportedStrong;
+            entry.localSupportIndices = supportIndices.slice();
+            entry.longestRun = longestRun;
+            entry.requiredSupport = requiredSupport;
+            entry.requiredRun = requiredRun;
+        }
+        if (supportedCount < requiredSupport && longestRun < requiredRun) {
+            if (entry) {
+                entry.decision = 'reject_support';
+                debugCollector.push(entry);
+            }
+            return;
+        }
+        if (supportedStrong < 1) {
+            if (entry) {
+                entry.decision = 'reject_no_strong';
+                debugCollector.push(entry);
+            }
+            return;
+        }
+        accepted.push(cluster.x);
+        if (entry) {
+            entry.decision = 'accept';
+            debugCollector.push(entry);
+        }
+    });
+
+    accepted.push(Math.round(mergedSystem.xs.x2));
+    if (debugCollector) {
+        debugCollector.push({
+            x: Math.round(mergedSystem.xs.x2),
+            decision: 'anchor_end',
+            groupSize: group.length
+        });
+    }
+    return clusterBarlineXs(accepted, Math.max(3, Math.round(2.0 * dominantSp)));
+}
+
+function getInteriorBxsValues(bxs) {
+    if (!Array.isArray(bxs) || bxs.length <= 2) return [];
+    return bxs.slice(1, -1).map(function (x) { return Math.round(x); });
+}
+
+function countAlignedBarlines(bxsA, bxsB, tolerance) {
+    var barsA = getInteriorBxsValues(bxsA);
+    var barsB = getInteriorBxsValues(bxsB);
+    if (!barsA.length || !barsB.length) {
+        return {
+            shared: 0,
+            ratio: 0,
+            minCount: Math.min(barsA.length, barsB.length)
+        };
+    }
+
+    var used = new Set();
+    var shared = 0;
+    for (var i = 0; i < barsA.length; i++) {
+        var bestIndex = -1;
+        var bestDist = Infinity;
+        for (var j = 0; j < barsB.length; j++) {
+            if (used.has(j)) continue;
+            var dist = Math.abs(barsA[i] - barsB[j]);
+            if (dist <= tolerance && dist < bestDist) {
+                bestIndex = j;
+                bestDist = dist;
+            }
+        }
+        if (bestIndex >= 0) {
+            used.add(bestIndex);
+            shared++;
+        }
+    }
+
+    return {
+        shared: shared,
+        ratio: shared / Math.max(1, Math.min(barsA.length, barsB.length)),
+        minCount: Math.min(barsA.length, barsB.length)
+    };
+}
+
+function getGroupClusterXs(group, annotatedClusters) {
+    var indices = new Set(group.map(function (item) { return item.groupIndex; }));
+    var xs = [];
+    annotatedClusters.forEach(function (cluster) {
+        if ((cluster.strongSupportCount || 0) < 2) return;
+        var hit = false;
+        for (var i = 0; i < cluster.support.length; i++) {
+            if (indices.has(cluster.support[i].index)) {
+                hit = true;
+                break;
+            }
+        }
+        if (hit) xs.push(Math.round(cluster.x));
+    });
+    return clusterBarlineXs(xs, 4);
+}
+
+function countAlignedXs(xsA, xsB, tolerance) {
+    if (!Array.isArray(xsA) || !Array.isArray(xsB) || !xsA.length || !xsB.length) {
+        return { shared: 0, ratio: 0, minCount: Math.min(xsA ? xsA.length : 0, xsB ? xsB.length : 0) };
+    }
+
+    var used = new Set();
+    var shared = 0;
+    for (var i = 0; i < xsA.length; i++) {
+        var bestIndex = -1;
+        var bestDist = Infinity;
+        for (var j = 0; j < xsB.length; j++) {
+            if (used.has(j)) continue;
+            var dist = Math.abs(xsA[i] - xsB[j]);
+            if (dist <= tolerance && dist < bestDist) {
+                bestIndex = j;
+                bestDist = dist;
+            }
+        }
+        if (bestIndex >= 0) {
+            used.add(bestIndex);
+            shared++;
+        }
+    }
+
+    return {
+        shared: shared,
+        ratio: shared / Math.max(1, Math.min(xsA.length, xsB.length)),
+        minCount: Math.min(xsA.length, xsB.length)
+    };
+}
+
+function shouldMergeAdjacentFullScoreGroupsByBarlines(groupA, barsA, groupB, barsB, annotatedClusters) {
+    var dominantSp = Math.max(
+        groupA.reduce(function (maxSp, item) { return Math.max(maxSp, getSystemEstimatedSpatium(item.system)); }, 4),
+        groupB.reduce(function (maxSp, item) { return Math.max(maxSp, getSystemEstimatedSpatium(item.system)); }, 4)
+    );
+    var tolerance = Math.max(4, Math.round(0.6 * dominantSp));
+    var clusterXsA = getGroupClusterXs(groupA, annotatedClusters);
+    var clusterXsB = getGroupClusterXs(groupB, annotatedClusters);
+    var aligned = countAlignedXs(clusterXsA, clusterXsB, tolerance);
+    if (aligned.shared < 3 || aligned.ratio < 0.55) {
+        aligned = countAlignedBarlines(barsA, barsB, tolerance);
+    }
+    if (aligned.shared < 3) return false;
+    if (aligned.ratio < 0.55) return false;
+
+    var upper = groupA[groupA.length - 1].system;
+    var lower = groupB[0].system;
+    var sampleX = Math.round((Math.max(upper.xs.x1, lower.xs.x1) + Math.min(upper.xs.x2, lower.xs.x2)) / 2);
+    var upperBounds = getSystemTopBottomAtX(upper, sampleX);
+    var lowerBounds = getSystemTopBottomAtX(lower, sampleX);
+    var gapSp = (lowerBounds.top - upperBounds.bottom) / dominantSp;
+    if (gapSp < -0.75 || gapSp > 18.0) {
+        if (!(aligned.shared >= 4 && aligned.ratio >= 0.75 && gapSp <= 24.0)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function formatFullScoreMergeDecision(kind, indexA, indexB, details) {
+    return Object.assign({
+        kind: kind,
+        pair: [indexA, indexB]
+    }, details || {});
+}
+
+function emitFullScoreDebugReport(pagenum, debugInfo) {
+    if (!debugInfo) return;
+    var summary = {
+        page: pagenum,
+        rawStaffItems: debugInfo.rawItemCount || 0,
+        clusterCount: Array.isArray(debugInfo.clusters) ? debugInfo.clusters.length : 0,
+        firstPassGroups: Array.isArray(debugInfo.firstPassGroups) ? debugInfo.firstPassGroups.length : 0,
+        finalGroups: Array.isArray(debugInfo.groups) ? debugInfo.groups.length : 0,
+        finalSystems: Array.isArray(debugInfo.finalBxs) ? debugInfo.finalBxs.length : 0
+    };
+    console.groupCollapsed('[FullScoreDebug] page ' + pagenum);
+    console.log('summary', summary);
+    if (Array.isArray(debugInfo.mergeDecisions) && debugInfo.mergeDecisions.length) {
+        console.table(debugInfo.mergeDecisions);
+    }
+    if (Array.isArray(debugInfo.leftMarkers) && debugInfo.leftMarkers.length) {
+        debugInfo.leftMarkers.forEach(function (marker, idx) {
+            console.groupCollapsed('[FullScoreDebug] left marker ' + idx);
+            console.log('group', marker.groupIndices, 'chosenX', marker.x, 'valid', marker.valid);
+            if (Array.isArray(marker.components) && marker.components.length) {
+                console.table(marker.components);
+            }
+            console.groupEnd();
+        });
+    }
+    if (Array.isArray(debugInfo.finalGroupReports) && debugInfo.finalGroupReports.length) {
+        debugInfo.finalGroupReports.forEach(function (report, idx) {
+            console.groupCollapsed('[FullScoreDebug] final group ' + idx);
+            console.log('group', report.groupIndices, 'leftMarker', report.leftMarker, 'bounds', report.bounds, 'bxs', report.bxs);
+            if (Array.isArray(report.clusterDecisions) && report.clusterDecisions.length) {
+                console.table(report.clusterDecisions);
+            }
+            if (Array.isArray(report.candidates) && report.candidates.length) {
+                console.table(report.candidates);
+            }
+            console.groupEnd();
+        });
+    }
+    console.groupEnd();
+    window.__lastFullScoreDebug = debugInfo;
+}
+
 function getSystemEstimatedSpatium(system) {
-    var lines = getRepresentativeSystemLines(system, 'left') || getRepresentativeSystemLines(system, 'right');
-    if (!lines || lines.length < 2) return 8;
-    return Math.max(4, (lines[lines.length - 1] - lines[0]) / (lines.length - 1));
+    var lines = getSystemEnvelopeLines(system, 'left') || getSystemEnvelopeLines(system, 'right');
+    return estimateSpatiumFromEnvelopeLines(lines);
 }
 
 function getSystemTopBottomAtX(system, x) {
     var xs = system && system.xs ? system.xs : { x1: 0, x2: 1 };
     var t = (xs.x2 !== xs.x1) ? (x - xs.x1) / (xs.x2 - xs.x1) : 0;
     t = Math.max(0, Math.min(1, t));
-    var leftLines = getRepresentativeSystemLines(system, 'left');
-    var rightLines = getRepresentativeSystemLines(system, 'right');
+    var leftLines = getSystemEnvelopeLines(system, 'left');
+    var rightLines = getSystemEnvelopeLines(system, 'right');
     if (!leftLines || !rightLines || leftLines.length !== rightLines.length) {
-        var fallback = getRepresentativeSystemLines(system, 'left') || getRepresentativeSystemLines(system, 'right');
+        var fallback = getSystemEnvelopeLines(system, 'left') || getSystemEnvelopeLines(system, 'right');
         if (!fallback) {
             return { top: 0, bottom: 0 };
         }
@@ -1890,7 +2564,7 @@ function detectMergedSystemBarlines(pageImageData, mergedSystem, dominantSpatium
         var blackRatio = blackCount / Math.max(1, height);
         var contrast = ((leftBright + rightBright) * 0.5 - centerBright) / 255;
 
-        if (connectivity < 0.72 || blackRatio < 0.5 || contrast < 0.08) continue;
+        if (connectivity < 0.66 || blackRatio < 0.44 || contrast < 0.08) continue;
         candidates.push({
             x: col,
             score: connectivity * 0.55 + blackRatio * 0.30 + contrast * 0.15
@@ -1910,6 +2584,381 @@ function detectMergedSystemBarlines(pageImageData, mergedSystem, dominantSpatium
     return accepted.sort(function (a, b) { return a - b; });
 }
 
+function getInteriorBarlines(bxs) {
+    if (!Array.isArray(bxs) || bxs.length <= 2) return [];
+    return bxs.slice(1, -1).map(function (x) { return Math.abs(Math.round(x)); });
+}
+
+function findNearestInteriorBarlineX(bxs, targetX, tolerance) {
+    var bars = getInteriorBarlines(bxs);
+    var best = null;
+    var bestDist = Infinity;
+    for (var i = 0; i < bars.length; i++) {
+        var dist = Math.abs(bars[i] - targetX);
+        if (dist <= tolerance && dist < bestDist) {
+            bestDist = dist;
+            best = bars[i];
+        }
+    }
+    return best;
+}
+
+function averageBrightnessInColumnBand(pageImageData, x, top, bottom) {
+    var pixelData = pageImageData.pixelData;
+    var stride = pageImageData.stride;
+    var width = pageImageData.width;
+    var col = Math.max(0, Math.min(width - 1, Math.round(x)));
+    var sum = 0;
+    var count = 0;
+    for (var row = Math.max(0, Math.round(top)); row <= Math.round(bottom); row++) {
+        for (var drift = -1; drift <= 1; drift++) {
+            var cx = col + drift;
+            if (cx < 0 || cx >= width) continue;
+            var idx = row * stride + cx * 4;
+            if (idx < 0 || idx + 2 >= pixelData.length) continue;
+            sum += (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+            count++;
+        }
+    }
+    return count ? sum / count : 255;
+}
+
+function scoreSystemVerticalEvidence(pageImageData, system, x) {
+    var bounds = getSystemTopBottomAtX(system, x);
+    var top = Math.round(bounds.top);
+    var bottom = Math.round(bounds.bottom);
+    var height = bottom - top + 1;
+    if (height < 8) return 0;
+
+    var pixelData = pageImageData.pixelData;
+    var stride = pageImageData.stride;
+    var width = pageImageData.width;
+    var col = Math.max(0, Math.min(width - 1, Math.round(x)));
+    var darkCount = 0;
+    var consecutiveDark = 0;
+    var maxConsecutive = 0;
+
+    for (var row = top; row <= bottom; row++) {
+        var dark = false;
+        for (var drift = -1; drift <= 1; drift++) {
+            var cx = col + drift;
+            if (cx < 0 || cx >= width) continue;
+            var idx = row * stride + cx * 4;
+            if (idx < 0 || idx + 2 >= pixelData.length) continue;
+            if ((pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3 < 170) {
+                dark = true;
+                break;
+            }
+        }
+        if (dark) {
+            darkCount++;
+            consecutiveDark++;
+            if (consecutiveDark > maxConsecutive) maxConsecutive = consecutiveDark;
+        } else {
+            consecutiveDark = 0;
+        }
+    }
+
+    var connectivity = maxConsecutive / Math.max(1, height);
+    var blackRatio = darkCount / Math.max(1, height);
+    return connectivity * 0.7 + blackRatio * 0.3;
+}
+
+function buildDefaultBarlineProfile() {
+    return {
+        usableMin: 0.58,
+        strongMin: 0.72,
+        bridgeMin: 0.58
+    };
+}
+
+function quantileValue(values, q) {
+    if (!Array.isArray(values) || !values.length) return null;
+    var sorted = values.slice().sort(function (a, b) { return a - b; });
+    var pos = Math.max(0, Math.min(sorted.length - 1, (sorted.length - 1) * q));
+    var low = Math.floor(pos);
+    var high = Math.ceil(pos);
+    if (low === high) return sorted[low];
+    var t = pos - low;
+    return sorted[low] * (1 - t) + sorted[high] * t;
+}
+
+function deriveFullScoreBarlineProfile(pageImageData, items) {
+    var defaultProfile = buildDefaultBarlineProfile();
+    if (!Array.isArray(items) || items.length < 2) return defaultProfile;
+
+    var recurringEvidence = [];
+    var bridgeEvidence = [];
+
+    for (var i = 0; i < items.length - 1; i++) {
+        var evidence = computeAdjacentAlignmentEvidence(pageImageData, items[i], items[i + 1], defaultProfile);
+        if (!evidence || !Array.isArray(evidence.samples)) continue;
+        evidence.samples.forEach(function (sample) {
+            if (sample.supportCount >= 2 || sample.bridgeEvidence >= 0.45) {
+                recurringEvidence.push(sample.anchorScore);
+                bridgeEvidence.push(sample.bridgeEvidence);
+            }
+        });
+    }
+
+    if (recurringEvidence.length < 3) {
+        return defaultProfile;
+    }
+
+    var medianAnchor = quantileValue(recurringEvidence, 0.5);
+    var lowerAnchor = quantileValue(recurringEvidence, 0.25);
+    var medianBridge = bridgeEvidence.length ? quantileValue(bridgeEvidence, 0.5) : defaultProfile.bridgeMin;
+
+    return {
+        usableMin: Math.max(0.52, Math.min(0.68, lowerAnchor - 0.03)),
+        strongMin: Math.max(0.64, Math.min(0.82, medianAnchor - 0.01)),
+        bridgeMin: Math.max(0.52, Math.min(0.72, medianBridge - 0.02))
+    };
+}
+
+function classifySystemVerticalEvidence(score, profile) {
+    profile = profile || buildDefaultBarlineProfile();
+    if (!isFinite(score)) return 'none';
+    if (score >= profile.strongMin) return 'strong';
+    if (score >= profile.usableMin) return 'usable';
+    return 'weak';
+}
+
+function scoreInterSystemBridge(pageImageData, upperSystem, lowerSystem, x) {
+    if (!upperSystem || !lowerSystem) return 0;
+    var upperBounds = getSystemTopBottomAtX(upperSystem, x);
+    var lowerBounds = getSystemTopBottomAtX(lowerSystem, x);
+    var gapTop = Math.round(upperBounds.bottom) + 1;
+    var gapBottom = Math.round(lowerBounds.top) - 1;
+    if (gapBottom <= gapTop) return 0;
+    var height = gapBottom - gapTop + 1;
+    if (height < 2) return 0;
+
+    var centerBright = averageBrightnessInColumnBand(pageImageData, x, gapTop, gapBottom);
+    var sideBright = (
+        averageBrightnessInColumnBand(pageImageData, x - 3, gapTop, gapBottom) +
+        averageBrightnessInColumnBand(pageImageData, x + 3, gapTop, gapBottom)
+    ) * 0.5;
+    var darkness = (255 - centerBright) / 255;
+    var contrast = Math.max(0, (sideBright - centerBright) / 255);
+    return darkness * 0.65 + contrast * 0.35;
+}
+
+function clusterFullScoreCandidates(candidates, tolerance) {
+    if (!candidates.length) return [];
+    var sorted = candidates.slice().sort(function (a, b) { return a.x - b.x; });
+    var clusters = [{ members: [sorted[0]] }];
+    for (var i = 1; i < sorted.length; i++) {
+        var cluster = clusters[clusters.length - 1];
+        var lastX = cluster.members[cluster.members.length - 1].x;
+        if (Math.abs(sorted[i].x - lastX) <= tolerance) {
+            cluster.members.push(sorted[i]);
+        } else {
+            clusters.push({ members: [sorted[i]] });
+        }
+    }
+    return clusters;
+}
+
+function computeAdjacentAlignmentEvidence(pageImageData, upperItem, lowerItem, profile) {
+    profile = profile || buildDefaultBarlineProfile();
+    var upperBars = getInteriorBarlines(upperItem.bxs);
+    var lowerBars = getInteriorBarlines(lowerItem.bxs);
+    var dominantSp = Math.max(getSystemEstimatedSpatium(upperItem.system), getSystemEstimatedSpatium(lowerItem.system), 4);
+    var tolerance = Math.max(4, Math.round(0.75 * dominantSp));
+    if (!upperBars.length || !lowerBars.length) {
+        return {
+            matchedCount: 0,
+            minCount: Math.min(upperBars.length, lowerBars.length),
+            ratio: 0,
+            tolerance: tolerance,
+            matchedXs: [],
+            bridgeCount: 0,
+            weightedScore: 0
+        };
+    }
+
+    var usedLower = new Set();
+    var matches = [];
+    var bridgeCount = 0;
+    var weightedScore = 0;
+    var strongAnchorCount = 0;
+    var usableAnchorCount = 0;
+    var samples = [];
+
+    for (var i = 0; i < upperBars.length; i++) {
+        var bestIndex = -1;
+        var bestDist = Infinity;
+        for (var j = 0; j < lowerBars.length; j++) {
+            if (usedLower.has(j)) continue;
+            var dist = Math.abs(upperBars[i] - lowerBars[j]);
+            if (dist <= tolerance && dist < bestDist) {
+                bestDist = dist;
+                bestIndex = j;
+            }
+        }
+        if (bestIndex < 0) continue;
+
+        usedLower.add(bestIndex);
+        var canonicalX = Math.round((upperBars[i] + lowerBars[bestIndex]) / 2);
+        var upperEvidence = scoreSystemVerticalEvidence(pageImageData, upperItem.system, canonicalX);
+        var lowerEvidence = scoreSystemVerticalEvidence(pageImageData, lowerItem.system, canonicalX);
+        var bridgeEvidence = scoreInterSystemBridge(pageImageData, upperItem.system, lowerItem.system, canonicalX);
+        var upperClass = classifySystemVerticalEvidence(upperEvidence, profile);
+        var lowerClass = classifySystemVerticalEvidence(lowerEvidence, profile);
+        var hasStrongAnchor = upperClass === 'strong' || lowerClass === 'strong';
+        var hasUsableAnchor = hasStrongAnchor || upperClass === 'usable' || lowerClass === 'usable';
+        var anchorScore = Math.max(upperEvidence, lowerEvidence);
+        samples.push({
+            x: canonicalX,
+            upperEvidence: upperEvidence,
+            lowerEvidence: lowerEvidence,
+            anchorScore: anchorScore,
+            bridgeEvidence: bridgeEvidence,
+            supportCount: 2
+        });
+
+        if (!hasUsableAnchor && bridgeEvidence < profile.bridgeMin) {
+            continue;
+        }
+
+        if (bridgeEvidence >= 0.45) bridgeCount++;
+        if (hasStrongAnchor) strongAnchorCount++;
+        if (hasUsableAnchor) usableAnchorCount++;
+        weightedScore += 1 + 0.5 * upperEvidence + 0.5 * lowerEvidence + 1.25 * bridgeEvidence;
+        matches.push(canonicalX);
+    }
+
+    return {
+        matchedCount: matches.length,
+        minCount: Math.min(upperBars.length, lowerBars.length),
+        ratio: matches.length / Math.max(1, Math.min(upperBars.length, lowerBars.length)),
+        tolerance: tolerance,
+        matchedXs: matches,
+        bridgeCount: bridgeCount,
+        weightedScore: weightedScore,
+        strongAnchorCount: strongAnchorCount,
+        usableAnchorCount: usableAnchorCount,
+        samples: samples
+    };
+}
+
+function shouldMergeAdjacentFullScoreItems(pageImageData, upperItem, lowerItem, profile) {
+    var evidence = computeAdjacentAlignmentEvidence(pageImageData, upperItem, lowerItem, profile);
+    if (evidence.matchedCount === 0) return false;
+    if (evidence.strongAnchorCount === 0 && evidence.bridgeCount === 0) return false;
+    if (evidence.bridgeCount >= 2 && evidence.usableAnchorCount >= 2) return true;
+    if (evidence.strongAnchorCount >= 2 && evidence.matchedCount >= 3 && evidence.ratio >= 0.35) return true;
+    if (evidence.strongAnchorCount >= 1 && evidence.matchedCount >= 4 && evidence.ratio >= 0.45) return true;
+    return false;
+}
+
+function buildFullScoreBarlinesFromSelection(pageImageData, selected, mergedSystem, profile) {
+    profile = profile || buildDefaultBarlineProfile();
+    var dominantSp = selected.reduce(function (maxSp, item) {
+        return Math.max(maxSp, getSystemEstimatedSpatium(item.system));
+    }, 4);
+    var tolerance = Math.max(4, Math.round(0.75 * dominantSp));
+
+    if (selected.length === 1) {
+        var singleBars = [Math.round(mergedSystem.xs.x1)];
+        getInteriorBarlines(selected[0].bxs).forEach(function (x) {
+            if (classifySystemVerticalEvidence(scoreSystemVerticalEvidence(pageImageData, selected[0].system, x), profile) !== 'weak') {
+                singleBars.push(x);
+            }
+        });
+        singleBars.push(Math.round(mergedSystem.xs.x2));
+        return clusterBarlineXs(singleBars, Math.max(3, Math.round(2.0 * dominantSp)));
+    }
+
+    var candidates = [];
+
+    selected.forEach(function (item, index) {
+        getInteriorBarlines(item.bxs).forEach(function (x) {
+            candidates.push({
+                x: x,
+                itemIndex: index,
+                system: item.system,
+                verticalEvidence: scoreSystemVerticalEvidence(pageImageData, item.system, x)
+            });
+        });
+    });
+
+    var clusters = clusterFullScoreCandidates(candidates, tolerance);
+    var accepted = [Math.round(mergedSystem.xs.x1)];
+
+    clusters.forEach(function (cluster) {
+        var sourceCount = new Set(cluster.members.map(function (m) { return m.itemIndex; })).size;
+        var bridgeScore = 0;
+        for (var i = 0; i < selected.length - 1; i++) {
+            var clusterX = cluster.members.reduce(function (sum, member) { return sum + member.x; }, 0) / cluster.members.length;
+            bridgeScore = Math.max(bridgeScore, scoreInterSystemBridge(pageImageData, selected[i].system, selected[i + 1].system, clusterX));
+        }
+        var strongAnchors = 0;
+        var usableAnchors = 0;
+        cluster.members.forEach(function (member) {
+            var cls = classifySystemVerticalEvidence(member.verticalEvidence, profile);
+            if (cls === 'strong') strongAnchors++;
+            if (cls === 'strong' || cls === 'usable') usableAnchors++;
+        });
+
+        if (strongAnchors === 0 && bridgeScore < profile.bridgeMin) {
+            return;
+        }
+        if (sourceCount < 2 && bridgeScore < 0.7) {
+            return;
+        }
+        if (usableAnchors < 2 && bridgeScore < 0.62) {
+            return;
+        }
+
+        var weightedSum = 0;
+        var totalWeight = 0;
+        cluster.members.forEach(function (member) {
+            var weight = 1 + member.verticalEvidence;
+            weightedSum += member.x * weight;
+            totalWeight += weight;
+        });
+        var canonicalX = Math.round(weightedSum / Math.max(1, totalWeight));
+
+        var perStaffSupport = 0;
+        var perStaffStrong = 0;
+        var fullBridgeCount = 0;
+        for (var si = 0; si < selected.length; si++) {
+            var matchedX = findNearestInteriorBarlineX(selected[si].bxs, canonicalX, tolerance);
+            if (matchedX == null) continue;
+            var supportScore = scoreSystemVerticalEvidence(pageImageData, selected[si].system, matchedX);
+            var supportClass = classifySystemVerticalEvidence(supportScore, profile);
+            if (supportClass === 'weak' || supportClass === 'none') continue;
+            perStaffSupport++;
+            if (supportClass === 'strong') perStaffStrong++;
+        }
+        for (var bi = 0; bi < selected.length - 1; bi++) {
+            if (scoreInterSystemBridge(pageImageData, selected[bi].system, selected[bi + 1].system, canonicalX) >= profile.bridgeMin) {
+                fullBridgeCount++;
+            }
+        }
+
+        var requiredStaffSupport = selected.length <= 3 ? selected.length : selected.length - 1;
+        var hasFullBridge = fullBridgeCount >= selected.length - 1;
+        if (!hasFullBridge) {
+            if (perStaffSupport < requiredStaffSupport) {
+                return;
+            }
+            if (perStaffStrong < 1) {
+                return;
+            }
+        } else if (perStaffStrong < 1 && strongAnchors < 1) {
+            return;
+        }
+
+        accepted.push(canonicalX);
+    });
+
+    accepted.push(Math.round(mergedSystem.xs.x2));
+    return clusterBarlineXs(accepted, Math.max(3, Math.round(2.0 * dominantSp)));
+}
+
 function systemLooksLikeMergedGrandStaff(system) {
     if (!system) return false;
     var xs = system.xs || { x1: 0, x2: 0 };
@@ -1917,8 +2966,65 @@ function systemLooksLikeMergedGrandStaff(system) {
     var bounds = getSystemTopBottomAtX(system, midX);
     var height = bounds.bottom - bounds.top;
     var spatium = getSystemEstimatedSpatium(system);
+    var lineCount = Math.max(
+        (getSystemEnvelopeLines(system, 'left') || []).length,
+        (getSystemEnvelopeLines(system, 'right') || []).length
+    );
     if (!isFinite(height) || !isFinite(spatium) || spatium <= 0) return false;
-    return height >= 7.25 * spatium;
+    var heightInSp = height / spatium;
+    return lineCount >= 8 && heightInSp >= 8.0 && heightInSp <= 17.0;
+}
+
+function canMergeAsGrandStaff(currentItem, nextItem) {
+    if (!currentItem || !nextItem || !currentItem.system || !nextItem.system) {
+        return false;
+    }
+
+    var currentSystem = currentItem.system;
+    var nextSystem = nextItem.system;
+    var currentXs = currentSystem.xs || { x1: 0, x2: 0 };
+    var nextXs = nextSystem.xs || { x1: 0, x2: 0 };
+    var dominantSpatium = Math.max(
+        getSystemEstimatedSpatium(currentSystem),
+        getSystemEstimatedSpatium(nextSystem),
+        4
+    );
+
+    var overlapLeft = Math.max(currentXs.x1, nextXs.x1);
+    var overlapRight = Math.min(currentXs.x2, nextXs.x2);
+    var sampleX = overlapLeft <= overlapRight
+        ? Math.round((overlapLeft + overlapRight) / 2)
+        : Math.round((Math.max(currentXs.x1, nextXs.x1) + Math.min(currentXs.x2, nextXs.x2)) / 2);
+
+    sampleX = Math.max(
+        Math.min(sampleX, Math.max(currentXs.x2, nextXs.x2)),
+        Math.min(currentXs.x1, nextXs.x1)
+    );
+
+    var currentBounds = getSystemTopBottomAtX(currentSystem, sampleX);
+    var nextBounds = getSystemTopBottomAtX(nextSystem, sampleX);
+    var currentHeightSp = (currentBounds.bottom - currentBounds.top) / dominantSpatium;
+    var nextHeightSp = (nextBounds.bottom - nextBounds.top) / dominantSpatium;
+    var gapSp = (nextBounds.top - currentBounds.bottom) / dominantSpatium;
+    var mergedHeightSp = (nextBounds.bottom - currentBounds.top) / dominantSpatium;
+
+    if (!isFinite(currentHeightSp) || !isFinite(nextHeightSp) || !isFinite(gapSp) || !isFinite(mergedHeightSp)) {
+        return false;
+    }
+
+    if (currentHeightSp > 6.5 || nextHeightSp > 6.5) {
+        return false;
+    }
+
+    if (gapSp < -0.75 || gapSp > 9.0) {
+        return false;
+    }
+
+    if (mergedHeightSp < 8.0 || mergedHeightSp > 17.0) {
+        return false;
+    }
+
+    return true;
 }
 
 function buildMergedSystemFromSelection(selected) {
@@ -1960,6 +3066,537 @@ function buildMergedSystemFromSelection(selected) {
     };
 }
 
+function countLongestConsecutiveIndices(indices) {
+    if (!Array.isArray(indices) || !indices.length) return 0;
+    var sorted = indices.slice().sort(function (a, b) { return a - b; });
+    var best = 1;
+    var current = 1;
+    for (var i = 1; i < sorted.length; i++) {
+        if (sorted[i] === sorted[i - 1] + 1) {
+            current++;
+            if (current > best) best = current;
+        } else if (sorted[i] !== sorted[i - 1]) {
+            current = 1;
+        }
+    }
+    return best;
+}
+
+function getSelectionSystemInfo(selection) {
+    if (!Array.isArray(selection) || !selection.length) return null;
+
+    var mergeInfo = selection.length > 1 ? buildMergedSystemFromSelection(selection.slice()) : null;
+    var system = mergeInfo ? mergeInfo.system : cloneSystemForGeometrySeed(selection[0].system);
+    var dominantSp = mergeInfo ? mergeInfo.dominantSpatium : getSystemEstimatedSpatium(selection[0].system);
+    if (!dominantSp) dominantSp = 8;
+
+    var x1 = Math.min.apply(null, selection.map(function (item) {
+        return getSystemBoundaryXs(item.system, item.bxs).x1;
+    }));
+    var x2 = Math.max.apply(null, selection.map(function (item) {
+        return getSystemBoundaryXs(item.system, item.bxs).x2;
+    }));
+    system.xs = {
+        x1: Math.round(x1),
+        x2: Math.round(x2)
+    };
+
+    var sampleX = Math.round(system.xs.x1);
+    var top = Infinity;
+    var bottom = -Infinity;
+    selection.forEach(function (item) {
+        var bounds = getSystemTopBottomAtX(item.system, sampleX);
+        if (bounds.top < top) top = bounds.top;
+        if (bounds.bottom > bottom) bottom = bounds.bottom;
+    });
+    if (!isFinite(top) || !isFinite(bottom)) {
+        var fallback = getSystemTopBottomAtX(system, Math.round((system.xs.x1 + system.xs.x2) / 2));
+        top = fallback.top;
+        bottom = fallback.bottom;
+    }
+
+    return {
+        system: system,
+        dominantSpatium: dominantSp,
+        top: Math.round(top),
+        bottom: Math.round(bottom)
+    };
+}
+
+function measureVerticalRunAtX(pageImageData, x, top, bottom, options) {
+    options = options || {};
+    var threshold = typeof options.threshold === 'number' ? options.threshold : 170;
+    var bandHalfWidth = Math.max(0, Math.round(options.bandHalfWidth || 0));
+    var driftRadius = Math.max(0, Math.round(options.driftRadius || 0));
+    var maxHole = Math.max(0, Math.round(options.maxHole || 0));
+    var sideDx = Math.max(2, Math.round(options.sideDx || 3));
+    var edgeWindow = Math.max(2, Math.round(options.edgeWindow || 4));
+    var pixelHeight = Math.floor(pageImageData.pixelData.length / pageImageData.stride);
+    var clampedTop = Math.max(0, Math.round(top));
+    var clampedBottom = Math.min(pixelHeight - 1, Math.round(bottom));
+    if (clampedBottom <= clampedTop) {
+        return {
+            score: 0,
+            darkRatio: 0,
+            connectivity: 0,
+            contrast: 0,
+            topTouch: 0,
+            bottomTouch: 0,
+            start: clampedTop,
+            end: clampedTop,
+            span: 0
+        };
+    }
+
+    var totalRows = clampedBottom - clampedTop + 1;
+    var darkCount = 0;
+    var bestStart = clampedTop;
+    var bestEnd = clampedTop;
+    var bestSpan = 0;
+    var currentStart = null;
+    var currentLastDark = null;
+
+    for (var row = clampedTop; row <= clampedBottom; row++) {
+        var dark = isDarkInVerticalBand(pageImageData, x, row, threshold, bandHalfWidth, driftRadius);
+        if (dark) {
+            darkCount++;
+            if (currentStart === null) {
+                currentStart = row;
+            }
+            currentLastDark = row;
+            continue;
+        }
+
+        if (currentStart !== null && currentLastDark !== null && (row - currentLastDark) <= maxHole) {
+            continue;
+        }
+
+        if (currentStart !== null && currentLastDark !== null) {
+            var span = currentLastDark - currentStart + 1;
+            if (span > bestSpan) {
+                bestSpan = span;
+                bestStart = currentStart;
+                bestEnd = currentLastDark;
+            }
+        }
+        currentStart = null;
+        currentLastDark = null;
+    }
+
+    if (currentStart !== null && currentLastDark !== null) {
+        var trailingSpan = currentLastDark - currentStart + 1;
+        if (trailingSpan > bestSpan) {
+            bestSpan = trailingSpan;
+            bestStart = currentStart;
+            bestEnd = currentLastDark;
+        }
+    }
+
+    var topEdgeBottom = Math.min(clampedBottom, clampedTop + edgeWindow - 1);
+    var bottomEdgeTop = Math.max(clampedTop, clampedBottom - edgeWindow + 1);
+    var topTouch = getVerticalOverlapLength(bestStart, bestEnd, clampedTop, topEdgeBottom) / Math.max(1, topEdgeBottom - clampedTop + 1);
+    var bottomTouch = getVerticalOverlapLength(bestStart, bestEnd, bottomEdgeTop, clampedBottom) / Math.max(1, clampedBottom - bottomEdgeTop + 1);
+    var darkRatio = darkCount / totalRows;
+    var connectivity = bestSpan / totalRows;
+    var centerBright = averageColumnBrightness(pageImageData, x, clampedTop, clampedBottom);
+    var leftBright = averageColumnBrightness(pageImageData, x - sideDx, clampedTop, clampedBottom);
+    var rightBright = averageColumnBrightness(pageImageData, x + sideDx, clampedTop, clampedBottom);
+    var contrast = Math.max(0, ((leftBright + rightBright) * 0.5 - centerBright) / 255);
+    var score = connectivity * 0.45 + darkRatio * 0.25 + contrast * 0.15 + Math.min(topTouch, bottomTouch) * 0.15;
+
+    return {
+        score: score,
+        darkRatio: darkRatio,
+        connectivity: connectivity,
+        contrast: contrast,
+        topTouch: topTouch,
+        bottomTouch: bottomTouch,
+        start: bestStart,
+        end: bestEnd,
+        span: bestSpan
+    };
+}
+
+function detectLeftMarkerComponents(pageImageData, info) {
+    var dominantSp = info.dominantSpatium;
+    var width = pageImageData.width;
+    var x1 = info.system.xs.x1;
+    var zoneStart = Math.max(1, Math.round(x1 - 3.0 * dominantSp));
+    var zoneEnd = Math.min(width - 2, Math.round(Math.min(x1 + 20 * dominantSp, width * 0.35)));
+    if (zoneEnd <= zoneStart) {
+        zoneEnd = Math.min(width - 2, zoneStart + Math.max(12, Math.round(12 * dominantSp)));
+    }
+
+    var columnCandidates = [];
+    for (var x = zoneStart; x <= zoneEnd; x++) {
+        var metrics = measureVerticalRunAtX(pageImageData, x, info.top - 0.40 * dominantSp, info.bottom + 0.40 * dominantSp, {
+            threshold: 178,
+            bandHalfWidth: Math.max(1, Math.round(0.22 * dominantSp)),
+            driftRadius: Math.max(1, Math.round(0.28 * dominantSp)),
+            maxHole: Math.max(2, Math.round(1.0 * dominantSp)),
+            sideDx: Math.max(2, Math.round(0.8 * dominantSp)),
+            edgeWindow: Math.max(3, Math.round(0.9 * dominantSp))
+        });
+
+        if (metrics.connectivity < 0.48 || metrics.darkRatio < 0.24) continue;
+        if (metrics.topTouch < 0.12 || metrics.bottomTouch < 0.12) continue;
+
+        columnCandidates.push({
+            x: x,
+            metrics: metrics,
+            columnScore: metrics.score + Math.min(metrics.topTouch, metrics.bottomTouch) * 0.10
+        });
+    }
+
+    if (!columnCandidates.length) return [];
+
+    var clusters = [];
+    var current = [columnCandidates[0]];
+    var maxGap = Math.max(1, Math.round(0.35 * dominantSp));
+    for (var i = 1; i < columnCandidates.length; i++) {
+        if (columnCandidates[i].x - current[current.length - 1].x <= maxGap) {
+            current.push(columnCandidates[i]);
+        } else {
+            clusters.push(current);
+            current = [columnCandidates[i]];
+        }
+    }
+    clusters.push(current);
+
+    return clusters.map(function (cluster) {
+        var weightedX = 0;
+        var weightSum = 0;
+        var bestMetrics = cluster[0].metrics;
+        var scoreSum = 0;
+        var darkRatioSum = 0;
+        var connectivitySum = 0;
+        var contrastSum = 0;
+        var topTouchSum = 0;
+        var bottomTouchSum = 0;
+        var yMin = Infinity;
+        var yMax = -Infinity;
+
+        cluster.forEach(function (entry) {
+            var weight = Math.max(0.01, entry.columnScore);
+            weightedX += entry.x * weight;
+            weightSum += weight;
+            scoreSum += entry.columnScore;
+            darkRatioSum += entry.metrics.darkRatio;
+            connectivitySum += entry.metrics.connectivity;
+            contrastSum += entry.metrics.contrast;
+            topTouchSum += entry.metrics.topTouch;
+            bottomTouchSum += entry.metrics.bottomTouch;
+            if (entry.metrics.score > bestMetrics.score) {
+                bestMetrics = entry.metrics;
+            }
+            if (entry.metrics.start < yMin) yMin = entry.metrics.start;
+            if (entry.metrics.end > yMax) yMax = entry.metrics.end;
+        });
+
+        var componentWidth = cluster[cluster.length - 1].x - cluster[0].x + 1;
+        var componentSpan = yMax - yMin + 1;
+        var avgDarkRatio = darkRatioSum / cluster.length;
+        var avgConnectivity = connectivitySum / cluster.length;
+        var avgContrast = contrastSum / cluster.length;
+        var avgTopTouch = topTouchSum / cluster.length;
+        var avgBottomTouch = bottomTouchSum / cluster.length;
+        var expectedWidth = Math.max(2, Math.round(0.9 * dominantSp));
+        var widthPenalty = Math.abs(componentWidth - expectedWidth) / Math.max(expectedWidth, 1);
+        var leftBias = (cluster[0].x - zoneStart) / Math.max(1, zoneEnd - zoneStart);
+        var componentScore =
+            avgConnectivity * 0.30 +
+            avgDarkRatio * 0.24 +
+            avgContrast * 0.10 +
+            Math.min(avgTopTouch, avgBottomTouch) * 0.16 +
+            Math.min(1, componentSpan / Math.max(1, info.bottom - info.top + 1)) * 0.12 +
+            Math.min(1, componentWidth / Math.max(1, expectedWidth)) * 0.08 -
+            Math.max(0, widthPenalty - 0.75) * 0.06 -
+            leftBias * 0.03;
+
+        return {
+            x: Math.round(weightedX / Math.max(1e-6, weightSum)),
+            xMin: cluster[0].x,
+            xMax: cluster[cluster.length - 1].x,
+            width: componentWidth,
+            yMin: yMin,
+            yMax: yMax,
+            span: componentSpan,
+            score: componentScore,
+            metrics: {
+                score: bestMetrics.score,
+                darkRatio: avgDarkRatio,
+                connectivity: avgConnectivity,
+                contrast: avgContrast,
+                topTouch: avgTopTouch,
+                bottomTouch: avgBottomTouch
+            },
+            valid: avgConnectivity >= 0.60 &&
+                avgDarkRatio >= 0.30 &&
+                avgContrast >= 0.02 &&
+                avgTopTouch >= 0.22 &&
+                avgBottomTouch >= 0.22 &&
+                componentSpan >= Math.round(0.72 * (info.bottom - info.top + 1)) &&
+                componentWidth >= 1 &&
+                componentWidth <= Math.max(10, Math.round(1.75 * dominantSp))
+        };
+    }).sort(function (a, b) {
+        return b.score - a.score;
+    });
+}
+
+function findLeftSystemMarkerForSelection(pageImageData, selection) {
+    var info = getSelectionSystemInfo(selection);
+    if (!info) return null;
+
+    var components = detectLeftMarkerComponents(pageImageData, info);
+    if (!components.length) return null;
+
+    var best = components[0];
+    best.system = info.system;
+    best.top = info.top;
+    best.bottom = info.bottom;
+    best.dominantSpatium = info.dominantSpatium;
+    best.components = components.slice(0, 6).map(function (component) {
+        return {
+            x: component.x,
+            xMin: component.xMin,
+            xMax: component.xMax,
+            width: component.width,
+            span: component.span,
+            score: Math.round(component.score * 1000) / 1000,
+            valid: component.valid
+        };
+    });
+    return best;
+}
+
+function scoreStaffBarlineSegmentAtX(pageImageData, system, x) {
+    var spatium = getSystemEstimatedSpatium(system);
+    var bounds = getSystemTopBottomAtX(system, x);
+    var metrics = measureVerticalRunAtX(
+        pageImageData,
+        x,
+        bounds.top - 0.30 * spatium,
+        bounds.bottom + 0.30 * spatium,
+        {
+            threshold: 168,
+            bandHalfWidth: Math.max(0, Math.round(0.18 * spatium)),
+            driftRadius: Math.max(1, Math.round(0.22 * spatium)),
+            maxHole: Math.max(1, Math.round(0.60 * spatium)),
+            sideDx: Math.max(2, Math.round(0.7 * spatium)),
+            edgeWindow: Math.max(2, Math.round(0.75 * spatium))
+        }
+    );
+    var edgeCoverage = Math.min(metrics.topTouch, metrics.bottomTouch);
+    var score = metrics.score;
+    if (metrics.topTouch < 0.20 || metrics.bottomTouch < 0.20) {
+        score = Math.min(score, 0.54);
+    } else {
+        score += edgeCoverage * 0.10;
+    }
+    metrics.edgeCoverage = edgeCoverage;
+    metrics.score = score;
+    return metrics;
+}
+
+function buildFullScoreGroupsFromLeftMarkers(pageImageData, items, debugInfo) {
+    var groups = [];
+    var decisions = [];
+
+    for (var start = 0; start < items.length;) {
+        var best = null;
+        for (var end = start; end < items.length && end < start + 8; end++) {
+            var selection = items.slice(start, end + 1);
+            var marker = findLeftSystemMarkerForSelection(pageImageData, selection);
+            var selectionScore = marker ? marker.score + Math.min(0.12, 0.03 * (selection.length - 1)) : -Infinity;
+            decisions.push({
+                pair: [start, end],
+                kind: 'left_marker',
+                merged: !!(marker && marker.valid),
+                markerX: marker ? marker.x : null,
+                score: marker ? Math.round(marker.score * 1000) / 1000 : null
+            });
+
+            if (!marker || !marker.valid) {
+                if (end > start) break;
+                continue;
+            }
+
+            if (!best || selectionScore > best.selectionScore) {
+                best = {
+                    items: selection,
+                    end: end,
+                    marker: marker,
+                    selectionScore: selectionScore
+                };
+            }
+        }
+
+        if (!best) {
+            var fallbackMarker = findLeftSystemMarkerForSelection(pageImageData, [items[start]]);
+            best = {
+                items: [items[start]],
+                end: start,
+                marker: fallbackMarker || {
+                    x: Math.round(getSystemBoundaryXs(items[start].system, items[start].bxs).x1),
+                    score: 0,
+                    metrics: {
+                        connectivity: 0,
+                        darkRatio: 0,
+                        contrast: 0,
+                        topTouch: 0,
+                        bottomTouch: 0
+                    },
+                    valid: false
+                },
+                selectionScore: fallbackMarker ? fallbackMarker.score : 0
+            };
+        }
+
+        groups.push(best);
+        start = best.end + 1;
+    }
+
+    if (debugInfo) {
+        debugInfo.mergeDecisions = decisions;
+    }
+    return groups;
+}
+
+function detectFullScoreBarlinesForGroup(pageImageData, groupInfo) {
+    var selection = groupInfo.items;
+    var systemInfo = getSelectionSystemInfo(selection);
+    if (!systemInfo) return null;
+
+    var dominantSp = systemInfo.dominantSpatium;
+    var leftX = groupInfo.marker && typeof groupInfo.marker.x === 'number'
+        ? Math.round(groupInfo.marker.x)
+        : Math.round(systemInfo.system.xs.x1);
+    var rightX = Math.round(systemInfo.system.xs.x2);
+    var groupSystem = cloneSystemForGeometrySeed(systemInfo.system);
+    groupSystem.xs.x1 = leftX;
+    groupSystem.xs.x2 = rightX;
+
+    var searchStart = Math.max(leftX + Math.round(1.5 * dominantSp), leftX + 2);
+    var searchEnd = Math.max(searchStart, rightX - Math.round(1.5 * dominantSp));
+    var minGap = Math.max(3, Math.round(2.0 * dominantSp));
+    var candidates = [];
+
+    for (var x = searchStart; x <= searchEnd; x++) {
+        var fullMetrics = measureVerticalRunAtX(
+            pageImageData,
+            x,
+            systemInfo.top - 0.35 * dominantSp,
+            systemInfo.bottom + 0.35 * dominantSp,
+            {
+                threshold: 168,
+                bandHalfWidth: Math.max(0, Math.round(0.18 * dominantSp)),
+                driftRadius: Math.max(1, Math.round(0.25 * dominantSp)),
+                maxHole: Math.max(2, Math.round(0.8 * dominantSp)),
+                sideDx: Math.max(2, Math.round(0.9 * dominantSp)),
+                edgeWindow: Math.max(3, Math.round(0.9 * dominantSp))
+            }
+        );
+
+        var usableIndices = [];
+        var strongIndices = [];
+        var supportScoreSum = 0;
+        var bridgeCount = 0;
+
+        for (var i = 0; i < selection.length; i++) {
+            var support = scoreStaffBarlineSegmentAtX(pageImageData, selection[i].system, x);
+            supportScoreSum += support.score;
+            if (support.score >= 0.56) usableIndices.push(i);
+            if (support.score >= 0.72) strongIndices.push(i);
+        }
+
+        for (var bi = 0; bi < selection.length - 1; bi++) {
+            var bridgeScore = scoreInterSystemBridge(pageImageData, selection[bi].system, selection[bi + 1].system, x);
+            if (bridgeScore >= 0.42) bridgeCount++;
+        }
+
+        var usableRatio = selection.length ? usableIndices.length / selection.length : 0;
+        var strongRatio = selection.length ? strongIndices.length / selection.length : 0;
+        var longestRunRatio = selection.length ? countLongestConsecutiveIndices(usableIndices) / selection.length : 0;
+        var bridgeRatio = selection.length > 1 ? bridgeCount / (selection.length - 1) : 1;
+        var averageSupport = selection.length ? supportScoreSum / selection.length : 0;
+        var fullStrong = fullMetrics.connectivity >= 0.78 &&
+            fullMetrics.darkRatio >= 0.38 &&
+            fullMetrics.contrast >= 0.04 &&
+            fullMetrics.topTouch >= 0.35 &&
+            fullMetrics.bottomTouch >= 0.35;
+        var segmentedStrong = strongIndices.length >= 2 &&
+            countLongestConsecutiveIndices(usableIndices) >= Math.max(2, Math.ceil(selection.length * 0.5));
+        var segmentedUsable = usableIndices.length >= Math.max(2, Math.ceil(selection.length * 0.6)) &&
+            bridgeCount >= Math.max(1, Math.ceil((selection.length - 1) * 0.35));
+
+        if (!fullStrong && !segmentedStrong && !segmentedUsable) {
+            continue;
+        }
+
+        candidates.push({
+            x: x,
+            score: fullMetrics.score * 0.42 + usableRatio * 0.20 + longestRunRatio * 0.18 + strongRatio * 0.12 + bridgeRatio * 0.08 + averageSupport * 0.05,
+            fullMetrics: fullMetrics,
+            usableIndices: usableIndices.slice(),
+            strongIndices: strongIndices.slice(),
+            bridgeCount: bridgeCount
+        });
+    }
+
+    candidates.sort(function (a, b) { return b.score - a.score; });
+    var accepted = [leftX, rightX];
+    var acceptedDebug = [];
+    var acceptedSet = new Set();
+    for (var ci = 0; ci < candidates.length; ci++) {
+        var cand = candidates[ci];
+        var tooClose = accepted.some(function (existingX) {
+            return Math.abs(existingX - cand.x) < minGap;
+        });
+        if (tooClose) continue;
+        accepted.push(cand.x);
+        acceptedSet.add(cand.x);
+        acceptedDebug.push({
+            x: cand.x,
+            score: Math.round(cand.score * 1000) / 1000,
+            usable: cand.usableIndices.slice(),
+            strong: cand.strongIndices.slice(),
+            bridgeCount: cand.bridgeCount,
+            connectivity: Math.round(cand.fullMetrics.connectivity * 1000) / 1000,
+            darkRatio: Math.round(cand.fullMetrics.darkRatio * 1000) / 1000
+        });
+    }
+
+    var candidateDebug = candidates.slice(0, 80).map(function (cand) {
+        return {
+            x: cand.x,
+            accepted: acceptedSet.has(cand.x),
+            score: Math.round(cand.score * 1000) / 1000,
+            usable: cand.usableIndices.slice(),
+            strong: cand.strongIndices.slice(),
+            bridgeCount: cand.bridgeCount,
+            connectivity: Math.round(cand.fullMetrics.connectivity * 1000) / 1000,
+            darkRatio: Math.round(cand.fullMetrics.darkRatio * 1000) / 1000,
+            contrast: Math.round(cand.fullMetrics.contrast * 1000) / 1000,
+            topTouch: Math.round(cand.fullMetrics.topTouch * 1000) / 1000,
+            bottomTouch: Math.round(cand.fullMetrics.bottomTouch * 1000) / 1000
+        };
+    });
+
+    return {
+        system: groupSystem,
+        bxs: accepted.sort(function (a, b) { return a - b; }),
+        debug: acceptedDebug,
+        candidateDebug: candidateDebug,
+        bounds: {
+            top: systemInfo.top,
+            bottom: systemInfo.bottom,
+            leftX: leftX,
+            rightX: rightX
+        }
+    };
+}
+
 function normalizePageToPianoSystems(pageData, pageImageData) {
     if (!pageData || !Array.isArray(pageData.cxs) || !Array.isArray(pageData.bxs) || pageData.cxs.length === 0) {
         return false;
@@ -1978,31 +3615,52 @@ function normalizePageToPianoSystems(pageData, pageImageData) {
     var normalizedBxs = [];
     var changed = false;
 
+    function detectForSystem(system, priorBxs) {
+        var detected = detectMergedSystemBarlines(pageImageData, system, getSystemEstimatedSpatium(system));
+        if (!Array.isArray(priorBxs) || priorBxs.length !== detected.length) {
+            changed = true;
+            return detected;
+        }
+        for (var bi = 0; bi < detected.length; bi++) {
+            if (Math.round(Math.abs(priorBxs[bi])) !== Math.round(Math.abs(detected[bi]))) {
+                changed = true;
+                break;
+            }
+        }
+        return detected;
+    }
+
     for (var i = 0; i < items.length; i++) {
         var current = items[i];
         var currentMerged = systemLooksLikeMergedGrandStaff(current.system);
         if (currentMerged || i === items.length - 1) {
             normalizedCxs.push(current.system);
-            normalizedBxs.push(current.bxs);
+            normalizedBxs.push(detectForSystem(current.system, current.bxs));
             continue;
         }
 
         var next = items[i + 1];
         if (systemLooksLikeMergedGrandStaff(next.system)) {
             normalizedCxs.push(current.system);
-            normalizedBxs.push(current.bxs);
+            normalizedBxs.push(detectForSystem(current.system, current.bxs));
+            continue;
+        }
+
+        if (!canMergeAsGrandStaff(current, next)) {
+            normalizedCxs.push(current.system);
+            normalizedBxs.push(detectForSystem(current.system, current.bxs));
             continue;
         }
 
         var mergeInfo = buildMergedSystemFromSelection([current, next]);
         if (!mergeInfo) {
             normalizedCxs.push(current.system);
-            normalizedBxs.push(current.bxs);
+            normalizedBxs.push(detectForSystem(current.system, current.bxs));
             continue;
         }
 
         normalizedCxs.push(mergeInfo.system);
-        normalizedBxs.push(detectMergedSystemBarlines(pageImageData, mergeInfo.system, mergeInfo.dominantSpatium));
+        normalizedBxs.push(detectForSystem(mergeInfo.system, current.bxs));
         changed = true;
         i += 1;
     }
@@ -2010,6 +3668,126 @@ function normalizePageToPianoSystems(pageData, pageImageData) {
     if (!changed) {
         return false;
     }
+
+    pageData.cxs = normalizedCxs;
+    pageData.bxs = normalizedBxs;
+    return true;
+}
+
+function normalizePageToFullScoreSystems(pageData, pageImageData, debugInfo) {
+    if (!pageData || !Array.isArray(pageData.cxs) || !Array.isArray(pageData.bxs) || pageData.cxs.length === 0) {
+        return false;
+    }
+
+    var rawItems = expandSystemsToStaffItems(pageData.cxs, pageData.bxs);
+    if (!rawItems.length) return false;
+
+    var items = rawItems.map(function (item, index) {
+        var seededSystem = cloneSystemForGeometrySeed(item.system);
+        applyExistingBoundaryXs(seededSystem, item.bxs);
+        if (typeof BarlineDetectV2 !== 'undefined' && systemSupportsRenderGeometryFit(seededSystem)) {
+            var renderGeometry = BarlineDetectV2.buildRenderGeometry(seededSystem, pageImageData.pixelData, pageImageData.stride, pageImageData.width);
+            if (renderGeometry) {
+                seededSystem = applyRenderGeometryToSystem(seededSystem, renderGeometry, {
+                    fixedXs: getSystemBoundaryXs(seededSystem, item.bxs)
+                });
+            }
+        }
+        return {
+            groupIndex: index,
+            system: seededSystem,
+            bxs: Array.isArray(item.bxs) ? item.bxs.slice() : []
+        };
+    });
+
+    if (debugInfo) {
+        debugInfo.rawItemCount = items.length;
+        debugInfo.finalGroupReports = [];
+        debugInfo.clusters = [];
+        debugInfo.leftMarkers = [];
+    }
+
+    var groups = buildFullScoreGroupsFromLeftMarkers(pageImageData, items, debugInfo);
+    var normalizedCxs = [];
+    var normalizedBxs = [];
+
+    groups.forEach(function (groupInfo) {
+        var detected = detectFullScoreBarlinesForGroup(pageImageData, groupInfo);
+        if (!detected) return;
+        normalizedCxs.push(detected.system);
+        normalizedBxs.push(detected.bxs);
+        if (debugInfo) {
+            debugInfo.leftMarkers.push({
+                groupIndices: groupInfo.items.map(function (item) { return item.groupIndex; }),
+                top: groupInfo.marker ? groupInfo.marker.top : detected.bounds.top,
+                bottom: groupInfo.marker ? groupInfo.marker.bottom : detected.bounds.bottom,
+                x: groupInfo.marker ? groupInfo.marker.x : detected.bounds.leftX,
+                valid: !!(groupInfo.marker && groupInfo.marker.valid),
+                components: groupInfo.marker && Array.isArray(groupInfo.marker.components)
+                    ? groupInfo.marker.components.map(function (component) {
+                        return {
+                            x: component.x,
+                            xMin: component.xMin,
+                            xMax: component.xMax,
+                            width: component.width,
+                            span: component.span,
+                            score: component.score,
+                            valid: !!component.valid
+                        };
+                    })
+                    : []
+            });
+            debugInfo.finalGroupReports.push({
+                groupIndices: groupInfo.items.map(function (item) { return item.groupIndex; }),
+                leftMarker: groupInfo.marker ? {
+                    x: groupInfo.marker.x,
+                    score: Math.round(groupInfo.marker.score * 1000) / 1000,
+                    valid: !!groupInfo.marker.valid
+                } : null,
+                clusterDecisions: detected.debug,
+                candidates: detected.candidateDebug,
+                bounds: detected.bounds,
+                bxs: detected.bxs.slice()
+            });
+        }
+    });
+
+    if (!normalizedCxs.length) {
+        return false;
+    }
+
+    if (debugInfo) {
+        debugInfo.groups = groups.map(function (groupInfo) {
+            return groupInfo.items.map(function (item) { return item.groupIndex; });
+        });
+        debugInfo.firstPassGroups = debugInfo.groups.slice();
+    }
+
+    var currentCxs = pageData.cxs || [];
+    var currentBxs = pageData.bxs || [];
+    var changed = normalizedCxs.length !== currentCxs.length || normalizedBxs.length !== currentBxs.length;
+    if (!changed) {
+        changed = normalizedBxs.some(function (bars, idx) {
+            var prior = currentBxs[idx] || [];
+            if (prior.length !== bars.length) return true;
+            for (var j = 0; j < bars.length; j++) {
+                if (Math.round(Math.abs(prior[j])) !== Math.round(Math.abs(bars[j]))) return true;
+            }
+            return false;
+        });
+    }
+
+    if (!changed) {
+        changed = normalizedCxs.some(function (system, idx) {
+            var prior = currentCxs[idx];
+            if (!prior || !prior.xs || !system.xs) return true;
+            return Math.round(prior.xs.x1) !== Math.round(system.xs.x1) ||
+                Math.round(prior.xs.x2) !== Math.round(system.xs.x2) ||
+                Math.round(getSystemSortTop(prior)) !== Math.round(getSystemSortTop(system));
+        });
+    }
+
+    if (!changed) return false;
 
     pageData.cxs = normalizedCxs;
     pageData.bxs = normalizedBxs;
@@ -2078,6 +3856,9 @@ function mergeSystemsInYDrag(event) {
     });
 
     MetricStore.setMetricData(pageData, { clone: false });
+    if (window.SynpdfCorrectionTools && typeof SynpdfCorrectionTools.snapshotV2BaselineForPage === 'function') {
+        SynpdfCorrectionTools.snapshotV2BaselineForPage(pagenum, pageData, [], []);
+    }
     requestRefresh({ preferLiveData: true });
     return true;
 }
@@ -2845,29 +4626,37 @@ $(document).ready(function () {
     function setBatchButtonState(isRunning, currentPage, lastPage) {
         var cnnAllBtn = $('#run-cnn-all-btn');
         var pianoAllBtn = $('#run-piano-all-btn');
+        var fullScoreAllBtn = $('#run-fullscore-all-btn');
         var cnnBtn = $('#run-cnn-btn');
         var v2Btn = $('#run-v2-btn');
         var geomBtn = $('#run-geom-btn');
         if (isRunning) {
             cnnAllBtn.prop('disabled', true).text('Running CNN All… ' + currentPage + '/' + lastPage);
             pianoAllBtn.prop('disabled', true).text('Running Piano All… ' + currentPage + '/' + lastPage);
+            fullScoreAllBtn.prop('disabled', true).text('Running Full Score… ' + currentPage + '/' + lastPage);
             cnnBtn.prop('disabled', true);
             v2Btn.prop('disabled', true);
             geomBtn.prop('disabled', true);
         } else {
             cnnAllBtn.prop('disabled', false).text('Run CNN-only All Pages');
             pianoAllBtn.prop('disabled', false).text('Run Piano All Pages');
+            fullScoreAllBtn.prop('disabled', false).text('Run Full Score All Pages');
             cnnBtn.prop('disabled', false);
             v2Btn.prop('disabled', false);
             geomBtn.prop('disabled', false);
         }
     }
 
-    function waitForRenderedPage(targetPage) {
+    function waitForRenderedPage(targetPage, options) {
+        options = options || {};
+        var requireNewCanvas = !!options.requireNewCanvas;
+        var previousCanvas = options.previousCanvas || null;
+        var sawRenderStart = !requireNewCanvas;
         return new Promise(function (resolve, reject) {
             var startedAt = performance.now();
             function poll() {
                 if (typeof rendering$$module$synpdf !== 'undefined' && rendering$$module$synpdf) {
+                    sawRenderStart = true;
                     if (performance.now() - startedAt > 30000) {
                         reject(new Error('Timed out waiting for page render'));
                         return;
@@ -2887,6 +4676,26 @@ $(document).ready(function () {
                     return;
                 }
 
+                var canvas = getCurrentPageCanvas();
+                if (requireNewCanvas) {
+                    if (!sawRenderStart) {
+                        if (performance.now() - startedAt > 30000) {
+                            reject(new Error('Render did not start for target page'));
+                            return;
+                        }
+                        setTimeout(poll, 50);
+                        return;
+                    }
+                    if (!canvas || canvas === previousCanvas) {
+                        if (performance.now() - startedAt > 30000) {
+                            reject(new Error('Rendered canvas did not refresh'));
+                            return;
+                        }
+                        setTimeout(poll, 50);
+                        return;
+                    }
+                }
+
                 var imageData = getCurrentPageImageData();
                 if (!imageData || !imageData.pixelData || !imageData.pixelData.length) {
                     if (performance.now() - startedAt > 30000) {
@@ -2903,14 +4712,19 @@ $(document).ready(function () {
         });
     }
 
-    async function goToRenderedPage(targetPage) {
+    async function goToRenderedPage(targetPage, options) {
+        options = options || {};
         var currentInput = document.getElementById('pagenum');
         var previousPage = currentInput ? parseInt(currentInput.value, 10) : opt$$module$synpdf.pagenum;
+        var previousCanvas = getCurrentPageCanvas();
         opt$$module$synpdf.pagenum = targetPage;
         if (typeof setPagenum$$module$synpdf === 'function') {
             setPagenum$$module$synpdf(previousPage);
         }
-        await waitForRenderedPage(targetPage);
+        await waitForRenderedPage(targetPage, {
+            requireNewCanvas: !!options.forceRerender,
+            previousCanvas: previousCanvas
+        });
     }
 
     async function runAllPagesBarlineDetection(runMode) {
@@ -2926,7 +4740,7 @@ $(document).ready(function () {
         try {
             for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
                 setBatchButtonState(true, pageNum, lastPage);
-                await goToRenderedPage(pageNum);
+                await goToRenderedPage(pageNum, { forceRerender: true });
                 var ok = runPageBarlineDetection(runMode, { suppressRefresh: true });
                 if (!ok) {
                     throw new Error('Detection failed on page ' + pageNum);
@@ -2943,7 +4757,8 @@ $(document).ready(function () {
         }
     }
 
-    function runCurrentPagePianoNormalize() {
+    function runCurrentPagePianoNormalize(options) {
+        options = options || {};
         const pageImageData = getCurrentPageImageData();
         if (!pageImageData) {
             alert("No page pixel data available from the current canvas. Please reload the page.");
@@ -2976,8 +4791,56 @@ $(document).ready(function () {
             return false;
         }
 
-        requestRefresh({ preferLiveData: true });
+        if (!options.suppressRefresh) {
+            requestRefresh({ preferLiveData: true });
+        }
         console.log('Piano normalization completed on page ' + pagenum + '.');
+        return true;
+    }
+
+    function runCurrentPageFullScoreNormalize(options) {
+        options = options || {};
+        const pageImageData = getCurrentPageImageData();
+        if (!pageImageData) {
+            alert("No page pixel data available from the current canvas. Please reload the page.");
+            return false;
+        }
+
+        let pagenumElement = document.getElementById('pagenum');
+        let pagenum = pagenumElement ? parseInt(pagenumElement.value) : opt$$module$synpdf.pagenum;
+        if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || pagenum < 0 || pagenum >= deMetriek$$module$synpdf.length) {
+            alert('Invalid page number or deMetriek data missing.');
+            return false;
+        }
+
+        let pageData = deMetriek$$module$synpdf[pagenum];
+        if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
+            alert("No staff systems found on this page.");
+            return false;
+        }
+
+        var debugInfo = {};
+        var changed = normalizePageToFullScoreSystems(pageData, pageImageData, debugInfo);
+        deMetriek$$module$synpdf[pagenum] = pageData;
+        if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.snapshotFullScoreDebugForPage) {
+            SynpdfCorrectionTools.snapshotFullScoreDebugForPage(pagenum, pageData, debugInfo);
+        }
+        emitFullScoreDebugReport(pagenum, Object.assign({}, debugInfo, { finalBxs: pageData.bxs }));
+
+        if (!changed) {
+            console.log('Full-score normalization found nothing to regroup on page ' + pagenum + '.');
+            return true;
+        }
+
+        if (!persistMetricData()) {
+            alert("Could not save full-score normalized systems.");
+            return false;
+        }
+
+        if (!options.suppressRefresh) {
+            requestRefresh({ preferLiveData: true });
+        }
+        console.log('Full-score normalization completed on page ' + pagenum + '.');
         return true;
     }
 
@@ -2993,8 +4856,8 @@ $(document).ready(function () {
         try {
             for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
                 setBatchButtonState(true, pageNum, lastPage);
-                await goToRenderedPage(pageNum);
-                var ok = runCurrentPagePianoNormalize();
+                await goToRenderedPage(pageNum, { forceRerender: true });
+                var ok = runCurrentPagePianoNormalize({ suppressRefresh: true });
                 if (!ok) {
                     throw new Error('Piano normalization failed on page ' + pageNum);
                 }
@@ -3004,6 +4867,39 @@ $(document).ready(function () {
         } catch (err) {
             console.error('All-pages piano normalization aborted:', err);
             alert('All-pages piano normalization stopped: ' + err.message);
+        } finally {
+            batchDetectionInProgress = false;
+            setBatchButtonState(false);
+        }
+    }
+
+    async function runAllPagesFullScoreNormalize() {
+        if (batchDetectionInProgress) return;
+        if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
+            alert('No metric data loaded.');
+            return;
+        }
+
+        var lastPage = deMetriek$$module$synpdf.length - 1;
+        batchDetectionInProgress = true;
+        try {
+            if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.clearFullScoreDebugState) {
+                SynpdfCorrectionTools.clearFullScoreDebugState();
+            }
+            for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
+                setBatchButtonState(true, pageNum, lastPage);
+                await goToRenderedPage(pageNum, { forceRerender: true });
+                var ok = runCurrentPageFullScoreNormalize({ suppressRefresh: true });
+                if (!ok) {
+                    throw new Error('Full-score normalization failed on page ' + pageNum);
+                }
+                await new Promise(function (resolve) { setTimeout(resolve, 10); });
+            }
+            requestRefresh({ preferLiveData: true });
+            console.log('Full-score normalization completed for all pages.');
+        } catch (err) {
+            console.error('All-pages full-score normalization aborted:', err);
+            alert('All-pages full-score normalization stopped: ' + err.message);
         } finally {
             batchDetectionInProgress = false;
             setBatchButtonState(false);
@@ -3022,6 +4918,10 @@ $(document).ready(function () {
     });
     $('#run-piano-all-btn').on('click', function () {
         runAllPagesPianoNormalize();
+    });
+
+    $('#run-fullscore-all-btn').on('click', function () {
+        runAllPagesFullScoreNormalize();
     });
 
     $('#run-geom-btn').on('click', function () {

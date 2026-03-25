@@ -29,6 +29,7 @@ deployment:
     - /bin/cp export_static_json.php $DEPLOYPATH
     - /bin/cp -R assets $DEPLOYPATH
     - /bin/cp -R js $DEPLOYPATH
+    - /bin/cp -R synpdf_182/models $DEPLOYPATH
     - /bin/mkdir -p ${DEPLOYPATH}data/metrics
     - /bin/mkdir -p ${DEPLOYPATH}data/times
     - /bin/cp data/.htaccess ${DEPLOYPATH}data/.htaccess
@@ -46,6 +47,11 @@ deployment:
     - /bin/cp synpdf_182/editmode/synpdf-edit-mode.php $DEPLOYPATH3 
     - /bin/cp synpdf_182/editmode/edit-mode-tools.js $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/synpdf-edit-mode.js $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/metric-store.js $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/correction-log-tools.js $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/barline-detect-v2.js $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/barline-patch-cnn-runtime.js $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/ml-label-tools.js $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/dispatcher.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/load_file.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/get_recordings_already_synced.php $DEPLOYPATH3
@@ -54,5 +60,4 @@ deployment:
     - /bin/cp synpdf_182/editmode/synpdf-full-yubsync2.js $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/get_metric_arr.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/get_parts.php $DEPLOYPATH3
-
 
