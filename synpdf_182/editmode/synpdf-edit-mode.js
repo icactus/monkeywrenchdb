@@ -2680,8 +2680,17 @@ function checkMenu$$module$synpdf(a) {
                 toggleScoreBtn$$module$synpdf();
                 break;
             case "onestf":
-                // Clear cache when single staves mode changes to force reprocessing
-                deMetriek$$module$synpdf = [opt$$module$synpdf.pagewd];
+                // Keep the full metric array so batch CNN can still process every page.
+                // Single-staff mode changes detection behavior, not the page list itself.
+                var storedMetricData = MetricStore.getStoredMetricData();
+                if (Array.isArray(storedMetricData) && storedMetricData.length > 1) {
+                    deMetriek$$module$synpdf = MetricStore.clone(storedMetricData);
+                    MetricStore.setMetricData(deMetriek$$module$synpdf, { clone: false });
+                } else if (Array.isArray(deMetriek$$module$synpdf) && deMetriek$$module$synpdf.length > 1) {
+                    MetricStore.setMetricData(deMetriek$$module$synpdf, { clone: false });
+                } else {
+                    seedMetricStorageFromMemory();
+                }
                 resizePdfSyn$$module$synpdf();
                 break;
             case "advncd":
