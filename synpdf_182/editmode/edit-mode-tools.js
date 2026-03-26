@@ -929,7 +929,7 @@ function getCurrentPageImageData() {
         return document.querySelector('#notation canvas') || document.querySelector('canvas');
     }
 
-    function rebuildCurrentPageMetricData(pagenum, forceSingleStaves) {
+    function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf) {
         var canvas = getCurrentPageCanvas();
         if (!canvas || typeof countPix$$module$synpdf !== 'function') {
             return null;
@@ -955,7 +955,7 @@ function getCurrentPageImageData() {
 
             return deMetriek$$module$synpdf[pagenum];
         } finally {
-            if (forceSingleStaves) {
+            if (forceSingleStaves && restoreOnestf !== false) {
                 opt$$module$synpdf.onestf = previousOnestf;
             }
         }
@@ -964,7 +964,7 @@ function getCurrentPageImageData() {
     async function preparePageForCNN(pagenum, lastPage) {
         setBatchButtonState(true, pagenum, lastPage);
         await goToRenderedPage(pagenum, { forceRerender: true });
-        var rebuilt = rebuildCurrentPageMetricData(pagenum, true);
+        var rebuilt = rebuildCurrentPageMetricData(pagenum, true, false);
         if (!rebuilt) {
             throw new Error('Failed to prepare page ' + pagenum + ' for CNN');
         }
@@ -4781,11 +4781,14 @@ $(document).ready(function () {
         }
 
         var lastPage = deMetriek$$module$synpdf.length - 1;
+        var previousOnestf = opt$$module$synpdf.onestf;
         batchDetectionInProgress = true;
         try {
             for (var prepPageNum = 1; prepPageNum <= lastPage; prepPageNum++) {
                 await preparePageForCNN(prepPageNum, lastPage);
             }
+
+            opt$$module$synpdf.onestf = previousOnestf;
 
             for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
                 setBatchButtonState(true, pageNum, lastPage);
@@ -4801,6 +4804,7 @@ $(document).ready(function () {
             console.error('All-pages CNN detection aborted:', err);
             alert('All-pages CNN detection stopped: ' + err.message);
         } finally {
+            opt$$module$synpdf.onestf = previousOnestf;
             batchDetectionInProgress = false;
             setBatchButtonState(false);
         }
