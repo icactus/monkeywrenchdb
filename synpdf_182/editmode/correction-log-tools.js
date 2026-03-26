@@ -531,7 +531,17 @@ var SynpdfCorrectionTools = (function () {
                         method: 'POST',
                         body: formData
                     });
-                    var result = await response.json();
+                    var responseText = await response.text();
+                    var contentType = response.headers.get('content-type') || '';
+                    var result = null;
+                    if (contentType.indexOf('application/json') !== -1) {
+                        result = JSON.parse(responseText);
+                    } else {
+                        throw new Error(
+                            'HTTP ' + response.status + ' ' + response.statusText +
+                            (responseText ? ': ' + responseText.slice(0, 180).replace(/\s+/g, ' ') : '')
+                        );
+                    }
                     if (!response.ok || !result.success) {
                         throw new Error(result.error || 'Save failed');
                     }
