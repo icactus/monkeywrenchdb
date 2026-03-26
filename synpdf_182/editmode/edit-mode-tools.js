@@ -1003,8 +1003,8 @@ async function preparePageForCNN(pagenum, lastPage) {
         await goToRenderedPage(pagenum, { forceRerender: true });
     }
     await recomputeCurrentPageWithCurrentOptions(pagenum);
-    if (!persistMetricData()) {
-        throw new Error('Failed to persist page ' + pagenum + ' after CNN prep');
+    if (!runPageGeometryOnly({ suppressRefresh: true, suppressAlerts: true })) {
+        throw new Error('Failed to fit staff geometry on page ' + pagenum + ' during CNN prep');
     }
     return deMetriek$$module$synpdf[pagenum] || null;
 }
@@ -4787,38 +4787,39 @@ $(document).ready(function () {
         }
     }
 
-    function runPageGeometryOnly() {
+    function runPageGeometryOnly(options) {
+        options = options || {};
         if (typeof BarlineDetectV2 === 'undefined') {
-            alert("V2 Detection module is not loaded.");
-            return;
+            if (!options.suppressAlerts) alert("V2 Detection module is not loaded.");
+            return false;
         }
 
         const pageImageData = getCurrentPageImageData();
         if (!pageImageData) {
-            alert("No page pixel data available from the current canvas. Please reload the page.");
-            return;
+            if (!options.suppressAlerts) alert("No page pixel data available from the current canvas. Please reload the page.");
+            return false;
         }
 
         let pagenumElement = document.getElementById('pagenum');
         let pagenum = pagenumElement ? parseInt(pagenumElement.value) : opt$$module$synpdf.pagenum;
 
         if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || pagenum < 0 || pagenum >= deMetriek$$module$synpdf.length) {
-            alert('Invalid page number or deMetriek data missing.');
-            return;
+            if (!options.suppressAlerts) alert('Invalid page number or deMetriek data missing.');
+            return false;
         }
 
         let pageData = deMetriek$$module$synpdf[pagenum];
         if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
-            alert("No staff systems found on this page to fit geometry for.");
-            return;
+            if (!options.suppressAlerts) alert("No staff systems found on this page to fit geometry for.");
+            return false;
         }
 
         let pixelData = pageImageData.pixelData;
         let stride = pageImageData.stride;
         let width = pageImageData.width;
         if (!pixelData || pixelData.length === 0) {
-            alert('Pixel data extraction failed. Please reload the page.');
-            return;
+            if (!options.suppressAlerts) alert('Pixel data extraction failed. Please reload the page.');
+            return false;
         }
 
         console.log("Running staff geometry fit on page " + pagenum + " for " + pageData.cxs.length + " systems...");
@@ -4841,12 +4842,15 @@ $(document).ready(function () {
         deMetriek$$module$synpdf[pagenum] = pageData;
 
         if (!persistMetricData()) {
-            alert("Could not save updated staff geometry. Aborting refresh.");
-            return;
+            if (!options.suppressAlerts) alert("Could not save updated staff geometry. Aborting refresh.");
+            return false;
         }
 
-        requestRefresh({ preferLiveData: true });
+        if (!options.suppressRefresh) {
+            requestRefresh({ preferLiveData: true });
+        }
         console.log("Staff geometry fit completed and saved.");
+        return true;
     }
 
     async function runAllPagesBarlineDetection(runMode) {
