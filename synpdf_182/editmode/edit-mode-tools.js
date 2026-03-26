@@ -995,6 +995,86 @@ async function preparePageForCNN(pagenum, lastPage) {
     return rebuilt;
 }
 
+function waitForRenderedPage(targetPage, options) {
+    options = options || {};
+    var requireNewCanvas = !!options.requireNewCanvas;
+    var previousCanvas = options.previousCanvas || null;
+    var sawRenderStart = !requireNewCanvas;
+    return new Promise(function (resolve, reject) {
+        var startedAt = performance.now();
+        function poll() {
+            if (typeof rendering$$module$synpdf !== 'undefined' && rendering$$module$synpdf) {
+                sawRenderStart = true;
+                if (performance.now() - startedAt > 30000) {
+                    reject(new Error('Timed out waiting for page render'));
+                    return;
+                }
+                setTimeout(poll, 50);
+                return;
+            }
+
+            var pageInput = document.getElementById('pagenum');
+            var pageVal = pageInput ? parseInt(pageInput.value, 10) : opt$$module$synpdf.pagenum;
+            if (pageVal !== targetPage) {
+                if (performance.now() - startedAt > 30000) {
+                    reject(new Error('Rendered page number did not update'));
+                    return;
+                }
+                setTimeout(poll, 50);
+                return;
+            }
+
+            var canvas = getCurrentPageCanvas();
+            if (requireNewCanvas) {
+                if (!sawRenderStart) {
+                    if (performance.now() - startedAt > 30000) {
+                        reject(new Error('Render did not start for target page'));
+                        return;
+                    }
+                    setTimeout(poll, 50);
+                    return;
+                }
+                if (!canvas || canvas === previousCanvas) {
+                    if (performance.now() - startedAt > 30000) {
+                        reject(new Error('Rendered canvas did not refresh'));
+                        return;
+                    }
+                    setTimeout(poll, 50);
+                    return;
+                }
+            }
+
+            var imageData = getCurrentPageImageData();
+            if (!imageData || !imageData.pixelData || !imageData.pixelData.length) {
+                if (performance.now() - startedAt > 30000) {
+                    reject(new Error('Rendered page image data unavailable'));
+                    return;
+                }
+                setTimeout(poll, 50);
+                return;
+            }
+
+            setTimeout(resolve, 40);
+        }
+        poll();
+    });
+}
+
+async function goToRenderedPage(targetPage, options) {
+    options = options || {};
+    var currentInput = document.getElementById('pagenum');
+    var previousPage = currentInput ? parseInt(currentInput.value, 10) : opt$$module$synpdf.pagenum;
+    var previousCanvas = getCurrentPageCanvas();
+    opt$$module$synpdf.pagenum = targetPage;
+    if (typeof setPagenum$$module$synpdf === 'function') {
+        setPagenum$$module$synpdf(previousPage);
+    }
+    await waitForRenderedPage(targetPage, {
+        requireNewCanvas: !!options.forceRerender,
+        previousCanvas: previousCanvas
+    });
+}
+
 function normalizeDetectedSystemBarlines(system, detectedBarlines, existingBarlines) {
     const currentBarlines = Array.isArray(existingBarlines) ? existingBarlines.slice() : [];
     const leftBoundary = currentBarlines.length > 0 ? currentBarlines[0] : system.xs.x1;
@@ -4690,86 +4770,6 @@ $(document).ready(function () {
 
         requestRefresh({ preferLiveData: true });
         console.log("Staff geometry fit completed and saved.");
-    }
-
-    function waitForRenderedPage(targetPage, options) {
-        options = options || {};
-        var requireNewCanvas = !!options.requireNewCanvas;
-        var previousCanvas = options.previousCanvas || null;
-        var sawRenderStart = !requireNewCanvas;
-        return new Promise(function (resolve, reject) {
-            var startedAt = performance.now();
-            function poll() {
-                if (typeof rendering$$module$synpdf !== 'undefined' && rendering$$module$synpdf) {
-                    sawRenderStart = true;
-                    if (performance.now() - startedAt > 30000) {
-                        reject(new Error('Timed out waiting for page render'));
-                        return;
-                    }
-                    setTimeout(poll, 50);
-                    return;
-                }
-
-                var pageInput = document.getElementById('pagenum');
-                var pageVal = pageInput ? parseInt(pageInput.value, 10) : opt$$module$synpdf.pagenum;
-                if (pageVal !== targetPage) {
-                    if (performance.now() - startedAt > 30000) {
-                        reject(new Error('Rendered page number did not update'));
-                        return;
-                    }
-                    setTimeout(poll, 50);
-                    return;
-                }
-
-                var canvas = getCurrentPageCanvas();
-                if (requireNewCanvas) {
-                    if (!sawRenderStart) {
-                        if (performance.now() - startedAt > 30000) {
-                            reject(new Error('Render did not start for target page'));
-                            return;
-                        }
-                        setTimeout(poll, 50);
-                        return;
-                    }
-                    if (!canvas || canvas === previousCanvas) {
-                        if (performance.now() - startedAt > 30000) {
-                            reject(new Error('Rendered canvas did not refresh'));
-                            return;
-                        }
-                        setTimeout(poll, 50);
-                        return;
-                    }
-                }
-
-                var imageData = getCurrentPageImageData();
-                if (!imageData || !imageData.pixelData || !imageData.pixelData.length) {
-                    if (performance.now() - startedAt > 30000) {
-                        reject(new Error('Rendered page image data unavailable'));
-                        return;
-                    }
-                    setTimeout(poll, 50);
-                    return;
-                }
-
-                setTimeout(resolve, 40);
-            }
-            poll();
-        });
-    }
-
-    async function goToRenderedPage(targetPage, options) {
-        options = options || {};
-        var currentInput = document.getElementById('pagenum');
-        var previousPage = currentInput ? parseInt(currentInput.value, 10) : opt$$module$synpdf.pagenum;
-        var previousCanvas = getCurrentPageCanvas();
-        opt$$module$synpdf.pagenum = targetPage;
-        if (typeof setPagenum$$module$synpdf === 'function') {
-            setPagenum$$module$synpdf(previousPage);
-        }
-        await waitForRenderedPage(targetPage, {
-            requireNewCanvas: !!options.forceRerender,
-            previousCanvas: previousCanvas
-        });
     }
 
     async function runAllPagesBarlineDetection(runMode) {
