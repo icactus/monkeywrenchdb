@@ -907,8 +907,13 @@ function seedMetricStorageFromMemory() {
     return true;
 }
 
+function getDisplayedPageNumber() {
+    var pageInput = document.getElementById('pagenum');
+    return pageInput ? parseInt(pageInput.value, 10) : opt$$module$synpdf.pagenum;
+}
+
 function getCurrentPageImageData() {
-    const canvas = document.querySelector('#notation canvas') || document.querySelector('canvas');
+    const canvas = getCurrentPageCanvas();
     if (!canvas) {
         return null;
     }
@@ -926,7 +931,10 @@ function getCurrentPageImageData() {
 }
 
 function getCurrentPageCanvas() {
-    return document.querySelector('#notation canvas') || document.querySelector('canvas');
+    var pageNum = getDisplayedPageNumber();
+    return document.getElementById('canvas' + pageNum) ||
+        document.querySelector('#notation canvas') ||
+        document.querySelector('canvas');
 }
 
 function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf) {
@@ -1022,8 +1030,7 @@ function waitForRenderedPage(targetPage, options) {
     return new Promise(function (resolve, reject) {
         var startedAt = performance.now();
         function poll() {
-            var pageInput = document.getElementById('pagenum');
-            var pageVal = pageInput ? parseInt(pageInput.value, 10) : opt$$module$synpdf.pagenum;
+            var pageVal = getDisplayedPageNumber();
             var canvas = getCurrentPageCanvas();
             var imageData = getCurrentPageImageData();
 
@@ -1095,9 +1102,8 @@ function waitForRenderedPage(targetPage, options) {
 async function goToRenderedPage(targetPage, options) {
     options = options || {};
     await waitForRenderIdle();
-    var currentInput = document.getElementById('pagenum');
-    var previousPage = currentInput ? parseInt(currentInput.value, 10) : opt$$module$synpdf.pagenum;
-    var previousCanvas = getCurrentPageCanvas();
+    var previousPage = getDisplayedPageNumber();
+    var previousCanvas = document.getElementById('canvas' + previousPage) || getCurrentPageCanvas();
     opt$$module$synpdf.pagenum = targetPage;
     if (typeof setPagenum$$module$synpdf === 'function') {
         setPagenum$$module$synpdf(previousPage);

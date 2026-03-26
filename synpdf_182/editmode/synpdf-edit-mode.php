@@ -31,7 +31,7 @@
     <script src="correction-log-tools.js?v=11"></script>
     <script src="barline-patch-cnn-runtime.js?v=1"></script>
     <script src="synpdf-edit-mode.js?v=81"></script>
-    <script src="edit-mode-tools.js?v=158"></script>
+    <script src="edit-mode-tools.js?v=159"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <?php $barlineCnnBrowserJsVer = file_exists('../models/barline-patch-cnn-3x6-browser.js') ? filemtime('../models/barline-patch-cnn-3x6-browser.js') : time(); ?>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
