@@ -915,9 +915,7 @@ function getDisplayedPageNumber() {
 function isCanvasReadyForAnalysis(canvas) {
     return !!(canvas &&
         canvas.width > 1 &&
-        canvas.height > 1 &&
-        canvas.classList &&
-        canvas.classList.contains('rendered'));
+        canvas.height > 1);
 }
 
 function getCurrentPageImageData() {
@@ -939,9 +937,7 @@ function getCurrentPageImageData() {
 }
 
 function getCurrentPageCanvas() {
-    var pageNum = getDisplayedPageNumber();
-    return document.getElementById('canvas' + pageNum) ||
-        document.querySelector('#notation canvas') ||
+    return document.querySelector('#notation canvas') ||
         document.querySelector('canvas');
 }
 
@@ -1003,7 +999,9 @@ function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
 
 async function preparePageForCNN(pagenum, lastPage) {
     setBatchButtonState(true, pagenum, lastPage, 'cnn');
-    await goToRenderedPage(pagenum, { forceRerender: true });
+    if (getDisplayedPageNumber() !== pagenum) {
+        await goToRenderedPage(pagenum, { forceRerender: true });
+    }
     await recomputeCurrentPageWithCurrentOptions(pagenum);
     if (!persistMetricData()) {
         throw new Error('Failed to persist page ' + pagenum + ' after CNN prep');
@@ -1039,7 +1037,7 @@ function waitForRenderedPage(targetPage, options) {
         var startedAt = performance.now();
         function poll() {
             var pageVal = getDisplayedPageNumber();
-            var canvas = document.getElementById('canvas' + targetPage) || getCurrentPageCanvas();
+            var canvas = getCurrentPageCanvas();
             var imageData = isCanvasReadyForAnalysis(canvas)
                 ? {
                     pixelData: canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data,
@@ -1117,18 +1115,10 @@ async function goToRenderedPage(targetPage, options) {
     options = options || {};
     await waitForRenderIdle();
     var previousPage = getDisplayedPageNumber();
-    var previousCanvas = document.getElementById('canvas' + previousPage) || getCurrentPageCanvas();
+    var previousCanvas = getCurrentPageCanvas();
     opt$$module$synpdf.pagenum = targetPage;
     if (typeof setPagenum$$module$synpdf === 'function') {
         setPagenum$$module$synpdf(previousPage);
-    }
-    await ensurePageQueuedAndVisible(targetPage);
-    var targetCanvas = document.getElementById('canvas' + targetPage);
-    if (targetCanvas && typeof targetCanvas.scrollIntoView === 'function') {
-        targetCanvas.scrollIntoView({ block: 'center', inline: 'nearest' });
-    }
-    if (typeof renderPageIfNotRendered === 'function') {
-        renderPageIfNotRendered(targetPage);
     }
     await waitForRenderedPage(targetPage, {
         requireNewCanvas: !!options.forceRerender,
@@ -1148,29 +1138,10 @@ async function recomputeCurrentPageWithCurrentOptions(targetPage) {
     await waitForRenderIdle();
     var previousCanvas = getCurrentPageCanvas();
     resizePdfSyn$$module$synpdf();
-    await ensurePageQueuedAndVisible(targetPage);
     await waitForRenderedPage(targetPage, {
         requireNewCanvas: true,
         previousCanvas: previousCanvas
     });
-}
-
-async function ensurePageQueuedAndVisible(targetPage) {
-    var startedAt = performance.now();
-    while (!document.getElementById('canvas' + targetPage)) {
-        if (performance.now() - startedAt > 30000) {
-            throw new Error('Timed out waiting for page shell ' + targetPage);
-        }
-        await new Promise(function (resolve) { setTimeout(resolve, 50); });
-    }
-
-    var targetCanvas = document.getElementById('canvas' + targetPage);
-    if (targetCanvas && typeof targetCanvas.scrollIntoView === 'function') {
-        targetCanvas.scrollIntoView({ block: 'center', inline: 'nearest' });
-    }
-    if (typeof renderPageIfNotRendered === 'function') {
-        renderPageIfNotRendered(targetPage);
-    }
 }
 
 function normalizeDetectedSystemBarlines(system, detectedBarlines, existingBarlines) {
