@@ -997,6 +997,72 @@ function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
     }
 }
 
+function runPageGeometryOnly(options) {
+    options = options || {};
+    if (typeof BarlineDetectV2 === 'undefined') {
+        if (!options.suppressAlerts) alert("V2 Detection module is not loaded.");
+        return false;
+    }
+
+    const pageImageData = getCurrentPageImageData();
+    if (!pageImageData) {
+        if (!options.suppressAlerts) alert("No page pixel data available from the current canvas. Please reload the page.");
+        return false;
+    }
+
+    let pagenumElement = document.getElementById('pagenum');
+    let pagenum = pagenumElement ? parseInt(pagenumElement.value) : opt$$module$synpdf.pagenum;
+
+    if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || pagenum < 0 || pagenum >= deMetriek$$module$synpdf.length) {
+        if (!options.suppressAlerts) alert('Invalid page number or deMetriek data missing.');
+        return false;
+    }
+
+    let pageData = deMetriek$$module$synpdf[pagenum];
+    if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
+        if (!options.suppressAlerts) alert("No staff systems found on this page to fit geometry for.");
+        return false;
+    }
+
+    let pixelData = pageImageData.pixelData;
+    let stride = pageImageData.stride;
+    let width = pageImageData.width;
+    if (!pixelData || pixelData.length === 0) {
+        if (!options.suppressAlerts) alert('Pixel data extraction failed. Please reload the page.');
+        return false;
+    }
+
+    console.log("Running staff geometry fit on page " + pagenum + " for " + pageData.cxs.length + " systems...");
+
+    const fittedSystems = JSON.parse(JSON.stringify(pageData.cxs));
+    fittedSystems.forEach(function (system, index) {
+        applyExistingBoundaryXs(system, pageData.bxs && pageData.bxs[index]);
+    });
+    const systemRenderGeometry = fittedSystems.map(function (system) {
+        if (!systemSupportsRenderGeometryFit(system)) return null;
+        return BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width);
+    });
+
+    pageData.cxs = fittedSystems.map(function (system, index) {
+        if (!systemRenderGeometry[index]) return system;
+        return applyRenderGeometryToSystem(system, systemRenderGeometry[index], {
+            fixedXs: getSystemBoundaryXs(system, pageData.bxs && pageData.bxs[index])
+        });
+    });
+    deMetriek$$module$synpdf[pagenum] = pageData;
+
+    if (!persistMetricData()) {
+        if (!options.suppressAlerts) alert("Could not save updated staff geometry. Aborting refresh.");
+        return false;
+    }
+
+    if (!options.suppressRefresh) {
+        requestRefresh({ preferLiveData: true });
+    }
+    console.log("Staff geometry fit completed and saved.");
+    return true;
+}
+
 async function preparePageForCNN(pagenum, lastPage) {
     setBatchButtonState(true, pagenum, lastPage, 'cnn');
     if (getDisplayedPageNumber() !== pagenum) {
@@ -4785,72 +4851,6 @@ $(document).ready(function () {
             alert("V2 Detection failed to return valid barlines for all systems. Aborting update.");
             return false;
         }
-    }
-
-    function runPageGeometryOnly(options) {
-        options = options || {};
-        if (typeof BarlineDetectV2 === 'undefined') {
-            if (!options.suppressAlerts) alert("V2 Detection module is not loaded.");
-            return false;
-        }
-
-        const pageImageData = getCurrentPageImageData();
-        if (!pageImageData) {
-            if (!options.suppressAlerts) alert("No page pixel data available from the current canvas. Please reload the page.");
-            return false;
-        }
-
-        let pagenumElement = document.getElementById('pagenum');
-        let pagenum = pagenumElement ? parseInt(pagenumElement.value) : opt$$module$synpdf.pagenum;
-
-        if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || pagenum < 0 || pagenum >= deMetriek$$module$synpdf.length) {
-            if (!options.suppressAlerts) alert('Invalid page number or deMetriek data missing.');
-            return false;
-        }
-
-        let pageData = deMetriek$$module$synpdf[pagenum];
-        if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
-            if (!options.suppressAlerts) alert("No staff systems found on this page to fit geometry for.");
-            return false;
-        }
-
-        let pixelData = pageImageData.pixelData;
-        let stride = pageImageData.stride;
-        let width = pageImageData.width;
-        if (!pixelData || pixelData.length === 0) {
-            if (!options.suppressAlerts) alert('Pixel data extraction failed. Please reload the page.');
-            return false;
-        }
-
-        console.log("Running staff geometry fit on page " + pagenum + " for " + pageData.cxs.length + " systems...");
-
-        const fittedSystems = JSON.parse(JSON.stringify(pageData.cxs));
-        fittedSystems.forEach(function (system, index) {
-            applyExistingBoundaryXs(system, pageData.bxs && pageData.bxs[index]);
-        });
-        const systemRenderGeometry = fittedSystems.map(function (system) {
-            if (!systemSupportsRenderGeometryFit(system)) return null;
-            return BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width);
-        });
-
-        pageData.cxs = fittedSystems.map(function (system, index) {
-            if (!systemRenderGeometry[index]) return system;
-            return applyRenderGeometryToSystem(system, systemRenderGeometry[index], {
-                fixedXs: getSystemBoundaryXs(system, pageData.bxs && pageData.bxs[index])
-            });
-        });
-        deMetriek$$module$synpdf[pagenum] = pageData;
-
-        if (!persistMetricData()) {
-            if (!options.suppressAlerts) alert("Could not save updated staff geometry. Aborting refresh.");
-            return false;
-        }
-
-        if (!options.suppressRefresh) {
-            requestRefresh({ preferLiveData: true });
-        }
-        console.log("Staff geometry fit completed and saved.");
-        return true;
     }
 
     async function runAllPagesBarlineDetection(runMode) {
