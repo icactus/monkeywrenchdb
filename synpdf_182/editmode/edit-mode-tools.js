@@ -4869,9 +4869,16 @@ $(document).ready(function () {
                 await preparePageForCNN(prepPageNum, lastPage);
             }
 
+            if (lastPage >= 1) {
+                setBatchButtonState(true, 1, lastPage, 'cnn');
+                await goToRenderedPage(1, { forceRerender: true });
+            }
+
             for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
                 setBatchButtonState(true, pageNum, lastPage, 'cnn');
-                await goToRenderedPage(pageNum, { forceRerender: true });
+                if (getDisplayedPageNumber() !== pageNum) {
+                    await goToRenderedPage(pageNum, { forceRerender: true });
+                }
                 var ok = runPageBarlineDetection(runMode, { suppressRefresh: true, skipSingleStaffPrep: true });
                 if (!ok) {
                     throw new Error('Detection failed on page ' + pageNum);
