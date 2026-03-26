@@ -28,7 +28,7 @@
     <script src="pdf.min.js"></script>
 
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=11"></script>
+    <script src="correction-log-tools.js?v=12"></script>
     <script src="barline-patch-cnn-runtime.js?v=1"></script>
     <script src="synpdf-edit-mode.js?v=81"></script>
     <script src="edit-mode-tools.js?v=159"></script>

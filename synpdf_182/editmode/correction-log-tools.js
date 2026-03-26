@@ -1,5 +1,6 @@
 var SynpdfCorrectionTools = (function () {
     var baselinesByPage = {};
+    var fullScoreDebugByPage = {};
     var correctionLog = [];
     var overlayRenderToken = null;
     var notationEl = null;
@@ -158,6 +159,11 @@ var SynpdfCorrectionTools = (function () {
         return baselinesByPage[pagenum] || null;
     }
 
+    function getCurrentPageNumber() {
+        var pagenumElement = document.getElementById('pagenum');
+        return pagenumElement ? parseInt(pagenumElement.value, 10) : opt$$module$synpdf.pagenum;
+    }
+
     function syncLegacyMeasureOverlayVisibility() {
         var notation = getNotation();
         if (!notation) return;
@@ -182,22 +188,6 @@ var SynpdfCorrectionTools = (function () {
     function getSystemVerticalBounds(pageNum, systemIndex, xJson, fallbackCs) {
         var baseline = baselinesByPage[pageNum];
         var systemBaseline = baseline && baseline.systems ? baseline.systems[systemIndex] : null;
-        var renderGeometry = systemBaseline && systemBaseline.renderGeometry;
-        if (renderGeometry) {
-            var queryX = typeof xJson === 'number'
-                ? xJson
-                : Math.round((renderGeometry.left.x + renderGeometry.right.x) / 2);
-            var topY = interpolateLineY(renderGeometry, 0, queryX);
-            var botY = interpolateLineY(renderGeometry, 4, queryX);
-            if (typeof topY === 'number' && typeof botY === 'number') {
-                return {
-                    top: Math.round(Math.min(topY, botY)),
-                    bottom: Math.round(Math.max(topY, botY)),
-                    fromRenderGeometry: true
-                };
-            }
-        }
-
         var cs = cloneSimpleArray(fallbackCs);
         if (!cs.length && systemBaseline && Array.isArray(systemBaseline.cs)) {
             cs = systemBaseline.cs.slice();
@@ -207,6 +197,24 @@ var SynpdfCorrectionTools = (function () {
             cs = systemBaseline.csl.map(function (leftY, index) {
                 return Math.round((leftY + systemBaseline.csr[index]) / 2);
             });
+        }
+
+        var renderGeometry = systemBaseline && systemBaseline.renderGeometry;
+        if (renderGeometry) {
+            var queryX = typeof xJson === 'number'
+                ? xJson
+                : Math.round((renderGeometry.left.x + renderGeometry.right.x) / 2);
+            var topY = interpolateLineY(renderGeometry, 0, queryX);
+            var botY = interpolateLineY(renderGeometry, 4, queryX);
+            if (typeof topY === 'number' && typeof botY === 'number') {
+                var fallbackTop = cs.length ? Math.min.apply(null, cs) : null;
+                var fallbackBottom = cs.length ? Math.max.apply(null, cs) : null;
+                return {
+                    top: Math.round(fallbackTop !== null ? Math.min(topY, botY, fallbackTop) : Math.min(topY, botY)),
+                    bottom: Math.round(fallbackBottom !== null ? Math.max(topY, botY, fallbackBottom) : Math.max(topY, botY)),
+                    fromRenderGeometry: true
+                };
+            }
         }
         if (!cs.length) return null;
         return {
@@ -290,67 +298,186 @@ var SynpdfCorrectionTools = (function () {
         overlay.style.width = notation.scrollWidth + 'px';
 
         var baseline = getCurrentPageBaseline();
-        if (!baseline || !baseline.systems) return;
+        if (baseline && baseline.systems) {
+            baseline.systems.forEach(function (systemBaseline) {
+                if (!systemBaseline || !Array.isArray(systemBaseline.candidates)) return;
+                var acceptedBarlines = (systemBaseline.acceptedBarlines || []).map(function (value) {
+                    return Math.round(Math.abs(value));
+                });
+                var acceptedSet = new Set(acceptedBarlines);
+                var leftAnchor = systemBaseline.xs && typeof systemBaseline.xs.x1 === 'number'
+                    ? Math.round(Math.abs(systemBaseline.xs.x1))
+                    : (acceptedBarlines.length ? acceptedBarlines[0] : null);
+                var rightAnchor = systemBaseline.xs && typeof systemBaseline.xs.x2 === 'number'
+                    ? Math.round(Math.abs(systemBaseline.xs.x2))
+                    : (acceptedBarlines.length ? acceptedBarlines[acceptedBarlines.length - 1] : null);
+                if (leftAnchor !== null) acceptedSet.delete(leftAnchor);
+                if (rightAnchor !== null) acceptedSet.delete(rightAnchor);
+                var sysTop = 0;
+                var sysBottom = 0;
+                if (systemBaseline.renderGeometry) {
+                    var leftTop = interpolateLineY(systemBaseline.renderGeometry, 0, systemBaseline.renderGeometry.left.x);
+                    var rightTop = interpolateLineY(systemBaseline.renderGeometry, 0, systemBaseline.renderGeometry.right.x);
+                    var leftBottom = interpolateLineY(systemBaseline.renderGeometry, 4, systemBaseline.renderGeometry.left.x);
+                    var rightBottom = interpolateLineY(systemBaseline.renderGeometry, 4, systemBaseline.renderGeometry.right.x);
+                    sysTop = Math.max(0, Math.round(Math.min(leftTop, rightTop, leftBottom, rightBottom)) - 6);
+                    sysBottom = Math.round(Math.max(leftTop, rightTop, leftBottom, rightBottom)) + 6;
+                } else {
+                    sysTop = Math.max(0, Math.round(systemBaseline.cs[0]) - 6);
+                    sysBottom = Math.round(systemBaseline.cs[systemBaseline.cs.length - 1]) + 6;
+                }
+                var sysHeight = Math.max(8, sysBottom - sysTop);
 
-        baseline.systems.forEach(function (systemBaseline) {
-            if (!systemBaseline || !Array.isArray(systemBaseline.candidates)) return;
-            var acceptedBarlines = (systemBaseline.acceptedBarlines || []).map(function (value) {
-                return Math.round(Math.abs(value));
-            });
-            var acceptedSet = new Set(acceptedBarlines);
-            var leftAnchor = systemBaseline.xs && typeof systemBaseline.xs.x1 === 'number'
-                ? Math.round(Math.abs(systemBaseline.xs.x1))
-                : (acceptedBarlines.length ? acceptedBarlines[0] : null);
-            var rightAnchor = systemBaseline.xs && typeof systemBaseline.xs.x2 === 'number'
-                ? Math.round(Math.abs(systemBaseline.xs.x2))
-                : (acceptedBarlines.length ? acceptedBarlines[acceptedBarlines.length - 1] : null);
-            if (leftAnchor !== null) acceptedSet.delete(leftAnchor);
-            if (rightAnchor !== null) acceptedSet.delete(rightAnchor);
-            var sysTop = 0;
-            var sysBottom = 0;
-            if (systemBaseline.renderGeometry) {
-                var leftTop = interpolateLineY(systemBaseline.renderGeometry, 0, systemBaseline.renderGeometry.left.x);
-                var rightTop = interpolateLineY(systemBaseline.renderGeometry, 0, systemBaseline.renderGeometry.right.x);
-                var leftBottom = interpolateLineY(systemBaseline.renderGeometry, 4, systemBaseline.renderGeometry.left.x);
-                var rightBottom = interpolateLineY(systemBaseline.renderGeometry, 4, systemBaseline.renderGeometry.right.x);
-                sysTop = Math.max(0, Math.round(Math.min(leftTop, rightTop, leftBottom, rightBottom)) - 6);
-                sysBottom = Math.round(Math.max(leftTop, rightTop, leftBottom, rightBottom)) + 6;
-            } else {
-                sysTop = Math.max(0, Math.round(systemBaseline.cs[0]) - 6);
-                sysBottom = Math.round(systemBaseline.cs[systemBaseline.cs.length - 1]) + 6;
-            }
-            var sysHeight = Math.max(8, sysBottom - sysTop);
+                [leftAnchor, rightAnchor].forEach(function (anchorX, anchorIndex) {
+                    if (anchorX === null || anchorX === undefined) return;
+                    var anchor = document.createElement('div');
+                    anchor.style.position = 'absolute';
+                    anchor.style.left = anchorX + 'px';
+                    anchor.style.top = sysTop + 'px';
+                    anchor.style.height = sysHeight + 'px';
+                    anchor.style.width = '3px';
+                    anchor.style.background = anchorIndex === 0
+                        ? 'rgba(255, 170, 0, 0.95)'
+                        : 'rgba(255, 210, 0, 0.95)';
+                    anchor.style.boxShadow = '0 0 0 1px rgba(120, 70, 0, 0.35)';
+                    overlay.appendChild(anchor);
+                });
 
-            [leftAnchor, rightAnchor].forEach(function (anchorX, anchorIndex) {
-                if (anchorX === null || anchorX === undefined) return;
-                var anchor = document.createElement('div');
-                anchor.style.position = 'absolute';
-                anchor.style.left = anchorX + 'px';
-                anchor.style.top = sysTop + 'px';
-                anchor.style.height = sysHeight + 'px';
-                anchor.style.width = '3px';
-                anchor.style.background = anchorIndex === 0
-                    ? 'rgba(255, 170, 0, 0.95)'
-                    : 'rgba(255, 210, 0, 0.95)';
-                anchor.style.boxShadow = '0 0 0 1px rgba(120, 70, 0, 0.35)';
-                overlay.appendChild(anchor);
+                systemBaseline.candidates.forEach(function (candidate) {
+                    var x = Math.round(candidate.x);
+                    var isAccepted = acceptedSet.has(x);
+                    var opacity = Math.max(0.16, Math.min(0.9, isAccepted ? 0.9 : (candidate.score || 0.25)));
+                    var line = document.createElement('div');
+                    line.style.position = 'absolute';
+                    line.style.left = x + 'px';
+                    line.style.top = sysTop + 'px';
+                    line.style.height = sysHeight + 'px';
+                    line.style.width = isAccepted ? '2px' : '1px';
+                    line.style.background = isAccepted ? 'rgba(0, 190, 255, ' + opacity + ')' : 'rgba(255, 0, 180, ' + opacity + ')';
+                    line.style.borderLeft = isAccepted ? 'none' : '1px dashed rgba(255, 0, 180, ' + opacity + ')';
+                    overlay.appendChild(line);
+                });
             });
+        }
 
-            systemBaseline.candidates.forEach(function (candidate) {
-                var x = Math.round(candidate.x);
-                var isAccepted = acceptedSet.has(x);
-                var opacity = Math.max(0.16, Math.min(0.9, isAccepted ? 0.9 : (candidate.score || 0.25)));
-                var line = document.createElement('div');
-                line.style.position = 'absolute';
-                line.style.left = x + 'px';
-                line.style.top = sysTop + 'px';
-                line.style.height = sysHeight + 'px';
-                line.style.width = isAccepted ? '2px' : '1px';
-                line.style.background = isAccepted ? 'rgba(0, 190, 255, ' + opacity + ')' : 'rgba(255, 0, 180, ' + opacity + ')';
-                line.style.borderLeft = isAccepted ? 'none' : '1px dashed rgba(255, 0, 180, ' + opacity + ')';
-                overlay.appendChild(line);
+        var fullScoreDebug = fullScoreDebugByPage[getCurrentPageNumber()];
+        if (fullScoreDebug && Array.isArray(fullScoreDebug.clusters)) {
+            fullScoreDebug.clusters.forEach(function (cluster) {
+                if (!cluster || !Array.isArray(cluster.segments)) return;
+                var supportCount = Array.isArray(cluster.supportIndices) ? cluster.supportIndices.length : 0;
+                var color = supportCount >= 3
+                    ? 'rgba(0, 255, 180, 0.45)'
+                    : supportCount >= 2
+                        ? 'rgba(255, 200, 0, 0.45)'
+                        : 'rgba(255, 80, 80, 0.30)';
+
+                cluster.segments.forEach(function (seg) {
+                    if (!seg) return;
+                    var line = document.createElement('div');
+                    line.style.position = 'absolute';
+                    line.style.left = Math.round(typeof seg.x === 'number' ? seg.x : cluster.x) + 'px';
+                    line.style.top = Math.round(seg.y1) + 'px';
+                    line.style.height = Math.max(1, Math.round(seg.y2 - seg.y1 + 1)) + 'px';
+                    line.style.width = '2px';
+                    line.style.background = color;
+                    overlay.appendChild(line);
+                });
+
+                if (typeof cluster.minY === 'number' && typeof cluster.maxY === 'number') {
+                    var guide = document.createElement('div');
+                    guide.style.position = 'absolute';
+                    guide.style.left = Math.round(cluster.x) + 'px';
+                    guide.style.top = Math.round(cluster.minY) + 'px';
+                    guide.style.height = Math.max(1, Math.round(cluster.maxY - cluster.minY + 1)) + 'px';
+                    guide.style.width = '1px';
+                    guide.style.borderLeft = '1px dashed rgba(0, 255, 180, 0.55)';
+                    overlay.appendChild(guide);
+                }
             });
-        });
+        }
+
+        if (fullScoreDebug && Array.isArray(fullScoreDebug.leftMarkers)) {
+            fullScoreDebug.leftMarkers.forEach(function (marker, markerIndex) {
+                if (!marker) return;
+                var markerTop = typeof marker.top === 'number' ? Math.round(marker.top) : 0;
+                var markerBottom = typeof marker.bottom === 'number' ? Math.round(marker.bottom) : markerTop;
+                var markerHeight = Math.max(1, markerBottom - markerTop + 1);
+
+                if (Array.isArray(marker.components)) {
+                    marker.components.forEach(function (component, componentIndex) {
+                        if (!component) return;
+                        var comp = document.createElement('div');
+                        comp.style.position = 'absolute';
+                        comp.style.left = Math.round(component.xMin) + 'px';
+                        comp.style.top = markerTop + 'px';
+                        comp.style.width = Math.max(1, Math.round(component.xMax - component.xMin + 1)) + 'px';
+                        comp.style.height = markerHeight + 'px';
+                        comp.style.background = component.valid
+                            ? 'rgba(0, 200, 120, 0.12)'
+                            : 'rgba(255, 120, 0, 0.08)';
+                        comp.style.border = componentIndex === 0
+                            ? '1px solid rgba(0, 200, 120, 0.7)'
+                            : '1px dashed rgba(255, 150, 0, 0.5)';
+                        overlay.appendChild(comp);
+                    });
+                }
+
+                if (typeof marker.x === 'number') {
+                    var chosen = document.createElement('div');
+                    chosen.style.position = 'absolute';
+                    chosen.style.left = Math.round(marker.x) + 'px';
+                    chosen.style.top = markerTop + 'px';
+                    chosen.style.height = markerHeight + 'px';
+                    chosen.style.width = '4px';
+                    chosen.style.background = marker.valid
+                        ? 'rgba(0, 255, 120, 0.95)'
+                        : 'rgba(255, 90, 90, 0.9)';
+                    chosen.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.25)';
+                    overlay.appendChild(chosen);
+                }
+            });
+        }
+
+        if (fullScoreDebug && Array.isArray(fullScoreDebug.finalGroups)) {
+            fullScoreDebug.finalGroups.forEach(function (group) {
+                if (!group || !group.bounds) return;
+                var bounds = group.bounds;
+                var top = Math.round(bounds.top);
+                var bottom = Math.round(bounds.bottom);
+                var left = Math.round(bounds.leftX);
+                var right = Math.round(bounds.rightX);
+                var height = Math.max(1, bottom - top + 1);
+
+                var frame = document.createElement('div');
+                frame.style.position = 'absolute';
+                frame.style.left = left + 'px';
+                frame.style.top = top + 'px';
+                frame.style.width = Math.max(1, right - left) + 'px';
+                frame.style.height = height + 'px';
+                frame.style.border = '1px solid rgba(0, 170, 255, 0.22)';
+                frame.style.background = 'rgba(0, 170, 255, 0.03)';
+                overlay.appendChild(frame);
+
+                if (Array.isArray(group.candidates)) {
+                    group.candidates.forEach(function (candidate) {
+                        if (!candidate || typeof candidate.x !== 'number') return;
+                        var line = document.createElement('div');
+                        line.style.position = 'absolute';
+                        line.style.left = Math.round(candidate.x) + 'px';
+                        line.style.top = top + 'px';
+                        line.style.height = height + 'px';
+                        line.style.width = candidate.accepted ? '2px' : '1px';
+                        line.style.background = candidate.accepted
+                            ? 'rgba(0, 220, 255, 0.9)'
+                            : 'rgba(255, 0, 120, 0.28)';
+                        if (!candidate.accepted) {
+                            line.style.borderLeft = '1px dashed rgba(255, 0, 120, 0.45)';
+                        }
+                        overlay.appendChild(line);
+                    });
+                }
+            });
+        }
     }
 
     function scheduleV2CandidateOverlayRender() {
@@ -482,6 +609,105 @@ var SynpdfCorrectionTools = (function () {
         updateCorrectionLogUI();
     }
 
+    function snapshotFullScoreDebugForPage(pagenum, pageData, debugInfo) {
+        fullScoreDebugByPage[pagenum] = {
+            sourcePdf: getCurrentPdfName(),
+            pageNumber: pagenum,
+            pageIndex: pagenum - 1,
+            fixwd: getCurrentFixwdValue(),
+            generatedAt: new Date().toISOString(),
+            clusters: Array.isArray(debugInfo && debugInfo.clusters) ? debugInfo.clusters.map(function (cluster) {
+                var minY = Infinity;
+                var maxY = -Infinity;
+                var segments = Array.isArray(cluster.segments) ? cluster.segments.map(function (seg) {
+                    if (!seg) return null;
+                    if (typeof seg.y1 === 'number' && seg.y1 < minY) minY = seg.y1;
+                    if (typeof seg.y2 === 'number' && seg.y2 > maxY) maxY = seg.y2;
+                    return {
+                        x: typeof seg.x === 'number' ? Math.round(seg.x) : null,
+                        y1: Math.round(seg.y1),
+                        y2: Math.round(seg.y2),
+                        height: Math.round(seg.height || (seg.y2 - seg.y1 + 1))
+                    };
+                }).filter(Boolean) : [];
+                var segments = segments.slice(0, 60);
+                return {
+                    x: Math.round(cluster.x),
+                    totalHeight: Math.round(cluster.totalHeight || 0),
+                    supportIndices: Array.isArray(cluster.supportIndices) ? cluster.supportIndices.slice() : [],
+                    supportScores: Array.isArray(cluster.support) ? cluster.support.map(function (s) {
+                        return { index: s.index, score: s.score };
+                    }) : [],
+                    minY: isFinite(minY) ? Math.round(minY) : null,
+                    maxY: isFinite(maxY) ? Math.round(maxY) : null,
+                    segments: segments
+                };
+            }) : [],
+            groups: Array.isArray(debugInfo && debugInfo.groups) ? debugInfo.groups.map(function (group) {
+                return Array.isArray(group) ? group.slice() : [];
+            }) : [],
+            leftMarkers: Array.isArray(debugInfo && debugInfo.leftMarkers) ? debugInfo.leftMarkers.map(function (marker) {
+                return {
+                    groupIndices: Array.isArray(marker.groupIndices) ? marker.groupIndices.slice() : [],
+                    top: typeof marker.top === 'number' ? Math.round(marker.top) : null,
+                    bottom: typeof marker.bottom === 'number' ? Math.round(marker.bottom) : null,
+                    x: typeof marker.x === 'number' ? Math.round(marker.x) : null,
+                    valid: !!marker.valid,
+                    components: Array.isArray(marker.components) ? marker.components.map(function (component) {
+                        return {
+                            x: typeof component.x === 'number' ? Math.round(component.x) : null,
+                            xMin: typeof component.xMin === 'number' ? Math.round(component.xMin) : null,
+                            xMax: typeof component.xMax === 'number' ? Math.round(component.xMax) : null,
+                            width: typeof component.width === 'number' ? Math.round(component.width) : null,
+                            span: typeof component.span === 'number' ? Math.round(component.span) : null,
+                            score: typeof component.score === 'number' ? component.score : null,
+                            valid: !!component.valid
+                        };
+                    }) : []
+                };
+            }) : [],
+            finalGroups: Array.isArray(debugInfo && debugInfo.finalGroupReports) ? debugInfo.finalGroupReports.map(function (report) {
+                return {
+                    groupIndices: Array.isArray(report.groupIndices) ? report.groupIndices.slice() : [],
+                    leftMarker: report.leftMarker ? {
+                        x: typeof report.leftMarker.x === 'number' ? Math.round(report.leftMarker.x) : null,
+                        score: typeof report.leftMarker.score === 'number' ? report.leftMarker.score : null,
+                        valid: !!report.leftMarker.valid
+                    } : null,
+                    bounds: report.bounds ? {
+                        top: typeof report.bounds.top === 'number' ? Math.round(report.bounds.top) : null,
+                        bottom: typeof report.bounds.bottom === 'number' ? Math.round(report.bounds.bottom) : null,
+                        leftX: typeof report.bounds.leftX === 'number' ? Math.round(report.bounds.leftX) : null,
+                        rightX: typeof report.bounds.rightX === 'number' ? Math.round(report.bounds.rightX) : null
+                    } : null,
+                    candidates: Array.isArray(report.candidates) ? report.candidates.map(function (candidate) {
+                        return {
+                            x: typeof candidate.x === 'number' ? Math.round(candidate.x) : null,
+                            accepted: !!candidate.accepted,
+                            score: typeof candidate.score === 'number' ? candidate.score : null,
+                            usable: Array.isArray(candidate.usable) ? candidate.usable.slice() : [],
+                            strong: Array.isArray(candidate.strong) ? candidate.strong.slice() : [],
+                            bridgeCount: typeof candidate.bridgeCount === 'number' ? candidate.bridgeCount : null,
+                            connectivity: typeof candidate.connectivity === 'number' ? candidate.connectivity : null,
+                            darkRatio: typeof candidate.darkRatio === 'number' ? candidate.darkRatio : null,
+                            contrast: typeof candidate.contrast === 'number' ? candidate.contrast : null,
+                            topTouch: typeof candidate.topTouch === 'number' ? candidate.topTouch : null,
+                            bottomTouch: typeof candidate.bottomTouch === 'number' ? candidate.bottomTouch : null
+                        };
+                    }) : [],
+                    bxs: Array.isArray(report.bxs) ? report.bxs.slice() : []
+                };
+            }) : [],
+            finalBxs: pageData && Array.isArray(pageData.bxs) ? JSON.parse(JSON.stringify(pageData.bxs)) : []
+        };
+        scheduleV2CandidateOverlayRender();
+    }
+
+    function clearFullScoreDebugState() {
+        fullScoreDebugByPage = {};
+        scheduleV2CandidateOverlayRender();
+    }
+
     function updateAcceptedBarlinesForPage(pagenum, pageData) {
         var baseline = baselinesByPage[pagenum];
         if (!baseline || !pageData || !Array.isArray(pageData.bxs) || !baseline.systems) {
@@ -602,6 +828,8 @@ var SynpdfCorrectionTools = (function () {
         init: init,
         scheduleV2CandidateOverlayRender: scheduleV2CandidateOverlayRender,
         snapshotV2BaselineForPage: snapshotV2BaselineForPage,
+        snapshotFullScoreDebugForPage: snapshotFullScoreDebugForPage,
+        clearFullScoreDebugState: clearFullScoreDebugState,
         updateAcceptedBarlinesForPage: updateAcceptedBarlinesForPage,
         recordBarlineCorrection: recordBarlineCorrection,
         getCurrentPdfCnnTrainingExamples: getCurrentPdfCnnTrainingExamples,
