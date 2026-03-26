@@ -1122,6 +1122,7 @@ async function goToRenderedPage(targetPage, options) {
     if (typeof setPagenum$$module$synpdf === 'function') {
         setPagenum$$module$synpdf(previousPage);
     }
+    await ensurePageQueuedAndVisible(targetPage);
     var targetCanvas = document.getElementById('canvas' + targetPage);
     if (targetCanvas && typeof targetCanvas.scrollIntoView === 'function') {
         targetCanvas.scrollIntoView({ block: 'center', inline: 'nearest' });
@@ -1147,10 +1148,29 @@ async function recomputeCurrentPageWithCurrentOptions(targetPage) {
     await waitForRenderIdle();
     var previousCanvas = getCurrentPageCanvas();
     resizePdfSyn$$module$synpdf();
+    await ensurePageQueuedAndVisible(targetPage);
     await waitForRenderedPage(targetPage, {
         requireNewCanvas: true,
         previousCanvas: previousCanvas
     });
+}
+
+async function ensurePageQueuedAndVisible(targetPage) {
+    var startedAt = performance.now();
+    while (!document.getElementById('canvas' + targetPage)) {
+        if (performance.now() - startedAt > 30000) {
+            throw new Error('Timed out waiting for page shell ' + targetPage);
+        }
+        await new Promise(function (resolve) { setTimeout(resolve, 50); });
+    }
+
+    var targetCanvas = document.getElementById('canvas' + targetPage);
+    if (targetCanvas && typeof targetCanvas.scrollIntoView === 'function') {
+        targetCanvas.scrollIntoView({ block: 'center', inline: 'nearest' });
+    }
+    if (typeof renderPageIfNotRendered === 'function') {
+        renderPageIfNotRendered(targetPage);
+    }
 }
 
 function normalizeDetectedSystemBarlines(system, detectedBarlines, existingBarlines) {
