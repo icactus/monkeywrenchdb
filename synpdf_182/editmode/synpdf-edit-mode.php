@@ -28,14 +28,14 @@
     <script src="pdf.min.js"></script>
 
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=8"></script>
+    <script src="correction-log-tools.js?v=11"></script>
     <script src="barline-patch-cnn-runtime.js?v=1"></script>
-    <script src="synpdf-edit-mode.js?v=78"></script>
-    <script src="edit-mode-tools.js?v=119"></script>
+    <script src="synpdf-edit-mode.js?v=81"></script>
+    <script src="edit-mode-tools.js?v=153"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <?php $barlineCnnBrowserJsVer = file_exists('../models/barline-patch-cnn-3x6-browser.js') ? filemtime('../models/barline-patch-cnn-3x6-browser.js') : time(); ?>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
-    <script src="barline-detect-v2.js?v=61"></script>
+    <script src="barline-detect-v2.js?v=62"></script>
     <style>
         html {
             width: 100%;
@@ -933,6 +933,8 @@
                                 style="background:#ff8a00; color:#000; font-weight:bold; margin-left:8px;">Run CNN-only All Pages</button>
                             <button id="run-piano-all-btn" type="button"
                                 style="background:#d7a6ff; color:#000; font-weight:bold; margin-left:8px;">Run Piano All Pages</button>
+                            <button id="run-fullscore-all-btn" type="button"
+                                style="background:#b7d9ff; color:#000; font-weight:bold; margin-left:8px;">Run Full Score All Pages</button>
                         </div>
                         <div style="margin-top: 8px; min-width: 260px;">
                             <label style="display:flex;align-items:center;gap:6px;">
