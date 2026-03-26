@@ -961,6 +961,16 @@ function getCurrentPageImageData() {
         }
     }
 
+    async function preparePageForCNN(pagenum, lastPage) {
+        setBatchButtonState(true, pagenum, lastPage);
+        await goToRenderedPage(pagenum, { forceRerender: true });
+        var rebuilt = rebuildCurrentPageMetricData(pagenum, true);
+        if (!rebuilt) {
+            throw new Error('Failed to prepare page ' + pagenum + ' for CNN');
+        }
+        return rebuilt;
+    }
+
 function normalizeDetectedSystemBarlines(system, detectedBarlines, existingBarlines) {
     const currentBarlines = Array.isArray(existingBarlines) ? existingBarlines.slice() : [];
     const leftBoundary = currentBarlines.length > 0 ? currentBarlines[0] : system.xs.x1;
@@ -4469,7 +4479,7 @@ $(document).ready(function () {
         }
 
         let pageData = deMetriek$$module$synpdf[pagenum];
-        if (runMode === 'cnn_only') {
+        if (runMode === 'cnn_only' && !options.skipSingleStaffPrep) {
             pageData = rebuildCurrentPageMetricData(pagenum, true) || pageData;
         }
         if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
@@ -4773,10 +4783,14 @@ $(document).ready(function () {
         var lastPage = deMetriek$$module$synpdf.length - 1;
         batchDetectionInProgress = true;
         try {
+            for (var prepPageNum = 1; prepPageNum <= lastPage; prepPageNum++) {
+                await preparePageForCNN(prepPageNum, lastPage);
+            }
+
             for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
                 setBatchButtonState(true, pageNum, lastPage);
                 await goToRenderedPage(pageNum, { forceRerender: true });
-                var ok = runPageBarlineDetection(runMode, { suppressRefresh: true });
+                var ok = runPageBarlineDetection(runMode, { suppressRefresh: true, skipSingleStaffPrep: true });
                 if (!ok) {
                     throw new Error('Detection failed on page ' + pageNum);
                 }
