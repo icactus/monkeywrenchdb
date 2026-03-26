@@ -4060,7 +4060,7 @@ function mergeSystemsInYDrag(event) {
 
     MetricStore.setMetricData(pageData, { clone: false });
     if (window.SynpdfCorrectionTools && typeof SynpdfCorrectionTools.snapshotV2BaselineForPage === 'function') {
-        SynpdfCorrectionTools.snapshotV2BaselineForPage(pagenum, pageData, [], []);
+        SynpdfCorrectionTools.snapshotV2BaselineForPage(pagenum, pageData[pagenum], [], []);
     }
     requestRefresh({ preferLiveData: true });
     return true;
