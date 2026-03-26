@@ -912,9 +912,17 @@ function getDisplayedPageNumber() {
     return pageInput ? parseInt(pageInput.value, 10) : opt$$module$synpdf.pagenum;
 }
 
+function isCanvasReadyForAnalysis(canvas) {
+    return !!(canvas &&
+        canvas.width > 1 &&
+        canvas.height > 1 &&
+        canvas.classList &&
+        canvas.classList.contains('rendered'));
+}
+
 function getCurrentPageImageData() {
     const canvas = getCurrentPageCanvas();
-    if (!canvas) {
+    if (!isCanvasReadyForAnalysis(canvas)) {
         return null;
     }
 
@@ -1031,8 +1039,14 @@ function waitForRenderedPage(targetPage, options) {
         var startedAt = performance.now();
         function poll() {
             var pageVal = getDisplayedPageNumber();
-            var canvas = getCurrentPageCanvas();
-            var imageData = getCurrentPageImageData();
+            var canvas = document.getElementById('canvas' + targetPage) || getCurrentPageCanvas();
+            var imageData = isCanvasReadyForAnalysis(canvas)
+                ? {
+                    pixelData: canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data,
+                    stride: canvas.width * 4,
+                    width: canvas.width
+                }
+                : null;
 
             if (typeof rendering$$module$synpdf !== 'undefined' && rendering$$module$synpdf) {
                 sawRenderStart = true;
