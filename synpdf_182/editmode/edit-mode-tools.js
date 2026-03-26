@@ -977,7 +977,7 @@ function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf)
     }
 }
 
-function setBatchButtonState(isRunning, currentPage, lastPage) {
+function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
     var cnnAllBtn = $('#run-cnn-all-btn');
     var pianoAllBtn = $('#run-piano-all-btn');
     var fullScoreAllBtn = $('#run-fullscore-all-btn');
@@ -985,9 +985,9 @@ function setBatchButtonState(isRunning, currentPage, lastPage) {
     var v2Btn = $('#run-v2-btn');
     var geomBtn = $('#run-geom-btn');
     if (isRunning) {
-        cnnAllBtn.prop('disabled', true).text('Running CNN All… ' + currentPage + '/' + lastPage);
-        pianoAllBtn.prop('disabled', true).text('Running Piano All… ' + currentPage + '/' + lastPage);
-        fullScoreAllBtn.prop('disabled', true).text('Running Full Score… ' + currentPage + '/' + lastPage);
+        cnnAllBtn.prop('disabled', true).text(activeMode === 'cnn' ? 'Running CNN All… ' + currentPage + '/' + lastPage : 'Run CNN-only All Pages');
+        pianoAllBtn.prop('disabled', true).text(activeMode === 'piano' ? 'Running Piano All… ' + currentPage + '/' + lastPage : 'Run Piano All Pages');
+        fullScoreAllBtn.prop('disabled', true).text(activeMode === 'fullscore' ? 'Running Full Score… ' + currentPage + '/' + lastPage : 'Run Full Score All Pages');
         cnnBtn.prop('disabled', true);
         v2Btn.prop('disabled', true);
         geomBtn.prop('disabled', true);
@@ -1002,7 +1002,7 @@ function setBatchButtonState(isRunning, currentPage, lastPage) {
 }
 
 async function preparePageForCNN(pagenum, lastPage) {
-    setBatchButtonState(true, pagenum, lastPage);
+    setBatchButtonState(true, pagenum, lastPage, 'cnn');
     await goToRenderedPage(pagenum, { forceRerender: true });
     await recomputeCurrentPageWithCurrentOptions(pagenum);
     if (!persistMetricData()) {
@@ -1121,6 +1121,13 @@ async function goToRenderedPage(targetPage, options) {
     opt$$module$synpdf.pagenum = targetPage;
     if (typeof setPagenum$$module$synpdf === 'function') {
         setPagenum$$module$synpdf(previousPage);
+    }
+    var targetCanvas = document.getElementById('canvas' + targetPage);
+    if (targetCanvas && typeof targetCanvas.scrollIntoView === 'function') {
+        targetCanvas.scrollIntoView({ block: 'center', inline: 'nearest' });
+    }
+    if (typeof renderPageIfNotRendered === 'function') {
+        renderPageIfNotRendered(targetPage);
     }
     await waitForRenderedPage(targetPage, {
         requireNewCanvas: !!options.forceRerender,
@@ -4860,7 +4867,7 @@ $(document).ready(function () {
             }
 
             for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
-                setBatchButtonState(true, pageNum, lastPage);
+                setBatchButtonState(true, pageNum, lastPage, 'cnn');
                 await goToRenderedPage(pageNum, { forceRerender: true });
                 var ok = runPageBarlineDetection(runMode, { suppressRefresh: true, skipSingleStaffPrep: true });
                 if (!ok) {
@@ -4976,7 +4983,7 @@ $(document).ready(function () {
         batchDetectionInProgress = true;
         try {
             for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
-                setBatchButtonState(true, pageNum, lastPage);
+                setBatchButtonState(true, pageNum, lastPage, 'piano');
                 await goToRenderedPage(pageNum, { forceRerender: true });
                 var ok = runCurrentPagePianoNormalize({ suppressRefresh: true });
                 if (!ok) {
@@ -5008,7 +5015,7 @@ $(document).ready(function () {
                 SynpdfCorrectionTools.clearFullScoreDebugState();
             }
             for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
-                setBatchButtonState(true, pageNum, lastPage);
+                setBatchButtonState(true, pageNum, lastPage, 'fullscore');
                 await goToRenderedPage(pageNum, { forceRerender: true });
                 var ok = runCurrentPageFullScoreNormalize({ suppressRefresh: true });
                 if (!ok) {
