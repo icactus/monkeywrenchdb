@@ -988,11 +988,11 @@ function setBatchButtonState(isRunning, currentPage, lastPage) {
 async function preparePageForCNN(pagenum, lastPage) {
     setBatchButtonState(true, pagenum, lastPage);
     await goToRenderedPage(pagenum, { forceRerender: true });
-    var rebuilt = rebuildCurrentPageMetricData(pagenum, true, false);
-    if (!rebuilt) {
-        throw new Error('Failed to prepare page ' + pagenum + ' for CNN');
+    await recomputeCurrentPageWithCurrentOptions(pagenum);
+    if (!persistMetricData()) {
+        throw new Error('Failed to persist page ' + pagenum + ' after CNN prep');
     }
-    return rebuilt;
+    return deMetriek$$module$synpdf[pagenum] || null;
 }
 
 function waitForRenderIdle(timeoutMs) {
@@ -1104,6 +1104,24 @@ async function goToRenderedPage(targetPage, options) {
     }
     await waitForRenderedPage(targetPage, {
         requireNewCanvas: !!options.forceRerender,
+        previousCanvas: previousCanvas
+    });
+}
+
+function setSingleStaffMode(isEnabled) {
+    opt$$module$synpdf.onestf = isEnabled ? 1 : 0;
+    var singleStaffInput = document.querySelector('#menu input#onestf');
+    if (singleStaffInput) {
+        singleStaffInput.checked = !!isEnabled;
+    }
+}
+
+async function recomputeCurrentPageWithCurrentOptions(targetPage) {
+    await waitForRenderIdle();
+    var previousCanvas = getCurrentPageCanvas();
+    resizePdfSyn$$module$synpdf();
+    await waitForRenderedPage(targetPage, {
+        requireNewCanvas: true,
         previousCanvas: previousCanvas
     });
 }
@@ -4814,14 +4832,12 @@ $(document).ready(function () {
         }
 
         var lastPage = deMetriek$$module$synpdf.length - 1;
-        var previousOnestf = opt$$module$synpdf.onestf;
         batchDetectionInProgress = true;
         try {
+            setSingleStaffMode(true);
             for (var prepPageNum = 1; prepPageNum <= lastPage; prepPageNum++) {
                 await preparePageForCNN(prepPageNum, lastPage);
             }
-
-            opt$$module$synpdf.onestf = previousOnestf;
 
             for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
                 setBatchButtonState(true, pageNum, lastPage);
@@ -4837,7 +4853,6 @@ $(document).ready(function () {
             console.error('All-pages CNN detection aborted:', err);
             alert('All-pages CNN detection stopped: ' + err.message);
         } finally {
-            opt$$module$synpdf.onestf = previousOnestf;
             batchDetectionInProgress = false;
             setBatchButtonState(false);
         }
