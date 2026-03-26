@@ -4673,24 +4673,25 @@ $(document).ready(function () {
         const pagePerfStart = performance.now();
         console.log("Running " + (runMode === 'cnn_only' ? 'CNN-only dev detection' : 'V2 ML Detection') + " on page " + pagenum + " for " + pageData.cxs.length + " systems...");
 
-        // Pre-fit page-local system geometry from the current rendered canvas so the
-        // first V2 run uses the corrected skewed staff seed instead of stale flat cs.
         const systemsForDetection = JSON.parse(JSON.stringify(pageData.cxs));
         systemsForDetection.forEach(function (system, index) {
             applyExistingBoundaryXs(system, pageData.bxs && pageData.bxs[index]);
         });
-        const prefitStart = performance.now();
-        const initialRenderGeometry = systemsForDetection.map(function (system) {
-            if (!systemSupportsRenderGeometryFit(system)) return null;
-            return BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width);
-        });
-        initialRenderGeometry.forEach(function (renderGeometry, index) {
-            applyRenderGeometryToSystem(systemsForDetection[index], renderGeometry, {
-                expandSparse: true,
-                fixedXs: getSystemBoundaryXs(systemsForDetection[index], pageData.bxs && pageData.bxs[index])
+        let prefitMs = 0;
+        if (runMode !== 'cnn_only') {
+            const prefitStart = performance.now();
+            const initialRenderGeometry = systemsForDetection.map(function (system) {
+                if (!systemSupportsRenderGeometryFit(system)) return null;
+                return BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width);
             });
-        });
-        const prefitMs = performance.now() - prefitStart;
+            initialRenderGeometry.forEach(function (renderGeometry, index) {
+                applyRenderGeometryToSystem(systemsForDetection[index], renderGeometry, {
+                    expandSparse: true,
+                    fixedXs: getSystemBoundaryXs(systemsForDetection[index], pageData.bxs && pageData.bxs[index])
+                });
+            });
+            prefitMs = performance.now() - prefitStart;
+        }
 
         const detectionOpts = {
             allowV1Fallback: false,
@@ -4711,16 +4712,23 @@ $(document).ready(function () {
         });
 
         if (v2Barlines && v2Barlines.length === pageData.cxs.length) {
-            pageData.cxs = systemsForDetection.map(function (system, index) {
-                return applyRenderGeometryToSystem(system, systemRenderGeometry[index], {
-                    fixedXs: getSystemBoundaryXs(system, pageData.bxs && pageData.bxs[index])
+            if (runMode !== 'cnn_only') {
+                pageData.cxs = systemsForDetection.map(function (system, index) {
+                    return applyRenderGeometryToSystem(system, systemRenderGeometry[index], {
+                        fixedXs: getSystemBoundaryXs(system, pageData.bxs && pageData.bxs[index])
+                    });
                 });
-            });
+            }
             pageData.bxs = v2Barlines.map(function (detectedBarlines, index) {
                 return normalizeDetectedSystemBarlines(pageData.cxs[index], detectedBarlines, pageData.bxs[index]);
             });
             deMetriek$$module$synpdf[pagenum] = pageData;
-            SynpdfCorrectionTools.snapshotV2BaselineForPage(pagenum, pageData, systemDiagnostics, systemRenderGeometry);
+            SynpdfCorrectionTools.snapshotV2BaselineForPage(
+                pagenum,
+                pageData,
+                systemDiagnostics,
+                runMode === 'cnn_only' ? [] : systemRenderGeometry
+            );
 
             // Persist the updated live metric array before re-rendering.
             if (!persistMetricData()) {
