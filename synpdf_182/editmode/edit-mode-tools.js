@@ -925,51 +925,75 @@ function getCurrentPageImageData() {
     };
 }
 
-    function getCurrentPageCanvas() {
-        return document.querySelector('#notation canvas') || document.querySelector('canvas');
+function getCurrentPageCanvas() {
+    return document.querySelector('#notation canvas') || document.querySelector('canvas');
+}
+
+function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf) {
+    var canvas = getCurrentPageCanvas();
+    if (!canvas || typeof countPix$$module$synpdf !== 'function') {
+        return null;
     }
 
-    function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf) {
-        var canvas = getCurrentPageCanvas();
-        if (!canvas || typeof countPix$$module$synpdf !== 'function') {
+    var previousOnestf = opt$$module$synpdf.onestf;
+    if (forceSingleStaves) {
+        opt$$module$synpdf.onestf = 1;
+    }
+
+    try {
+        var pageData = countPix$$module$synpdf(canvas, parseInt(opt$$module$synpdf.seln));
+        if (!pageData || !pageData.cxs) {
             return null;
         }
 
-        var previousOnestf = opt$$module$synpdf.onestf;
-        if (forceSingleStaves) {
-            opt$$module$synpdf.onestf = 1;
+        deMetriek$$module$synpdf[pagenum] = pageData.cxs.length ? pageData : { cxs: [], bxs: [] };
+        MetricStore.setMetricData(deMetriek$$module$synpdf, { clone: false });
+
+        if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.snapshotV2BaselineForPage) {
+            SynpdfCorrectionTools.snapshotV2BaselineForPage(pagenum, deMetriek$$module$synpdf[pagenum], [], []);
         }
 
-        try {
-            var pageData = countPix$$module$synpdf(canvas, parseInt(opt$$module$synpdf.seln));
-            if (!pageData || !pageData.cxs) {
-                return null;
-            }
-
-            deMetriek$$module$synpdf[pagenum] = pageData.cxs.length ? pageData : { cxs: [], bxs: [] };
-            MetricStore.setMetricData(deMetriek$$module$synpdf, { clone: false });
-
-            if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.snapshotV2BaselineForPage) {
-                SynpdfCorrectionTools.snapshotV2BaselineForPage(pagenum, deMetriek$$module$synpdf[pagenum], [], []);
-            }
-
-            return deMetriek$$module$synpdf[pagenum];
-        } finally {
-            if (forceSingleStaves && restoreOnestf !== false) {
-                opt$$module$synpdf.onestf = previousOnestf;
-            }
+        return deMetriek$$module$synpdf[pagenum];
+    } finally {
+        if (forceSingleStaves && restoreOnestf !== false) {
+            opt$$module$synpdf.onestf = previousOnestf;
         }
     }
+}
 
-    async function preparePageForCNN(pagenum, lastPage) {
-        setBatchButtonState(true, pagenum, lastPage);
-        await goToRenderedPage(pagenum, { forceRerender: true });
-        var rebuilt = rebuildCurrentPageMetricData(pagenum, true, false);
-        if (!rebuilt) {
-            throw new Error('Failed to prepare page ' + pagenum + ' for CNN');
-        }
-        return rebuilt;
+function setBatchButtonState(isRunning, currentPage, lastPage) {
+    var cnnAllBtn = $('#run-cnn-all-btn');
+    var pianoAllBtn = $('#run-piano-all-btn');
+    var fullScoreAllBtn = $('#run-fullscore-all-btn');
+    var cnnBtn = $('#run-cnn-btn');
+    var v2Btn = $('#run-v2-btn');
+    var geomBtn = $('#run-geom-btn');
+    if (isRunning) {
+        cnnAllBtn.prop('disabled', true).text('Running CNN All… ' + currentPage + '/' + lastPage);
+        pianoAllBtn.prop('disabled', true).text('Running Piano All… ' + currentPage + '/' + lastPage);
+        fullScoreAllBtn.prop('disabled', true).text('Running Full Score… ' + currentPage + '/' + lastPage);
+        cnnBtn.prop('disabled', true);
+        v2Btn.prop('disabled', true);
+        geomBtn.prop('disabled', true);
+    } else {
+        cnnAllBtn.prop('disabled', false).text('Run CNN-only All Pages');
+        pianoAllBtn.prop('disabled', false).text('Run Piano All Pages');
+        fullScoreAllBtn.prop('disabled', false).text('Run Full Score All Pages');
+        cnnBtn.prop('disabled', false);
+        v2Btn.prop('disabled', false);
+        geomBtn.prop('disabled', false);
     }
+}
+
+async function preparePageForCNN(pagenum, lastPage) {
+    setBatchButtonState(true, pagenum, lastPage);
+    await goToRenderedPage(pagenum, { forceRerender: true });
+    var rebuilt = rebuildCurrentPageMetricData(pagenum, true, false);
+    if (!rebuilt) {
+        throw new Error('Failed to prepare page ' + pagenum + ' for CNN');
+    }
+    return rebuilt;
+}
 
 function normalizeDetectedSystemBarlines(system, detectedBarlines, existingBarlines) {
     const currentBarlines = Array.isArray(existingBarlines) ? existingBarlines.slice() : [];
@@ -4666,30 +4690,6 @@ $(document).ready(function () {
 
         requestRefresh({ preferLiveData: true });
         console.log("Staff geometry fit completed and saved.");
-    }
-
-    function setBatchButtonState(isRunning, currentPage, lastPage) {
-        var cnnAllBtn = $('#run-cnn-all-btn');
-        var pianoAllBtn = $('#run-piano-all-btn');
-        var fullScoreAllBtn = $('#run-fullscore-all-btn');
-        var cnnBtn = $('#run-cnn-btn');
-        var v2Btn = $('#run-v2-btn');
-        var geomBtn = $('#run-geom-btn');
-        if (isRunning) {
-            cnnAllBtn.prop('disabled', true).text('Running CNN All… ' + currentPage + '/' + lastPage);
-            pianoAllBtn.prop('disabled', true).text('Running Piano All… ' + currentPage + '/' + lastPage);
-            fullScoreAllBtn.prop('disabled', true).text('Running Full Score… ' + currentPage + '/' + lastPage);
-            cnnBtn.prop('disabled', true);
-            v2Btn.prop('disabled', true);
-            geomBtn.prop('disabled', true);
-        } else {
-            cnnAllBtn.prop('disabled', false).text('Run CNN-only All Pages');
-            pianoAllBtn.prop('disabled', false).text('Run Piano All Pages');
-            fullScoreAllBtn.prop('disabled', false).text('Run Full Score All Pages');
-            cnnBtn.prop('disabled', false);
-            v2Btn.prop('disabled', false);
-            geomBtn.prop('disabled', false);
-        }
     }
 
     function waitForRenderedPage(targetPage, options) {
