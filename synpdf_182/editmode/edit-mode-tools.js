@@ -1003,8 +1003,17 @@ function waitForRenderedPage(targetPage, options) {
     return new Promise(function (resolve, reject) {
         var startedAt = performance.now();
         function poll() {
+            var pageInput = document.getElementById('pagenum');
+            var pageVal = pageInput ? parseInt(pageInput.value, 10) : opt$$module$synpdf.pagenum;
+            var canvas = getCurrentPageCanvas();
+            var imageData = getCurrentPageImageData();
+
             if (typeof rendering$$module$synpdf !== 'undefined' && rendering$$module$synpdf) {
                 sawRenderStart = true;
+                if (pageVal === targetPage && imageData && imageData.pixelData && imageData.pixelData.length) {
+                    setTimeout(resolve, 40);
+                    return;
+                }
                 if (performance.now() - startedAt > 30000) {
                     reject(new Error('Timed out waiting for page render'));
                     return;
@@ -1013,8 +1022,6 @@ function waitForRenderedPage(targetPage, options) {
                 return;
             }
 
-            var pageInput = document.getElementById('pagenum');
-            var pageVal = pageInput ? parseInt(pageInput.value, 10) : opt$$module$synpdf.pagenum;
             if (pageVal !== targetPage) {
                 if (performance.now() - startedAt > 30000) {
                     reject(new Error('Rendered page number did not update'));
@@ -1024,9 +1031,12 @@ function waitForRenderedPage(targetPage, options) {
                 return;
             }
 
-            var canvas = getCurrentPageCanvas();
             if (requireNewCanvas) {
                 if (!sawRenderStart) {
+                    if (imageData && imageData.pixelData && imageData.pixelData.length) {
+                        setTimeout(resolve, 40);
+                        return;
+                    }
                     if (performance.now() - startedAt > 30000) {
                         reject(new Error('Render did not start for target page'));
                         return;
@@ -1035,6 +1045,10 @@ function waitForRenderedPage(targetPage, options) {
                     return;
                 }
                 if (!canvas || canvas === previousCanvas) {
+                    if (imageData && imageData.pixelData && imageData.pixelData.length) {
+                        setTimeout(resolve, 40);
+                        return;
+                    }
                     if (performance.now() - startedAt > 30000) {
                         reject(new Error('Rendered canvas did not refresh'));
                         return;
@@ -1044,7 +1058,6 @@ function waitForRenderedPage(targetPage, options) {
                 }
             }
 
-            var imageData = getCurrentPageImageData();
             if (!imageData || !imageData.pixelData || !imageData.pixelData.length) {
                 if (performance.now() - startedAt > 30000) {
                     reject(new Error('Rendered page image data unavailable'));
