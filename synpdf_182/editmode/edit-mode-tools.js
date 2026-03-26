@@ -995,6 +995,25 @@ async function preparePageForCNN(pagenum, lastPage) {
     return rebuilt;
 }
 
+function waitForRenderIdle(timeoutMs) {
+    timeoutMs = timeoutMs || 30000;
+    return new Promise(function (resolve, reject) {
+        var startedAt = performance.now();
+        function poll() {
+            if (typeof rendering$$module$synpdf === 'undefined' || !rendering$$module$synpdf) {
+                resolve();
+                return;
+            }
+            if (performance.now() - startedAt > timeoutMs) {
+                reject(new Error('Timed out waiting for current render to finish'));
+                return;
+            }
+            setTimeout(poll, 50);
+        }
+        poll();
+    });
+}
+
 function waitForRenderedPage(targetPage, options) {
     options = options || {};
     var requireNewCanvas = !!options.requireNewCanvas;
@@ -1075,6 +1094,7 @@ function waitForRenderedPage(targetPage, options) {
 
 async function goToRenderedPage(targetPage, options) {
     options = options || {};
+    await waitForRenderIdle();
     var currentInput = document.getElementById('pagenum');
     var previousPage = currentInput ? parseInt(currentInput.value, 10) : opt$$module$synpdf.pagenum;
     var previousCanvas = getCurrentPageCanvas();
