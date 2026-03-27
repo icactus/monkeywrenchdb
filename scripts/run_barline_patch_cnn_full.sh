@@ -124,6 +124,10 @@ else
         echo "SKIP ${base}: missing PDF ${pdf}"
         exit 0
       fi
+      if [[ -f "$out" && "$out" -nt "$json" && "$out" -nt "$pdf" ]]; then
+        echo "SKIP ${base}: patch shard is up to date"
+        exit 0
+      fi
       echo "EXTRACT ${base}"
       python3 -u scripts/extract_barline_patch_dataset.py \
         --pdf "$pdf" \

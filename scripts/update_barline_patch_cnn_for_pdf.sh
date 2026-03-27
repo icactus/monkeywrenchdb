@@ -16,6 +16,7 @@ shift
 DATA_DIR="synpdf_182/editmode/training-folder"
 PATCH_DIR="${DATA_DIR}/patches_3x6"
 HARDCASE_DIR="${DATA_DIR}/hardcases"
+CORRECTIONS_ARCHIVE_DIR="${DATA_DIR}/processed/corrections"
 MODEL_OUT="synpdf_182/models/barline-patch-cnn-3x6.keras"
 SUMMARY_OUT="synpdf_182/models/barline-patch-cnn-3x6-summary.json"
 BROWSER_OUT="synpdf_182/models/barline-patch-cnn-3x6-browser.js"
@@ -37,10 +38,11 @@ PDF_PATH="pdfs/${PDF_ID}.pdf"
 TD_JSON="${DATA_DIR}/${PDF_ID}-td.json"
 TD_JSON_PROCESSED="${DATA_DIR}/processed/${PDF_ID}-td.json"
 CORRECTIONS_JSON="${DATA_DIR}/${PDF_ID}-corrections.json"
+CORRECTIONS_JSON_ARCHIVED="${CORRECTIONS_ARCHIVE_DIR}/${PDF_ID}-corrections.json"
 PATCH_OUT="${PATCH_DIR}/${PDF_ID}_patches.npz"
 HARDCASE_OUT="${HARDCASE_DIR}/${PDF_ID}_hardcases.npz"
 
-mkdir -p "$PATCH_DIR" "$HARDCASE_DIR" "$(dirname "$MODEL_OUT")"
+mkdir -p "$PATCH_DIR" "$HARDCASE_DIR" "$CORRECTIONS_ARCHIVE_DIR" "$(dirname "$MODEL_OUT")"
 
 if [[ ! -f "$PDF_PATH" ]]; then
   echo "Missing PDF: $PDF_PATH" >&2
@@ -49,6 +51,10 @@ fi
 
 if [[ -f "$TD_JSON_PROCESSED" ]]; then
   TD_JSON="$TD_JSON_PROCESSED"
+fi
+
+if [[ ! -s "$CORRECTIONS_JSON" && -s "$CORRECTIONS_JSON_ARCHIVED" ]]; then
+  CORRECTIONS_JSON="$CORRECTIONS_JSON_ARCHIVED"
 fi
 
 if [[ -f "$TD_JSON" ]]; then
