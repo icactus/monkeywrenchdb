@@ -59,29 +59,45 @@
         }
     }
 
-    // Interaction Logic (Intercept clicks on notation)
+    // Interaction Logic (Intercept pointer presses on notation)
     const notation = document.getElementById("notation");
 
-    // We use capturing phase to intercept before the main player
-    notation.addEventListener("click", function (event) {
+    function getPointerClientCoords(event) {
+        const touch = event.touches && event.touches[0]
+            ? event.touches[0]
+            : (event.changedTouches && event.changedTouches[0] ? event.changedTouches[0] : null);
+        if (touch) {
+            return { clientX: touch.clientX, clientY: touch.clientY };
+        }
+        return { clientX: event.clientX, clientY: event.clientY };
+    }
 
+    function handleLiveEditPointer(event) {
         if (!liveEditActive) return;
+        if (event.type === "mousedown" && event.button !== 0) return;
 
         event.preventDefault();
+        if (typeof event.stopImmediatePropagation === "function") {
+            event.stopImmediatePropagation();
+        }
         event.stopPropagation();
-
 
         if (event.shiftKey) {
             handleSplit(event);
         } else {
             handleBarline(event);
         }
-    }, true); // Capture phase
+    }
+
+    // Use capture so we beat the main player handlers.
+    notation.addEventListener("mousedown", handleLiveEditPointer, true);
+    notation.addEventListener("touchstart", handleLiveEditPointer, { capture: true, passive: false });
 
 
     // --- Core Editing Logic Prototypes (Ported) ---
 
     function resolveCanvasFromEvent(event) {
+        const coords = getPointerClientCoords(event);
         let target = event.target;
         if (target && target.tagName === 'CANVAS' && target.id.startsWith('canvas')) {
             return target;
@@ -93,7 +109,7 @@
         }
 
         if (typeof document.elementsFromPoint === 'function') {
-            const hitStack = document.elementsFromPoint(event.clientX, event.clientY);
+            const hitStack = document.elementsFromPoint(coords.clientX, coords.clientY);
             for (const el of hitStack) {
                 if (el && el.tagName === 'CANVAS' && el.id && el.id.startsWith('canvas')) {
                     return el;
@@ -118,9 +134,10 @@
         const scaleX = target.width / target.offsetWidth;
         const scaleY = target.height / target.offsetHeight;
 
+        const coords = getPointerClientCoords(event);
         const rect = target.getBoundingClientRect();
-        const x = (event.clientX - rect.left) * scaleX;
-        const y = (event.clientY - rect.top) * scaleY;
+        const x = (coords.clientX - rect.left) * scaleX;
+        const y = (coords.clientY - rect.top) * scaleY;
 
         return { x, y, pageIdx };
     }
