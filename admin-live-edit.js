@@ -81,13 +81,32 @@
 
     // --- Core Editing Logic Prototypes (Ported) ---
 
-    function getEventContext(event) {
+    function resolveCanvasFromEvent(event) {
         let target = event.target;
-        // Verify we clicked a canvas
-        if (target.tagName !== 'CANVAS' || !target.id.startsWith('canvas')) {
-            // Try finding a canvas if we clicked an overlay? 
-            // For now, assume direct click as we are using capturing phase on wrapper
-            // But if there's padding in the wrapper, target might be the wrapper
+        if (target && target.tagName === 'CANVAS' && target.id.startsWith('canvas')) {
+            return target;
+        }
+
+        if (target && typeof target.closest === 'function') {
+            const closestCanvas = target.closest('canvas[id^="canvas"]');
+            if (closestCanvas) return closestCanvas;
+        }
+
+        if (typeof document.elementsFromPoint === 'function') {
+            const hitStack = document.elementsFromPoint(event.clientX, event.clientY);
+            for (const el of hitStack) {
+                if (el && el.tagName === 'CANVAS' && el.id && el.id.startsWith('canvas')) {
+                    return el;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    function getEventContext(event) {
+        let target = resolveCanvasFromEvent(event);
+        if (!target) {
             return null;
         }
 
@@ -99,10 +118,9 @@
         const scaleX = target.width / target.offsetWidth;
         const scaleY = target.height / target.offsetHeight;
 
-        // Use offsetX/Y which are relative to the target element's padding box
-        // This automatically handles borders and simple offsets
-        const x = event.offsetX * scaleX;
-        const y = event.offsetY * scaleY;
+        const rect = target.getBoundingClientRect();
+        const x = (event.clientX - rect.left) * scaleX;
+        const y = (event.clientY - rect.top) * scaleY;
 
         return { x, y, pageIdx };
     }
