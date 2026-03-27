@@ -1081,7 +1081,7 @@ async function preparePageForCNN(pagenum, lastPage) {
 }
 
 function waitForRenderIdle(timeoutMs) {
-    timeoutMs = timeoutMs || 30000;
+    var hasTimeout = typeof timeoutMs === 'number' && isFinite(timeoutMs) && timeoutMs > 0;
     return new Promise(function (resolve, reject) {
         var startedAt = performance.now();
         function poll() {
@@ -1089,7 +1089,7 @@ function waitForRenderIdle(timeoutMs) {
                 resolve();
                 return;
             }
-            if (performance.now() - startedAt > timeoutMs) {
+            if (hasTimeout && performance.now() - startedAt > timeoutMs) {
                 reject(new Error('Timed out waiting for current render to finish'));
                 return;
             }
@@ -1102,8 +1102,10 @@ function waitForRenderIdle(timeoutMs) {
 function waitForRenderedPage(targetPage, options) {
     options = options || {};
     var requireNewCanvas = !!options.requireNewCanvas;
-    var previousCanvas = options.previousCanvas || null;
     var sawRenderStart = !requireNewCanvas;
+    var timeoutMs = typeof options.timeoutMs === 'number' && isFinite(options.timeoutMs) && options.timeoutMs > 0
+        ? options.timeoutMs
+        : null;
     return new Promise(function (resolve, reject) {
         var startedAt = performance.now();
         function poll() {
@@ -1119,17 +1121,7 @@ function waitForRenderedPage(targetPage, options) {
 
             if (typeof rendering$$module$synpdf !== 'undefined' && rendering$$module$synpdf) {
                 sawRenderStart = true;
-                if (
-                    pageVal === targetPage &&
-                    imageData &&
-                    imageData.pixelData &&
-                    imageData.pixelData.length &&
-                    (!requireNewCanvas || (canvas && canvas !== previousCanvas))
-                ) {
-                    setTimeout(resolve, 40);
-                    return;
-                }
-                if (performance.now() - startedAt > 30000) {
+                if (timeoutMs !== null && performance.now() - startedAt > timeoutMs) {
                     reject(new Error('Timed out waiting for page render'));
                     return;
                 }
@@ -1138,7 +1130,7 @@ function waitForRenderedPage(targetPage, options) {
             }
 
             if (pageVal !== targetPage) {
-                if (performance.now() - startedAt > 30000) {
+                if (timeoutMs !== null && performance.now() - startedAt > timeoutMs) {
                     reject(new Error('Rendered page number did not update'));
                     return;
                 }
@@ -1148,16 +1140,8 @@ function waitForRenderedPage(targetPage, options) {
 
             if (requireNewCanvas) {
                 if (!sawRenderStart) {
-                    if (performance.now() - startedAt > 30000) {
+                    if (timeoutMs !== null && performance.now() - startedAt > timeoutMs) {
                         reject(new Error('Render did not start for target page'));
-                        return;
-                    }
-                    setTimeout(poll, 50);
-                    return;
-                }
-                if (!canvas || canvas === previousCanvas) {
-                    if (performance.now() - startedAt > 30000) {
-                        reject(new Error('Rendered canvas did not refresh'));
                         return;
                     }
                     setTimeout(poll, 50);
@@ -1166,7 +1150,7 @@ function waitForRenderedPage(targetPage, options) {
             }
 
             if (!imageData || !imageData.pixelData || !imageData.pixelData.length) {
-                if (performance.now() - startedAt > 30000) {
+                if (timeoutMs !== null && performance.now() - startedAt > timeoutMs) {
                     reject(new Error('Rendered page image data unavailable'));
                     return;
                 }
@@ -1184,14 +1168,12 @@ async function goToRenderedPage(targetPage, options) {
     options = options || {};
     await waitForRenderIdle();
     var previousPage = getDisplayedPageNumber();
-    var previousCanvas = getCurrentPageCanvas();
     opt$$module$synpdf.pagenum = targetPage;
     if (typeof setPagenum$$module$synpdf === 'function') {
         setPagenum$$module$synpdf(previousPage);
     }
     await waitForRenderedPage(targetPage, {
-        requireNewCanvas: !!options.forceRerender,
-        previousCanvas: previousCanvas
+        requireNewCanvas: !!options.forceRerender
     });
 }
 
@@ -1205,11 +1187,9 @@ function setSingleStaffMode(isEnabled) {
 
 async function recomputeCurrentPageWithCurrentOptions(targetPage) {
     await waitForRenderIdle();
-    var previousCanvas = getCurrentPageCanvas();
     resizePdfSyn$$module$synpdf();
     await waitForRenderedPage(targetPage, {
-        requireNewCanvas: true,
-        previousCanvas: previousCanvas
+        requireNewCanvas: true
     });
 }
 
