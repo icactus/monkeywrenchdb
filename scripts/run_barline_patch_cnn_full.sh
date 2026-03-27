@@ -11,6 +11,7 @@ HARDCASE_DIR="synpdf_182/editmode/training-folder/hardcases"
 MODEL_OUT="synpdf_182/models/barline-patch-cnn-3x6.keras"
 SUMMARY_OUT="synpdf_182/models/barline-patch-cnn-3x6-summary.json"
 BROWSER_OUT="synpdf_182/models/barline-patch-cnn-3x6-browser.js"
+SUMMARY_HISTORY_DIR="synpdf_182/models/history"
 PATCH_WIDTH=32
 PATCH_HEIGHT=64
 X_SPATIUMS=1.5
@@ -31,6 +32,7 @@ Options:
   --model-out PATH      Output .keras model path
   --summary-out PATH    Output JSON summary path
   --browser-out PATH    Output browser JS model path
+  --summary-history-dir PATH  Directory for timestamped summary snapshots
   --hardcase-dir PATH   Additional hardcase shard directory to merge into full retraining
   --epochs N            Training epochs (default: ${EPOCHS})
   --batch-size N        Training batch size (default: ${BATCH_SIZE})
@@ -53,6 +55,7 @@ while [[ $# -gt 0 ]]; do
     --model-out) MODEL_OUT="$2"; shift 2 ;;
     --summary-out) SUMMARY_OUT="$2"; shift 2 ;;
     --browser-out) BROWSER_OUT="$2"; shift 2 ;;
+    --summary-history-dir) SUMMARY_HISTORY_DIR="$2"; shift 2 ;;
     --epochs) EPOCHS="$2"; shift 2 ;;
     --batch-size) BATCH_SIZE="$2"; shift 2 ;;
     --jobs) JOBS="$2"; shift 2 ;;
@@ -72,7 +75,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-mkdir -p "$PATCH_DIR" "$(dirname "$MODEL_OUT")" "$(dirname "$SUMMARY_OUT")" "$(dirname "$BROWSER_OUT")"
+mkdir -p "$PATCH_DIR" "$(dirname "$MODEL_OUT")" "$(dirname "$SUMMARY_OUT")" "$(dirname "$BROWSER_OUT")" "$SUMMARY_HISTORY_DIR"
 
 echo "==> Barline Patch CNN Pipeline"
 echo "Root:           $ROOT_DIR"
@@ -82,6 +85,7 @@ echo "Patch dir:      $PATCH_DIR"
 echo "Hardcase dir:   $HARDCASE_DIR"
 echo "Model out:      $MODEL_OUT"
 echo "Summary out:    $SUMMARY_OUT"
+echo "Summary hist:   $SUMMARY_HISTORY_DIR"
 echo "Browser out:    $BROWSER_OUT"
 echo "Patch geometry: ${X_SPATIUMS} x-spatiums each side, ${Y_SPATIUMS} y-spatiums above/below"
 echo "Patch tensor:   ${PATCH_WIDTH}x${PATCH_HEIGHT}"
@@ -170,6 +174,13 @@ echo "==> Step 4: Export browser CNN"
 python3 -u scripts/export_barline_patch_cnn_to_js.py \
   --model "$MODEL_OUT" \
   --out "$BROWSER_OUT"
+
+echo
+echo "==> Step 5: Archive timestamped training summary"
+SUMMARY_STAMP="$(date +%Y%m%d-%H%M%S)"
+SUMMARY_ARCHIVE_OUT="${SUMMARY_HISTORY_DIR}/barline-patch-cnn-3x6-summary-${SUMMARY_STAMP}.json"
+cp "$SUMMARY_OUT" "$SUMMARY_ARCHIVE_OUT"
+echo "Summary snapshot: $SUMMARY_ARCHIVE_OUT"
 
 echo
 echo "==> Done"
