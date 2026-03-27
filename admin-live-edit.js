@@ -129,15 +129,19 @@
         const pageIdx = parseInt(target.id.replace('canvas', ''));
         if (isNaN(pageIdx)) return null;
 
-        // Robust scaling calculation
-        // internal buffer size / visual display size
-        const scaleX = target.width / target.offsetWidth;
-        const scaleY = target.height / target.offsetHeight;
+        // Metric data is stored in logical page-width coordinates, not canvas buffer pixels.
+        // The viewer renders canvases at higher DPR internally, so map from displayed CSS size
+        // back into metric-space instead of using target.width/height.
+        const metricArr = window.deMetriek$$module$synpdf || window.metric_arr$$module$synpdf;
+        const logicalPageWidth = Array.isArray(metricArr) && typeof metricArr[0] === 'number'
+            ? metricArr[0]
+            : target.offsetWidth;
+        const scale = logicalPageWidth / target.getBoundingClientRect().width;
 
         const coords = getPointerClientCoords(event);
         const rect = target.getBoundingClientRect();
-        const x = (coords.clientX - rect.left) * scaleX;
-        const y = (coords.clientY - rect.top) * scaleY;
+        const x = (coords.clientX - rect.left) * scale;
+        const y = (coords.clientY - rect.top) * scale;
 
         return { x, y, pageIdx };
     }
