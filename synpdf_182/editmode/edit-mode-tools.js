@@ -937,8 +937,13 @@ function getCurrentPageImageData() {
 }
 
 function getCurrentPageCanvas() {
-    return document.querySelector('#notation canvas') ||
-        document.querySelector('canvas');
+    const notationCanvases = document.querySelectorAll('#notation canvas');
+    if (notationCanvases.length) {
+        return notationCanvases[notationCanvases.length - 1];
+    }
+
+    const canvases = document.querySelectorAll('canvas');
+    return canvases.length ? canvases[canvases.length - 1] : null;
 }
 
 function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf) {
@@ -1114,7 +1119,13 @@ function waitForRenderedPage(targetPage, options) {
 
             if (typeof rendering$$module$synpdf !== 'undefined' && rendering$$module$synpdf) {
                 sawRenderStart = true;
-                if (pageVal === targetPage && imageData && imageData.pixelData && imageData.pixelData.length) {
+                if (
+                    pageVal === targetPage &&
+                    imageData &&
+                    imageData.pixelData &&
+                    imageData.pixelData.length &&
+                    (!requireNewCanvas || (canvas && canvas !== previousCanvas))
+                ) {
                     setTimeout(resolve, 40);
                     return;
                 }
@@ -1137,10 +1148,6 @@ function waitForRenderedPage(targetPage, options) {
 
             if (requireNewCanvas) {
                 if (!sawRenderStart) {
-                    if (imageData && imageData.pixelData && imageData.pixelData.length) {
-                        setTimeout(resolve, 40);
-                        return;
-                    }
                     if (performance.now() - startedAt > 30000) {
                         reject(new Error('Render did not start for target page'));
                         return;
@@ -1149,10 +1156,6 @@ function waitForRenderedPage(targetPage, options) {
                     return;
                 }
                 if (!canvas || canvas === previousCanvas) {
-                    if (imageData && imageData.pixelData && imageData.pixelData.length) {
-                        setTimeout(resolve, 40);
-                        return;
-                    }
                     if (performance.now() - startedAt > 30000) {
                         reject(new Error('Rendered canvas did not refresh'));
                         return;
