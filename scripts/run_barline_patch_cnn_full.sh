@@ -10,6 +10,7 @@ PATCH_DIR="synpdf_182/editmode/training-folder/patches_3x6"
 HARDCASE_DIR="synpdf_182/editmode/training-folder/hardcases"
 MODEL_OUT="synpdf_182/models/barline-patch-cnn-3x6.keras"
 SUMMARY_OUT="synpdf_182/models/barline-patch-cnn-3x6-summary.json"
+BROWSER_OUT="synpdf_182/models/barline-patch-cnn-3x6-browser.js"
 PATCH_WIDTH=32
 PATCH_HEIGHT=64
 X_SPATIUMS=1.5
@@ -29,6 +30,7 @@ Options:
   --patch-dir PATH      Output directory for patch shards
   --model-out PATH      Output .keras model path
   --summary-out PATH    Output JSON summary path
+  --browser-out PATH    Output browser JS model path
   --hardcase-dir PATH   Additional hardcase shard directory to merge into full retraining
   --epochs N            Training epochs (default: ${EPOCHS})
   --batch-size N        Training batch size (default: ${BATCH_SIZE})
@@ -50,6 +52,7 @@ while [[ $# -gt 0 ]]; do
     --hardcase-dir) HARDCASE_DIR="$2"; shift 2 ;;
     --model-out) MODEL_OUT="$2"; shift 2 ;;
     --summary-out) SUMMARY_OUT="$2"; shift 2 ;;
+    --browser-out) BROWSER_OUT="$2"; shift 2 ;;
     --epochs) EPOCHS="$2"; shift 2 ;;
     --batch-size) BATCH_SIZE="$2"; shift 2 ;;
     --jobs) JOBS="$2"; shift 2 ;;
@@ -69,7 +72,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-mkdir -p "$PATCH_DIR" "$(dirname "$MODEL_OUT")" "$(dirname "$SUMMARY_OUT")"
+mkdir -p "$PATCH_DIR" "$(dirname "$MODEL_OUT")" "$(dirname "$SUMMARY_OUT")" "$(dirname "$BROWSER_OUT")"
 
 echo "==> Barline Patch CNN Pipeline"
 echo "Root:           $ROOT_DIR"
@@ -79,6 +82,7 @@ echo "Patch dir:      $PATCH_DIR"
 echo "Hardcase dir:   $HARDCASE_DIR"
 echo "Model out:      $MODEL_OUT"
 echo "Summary out:    $SUMMARY_OUT"
+echo "Browser out:    $BROWSER_OUT"
 echo "Patch geometry: ${X_SPATIUMS} x-spatiums each side, ${Y_SPATIUMS} y-spatiums above/below"
 echo "Patch tensor:   ${PATCH_WIDTH}x${PATCH_HEIGHT}"
 echo "Render width:   $RENDER_WIDTH"
@@ -162,6 +166,13 @@ fi
 python3 -u scripts/train_barline_patch_cnn.py "${TRAIN_ARGS[@]}"
 
 echo
+echo "==> Step 4: Export browser CNN"
+python3 -u scripts/export_barline_patch_cnn_to_js.py \
+  --model "$MODEL_OUT" \
+  --out "$BROWSER_OUT"
+
+echo
 echo "==> Done"
 echo "Model:   $MODEL_OUT"
+echo "Browser: $BROWSER_OUT"
 echo "Summary: $SUMMARY_OUT"
