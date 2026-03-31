@@ -1535,6 +1535,10 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
                     relativeY: ((boxTop - cumulativeHeight) * k),
                     w: ((measureRightBarline - measureLeftBarline) * k),
                     h: ((boxBottom - boxTop) * k),
+                    ytl: (topLeft * k),
+                    ytr: (topRight * k),
+                    ybl: (bottomLeft * k),
+                    ybr: (bottomRight * k),
                     page: pageNum
                 });
                 prevMeasure.split = true;
@@ -1548,6 +1552,10 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
                 y: (boxTop * k),
                 w: ((measureRightBarline - measureLeftBarline) * k),
                 h: ((boxBottom - boxTop) * k),
+                ytl: (topLeft * k),
+                ytr: (topRight * k),
+                ybl: (bottomLeft * k),
+                ybr: (bottomRight * k),
                 page: pageNum,
                 split: isSplit
             });
