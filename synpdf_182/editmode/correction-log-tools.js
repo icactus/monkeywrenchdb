@@ -54,6 +54,20 @@ var SynpdfCorrectionTools = (function () {
         updateCorrectionLogUI();
     }
 
+    function downloadCorrectionsPayload(payloadText, filename) {
+        var blob = new Blob([payloadText], { type: 'application/json' });
+        var downloadUrl = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(function () {
+            URL.revokeObjectURL(downloadUrl);
+        }, 0);
+    }
+
     function getCurrentPdfCorrections() {
         var pdfName = getCurrentPdfName();
         return correctionLog.filter(function (entry) {
@@ -545,7 +559,9 @@ var SynpdfCorrectionTools = (function () {
                     if (!response.ok || !result.success) {
                         throw new Error(result.error || 'Save failed');
                     }
-                    alert('Saved corrections to ' + result.path);
+                    var downloadName = (result.path && result.path.split('/').pop()) || (getCurrentPdfName() + '-corrections.json');
+                    downloadCorrectionsPayload(output.value, downloadName);
+                    alert('Saved corrections to ' + result.path + ' and started download ' + downloadName);
                 } catch (error) {
                     console.error('Failed to save correction log:', error);
                     alert('Failed to save corrections file: ' + error.message);
