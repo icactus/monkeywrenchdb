@@ -1444,11 +1444,42 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
         //convert each page's staff line pixel coordinates so they are relative to total pdf height
         staffSystem.cs = staffSystem.cs.map(function (staffLineLoc) {
             return 1 * staffLineLoc + cumulativeHeight;
-        })
+        });
+        if (Array.isArray(staffSystem.csl)) {
+            staffSystem.csl = staffSystem.csl.map(function (staffLineLoc) {
+                return 1 * staffLineLoc + cumulativeHeight;
+            });
+        }
+        if (Array.isArray(staffSystem.csr)) {
+            staffSystem.csr = staffSystem.csr.map(function (staffLineLoc) {
+                return 1 * staffLineLoc + cumulativeHeight;
+            });
+        }
     });
+    function getSystemEdgeLines(system) {
+        var cs = Array.isArray(system.cs) ? system.cs.slice() : [];
+        var csl = Array.isArray(system.csl) && system.csl.length === cs.length ? system.csl.slice() : cs.slice();
+        var csr = Array.isArray(system.csr) && system.csr.length === cs.length ? system.csr.slice() : cs.slice();
+        return {
+            left: csl,
+            right: csr
+        };
+    }
+    function interpolateSystemLine(system, lineIndex, x) {
+        var xs = system.xs || { x1: 0, x2: 0 };
+        var edges = getSystemEdgeLines(system);
+        var left = edges.left[lineIndex];
+        var right = edges.right[lineIndex];
+        if (typeof left !== 'number' || typeof right !== 'number') return null;
+        if (xs.x2 === xs.x1) return left;
+        var t = (x - xs.x1) / (xs.x2 - xs.x1);
+        t = Math.max(0, Math.min(1, t));
+        return left + t * (right - left);
+    }
     for (let i = 0; i < parsedPageMetricArr.length; ++i) {
         //staff means not just one staff but the entire system if applicable
-        let staff = parsedPageMetricArr[i].cs;
+        let system = parsedPageMetricArr[i];
+        let staff = system.cs;
         var staffTopLine = staff[0];
         var staffBottomLine = staff[staff.length - 1];
         var staffBarlineArr = pageBarlineArray[i];
@@ -1457,6 +1488,16 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
             var measureLeftBarline = Math.abs(staffBarlineArr[j]);
             var measureRightBarline = Math.abs(staffBarlineArr[j + 1]);
             const k = (window.__deMScale || 1);
+            var topLeft = interpolateSystemLine(system, 0, measureLeftBarline);
+            var topRight = interpolateSystemLine(system, 0, measureRightBarline);
+            var bottomLeft = interpolateSystemLine(system, staff.length - 1, measureLeftBarline);
+            var bottomRight = interpolateSystemLine(system, staff.length - 1, measureRightBarline);
+            if ([topLeft, topRight, bottomLeft, bottomRight].some(function (v) { return typeof v !== 'number'; })) {
+                topLeft = topRight = staffTopLine;
+                bottomLeft = bottomRight = staffBottomLine;
+            }
+            var boxTop = Math.min(topLeft, topRight, bottomLeft, bottomRight);
+            var boxBottom = Math.max(topLeft, topRight, bottomLeft, bottomRight);
 
             // If LEFT barline is negative, this is a continuation segment
             // Add it to the previous measure's linkedBoxes instead of creating new entry
@@ -1467,10 +1508,10 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
                 }
                 prevMeasure.linkedBoxes.push({
                     x: (measureLeftBarline * k),
-                    y: (staffTopLine * k),
-                    relativeY: ((staffTopLine - cumulativeHeight) * k),
+                    y: (boxTop * k),
+                    relativeY: ((boxTop - cumulativeHeight) * k),
                     w: ((measureRightBarline - measureLeftBarline) * k),
-                    h: ((staffBottomLine - staffTopLine) * k),
+                    h: ((boxBottom - boxTop) * k),
                     page: pageNum
                 });
                 prevMeasure.split = true;
@@ -1481,9 +1522,9 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
             var isSplit = staffBarlineArr[j + 1] < 0;
             deMaten$$module$synpdf.push({
                 x: (measureLeftBarline * k),
-                y: (staffTopLine * k),
+                y: (boxTop * k),
                 w: ((measureRightBarline - measureLeftBarline) * k),
-                h: ((staffBottomLine - staffTopLine) * k),
+                h: ((boxBottom - boxTop) * k),
                 page: pageNum,
                 split: isSplit
             });
@@ -1497,6 +1538,8 @@ function addDummySys$$module$synpdf() {
         b = a.xs.x2;
     Cs$$module$synpdf.push({
         cs: [a.cs[0], a.cs[a.cs.length - 1]],
+        csl: Array.isArray(a.csl) ? a.csl.slice() : [a.cs[0], a.cs[a.cs.length - 1]],
+        csr: Array.isArray(a.csr) ? a.csr.slice() : [a.cs[0], a.cs[a.cs.length - 1]],
         xs: {
             x1: b,
             x2: b - 4
@@ -2581,6 +2624,12 @@ function schaalMetriek$$module$synpdf() {
         0 != d && (a.cxs.forEach(function (a) {
             a.cs.forEach(function (c, d) {
                 return a.cs[d] = c * b
+            });
+            Array.isArray(a.csl) && a.csl.forEach(function (c, d) {
+                return a.csl[d] = c * b
+            });
+            Array.isArray(a.csr) && a.csr.forEach(function (c, d) {
+                return a.csr[d] = c * b
             });
             a.xs.x1 *= b;
             a.xs.x2 *= b
