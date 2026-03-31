@@ -1481,11 +1481,32 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
     });
     function getSystemEdgeLines(system) {
         var cs = Array.isArray(system.cs) ? system.cs.slice() : [];
-        var csl = Array.isArray(system.csl) && system.csl.length === cs.length ? system.csl.slice() : cs.slice();
-        var csr = Array.isArray(system.csr) && system.csr.length === cs.length ? system.csr.slice() : cs.slice();
+        function normalizeEdgeLines(edgeLines) {
+            if (!Array.isArray(edgeLines) || edgeLines.length < 2) return null;
+            if (cs.length === 2 && edgeLines.length > 2) {
+                return [edgeLines[0], edgeLines[edgeLines.length - 1]];
+            }
+            return edgeLines.slice();
+        }
+        var csl = normalizeEdgeLines(system.csl);
+        var csr = normalizeEdgeLines(system.csr);
+        if ((!csl || !csr || csl.length !== csr.length) && cs.length >= 2) {
+            csl = cs.slice();
+            csr = cs.slice();
+        }
+        if ((!csl || !csr || csl.length !== csr.length) && cs.length < 2) {
+            csl = null;
+            csr = null;
+        }
+        if (cs.length < 2 && csl && csr && csl.length === csr.length) {
+            cs = csl.map(function (leftY, index) {
+                return (leftY + csr[index]) / 2;
+            });
+        }
         return {
-            left: csl,
-            right: csr
+            cs: cs,
+            left: csl || cs.slice(),
+            right: csr || cs.slice()
         };
     }
     function interpolateSystemLine(system, lineIndex, x) {
@@ -1502,7 +1523,8 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
     for (let i = 0; i < parsedPageMetricArr.length; ++i) {
         //staff means not just one staff but the entire system if applicable
         let system = parsedPageMetricArr[i];
-        let staff = system.cs;
+        let edgeLines = getSystemEdgeLines(system);
+        let staff = edgeLines.cs;
         var staffTopLine = staff[0];
         var staffBottomLine = staff[staff.length - 1];
         var staffBarlineArr = pageBarlineArray[i];
