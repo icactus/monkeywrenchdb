@@ -98,7 +98,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $purgeResult = null;
                 if ($metricMeta && isset($metricMeta['piece_id'], $metricMeta['instrument_id'])) {
-                    $purgeResult = purgeMetricArrCache((int) $metricArrId, (int) $metricMeta['piece_id'], (int) $metricMeta['instrument_id']);
+                    try {
+                        $purgeResult = purgeMetricArrCache((int) $metricArrId, (int) $metricMeta['piece_id'], (int) $metricMeta['instrument_id']);
+                    } catch (Throwable $purgeError) {
+                        error_log('Live edit cache purge failed: ' . $purgeError->getMessage());
+                        $purgeResult = [
+                            'success' => false,
+                            'message' => 'Cache purge failed: ' . $purgeError->getMessage(),
+                        ];
+                    }
                 }
                 echo json_encode([
                     'success' => true,

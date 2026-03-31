@@ -19,6 +19,11 @@ function purgeCloudflareCache(array $urls): array
         return ['success' => true, 'message' => 'Cloudflare purge disabled (not configured)'];
     }
 
+    if (!function_exists('curl_init')) {
+        error_log('Cloudflare purge skipped: curl extension is unavailable');
+        return ['success' => false, 'message' => 'Cloudflare purge skipped: curl extension unavailable'];
+    }
+
     if (empty($urls)) {
         return ['success' => true, 'message' => 'No URLs to purge'];
     }
@@ -71,6 +76,9 @@ function purgeCloudflareCache(array $urls): array
 function purgeMetricArrCache(int $metricArrId, int $pieceId, int $instrumentId): array
 {
     $baseUrl = SITE_BASE_URL;
+    if ($baseUrl === '') {
+        return ['success' => false, 'message' => 'Cloudflare purge skipped: SITE_BASE_URL is empty'];
+    }
 
     $urlsToPurge = [
         // Direct metric arr endpoints
