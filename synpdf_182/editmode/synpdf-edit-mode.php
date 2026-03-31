@@ -19,6 +19,10 @@
         session_start();
     }
 
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
     // ADMIN CHECK
     if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
         die("<h1>Access Denied</h1><p>You must be an Administrator to access this page.</p><p><a href='/'>Go Home</a></p>");
@@ -31,7 +35,7 @@
     <script src="correction-log-tools.js?v=13"></script>
     <script src="barline-patch-cnn-runtime.js?v=1"></script>
     <script src="synpdf-edit-mode.js?v=81"></script>
-    <script src="edit-mode-tools.js?v=171"></script>
+    <script src="edit-mode-tools.js?v=172"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <?php $barlineCnnBrowserJsVer = file_exists('../models/barline-patch-cnn-3x6-browser.js') ? filemtime('../models/barline-patch-cnn-3x6-browser.js') : time(); ?>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
