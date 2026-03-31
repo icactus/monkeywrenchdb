@@ -472,13 +472,14 @@
         }
 
         #notation {
-            width: 1000px;
+            width: 100%;
+            max-width: 1000px;
+            min-width: 0;
+            flex: 1 1 auto;
             overflow-y: scroll;
-            overflow-x: auto;
+            overflow-x: hidden;
             position: relative;
             background: #f8f8f8;
-            box-sizing: border-box;
-            padding-right: 16px;
             scrollbar-gutter: stable;
         }
 
