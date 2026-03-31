@@ -785,8 +785,15 @@ function addDummySys$$module$synpdf() {
     msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin()
 }
 
+function getNotationRenderWidth$$module$synpdf() {
+    if (!deNot$$module$synpdf) return 0;
+    const notationStyle = window.getComputedStyle(deNot$$module$synpdf);
+    const paddingRight = parseFloat(notationStyle.paddingRight) || 0;
+    return Math.max(0, Math.round(deNot$$module$synpdf.clientWidth - paddingRight));
+}
+
 function readPdfdoc$$module$synpdf() {
-    opt$$module$synpdf.pagewd = opt$$module$synpdf.advncd ? opt$$module$synpdf.fixwd : deNot$$module$synpdf.clientWidth;
+    opt$$module$synpdf.pagewd = opt$$module$synpdf.advncd ? opt$$module$synpdf.fixwd : getNotationRenderWidth$$module$synpdf();
     schaalMetriek$$module$synpdf();
     Cs$$module$synpdf = [];
     pageStfIx$$module$synpdf = [];

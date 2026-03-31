@@ -472,10 +472,12 @@
         }
 
         #notation {
-            width: 100%;
-            max-width: 1000px;
+            --notation-scrollbar-lane: 18px;
+            width: min(1000px, calc(100% - var(--notation-scrollbar-lane)));
             min-width: 0;
             flex: 1 1 auto;
+            box-sizing: content-box;
+            padding-right: var(--notation-scrollbar-lane);
             overflow-y: scroll;
             overflow-x: hidden;
             position: relative;
