@@ -1255,6 +1255,10 @@ function scaleNestedArray(arr, scaleAmount) {
             if ('y' in out) out.y = (out.y * k);
             if ('w' in out) out.w = (out.w * k);
             if ('h' in out) out.h = (out.h * k);
+            if ('ytl' in out) out.ytl = (out.ytl * k);
+            if ('ytr' in out) out.ytr = (out.ytr * k);
+            if ('ybl' in out) out.ybl = (out.ybl * k);
+            if ('ybr' in out) out.ybr = (out.ybr * k);
             if ('relativeY' in out) out.relativeY = (out.relativeY * k);
 
             // Recurse into linkedBoxes (for split measures)
