@@ -1,8 +1,8 @@
 // Service Worker for Monkey Wrench Database PWA
-// Version 108 - Added timeout and better error handling
+// Version 110 - Don't intercept non-GET requests
 // Bump this version number to force update on all clients
 
-const SW_VERSION = 109;
+const SW_VERSION = 110;
 const FETCH_TIMEOUT_MS = 10000; // 10 second timeout
 
 // Install event - activate immediately
@@ -57,6 +57,13 @@ function fetchWithTimeout(request, timeoutMs) {
 self.addEventListener('fetch', (event) => {
     // Skip non-HTTP requests (e.g., chrome-extension://)
     if (!event.request.url.startsWith('http')) {
+        return;
+    }
+
+    // Never proxy non-GET requests through the service worker timeout wrapper.
+    // Long-running form submissions/uploads (for example editmode saves) must
+    // go straight to the network so the SW doesn't turn them into 503s.
+    if (event.request.method !== 'GET') {
         return;
     }
 
