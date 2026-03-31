@@ -473,6 +473,9 @@
             overflow-x: auto;
             position: relative;
             background: #f8f8f8;
+            box-sizing: border-box;
+            padding-right: 16px;
+            scrollbar-gutter: stable;
         }
 
         sidecontent {
