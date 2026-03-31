@@ -5,7 +5,22 @@
  * Call purgeCloudflareCache() with an array of URLs to purge from Cloudflare's edge cache.
  */
 
-require_once __DIR__ . '/cloudflare_config.php';
+if (file_exists(__DIR__ . '/cloudflare_config.php')) {
+    require_once __DIR__ . '/cloudflare_config.php';
+} else {
+    if (!defined('SITE_BASE_URL')) {
+        define('SITE_BASE_URL', '');
+    }
+    if (!defined('CLOUDFLARE_ZONE_ID')) {
+        define('CLOUDFLARE_ZONE_ID', '');
+    }
+    if (!defined('CLOUDFLARE_API_TOKEN')) {
+        define('CLOUDFLARE_API_TOKEN', '');
+    }
+    if (!defined('CLOUDFLARE_ENABLED')) {
+        define('CLOUDFLARE_ENABLED', false);
+    }
+}
 
 /**
  * Purge specific URLs from Cloudflare's cache
