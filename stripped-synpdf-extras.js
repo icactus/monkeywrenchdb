@@ -715,6 +715,7 @@ function fetchRecordings(metricArrId) {
 
 
 let recordingCache = {};
+window.metricArrCacheBusters = window.metricArrCacheBusters || {};
 async function loadRecording(recordingFullData) {
     console.log(recordingFullData);
 
@@ -770,9 +771,13 @@ async function sendVarToSynpdf(recordingFullData) {
 
     const metricId = recordingFullData.metric_arr_id;
     const recordingId = recordingFullData.recording_id;
+    const metricCacheBust = recordingFullData.metric_arr_cache_bust || window.metricArrCacheBusters[metricId];
+    const metricUrl = metricCacheBust
+        ? `data/metrics/${metricId}.json?v=${encodeURIComponent(metricCacheBust)}`
+        : `data/metrics/${metricId}.json`;
 
     const [metricData, timesData] = await Promise.all([
-        fetch(`data/metrics/${metricId}.json`).then(r => r.json()),
+        fetch(metricUrl).then(r => r.json()),
         fetch(`data/times/${recordingId}.json`).then(r => r.json())
     ]);
 

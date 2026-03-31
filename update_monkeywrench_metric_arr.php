@@ -28,6 +28,7 @@ if (file_exists('phpfiles/config.php')) {
     echo json_encode(['success' => false, 'message' => 'Database configuration missing.']);
     exit;
 }
+require_once 'phpfiles/cloudflare_purge.php';
 
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 if ($conn->connect_error) {
@@ -71,8 +72,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($stmt->execute()) {
         if ($stmt->affected_rows >= 0) {
+            $metaStmt = $conn->prepare("SELECT piece_id, instrument_id FROM metric_arr WHERE metric_arr_id = ?");
+            if (!$metaStmt) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
+                $stmt->close();
+                $conn->close();
+                exit;
+            }
+            $metaStmt->bind_param('i', $metricArrId);
+            $metaStmt->execute();
+            $metaResult = $metaStmt->get_result();
+            $metricMeta = $metaResult ? $metaResult->fetch_assoc() : null;
+            $metaStmt->close();
+
             // Also write the static JSON file
-            $staticDir = __DIR__ . '/data/metrics';
+            $staticDir = rtrim($_SERVER['DOCUMENT_ROOT'] ?? __DIR__, '/') . '/data/metrics';
             if (!is_dir($staticDir))
                 mkdir($staticDir, 0755, true);
             $staticFile = "$staticDir/$metricArrId.json";
@@ -81,7 +96,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($writeOk === false) {
                 echo json_encode(['success' => true, 'message' => 'DB updated but static file write failed.']);
             } else {
-                echo json_encode(['success' => true, 'message' => 'Updated successfully.']);
+                $purgeResult = null;
+                if ($metricMeta && isset($metricMeta['piece_id'], $metricMeta['instrument_id'])) {
+                    $purgeResult = purgeMetricArrCache((int) $metricArrId, (int) $metricMeta['piece_id'], (int) $metricMeta['instrument_id']);
+                }
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Updated successfully.',
+                    'cache_bust' => (string) round(microtime(true) * 1000),
+                    'cache_purged' => $purgeResult['success'] ?? null,
+                    'cache_purge_message' => $purgeResult['message'] ?? null,
+                ]);
             }
         } else {
             // Should not happen if execute returns true, but safe fallback
