@@ -4674,7 +4674,7 @@ $(document).ready(function () {
         seedMetricStorageFromMemory();
     });
 
-    function runPageBarlineDetection(runMode, options) {
+    async function runPageBarlineDetection(runMode, options) {
         options = options || {};
         if (typeof BarlineDetectV2 === 'undefined') {
             alert("V2 Detection module is not loaded.");
@@ -4749,16 +4749,18 @@ $(document).ready(function () {
         const systemDiagnostics = [];
         const systemRenderGeometry = [];
         const systemPerf = [];
-        let v2Barlines = systemsForDetection.map(function (system, index) {
+        let v2Barlines = [];
+        for (let index = 0; index < systemsForDetection.length; index++) {
+            const system = systemsForDetection[index];
             const perSystemOpts = Object.assign({}, detectionOpts, { diagnostics: [], perfStats: {} });
-            const detected = BarlineDetectV2.findBarLinesV2(system, stride, pixelData, width, perSystemOpts);
+            const detected = await Promise.resolve(BarlineDetectV2.findBarLinesV2(system, stride, pixelData, width, perSystemOpts));
             systemDiagnostics[index] = perSystemOpts.diagnostics.slice();
             systemPerf[index] = perSystemOpts.perfStats;
             systemRenderGeometry[index] = systemSupportsRenderGeometryFit(system)
                 ? BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width)
                 : null;
-            return detected;
-        });
+            v2Barlines.push(detected);
+        }
 
         if (v2Barlines && v2Barlines.length === pageData.cxs.length) {
             if (runMode !== 'cnn_only') {
@@ -4862,7 +4864,7 @@ $(document).ready(function () {
                 if (getDisplayedPageNumber() !== pageNum) {
                     await goToRenderedPage(pageNum, { forceRerender: true });
                 }
-                var ok = runPageBarlineDetection(runMode, { suppressRefresh: true, skipSingleStaffPrep: true });
+                var ok = await runPageBarlineDetection(runMode, { suppressRefresh: true, skipSingleStaffPrep: true });
                 if (!ok) {
                     throw new Error('Detection failed on page ' + pageNum);
                 }
@@ -5027,12 +5029,12 @@ $(document).ready(function () {
         }
     }
 
-    $('#run-v2-btn').on('click', function () {
-        runPageBarlineDetection('rf');
+    $('#run-v2-btn').on('click', async function () {
+        await runPageBarlineDetection('rf');
     });
 
-    $('#run-cnn-btn').on('click', function () {
-        runPageBarlineDetection('cnn_only');
+    $('#run-cnn-btn').on('click', async function () {
+        await runPageBarlineDetection('cnn_only');
     });
     $('#run-cnn-all-btn').on('click', function () {
         runAllPagesBarlineDetection('cnn_only');

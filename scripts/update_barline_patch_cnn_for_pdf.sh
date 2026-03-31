@@ -22,11 +22,16 @@ SUMMARY_OUT="synpdf_182/models/barline-patch-cnn-3x6-summary.json"
 BROWSER_OUT="synpdf_182/models/barline-patch-cnn-3x6-browser.js"
 EPOCHS=12
 BATCH_SIZE=64
+HARDCASE_WEIGHT=2.0
+ONNX_SITE_PACKAGES="${ROOT_DIR}/.venv-onnx/lib/python3.11/site-packages"
+ONNX_OUT="${MODEL_OUT%.keras}.onnx"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --epochs) EPOCHS="$2"; shift 2 ;;
     --batch-size) BATCH_SIZE="$2"; shift 2 ;;
+    --hardcase-weight) HARDCASE_WEIGHT="$2"; shift 2 ;;
+    --onnx-out) ONNX_OUT="$2"; shift 2 ;;
     *)
       echo "Unknown option: $1" >&2
       exit 1
@@ -87,16 +92,33 @@ python3 scripts/train_barline_patch_cnn.py \
   --model-out "$MODEL_OUT" \
   --summary-out "$SUMMARY_OUT" \
   --epochs "$EPOCHS" \
-  --batch-size "$BATCH_SIZE"
+  --batch-size "$BATCH_SIZE" \
+  --hardcase-weight "$HARDCASE_WEIGHT"
 
 echo
 echo "==> Export browser CNN"
 python3 scripts/export_barline_patch_cnn_to_js.py \
   --model "$MODEL_OUT" \
-  --out "$BROWSER_OUT"
+  --out "$BROWSER_OUT" \
+  --x-spatiums 1.5 \
+  --y-spatiums 1.0
+
+if [[ -d "$ONNX_SITE_PACKAGES" ]]; then
+  echo
+  echo "==> Export ONNX CNN"
+  PYTHONPATH="${ONNX_SITE_PACKAGES}${PYTHONPATH:+:${PYTHONPATH}}" python3 scripts/export_barline_patch_cnn_to_onnx.py \
+    --model "$MODEL_OUT" \
+    --out "$ONNX_OUT" \
+    --x-spatiums 1.5 \
+    --y-spatiums 1.0
+else
+  echo
+  echo "SKIP ONNX export: missing $ONNX_SITE_PACKAGES"
+fi
 
 echo
 echo "==> Done"
 echo "Model:   $MODEL_OUT"
 echo "Browser: $BROWSER_OUT"
+echo "ONNX:    $ONNX_OUT"
 echo "Summary: $SUMMARY_OUT"

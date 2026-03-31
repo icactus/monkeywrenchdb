@@ -30,6 +30,7 @@ deployment:
     - /bin/cp -R assets $DEPLOYPATH
     - /bin/cp -R js $DEPLOYPATH
     - /bin/cp -R synpdf_182/models $DEPLOYPATH
+    - /bin/cp synpdf_182/models/.htaccess ${DEPLOYPATH}models/.htaccess
     - /bin/mkdir -p ${DEPLOYPATH}data/metrics
     - /bin/mkdir -p ${DEPLOYPATH}data/times
     - /bin/cp data/.htaccess ${DEPLOYPATH}data/.htaccess
@@ -45,6 +46,7 @@ deployment:
 
     - export DEPLOYPATH3=/home/monkcdmb/public_html/editmode/
     - /bin/cp synpdf_182/editmode/synpdf-edit-mode.php $DEPLOYPATH3 
+    - /bin/cp synpdf_182/editmode/ml-label-editor.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/edit-mode-tools.js $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/synpdf-edit-mode.js $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/metric-store.js $DEPLOYPATH3
@@ -61,3 +63,5 @@ deployment:
     - /bin/cp synpdf_182/editmode/get_metric_arr.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/get_parts.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/save_correction_log.php $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/.htaccess ${DEPLOYPATH3}.htaccess
+    - /bin/cp -R synpdf_182/editmode/vendor $DEPLOYPATH3

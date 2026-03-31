@@ -22,6 +22,9 @@
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('Pragma: no-cache');
     header('Expires: 0');
+    header('Cross-Origin-Opener-Policy: same-origin');
+    header('Cross-Origin-Embedder-Policy: require-corp');
+    header('Cross-Origin-Resource-Policy: same-origin');
 
     // ADMIN CHECK
     if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
@@ -31,15 +34,38 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 
+    <?php
+    $ortJsVer = file_exists('vendor/onnxruntime/ort.wasm.min.js') ? filemtime('vendor/onnxruntime/ort.wasm.min.js') : time();
+    $barlineCnnRuntimeVer = file_exists('barline-patch-cnn-runtime.js') ? filemtime('barline-patch-cnn-runtime.js') : time();
+    $editModeToolsVer = file_exists('edit-mode-tools.js') ? filemtime('edit-mode-tools.js') : time();
+    $barlineDetectVer = file_exists('barline-detect-v2.js') ? filemtime('barline-detect-v2.js') : time();
+    $barlineCnnBrowserJsVer = file_exists('../models/barline-patch-cnn-3x6-browser.js') ? filemtime('../models/barline-patch-cnn-3x6-browser.js') : time();
+    $barlineCnnOnnxVer = file_exists('../models/barline-patch-cnn-3x6.onnx') ? filemtime('../models/barline-patch-cnn-3x6.onnx') : 0;
+    $barlineCnnOnnxMetaVer = file_exists('../models/barline-patch-cnn-3x6.onnx.json') ? filemtime('../models/barline-patch-cnn-3x6.onnx.json') : 0;
+    $barlineCnnOnnxEnabled = $barlineCnnOnnxVer > 0 && $barlineCnnOnnxMetaVer > 0;
+    $onnxWasmRoot = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/synpdf_182/editmode/synpdf-edit-mode.php'), '/\\') . '/vendor/onnxruntime/';
+    $serverHost = $_SERVER['HTTP_HOST'] ?? '';
+    $isLocalHost = preg_match('/^(localhost|127\.0\.0\.1)(:\d+)?$/', $serverHost) === 1;
+    $onnxWasmThreads = $isLocalHost ? 1 : 4;
+    ?>
     <script src="metric-store.js?v=2"></script>
     <script src="correction-log-tools.js?v=13"></script>
-    <script src="barline-patch-cnn-runtime.js?v=1"></script>
+    <script>
+        window.BarlinePatchCnnOnnxConfig = {
+            enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
+            modelUrl: <?php echo json_encode('../models/barline-patch-cnn-3x6.onnx?v=' . ($barlineCnnOnnxVer ?: time())); ?>,
+            metadataUrl: <?php echo json_encode('../models/barline-patch-cnn-3x6.onnx.json?v=' . ($barlineCnnOnnxMetaVer ?: time())); ?>,
+            wasmRoot: <?php echo json_encode($onnxWasmRoot); ?>,
+            wasmThreads: <?php echo (int)$onnxWasmThreads; ?>
+        };
+    </script>
+    <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
+    <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
     <script src="synpdf-edit-mode.js?v=81"></script>
-    <script src="edit-mode-tools.js?v=172"></script>
+    <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
-    <?php $barlineCnnBrowserJsVer = file_exists('../models/barline-patch-cnn-3x6-browser.js') ? filemtime('../models/barline-patch-cnn-3x6-browser.js') : time(); ?>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
-    <script src="barline-detect-v2.js?v=62"></script>
+    <script src="barline-detect-v2.js?v=<?php echo $barlineDetectVer; ?>"></script>
     <style>
         html {
             width: 100%;

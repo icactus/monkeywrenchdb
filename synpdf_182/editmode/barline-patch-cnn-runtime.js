@@ -1,6 +1,15 @@
 (function (global) {
     'use strict';
 
+    var onnxState = {
+        metadata: null,
+        metadataPromise: null,
+        session: null,
+        sessionPromise: null,
+        failed: false,
+        threadFallbackAttempted: false
+    };
+
     function clamp(value, minValue, maxValue) {
         return Math.max(minValue, Math.min(maxValue, value));
     }
@@ -115,6 +124,22 @@
         return avg < 128 ? 1 : 0;
     }
 
+    function getFallbackMetadata() {
+        var modelData = global.BarlinePatchCnnModelData || {};
+        return {
+            input_shape: modelData.input_shape || [64, 32, 1],
+            crop_config: modelData.crop_config || { x_spatiums: 1.5, y_spatiums: 1.0 }
+        };
+    }
+
+    function getRuntimeConfig() {
+        return global.BarlinePatchCnnOnnxConfig || null;
+    }
+
+    function getCurrentMetadataSync() {
+        return onnxState.metadata || getFallbackMetadata();
+    }
+
     function cropCandidatePatch(pixelData, stride, width, xCol, staffTop, staffBot, spatium, xSpatiums, ySpatiums, patchWidth, patchHeight) {
         var height = Math.floor(pixelData.length / stride);
         var xMargin = Math.max(1, Math.round(xSpatiums * spatium));
@@ -145,12 +170,12 @@
         return patch;
     }
 
-    function inferFromPatch(patch) {
+    function inferFromPatchFallback(patch, metadata) {
         var modelData = global.BarlinePatchCnnModelData;
         if (!modelData) {
             throw new Error("BarlinePatchCnnModelData is not loaded.");
         }
-        var inputShape = modelData.input_shape || [64, 32, 1];
+        var inputShape = metadata.input_shape || [64, 32, 1];
         var inH = inputShape[0];
         var inW = inputShape[1];
         var layers = modelData.layers;
@@ -171,23 +196,231 @@
         return sigmoid(dense2[0]);
     }
 
+    async function getOnnxMetadata() {
+        if (onnxState.metadata) return onnxState.metadata;
+        if (onnxState.failed) return null;
+        var config = getRuntimeConfig();
+        if (!config || !config.enabled || !config.metadataUrl || typeof fetch !== 'function') {
+            return null;
+        }
+        if (!onnxState.metadataPromise) {
+            onnxState.metadataPromise = fetch(config.metadataUrl, { cache: 'no-store' })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error("Metadata HTTP " + response.status);
+                    }
+                    return response.json();
+                })
+                .then(function (metadata) {
+                    onnxState.metadata = metadata;
+                    return metadata;
+                })
+                .catch(function (err) {
+                    console.warn("BarlinePatchCNN ONNX metadata load failed:", err);
+                    onnxState.failed = true;
+                    return null;
+                });
+        }
+        return onnxState.metadataPromise;
+    }
+
+    async function getOnnxSession() {
+        if (onnxState.session) return onnxState.session;
+        if (onnxState.failed) return null;
+        var config = getRuntimeConfig();
+        if (!config || !config.enabled || !config.modelUrl || !global.ort || !global.ort.InferenceSession) {
+            return null;
+        }
+        if (!onnxState.sessionPromise) {
+            onnxState.sessionPromise = (async function () {
+                var threadCounts = [];
+                var requestedThreads = config.wasmThreads || 4;
+                threadCounts.push(requestedThreads);
+                if (requestedThreads !== 1) {
+                    threadCounts.push(1);
+                }
+
+                for (var i = 0; i < threadCounts.length; i++) {
+                    var threadCount = threadCounts[i];
+                    try {
+                        if (global.ort.env && global.ort.env.wasm) {
+                            if (config.wasmRoot) {
+                                global.ort.env.wasm.wasmPaths = config.wasmRoot;
+                            }
+                            global.ort.env.wasm.numThreads = threadCount;
+                        }
+                        var session = await global.ort.InferenceSession.create(config.modelUrl, {
+                            executionProviders: ['wasm'],
+                            graphOptimizationLevel: 'all'
+                        });
+                        if (threadCount !== requestedThreads) {
+                            console.warn("BarlinePatchCNN ONNX fell back to single-threaded wasm.", {
+                                requestedThreads: requestedThreads
+                            });
+                            onnxState.threadFallbackAttempted = true;
+                        }
+                        onnxState.session = session;
+                        return session;
+                    } catch (err) {
+                        console.warn("BarlinePatchCNN ONNX session init failed:", err && err.message ? err.message : err, {
+                            crossOriginIsolated: typeof global.crossOriginIsolated === 'boolean' ? global.crossOriginIsolated : null,
+                            wasmThreads: threadCount,
+                            wasmRoot: config.wasmRoot,
+                            modelUrl: config.modelUrl
+                        });
+                    }
+                }
+
+                onnxState.failed = true;
+                return null;
+            })();
+        }
+        return onnxState.sessionPromise;
+    }
+
+    async function getOnnxResources() {
+        var results = await Promise.all([getOnnxMetadata(), getOnnxSession()]);
+        if (!results[0] || !results[1]) return null;
+        return {
+            metadata: results[0],
+            session: results[1]
+        };
+    }
+
+    function flattenOutputScores(outputTensor) {
+        if (!outputTensor || !outputTensor.data) return null;
+        var dims = outputTensor.dims || [];
+        var data = outputTensor.data;
+        if (dims.length === 1) {
+            return Array.prototype.slice.call(data);
+        }
+        if (dims.length === 2 && dims[1] === 1) {
+            var values = new Array(dims[0]);
+            for (var i = 0; i < dims[0]; i++) values[i] = data[i];
+            return values;
+        }
+        return Array.prototype.slice.call(data);
+    }
+
+    async function inferPatchesOnnxAsync(patches, metadata) {
+        var resources = await getOnnxResources();
+        if (!resources) return null;
+
+        var session = resources.session;
+        var inputShape = metadata.input_shape || [64, 32, 1];
+        var patchHeight = inputShape[0];
+        var patchWidth = inputShape[1];
+        var batchSize = patches.length;
+        var inputData = new Float32Array(batchSize * patchHeight * patchWidth);
+
+        for (var i = 0; i < batchSize; i++) {
+            inputData.set(patches[i], i * patchHeight * patchWidth);
+        }
+
+        var inputName = session.inputNames[0];
+        var outputName = session.outputNames[0];
+        var tensor = new global.ort.Tensor('float32', inputData, [batchSize, patchHeight, patchWidth, 1]);
+        var outputs = await session.run((function () {
+            var feeds = {};
+            feeds[inputName] = tensor;
+            return feeds;
+        })(), [outputName]);
+        return flattenOutputScores(outputs[outputName]);
+    }
+
+    async function predictBatchCandidatesAsync(pixelData, stride, width, candidates) {
+        var metadata = (await getOnnxMetadata()) || getFallbackMetadata();
+        var inputShape = metadata.input_shape || [64, 32, 1];
+        var patchHeight = inputShape[0];
+        var patchWidth = inputShape[1];
+        var cropConfig = metadata.crop_config || {};
+        var xSpatiums = cropConfig.x_spatiums != null ? cropConfig.x_spatiums : 1.5;
+        var ySpatiums = cropConfig.y_spatiums != null ? cropConfig.y_spatiums : 1.0;
+        var scores = new Array(candidates.length).fill(null);
+        var patches = [];
+        var patchIndices = [];
+
+        for (var i = 0; i < candidates.length; i++) {
+            var candidate = candidates[i];
+            var patch = cropCandidatePatch(
+                pixelData,
+                stride,
+                width,
+                candidate.xCol,
+                candidate.staffTop,
+                candidate.staffBot,
+                candidate.spatium,
+                xSpatiums,
+                ySpatiums,
+                patchWidth,
+                patchHeight
+            );
+            if (!patch) continue;
+            patches.push(patch);
+            patchIndices.push(i);
+        }
+
+        if (!patches.length) return scores;
+
+        try {
+            var onnxScores = await inferPatchesOnnxAsync(patches, metadata);
+            if (onnxScores) {
+                for (var ps = 0; ps < patchIndices.length; ps++) {
+                    scores[patchIndices[ps]] = onnxScores[ps];
+                }
+                return scores;
+            }
+        } catch (err) {
+            console.warn("BarlinePatchCNN ONNX inference failed, falling back to JS runtime:", err);
+            onnxState.failed = true;
+        }
+
+        for (var fp = 0; fp < patchIndices.length; fp++) {
+            scores[patchIndices[fp]] = inferFromPatchFallback(patches[fp], metadata);
+        }
+        return scores;
+    }
+
+    async function predictCandidateAsync(pixelData, stride, width, xCol, staffTop, staffBot, spatium) {
+        var scores = await predictBatchCandidatesAsync(pixelData, stride, width, [{
+            xCol: xCol,
+            staffTop: staffTop,
+            staffBot: staffBot,
+            spatium: spatium
+        }]);
+        return scores[0];
+    }
+
+    function predictCandidateSync(pixelData, stride, width, xCol, staffTop, staffBot, spatium) {
+        var metadata = getCurrentMetadataSync();
+        var inputShape = metadata.input_shape || [64, 32, 1];
+        var cropConfig = metadata.crop_config || {};
+        var patchHeight = inputShape[0];
+        var patchWidth = inputShape[1];
+        var xSpatiums = cropConfig.x_spatiums != null ? cropConfig.x_spatiums : 1.5;
+        var ySpatiums = cropConfig.y_spatiums != null ? cropConfig.y_spatiums : 1.0;
+        var patch = cropCandidatePatch(
+            pixelData, stride, width, xCol, staffTop, staffBot, spatium,
+            xSpatiums, ySpatiums, patchWidth, patchHeight
+        );
+        if (!patch) return null;
+        return inferFromPatchFallback(patch, metadata);
+    }
+
     var api = {
         cropCandidatePatch: cropCandidatePatch,
-        predictFromPatch: inferFromPatch,
-        predictCandidate: function (pixelData, stride, width, xCol, staffTop, staffBot, spatium) {
-            var modelData = global.BarlinePatchCnnModelData || {};
-            var inputShape = modelData.input_shape || [64, 32, 1];
-            var cropConfig = modelData.crop_config || {};
-            var patchHeight = inputShape[0];
-            var patchWidth = inputShape[1];
-            var xSpatiums = cropConfig.x_spatiums != null ? cropConfig.x_spatiums : 1.5;
-            var ySpatiums = cropConfig.y_spatiums != null ? cropConfig.y_spatiums : 1.0;
-            var patch = cropCandidatePatch(
-                pixelData, stride, width, xCol, staffTop, staffBot, spatium,
-                xSpatiums, ySpatiums, patchWidth, patchHeight
-            );
-            if (!patch) return null;
-            return inferFromPatch(patch);
+        predictFromPatch: function (patch) {
+            return inferFromPatchFallback(patch, getCurrentMetadataSync());
+        },
+        predictCandidate: predictCandidateSync,
+        predictCandidateAsync: predictCandidateAsync,
+        predictBatchCandidatesAsync: predictBatchCandidatesAsync,
+        loadAsync: async function () {
+            return getOnnxResources();
+        },
+        isOnnxConfigured: function () {
+            var config = getRuntimeConfig();
+            return !!(config && config.enabled);
         }
     };
 

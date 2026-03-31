@@ -1140,9 +1140,437 @@ var BarlineDetectV2 = (function () {
      * - ROBUST BASELINE: Whiteness baseline uses median of top-N candidates
      *   instead of single max, more resistant to outliers
      */
+    async function findBarLinesCnnOnlyAsync(system, stride, pixelData, imageWidth, opts) {
+        opts = opts || {};
+        var perfStats = opts.perfStats || null;
+        var perfStart = perfStats ? performance.now() : 0;
+        var scanStart = perfStats ? performance.now() : 0;
+        var candidateCount = 0;
+        var cnnCalls = 0;
+        var cnnTimeMs = 0;
+        var mtdrmpl = 0.5;
+        var voorna = 0.2;
+        var dx = 3;
+        var zwgrens = 0.7;
+        var drift = 2;
+        var connectMin = 0.7;
+        var allowV1Fallback = opts.allowV1Fallback !== undefined ? opts.allowV1Fallback : true;
+
+        var staffLines = getSystemSeedLines(system);
+        var xs = system.xs;
+        var seenCols = new Set();
+
+        if (!staffLines || staffLines.length < 2) return [xs.x1];
+
+        var norm = normalizeStaffLines(staffLines, pixelData, stride, imageWidth, xs);
+        if (!norm.isValid) {
+            var invalidNormFallback = findBarLinesV1Single(system, stride, pixelData, imageWidth, opts);
+            if (allowV1Fallback) {
+                pushFallbackDiagnostics(opts.diagnostics, invalidNormFallback, "fallback_v1_invalid_staff:" + (norm.reason || "invalid_staff"));
+                return invalidNormFallback.length > 0 ? invalidNormFallback : [xs.x1];
+            }
+            return [xs.x1];
+        }
+
+        var normLines = norm.lines || staffLines;
+        var topY = Math.round(norm.topY);
+        var botY = Math.round(norm.botY);
+        var staffHeight = botY - topY;
+        var subStaves = parseSubStaves(staffLines);
+        var spatium = getDominantSpatium(subStaves);
+        var tracedLines = traceStaffLines(normLines, pixelData, stride, imageWidth, 20);
+        var staffGeomCache = new Array(imageWidth);
+
+        function getStaffGeometry(col) {
+            if (staffGeomCache[col]) return staffGeomCache[col];
+
+            var effectiveLines = [];
+            var usedTraceFallback = false;
+            var maxLineOffset = Math.max(4, Math.round(1.15 * spatium));
+            var minStaffHeight = Math.max(4, Math.round(staffHeight * 0.82));
+            var maxStaffHeight = Math.max(minStaffHeight + 2, Math.round(staffHeight * 1.18));
+
+            if (tracedLines) {
+                for (var lineIdx = 0; lineIdx < 5; lineIdx++) {
+                    var baseY = Math.round(normLines[lineIdx]);
+                    var tracedY = Math.round(tracedLines[lineIdx][col]);
+                    effectiveLines.push(Math.max(baseY - maxLineOffset, Math.min(baseY + maxLineOffset, tracedY)));
+                }
+
+                for (var clampIdx = 1; clampIdx < effectiveLines.length; clampIdx++) {
+                    if (effectiveLines[clampIdx] <= effectiveLines[clampIdx - 1]) {
+                        effectiveLines[clampIdx] = effectiveLines[clampIdx - 1] + 1;
+                    }
+                }
+
+                var tracedHeight = effectiveLines[4] - effectiveLines[0];
+                if (tracedHeight < minStaffHeight || tracedHeight > maxStaffHeight) {
+                    usedTraceFallback = true;
+                    effectiveLines = normLines.map(function (y) { return Math.round(y); });
+                }
+            } else {
+                usedTraceFallback = true;
+                effectiveLines = normLines.map(function (y) { return Math.round(y); });
+            }
+
+            var localTop = effectiveLines[0];
+            var localBot = effectiveLines[4];
+            var geom = {
+                lines: effectiveLines,
+                top: localTop,
+                bot: localBot,
+                height: localBot - localTop,
+                usedTraceFallback: usedTraceFallback
+            };
+            staffGeomCache[col] = geom;
+            return geom;
+        }
+
+        var maxWit = 0;
+        for (var col = 0; col < imageWidth; col++) {
+            var maxWitGeom = getStaffGeometry(col);
+            var maxWitTop = maxWitGeom.top;
+            var maxWitBot = maxWitGeom.bot;
+            var colSum = 0;
+            var rowCount = 0;
+            for (var row = maxWitTop; row < maxWitBot; row++) {
+                var idx = row * stride + col * 4;
+                if (idx + 2 >= pixelData.length || idx < 0) continue;
+                colSum += pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2];
+                rowCount++;
+            }
+            var avg = rowCount > 0 ? colSum / (3 * rowCount) : 0;
+            if (avg > maxWit) maxWit = avg;
+        }
+        var witThreshold = 3 * maxWit * zwgrens;
+
+        var numCols = imageWidth;
+        var tArr = new Float32Array(numCols);
+        var yArr = new Float32Array(numCols);
+        var ext = Math.round(1 * spatium);
+
+        for (var dataCol = 0; dataCol < numCols; dataCol++) {
+            var dataGeom = getStaffGeometry(dataCol);
+            var localTop = dataGeom.top;
+            var localBot = dataGeom.bot;
+            var localHeight = dataGeom.height;
+            if (localHeight <= 0) continue;
+
+            var extTop = Math.max(0, localTop - ext);
+            var extBot = Math.min(Math.floor(pixelData.length / stride) - 1, localBot + ext);
+
+            var brightnessSum = 0;
+            var brightnessRows = 0;
+            var blackCount = 0;
+
+            for (var extRow = extTop; extRow <= extBot; extRow++) {
+                var extRowOffset = extRow * stride;
+                if (extRowOffset < 0 || extRowOffset + (numCols * 4) > pixelData.length) continue;
+
+                var extColIdx = extRowOffset + dataCol * 4;
+                if (extColIdx + 2 < pixelData.length && extColIdx >= 0) {
+                    brightnessSum += pixelData[extColIdx] + pixelData[extColIdx + 1] + pixelData[extColIdx + 2];
+                    brightnessRows++;
+                }
+            }
+
+            for (var staffRow = localTop; staffRow <= localBot; staffRow++) {
+                var staffRowOffset = staffRow * stride;
+                if (staffRowOffset < 0 || staffRowOffset + (numCols * 4) > pixelData.length) continue;
+
+                var pIdx = staffRowOffset + dataCol * 4;
+                if (pIdx + 2 >= pixelData.length || pIdx < 0) continue;
+                var pxBrightness = pixelData[pIdx] + pixelData[pIdx + 1] + pixelData[pIdx + 2];
+
+                var adjBrightness = 765;
+                if (dataCol + 1 < numCols) {
+                    var adjIdx = staffRowOffset + (dataCol + 1) * 4;
+                    if (adjIdx + 2 < pixelData.length) {
+                        adjBrightness = pixelData[adjIdx] + pixelData[adjIdx + 1] + pixelData[adjIdx + 2];
+                    }
+                }
+
+                if (Math.min(pxBrightness, adjBrightness) < witThreshold) {
+                    blackCount++;
+                }
+            }
+
+            tArr[dataCol] = brightnessRows > 0 ? brightnessSum / (3 * brightnessRows) : 0;
+            yArr[dataCol] = blackCount;
+        }
+
+        var q = xs.x1 + 50;
+        var u = xs.x2 - 20;
+        if (q >= u) { q = xs.x1; u = xs.x2; }
+
+        var sortedY = [];
+        for (var yCol = q; yCol < u; yCol++) sortedY.push(yArr[yCol]);
+        sortedY.sort(function (a, b) { return b - a; });
+        var maxBlackCount = sortedY[0] || 0;
+
+        var leftWhites = [];
+        var rightWhites = [];
+        for (var whiteCol = q; whiteCol < u; whiteCol++) {
+            if (yArr[whiteCol] > maxBlackCount * mtdrmpl) {
+                if (whiteCol - dx >= 0) leftWhites.push(tArr[whiteCol - dx]);
+                if (whiteCol + dx < numCols) rightWhites.push(tArr[whiteCol + dx]);
+            }
+        }
+
+        leftWhites.sort(function (a, b) { return b - a; });
+        rightWhites.sort(function (a, b) { return b - a; });
+
+        var vBase = leftWhites.length >= 5 ? leftWhites[Math.floor(leftWhites.length / 2)] : (leftWhites.length > 0 ? leftWhites[0] : 0);
+        var wBase = rightWhites.length >= 5 ? rightWhites[Math.floor(rightWhites.length / 2)] : (rightWhites.length > 0 ? rightWhites[0] : 0);
+        var effectiveMinGap = Math.max(3, Math.round(2.0 * spatium));
+        var candidateSpecs = [];
+
+        for (var scanCol = 5; scanCol < numCols - 5; scanCol++) {
+            if (yArr[scanCol] < maxBlackCount * mtdrmpl) continue;
+            if (scanCol - dx < 0 || tArr[scanCol - dx] < vBase * voorna) continue;
+            if (scanCol + dx >= numCols || tArr[scanCol + dx] < wBase * voorna) continue;
+
+            var consecutiveDark = 0;
+            var maxConsecutive = 0;
+            var geom = getStaffGeometry(scanCol);
+            var localTop = geom.top;
+            var localBot = geom.bot;
+            var localHeight = geom.height;
+
+            for (var row = localTop; row <= localBot; row++) {
+                var rowOffset = row * stride;
+                if (rowOffset < 0 || rowOffset + (numCols * 4) > pixelData.length) continue;
+
+                var isDark = false;
+                for (var dxOff = -drift; dxOff <= drift; dxOff++) {
+                    var cx = scanCol + dxOff;
+                    if (cx < 0 || cx >= numCols) continue;
+                    var rowIdx = rowOffset + cx * 4;
+                    if (rowIdx + 2 >= pixelData.length || rowIdx < 0) continue;
+                    var brightness = (pixelData[rowIdx] + pixelData[rowIdx + 1] + pixelData[rowIdx + 2]) / 3;
+                    if (brightness < 128) {
+                        isDark = true;
+                        break;
+                    }
+                }
+
+                if (isDark) {
+                    consecutiveDark++;
+                    if (consecutiveDark > maxConsecutive) maxConsecutive = consecutiveDark;
+                } else {
+                    consecutiveDark = 0;
+                }
+            }
+
+            var effectiveConnectMin = geom.usedTraceFallback ? Math.max(0.62, connectMin - 0.08) : connectMin;
+            if (localHeight > 0 && (maxConsecutive / localHeight) < effectiveConnectMin) continue;
+
+            var colScores = [];
+            for (var tc = scanCol - 2; tc <= scanCol + 2; tc++) {
+                if (tc < 0 || tc >= numCols) continue;
+
+                var tcMaxConsec = 0;
+                var tcConsec = 0;
+                for (var traceRow = localTop; traceRow <= localBot; traceRow++) {
+                    var traceRowOffset = traceRow * stride;
+                    if (traceRowOffset < 0 || traceRowOffset + (numCols * 4) > pixelData.length) continue;
+
+                    var traceIdx = traceRowOffset + tc * 4;
+                    var isDarkTc = false;
+                    if (traceIdx + 2 < pixelData.length && traceIdx >= 0) {
+                        if ((pixelData[traceIdx] + pixelData[traceIdx + 1] + pixelData[traceIdx + 2]) / 3 < 128) {
+                            isDarkTc = true;
+                        }
+                    }
+
+                    if (isDarkTc) {
+                        tcConsec++;
+                        if (tcConsec > tcMaxConsec) tcMaxConsec = tcConsec;
+                    } else {
+                        tcConsec = 0;
+                    }
+                }
+                colScores.push({ c: tc, score: tcMaxConsec });
+            }
+
+            colScores.sort(function (a, b) { return b.score - a.score; });
+            var absoluteMax = colScores[0].score;
+            var bestCols = [];
+            for (var scoreIdx = 0; scoreIdx < colScores.length; scoreIdx++) {
+                if (colScores[scoreIdx].score >= absoluteMax - 2) {
+                    bestCols.push(colScores[scoreIdx].c);
+                }
+            }
+            bestCols.sort(function (a, b) { return a - b; });
+
+            var bestCol = bestCols[Math.floor(bestCols.length / 2)];
+            if (seenCols.has(bestCol)) continue;
+            seenCols.add(bestCol);
+            candidateCount++;
+
+            var blackness = localHeight > 0 ? yArr[bestCol] / localHeight : 0;
+            var connectivity = localHeight > 0 ? absoluteMax / localHeight : 0;
+            var candSpatium = getSpatiumForY(subStaves, localTop);
+
+            candidateSpecs.push({
+                x: bestCol,
+                localTop: localTop,
+                localBot: localBot,
+                spatium: candSpatium,
+                blackness: blackness,
+                connectivity: connectivity
+            });
+        }
+
+        if (perfStats) {
+            perfStats.scanMs = performance.now() - scanStart;
+            perfStats.candidateCount = candidateCount;
+        }
+
+        var scores = [];
+        if (candidateSpecs.length > 0) {
+            var cnnStart = perfStats ? performance.now() : 0;
+            scores = await BarlinePatchCNN.predictBatchCandidatesAsync(
+                pixelData,
+                stride,
+                imageWidth,
+                candidateSpecs.map(function (candidate) {
+                    return {
+                        xCol: candidate.x,
+                        staffTop: candidate.localTop,
+                        staffBot: candidate.localBot,
+                        spatium: candidate.spatium
+                    };
+                })
+            );
+            cnnCalls = candidateSpecs.length;
+            if (perfStats) {
+                cnnTimeMs = performance.now() - cnnStart;
+                perfStats.cnnCalls = cnnCalls;
+                perfStats.cnnTimeMs = cnnTimeMs;
+            }
+        } else if (perfStats) {
+            perfStats.cnnCalls = 0;
+            perfStats.cnnTimeMs = 0;
+        }
+
+        var mlCandidates = [];
+        var threshold = opts.cnnThreshold !== undefined ? opts.cnnThreshold : 0.50;
+        for (var candIdx = 0; candIdx < candidateSpecs.length; candIdx++) {
+            var candidate = candidateSpecs[candIdx];
+            var score = scores[candIdx];
+            var valid = score !== null && score >= threshold;
+            var vetoReason = score === null ? "cnn_unavailable" : (valid ? "accepted_cnn_only" : "cnn_low_score");
+
+            if (opts.diagnostics) {
+                opts.diagnostics.push({
+                    x: candidate.x,
+                    score: score !== null ? score : 0,
+                    mlScore: 1.0,
+                    cnnScore: score,
+                    featuresArr: null,
+                    features: {
+                        blackness: candidate.blackness,
+                        connectivity: candidate.connectivity,
+                        classifierMode: "cnn_only"
+                    },
+                    vetoReason: vetoReason
+                });
+            }
+
+            if (valid) {
+                mlCandidates.push({ x: candidate.x, score: score });
+            }
+        }
+
+        var nmsStart = perfStats ? performance.now() : 0;
+        mlCandidates.sort(function (a, b) { return b.score - a.score; });
+
+        var barlines = [xs.x1];
+        var acceptedObjects = [{ x: xs.x1, score: 1.0 }];
+        if (typeof xs.x2 === 'number' && isFinite(xs.x2) && Math.abs(xs.x2 - xs.x1) >= 1) {
+            acceptedObjects.push({ x: xs.x2, score: 1.0 });
+        }
+
+        for (var mlIdx = 0; mlIdx < mlCandidates.length; mlIdx++) {
+            var cand = mlCandidates[mlIdx];
+            var isTooClose = false;
+            for (var accIdx = 0; accIdx < acceptedObjects.length; accIdx++) {
+                if (Math.abs(cand.x - acceptedObjects[accIdx].x) < effectiveMinGap) {
+                    isTooClose = true;
+                    break;
+                }
+            }
+
+            if (!isTooClose) {
+                acceptedObjects.push(cand);
+            } else if (opts.diagnostics) {
+                for (var diagIdx = 0; diagIdx < opts.diagnostics.length; diagIdx++) {
+                    if (opts.diagnostics[diagIdx].x === cand.x) {
+                        opts.diagnostics[diagIdx].vetoReason = "NMS_suppression";
+                        break;
+                    }
+                }
+            }
+        }
+
+        acceptedObjects.sort(function (a, b) { return a.x - b.x; });
+        if (acceptedObjects.length > 1) {
+            var clusteredAccepted = [];
+            var activeCluster = [acceptedObjects[0]];
+
+            function flushAcceptedCluster() {
+                if (activeCluster.length === 0) return;
+                var best = activeCluster[0];
+                for (var ci = 1; ci < activeCluster.length; ci++) {
+                    if (activeCluster[ci].score > best.score) best = activeCluster[ci];
+                }
+                clusteredAccepted.push(best);
+                activeCluster = [];
+            }
+
+            for (var ao = 1; ao < acceptedObjects.length; ao++) {
+                var prev = activeCluster[activeCluster.length - 1];
+                var curr = acceptedObjects[ao];
+                if (Math.abs(curr.x - prev.x) < effectiveMinGap) {
+                    activeCluster.push(curr);
+                } else {
+                    flushAcceptedCluster();
+                    activeCluster.push(curr);
+                }
+            }
+            flushAcceptedCluster();
+            acceptedObjects = clusteredAccepted;
+        }
+
+        for (var acceptIdx = 1; acceptIdx < acceptedObjects.length; acceptIdx++) {
+            if (Math.abs(acceptedObjects[acceptIdx].x - xs.x2) < 1) continue;
+            barlines.push(acceptedObjects[acceptIdx].x);
+        }
+
+        var fallbackV1 = findBarLinesV1Single(system, stride, pixelData, imageWidth, opts);
+        if (allowV1Fallback && fallbackV1.length > barlines.length && (barlines.length <= 1 || fallbackV1.length - barlines.length >= 2)) {
+            pushFallbackDiagnostics(opts.diagnostics, fallbackV1, "fallback_v1_system", barlines);
+            return fallbackV1;
+        }
+
+        if (perfStats) {
+            perfStats.nmsMs = performance.now() - nmsStart;
+            perfStats.totalMs = performance.now() - perfStart;
+            perfStats.acceptedCount = barlines.length;
+        }
+
+        return barlines;
+    }
+
     function findBarLinesV2(system, stride, pixelData, imageWidth, opts) {
         opts = opts || {};
         var classifierMode = opts.classifierMode || "rf";
+        if (classifierMode === "cnn_only" &&
+            typeof BarlinePatchCNN !== 'undefined' &&
+            typeof BarlinePatchCNN.predictBatchCandidatesAsync === 'function') {
+            return findBarLinesCnnOnlyAsync(system, stride, pixelData, imageWidth, opts);
+        }
         var perfStats = opts.perfStats || null;
         var perfStart = perfStats ? performance.now() : 0;
         var scanStart = perfStats ? performance.now() : 0;
@@ -2264,7 +2692,7 @@ var BarlineDetectV2 = (function () {
                     vetoReason = "cnn_low_score";
                     isValid = false;
                 }
-            } else if ((boxDensityAbove > 0.85 || boxDensityBelow > 0.85) && !hardExtensionRescue) {
+            } else if ((boxDensityAbove > (opts.hardExtensionThreshold !== undefined ? opts.hardExtensionThreshold : 0.85) || boxDensityBelow > (opts.hardExtensionThreshold !== undefined ? opts.hardExtensionThreshold : 0.85)) && !hardExtensionRescue) {
                 // HARDEST VETO: Barlines never extend continuously as an 85% solid block this far past the staff.
                 isValid = false;
                 vetoReason = "hardExtVeto";
@@ -2744,6 +3172,7 @@ var BarlineDetectV2 = (function () {
         parseSubStaves: parseSubStaves,
         getSpatiumForY: getSpatiumForY,
         getDominantSpatium: getDominantSpatium,
+        findBarLinesCnnOnlyAsync: findBarLinesCnnOnlyAsync,
         findBarLinesV2: findBarLinesV2,
         findBarLinesAll: findBarLinesAll,
         getDiagnostics: getDiagnostics,

@@ -22,6 +22,9 @@ JOBS=4
 RENDER_THREADS=2
 EPOCHS=12
 BATCH_SIZE=64
+HARDCASE_WEIGHT=2.0
+ONNX_SITE_PACKAGES="${ROOT_DIR}/.venv-onnx/lib/python3.11/site-packages"
+ONNX_OUT=""
 
 usage() {
   cat <<EOF
@@ -32,10 +35,12 @@ Options:
   --model-out PATH      Output .keras model path
   --summary-out PATH    Output JSON summary path
   --browser-out PATH    Output browser JS model path
+  --onnx-out PATH       Output ONNX model path (default: derived from --model-out)
   --summary-history-dir PATH  Directory for timestamped summary snapshots
   --hardcase-dir PATH   Additional hardcase shard directory to merge into full retraining
   --epochs N            Training epochs (default: ${EPOCHS})
   --batch-size N        Training batch size (default: ${BATCH_SIZE})
+  --hardcase-weight N   Weight multiplier for hardcase samples (default: ${HARDCASE_WEIGHT})
   --jobs N              Parallel extraction jobs for base patch shards (default: ${JOBS})
   --render-threads N    PDF render threads per extraction job (default: ${RENDER_THREADS})
   --dpi N               PDF render DPI for patch extraction (default: ${DPI})
@@ -55,9 +60,11 @@ while [[ $# -gt 0 ]]; do
     --model-out) MODEL_OUT="$2"; shift 2 ;;
     --summary-out) SUMMARY_OUT="$2"; shift 2 ;;
     --browser-out) BROWSER_OUT="$2"; shift 2 ;;
+    --onnx-out) ONNX_OUT="$2"; shift 2 ;;
     --summary-history-dir) SUMMARY_HISTORY_DIR="$2"; shift 2 ;;
     --epochs) EPOCHS="$2"; shift 2 ;;
     --batch-size) BATCH_SIZE="$2"; shift 2 ;;
+    --hardcase-weight) HARDCASE_WEIGHT="$2"; shift 2 ;;
     --jobs) JOBS="$2"; shift 2 ;;
     --render-threads) RENDER_THREADS="$2"; shift 2 ;;
     --dpi) DPI="$2"; shift 2 ;;
@@ -75,7 +82,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-mkdir -p "$PATCH_DIR" "$(dirname "$MODEL_OUT")" "$(dirname "$SUMMARY_OUT")" "$(dirname "$BROWSER_OUT")" "$SUMMARY_HISTORY_DIR"
+if [[ -z "$ONNX_OUT" ]]; then
+  ONNX_OUT="${MODEL_OUT%.keras}.onnx"
+fi
+
+mkdir -p "$PATCH_DIR" "$(dirname "$MODEL_OUT")" "$(dirname "$SUMMARY_OUT")" "$(dirname "$BROWSER_OUT")" "$(dirname "$ONNX_OUT")" "$SUMMARY_HISTORY_DIR"
 
 echo "==> Barline Patch CNN Pipeline"
 echo "Root:           $ROOT_DIR"
@@ -87,6 +98,7 @@ echo "Model out:      $MODEL_OUT"
 echo "Summary out:    $SUMMARY_OUT"
 echo "Summary hist:   $SUMMARY_HISTORY_DIR"
 echo "Browser out:    $BROWSER_OUT"
+echo "ONNX out:       $ONNX_OUT"
 echo "Patch geometry: ${X_SPATIUMS} x-spatiums each side, ${Y_SPATIUMS} y-spatiums above/below"
 echo "Patch tensor:   ${PATCH_WIDTH}x${PATCH_HEIGHT}"
 echo "Render width:   $RENDER_WIDTH"
@@ -95,6 +107,7 @@ echo "Render threads: $RENDER_THREADS"
 echo "DPI:            $DPI"
 echo "Epochs:         $EPOCHS"
 echo "Batch size:     $BATCH_SIZE"
+echo "Hardcase wt:    $HARDCASE_WEIGHT"
 echo
 
 echo "==> Step 1: Extract CNN patch shards"
@@ -163,6 +176,7 @@ TRAIN_ARGS=(
   --summary-out "$SUMMARY_OUT"
   --epochs "$EPOCHS"
   --batch-size "$BATCH_SIZE"
+  --hardcase-weight "$HARDCASE_WEIGHT"
 )
 if compgen -G "${HARDCASE_DIR}/*_hardcases.npz" > /dev/null; then
   TRAIN_ARGS+=(--extra-data-dir "$HARDCASE_DIR")
@@ -173,10 +187,25 @@ echo
 echo "==> Step 4: Export browser CNN"
 python3 -u scripts/export_barline_patch_cnn_to_js.py \
   --model "$MODEL_OUT" \
-  --out "$BROWSER_OUT"
+  --out "$BROWSER_OUT" \
+  --x-spatiums "$X_SPATIUMS" \
+  --y-spatiums "$Y_SPATIUMS"
+
+if [[ -d "$ONNX_SITE_PACKAGES" ]]; then
+  echo
+  echo "==> Step 5: Export ONNX CNN"
+  PYTHONPATH="${ONNX_SITE_PACKAGES}${PYTHONPATH:+:${PYTHONPATH}}" python3 scripts/export_barline_patch_cnn_to_onnx.py \
+    --model "$MODEL_OUT" \
+    --out "$ONNX_OUT" \
+    --x-spatiums "$X_SPATIUMS" \
+    --y-spatiums "$Y_SPATIUMS"
+else
+  echo
+  echo "==> Step 5: Skip ONNX export (missing $ONNX_SITE_PACKAGES)"
+fi
 
 echo
-echo "==> Step 5: Archive timestamped training summary"
+echo "==> Step 6: Archive timestamped training summary"
 SUMMARY_STAMP="$(date +%Y%m%d-%H%M%S)"
 SUMMARY_ARCHIVE_OUT="${SUMMARY_HISTORY_DIR}/barline-patch-cnn-3x6-summary-${SUMMARY_STAMP}.json"
 cp "$SUMMARY_OUT" "$SUMMARY_ARCHIVE_OUT"
@@ -186,4 +215,5 @@ echo
 echo "==> Done"
 echo "Model:   $MODEL_OUT"
 echo "Browser: $BROWSER_OUT"
+echo "ONNX:    $ONNX_OUT"
 echo "Summary: $SUMMARY_OUT"
