@@ -150,19 +150,22 @@
         if (!modelData) {
             throw new Error("BarlinePatchCnnModelData is not loaded.");
         }
+        var inputShape = modelData.input_shape || [64, 32, 1];
+        var inH = inputShape[0];
+        var inW = inputShape[1];
         var layers = modelData.layers;
         var x = patch;
 
-        x = reluInPlace(convSame(x, 64, 32, 1, layers.conv2d));
-        x = reluInPlace(convSame(x, 64, 32, 16, layers.conv2d_1));
-        var pooled1 = maxPool2x2(x, 64, 32, 16);
+        x = reluInPlace(convSame(x, inH, inW, 1, layers.conv2d));
+        x = reluInPlace(convSame(x, inH, inW, 32, layers.conv2d_1));
+        var pooled1 = maxPool2x2(x, inH, inW, 32);
 
         x = reluInPlace(convSame(pooled1.data, pooled1.height, pooled1.width, pooled1.channels, layers.conv2d_2));
-        x = reluInPlace(convSame(x, pooled1.height, pooled1.width, 32, layers.conv2d_3));
-        var pooled2 = maxPool2x2(x, pooled1.height, pooled1.width, 32);
+        x = reluInPlace(convSame(x, pooled1.height, pooled1.width, 64, layers.conv2d_3));
+        var pooled2 = maxPool2x2(x, pooled1.height, pooled1.width, 64);
 
         x = reluInPlace(convSame(pooled2.data, pooled2.height, pooled2.width, pooled2.channels, layers.conv2d_4));
-        var gap = globalAveragePool(x, pooled2.height, pooled2.width, 64);
+        var gap = globalAveragePool(x, pooled2.height, pooled2.width, 128);
         var dense1 = dense(gap, layers.dense, true);
         var dense2 = dense(dense1, layers.dense_1, false);
         return sigmoid(dense2[0]);
@@ -172,7 +175,17 @@
         cropCandidatePatch: cropCandidatePatch,
         predictFromPatch: inferFromPatch,
         predictCandidate: function (pixelData, stride, width, xCol, staffTop, staffBot, spatium) {
-            var patch = cropCandidatePatch(pixelData, stride, width, xCol, staffTop, staffBot, spatium, 1.5, 1.0, 32, 64);
+            var modelData = global.BarlinePatchCnnModelData || {};
+            var inputShape = modelData.input_shape || [64, 32, 1];
+            var cropConfig = modelData.crop_config || {};
+            var patchHeight = inputShape[0];
+            var patchWidth = inputShape[1];
+            var xSpatiums = cropConfig.x_spatiums != null ? cropConfig.x_spatiums : 1.5;
+            var ySpatiums = cropConfig.y_spatiums != null ? cropConfig.y_spatiums : 1.0;
+            var patch = cropCandidatePatch(
+                pixelData, stride, width, xCol, staffTop, staffBot, spatium,
+                xSpatiums, ySpatiums, patchWidth, patchHeight
+            );
             if (!patch) return null;
             return inferFromPatch(patch);
         }

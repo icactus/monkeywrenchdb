@@ -18,8 +18,11 @@ LAYER_NAMES = [
 
 
 def to_payload(model):
+    input_shape = model.input_shape
+    if not isinstance(input_shape, (list, tuple)) or len(input_shape) != 4:
+        raise ValueError(f"Unexpected model input shape: {input_shape}")
     payload = {
-        "input_shape": [64, 32, 1],
+        "input_shape": [int(input_shape[1]), int(input_shape[2]), int(input_shape[3])],
         "layers": {},
     }
     for layer_name in LAYER_NAMES:
@@ -42,10 +45,16 @@ def main():
     parser.add_argument("--model", required=True, help="Path to .keras model")
     parser.add_argument("--out", required=True, help="Output JS file path")
     parser.add_argument("--var-name", default="BarlinePatchCnnModelData", help="Global JS variable name")
+    parser.add_argument("--x-spatiums", type=float, default=3.0, help="Horizontal crop margin in spatiums each side")
+    parser.add_argument("--y-spatiums", type=float, default=1.0, help="Vertical crop margin in spatiums above/below")
     args = parser.parse_args()
 
     model = tf.keras.models.load_model(args.model)
     payload = to_payload(model)
+    payload["crop_config"] = {
+        "x_spatiums": float(args.x_spatiums),
+        "y_spatiums": float(args.y_spatiums),
+    }
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     json_blob = json.dumps(payload, separators=(",", ":"))

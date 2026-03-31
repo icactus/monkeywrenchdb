@@ -124,18 +124,18 @@ def compile_model(model, learning_rate):
 def build_model(input_shape, learning_rate):
     model = tf.keras.Sequential([
         tf.keras.layers.Input(shape=input_shape),
-        tf.keras.layers.Conv2D(16, (3, 3), padding="same", activation="relu"),
-        tf.keras.layers.Conv2D(16, (3, 3), padding="same", activation="relu"),
-        tf.keras.layers.MaxPooling2D((2, 2)),
-
         tf.keras.layers.Conv2D(32, (3, 3), padding="same", activation="relu"),
         tf.keras.layers.Conv2D(32, (3, 3), padding="same", activation="relu"),
         tf.keras.layers.MaxPooling2D((2, 2)),
 
         tf.keras.layers.Conv2D(64, (3, 3), padding="same", activation="relu"),
+        tf.keras.layers.Conv2D(64, (3, 3), padding="same", activation="relu"),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+
+        tf.keras.layers.Conv2D(128, (3, 3), padding="same", activation="relu"),
         tf.keras.layers.GlobalAveragePooling2D(),
 
-        tf.keras.layers.Dense(32, activation="relu"),
+        tf.keras.layers.Dense(64, activation="relu"),
         tf.keras.layers.Dropout(0.2),
         tf.keras.layers.Dense(1, activation="sigmoid"),
     ])
@@ -181,8 +181,11 @@ def split_by_document(x, y, groups, val_size, test_size, seed):
     return train_idx, val_idx, test_idx, "document_level"
 
 
-def make_dataset(x, y, batch_size, training):
-    ds = tf.data.Dataset.from_tensor_slices((x, y))
+def make_dataset(x, y, batch_size, training, sample_weight=None):
+    if sample_weight is None:
+        ds = tf.data.Dataset.from_tensor_slices((x, y))
+    else:
+        ds = tf.data.Dataset.from_tensor_slices((x, y, sample_weight))
     if training:
         ds = ds.shuffle(min(len(x), 20000), reshuffle_each_iteration=True)
     ds = ds.batch(batch_size).prefetch(tf.data.AUTOTUNE)
@@ -202,6 +205,20 @@ def class_weight_dict(y, class_weight_scale=None):
     if class_weight_scale:
         weights[0] *= float(class_weight_scale.get(0, 1.0))
         weights[1] *= float(class_weight_scale.get(1, 1.0))
+    return weights
+
+
+def build_sample_weights(y, kinds, class_weight, hardcase_weight):
+    weights = np.ones(len(y), dtype=np.float32)
+
+    if class_weight:
+        class0 = float(class_weight.get(0, 1.0))
+        class1 = float(class_weight.get(1, 1.0))
+        weights *= np.where(y == 1, class1, class0).astype(np.float32)
+
+    if hardcase_weight != 1.0:
+        weights *= np.where(kinds == "hardcase", float(hardcase_weight), 1.0).astype(np.float32)
+
     return weights
 
 
@@ -262,6 +279,7 @@ def main():
     parser.add_argument("--replay-multiplier", type=float, default=3.0, help="When using --replay-data-dir, sample this many replay examples per hardcase example into the training set")
     parser.add_argument("--neg-weight-scale", type=float, default=1.0, help="Multiplier applied to class-0 weight during training")
     parser.add_argument("--pos-weight-scale", type=float, default=1.0, help="Multiplier applied to class-1 weight during training")
+    parser.add_argument("--hardcase-weight", type=float, default=1.0, help="Multiplier applied to hardcase training examples")
     args = parser.parse_args()
 
     tf.keras.utils.set_random_seed(args.seed)
@@ -319,7 +337,13 @@ def main():
         resume_from=args.resume_from,
         learning_rate=learning_rate,
     )
-    train_ds = make_dataset(x_train, y_train, args.batch_size, training=True)
+    class_weight_scale = {
+        0: args.neg_weight_scale,
+        1: args.pos_weight_scale,
+    }
+    cw = class_weight_dict(y_train, class_weight_scale=class_weight_scale)
+    train_sample_weights = build_sample_weights(y_train, kinds_train, cw, args.hardcase_weight)
+    train_ds = make_dataset(x_train, y_train, args.batch_size, training=True, sample_weight=train_sample_weights)
     val_ds = make_dataset(x_val, y_val, args.batch_size, training=False)
 
     callbacks = [
@@ -330,11 +354,6 @@ def main():
         )
     ]
 
-    class_weight_scale = {
-        0: args.neg_weight_scale,
-        1: args.pos_weight_scale,
-    }
-    cw = class_weight_dict(y_train, class_weight_scale=class_weight_scale)
     if args.eval_only:
         history = None
     else:
@@ -343,7 +362,6 @@ def main():
             validation_data=val_ds,
             epochs=args.epochs,
             callbacks=callbacks,
-            class_weight=cw,
             verbose=2,
         )
 
@@ -385,6 +403,7 @@ def main():
             "replay_data_dir": args.replay_data_dir,
             "replay_multiplier": float(args.replay_multiplier),
             "threshold": float(args.threshold),
+            "input_shape": [int(dim) for dim in x_train.shape[1:]],
             "test_accuracy": metrics["accuracy"],
             "test_f1": metrics["f1"],
             "class_weight": cw,
@@ -392,6 +411,7 @@ def main():
                 "neg": float(args.neg_weight_scale),
                 "pos": float(args.pos_weight_scale),
             },
+            "hardcase_weight": float(args.hardcase_weight),
             "history": {} if history is None else {k: [float(vv) for vv in vals] for k, vals in history.history.items()},
             "source_kind_breakdown": {
                 "train": {
