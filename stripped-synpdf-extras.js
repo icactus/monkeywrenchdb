@@ -1253,6 +1253,7 @@ function scaleNestedArray(arr, scaleAmount) {
             const out = { ...item };
             if ('x' in out) out.x = (out.x * k) + 0;
             if ('y' in out) out.y = (out.y * k);
+            if ('scrollY' in out) out.scrollY = (out.scrollY * k);
             if ('w' in out) out.w = (out.w * k);
             if ('h' in out) out.h = (out.h * k);
             if ('ytl' in out) out.ytl = (out.ytl * k);

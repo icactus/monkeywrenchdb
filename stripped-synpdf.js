@@ -341,6 +341,7 @@ var opt$$module$synpdf, times_arr$$module$synpdf, offset_js$$module$synpdf, pdf_
     fullmenu$$module$synpdf, pageNumChanged$$module$synpdf = {},
     xcurprev$$module$synpdf = -1,
     ycurprev$$module$synpdf = -1,
+    scrollYCurPrev$$module$synpdf = -1,
     dummyPlayer$$module$synpdf = new DummyPlayer$$module$synpdf,
     TOFF$$module$synpdf = .01,
     elmed$$module$synpdf, msc_wz$$module$synpdf, doReadPdf$$module$synpdf, skipn$$module$synpdf = null,
@@ -861,15 +862,17 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
             var measureWidth = c.w;
             var measureY = c.y;
             var measureHeight = c.h;
+            var measureScrollY = (typeof c.scrollY === "number") ? c.scrollY : measureY;
 
             if (measureX === xcurprev$$module$synpdf && measureY === ycurprev$$module$synpdf) {
                 return;
             }
 
-            var distanceToScrollY = measureY - ycurprev$$module$synpdf;
+            var distanceToScrollY = measureScrollY - scrollYCurPrev$$module$synpdf;
             var distanceToScrollX = measureX - xcurprev$$module$synpdf; // Track X change
             xcurprev$$module$synpdf = measureX;
             ycurprev$$module$synpdf = measureY;
+            scrollYCurPrev$$module$synpdf = measureScrollY;
 
             var maatlooperStyle = this.maatloper[0].style;
             const canvasX = pageLeftInNotation(c.page ?? 1);
@@ -955,7 +958,7 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
             if (!inTwoUp) {
                 if (distanceToScrollY !== 0) {
                     const scrollFlagValueY = Math.abs(distanceToScrollY) > 500 ? 1 : 0;
-                    const targetY = measureY - self.tmargin;
+                    const targetY = measureScrollY - self.tmargin;
                     doeRol$$module$synpdf(targetY, useInstantScroll ? 1 : scrollFlagValueY);
                 }
             } else {
@@ -1554,6 +1557,7 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
                 prevMeasure.linkedBoxes.push({
                     x: (measureLeftBarline * k),
                     y: (boxTop * k),
+                    scrollY: (staffTopLine * k),
                     relativeY: ((boxTop - cumulativeHeight) * k),
                     w: ((measureRightBarline - measureLeftBarline) * k),
                     h: ((boxBottom - boxTop) * k),
@@ -1572,6 +1576,7 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
             deMaten$$module$synpdf.push({
                 x: (measureLeftBarline * k),
                 y: (boxTop * k),
+                scrollY: (staffTopLine * k),
                 w: ((measureRightBarline - measureLeftBarline) * k),
                 h: ((boxBottom - boxTop) * k),
                 ytl: (topLeft * k),
@@ -1603,6 +1608,7 @@ function addDummySys$$module$synpdf() {
     deMaten$$module$synpdf.push({
         x: a.x + a.w,
         y: a.y,
+        scrollY: (typeof a.scrollY === "number") ? a.scrollY : a.y,
         w: 2,
         h: a.h,
         page: a.page   // <-- keep the dummy on the correct page
@@ -2132,6 +2138,7 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
                         - (window.offset$$module$synpdf || 0));
                 xcurprev$$module$synpdf = -1;
                 ycurprev$$module$synpdf = -1;
+                scrollYCurPrev$$module$synpdf = -1;
                 msc_wz$$module$synpdf?.time2x(t);
             });
         });
@@ -2266,6 +2273,7 @@ function resizePdf$$module$synpdf(scrollType) {
         // force a reposition even if measure coords match cached previous
         xcurprev$$module$synpdf = -1;
         ycurprev$$module$synpdf = -1;
+        scrollYCurPrev$$module$synpdf = -1;
 
         msc_wz$$module$synpdf.time2x(t);
         msc_wz$$module$synpdf.setTmargin();
