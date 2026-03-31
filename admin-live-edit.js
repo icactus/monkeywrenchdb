@@ -358,7 +358,19 @@
             method: 'POST',
             body: formData
         })
-            .then(res => res.json())
+            .then(async res => {
+                const responseText = await res.text();
+                let data = null;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    throw new Error(`HTTP ${res.status} ${res.statusText}${responseText ? ': ' + responseText.slice(0, 300) : ''}`);
+                }
+                if (!res.ok) {
+                    throw new Error(data.message || `HTTP ${res.status} ${res.statusText}`);
+                }
+                return data;
+            })
             .then(data => {
                 if (data.success) {
                     const cacheBust = data.cache_bust || Date.now();
@@ -375,7 +387,7 @@
             })
             .catch(err => {
                 console.error(err);
-                alert("Network error occurred.");
+                alert("Save failed: " + err.message);
             })
             .finally(() => {
                 saveBtn.textContent = "Save Changes";
