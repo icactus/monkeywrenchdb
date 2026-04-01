@@ -65,7 +65,7 @@ function activateExclusiveMode(mode) {
         case 'q':
             QisActive = true;
             break;
-        case 'n':
+        case 'e':
             NisActive = true;
             break;
         case 's':
@@ -106,7 +106,7 @@ function toggleExclusiveMode(mode) {
         case 'q':
             isActive = QisActive;
             break;
-        case 'n':
+        case 'e':
             isActive = NisActive;
             break;
         case 's':
@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     tooltip.innerHTML = "Q";
                 }
                 if (NisActive) {
-                    tooltip.innerHTML = "N";
+                    tooltip.innerHTML = "E";
                 }
                 if (WisActive) {
                     tooltip.innerHTML = "W";
@@ -862,8 +862,8 @@ function roundValuesInArray(obj) {
 }
 
 function toggleNActivity() {
-    console.log(NisActive ? 'N mode is OFF' : 'N mode is ON');
-    toggleExclusiveMode('n');
+    console.log(NisActive ? 'E mode is OFF' : 'E mode is ON');
+    toggleExclusiveMode('e');
 }
 
 function toggleSActivity() {
@@ -1378,7 +1378,7 @@ document.addEventListener('keydown', function (event) {
         case 'q':
             toggleQActivity();
             break;
-        case 'n':
+        case 'e':
             toggleNActivity();
             break;
         case 's':

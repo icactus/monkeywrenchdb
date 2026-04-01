@@ -785,7 +785,7 @@
                 <div id="credits"></div>
                 <div id="credits2"></div>
                 <p><!-- page coordinate editing section info -->Coordinate logging: <span id="indicator"
-                        class="inactive-indicator">OFF</span> Q toggles on/off for adding or removing barlines
+                        class="inactive-indicator">OFF</span> Q toggles on/off for adding or removing barlines, E logs CNN examples
                     (shift-click to split multimeasure rests),<br> W draws a new staff (click top-left then
                     bottom-right; shift-click for auto-snap to lines), Y refits or merges staves</p>
             </div>
