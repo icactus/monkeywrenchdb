@@ -20,6 +20,22 @@ var suppressNextYClick = false;
 let indicatorElement;
 let notation;
 
+function getActiveModeTooltipLabel() {
+    if (QisActive) return 'Q';
+    if (NisActive) return 'E';
+    if (WisActive) return 'W';
+    if (SisActive) return 'S';
+    if (YisActive) return 'Y';
+    if (GeometryModeActive) return '$';
+    return '';
+}
+
+function refreshModeTooltip() {
+    var tooltip = document.getElementById('tooltip');
+    if (!tooltip) return;
+    tooltip.innerHTML = getActiveModeTooltipLabel();
+}
+
 function getSystemHitBounds(pageNumber, systemIndex, csGroup, xJson) {
     if (window.SynpdfCorrectionTools && typeof SynpdfCorrectionTools.getSystemVerticalBounds === 'function') {
         var bounds = SynpdfCorrectionTools.getSystemVerticalBounds(pageNumber, systemIndex, xJson, csGroup);
@@ -56,6 +72,7 @@ function clearExclusiveModeState() {
     if (document && document.body) {
         document.body.style.cursor = 'default';
     }
+    refreshModeTooltip();
 }
 
 function activateExclusiveMode(mode) {
@@ -98,6 +115,7 @@ function activateExclusiveMode(mode) {
     if (document && document.body) {
         document.body.style.cursor = 'crosshair';
     }
+    refreshModeTooltip();
 }
 
 function toggleExclusiveMode(mode) {
@@ -194,24 +212,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (tooltip) {
                 tooltip.style.left = Math.max(0, e.clientX - 24) + 'px';
                 tooltip.style.top = Math.max(0, e.clientY - 110) + 'px';
-                if (QisActive) {
-                    tooltip.innerHTML = "Q";
-                }
-                if (NisActive) {
-                    tooltip.innerHTML = "E";
-                }
-                if (WisActive) {
-                    tooltip.innerHTML = "W";
-                }
-                if (SisActive) {
-                    tooltip.innerHTML = "S";
-                }
-                if (YisActive) {
-                    tooltip.innerHTML = "Y";
-                }
-                if (GeometryModeActive) {
-                    tooltip.innerHTML = "$";
-                }
+                refreshModeTooltip();
             }
         });
     }
