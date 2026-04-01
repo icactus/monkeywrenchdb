@@ -190,14 +190,10 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         notation.addEventListener('mousemove', function (e) {
-            var rect = notation.getBoundingClientRect();
-            var x = e.clientX - rect.left;
-            var y = Math.round(e.clientY - rect.top + notation.scrollTop);
-
             var tooltip = document.getElementById('tooltip');
             if (tooltip) {
-                tooltip.style.left = (x - 100) + 'px';
-                tooltip.style.top = Math.round((y - (-50 + notation.scrollTop))) + 'px';
+                tooltip.style.left = Math.max(0, e.clientX - 24) + 'px';
+                tooltip.style.top = Math.max(0, e.clientY - 110) + 'px';
                 if (QisActive) {
                     tooltip.innerHTML = "Q";
                 }
