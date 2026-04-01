@@ -1411,16 +1411,16 @@ document.addEventListener('keydown', function (event) {
                 toggleWActivity(); // Turn off
             }
             break;
-        case '/':
+        case 'D':
             keyDown$$module$synpdf({
-                key: "PageDown"
+                key: "PageUp"
             });
             // Auto-save metric data after page change (same as 'p' key)
             persistMetricData();
             break;
-        case '.':
+        case 'd':
             keyDown$$module$synpdf({
-                key: "PageUp"
+                key: "PageDown"
             });
             // Auto-save metric data after page change (same as 'p' key)
             persistMetricData();
