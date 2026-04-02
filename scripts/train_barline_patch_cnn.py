@@ -280,6 +280,7 @@ def main():
     parser.add_argument("--neg-weight-scale", type=float, default=1.0, help="Multiplier applied to class-0 weight during training")
     parser.add_argument("--pos-weight-scale", type=float, default=1.0, help="Multiplier applied to class-1 weight during training")
     parser.add_argument("--hardcase-weight", type=float, default=1.0, help="Multiplier applied to hardcase training examples")
+    parser.add_argument("--train-on-all-data", action="store_true", help="Skip held-out splitting and continue training on all available examples")
     args = parser.parse_args()
 
     tf.keras.utils.set_random_seed(args.seed)
@@ -314,23 +315,42 @@ def main():
     else:
         all_data_dirs = [args.data_dir] + list(args.extra_data_dir)
         x, y, groups, kinds = load_shards_from_dirs(all_data_dirs)
-        train_idx, val_idx, test_idx, split_mode = split_by_document(x, y, groups, args.val_size, args.test_size, args.seed)
+        if args.train_on_all_data:
+            split_mode = "all_data_final_fit"
+            x_train, y_train = x, y
+            groups_train = groups
+            kinds_train = kinds
+            x_val = np.empty((0,) + x.shape[1:], dtype=x.dtype)
+            y_val = np.empty((0,), dtype=y.dtype)
+            x_test = np.empty((0,) + x.shape[1:], dtype=x.dtype)
+            y_test = np.empty((0,), dtype=y.dtype)
+            groups_val = np.empty((0,), dtype=groups.dtype)
+            groups_test = np.empty((0,), dtype=groups.dtype)
+            kinds_val = np.empty((0,), dtype=kinds.dtype)
+            kinds_test = np.empty((0,), dtype=kinds.dtype)
+            train_docs = sorted(np.unique(groups_train).tolist())
+            val_docs = []
+            test_docs = []
+        else:
+            train_idx, val_idx, test_idx, split_mode = split_by_document(x, y, groups, args.val_size, args.test_size, args.seed)
 
-        x_train, y_train = x[train_idx], y[train_idx]
-        x_val, y_val = x[val_idx], y[val_idx]
-        x_test, y_test = x[test_idx], y[test_idx]
-        groups_train = groups[train_idx]
-        groups_val = groups[val_idx]
-        groups_test = groups[test_idx]
-        kinds_train = kinds[train_idx]
-        kinds_val = kinds[val_idx]
-        kinds_test = kinds[test_idx]
-        train_docs = sorted(np.unique(groups_train).tolist())
-        val_docs = sorted(np.unique(groups_val).tolist())
-        test_docs = sorted(np.unique(groups_test).tolist())
+            x_train, y_train = x[train_idx], y[train_idx]
+            x_val, y_val = x[val_idx], y[val_idx]
+            x_test, y_test = x[test_idx], y[test_idx]
+            groups_train = groups[train_idx]
+            groups_val = groups[val_idx]
+            groups_test = groups[test_idx]
+            kinds_train = kinds[train_idx]
+            kinds_val = kinds[val_idx]
+            kinds_test = kinds[test_idx]
+            train_docs = sorted(np.unique(groups_train).tolist())
+            val_docs = sorted(np.unique(groups_val).tolist())
+            test_docs = sorted(np.unique(groups_test).tolist())
 
     if args.eval_only and not args.resume_from:
         parser.error("--eval-only requires --resume-from")
+    if args.eval_only and args.train_on_all_data:
+        parser.error("--eval-only cannot be combined with --train-on-all-data")
 
     model, model_mode = load_or_build_model(
         input_shape=x_train.shape[1:],
@@ -344,29 +364,34 @@ def main():
     cw = class_weight_dict(y_train, class_weight_scale=class_weight_scale)
     train_sample_weights = build_sample_weights(y_train, kinds_train, cw, args.hardcase_weight)
     train_ds = make_dataset(x_train, y_train, args.batch_size, training=True, sample_weight=train_sample_weights)
-    val_ds = make_dataset(x_val, y_val, args.batch_size, training=False)
+    val_ds = make_dataset(x_val, y_val, args.batch_size, training=False) if len(x_val) else None
 
-    callbacks = [
-        tf.keras.callbacks.EarlyStopping(
-            monitor="val_loss",
-            patience=3,
-            restore_best_weights=True,
+    callbacks = []
+    if val_ds is not None:
+        callbacks.append(
+            tf.keras.callbacks.EarlyStopping(
+                monitor="val_loss",
+                patience=3,
+                restore_best_weights=True,
+            )
         )
-    ]
 
     if args.eval_only:
         history = None
     else:
-        history = model.fit(
-            train_ds,
-            validation_data=val_ds,
-            epochs=args.epochs,
-            callbacks=callbacks,
-            verbose=2,
-        )
+        fit_kwargs = {
+            "epochs": args.epochs,
+            "callbacks": callbacks,
+            "verbose": 2,
+        }
+        if val_ds is not None:
+            fit_kwargs["validation_data"] = val_ds
+        history = model.fit(train_ds, **fit_kwargs)
 
-    test_probs = model.predict(make_dataset(x_test, y_test, args.batch_size, training=False), verbose=0).reshape(-1)
-    metrics = evaluate_predictions(y_test, test_probs, args.threshold)
+    metrics = None
+    if len(x_test):
+        test_probs = model.predict(make_dataset(x_test, y_test, args.batch_size, training=False), verbose=0).reshape(-1)
+        metrics = evaluate_predictions(y_test, test_probs, args.threshold)
 
     print(f"Split mode: {split_mode}")
     print(f"Model mode: {model_mode}")
@@ -375,10 +400,13 @@ def main():
     print(f"Learning rate: {learning_rate:.6f}")
     print(f"Train docs: {len(train_docs)}, Val docs: {len(val_docs)}, Test docs: {len(test_docs)}")
     print(f"Train examples: {len(x_train)}, Val examples: {len(x_val)}, Test examples: {len(x_test)}")
-    print(f"Threshold: {args.threshold:.2f}")
-    print(f"Test accuracy: {metrics['accuracy']:.4f}")
-    print(f"Test F1: {metrics['f1']:.4f}")
-    print(metrics["report"])
+    if metrics is not None:
+        print(f"Threshold: {args.threshold:.2f}")
+        print(f"Test accuracy: {metrics['accuracy']:.4f}")
+        print(f"Test F1: {metrics['f1']:.4f}")
+        print(metrics["report"])
+    else:
+        print("No held-out evaluation: trained on all available data.")
 
     if args.eval_only:
         print("Eval-only mode: model weights were not modified.")
@@ -404,8 +432,8 @@ def main():
             "replay_multiplier": float(args.replay_multiplier),
             "threshold": float(args.threshold),
             "input_shape": [int(dim) for dim in x_train.shape[1:]],
-            "test_accuracy": metrics["accuracy"],
-            "test_f1": metrics["f1"],
+            "test_accuracy": None if metrics is None else metrics["accuracy"],
+            "test_f1": None if metrics is None else metrics["f1"],
             "class_weight": cw,
             "class_weight_scale": {
                 "neg": float(args.neg_weight_scale),
