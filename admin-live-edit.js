@@ -273,60 +273,8 @@
             return;
         }
 
-        // --- NORMALIZATION STEP ---
-        // Verify current width (index 0)
-        let currentWidth = metricArr[0];
-        if (!currentWidth) {
-            // Fallback if index 0 is missing (unlikely)
-            currentWidth = document.getElementById('notation-scroll').clientWidth;
-        }
-
-        let scaleFactor = 1000 / currentWidth;
-        console.log("Normalizing Save Data: Current Width =", currentWidth, "Scale Factor =", scaleFactor);
-
-        // Deep clone to avoid messing up live view
+        // Deep clone current viewer data and let the server normalize it back to 1000-wide storage.
         let dataToSave = JSON.parse(JSON.stringify(metricArr));
-
-        // Apply scaling
-        dataToSave[0] = 1000;
-
-        // Recursively scale 'bxs', 'cxs' (cs, x1, x2)
-        // cxs structure: [ { cs: [y1, y2...], xs: {x1, x2} }, ... ] for each system
-        // bxs structure: [ [x1, x2, ...], ... ] for each system corresponding to cxs index
-
-        // Iterate pages (starting at index 1 usually, but let's be safe and check array structure)
-        // metric_arr is: [width, page1Obj, page2Obj...]
-
-        for (let i = 1; i < dataToSave.length; i++) {
-            let page = dataToSave[i];
-            if (!page) continue;
-
-            // Scale CXS
-            if (page.cxs) {
-                page.cxs.forEach(sys => {
-                    // Start/End x coordinates of system
-                    if (sys.xs) {
-                        if (typeof sys.xs.x1 === 'number') sys.xs.x1 = parseFloat((sys.xs.x1 * scaleFactor).toFixed(1));
-                        if (typeof sys.xs.x2 === 'number') sys.xs.x2 = parseFloat((sys.xs.x2 * scaleFactor).toFixed(1));
-                    }
-                    // Staff lines (y coordinates)
-                    // Note: In synpdf, 'cs' are y-coords. Height also scales with width to maintain aspect ratio?
-                    // Yes, usually aspect ratio is preserved. 
-                    // However, strip-cs-and-format-1000.js scales EVERYTHING recursively.
-                    // This implies CS (y-coords) are also scaled.
-                    if (sys.cs) {
-                        sys.cs = sys.cs.map(val => parseFloat((val * scaleFactor).toFixed(1)));
-                    }
-                });
-            }
-
-            // Scale BXS
-            if (page.bxs) {
-                for (let s = 0; s < page.bxs.length; s++) {
-                    page.bxs[s] = page.bxs[s].map(val => parseFloat((val * scaleFactor).toFixed(1)));
-                }
-            }
-        }
 
         // Get ID from Globals or URL
         let metricArrId = null;

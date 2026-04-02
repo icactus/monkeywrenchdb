@@ -31,6 +31,76 @@ if (file_exists('phpfiles/config.php')) {
 
 mysqli_report(MYSQLI_REPORT_OFF);
 
+function normalizeMetricDataForStorage($jsonData)
+{
+    $data = json_decode($jsonData);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        throw new Exception('Invalid JSON data: ' . json_last_error_msg());
+    }
+    if (!isset($data[0]) || !is_numeric($data[0])) {
+        throw new Exception('First entry is not a valid number.');
+    }
+
+    $originalFirstEntryValue = (float) $data[0];
+    if ($originalFirstEntryValue == 0.0) {
+        throw new Exception('First entry value is zero, cannot scale.');
+    }
+
+    $scaleFactor = 1000 / $originalFirstEntryValue;
+    $data[0] = 1000;
+
+    for ($i = 1; $i < count($data); $i++) {
+        $data[$i] = normalizeMetricNodeForStorage($data[$i], $scaleFactor);
+    }
+
+    return json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+}
+
+function normalizeMetricNodeForStorage($node, $scaleFactor)
+{
+    if (is_array($node)) {
+        return array_map(function ($item) use ($scaleFactor) {
+            return normalizeMetricNodeForStorage($item, $scaleFactor);
+        }, $node);
+    }
+
+    if (is_object($node) && $node !== null) {
+        if (property_exists($node, 'cs') && is_array($node->cs)) {
+            if (count($node->cs) > 1) {
+                $first = round($node->cs[0] * $scaleFactor, 1);
+                $last = round($node->cs[count($node->cs) - 1] * $scaleFactor, 1);
+                $node->cs = [$first, $last];
+            } else {
+                $node->cs = [round($node->cs[0] * $scaleFactor, 1)];
+            }
+        }
+
+        foreach ($node as $key => $value) {
+            if ($key === 'cs' && is_array($value)) {
+                continue;
+            }
+            $node->$key = normalizeMetricNodeForStorage($value, $scaleFactor);
+        }
+
+        if (property_exists($node, 'xs') && is_object($node->xs)) {
+            if (property_exists($node->xs, 'x1') && is_numeric($node->xs->x1)) {
+                $node->xs->x1 = round($node->xs->x1, 1);
+            }
+            if (property_exists($node->xs, 'x2') && is_numeric($node->xs->x2)) {
+                $node->xs->x2 = round($node->xs->x2, 1);
+            }
+        }
+
+        return $node;
+    }
+
+    if (is_numeric($node)) {
+        return round($node * $scaleFactor, 1);
+    }
+
+    return $node;
+}
+
 try {
     $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
     if ($conn->connect_error) {
@@ -51,10 +121,10 @@ try {
             exit;
         }
 
-        // Validate JSON
-        $decoded = json_decode($metricArrData);
-        if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
-            echo json_encode(['success' => false, 'message' => 'Invalid JSON data: ' . json_last_error_msg()]);
+        try {
+            $metricArrDataProcessed = normalizeMetricDataForStorage($metricArrData);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
             $conn->close();
             exit;
         }
@@ -69,7 +139,7 @@ try {
         }
 
         // Bind parameters: s = string (data), i = int (id)
-        $stmt->bind_param('si', $metricArrData, $metricArrId);
+        $stmt->bind_param('si', $metricArrDataProcessed, $metricArrId);
 
         if ($stmt->execute()) {
             if ($stmt->affected_rows >= 0) {
@@ -79,7 +149,7 @@ try {
                     mkdir($staticDir, 0755, true);
                 }
                 $staticFile = "$staticDir/$metricArrId.json";
-                $writeOk = file_put_contents($staticFile, $metricArrData);
+                $writeOk = file_put_contents($staticFile, $metricArrDataProcessed);
 
                 if ($writeOk === false) {
                     echo json_encode([
