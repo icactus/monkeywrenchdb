@@ -1209,11 +1209,13 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
 
     const pageOf = (m) => (m && m.page != null) ? m.page : 1; // 1-based
 
+    const rowKeyOf = (m) => (m && typeof m.scrollY === "number") ? m.scrollY : m.y;
+
     const collectRows = (pageIdx) => {
         const set = Object.create(null);
         for (let i = 0; i < deMaten$$module$synpdf.length; i++) {
             const mm = deMaten$$module$synpdf[i];
-            if (pageOf(mm) === pageIdx) set[mm.y + mm.h] = 1;
+            if (pageOf(mm) === pageIdx) set[rowKeyOf(mm)] = 1;
         }
         return Object.keys(set).map(Number).sort((a, b) => a - b);
     };
@@ -1224,14 +1226,15 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
     let rows = collectRows(curPage);
     if (!rows.length) return;
 
-    // row containing current y
+    // row containing current system scroll anchor
     let rowIdx = 0;
-    while (rowIdx < rows.length && rows[rowIdx] < cur.y) rowIdx++;
+    const curRowKey = rowKeyOf(cur);
+    while (rowIdx < rows.length && rows[rowIdx] < curRowKey) rowIdx++;
 
     const pageCount = (pdfDoc$$module$synpdf && pdfDoc$$module$synpdf.numPages) || nPage$$module$synpdf || 1;
 
     let targetPage = curPage;
-    let targetRowBottom;
+    let targetRowKey;
 
     if (isPageJump) {
         // Jump to previous/next actual PDF page
@@ -1242,11 +1245,11 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
                 targetPage = curPage + 1;
                 rows = collectRows(targetPage);
                 if (!rows.length) return;
-                targetRowBottom = rows[0]; // first row of next page
+                targetRowKey = rows[0]; // first row of next page
             } else {
                 // Already on last page - stay on last row
                 targetPage = curPage;
-                targetRowBottom = rows[rows.length - 1];
+                targetRowKey = rows[rows.length - 1];
             }
         } else {
             // PageUp - go to previous page
@@ -1254,64 +1257,62 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
                 targetPage = curPage - 1;
                 rows = collectRows(targetPage);
                 if (!rows.length) return;
-                targetRowBottom = rows[0]; // first row of previous page
+                targetRowKey = rows[0]; // first row of previous page
             } else {
                 // Already on first page - stay on first row
                 targetPage = curPage;
-                targetRowBottom = rows[0];
+                targetRowKey = rows[0];
             }
         }
     } else {
         if (isDown) {
             if (rowIdx < rows.length - 1) {
-                targetRowBottom = rows[rowIdx + 1];
+                targetRowKey = rows[rowIdx + 1];
             } else {
                 if (curPage + 1 > pageCount) {
                     // clamp at the last row of the last page
                     targetPage = curPage;
-                    targetRowBottom = rows[rows.length - 1];
+                    targetRowKey = rows[rows.length - 1];
                 } else {
                     targetPage = curPage + 1;
                     rows = collectRows(targetPage);
                     if (!rows.length) return;
-                    targetRowBottom = rows[0];
+                    targetRowKey = rows[0];
                 }
             }
         } else {
             if (rowIdx > 0) {
-                targetRowBottom = rows[rowIdx - 1];
+                targetRowKey = rows[rowIdx - 1];
             } else {
                 if (curPage - 1 < 1) {
                     // clamp at the first row of the first page
                     targetPage = curPage;
-                    targetRowBottom = rows[0];
+                    targetRowKey = rows[0];
                 } else {
                     targetPage = curPage - 1;
                     rows = collectRows(targetPage);
                     if (!rows.length) return;
-                    targetRowBottom = rows[rows.length - 1];
+                    targetRowKey = rows[rows.length - 1];
                 }
             }
         }
     }
 
     // safe X inside a measure on the target row (avoid indent no-ops)
-    function pickSafeAbsX(targetPage, targetRowBottom, preferInnerX) {
+    function pickTargetMeasure(targetPage, targetRowKey, preferInnerX) {
         const candidates = [];
         for (let j = 0; j < deMaten$$module$synpdf.length; j++) {
             const mm = deMaten$$module$synpdf[j];
             if (pageOf(mm) !== targetPage) continue;
-            if (Math.abs((mm.y + mm.h) - targetRowBottom) <= 2) candidates.push(mm);
+            if (Math.abs(rowKeyOf(mm) - targetRowKey) <= 2) candidates.push(mm);
         }
-        const pageLeft = pageLeftInNotation(targetPage); // 1-based
         if (!candidates.length) {
             // No measures on target row - find any on target page
             for (let j = 0; j < deMaten$$module$synpdf.length; j++) {
                 const mm2 = deMaten$$module$synpdf[j];
-                if (pageOf(mm2) === targetPage)
-                    return pageLeft + mm2.x + Math.min(mm2.w - 1, Math.max(1, mm2.w >> 1));
+                if (pageOf(mm2) === targetPage) return mm2;
             }
-            return pageLeft + 5;
+            return null;
         }
 
         // Sort candidates by X position to find leftmost/rightmost
@@ -1321,12 +1322,12 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
 
         // If preferred X is left of the leftmost measure, use the leftmost measure's center
         if (preferInnerX < leftmost.x) {
-            return pageLeft + leftmost.x + (leftmost.w >> 1);
+            return leftmost;
         }
 
         // If preferred X is right of the rightmost measure, use the rightmost measure's center
         if (preferInnerX > rightmost.x + rightmost.w) {
-            return pageLeft + rightmost.x + (rightmost.w >> 1);
+            return rightmost;
         }
 
         // Find the closest measure to the preferred X
@@ -1337,14 +1338,15 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
             if (d < bestDist) { bestDist = d; best = candidates[j]; }
         }
 
-        // Return a point inside the best measure
-        const inner = Math.min(best.x + best.w - 1, Math.max(best.x + 1, preferInnerX));
-        return pageLeft + inner;
+        return best;
     }
 
     const preferInnerX = cur.x + cur.w * 0.5;
-    const targetY = targetRowBottom - 5;
-    const absX = pickSafeAbsX(targetPage, targetRowBottom, preferInnerX);
+    const targetMeasure = pickTargetMeasure(targetPage, targetRowKey, preferInnerX);
+    if (!targetMeasure) return;
+    const pageLeft = pageLeftInNotation(targetPage);
+    const absX = pageLeft + Math.min(targetMeasure.x + targetMeasure.w - 1, Math.max(targetMeasure.x + 1, preferInnerX));
+    const targetY = targetMeasure.y + Math.min(targetMeasure.h - 1, Math.max(2, targetMeasure.h * 0.5));
     this.x2time(absX, targetY, !1, false);
 };
 
