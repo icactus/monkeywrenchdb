@@ -76,18 +76,25 @@ var SynpdfCorrectionTools = (function () {
     }
 
     function getCnnTrainingTarget(entry) {
-        if (!entry || !entry.nearestCandidate) return null;
+        if (!entry) return null;
         if (entry.reason === 'end_of_line_no_barline') return null;
 
         if (entry.action === 'delete' && entry.acceptedNearby) {
+            var acceptedMatchX = typeof entry.acceptedMatchX === 'number'
+                ? entry.acceptedMatchX
+                : (entry.nearestCandidate ? entry.nearestCandidate.x : null);
+            if (typeof acceptedMatchX !== 'number') return null;
             return {
                 label: 0,
-                candidateX: Math.round(entry.nearestCandidate.x),
-                candidateDistance: entry.nearestCandidate.distance,
+                candidateX: Math.round(acceptedMatchX),
+                candidateDistance: typeof entry.acceptedMatchDistance === 'number'
+                    ? entry.acceptedMatchDistance
+                    : (entry.nearestCandidate ? entry.nearestCandidate.distance : null),
                 source: 'delete_accepted_candidate'
             };
         }
 
+        if (!entry.nearestCandidate) return null;
         if (entry.action === 'add' && entry.hadNearbyCandidate) {
             return {
                 label: 1,
@@ -796,13 +803,35 @@ var SynpdfCorrectionTools = (function () {
         if (!baseline || !baseline.systems || !systemBaseline) {
             return null;
         }
+        var acceptedMatchX = null;
+        var acceptedMatchDistance = Infinity;
+        if (Array.isArray(systemBaseline.acceptedBarlines) && systemBaseline.acceptedBarlines.length) {
+            for (var acceptedIdx = 0; acceptedIdx < systemBaseline.acceptedBarlines.length; acceptedIdx++) {
+                var acceptedX = systemBaseline.acceptedBarlines[acceptedIdx];
+                var acceptedDistance = Math.abs(acceptedX - xJson);
+                if (acceptedDistance < acceptedMatchDistance) {
+                    acceptedMatchDistance = acceptedDistance;
+                    acceptedMatchX = acceptedX;
+                }
+            }
+        }
+        var acceptedNearby = typeof acceptedMatchX === 'number' && acceptedMatchDistance <= CANDIDATE_MATCH_TOLERANCE;
+
         if (!Array.isArray(systemBaseline.candidates) || systemBaseline.candidates.length === 0) {
             return {
                 baselineAvailable: true,
                 baselineSystemIndex: resolvedIndex,
                 hadNearbyCandidate: false,
-                nearestCandidate: null,
-                acceptedNearby: false
+                nearestCandidate: acceptedNearby ? {
+                    x: acceptedMatchX,
+                    distance: acceptedMatchDistance,
+                    score: null,
+                    vetoReason: 'accepted_barline_fallback',
+                    accepted: true
+                } : null,
+                acceptedNearby: acceptedNearby,
+                acceptedMatchX: acceptedMatchX,
+                acceptedMatchDistance: isFinite(acceptedMatchDistance) ? acceptedMatchDistance : null
             };
         }
 
@@ -817,15 +846,13 @@ var SynpdfCorrectionTools = (function () {
             }
         }
 
-        var acceptedNearby = Array.isArray(systemBaseline.acceptedBarlines) && systemBaseline.acceptedBarlines.some(function (acceptedX) {
-            return Math.abs(acceptedX - xJson) <= CANDIDATE_MATCH_TOLERANCE;
-        });
-
         return {
             baselineAvailable: true,
             baselineSystemIndex: resolvedIndex,
             hadNearbyCandidate: nearestDistance <= CANDIDATE_MATCH_TOLERANCE,
             acceptedNearby: acceptedNearby,
+            acceptedMatchX: acceptedMatchX,
+            acceptedMatchDistance: isFinite(acceptedMatchDistance) ? acceptedMatchDistance : null,
             nearestCandidate: {
                 x: nearest.x,
                 distance: nearestDistance,
@@ -883,6 +910,8 @@ var SynpdfCorrectionTools = (function () {
             nearestCandidate: nearestInfo ? nearestInfo.nearestCandidate : null,
             hadNearbyCandidate: nearestInfo ? nearestInfo.hadNearbyCandidate : false,
             acceptedNearby: nearestInfo ? nearestInfo.acceptedNearby : false,
+            acceptedMatchX: nearestInfo ? nearestInfo.acceptedMatchX : null,
+            acceptedMatchDistance: nearestInfo ? nearestInfo.acceptedMatchDistance : null,
             reason: '',
             note: ''
         });
