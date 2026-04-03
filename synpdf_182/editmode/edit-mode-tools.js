@@ -992,6 +992,22 @@ function refreshPageCandidateBaseline(pagenum, pageData, pageImageData) {
     return true;
 }
 
+function schedulePageCandidateBaselineRefresh(pagenum, pageData, pageImageData) {
+    if (!pageData || !pageImageData) {
+        return false;
+    }
+    var pageDataSnapshot = JSON.parse(JSON.stringify(pageData));
+    var pageImageDataSnapshot = {
+        pixelData: pageImageData.pixelData,
+        stride: pageImageData.stride,
+        width: pageImageData.width
+    };
+    window.setTimeout(function () {
+        refreshPageCandidateBaseline(pagenum, pageDataSnapshot, pageImageDataSnapshot);
+    }, 0);
+    return true;
+}
+
 function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf) {
     var canvas = getCurrentPageCanvas();
     if (!canvas || typeof countPix$$module$synpdf !== 'function') {
@@ -4167,7 +4183,7 @@ function mergeSystemsInYDrag(event) {
     });
 
     MetricStore.setMetricData(pageData, { clone: false });
-    refreshPageCandidateBaseline(pagenum, pageData[pagenum], pageImageData);
+    schedulePageCandidateBaselineRefresh(pagenum, pageData[pagenum], pageImageData);
     requestRefresh({ preferLiveData: true });
     return true;
 }
@@ -4256,7 +4272,7 @@ function handleYCxs(event) {
     });
 
     MetricStore.setMetricData(pageData, { clone: false });
-    refreshPageCandidateBaseline(pagenum, pageData[pagenum], pageImageData);
+    schedulePageCandidateBaselineRefresh(pagenum, pageData[pagenum], pageImageData);
     requestRefresh({ preferLiveData: true });
     return true;
 }
