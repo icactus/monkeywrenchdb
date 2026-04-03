@@ -238,6 +238,44 @@ var SynpdfCorrectionTools = (function () {
         };
     }
 
+    function getSystemCenterY(pageNum, systemIndex, xJson, fallbackCs) {
+        var bounds = getSystemVerticalBounds(pageNum, systemIndex, xJson, fallbackCs);
+        if (!bounds) return null;
+        return (bounds.top + bounds.bottom) / 2;
+    }
+
+    function resolveBaselineSystem(pageNum, systemIndex, xJson, yJson, fallbackCs) {
+        var baseline = baselinesByPage[pageNum];
+        if (!baseline || !baseline.systems || !baseline.systems.length) {
+            return { baseline: null, baselineIndex: systemIndex };
+        }
+
+        if (baseline.systems[systemIndex]) {
+            var exactBounds = getSystemVerticalBounds(pageNum, systemIndex, xJson, fallbackCs);
+            if (exactBounds && typeof yJson === 'number' && yJson >= exactBounds.top && yJson <= exactBounds.bottom) {
+                return { baseline: baseline.systems[systemIndex], baselineIndex: systemIndex };
+            }
+        }
+
+        var bestIndex = -1;
+        var bestDistance = Infinity;
+        for (var i = 0; i < baseline.systems.length; i++) {
+            var centerY = getSystemCenterY(pageNum, i, xJson, null);
+            if (typeof centerY !== 'number') continue;
+            var distance = Math.abs(centerY - yJson);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestIndex = i;
+            }
+        }
+
+        if (bestIndex >= 0) {
+            return { baseline: baseline.systems[bestIndex], baselineIndex: bestIndex };
+        }
+
+        return { baseline: baseline.systems[systemIndex] || null, baselineIndex: systemIndex };
+    }
+
     function renderV2MeasureOverlay() {
         var notation = getNotation();
         var overlay = ensureOverlay('v2-measure-overlay', 12);
@@ -750,16 +788,18 @@ var SynpdfCorrectionTools = (function () {
         updateCorrectionLogUI();
     }
 
-    function getNearestBaselineCandidate(pageNum, systemIndex, xJson) {
+    function getNearestBaselineCandidate(pageNum, systemIndex, xJson, yJson, fallbackCs) {
         var baseline = baselinesByPage[pageNum];
-        if (!baseline || !baseline.systems || !baseline.systems[systemIndex]) {
+        var resolved = resolveBaselineSystem(pageNum, systemIndex, xJson, yJson, fallbackCs);
+        var resolvedIndex = resolved ? resolved.baselineIndex : systemIndex;
+        var systemBaseline = resolved ? resolved.baseline : null;
+        if (!baseline || !baseline.systems || !systemBaseline) {
             return null;
         }
-
-        var systemBaseline = baseline.systems[systemIndex];
         if (!Array.isArray(systemBaseline.candidates) || systemBaseline.candidates.length === 0) {
             return {
                 baselineAvailable: true,
+                baselineSystemIndex: resolvedIndex,
                 hadNearbyCandidate: false,
                 nearestCandidate: null,
                 acceptedNearby: false
@@ -783,6 +823,7 @@ var SynpdfCorrectionTools = (function () {
 
         return {
             baselineAvailable: true,
+            baselineSystemIndex: resolvedIndex,
             hadNearbyCandidate: nearestDistance <= CANDIDATE_MATCH_TOLERANCE,
             acceptedNearby: acceptedNearby,
             nearestCandidate: {
@@ -806,9 +847,18 @@ var SynpdfCorrectionTools = (function () {
     }
 
     function recordBarlineCorrection(eventData) {
-        var nearestInfo = getNearestBaselineCandidate(eventData.pageNumber, eventData.systemIndex, eventData.xJson);
+        var metricData = typeof MetricStore !== 'undefined' && MetricStore && typeof MetricStore.getMetricData === 'function'
+            ? MetricStore.getMetricData()
+            : null;
+        var pageData = metricData && metricData[eventData.pageNumber];
+        var currentSystem = pageData && Array.isArray(pageData.cxs) ? pageData.cxs[eventData.systemIndex] : null;
+        var fallbackCs = currentSystem && Array.isArray(currentSystem.cs) ? currentSystem.cs : null;
+        var nearestInfo = getNearestBaselineCandidate(eventData.pageNumber, eventData.systemIndex, eventData.xJson, eventData.yJson, fallbackCs);
         var baseline = baselinesByPage[eventData.pageNumber];
-        var systemBaseline = baseline && baseline.systems ? baseline.systems[eventData.systemIndex] : null;
+        var baselineSystemIndex = nearestInfo && typeof nearestInfo.baselineSystemIndex === 'number'
+            ? nearestInfo.baselineSystemIndex
+            : eventData.systemIndex;
+        var systemBaseline = baseline && baseline.systems ? baseline.systems[baselineSystemIndex] : null;
         var notation = getNotation();
 
         correctionLog.push({
@@ -818,6 +868,7 @@ var SynpdfCorrectionTools = (function () {
             pageNumber: eventData.pageNumber,
             pageIndex: eventData.pageNumber - 1,
             systemIndex: eventData.systemIndex,
+            baselineSystemIndex: baselineSystemIndex,
             action: eventData.action,
             classification: classifyCorrectionAction(eventData.action, nearestInfo),
             xJson: Math.round(eventData.xJson),

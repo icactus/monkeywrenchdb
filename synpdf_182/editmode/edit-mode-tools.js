@@ -943,71 +943,6 @@ function getCurrentPageCanvas() {
     return canvases.length ? canvases[canvases.length - 1] : null;
 }
 
-function refreshPageCandidateBaseline(pagenum, pageData, pageImageData) {
-    if (typeof SynpdfCorrectionTools === 'undefined' ||
-        !SynpdfCorrectionTools ||
-        typeof SynpdfCorrectionTools.snapshotV2BaselineForPage !== 'function' ||
-        typeof BarlineDetectV2 === 'undefined' ||
-        !BarlineDetectV2 ||
-        typeof BarlineDetectV2.findBarLinesV2 !== 'function' ||
-        !pageData ||
-        !Array.isArray(pageData.cxs) ||
-        !pageImageData) {
-        return false;
-    }
-
-    var pixelData = pageImageData.pixelData;
-    var stride = pageImageData.stride;
-    var width = pageImageData.width;
-    var systemDiagnostics = [];
-    var systemRenderGeometry = [];
-
-    for (var index = 0; index < pageData.cxs.length; index++) {
-        var system = JSON.parse(JSON.stringify(pageData.cxs[index]));
-        applyExistingBoundaryXs(system, pageData.bxs && pageData.bxs[index]);
-        var perSystemOpts = {
-            allowV1Fallback: false,
-            classifierMode: 'rf',
-            diagnostics: []
-        };
-        try {
-            BarlineDetectV2.findBarLinesV2(system, stride, pixelData, width, perSystemOpts);
-            systemDiagnostics[index] = perSystemOpts.diagnostics.slice();
-            systemRenderGeometry[index] = systemSupportsRenderGeometryFit(system)
-                ? BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width)
-                : null;
-        } catch (err) {
-            console.warn('Unable to refresh candidate baseline for page', pagenum, 'system', index, err);
-            systemDiagnostics[index] = [];
-            systemRenderGeometry[index] = null;
-        }
-    }
-
-    SynpdfCorrectionTools.snapshotV2BaselineForPage(
-        pagenum,
-        pageData,
-        systemDiagnostics,
-        systemRenderGeometry
-    );
-    return true;
-}
-
-function schedulePageCandidateBaselineRefresh(pagenum, pageData, pageImageData) {
-    if (!pageData || !pageImageData) {
-        return false;
-    }
-    var pageDataSnapshot = JSON.parse(JSON.stringify(pageData));
-    var pageImageDataSnapshot = {
-        pixelData: pageImageData.pixelData,
-        stride: pageImageData.stride,
-        width: pageImageData.width
-    };
-    window.setTimeout(function () {
-        refreshPageCandidateBaseline(pagenum, pageDataSnapshot, pageImageDataSnapshot);
-    }, 0);
-    return true;
-}
-
 function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf) {
     var canvas = getCurrentPageCanvas();
     if (!canvas || typeof countPix$$module$synpdf !== 'function') {
@@ -1028,8 +963,7 @@ function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf)
         deMetriek$$module$synpdf[pagenum] = pageData.cxs.length ? pageData : { cxs: [], bxs: [] };
         MetricStore.setMetricData(deMetriek$$module$synpdf, { clone: false });
 
-        if (!refreshPageCandidateBaseline(pagenum, deMetriek$$module$synpdf[pagenum], getCurrentPageImageData()) &&
-            typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.snapshotV2BaselineForPage) {
+        if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.snapshotV2BaselineForPage) {
             SynpdfCorrectionTools.snapshotV2BaselineForPage(pagenum, deMetriek$$module$synpdf[pagenum], [], []);
         }
 
@@ -4183,7 +4117,6 @@ function mergeSystemsInYDrag(event) {
     });
 
     MetricStore.setMetricData(pageData, { clone: false });
-    schedulePageCandidateBaselineRefresh(pagenum, pageData[pagenum], pageImageData);
     requestRefresh({ preferLiveData: true });
     return true;
 }
@@ -4272,7 +4205,6 @@ function handleYCxs(event) {
     });
 
     MetricStore.setMetricData(pageData, { clone: false });
-    schedulePageCandidateBaselineRefresh(pagenum, pageData[pagenum], pageImageData);
     requestRefresh({ preferLiveData: true });
     return true;
 }
