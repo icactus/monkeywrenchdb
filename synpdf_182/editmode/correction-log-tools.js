@@ -665,6 +665,7 @@ var SynpdfCorrectionTools = (function () {
             pageNumber: pagenum,
             pageIndex: pagenum - 1,
             fixwd: getCurrentFixwdValue(),
+            detectorMode: 'v2',
             generatedAt: new Date().toISOString(),
             systems: pageData.cxs.map(function (system, index) {
                 var diagnostics = Array.isArray(systemDiagnostics[index]) ? systemDiagnostics[index] : [];
@@ -685,6 +686,45 @@ var SynpdfCorrectionTools = (function () {
                             score: typeof diag.score === 'number' ? diag.score : null,
                             vetoReason: diag.vetoReason || '',
                             features: diag.features || {}
+                        };
+                    })
+                };
+            })
+        };
+
+        scheduleV2CandidateOverlayRender();
+        updateCorrectionLogUI();
+    }
+
+    function snapshotCandidateBaselineForPage(pagenum, pageData, systemsSnapshot, detectorMode) {
+        if (!pageData || !Array.isArray(pageData.cxs) || !Array.isArray(pageData.bxs) || !Array.isArray(systemsSnapshot)) return;
+
+        baselinesByPage[pagenum] = {
+            sourcePdf: getCurrentPdfName(),
+            pageNumber: pagenum,
+            pageIndex: pagenum - 1,
+            fixwd: getCurrentFixwdValue(),
+            detectorMode: detectorMode || 'custom',
+            generatedAt: new Date().toISOString(),
+            systems: pageData.cxs.map(function (system, index) {
+                var snapshot = systemsSnapshot[index] || {};
+                var candidates = Array.isArray(snapshot.candidates) ? snapshot.candidates : [];
+                return {
+                    systemIndex: index,
+                    xs: system && system.xs ? { x1: system.xs.x1, x2: system.xs.x2 } : null,
+                    cs: cloneSimpleArray(system && system.cs),
+                    csl: cloneSimpleArray(system && system.csl),
+                    csr: cloneSimpleArray(system && system.csr),
+                    renderGeometry: snapshot.renderGeometry ? JSON.parse(JSON.stringify(snapshot.renderGeometry)) : null,
+                    acceptedBarlines: cloneSimpleArray(pageData.bxs[index]).map(function (value) {
+                        return Math.round(Math.abs(value));
+                    }),
+                    candidates: candidates.map(function (candidate) {
+                        return {
+                            x: Math.round(candidate.x),
+                            score: typeof candidate.score === 'number' ? candidate.score : null,
+                            vetoReason: candidate.vetoReason || '',
+                            features: candidate.features || {}
                         };
                     })
                 };
@@ -927,6 +967,7 @@ var SynpdfCorrectionTools = (function () {
             acceptedNearby: nearestInfo ? nearestInfo.acceptedNearby : false,
             acceptedMatchX: nearestInfo ? nearestInfo.acceptedMatchX : null,
             acceptedMatchDistance: nearestInfo ? nearestInfo.acceptedMatchDistance : null,
+            detectorMode: baseline && baseline.detectorMode ? baseline.detectorMode : null,
             reason: '',
             note: ''
         });
@@ -949,6 +990,7 @@ var SynpdfCorrectionTools = (function () {
         init: init,
         scheduleV2CandidateOverlayRender: scheduleV2CandidateOverlayRender,
         snapshotV2BaselineForPage: snapshotV2BaselineForPage,
+        snapshotCandidateBaselineForPage: snapshotCandidateBaselineForPage,
         snapshotFullScoreDebugForPage: snapshotFullScoreDebugForPage,
         clearFullScoreDebugState: clearFullScoreDebugState,
         updateAcceptedBarlinesForPage: updateAcceptedBarlinesForPage,

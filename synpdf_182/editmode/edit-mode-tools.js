@@ -5099,8 +5099,10 @@ $(document).ready(function () {
 
         normalizePageToPianoSystems(pageData, pageImageData);
         var detectedBxs = [];
+        var pianoSystemSnapshots = [];
         for (var i = 0; i < pageData.cxs.length; i++) {
             var system = pageData.cxs[i];
+            var candidateInfo = collectMergedSystemBarlineCandidates(pageImageData, system, getSystemEstimatedSpatium(system));
             var detected = await detectMergedSystemBarlinesWithPianoCnn(pageImageData, system, getSystemEstimatedSpatium(system), {
                 threshold: 0.5
             });
@@ -5109,10 +5111,23 @@ $(document).ready(function () {
                 return false;
             }
             detectedBxs.push(detected);
+            pianoSystemSnapshots.push({
+                candidates: candidateInfo.candidates.map(function (candidate) {
+                    return {
+                        x: candidate.x,
+                        score: candidate.score,
+                        vetoReason: ''
+                    };
+                }),
+                renderGeometry: null
+            });
         }
 
         pageData.bxs = detectedBxs;
         deMetriek$$module$synpdf[pagenum] = pageData;
+        if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.snapshotCandidateBaselineForPage) {
+            SynpdfCorrectionTools.snapshotCandidateBaselineForPage(pagenum, pageData, pianoSystemSnapshots, 'piano_cnn');
+        }
         if (!persistMetricData()) {
             alert("Could not save piano CNN barlines.");
             return false;
