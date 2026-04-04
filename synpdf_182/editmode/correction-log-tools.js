@@ -556,6 +556,7 @@ var SynpdfCorrectionTools = (function () {
     function bindCorrectionLogControls() {
         var copyBtn = document.getElementById('copy-correction-log');
         var saveBtn = document.getElementById('save-correction-log');
+        var undoBtn = document.getElementById('undo-correction-log');
         var clearBtn = document.getElementById('clear-correction-log');
         var showCandidates = document.getElementById('show-v2-candidates');
         var pageInput = document.getElementById('pagenum');
@@ -614,6 +615,20 @@ var SynpdfCorrectionTools = (function () {
                     saveBtn.disabled = false;
                     saveBtn.textContent = originalLabel;
                 }
+            });
+        }
+
+        if (undoBtn) {
+            undoBtn.addEventListener('click', function () {
+                var pdfName = getCurrentPdfName();
+                for (var i = correctionLog.length - 1; i >= 0; i--) {
+                    if (correctionLog[i] && correctionLog[i].sourcePdf === pdfName) {
+                        correctionLog.splice(i, 1);
+                        persistCorrectionLogState();
+                        return;
+                    }
+                }
+                alert('No corrections to undo for this PDF.');
             });
         }
 

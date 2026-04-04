@@ -43,18 +43,29 @@
     $barlineCnnOnnxVer = file_exists('../models/barline-patch-cnn-3x6.onnx') ? filemtime('../models/barline-patch-cnn-3x6.onnx') : 0;
     $barlineCnnOnnxMetaVer = file_exists('../models/barline-patch-cnn-3x6.onnx.json') ? filemtime('../models/barline-patch-cnn-3x6.onnx.json') : 0;
     $barlineCnnOnnxEnabled = $barlineCnnOnnxVer > 0 && $barlineCnnOnnxMetaVer > 0;
+    $pianoBarlineCnnBrowserJsVer = file_exists('../models/piano-barline-patch-cnn-browser.js') ? filemtime('../models/piano-barline-patch-cnn-browser.js') : 0;
+    $pianoBarlineCnnOnnxVer = file_exists('../models/piano-barline-patch-cnn.onnx') ? filemtime('../models/piano-barline-patch-cnn.onnx') : 0;
+    $pianoBarlineCnnOnnxMetaVer = file_exists('../models/piano-barline-patch-cnn.onnx.json') ? filemtime('../models/piano-barline-patch-cnn.onnx.json') : 0;
+    $pianoBarlineCnnOnnxEnabled = $pianoBarlineCnnOnnxVer > 0 && $pianoBarlineCnnOnnxMetaVer > 0;
     $onnxWasmRoot = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/synpdf_182/editmode/synpdf-edit-mode.php'), '/\\') . '/vendor/onnxruntime/';
     $serverHost = $_SERVER['HTTP_HOST'] ?? '';
     $isLocalHost = preg_match('/^(localhost|127\.0\.0\.1)(:\d+)?$/', $serverHost) === 1;
     $onnxWasmThreads = $isLocalHost ? 1 : 4;
     ?>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=14"></script>
+    <script src="correction-log-tools.js?v=15"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
             modelUrl: <?php echo json_encode('../models/barline-patch-cnn-3x6.onnx?v=' . ($barlineCnnOnnxVer ?: time())); ?>,
             metadataUrl: <?php echo json_encode('../models/barline-patch-cnn-3x6.onnx.json?v=' . ($barlineCnnOnnxMetaVer ?: time())); ?>,
+            wasmRoot: <?php echo json_encode($onnxWasmRoot); ?>,
+            wasmThreads: <?php echo (int)$onnxWasmThreads; ?>
+        };
+        window.PianoBarlinePatchCnnOnnxConfig = {
+            enabled: <?php echo $pianoBarlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
+            modelUrl: <?php echo json_encode('../models/piano-barline-patch-cnn.onnx?v=' . ($pianoBarlineCnnOnnxVer ?: time())); ?>,
+            metadataUrl: <?php echo json_encode('../models/piano-barline-patch-cnn.onnx.json?v=' . ($pianoBarlineCnnOnnxMetaVer ?: time())); ?>,
             wasmRoot: <?php echo json_encode($onnxWasmRoot); ?>,
             wasmThreads: <?php echo (int)$onnxWasmThreads; ?>
         };
@@ -65,6 +76,9 @@
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
+    <?php if ($pianoBarlineCnnBrowserJsVer > 0) { ?>
+        <script src="../models/piano-barline-patch-cnn-browser.js?v=<?php echo $pianoBarlineCnnBrowserJsVer; ?>"></script>
+    <?php } ?>
     <script src="barline-detect-v2.js?v=<?php echo $barlineDetectVer; ?>"></script>
     <style>
         html {
@@ -969,6 +983,8 @@
                                 style="background:#ff8a00; color:#000; font-weight:bold; margin-left:8px;">Run CNN-only All Pages</button>
                             <button id="run-piano-all-btn" type="button"
                                 style="background:#d7a6ff; color:#000; font-weight:bold; margin-left:8px;">Run Piano All Pages</button>
+                            <button id="run-piano-cnn-all-btn" type="button"
+                                style="background:#9d7dff; color:#000; font-weight:bold; margin-left:8px;">Run Piano CNN All Pages</button>
                             <button id="run-fullscore-all-btn" type="button"
                                 style="background:#b7d9ff; color:#000; font-weight:bold; margin-left:8px;">Run Full Score All Pages</button>
                         </div>
@@ -982,6 +998,7 @@
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
                                 <button id="copy-correction-log" type="button">Copy corrections</button>
                                 <button id="save-correction-log" type="button">Save corrections file</button>
+                                <button id="undo-correction-log" type="button">Undo last</button>
                                 <button id="clear-correction-log" type="button">Clear current PDF corrections</button>
                                 <span id="correction-log-status" style="font-size:11px;color:#666;"></span>
                             </div>

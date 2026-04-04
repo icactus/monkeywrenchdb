@@ -6,23 +6,21 @@ cd "$ROOT_DIR"
 
 DATA_DIR="synpdf_182/editmode/training-folder"
 PDF_DIR="pdfs"
-PATCH_DIR="synpdf_182/editmode/training-folder/patches_3x6"
-HARDCASE_DIR="synpdf_182/editmode/training-folder/hardcases"
-MODEL_OUT="synpdf_182/models/barline-patch-cnn-3x6.keras"
-SUMMARY_OUT="synpdf_182/models/barline-patch-cnn-3x6-summary.json"
-BROWSER_OUT="synpdf_182/models/barline-patch-cnn-3x6-browser.js"
+PATCH_DIR="synpdf_182/editmode/training-folder/patches_piano"
+MODEL_OUT="synpdf_182/models/piano-barline-patch-cnn.keras"
+SUMMARY_OUT="synpdf_182/models/piano-barline-patch-cnn-summary.json"
+BROWSER_OUT="synpdf_182/models/piano-barline-patch-cnn-browser.js"
 SUMMARY_HISTORY_DIR="synpdf_182/models/history"
-PATCH_WIDTH=32
-PATCH_HEIGHT=64
+PATCH_WIDTH=48
+PATCH_HEIGHT=192
 X_SPATIUMS=1.5
-Y_SPATIUMS=1.0
+Y_SPATIUMS=0.75
 RENDER_WIDTH=2000
 DPI=130
 JOBS=4
 RENDER_THREADS=2
 EPOCHS=12
 BATCH_SIZE=64
-HARDCASE_WEIGHT=2.0
 ONNX_SITE_PACKAGES="${ROOT_DIR}/.venv-onnx/lib/python3.11/site-packages"
 ONNX_OUT=""
 
@@ -31,20 +29,18 @@ usage() {
 Usage: $(basename "$0") [options]
 
 Options:
-  --patch-dir PATH      Output directory for patch shards
+  --patch-dir PATH      Output directory for piano patch shards
   --model-out PATH      Output .keras model path
   --summary-out PATH    Output JSON summary path
   --browser-out PATH    Output browser JS model path
   --onnx-out PATH       Output ONNX model path (default: derived from --model-out)
   --summary-history-dir PATH  Directory for timestamped summary snapshots
-  --hardcase-dir PATH   Additional hardcase shard directory to merge into full retraining
   --epochs N            Training epochs (default: ${EPOCHS})
   --batch-size N        Training batch size (default: ${BATCH_SIZE})
-  --hardcase-weight N   Weight multiplier for hardcase samples (default: ${HARDCASE_WEIGHT})
-  --jobs N              Parallel extraction jobs for base patch shards (default: ${JOBS})
+  --jobs N              Parallel extraction jobs (default: ${JOBS})
   --render-threads N    PDF render threads per extraction job (default: ${RENDER_THREADS})
-  --dpi N               PDF render DPI for patch extraction (default: ${DPI})
-  --render-width N      Width for patch-rendered page images (default: ${RENDER_WIDTH})
+  --dpi N               PDF render DPI (default: ${DPI})
+  --render-width N      Width for rendered page images (default: ${RENDER_WIDTH})
   --patch-width N       Patch tensor width (default: ${PATCH_WIDTH})
   --patch-height N      Patch tensor height (default: ${PATCH_HEIGHT})
   --x-spatiums N        Horizontal crop margin in spatiums each side (default: ${X_SPATIUMS})
@@ -56,7 +52,6 @@ EOF
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --patch-dir) PATCH_DIR="$2"; shift 2 ;;
-    --hardcase-dir) HARDCASE_DIR="$2"; shift 2 ;;
     --model-out) MODEL_OUT="$2"; shift 2 ;;
     --summary-out) SUMMARY_OUT="$2"; shift 2 ;;
     --browser-out) BROWSER_OUT="$2"; shift 2 ;;
@@ -64,7 +59,6 @@ while [[ $# -gt 0 ]]; do
     --summary-history-dir) SUMMARY_HISTORY_DIR="$2"; shift 2 ;;
     --epochs) EPOCHS="$2"; shift 2 ;;
     --batch-size) BATCH_SIZE="$2"; shift 2 ;;
-    --hardcase-weight) HARDCASE_WEIGHT="$2"; shift 2 ;;
     --jobs) JOBS="$2"; shift 2 ;;
     --render-threads) RENDER_THREADS="$2"; shift 2 ;;
     --dpi) DPI="$2"; shift 2 ;;
@@ -88,15 +82,13 @@ fi
 
 mkdir -p "$PATCH_DIR" "$(dirname "$MODEL_OUT")" "$(dirname "$SUMMARY_OUT")" "$(dirname "$BROWSER_OUT")" "$(dirname "$ONNX_OUT")" "$SUMMARY_HISTORY_DIR"
 
-echo "==> Barline Patch CNN Pipeline"
+echo "==> Piano Barline CNN Pipeline"
 echo "Root:           $ROOT_DIR"
 echo "Data dir:       $DATA_DIR"
 echo "PDF dir:        $PDF_DIR"
 echo "Patch dir:      $PATCH_DIR"
-echo "Hardcase dir:   $HARDCASE_DIR"
 echo "Model out:      $MODEL_OUT"
 echo "Summary out:    $SUMMARY_OUT"
-echo "Summary hist:   $SUMMARY_HISTORY_DIR"
 echo "Browser out:    $BROWSER_OUT"
 echo "ONNX out:       $ONNX_OUT"
 echo "Patch geometry: ${X_SPATIUMS} x-spatiums each side, ${Y_SPATIUMS} y-spatiums above/below"
@@ -107,93 +99,68 @@ echo "Render threads: $RENDER_THREADS"
 echo "DPI:            $DPI"
 echo "Epochs:         $EPOCHS"
 echo "Batch size:     $BATCH_SIZE"
-echo "Hardcase wt:    $HARDCASE_WEIGHT"
 echo
 
-echo "==> Step 1: Extract CNN patch shards"
-mkdir -p "$PATCH_DIR"
-if [[ "$JOBS" -le 1 ]]; then
-  python3 -u scripts/extract_barline_patch_dataset.py \
-    --data-dir "$DATA_DIR" \
-    --pdf-dir "$PDF_DIR" \
-    --out-dir "$PATCH_DIR" \
-    --patch-width "$PATCH_WIDTH" \
-    --patch-height "$PATCH_HEIGHT" \
-    --x-spatiums "$X_SPATIUMS" \
-    --y-spatiums "$Y_SPATIUMS" \
-    --dpi "$DPI" \
-    --render-width "$RENDER_WIDTH" \
-    --render-threads "$RENDER_THREADS"
-else
-  find "${DATA_DIR}/processed" -maxdepth 1 -name '*-td.json' ! -name '*-50-td.json' -print0 | \
-    xargs -0 -P "$JOBS" -I{} bash -lc '
-      json="$1"
-      data_dir="$2"
-      pdf_dir="$3"
-      patch_dir="$4"
-      patch_width="$5"
-      patch_height="$6"
-      x_spatiums="$7"
-      y_spatiums="$8"
-      dpi="$9"
-      render_width="${10}"
-      render_threads="${11}"
-      base=$(basename "$json" -td.json)
-      pdf="${pdf_dir}/${base}.pdf"
-      out="${patch_dir}/${base}_patches.npz"
-      if [[ ! -f "$pdf" ]]; then
-        echo "SKIP ${base}: missing PDF ${pdf}"
-        exit 0
-      fi
-      if [[ -f "$out" && "$out" -nt "$json" && "$out" -nt "$pdf" ]]; then
-        echo "SKIP ${base}: patch shard is up to date"
-        exit 0
-      fi
-      echo "EXTRACT ${base}"
-      python3 -u scripts/extract_barline_patch_dataset.py \
-        --pdf "$pdf" \
-        --json "$json" \
-        --out "$out" \
-        --patch-width "$patch_width" \
-        --patch-height "$patch_height" \
-        --x-spatiums "$x_spatiums" \
-        --y-spatiums "$y_spatiums" \
-        --dpi "$dpi" \
-        --render-width "$render_width" \
-        --render-threads "$render_threads"
-    ' _ {} "$DATA_DIR" "$PDF_DIR" "$PATCH_DIR" "$PATCH_WIDTH" "$PATCH_HEIGHT" "$X_SPATIUMS" "$Y_SPATIUMS" "$DPI" "$RENDER_WIDTH" "$RENDER_THREADS"
-fi
+echo "==> Step 1: Extract piano CNN patch shards"
+find "${DATA_DIR}/processed" -maxdepth 1 -name '*-50-td.json' -print0 | \
+  xargs -0 -P "$JOBS" -I{} bash -lc '
+    json="$1"
+    pdf_dir="$2"
+    patch_dir="$3"
+    patch_width="$4"
+    patch_height="$5"
+    x_spatiums="$6"
+    y_spatiums="$7"
+    dpi="$8"
+    render_width="$9"
+    render_threads="${10}"
+    base=$(basename "$json" -td.json)
+    pdf="${pdf_dir}/${base}.pdf"
+    out="${patch_dir}/${base}_patches.npz"
+    if [[ ! -f "$pdf" ]]; then
+      echo "SKIP ${base}: missing PDF ${pdf}"
+      exit 0
+    fi
+    if [[ -f "$out" && "$out" -nt "$json" && "$out" -nt "$pdf" ]]; then
+      echo "SKIP ${base}: piano patch shard is up to date"
+      exit 0
+    fi
+    echo "EXTRACT ${base}"
+    python3 -u scripts/extract_piano_barline_patch_dataset.py \
+      --pdf "$pdf" \
+      --json "$json" \
+      --out "$out" \
+      --patch-width "$patch_width" \
+      --patch-height "$patch_height" \
+      --x-spatiums "$x_spatiums" \
+      --y-spatiums "$y_spatiums" \
+      --dpi "$dpi" \
+      --render-width "$render_width" \
+      --include-gt-rescue \
+      --render-threads "$render_threads"
+  ' _ {} "$PDF_DIR" "$PATCH_DIR" "$PATCH_WIDTH" "$PATCH_HEIGHT" "$X_SPATIUMS" "$Y_SPATIUMS" "$DPI" "$RENDER_WIDTH" "$RENDER_THREADS"
 
 echo
-echo "==> Step 2: Extract hardcase shards"
-bash scripts/extract_all_barline_patch_hardcases.sh
-
-echo
-echo "==> Step 3: Train CNN from scratch on base patches + hardcases"
-TRAIN_ARGS=(
-  --data-dir "$PATCH_DIR"
-  --model-out "$MODEL_OUT"
-  --summary-out "$SUMMARY_OUT"
-  --epochs "$EPOCHS"
+echo "==> Step 2: Train piano CNN"
+python3 -u scripts/train_barline_patch_cnn.py \
+  --data-dir "$PATCH_DIR" \
+  --model-out "$MODEL_OUT" \
+  --summary-out "$SUMMARY_OUT" \
+  --epochs "$EPOCHS" \
   --batch-size "$BATCH_SIZE"
-  --hardcase-weight "$HARDCASE_WEIGHT"
-)
-if compgen -G "${HARDCASE_DIR}/*_hardcases.npz" > /dev/null; then
-  TRAIN_ARGS+=(--extra-data-dir "$HARDCASE_DIR")
-fi
-python3 -u scripts/train_barline_patch_cnn.py "${TRAIN_ARGS[@]}"
 
 echo
-echo "==> Step 4: Export browser CNN"
+echo "==> Step 3: Export piano browser CNN"
 python3 -u scripts/export_barline_patch_cnn_to_js.py \
   --model "$MODEL_OUT" \
   --out "$BROWSER_OUT" \
+  --var-name "PianoBarlinePatchCnnModelData" \
   --x-spatiums "$X_SPATIUMS" \
   --y-spatiums "$Y_SPATIUMS"
 
 if [[ -d "$ONNX_SITE_PACKAGES" ]]; then
   echo
-  echo "==> Step 5: Export ONNX CNN"
+  echo "==> Step 4: Export piano ONNX CNN"
   PYTHONPATH="${ONNX_SITE_PACKAGES}${PYTHONPATH:+:${PYTHONPATH}}" python3 scripts/export_barline_patch_cnn_to_onnx.py \
     --model "$MODEL_OUT" \
     --out "$ONNX_OUT" \
@@ -201,13 +168,13 @@ if [[ -d "$ONNX_SITE_PACKAGES" ]]; then
     --y-spatiums "$Y_SPATIUMS"
 else
   echo
-  echo "==> Step 5: Skip ONNX export (missing $ONNX_SITE_PACKAGES)"
+  echo "==> Step 4: Skip ONNX export (missing $ONNX_SITE_PACKAGES)"
 fi
 
 echo
-echo "==> Step 6: Archive timestamped training summary"
+echo "==> Step 5: Archive timestamped training summary"
 SUMMARY_STAMP="$(date +%Y%m%d-%H%M%S)"
-SUMMARY_ARCHIVE_OUT="${SUMMARY_HISTORY_DIR}/barline-patch-cnn-3x6-summary-${SUMMARY_STAMP}.json"
+SUMMARY_ARCHIVE_OUT="${SUMMARY_HISTORY_DIR}/piano-barline-patch-cnn-summary-${SUMMARY_STAMP}.json"
 cp "$SUMMARY_OUT" "$SUMMARY_ARCHIVE_OUT"
 echo "Summary snapshot: $SUMMARY_ARCHIVE_OUT"
 

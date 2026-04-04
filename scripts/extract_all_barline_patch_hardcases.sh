@@ -16,6 +16,10 @@ for f in "${TRAIN_DIR}"/*-corrections.json "${ARCHIVE_DIR}"/*-corrections.json; 
     continue
   fi
   base="$(basename "${f}" -corrections.json)"
+  if [[ "${base}" == *-50 ]]; then
+    echo "SKIP ${base}: piano corrections belong to the piano CNN pipeline"
+    continue
+  fi
   if [[ -n "${seen_bases[${base}]:-}" ]]; then
     continue
   fi

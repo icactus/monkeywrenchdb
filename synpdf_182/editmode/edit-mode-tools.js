@@ -978,6 +978,7 @@ function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf)
 function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
     var cnnAllBtn = $('#run-cnn-all-btn');
     var pianoAllBtn = $('#run-piano-all-btn');
+    var pianoCnnAllBtn = $('#run-piano-cnn-all-btn');
     var fullScoreAllBtn = $('#run-fullscore-all-btn');
     var cnnBtn = $('#run-cnn-btn');
     var v2Btn = $('#run-v2-btn');
@@ -985,6 +986,7 @@ function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
     if (isRunning) {
         cnnAllBtn.prop('disabled', true).text(activeMode === 'cnn' ? 'Running CNN All… ' + currentPage + '/' + lastPage : 'Run CNN-only All Pages');
         pianoAllBtn.prop('disabled', true).text(activeMode === 'piano' ? 'Running Piano All… ' + currentPage + '/' + lastPage : 'Run Piano All Pages');
+        pianoCnnAllBtn.prop('disabled', true).text(activeMode === 'piano_cnn' ? 'Running Piano CNN… ' + currentPage + '/' + lastPage : 'Run Piano CNN All Pages');
         fullScoreAllBtn.prop('disabled', true).text(activeMode === 'fullscore' ? 'Running Full Score… ' + currentPage + '/' + lastPage : 'Run Full Score All Pages');
         cnnBtn.prop('disabled', true);
         v2Btn.prop('disabled', true);
@@ -992,6 +994,7 @@ function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
     } else {
         cnnAllBtn.prop('disabled', false).text('Run CNN-only All Pages');
         pianoAllBtn.prop('disabled', false).text('Run Piano All Pages');
+        pianoCnnAllBtn.prop('disabled', false).text('Run Piano CNN All Pages');
         fullScoreAllBtn.prop('disabled', false).text('Run Full Score All Pages');
         cnnBtn.prop('disabled', false);
         v2Btn.prop('disabled', false);
@@ -2766,7 +2769,7 @@ function clusterBarlineXs(xsValues, minGap) {
     });
 }
 
-function detectMergedSystemBarlines(pageImageData, mergedSystem, dominantSpatium) {
+function collectMergedSystemBarlineCandidates(pageImageData, mergedSystem, dominantSpatium) {
     var pixelData = pageImageData.pixelData;
     var stride = pageImageData.stride;
     var width = pageImageData.width;
@@ -2828,13 +2831,28 @@ function detectMergedSystemBarlines(pageImageData, mergedSystem, dominantSpatium
         if (connectivity < 0.66 || blackRatio < 0.44 || contrast < 0.08) continue;
         candidates.push({
             x: col,
+            top: top,
+            bot: bot,
+            spatium: spatium,
             score: connectivity * 0.55 + blackRatio * 0.30 + contrast * 0.15
         });
     }
 
+    return {
+        xs: xs,
+        spatium: spatium,
+        minGap: Math.max(3, Math.round(2.0 * spatium)),
+        candidates: candidates
+    };
+}
+
+function detectMergedSystemBarlines(pageImageData, mergedSystem, dominantSpatium) {
+    var candidateInfo = collectMergedSystemBarlineCandidates(pageImageData, mergedSystem, dominantSpatium);
+    var xs = candidateInfo.xs;
+    var candidates = candidateInfo.candidates;
     candidates.sort(function (a, b) { return b.score - a.score; });
     var accepted = [Math.round(xs.x1), Math.round(xs.x2)];
-    var minGap = Math.max(3, Math.round(2.0 * spatium));
+    var minGap = candidateInfo.minGap;
     for (var i = 0; i < candidates.length; i++) {
         var cand = candidates[i].x;
         var tooClose = accepted.some(function (existing) { return Math.abs(existing - cand) < minGap; });
@@ -2842,6 +2860,67 @@ function detectMergedSystemBarlines(pageImageData, mergedSystem, dominantSpatium
             accepted.push(cand);
         }
     }
+    return accepted.sort(function (a, b) { return a - b; });
+}
+
+async function detectMergedSystemBarlinesWithPianoCnn(pageImageData, mergedSystem, dominantSpatium, options) {
+    options = options || {};
+    if (typeof PianoBarlinePatchCNN === 'undefined' || !PianoBarlinePatchCNN ||
+        typeof PianoBarlinePatchCNN.predictBatchCandidatesAsync !== 'function') {
+        return null;
+    }
+    if (typeof PianoBarlinePatchCNN.hasModelData === 'function' &&
+        !PianoBarlinePatchCNN.hasModelData() &&
+        (!PianoBarlinePatchCNN.isOnnxConfigured || !PianoBarlinePatchCNN.isOnnxConfigured())) {
+        return null;
+    }
+
+    var candidateInfo = collectMergedSystemBarlineCandidates(pageImageData, mergedSystem, dominantSpatium);
+    var xs = candidateInfo.xs;
+    var accepted = [Math.round(xs.x1), Math.round(xs.x2)];
+    var candidates = candidateInfo.candidates;
+    if (!candidates.length) {
+        return accepted.sort(function (a, b) { return a - b; });
+    }
+
+    var threshold = typeof options.threshold === 'number' ? options.threshold : 0.5;
+    var scores = await PianoBarlinePatchCNN.predictBatchCandidatesAsync(
+        pageImageData.pixelData,
+        pageImageData.stride,
+        pageImageData.width,
+        candidates.map(function (cand) {
+            return {
+                xCol: cand.x,
+                staffTop: cand.top,
+                staffBot: cand.bot,
+                spatium: cand.spatium
+            };
+        })
+    );
+
+    var ranked = candidates.map(function (cand, idx) {
+        return {
+            x: cand.x,
+            score: scores && typeof scores[idx] === 'number' ? scores[idx] : null,
+            heuristicScore: cand.score
+        };
+    }).filter(function (item) {
+        return item.score !== null && item.score >= threshold;
+    }).sort(function (a, b) {
+        if (b.score !== a.score) return b.score - a.score;
+        return b.heuristicScore - a.heuristicScore;
+    });
+
+    for (var i = 0; i < ranked.length; i++) {
+        var candX = ranked[i].x;
+        var tooClose = accepted.some(function (existing) {
+            return Math.abs(existing - candX) < candidateInfo.minGap;
+        });
+        if (!tooClose) {
+            accepted.push(candX);
+        }
+    }
+
     return accepted.sort(function (a, b) { return a - b; });
 }
 
@@ -4990,6 +5069,90 @@ $(document).ready(function () {
         }
     }
 
+    async function runCurrentPagePianoCnnDetection(options) {
+        options = options || {};
+        const pageImageData = getCurrentPageImageData();
+        if (!pageImageData) {
+            alert("No page pixel data available from the current canvas. Please reload the page.");
+            return false;
+        }
+        if (typeof PianoBarlinePatchCNN === 'undefined' || !PianoBarlinePatchCNN ||
+            typeof PianoBarlinePatchCNN.predictBatchCandidatesAsync !== 'function' ||
+            ((typeof PianoBarlinePatchCNN.hasModelData === 'function' && !PianoBarlinePatchCNN.hasModelData()) &&
+                (!PianoBarlinePatchCNN.isOnnxConfigured || !PianoBarlinePatchCNN.isOnnxConfigured()))) {
+            alert('Piano CNN model is not loaded yet.');
+            return false;
+        }
+
+        let pagenumElement = document.getElementById('pagenum');
+        let pagenum = pagenumElement ? parseInt(pagenumElement.value) : opt$$module$synpdf.pagenum;
+        if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || pagenum < 0 || pagenum >= deMetriek$$module$synpdf.length) {
+            alert('Invalid page number or deMetriek data missing.');
+            return false;
+        }
+
+        let pageData = deMetriek$$module$synpdf[pagenum];
+        if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
+            alert("No staff systems found on this page.");
+            return false;
+        }
+
+        normalizePageToPianoSystems(pageData, pageImageData);
+        var detectedBxs = [];
+        for (var i = 0; i < pageData.cxs.length; i++) {
+            var system = pageData.cxs[i];
+            var detected = await detectMergedSystemBarlinesWithPianoCnn(pageImageData, system, getSystemEstimatedSpatium(system), {
+                threshold: 0.5
+            });
+            if (!detected) {
+                alert('Piano CNN detection is unavailable.');
+                return false;
+            }
+            detectedBxs.push(detected);
+        }
+
+        pageData.bxs = detectedBxs;
+        deMetriek$$module$synpdf[pagenum] = pageData;
+        if (!persistMetricData()) {
+            alert("Could not save piano CNN barlines.");
+            return false;
+        }
+        if (!options.suppressRefresh) {
+            requestRefresh({ preferLiveData: true });
+        }
+        console.log('Piano CNN detection completed on page ' + pagenum + '.');
+        return true;
+    }
+
+    async function runAllPagesPianoCnnDetection() {
+        if (batchDetectionInProgress) return;
+        if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
+            alert('No metric data loaded.');
+            return;
+        }
+
+        var lastPage = deMetriek$$module$synpdf.length - 1;
+        batchDetectionInProgress = true;
+        try {
+            for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
+                setBatchButtonState(true, pageNum, lastPage, 'piano_cnn');
+                await goToRenderedPage(pageNum, { forceRerender: true });
+                var ok = await runCurrentPagePianoCnnDetection({ suppressRefresh: true });
+                if (!ok) {
+                    throw new Error('Piano CNN detection failed on page ' + pageNum);
+                }
+            }
+            requestRefresh({ preferLiveData: true });
+            console.log('Piano CNN detection completed for all pages.');
+        } catch (err) {
+            console.error('All-pages piano CNN detection aborted:', err);
+            alert('All-pages piano CNN detection stopped: ' + err.message);
+        } finally {
+            batchDetectionInProgress = false;
+            setBatchButtonState(false);
+        }
+    }
+
     async function runAllPagesFullScoreNormalize() {
         if (batchDetectionInProgress) return;
         if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
@@ -5035,6 +5198,9 @@ $(document).ready(function () {
     });
     $('#run-piano-all-btn').on('click', function () {
         runAllPagesPianoNormalize();
+    });
+    $('#run-piano-cnn-all-btn').on('click', function () {
+        runAllPagesPianoCnnDetection();
     });
 
     $('#run-fullscore-all-btn').on('click', function () {

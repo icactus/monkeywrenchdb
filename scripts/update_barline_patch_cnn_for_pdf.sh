@@ -13,6 +13,11 @@ fi
 PDF_ID="$1"
 shift
 
+if [[ "$PDF_ID" == *-50 ]]; then
+  echo "Refusing normal barline CNN update for piano PDF ${PDF_ID}. Use scripts/run_piano_barline_patch_cnn_full.sh instead." >&2
+  exit 1
+fi
+
 DATA_DIR="synpdf_182/editmode/training-folder"
 PATCH_DIR="${DATA_DIR}/patches_3x6"
 HARDCASE_DIR="${DATA_DIR}/hardcases"

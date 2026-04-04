@@ -298,7 +298,10 @@ def process_pdf(pdf_path, json_path, output_npz, patch_width, patch_height, x_sp
 
 def iter_sources(data_dir, pdf_dir):
     processed_dir = Path(data_dir) / "processed"
-    json_paths = sorted(processed_dir.glob("*-td.json"))
+    json_paths = sorted(
+        path for path in processed_dir.glob("*-td.json")
+        if not path.name.endswith("-50-td.json")
+    )
     for json_path in json_paths:
         base = json_path.stem.replace("-td", "")
         pdf_path = Path(pdf_dir) / f"{base}.pdf"
