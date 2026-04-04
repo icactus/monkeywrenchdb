@@ -5106,7 +5106,7 @@ $(document).ready(function () {
             var system = pageData.cxs[i];
             var candidateInfo = collectMergedSystemBarlineCandidates(pageImageData, system, getSystemEstimatedSpatium(system));
             var detected = await detectMergedSystemBarlinesWithPianoCnn(pageImageData, system, getSystemEstimatedSpatium(system), {
-                threshold: 0.5
+                threshold: 0.7
             });
             if (!detected) {
                 alert('Piano CNN detection is unavailable.');
