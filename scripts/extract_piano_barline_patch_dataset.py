@@ -169,16 +169,18 @@ def generate_piano_candidates(system, pixel_data, stride, width):
         center_bright = avg_brightness(pixel_data, stride, width, col, top, bot)
         left_bright = avg_brightness(pixel_data, stride, width, col - dx, top, bot)
         right_bright = avg_brightness(pixel_data, stride, width, col + dx, top, bot)
-        connectivity = max_consecutive / max(1, height)
-        black_ratio = black_count / max(1, height)
+        longest_run_ratio = max_consecutive / max(1, height)
+        support_ratio = black_count / max(1, height)
         contrast = (((left_bright + right_bright) * 0.5) - center_bright) / 255.0
 
-        if connectivity < 0.66 or black_ratio < 0.44 or contrast < 0.08:
+        # Piano barlines are often interrupted by notation across the grand staff.
+        # Bias candidate generation toward recall so the CNN can reject extras.
+        if longest_run_ratio < 0.24 or support_ratio < 0.58 or contrast < 0.04:
             continue
 
         candidates.append({
             "x": int(col),
-            "score": float(connectivity * 0.55 + black_ratio * 0.30 + contrast * 0.15),
+            "score": float(support_ratio * 0.50 + longest_run_ratio * 0.25 + contrast * 0.25),
             "spatium": float(spatium),
             "top": int(top),
             "bot": int(bot),
