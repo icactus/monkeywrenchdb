@@ -2689,6 +2689,172 @@ function scoreRowDarkness(pixelData, stride, width, row, x0, x1) {
     return samples > 0 ? dark / samples : 0;
 }
 
+function fitLineThroughSamples(points, x1, x2) {
+    if (!Array.isArray(points) || !points.length) return null;
+    if (points.length === 1) {
+        return {
+            y1: points[0].y,
+            y2: points[0].y
+        };
+    }
+
+    var weightSum = 0;
+    var meanX = 0;
+    var meanY = 0;
+    for (var i = 0; i < points.length; i++) {
+        var weight = typeof points[i].weight === 'number' ? points[i].weight : 1;
+        weightSum += weight;
+        meanX += points[i].x * weight;
+        meanY += points[i].y * weight;
+    }
+    if (weightSum <= 0) return null;
+    meanX /= weightSum;
+    meanY /= weightSum;
+
+    var numerator = 0;
+    var denominator = 0;
+    for (var j = 0; j < points.length; j++) {
+        var pointWeight = typeof points[j].weight === 'number' ? points[j].weight : 1;
+        var dx = points[j].x - meanX;
+        numerator += pointWeight * dx * (points[j].y - meanY);
+        denominator += pointWeight * dx * dx;
+    }
+
+    var slope = denominator > 1e-6 ? numerator / denominator : 0;
+    var intercept = meanY - slope * meanX;
+    return {
+        y1: slope * x1 + intercept,
+        y2: slope * x2 + intercept
+    };
+}
+
+function findBestOuterBoundaryRow(pixelData, stride, width, centerX, seedY, spatium) {
+    var searchRadius = Math.max(4, Math.round(1.5 * spatium));
+    var bandHalfWidth = Math.max(12, Math.round(2.2 * spatium));
+    var maxRow = Math.floor(pixelData.length / stride) - 1;
+    var startRow = Math.max(2, Math.round(seedY - searchRadius));
+    var endRow = Math.min(maxRow - 2, Math.round(seedY + searchRadius));
+    var best = null;
+
+    for (var row = startRow; row <= endRow; row++) {
+        var darkness = scoreRowDarkness(pixelData, stride, width, row, centerX - bandHalfWidth, centerX + bandHalfWidth);
+        var distancePenalty = Math.abs(row - seedY) / Math.max(1, searchRadius);
+        var score = darkness - distancePenalty * 0.10;
+        if (!best || score > best.score) {
+            best = {
+                y: row,
+                score: score,
+                darkness: darkness
+            };
+        }
+    }
+
+    if (!best || best.darkness < 0.16) {
+        return {
+            y: Math.round(seedY),
+            score: 0
+        };
+    }
+
+    return best;
+}
+
+function buildPianoOuterBoxGeometry(system, pageImageData) {
+    if (!system || !pageImageData || !pageImageData.pixelData || !system.xs) {
+        return null;
+    }
+
+    var xs = system.xs || { x1: 0, x2: 0 };
+    var widthSpan = Math.max(1, xs.x2 - xs.x1);
+    var spatium = Math.max(4, getSystemEstimatedSpatium(system) || 8);
+    var sampleXs = [
+        Math.round(xs.x1 + widthSpan * 0.08),
+        Math.round(xs.x1 + widthSpan * 0.30),
+        Math.round(xs.x1 + widthSpan * 0.50),
+        Math.round(xs.x1 + widthSpan * 0.70),
+        Math.round(xs.x1 + widthSpan * 0.92)
+    ].map(function (probeX) {
+        return Math.max(xs.x1, Math.min(xs.x2, probeX));
+    });
+
+    var topPoints = [];
+    var bottomPoints = [];
+    sampleXs.forEach(function (probeX) {
+        var bounds = getSystemTopBottomAtX(system, probeX);
+        var topFit = findBestOuterBoundaryRow(pageImageData.pixelData, pageImageData.stride, pageImageData.width, probeX, bounds.top, spatium);
+        var bottomFit = findBestOuterBoundaryRow(pageImageData.pixelData, pageImageData.stride, pageImageData.width, probeX, bounds.bottom, spatium);
+        topPoints.push({ x: probeX, y: topFit.y, weight: Math.max(0.25, topFit.score + 0.25) });
+        bottomPoints.push({ x: probeX, y: bottomFit.y, weight: Math.max(0.25, bottomFit.score + 0.25) });
+    });
+
+    var topLine = fitLineThroughSamples(topPoints, xs.x1, xs.x2);
+    var bottomLine = fitLineThroughSamples(bottomPoints, xs.x1, xs.x2);
+    if (!topLine || !bottomLine) return null;
+
+    if (bottomLine.y1 - topLine.y1 < spatium * 6 || bottomLine.y2 - topLine.y2 < spatium * 6) {
+        return null;
+    }
+
+    return {
+        left: {
+            x: Math.round(xs.x1),
+            lines: [Math.round(topLine.y1), Math.round(bottomLine.y1)]
+        },
+        right: {
+            x: Math.round(xs.x2),
+            lines: [Math.round(topLine.y2), Math.round(bottomLine.y2)]
+        },
+        xs: {
+            x1: Math.round(xs.x1),
+            x2: Math.round(xs.x2)
+        }
+    };
+}
+
+function fitPianoSystemsOnPage(pageData, pageImageData) {
+    if (!pageData || !Array.isArray(pageData.cxs) || !pageData.cxs.length) {
+        return false;
+    }
+
+    var changed = false;
+    for (var i = 0; i < pageData.cxs.length; i++) {
+        var system = pageData.cxs[i];
+        if (!Array.isArray(system.cs) || system.cs.length !== 2) {
+            continue;
+        }
+        var xs = system.xs || { x1: 0, x2: 0 };
+        var probeX = Math.round((xs.x1 + xs.x2) / 2);
+        var probeBounds = getSystemTopBottomAtX(system, probeX);
+        var probeSpatium = Math.max(4, getSystemEstimatedSpatium(system) || 8);
+        var heightInSp = (probeBounds.bottom - probeBounds.top) / probeSpatium;
+        if (!isFinite(heightInSp) || heightInSp < 8.0 || heightInSp > 17.0) {
+            continue;
+        }
+
+        var fittedGeometry = buildPianoOuterBoxGeometry(system, pageImageData);
+        if (!fittedGeometry) continue;
+
+        var updatedSystem = applyRenderGeometryToSystem(cloneSystemForGeometrySeed(system), fittedGeometry, {
+            fixedXs: getSystemBoundaryXs(system, pageData.bxs && pageData.bxs[i])
+        });
+
+        var beforeTop = getSystemTopBottomAtX(system, system.xs.x1 || 0);
+        var beforeBottom = getSystemTopBottomAtX(system, system.xs.x2 || 0);
+        var afterTop = getSystemTopBottomAtX(updatedSystem, updatedSystem.xs.x1 || 0);
+        var afterBottom = getSystemTopBottomAtX(updatedSystem, updatedSystem.xs.x2 || 0);
+        if (Math.round(beforeTop.top) !== Math.round(afterTop.top) ||
+            Math.round(beforeTop.bottom) !== Math.round(afterTop.bottom) ||
+            Math.round(beforeBottom.top) !== Math.round(afterBottom.top) ||
+            Math.round(beforeBottom.bottom) !== Math.round(afterBottom.bottom)) {
+            changed = true;
+        }
+
+        pageData.cxs[i] = updatedSystem;
+    }
+
+    return changed;
+}
+
 function detectStaffBundleAroundPoint(pixelData, stride, width, x, y, seedSpatium) {
     var spatium = Math.max(4, Math.round(seedSpatium || 8));
     var bandHalfWidth = Math.max(10, Math.round(1.7 * spatium));
@@ -5099,6 +5265,7 @@ $(document).ready(function () {
         }
 
         normalizePageToPianoSystems(pageData, pageImageData);
+        fitPianoSystemsOnPage(pageData, pageImageData);
         var detectedBxs = [];
         var pianoSystemSnapshots = [];
         for (var i = 0; i < pageData.cxs.length; i++) {
