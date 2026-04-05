@@ -11,7 +11,8 @@ MODEL_OUT="synpdf_182/models/piano-barline-patch-cnn.keras"
 SUMMARY_OUT="synpdf_182/models/piano-barline-patch-cnn-summary.json"
 BROWSER_OUT="synpdf_182/models/piano-barline-patch-cnn-browser.js"
 SUMMARY_HISTORY_DIR="synpdf_182/models/history"
-PATCH_WIDTH=48
+HARDCASE_WEIGHT=2.0
+PATCH_WIDTH=32
 PATCH_HEIGHT=192
 X_SPATIUMS=1.5
 Y_SPATIUMS=0.75
@@ -35,6 +36,7 @@ Options:
   --browser-out PATH    Output browser JS model path
   --onnx-out PATH       Output ONNX model path (default: derived from --model-out)
   --summary-history-dir PATH  Directory for timestamped summary snapshots
+  --hardcase-weight N   Weight multiplier for piano hardcase samples (default: ${HARDCASE_WEIGHT})
   --epochs N            Training epochs (default: ${EPOCHS})
   --batch-size N        Training batch size (default: ${BATCH_SIZE})
   --jobs N              Parallel extraction jobs (default: ${JOBS})
@@ -57,6 +59,7 @@ while [[ $# -gt 0 ]]; do
     --browser-out) BROWSER_OUT="$2"; shift 2 ;;
     --onnx-out) ONNX_OUT="$2"; shift 2 ;;
     --summary-history-dir) SUMMARY_HISTORY_DIR="$2"; shift 2 ;;
+    --hardcase-weight) HARDCASE_WEIGHT="$2"; shift 2 ;;
     --epochs) EPOCHS="$2"; shift 2 ;;
     --batch-size) BATCH_SIZE="$2"; shift 2 ;;
     --jobs) JOBS="$2"; shift 2 ;;
@@ -99,6 +102,7 @@ echo "Render threads: $RENDER_THREADS"
 echo "DPI:            $DPI"
 echo "Epochs:         $EPOCHS"
 echo "Batch size:     $BATCH_SIZE"
+echo "Hardcase weight:${HARDCASE_WEIGHT}"
 echo
 
 echo "==> Step 1: Extract piano CNN patch shards"
@@ -141,16 +145,28 @@ find "${DATA_DIR}/processed" -maxdepth 1 -name '*-50-td.json' -print0 | \
   ' _ {} "$PDF_DIR" "$PATCH_DIR" "$PATCH_WIDTH" "$PATCH_HEIGHT" "$X_SPATIUMS" "$Y_SPATIUMS" "$DPI" "$RENDER_WIDTH" "$RENDER_THREADS"
 
 echo
-echo "==> Step 2: Train piano CNN"
+echo "==> Step 2: Extract piano hardcase shards"
+bash scripts/extract_all_piano_barline_patch_hardcases.sh \
+  --patch-dir "$PATCH_DIR" \
+  --patch-width "$PATCH_WIDTH" \
+  --patch-height "$PATCH_HEIGHT" \
+  --x-spatiums "$X_SPATIUMS" \
+  --y-spatiums "$Y_SPATIUMS" \
+  --dpi "$DPI" \
+  --render-width "$RENDER_WIDTH"
+
+echo
+echo "==> Step 3: Train piano CNN"
 python3 -u scripts/train_barline_patch_cnn.py \
   --data-dir "$PATCH_DIR" \
   --model-out "$MODEL_OUT" \
   --summary-out "$SUMMARY_OUT" \
   --epochs "$EPOCHS" \
-  --batch-size "$BATCH_SIZE"
+  --batch-size "$BATCH_SIZE" \
+  --hardcase-weight "$HARDCASE_WEIGHT"
 
 echo
-echo "==> Step 3: Export piano browser CNN"
+echo "==> Step 4: Export piano browser CNN"
 python3 -u scripts/export_barline_patch_cnn_to_js.py \
   --model "$MODEL_OUT" \
   --out "$BROWSER_OUT" \
@@ -160,7 +176,7 @@ python3 -u scripts/export_barline_patch_cnn_to_js.py \
 
 if [[ -d "$ONNX_SITE_PACKAGES" ]]; then
   echo
-  echo "==> Step 4: Export piano ONNX CNN"
+  echo "==> Step 5: Export piano ONNX CNN"
   PYTHONPATH="${ONNX_SITE_PACKAGES}${PYTHONPATH:+:${PYTHONPATH}}" python3 scripts/export_barline_patch_cnn_to_onnx.py \
     --model "$MODEL_OUT" \
     --out "$ONNX_OUT" \
@@ -168,11 +184,11 @@ if [[ -d "$ONNX_SITE_PACKAGES" ]]; then
     --y-spatiums "$Y_SPATIUMS"
 else
   echo
-  echo "==> Step 4: Skip ONNX export (missing $ONNX_SITE_PACKAGES)"
+  echo "==> Step 5: Skip ONNX export (missing $ONNX_SITE_PACKAGES)"
 fi
 
 echo
-echo "==> Step 5: Archive timestamped training summary"
+echo "==> Step 6: Archive timestamped training summary"
 SUMMARY_STAMP="$(date +%Y%m%d-%H%M%S)"
 SUMMARY_ARCHIVE_OUT="${SUMMARY_HISTORY_DIR}/piano-barline-patch-cnn-summary-${SUMMARY_STAMP}.json"
 cp "$SUMMARY_OUT" "$SUMMARY_ARCHIVE_OUT"
