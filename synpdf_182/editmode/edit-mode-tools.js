@@ -1091,8 +1091,10 @@ function runPagePianoGeometryOnly(options) {
         return false;
     }
 
-    normalizePageToPianoSystems(pageData, pageImageData);
-    fitPianoSystemsOnPage(pageData, pageImageData);
+    var normalizedChanged = normalizePageToPianoSystems(pageData, pageImageData);
+    if (!normalizedChanged) {
+        fitPianoSystemsOnPage(pageData, pageImageData);
+    }
     deMetriek$$module$synpdf[pagenum] = pageData;
 
     if (!persistMetricData()) {
