@@ -251,6 +251,45 @@ var SynpdfCorrectionTools = (function () {
         return (bounds.top + bounds.bottom) / 2;
     }
 
+    function estimateSystemSpatium(systemBaseline) {
+        if (!systemBaseline) return null;
+
+        if (Array.isArray(systemBaseline.cs) && systemBaseline.cs.length >= 5) {
+            var top = systemBaseline.cs[0];
+            var bottom = systemBaseline.cs[systemBaseline.cs.length - 1];
+            var steps = systemBaseline.cs.length - 1;
+            if (typeof top === 'number' && typeof bottom === 'number' && steps > 0) {
+                return Math.abs(bottom - top) / steps;
+            }
+        }
+
+        if (Array.isArray(systemBaseline.csl) && systemBaseline.csl.length >= 5) {
+            var leftTop = systemBaseline.csl[0];
+            var leftBottom = systemBaseline.csl[systemBaseline.csl.length - 1];
+            var leftSteps = systemBaseline.csl.length - 1;
+            if (typeof leftTop === 'number' && typeof leftBottom === 'number' && leftSteps > 0) {
+                return Math.abs(leftBottom - leftTop) / leftSteps;
+            }
+        }
+
+        if (Array.isArray(systemBaseline.cs) && systemBaseline.cs.length === 2) {
+            var sparseTop = Math.min(systemBaseline.cs[0], systemBaseline.cs[1]);
+            var sparseBottom = Math.max(systemBaseline.cs[0], systemBaseline.cs[1]);
+            return Math.abs(sparseBottom - sparseTop) / 13;
+        }
+
+        return null;
+    }
+
+    function getCandidateMatchToleranceForBaseline(baseline, systemBaseline) {
+        var tolerance = CANDIDATE_MATCH_TOLERANCE;
+        var estSpatium = estimateSystemSpatium(systemBaseline);
+        if (baseline && baseline.detectorMode === 'piano_cnn') {
+            tolerance = Math.max(tolerance, Math.round((estSpatium || 8) * 1.4));
+        }
+        return tolerance;
+    }
+
     function resolveBaselineSystem(pageNum, systemIndex, xJson, yJson, fallbackCs) {
         var baseline = baselinesByPage[pageNum];
         if (!baseline || !baseline.systems || !baseline.systems.length) {
@@ -870,7 +909,8 @@ var SynpdfCorrectionTools = (function () {
                 }
             }
         }
-        var acceptedNearby = typeof acceptedMatchX === 'number' && acceptedMatchDistance <= CANDIDATE_MATCH_TOLERANCE;
+        var matchTolerance = getCandidateMatchToleranceForBaseline(baseline, systemBaseline);
+        var acceptedNearby = typeof acceptedMatchX === 'number' && acceptedMatchDistance <= matchTolerance;
 
         if (!Array.isArray(systemBaseline.candidates) || systemBaseline.candidates.length === 0) {
             return {
@@ -904,7 +944,7 @@ var SynpdfCorrectionTools = (function () {
         return {
             baselineAvailable: true,
             baselineSystemIndex: resolvedIndex,
-            hadNearbyCandidate: nearestDistance <= CANDIDATE_MATCH_TOLERANCE,
+            hadNearbyCandidate: nearestDistance <= matchTolerance,
             acceptedNearby: acceptedNearby,
             acceptedMatchX: acceptedMatchX,
             acceptedMatchDistance: isFinite(acceptedMatchDistance) ? acceptedMatchDistance : null,
