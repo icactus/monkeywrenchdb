@@ -16,7 +16,6 @@ var suppressNextSplitClick = false;
 var ySelectionBox = null;
 var yDragState = null;
 var suppressNextYClick = false;
-var pianoGeometryOverlayToken = null;
 
 let indicatorElement;
 let notation;
@@ -48,102 +47,6 @@ function getSystemHitBounds(pageNumber, systemIndex, csGroup, xJson) {
         top: Math.min.apply(null, csGroup),
         bottom: Math.max.apply(null, csGroup)
     };
-}
-
-function ensurePianoGeometryOverlay() {
-    var notationEl = document.getElementById('notation');
-    if (!notationEl) return null;
-    var overlay = document.getElementById('piano-geometry-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'piano-geometry-overlay';
-        overlay.style.position = 'absolute';
-        overlay.style.left = '0';
-        overlay.style.top = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.pointerEvents = 'none';
-        overlay.style.zIndex = '40';
-        notationEl.appendChild(overlay);
-    }
-    return overlay;
-}
-
-function isSparsePianoSystem(system) {
-    return !!(system &&
-        system.xs &&
-        Array.isArray(system.cs) &&
-        system.cs.length === 2 &&
-        Array.isArray(system.csl) &&
-        Array.isArray(system.csr) &&
-        system.csl.length >= 2 &&
-        system.csl.length === system.csr.length);
-}
-
-function renderPianoGeometryOverlay() {
-    var notationEl = document.getElementById('notation');
-    var overlay = ensurePianoGeometryOverlay();
-    if (!notationEl || !overlay) return;
-
-    overlay.setAttribute('width', String(notationEl.scrollWidth || notationEl.clientWidth || 0));
-    overlay.setAttribute('height', String(notationEl.scrollHeight || notationEl.clientHeight || 0));
-    while (overlay.firstChild) {
-        overlay.removeChild(overlay.firstChild);
-    }
-
-    var pagenumElement = document.getElementById('pagenum');
-    var pagenum = pagenumElement ? parseInt(pagenumElement.value, 10) : opt$$module$synpdf.pagenum;
-    var pageData = Array.isArray(deMetriek$$module$synpdf) ? deMetriek$$module$synpdf[pagenum] : null;
-    var systems = pageData && Array.isArray(pageData.cxs) ? pageData.cxs : [];
-    var hasAny = false;
-
-    systems.forEach(function (system) {
-        if (!isSparsePianoSystem(system)) return;
-        var x1 = Math.round(system.xs.x1 || 0);
-        var x2 = Math.round(system.xs.x2 || 0);
-        var topLeft = Math.round(system.csl[0]);
-        var bottomLeft = Math.round(system.csl[system.csl.length - 1]);
-        var topRight = Math.round(system.csr[0]);
-        var bottomRight = Math.round(system.csr[system.csr.length - 1]);
-        if (![x1, x2, topLeft, bottomLeft, topRight, bottomRight].every(function (value) {
-            return typeof value === 'number' && isFinite(value);
-        })) {
-            return;
-        }
-
-        var boxTop = Math.min(topLeft, topRight, bottomLeft, bottomRight);
-        var boxBottom = Math.max(topLeft, topRight, bottomLeft, bottomRight);
-        var width = Math.max(1, x2 - x1);
-        var height = Math.max(1, boxBottom - boxTop);
-
-        var box = document.createElement('div');
-        box.className = 'maten piano-geometry-box';
-        box.style.left = x1 + 'px';
-        box.style.top = boxTop + 'px';
-        box.style.width = width + 'px';
-        box.style.height = height + 'px';
-        box.style.background = 'rgba(255, 165, 0, 0.12)';
-        box.style.boxShadow = 'inset 0 0 0 2px rgba(255, 140, 0, 0.95)';
-        box.style.clipPath = 'polygon(' +
-            '0px ' + (topLeft - boxTop) + 'px,' +
-            width + 'px ' + (topRight - boxTop) + 'px,' +
-            width + 'px ' + (bottomRight - boxTop) + 'px,' +
-            '0px ' + (bottomLeft - boxTop) + 'px)';
-        overlay.appendChild(box);
-        hasAny = true;
-    });
-
-    overlay.style.display = hasAny ? 'block' : 'none';
-}
-
-function schedulePianoGeometryOverlayRender() {
-    if (pianoGeometryOverlayToken) {
-        clearTimeout(pianoGeometryOverlayToken);
-    }
-    pianoGeometryOverlayToken = setTimeout(function () {
-        pianoGeometryOverlayToken = null;
-        renderPianoGeometryOverlay();
-    }, 60);
 }
 
 function clearExclusiveModeState() {
@@ -1165,6 +1068,45 @@ function runPageGeometryOnly(options) {
     return true;
 }
 
+function runPagePianoGeometryOnly(options) {
+    options = options || {};
+
+    const pageImageData = getCurrentPageImageData();
+    if (!pageImageData) {
+        if (!options.suppressAlerts) alert("No page pixel data available from the current canvas. Please reload the page.");
+        return false;
+    }
+
+    let pagenumElement = document.getElementById('pagenum');
+    let pagenum = pagenumElement ? parseInt(pagenumElement.value) : opt$$module$synpdf.pagenum;
+
+    if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || pagenum < 0 || pagenum >= deMetriek$$module$synpdf.length) {
+        if (!options.suppressAlerts) alert('Invalid page number or deMetriek data missing.');
+        return false;
+    }
+
+    let pageData = deMetriek$$module$synpdf[pagenum];
+    if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
+        if (!options.suppressAlerts) alert("No staff systems found on this page.");
+        return false;
+    }
+
+    normalizePageToPianoSystems(pageData, pageImageData);
+    fitPianoSystemsOnPage(pageData, pageImageData);
+    deMetriek$$module$synpdf[pagenum] = pageData;
+
+    if (!persistMetricData()) {
+        if (!options.suppressAlerts) alert("Could not save updated piano staff geometry.");
+        return false;
+    }
+
+    if (!options.suppressRefresh) {
+        requestRefresh({ preferLiveData: true });
+    }
+
+    return true;
+}
+
 async function preparePageForCNN(pagenum, lastPage) {
     setBatchButtonState(true, pagenum, lastPage, 'cnn');
     if (getDisplayedPageNumber() !== pagenum) {
@@ -1867,7 +1809,6 @@ function requestRefresh(options) {
         }
 
         SynpdfCorrectionTools.scheduleV2CandidateOverlayRender();
-        schedulePianoGeometryOverlayRender();
     }, 50);
 }
 
@@ -5362,8 +5303,10 @@ $(document).ready(function () {
             return false;
         }
 
-        normalizePageToPianoSystems(pageData, pageImageData);
-        fitPianoSystemsOnPage(pageData, pageImageData);
+        if (!runPagePianoGeometryOnly({ suppressRefresh: true, suppressAlerts: options.suppressAlerts })) {
+            return false;
+        }
+        pageData = deMetriek$$module$synpdf[pagenum];
         var detectedBxs = [];
         var pianoSystemSnapshots = [];
         for (var i = 0; i < pageData.cxs.length; i++) {
@@ -5398,7 +5341,6 @@ $(document).ready(function () {
             alert("Could not save piano CNN barlines.");
             return false;
         }
-        schedulePianoGeometryOverlayRender();
         if (!options.suppressRefresh) {
             requestRefresh({ preferLiveData: true });
         }
@@ -5493,7 +5435,6 @@ $(document).ready(function () {
         runPageGeometryOnly();
     });
 
-    schedulePianoGeometryOverlayRender();
 });
 
 document.addEventListener('keyup', function (event) {
