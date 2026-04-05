@@ -17,7 +17,6 @@ var ySelectionBox = null;
 var yDragState = null;
 var suppressNextYClick = false;
 var pianoGeometryOverlayToken = null;
-var PIANO_GEOMETRY_SVG_NS = 'http://www.w3.org/2000/svg';
 
 let indicatorElement;
 let notation;
@@ -56,15 +55,15 @@ function ensurePianoGeometryOverlay() {
     if (!notationEl) return null;
     var overlay = document.getElementById('piano-geometry-overlay');
     if (!overlay) {
-        overlay = document.createElementNS(PIANO_GEOMETRY_SVG_NS, 'svg');
-        overlay.setAttribute('id', 'piano-geometry-overlay');
+        overlay = document.createElement('div');
+        overlay.id = 'piano-geometry-overlay';
         overlay.style.position = 'absolute';
         overlay.style.left = '0';
         overlay.style.top = '0';
         overlay.style.width = '100%';
         overlay.style.height = '100%';
         overlay.style.pointerEvents = 'none';
-        overlay.style.zIndex = '11';
+        overlay.style.zIndex = '40';
         notationEl.appendChild(overlay);
     }
     return overlay;
@@ -112,17 +111,25 @@ function renderPianoGeometryOverlay() {
             return;
         }
 
-        var polygon = document.createElementNS(PIANO_GEOMETRY_SVG_NS, 'polygon');
-        polygon.setAttribute('points', [
-            x1 + ',' + topLeft,
-            x2 + ',' + topRight,
-            x2 + ',' + bottomRight,
-            x1 + ',' + bottomLeft
-        ].join(' '));
-        polygon.setAttribute('fill', 'rgba(255, 165, 0, 0.08)');
-        polygon.setAttribute('stroke', 'rgba(255, 140, 0, 0.95)');
-        polygon.setAttribute('stroke-width', '2');
-        overlay.appendChild(polygon);
+        var boxTop = Math.min(topLeft, topRight, bottomLeft, bottomRight);
+        var boxBottom = Math.max(topLeft, topRight, bottomLeft, bottomRight);
+        var width = Math.max(1, x2 - x1);
+        var height = Math.max(1, boxBottom - boxTop);
+
+        var box = document.createElement('div');
+        box.className = 'maten piano-geometry-box';
+        box.style.left = x1 + 'px';
+        box.style.top = boxTop + 'px';
+        box.style.width = width + 'px';
+        box.style.height = height + 'px';
+        box.style.background = 'rgba(255, 165, 0, 0.12)';
+        box.style.boxShadow = 'inset 0 0 0 2px rgba(255, 140, 0, 0.95)';
+        box.style.clipPath = 'polygon(' +
+            '0px ' + (topLeft - boxTop) + 'px,' +
+            width + 'px ' + (topRight - boxTop) + 'px,' +
+            width + 'px ' + (bottomRight - boxTop) + 'px,' +
+            '0px ' + (bottomLeft - boxTop) + 'px)';
+        overlay.appendChild(box);
         hasAny = true;
     });
 
