@@ -1,1 +1,1 @@
-{"input_shape":[192,48,1],"crop_config":{"x_spatiums":1.5,"y_spatiums":0.75}}
+{"input_shape":[192,32,1],"crop_config":{"x_spatiums":1.5,"y_spatiums":0.75}}
