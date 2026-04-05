@@ -16,6 +16,8 @@ var suppressNextSplitClick = false;
 var ySelectionBox = null;
 var yDragState = null;
 var suppressNextYClick = false;
+var pianoGeometryOverlayToken = null;
+var PIANO_GEOMETRY_SVG_NS = 'http://www.w3.org/2000/svg';
 
 let indicatorElement;
 let notation;
@@ -47,6 +49,94 @@ function getSystemHitBounds(pageNumber, systemIndex, csGroup, xJson) {
         top: Math.min.apply(null, csGroup),
         bottom: Math.max.apply(null, csGroup)
     };
+}
+
+function ensurePianoGeometryOverlay() {
+    var notationEl = document.getElementById('notation');
+    if (!notationEl) return null;
+    var overlay = document.getElementById('piano-geometry-overlay');
+    if (!overlay) {
+        overlay = document.createElementNS(PIANO_GEOMETRY_SVG_NS, 'svg');
+        overlay.setAttribute('id', 'piano-geometry-overlay');
+        overlay.style.position = 'absolute';
+        overlay.style.left = '0';
+        overlay.style.top = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.pointerEvents = 'none';
+        overlay.style.zIndex = '11';
+        notationEl.appendChild(overlay);
+    }
+    return overlay;
+}
+
+function isSparsePianoSystem(system) {
+    return !!(system &&
+        system.xs &&
+        Array.isArray(system.cs) &&
+        system.cs.length === 2 &&
+        Array.isArray(system.csl) &&
+        Array.isArray(system.csr) &&
+        system.csl.length >= 2 &&
+        system.csl.length === system.csr.length);
+}
+
+function renderPianoGeometryOverlay() {
+    var notationEl = document.getElementById('notation');
+    var overlay = ensurePianoGeometryOverlay();
+    if (!notationEl || !overlay) return;
+
+    overlay.setAttribute('width', String(notationEl.scrollWidth || notationEl.clientWidth || 0));
+    overlay.setAttribute('height', String(notationEl.scrollHeight || notationEl.clientHeight || 0));
+    while (overlay.firstChild) {
+        overlay.removeChild(overlay.firstChild);
+    }
+
+    var pagenumElement = document.getElementById('pagenum');
+    var pagenum = pagenumElement ? parseInt(pagenumElement.value, 10) : opt$$module$synpdf.pagenum;
+    var pageData = Array.isArray(deMetriek$$module$synpdf) ? deMetriek$$module$synpdf[pagenum] : null;
+    var systems = pageData && Array.isArray(pageData.cxs) ? pageData.cxs : [];
+    var hasAny = false;
+
+    systems.forEach(function (system) {
+        if (!isSparsePianoSystem(system)) return;
+        var x1 = Math.round(system.xs.x1 || 0);
+        var x2 = Math.round(system.xs.x2 || 0);
+        var topLeft = Math.round(system.csl[0]);
+        var bottomLeft = Math.round(system.csl[system.csl.length - 1]);
+        var topRight = Math.round(system.csr[0]);
+        var bottomRight = Math.round(system.csr[system.csr.length - 1]);
+        if (![x1, x2, topLeft, bottomLeft, topRight, bottomRight].every(function (value) {
+            return typeof value === 'number' && isFinite(value);
+        })) {
+            return;
+        }
+
+        var polygon = document.createElementNS(PIANO_GEOMETRY_SVG_NS, 'polygon');
+        polygon.setAttribute('points', [
+            x1 + ',' + topLeft,
+            x2 + ',' + topRight,
+            x2 + ',' + bottomRight,
+            x1 + ',' + bottomLeft
+        ].join(' '));
+        polygon.setAttribute('fill', 'rgba(255, 165, 0, 0.08)');
+        polygon.setAttribute('stroke', 'rgba(255, 140, 0, 0.95)');
+        polygon.setAttribute('stroke-width', '2');
+        overlay.appendChild(polygon);
+        hasAny = true;
+    });
+
+    overlay.style.display = hasAny ? 'block' : 'none';
+}
+
+function schedulePianoGeometryOverlayRender() {
+    if (pianoGeometryOverlayToken) {
+        clearTimeout(pianoGeometryOverlayToken);
+    }
+    pianoGeometryOverlayToken = setTimeout(function () {
+        pianoGeometryOverlayToken = null;
+        renderPianoGeometryOverlay();
+    }, 60);
 }
 
 function clearExclusiveModeState() {
@@ -1770,6 +1860,7 @@ function requestRefresh(options) {
         }
 
         SynpdfCorrectionTools.scheduleV2CandidateOverlayRender();
+        schedulePianoGeometryOverlayRender();
     }, 50);
 }
 
@@ -5300,6 +5391,7 @@ $(document).ready(function () {
             alert("Could not save piano CNN barlines.");
             return false;
         }
+        schedulePianoGeometryOverlayRender();
         if (!options.suppressRefresh) {
             requestRefresh({ preferLiveData: true });
         }
@@ -5393,6 +5485,8 @@ $(document).ready(function () {
     $('#run-geom-btn').on('click', function () {
         runPageGeometryOnly();
     });
+
+    schedulePianoGeometryOverlayRender();
 });
 
 document.addEventListener('keyup', function (event) {
