@@ -1041,22 +1041,7 @@ function runPageGeometryOnly(options) {
     }
 
     console.log("Running staff geometry fit on page " + pagenum + " for " + pageData.cxs.length + " systems...");
-
-    const fittedSystems = JSON.parse(JSON.stringify(pageData.cxs));
-    fittedSystems.forEach(function (system, index) {
-        applyExistingBoundaryXs(system, pageData.bxs && pageData.bxs[index]);
-    });
-    const systemRenderGeometry = fittedSystems.map(function (system) {
-        if (!systemSupportsRenderGeometryFit(system)) return null;
-        return BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width);
-    });
-
-    pageData.cxs = fittedSystems.map(function (system, index) {
-        if (!systemRenderGeometry[index]) return system;
-        return applyRenderGeometryToSystem(system, systemRenderGeometry[index], {
-            fixedXs: getSystemBoundaryXs(system, pageData.bxs && pageData.bxs[index])
-        });
-    });
+    pageData = fitPageSystemsWithStandardGeometry(pageData, pageImageData);
     deMetriek$$module$synpdf[pagenum] = pageData;
 
     if (!persistMetricData()) {
@@ -1069,6 +1054,31 @@ function runPageGeometryOnly(options) {
     }
     console.log("Staff geometry fit completed and saved.");
     return true;
+}
+
+function fitPageSystemsWithStandardGeometry(pageData, pageImageData) {
+    let pixelData = pageImageData.pixelData;
+    let stride = pageImageData.stride;
+    let width = pageImageData.width;
+
+    const fittedSystems = JSON.parse(JSON.stringify(pageData.cxs));
+    fittedSystems.forEach(function (system, index) {
+        applyExistingBoundaryXs(system, pageData.bxs && pageData.bxs[index]);
+    });
+
+    const systemRenderGeometry = fittedSystems.map(function (system) {
+        if (!systemSupportsRenderGeometryFit(system)) return null;
+        return BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width);
+    });
+
+    pageData.cxs = fittedSystems.map(function (system, index) {
+        if (!systemRenderGeometry[index]) return system;
+        return applyRenderGeometryToSystem(system, systemRenderGeometry[index], {
+            fixedXs: getSystemBoundaryXs(system, pageData.bxs && pageData.bxs[index])
+        });
+    });
+
+    return pageData;
 }
 
 function runPagePianoGeometryOnly(options) {
@@ -1088,41 +1098,14 @@ function runPagePianoGeometryOnly(options) {
         return false;
     }
 
-    let pageData = deMetriek$$module$synpdf[pagenum];
+    let pageData = rebuildCurrentPageMetricData(pagenum, true);
     if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
-        if (!options.suppressAlerts) alert("No staff systems found on this page.");
+        if (!options.suppressAlerts) alert("Could not rebuild single-staff systems on this page.");
         return false;
     }
 
+    pageData = fitPageSystemsWithStandardGeometry(pageData, pageImageData);
     normalizePageToPianoSystems(pageData, pageImageData);
-
-    let pixelData = pageImageData.pixelData;
-    let stride = pageImageData.stride;
-    let width = pageImageData.width;
-    if (!pixelData || pixelData.length === 0) {
-        if (!options.suppressAlerts) alert('Pixel data extraction failed. Please reload the page.');
-        return false;
-    }
-
-    const fittedSystems = JSON.parse(JSON.stringify(pageData.cxs));
-    fittedSystems.forEach(function (system, index) {
-        applyExistingBoundaryXs(system, pageData.bxs && pageData.bxs[index]);
-    });
-
-    pageData.cxs = fittedSystems.map(function (system, index) {
-        if (!Array.isArray(system.cs) || system.cs.length !== 2) {
-            return system;
-        }
-        var renderGeometry = typeof BarlineDetectV2.buildPianoGrandStaffGeometry === 'function'
-            ? BarlineDetectV2.buildPianoGrandStaffGeometry(system, pixelData, stride, width)
-            : BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width);
-        if (!renderGeometry) {
-            return system;
-        }
-        return applyRenderGeometryToSystem(system, renderGeometry, {
-            fixedXs: getSystemBoundaryXs(system, pageData.bxs && pageData.bxs[index])
-        });
-    });
     deMetriek$$module$synpdf[pagenum] = pageData;
 
     if (!persistMetricData()) {
