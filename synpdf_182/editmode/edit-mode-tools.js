@@ -4149,8 +4149,25 @@ function normalizePageToPianoSystems(pageData, pageImageData) {
     }
 
     var items = pageData.cxs.map(function (system, index) {
+        var seededSystem = cloneSystemForGeometrySeed(system);
+        applyExistingBoundaryXs(seededSystem, pageData.bxs && pageData.bxs[index]);
+        if (typeof BarlineDetectV2 !== 'undefined' &&
+            !systemLooksLikeMergedGrandStaff(seededSystem) &&
+            systemSupportsRenderGeometryFit(seededSystem)) {
+            var renderGeometry = BarlineDetectV2.buildRenderGeometry(
+                seededSystem,
+                pageImageData.pixelData,
+                pageImageData.stride,
+                pageImageData.width
+            );
+            if (renderGeometry) {
+                seededSystem = applyRenderGeometryToSystem(seededSystem, renderGeometry, {
+                    fixedXs: getSystemBoundaryXs(seededSystem, pageData.bxs && pageData.bxs[index])
+                });
+            }
+        }
         return {
-            system: cloneSystemForGeometrySeed(system),
+            system: seededSystem,
             bxs: Array.isArray(pageData.bxs[index]) ? pageData.bxs[index].slice() : []
         };
     }).sort(function (a, b) {
