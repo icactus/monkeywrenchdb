@@ -169,18 +169,17 @@ def generate_piano_candidates(system, pixel_data, stride, width):
         center_bright = avg_brightness(pixel_data, stride, width, col, top, bot)
         left_bright = avg_brightness(pixel_data, stride, width, col - dx, top, bot)
         right_bright = avg_brightness(pixel_data, stride, width, col + dx, top, bot)
-        longest_run_ratio = max_consecutive / max(1, height)
         support_ratio = black_count / max(1, height)
         contrast = (((left_bright + right_bright) * 0.5) - center_bright) / 255.0
 
-        # Piano barlines are often interrupted by notation across the grand staff.
-        # Bias candidate generation toward recall so the CNN can reject extras.
-        if longest_run_ratio < 0.24 or support_ratio < 0.58 or contrast < 0.04:
+        # For piano, the right question is coverage across the full grand-staff span,
+        # not whether the line is uninterrupted. Let notation interrupt the stroke.
+        if support_ratio < 0.70 or contrast < 0.03:
             continue
 
         candidates.append({
             "x": int(col),
-            "score": float(support_ratio * 0.50 + longest_run_ratio * 0.25 + contrast * 0.25),
+            "score": float(support_ratio * 0.80 + contrast * 0.20),
             "spatium": float(spatium),
             "top": int(top),
             "bot": int(bot),
@@ -212,6 +211,13 @@ def build_examples_for_page(source_id, page_index, page_data, crop_binary_img, c
             continue
 
         gt_barlines = bxs[system_index][1:-1] if len(bxs[system_index]) > 2 else []
+        anchor_barlines = []
+        if len(bxs[system_index]) >= 2:
+            anchor_barlines = [int(round(bxs[system_index][0])), int(round(bxs[system_index][-1]))]
+        else:
+            xs = system.get("xs", {}) or {}
+            if "x1" in xs and "x2" in xs:
+                anchor_barlines = [int(round(xs["x1"])), int(round(xs["x2"]))]
         candidates = generate_piano_candidates(system, pixel_data, stride, image_width)
         candidate_xs = [cand["x"] for cand in candidates]
         seen_positions = set()
@@ -219,6 +225,9 @@ def build_examples_for_page(source_id, page_index, page_data, crop_binary_img, c
 
         for candidate in candidates:
             x_col = candidate["x"]
+            anchor_tolerance = max(6, int(round(candidate["spatium"] * 1.25)))
+            if any(abs(x_col - anchor_x) <= anchor_tolerance for anchor_x in anchor_barlines):
+                continue
             is_positive = any(abs(x_col - gt) <= 6 for gt in gt_barlines)
             ordered_positions.append((x_col, 1 if is_positive else 0, candidate, "candidate"))
             seen_positions.add(x_col)

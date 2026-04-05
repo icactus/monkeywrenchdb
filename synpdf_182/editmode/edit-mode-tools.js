@@ -2824,19 +2824,18 @@ function collectMergedSystemBarlineCandidates(pageImageData, mergedSystem, domin
         var centerBright = avgBrightness(col, top, bot);
         var leftBright = avgBrightness(Math.max(0, col - dx), top, bot);
         var rightBright = avgBrightness(Math.min(width - 1, col + dx), top, bot);
-        var longestRunRatio = maxConsecutive / Math.max(1, height);
         var supportRatio = blackCount / Math.max(1, height);
         var contrast = ((leftBright + rightBright) * 0.5 - centerBright) / 255;
 
-        // Piano barlines are frequently interrupted by notation or weak scans.
-        // Keep recall high here and let the piano CNN reject the extra proposals.
-        if (longestRunRatio < 0.24 || supportRatio < 0.58 || contrast < 0.04) continue;
+        // For piano, accept candidates based on total supported vertical coverage,
+        // not uninterrupted continuity through notation clutter.
+        if (supportRatio < 0.70 || contrast < 0.03) continue;
         candidates.push({
             x: col,
             top: top,
             bot: bot,
             spatium: spatium,
-            score: supportRatio * 0.50 + longestRunRatio * 0.25 + contrast * 0.25
+            score: supportRatio * 0.80 + contrast * 0.20
         });
     }
 
