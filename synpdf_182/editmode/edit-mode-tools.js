@@ -1113,7 +1113,9 @@ function runPagePianoGeometryOnly(options) {
         if (!Array.isArray(system.cs) || system.cs.length !== 2) {
             return system;
         }
-        var renderGeometry = BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width);
+        var renderGeometry = typeof BarlineDetectV2.buildPianoGrandStaffGeometry === 'function'
+            ? BarlineDetectV2.buildPianoGrandStaffGeometry(system, pixelData, stride, width)
+            : BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width);
         if (!renderGeometry) {
             return system;
         }

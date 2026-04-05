@@ -848,6 +848,63 @@ var BarlineDetectV2 = (function () {
         };
     }
 
+    function buildPianoGrandStaffGeometry(system, pixelData, stride, imageWidth) {
+        if (!system || !system.xs || !Array.isArray(system.cs) || system.cs.length !== 2) {
+            return null;
+        }
+
+        var topBound = Math.min(system.cs[0], system.cs[1]);
+        var botBound = Math.max(system.cs[0], system.cs[1]);
+        var totalSpan = botBound - topBound;
+        if (!isFinite(totalSpan) || totalSpan < 40) {
+            return null;
+        }
+
+        var estSpatium = Math.max(4, Math.round(totalSpan / 13));
+        var upperSystem = {
+            cs: [topBound, topBound + 4 * estSpatium],
+            xs: { x1: system.xs.x1, x2: system.xs.x2 }
+        };
+        var lowerSystem = {
+            cs: [botBound - 4 * estSpatium, botBound],
+            xs: { x1: system.xs.x1, x2: system.xs.x2 }
+        };
+
+        var upperGeom = buildRenderGeometry(upperSystem, pixelData, stride, imageWidth);
+        var lowerGeom = buildRenderGeometry(lowerSystem, pixelData, stride, imageWidth);
+        if (!upperGeom || !lowerGeom || !upperGeom.left || !upperGeom.right || !lowerGeom.left || !lowerGeom.right) {
+            return null;
+        }
+
+        var leftTop = upperGeom.left.lines[0];
+        var rightTop = upperGeom.right.lines[0];
+        var leftBottom = lowerGeom.left.lines[4];
+        var rightBottom = lowerGeom.right.lines[4];
+        var leftMid = Math.round((upperGeom.left.lines[4] + lowerGeom.left.lines[0]) / 2);
+        var rightMid = Math.round((upperGeom.right.lines[4] + lowerGeom.right.lines[0]) / 2);
+
+        if (![leftTop, rightTop, leftBottom, rightBottom].every(function (value) { return typeof value === 'number' && isFinite(value); })) {
+            return null;
+        }
+
+        return {
+            xs: {
+                x1: Math.round(system.xs.x1),
+                x2: Math.round(system.xs.x2)
+            },
+            spatium: estSpatium,
+            normalizationReason: 'piano_two_bundle_sparse',
+            left: {
+                x: Math.round(system.xs.x1),
+                lines: [Math.round(leftTop), Math.round((leftTop + leftMid) / 2), leftMid, Math.round((leftMid + leftBottom) / 2), Math.round(leftBottom)]
+            },
+            right: {
+                x: Math.round(system.xs.x2),
+                lines: [Math.round(rightTop), Math.round((rightTop + rightMid) / 2), rightMid, Math.round((rightMid + rightBottom) / 2), Math.round(rightBottom)]
+            }
+        };
+    }
+
 
     // =========================================================================
     // 1b. SUB-STAFF PARSING — split staffLines into individual staves
@@ -3169,6 +3226,7 @@ var BarlineDetectV2 = (function () {
     return {
         traceStaffLines: traceStaffLines,
         buildRenderGeometry: buildRenderGeometry,
+        buildPianoGrandStaffGeometry: buildPianoGrandStaffGeometry,
         parseSubStaves: parseSubStaves,
         getSpatiumForY: getSpatiumForY,
         getDominantSpatium: getDominantSpatium,
