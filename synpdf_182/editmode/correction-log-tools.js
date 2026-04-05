@@ -889,13 +889,57 @@ var SynpdfCorrectionTools = (function () {
         updateCorrectionLogUI();
     }
 
+    function getLiveAcceptedBarlineFallback(pageNum, systemIndex, xJson) {
+        var metricData = typeof MetricStore !== 'undefined' && MetricStore && typeof MetricStore.getMetricData === 'function'
+            ? MetricStore.getMetricData()
+            : null;
+        var pageData = metricData && metricData[pageNum];
+        if (!pageData || !Array.isArray(pageData.bxs) || !Array.isArray(pageData.bxs[systemIndex])) {
+            return null;
+        }
+
+        var accepted = pageData.bxs[systemIndex].map(function (value) {
+            return Math.round(Math.abs(value));
+        });
+        if (!accepted.length) return null;
+
+        var bestX = null;
+        var bestDistance = Infinity;
+        for (var i = 0; i < accepted.length; i++) {
+            var distance = Math.abs(accepted[i] - xJson);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestX = accepted[i];
+            }
+        }
+
+        if (typeof bestX !== 'number') return null;
+
+        var tolerance = Math.max(CANDIDATE_MATCH_TOLERANCE, 16);
+        return {
+            baselineAvailable: false,
+            baselineSystemIndex: systemIndex,
+            hadNearbyCandidate: false,
+            acceptedNearby: bestDistance <= tolerance,
+            acceptedMatchX: bestX,
+            acceptedMatchDistance: bestDistance,
+            nearestCandidate: bestDistance <= tolerance ? {
+                x: bestX,
+                distance: bestDistance,
+                score: null,
+                vetoReason: 'live_page_accepted_barline',
+                accepted: true
+            } : null
+        };
+    }
+
     function getNearestBaselineCandidate(pageNum, systemIndex, xJson, yJson, fallbackCs) {
         var baseline = baselinesByPage[pageNum];
         var resolved = resolveBaselineSystem(pageNum, systemIndex, xJson, yJson, fallbackCs);
         var resolvedIndex = resolved ? resolved.baselineIndex : systemIndex;
         var systemBaseline = resolved ? resolved.baseline : null;
         if (!baseline || !baseline.systems || !systemBaseline) {
-            return null;
+            return getLiveAcceptedBarlineFallback(pageNum, systemIndex, xJson);
         }
         var acceptedMatchX = null;
         var acceptedMatchDistance = Infinity;
