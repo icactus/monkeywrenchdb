@@ -1091,10 +1091,31 @@ function runPagePianoGeometryOnly(options) {
         return false;
     }
 
-    var normalizedChanged = normalizePageToPianoSystems(pageData, pageImageData);
-    if (!normalizedChanged) {
-        fitPianoSystemsOnPage(pageData, pageImageData);
+    normalizePageToPianoSystems(pageData, pageImageData);
+
+    let pixelData = pageImageData.pixelData;
+    let stride = pageImageData.stride;
+    let width = pageImageData.width;
+    if (!pixelData || pixelData.length === 0) {
+        if (!options.suppressAlerts) alert('Pixel data extraction failed. Please reload the page.');
+        return false;
     }
+
+    const fittedSystems = JSON.parse(JSON.stringify(pageData.cxs));
+    fittedSystems.forEach(function (system, index) {
+        applyExistingBoundaryXs(system, pageData.bxs && pageData.bxs[index]);
+    });
+    const systemRenderGeometry = fittedSystems.map(function (system) {
+        if (!systemSupportsRenderGeometryFit(system)) return null;
+        return BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width);
+    });
+
+    pageData.cxs = fittedSystems.map(function (system, index) {
+        if (!systemRenderGeometry[index]) return system;
+        return applyRenderGeometryToSystem(system, systemRenderGeometry[index], {
+            fixedXs: getSystemBoundaryXs(system, pageData.bxs && pageData.bxs[index])
+        });
+    });
     deMetriek$$module$synpdf[pagenum] = pageData;
 
     if (!persistMetricData()) {
