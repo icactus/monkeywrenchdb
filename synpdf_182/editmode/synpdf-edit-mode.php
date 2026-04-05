@@ -983,6 +983,8 @@
                                 style="background:#ff8a00; color:#000; font-weight:bold; margin-left:8px;">Run CNN-only All Pages</button>
                             <button id="run-piano-all-btn" type="button"
                                 style="background:#d7a6ff; color:#000; font-weight:bold; margin-left:8px;">Run Piano All Pages</button>
+                            <button id="run-piano-geom-all-btn" type="button"
+                                style="background:#b98cff; color:#000; font-weight:bold; margin-left:8px;">Run Piano Geometry All Pages</button>
                             <button id="run-piano-cnn-all-btn" type="button"
                                 style="background:#9d7dff; color:#000; font-weight:bold; margin-left:8px;">Run Piano CNN All Pages</button>
                             <button id="run-fullscore-all-btn" type="button"

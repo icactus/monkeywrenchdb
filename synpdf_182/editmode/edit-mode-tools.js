@@ -978,6 +978,7 @@ function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf)
 function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
     var cnnAllBtn = $('#run-cnn-all-btn');
     var pianoAllBtn = $('#run-piano-all-btn');
+    var pianoGeomAllBtn = $('#run-piano-geom-all-btn');
     var pianoCnnAllBtn = $('#run-piano-cnn-all-btn');
     var fullScoreAllBtn = $('#run-fullscore-all-btn');
     var cnnBtn = $('#run-cnn-btn');
@@ -986,6 +987,7 @@ function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
     if (isRunning) {
         cnnAllBtn.prop('disabled', true).text(activeMode === 'cnn' ? 'Running CNN All… ' + currentPage + '/' + lastPage : 'Run CNN-only All Pages');
         pianoAllBtn.prop('disabled', true).text(activeMode === 'piano' ? 'Running Piano All… ' + currentPage + '/' + lastPage : 'Run Piano All Pages');
+        pianoGeomAllBtn.prop('disabled', true).text(activeMode === 'piano_geom' ? 'Running Piano Geometry… ' + currentPage + '/' + lastPage : 'Run Piano Geometry All Pages');
         pianoCnnAllBtn.prop('disabled', true).text(activeMode === 'piano_cnn' ? 'Running Piano CNN… ' + currentPage + '/' + lastPage : 'Run Piano CNN All Pages');
         fullScoreAllBtn.prop('disabled', true).text(activeMode === 'fullscore' ? 'Running Full Score… ' + currentPage + '/' + lastPage : 'Run Full Score All Pages');
         cnnBtn.prop('disabled', true);
@@ -994,6 +996,7 @@ function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
     } else {
         cnnAllBtn.prop('disabled', false).text('Run CNN-only All Pages');
         pianoAllBtn.prop('disabled', false).text('Run Piano All Pages');
+        pianoGeomAllBtn.prop('disabled', false).text('Run Piano Geometry All Pages');
         pianoCnnAllBtn.prop('disabled', false).text('Run Piano CNN All Pages');
         fullScoreAllBtn.prop('disabled', false).text('Run Full Score All Pages');
         cnnBtn.prop('disabled', false);
@@ -5419,6 +5422,35 @@ $(document).ready(function () {
         }
     }
 
+    async function runAllPagesPianoGeometry() {
+        if (batchDetectionInProgress) return;
+        if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
+            alert('No metric data loaded.');
+            return;
+        }
+
+        var lastPage = deMetriek$$module$synpdf.length - 1;
+        batchDetectionInProgress = true;
+        try {
+            for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
+                setBatchButtonState(true, pageNum, lastPage, 'piano_geom');
+                await goToRenderedPage(pageNum, { forceRerender: true });
+                var ok = runPagePianoGeometryOnly({ suppressRefresh: true });
+                if (!ok) {
+                    throw new Error('Piano geometry failed on page ' + pageNum);
+                }
+            }
+            requestRefresh({ preferLiveData: true });
+            console.log('Piano geometry completed for all pages.');
+        } catch (err) {
+            console.error('All-pages piano geometry aborted:', err);
+            alert('All-pages piano geometry stopped: ' + err.message);
+        } finally {
+            batchDetectionInProgress = false;
+            setBatchButtonState(false);
+        }
+    }
+
     async function runAllPagesFullScoreNormalize() {
         if (batchDetectionInProgress) return;
         if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
@@ -5464,6 +5496,9 @@ $(document).ready(function () {
     });
     $('#run-piano-all-btn').on('click', function () {
         runAllPagesPianoNormalize();
+    });
+    $('#run-piano-geom-all-btn').on('click', function () {
+        runAllPagesPianoGeometry();
     });
     $('#run-piano-cnn-all-btn').on('click', function () {
         runAllPagesPianoCnnDetection();
