@@ -1123,7 +1123,7 @@ var SynpdfCorrectionTools = (function () {
             return false;
         }
 
-        var tolerance = typeof options.tolerance === 'number' ? options.tolerance : 4;
+        var tolerance = typeof options.tolerance === 'number' ? options.tolerance : 6;
         clearGeneratedCorrectionsForPage(pageNum, 'ground_truth_diff');
 
         var systemCount = Math.min(currentPage.cxs.length, currentPage.bxs.length, gtPage.cxs.length, gtPage.bxs.length);
