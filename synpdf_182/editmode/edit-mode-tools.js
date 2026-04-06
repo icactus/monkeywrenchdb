@@ -3174,7 +3174,12 @@ async function detectMergedSystemBarlinesWithPianoCnn(pageImageData, mergedSyste
     var accepted = [Math.round(xs.x1), Math.round(xs.x2)];
     var candidates = candidateInfo.candidates;
     if (!candidates.length) {
-        return accepted.sort(function (a, b) { return a - b; });
+        var emptyResult = {
+            accepted: accepted.sort(function (a, b) { return a - b; }),
+            candidates: [],
+            threshold: typeof options.threshold === 'number' ? options.threshold : 0.5
+        };
+        return options.returnDetails ? emptyResult : emptyResult.accepted;
     }
 
     var threshold = typeof options.threshold === 'number' ? options.threshold : 0.5;
@@ -3192,13 +3197,18 @@ async function detectMergedSystemBarlinesWithPianoCnn(pageImageData, mergedSyste
         })
     );
 
-    var ranked = candidates.map(function (cand, idx) {
+    var scoredCandidates = candidates.map(function (cand, idx) {
         return {
             x: cand.x,
+            top: cand.top,
+            bot: cand.bot,
+            spatium: cand.spatium,
             score: scores && typeof scores[idx] === 'number' ? scores[idx] : null,
             heuristicScore: cand.score
         };
-    }).filter(function (item) {
+    });
+
+    var ranked = scoredCandidates.filter(function (item) {
         return item.score !== null && item.score >= threshold;
     }).sort(function (a, b) {
         if (b.score !== a.score) return b.score - a.score;
@@ -3215,7 +3225,12 @@ async function detectMergedSystemBarlinesWithPianoCnn(pageImageData, mergedSyste
         }
     }
 
-    return accepted.sort(function (a, b) { return a - b; });
+    var result = {
+        accepted: accepted.sort(function (a, b) { return a - b; }),
+        candidates: scoredCandidates,
+        threshold: threshold
+    };
+    return options.returnDetails ? result : result.accepted;
 }
 
 function getInteriorBarlines(bxs) {
@@ -5447,32 +5462,45 @@ $(document).ready(function () {
             return false;
         }
 
-        if (!runPagePianoGeometryOnly({ suppressRefresh: true, suppressAlerts: options.suppressAlerts })) {
-            return false;
-        }
-        pageData = deMetriek$$module$synpdf[pagenum];
         var detectedBxs = [];
         var pianoSystemSnapshots = [];
         for (var i = 0; i < pageData.cxs.length; i++) {
             var system = pageData.cxs[i];
             var candidateInfo = collectMergedSystemBarlineCandidates(pageImageData, system, getSystemEstimatedSpatium(system));
             var detected = await detectMergedSystemBarlinesWithPianoCnn(pageImageData, system, getSystemEstimatedSpatium(system), {
-                threshold: 0.7
+                threshold: 0.7,
+                returnDetails: true
             });
             if (!detected) {
                 alert('Piano CNN detection is unavailable.');
                 return false;
             }
-            detectedBxs.push(detected);
+            detectedBxs.push(detected.accepted);
             pianoSystemSnapshots.push({
-                candidates: candidateInfo.candidates.map(function (candidate) {
+                candidates: detected.candidates.map(function (candidate) {
                     return {
                         x: candidate.x,
                         score: candidate.score,
+                        heuristicScore: candidate.heuristicScore,
                         vetoReason: ''
                     };
                 }),
                 renderGeometry: null
+            });
+
+            var scoreBuckets = {};
+            detected.candidates.forEach(function (candidate) {
+                if (typeof candidate.score !== 'number') return;
+                var bucket = Math.max(0, Math.min(100, Math.floor(candidate.score * 100)));
+                scoreBuckets[bucket] = (scoreBuckets[bucket] || 0) + 1;
+            });
+            console.log('[PianoCNNScoreBuckets]', {
+                page: pagenum,
+                systemIndex: i,
+                threshold: detected.threshold,
+                totalCandidates: detected.candidates.length,
+                acceptedInterior: Math.max(0, detected.accepted.length - 2),
+                buckets: scoreBuckets
             });
         }
 

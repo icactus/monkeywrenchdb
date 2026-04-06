@@ -144,6 +144,17 @@ var SynpdfCorrectionTools = (function () {
         }).filter(Boolean);
     }
 
+    function buildCnnScoreHistogram(entries) {
+        var buckets = {};
+        (entries || []).forEach(function (entry) {
+            var score = entry && entry.nearestCandidate ? entry.nearestCandidate.score : null;
+            if (typeof score !== 'number' || !isFinite(score)) return;
+            var bucket = Math.max(0, Math.min(100, Math.floor(score * 100)));
+            buckets[bucket] = (buckets[bucket] || 0) + 1;
+        });
+        return buckets;
+    }
+
     function updateCorrectionLogUI() {
         var output = document.getElementById('correction-log-output');
         var status = document.getElementById('correction-log-status');
@@ -153,7 +164,8 @@ var SynpdfCorrectionTools = (function () {
             sourcePdf: getCurrentPdfName(),
             fixwd: getCurrentFixwdValue(),
             corrections: currentPdfCorrections,
-            cnn_training_examples: cnnTrainingExamples
+            cnn_training_examples: cnnTrainingExamples,
+            cnn_score_histogram: buildCnnScoreHistogram(currentPdfCorrections)
         };
 
         if (output) {
