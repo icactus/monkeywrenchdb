@@ -64,6 +64,14 @@ var SynpdfCorrectionTools = (function () {
         persistCorrectionLogState();
     }
 
+    function clearCurrentPdfCorrections() {
+        var pdfName = getCurrentPdfName();
+        correctionLog = correctionLog.filter(function (entry) {
+            return !entry || entry.sourcePdf !== pdfName;
+        });
+        persistCorrectionLogState();
+    }
+
     function downloadCorrectionsPayload(payloadText, filename) {
         var blob = new Blob([payloadText], { type: 'application/json' });
         var downloadUrl = URL.createObjectURL(blob);
@@ -695,11 +703,7 @@ var SynpdfCorrectionTools = (function () {
 
         if (clearBtn) {
             clearBtn.addEventListener('click', function () {
-                var pdfName = getCurrentPdfName();
-                correctionLog = correctionLog.filter(function (entry) {
-                    return entry.sourcePdf !== pdfName;
-                });
-                persistCorrectionLogState();
+                clearCurrentPdfCorrections();
             });
         }
 
@@ -1198,6 +1202,7 @@ var SynpdfCorrectionTools = (function () {
         updateAcceptedBarlinesForPage: updateAcceptedBarlinesForPage,
         recordBarlineCorrection: recordBarlineCorrection,
         autoDiffPageAgainstGroundTruth: autoDiffPageAgainstGroundTruth,
+        clearCurrentPdfCorrections: clearCurrentPdfCorrections,
         getCurrentPdfCnnTrainingExamples: getCurrentPdfCnnTrainingExamples,
         getCurrentPdfName: getCurrentPdfName,
         getCurrentFixwdValue: getCurrentFixwdValue,

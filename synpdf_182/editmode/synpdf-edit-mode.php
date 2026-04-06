@@ -1011,6 +1011,8 @@
                                 style="background:#9d7dff; color:#000; font-weight:bold; margin-left:8px;">Run Piano CNN All Pages</button>
                             <button id="run-fullscore-all-btn" type="button"
                                 style="background:#b7d9ff; color:#000; font-weight:bold; margin-left:8px;">Run Full Score All Pages</button>
+                            <button id="export-td-btn" type="button"
+                                style="background:#4caf50; color:#fff; font-weight:bold; margin-left:8px;">Export TD JSON</button>
                         </div>
                         <div style="margin-top: 8px; min-width: 260px;">
                             <label style="display:flex;align-items:center;gap:6px;">

@@ -136,6 +136,10 @@ async function bootEditModeFromDb(pieceId, partId) {
     window.times_arr$$module$synpdf = undefined;
     window.offset_js$$module$synpdf = 0;
     window.scoreFnm$$module$synpdf = data.pdf_file.replace(/\.[^.]+$/, '');
+    if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.clearCurrentPdfCorrections) {
+        SynpdfCorrectionTools.clearCurrentPdfCorrections();
+    }
+    window.mlLoadedMetricContext = { pieceId: String(pieceId), partId: String(partId) };
 
     MetricStore.setGroundTruthMetricData(data.metric_arr, {
         pieceId: String(pieceId),
@@ -149,6 +153,49 @@ async function bootEditModeFromDb(pieceId, partId) {
     if (typeof window.msc_check_preload$$module$synpdf === 'function') {
         window.msc_check_preload$$module$synpdf();
     }
+}
+
+function exportCurrentMetricDataAsTd() {
+    const loadedContext = window.mlLoadedMetricContext || null;
+    const allPagesData = MetricStore.getMetricData();
+
+    if (!allPagesData || allPagesData.length === 0) {
+        alert('No metric data found in memory or localStorage. Please load a PDF and try again.');
+        return;
+    }
+
+    const pieceId = loadedContext && loadedContext.pieceId
+        ? loadedContext.pieceId
+        : (document.getElementById('piece_id1') ? document.getElementById('piece_id1').value : '');
+    const partId = loadedContext && loadedContext.partId
+        ? loadedContext.partId
+        : (document.getElementById('sync-part') ? document.getElementById('sync-part').value : '');
+
+    if (!pieceId || !partId) {
+        alert('Please load a piece and part first.');
+        return;
+    }
+
+    let exportData = MetricStore.clone(allPagesData);
+    exportData[0] = 1000;
+    for (let i = 1; i < exportData.length; i++) {
+        if (!exportData[i]) {
+            exportData[i] = { cxs: [], bxs: [] };
+        }
+    }
+
+    const jsonText = JSON.stringify(exportData, null, 0)
+        .replace(/{"cs"/g, '\n{"cs"')
+        .replace(/,\[/g, ',\n[')
+        .replace(/,"bxs":\[/g, ',\n"bxs":[\n')
+        .replace(/,{"cxs":/g, ',\n{"cxs":');
+    const href = 'data:text/json;charset=utf-8,' + encodeURIComponent(jsonText);
+    const link = document.createElement('a');
+    link.setAttribute('href', href);
+    link.setAttribute('download', `${pieceId}-${partId}-td.json`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 }
 
 function activateExclusiveMode(mode) {
@@ -4862,6 +4909,9 @@ function fetchAndLoadJsFile(pieceId) {
 
             // Pass the File object to your existing processing function
             readLocalFile$$module$synpdf(file);
+            if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.clearCurrentPdfCorrections) {
+                SynpdfCorrectionTools.clearCurrentPdfCorrections();
+            }
         })
         .catch(error => {
             console.error('Error fetching or processing .js file:', error);
@@ -5011,6 +5061,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const pieceSelect = document.getElementById('piece_id1');
     const partSelect = document.getElementById('sync-part');
     const pdfInput = document.getElementById('fknp');
+    const exportTdBtn = document.getElementById('export-td-btn');
     if (pieceSelect && partSelect && !window.location.href.includes('ml-label')) {
         pieceSelect.addEventListener('change', async function () {
             const pieceId = pieceSelect.value.trim();
@@ -5063,6 +5114,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (pdfInput && MetricStore && typeof MetricStore.clearGroundTruthMetricData === 'function') {
         pdfInput.addEventListener('change', function () {
             MetricStore.clearGroundTruthMetricData();
+        });
+    }
+    if (exportTdBtn) {
+        exportTdBtn.addEventListener('click', function () {
+            exportCurrentMetricDataAsTd();
         });
     }
 
