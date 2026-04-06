@@ -1087,11 +1087,34 @@ var SynpdfCorrectionTools = (function () {
         persistCorrectionLogState();
     }
 
-    function getInteriorBarlines(bxs) {
-        if (!Array.isArray(bxs) || bxs.length <= 2) return [];
-        return bxs.slice(1, -1).map(function (value) {
+    function getComparableInteriorBarlines(bxs, system, options) {
+        options = options || {};
+        if (!Array.isArray(bxs) || !bxs.length) return [];
+
+        var normalized = bxs.map(function (value) {
             return Math.round(Math.abs(value));
         });
+        var xs = system && system.xs ? system.xs : null;
+        var anchorTolerance = typeof options.anchorTolerance === 'number'
+            ? Math.max(0, options.anchorTolerance)
+            : 3;
+
+        if (xs && typeof xs.x1 === 'number' && normalized.length) {
+            var leftAnchor = Math.round(Math.abs(xs.x1));
+            if (Math.abs(normalized[0] - leftAnchor) <= anchorTolerance) {
+                normalized.shift();
+            }
+        }
+
+        if (xs && typeof xs.x2 === 'number' && normalized.length) {
+            var rightAnchor = Math.round(Math.abs(xs.x2));
+            if (Math.abs(normalized[normalized.length - 1] - rightAnchor) <= anchorTolerance) {
+                normalized.pop();
+            }
+        }
+
+        if (normalized.length <= 2) return [];
+        return normalized.slice(1, -1);
     }
 
     function getSystemCenterForMetricPage(pageData, systemIndex, xJson) {
@@ -1132,8 +1155,8 @@ var SynpdfCorrectionTools = (function () {
 
         var systemCount = Math.min(currentPage.cxs.length, currentPage.bxs.length, gtPage.cxs.length, gtPage.bxs.length);
         for (var systemIndex = 0; systemIndex < systemCount; systemIndex++) {
-            var detectedBars = getInteriorBarlines(currentPage.bxs[systemIndex]);
-            var gtBars = getInteriorBarlines(gtPage.bxs[systemIndex]);
+            var detectedBars = getComparableInteriorBarlines(currentPage.bxs[systemIndex], currentPage.cxs[systemIndex]);
+            var gtBars = getComparableInteriorBarlines(gtPage.bxs[systemIndex], gtPage.cxs[systemIndex]);
             var matchedDetected = new Array(detectedBars.length).fill(false);
             var matchedGt = new Array(gtBars.length).fill(false);
 
