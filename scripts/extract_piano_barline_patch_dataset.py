@@ -141,8 +141,6 @@ def generate_piano_candidates(system, pixel_data, stride, width):
         top = max(0, int(round(top)))
         bot = min(max_row, int(round(bot)))
         height = bot - top + 1
-        if height < 12:
-            continue
 
         black_count = 0
         consecutive_dark = 0
@@ -361,7 +359,7 @@ def main():
     parser.add_argument("--pdf", required=True)
     parser.add_argument("--json", required=True)
     parser.add_argument("--out", required=True)
-    parser.add_argument("--patch-width", type=int, default=48)
+    parser.add_argument("--patch-width", type=int, default=32)
     parser.add_argument("--patch-height", type=int, default=192)
     parser.add_argument("--x-spatiums", type=float, default=1.5)
     parser.add_argument("--y-spatiums", type=float, default=0.75)
