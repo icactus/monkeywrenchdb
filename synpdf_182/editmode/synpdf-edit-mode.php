@@ -921,6 +921,28 @@
                         <input type="submit" value="Submit" />
                     </div>
                 </form>
+                <form class="inputform" id="loadGroundTruthScore" method="POST" onsubmit="return false;">
+                    <div style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+                        <div>
+                            <label for="piece_id1">Load Piece</label>
+                            <select class="dropdown-menu" id="piece_id1">
+                                <option value="">Select piece...</option>
+                                <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
+                                    <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="sync-part">Part</label>
+                            <select id="sync-part" disabled>
+                                <option value="">— choose a piece first —</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button type="button" id="loadBtn">Load PDF &amp; TD Ref</button>
+                        </div>
+                    </div>
+                </form>
                 <!-- add metric_arr -->
                 <form class="inputform" id="addnewmetricform" method="POST" enctype="multipart/form-data">
                     <div style="display:flex;">

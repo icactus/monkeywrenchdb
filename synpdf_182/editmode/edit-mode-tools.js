@@ -75,6 +75,82 @@ function clearExclusiveModeState() {
     refreshModeTooltip();
 }
 
+async function fetchPartsForPiece(pieceId) {
+    const url = `./get_parts.php?piece_id=${encodeURIComponent(pieceId)}`;
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+        const txt = await response.text();
+        throw new Error(txt || `Failed to fetch parts (${response.status})`);
+    }
+    return response.json();
+}
+
+function populateEditModePartDropdown(parts, pieceId) {
+    const sel = document.getElementById('sync-part');
+    if (!sel) return;
+
+    sel.innerHTML = '';
+    sel.disabled = true;
+
+    if (!Array.isArray(parts) || !parts.length) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'No parts found';
+        sel.appendChild(opt);
+        return;
+    }
+
+    parts.forEach(function (part) {
+        const opt = document.createElement('option');
+        opt.value = String(part.part_id);
+        opt.textContent = part.label;
+        sel.appendChild(opt);
+    });
+
+    const key = `ys:lastPart:${pieceId}`;
+    const last = localStorage.getItem(key);
+    if (last && Array.from(sel.options).some(function (opt) { return opt.value === last; })) {
+        sel.value = last;
+    } else {
+        sel.selectedIndex = 0;
+    }
+    sel.disabled = false;
+    sel.addEventListener('change', function () {
+        localStorage.setItem(key, sel.value);
+    }, { once: true });
+}
+
+async function bootEditModeFromDb(pieceId, partId) {
+    const url = `./get_metric_arr.php?piece_id=${encodeURIComponent(pieceId)}&part=${encodeURIComponent(partId)}`;
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+        const txt = await response.text();
+        throw new Error(txt || `Failed to load metric_arr (${response.status})`);
+    }
+    const data = await response.json();
+    const liveMetric = MetricStore.clone(data.metric_arr);
+
+    window.pdf_file$$module$synpdf = '/pdfs/' + data.pdf_file;
+    window.metric_arr$$module$synpdf = liveMetric;
+    window.adv_settings$$module$synpdf = data.adv_settings || {};
+    window.times_arr$$module$synpdf = undefined;
+    window.offset_js$$module$synpdf = 0;
+    window.scoreFnm$$module$synpdf = data.pdf_file.replace(/\.[^.]+$/, '');
+
+    MetricStore.setGroundTruthMetricData(data.metric_arr, {
+        pieceId: String(pieceId),
+        partId: String(partId),
+        pdfFile: data.pdf_file,
+        editionLabel: data.edition_label || null,
+        loadedAt: new Date().toISOString()
+    });
+    MetricStore.setMetricData(liveMetric, { clone: false });
+
+    if (typeof window.msc_check_preload$$module$synpdf === 'function') {
+        window.msc_check_preload$$module$synpdf();
+    }
+}
+
 function activateExclusiveMode(mode) {
     clearExclusiveModeState();
 
@@ -3013,7 +3089,6 @@ function collectMergedSystemBarlineCandidates(pageImageData, mergedSystem, domin
         var top = Math.max(0, Math.round(bounds.top));
         var bot = Math.min(Math.floor(pixelData.length / stride) - 1, Math.round(bounds.bottom));
         var height = bot - top + 1;
-        if (height < 12) continue;
 
         var blackCount = 0;
         var consecutiveDark = 0;
@@ -4919,11 +4994,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const loadBtn = document.getElementById('loadBtn');
     const pieceSelect = document.getElementById('piece_id1');
+    const partSelect = document.getElementById('sync-part');
+    const pdfInput = document.getElementById('fknp');
+    if (pieceSelect && partSelect && !window.location.href.includes('ml-label')) {
+        pieceSelect.addEventListener('change', async function () {
+            const pieceId = pieceSelect.value.trim();
+            if (!pieceId) {
+                partSelect.innerHTML = '<option value="">— choose a piece first —</option>';
+                partSelect.disabled = true;
+                return;
+            }
+
+            try {
+                const parts = await fetchPartsForPiece(pieceId);
+                populateEditModePartDropdown(parts, pieceId);
+            } catch (err) {
+                console.error(err);
+                partSelect.innerHTML = '<option value="">(Error loading parts)</option>';
+                partSelect.disabled = true;
+            }
+        });
+    }
     if (loadBtn && pieceSelect) {
         // Only attach if it's the intended load button on the normal edit mode
         // In ML labeler, ML label tools handles this
         if (!window.location.href.includes('ml-label')) {
-            loadBtn.addEventListener('click', function () {
+            loadBtn.addEventListener('click', async function () {
                 const pieceId = pieceSelect.value.trim();
 
                 if (!pieceId) {
@@ -4931,10 +5027,28 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                fetchAndLoadJsFile(pieceId);
+                if (partSelect && partSelect.value) {
+                    try {
+                        await bootEditModeFromDb(pieceId, partSelect.value.trim());
+                    } catch (err) {
+                        console.error('Error loading score from DB:', err);
+                        alert('Error loading score: ' + err.message);
+                        return;
+                    }
+                } else {
+                    if (MetricStore && typeof MetricStore.clearGroundTruthMetricData === 'function') {
+                        MetricStore.clearGroundTruthMetricData();
+                    }
+                    fetchAndLoadJsFile(pieceId);
+                }
                 loadAlreadySyncedRecordings(pieceId);
             });
         }
+    }
+    if (pdfInput && MetricStore && typeof MetricStore.clearGroundTruthMetricData === 'function') {
+        pdfInput.addEventListener('change', function () {
+            MetricStore.clearGroundTruthMetricData();
+        });
     }
 
     const rewindBtn = document.getElementById('rewind');
@@ -5366,6 +5480,9 @@ $(document).ready(function () {
         deMetriek$$module$synpdf[pagenum] = pageData;
         if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.snapshotCandidateBaselineForPage) {
             SynpdfCorrectionTools.snapshotCandidateBaselineForPage(pagenum, pageData, pianoSystemSnapshots, 'piano_cnn');
+        }
+        if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.autoDiffPageAgainstGroundTruth) {
+            SynpdfCorrectionTools.autoDiffPageAgainstGroundTruth(pagenum);
         }
         if (!persistMetricData()) {
             alert("Could not save piano CNN barlines.");

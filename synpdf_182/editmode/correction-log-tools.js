@@ -54,6 +54,16 @@ var SynpdfCorrectionTools = (function () {
         updateCorrectionLogUI();
     }
 
+    function clearGeneratedCorrectionsForPage(pageNum, generatedBy) {
+        var pdfName = getCurrentPdfName();
+        correctionLog = correctionLog.filter(function (entry) {
+            if (!entry || entry.sourcePdf !== pdfName) return true;
+            if (entry.pageNumber !== pageNum) return true;
+            return entry.generatedBy !== generatedBy;
+        });
+        persistCorrectionLogState();
+    }
+
     function downloadCorrectionsPayload(payloadText, filename) {
         var blob = new Blob([payloadText], { type: 'application/json' });
         var downloadUrl = URL.createObjectURL(blob);
@@ -1052,12 +1062,108 @@ var SynpdfCorrectionTools = (function () {
             acceptedMatchX: nearestInfo ? nearestInfo.acceptedMatchX : null,
             acceptedMatchDistance: nearestInfo ? nearestInfo.acceptedMatchDistance : null,
             detectorMode: baseline && baseline.detectorMode ? baseline.detectorMode : null,
+            generatedBy: eventData.generatedBy || null,
             reason: '',
             note: ''
         });
 
         correctionLog[correctionLog.length - 1].cnnTarget = getCnnTrainingTarget(correctionLog[correctionLog.length - 1]);
         persistCorrectionLogState();
+    }
+
+    function getInteriorBarlines(bxs) {
+        if (!Array.isArray(bxs) || bxs.length <= 2) return [];
+        return bxs.slice(1, -1).map(function (value) {
+            return Math.round(Math.abs(value));
+        });
+    }
+
+    function getSystemCenterForMetricPage(pageData, systemIndex, xJson) {
+        if (!pageData || !Array.isArray(pageData.cxs) || !pageData.cxs[systemIndex]) return null;
+        var system = pageData.cxs[systemIndex];
+        var cs = cloneSimpleArray(system && system.cs);
+        if ((!cs || !cs.length) && Array.isArray(system.csl) && Array.isArray(system.csr) &&
+            system.csl.length >= 2 && system.csl.length === system.csr.length) {
+            cs = system.csl.map(function (leftY, index) {
+                return Math.round((leftY + system.csr[index]) / 2);
+            });
+        }
+        if (!cs || !cs.length) return null;
+        return Math.round((Math.min.apply(null, cs) + Math.max.apply(null, cs)) / 2);
+    }
+
+    function autoDiffPageAgainstGroundTruth(pageNum, options) {
+        options = options || {};
+        if (typeof MetricStore === 'undefined' || !MetricStore || typeof MetricStore.getGroundTruthMetricData !== 'function') {
+            return false;
+        }
+
+        var gtPayload = MetricStore.getGroundTruthMetricData();
+        if (!gtPayload || !Array.isArray(gtPayload.metric_arr)) {
+            return false;
+        }
+
+        var metricData = typeof MetricStore.getMetricData === 'function' ? MetricStore.getMetricData() : null;
+        var currentPage = metricData && metricData[pageNum];
+        var gtPage = gtPayload.metric_arr[pageNum];
+        if (!currentPage || !gtPage || !Array.isArray(currentPage.cxs) || !Array.isArray(currentPage.bxs) ||
+            !Array.isArray(gtPage.cxs) || !Array.isArray(gtPage.bxs)) {
+            return false;
+        }
+
+        var tolerance = typeof options.tolerance === 'number' ? options.tolerance : 4;
+        clearGeneratedCorrectionsForPage(pageNum, 'ground_truth_diff');
+
+        var systemCount = Math.min(currentPage.cxs.length, currentPage.bxs.length, gtPage.cxs.length, gtPage.bxs.length);
+        for (var systemIndex = 0; systemIndex < systemCount; systemIndex++) {
+            var detectedBars = getInteriorBarlines(currentPage.bxs[systemIndex]);
+            var gtBars = getInteriorBarlines(gtPage.bxs[systemIndex]);
+            var matchedDetected = new Array(detectedBars.length).fill(false);
+            var matchedGt = new Array(gtBars.length).fill(false);
+
+            for (var di = 0; di < detectedBars.length; di++) {
+                var bestGt = -1;
+                var bestDistance = Infinity;
+                for (var gi = 0; gi < gtBars.length; gi++) {
+                    if (matchedGt[gi]) continue;
+                    var distance = Math.abs(detectedBars[di] - gtBars[gi]);
+                    if (distance < bestDistance) {
+                        bestDistance = distance;
+                        bestGt = gi;
+                    }
+                }
+                if (bestGt >= 0 && bestDistance <= tolerance) {
+                    matchedDetected[di] = true;
+                    matchedGt[bestGt] = true;
+                }
+            }
+
+            for (var dIdx = 0; dIdx < detectedBars.length; dIdx++) {
+                if (matchedDetected[dIdx]) continue;
+                recordBarlineCorrection({
+                    pageNumber: pageNum,
+                    systemIndex: systemIndex,
+                    xJson: detectedBars[dIdx],
+                    yJson: getSystemCenterForMetricPage(currentPage, systemIndex, detectedBars[dIdx]) || 0,
+                    action: 'delete',
+                    generatedBy: 'ground_truth_diff'
+                });
+            }
+
+            for (var gIdx = 0; gIdx < gtBars.length; gIdx++) {
+                if (matchedGt[gIdx]) continue;
+                recordBarlineCorrection({
+                    pageNumber: pageNum,
+                    systemIndex: systemIndex,
+                    xJson: gtBars[gIdx],
+                    yJson: getSystemCenterForMetricPage(gtPage, systemIndex, gtBars[gIdx]) || 0,
+                    action: 'add',
+                    generatedBy: 'ground_truth_diff'
+                });
+            }
+        }
+
+        return true;
     }
 
     function init(options) {
@@ -1079,6 +1185,7 @@ var SynpdfCorrectionTools = (function () {
         clearFullScoreDebugState: clearFullScoreDebugState,
         updateAcceptedBarlinesForPage: updateAcceptedBarlinesForPage,
         recordBarlineCorrection: recordBarlineCorrection,
+        autoDiffPageAgainstGroundTruth: autoDiffPageAgainstGroundTruth,
         getCurrentPdfCnnTrainingExamples: getCurrentPdfCnnTrainingExamples,
         getCurrentPdfName: getCurrentPdfName,
         getCurrentFixwdValue: getCurrentFixwdValue,

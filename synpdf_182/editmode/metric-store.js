@@ -1,6 +1,7 @@
 var MetricStore = (function () {
     var METRIC_KEY = 'jsonString';
     var CORRECTION_LOG_KEY = 'synpdfV2CorrectionLog';
+    var GROUND_TRUTH_KEY = 'synpdfGroundTruthMetricData';
 
     function clone(value) {
         return JSON.parse(JSON.stringify(value));
@@ -77,15 +78,37 @@ var MetricStore = (function () {
         return safeEntries;
     }
 
+    function getGroundTruthMetricData() {
+        var parsed = parseStoredJson(GROUND_TRUTH_KEY);
+        return parsed && Array.isArray(parsed.metric_arr) ? parsed : null;
+    }
+
+    function setGroundTruthMetricData(metricData, context) {
+        var payload = {
+            metric_arr: clone(metricData || []),
+            context: context ? clone(context) : {}
+        };
+        localStorage.setItem(GROUND_TRUTH_KEY, JSON.stringify(payload));
+        return payload;
+    }
+
+    function clearGroundTruthMetricData() {
+        localStorage.removeItem(GROUND_TRUTH_KEY);
+    }
+
     return {
         METRIC_KEY: METRIC_KEY,
         CORRECTION_LOG_KEY: CORRECTION_LOG_KEY,
+        GROUND_TRUTH_KEY: GROUND_TRUTH_KEY,
         clone: clone,
         getStoredMetricData: getStoredMetricData,
         getMetricData: getMetricData,
         setMetricData: setMetricData,
         seedMetricDataFromMemory: seedMetricDataFromMemory,
         getCorrectionLog: getCorrectionLog,
-        setCorrectionLog: setCorrectionLog
+        setCorrectionLog: setCorrectionLog,
+        getGroundTruthMetricData: getGroundTruthMetricData,
+        setGroundTruthMetricData: setGroundTruthMetricData,
+        clearGroundTruthMetricData: clearGroundTruthMetricData
     };
 })();
