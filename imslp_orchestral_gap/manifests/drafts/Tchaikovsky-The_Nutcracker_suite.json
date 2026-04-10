@@ -1,0 +1,84 @@
+{
+  "piece_slug": "Tchaikovsky-The_Nutcracker_suite",
+  "display_title": "The Nutcracker (suite), Op.71a",
+  "composer_last": "Tchaikovsky",
+  "selected_page": {
+    "title": "The Nutcracker (suite), Op.71a (Tchaikovsky, Pyotr)",
+    "url": "https://imslp.org/wiki/The_Nutcracker_(suite),_Op.71a_(Tchaikovsky,_Pyotr)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts / Complete",
+    "publisher": "Leipzig: Breitkopf & Härtel, n.d.(ca.1910).",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; complete_section; string_parts_present; full_string_set; has_rating"
+  },
+  "parts": {
+    "1": "Tchaikovsky-The_Nutcracker_suite-1.pdf",
+    "2": "Tchaikovsky-The_Nutcracker_suite-2.pdf",
+    "3": "Tchaikovsky-The_Nutcracker_suite-3.pdf",
+    "4": "Tchaikovsky-The_Nutcracker_suite-4.pdf",
+    "5": "Tchaikovsky-The_Nutcracker_suite-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "26911",
+    "37556",
+    "37557",
+    "37558",
+    "37559",
+    "37560",
+    "37561",
+    "37562",
+    "37563",
+    "37564",
+    "37565",
+    "37566",
+    "37567",
+    "37568",
+    "37569"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/37556",
+  "selected_string_sources": {
+    "4": {
+      "index": "26911",
+      "filename": "PMLP03607-Tchaikovsky_-_Nutcracker_Suite_Op71a_(cello-part)a.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26911"
+    },
+    "1": {
+      "index": "37566",
+      "filename": "PMLP03607-Tchaikovsky-Op71a.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/37566"
+    },
+    "2": {
+      "index": "37567",
+      "filename": "PMLP03607-Tchaikovsky-Op71a.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/37567"
+    },
+    "3": {
+      "index": "37568",
+      "filename": "PMLP03607-Tchaikovsky-Op71a.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/37568"
+    },
+    "5": {
+      "index": "37569",
+      "filename": "PMLP03607-Tchaikovsky-Op71a.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/37569"
+    }
+  }
+}

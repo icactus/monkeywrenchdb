@@ -1,0 +1,5 @@
+config.json
+cache/
+fullres-pdfs/
+scripts/__pycache__/
+*.log

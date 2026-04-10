@@ -1,0 +1,83 @@
+{
+  "piece_slug": "Tchaikovsky-Romeo_and_Juliet_overture_fantasia",
+  "display_title": "Romeo and Juliet (overture-fantasia), TH 42",
+  "composer_last": "Tchaikovsky",
+  "selected_page": {
+    "title": "Romeo and Juliet (overture-fantasia), TH 42 (Tchaikovsky, Pyotr)",
+    "url": "https://imslp.org/wiki/Romeo_and_Juliet_(overture-fantasia),_TH_42_(Tchaikovsky,_Pyotr)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts / 3rd Version (1880)",
+    "publisher": "Berlin: Bote & Bock, n.d.[1881].  Plate 10297.\nSwitz Orchestra Library, 2024.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; has_rating"
+  },
+  "parts": {
+    "1": "Tchaikovsky-Romeo_and_Juliet_overture_fantasia-1.pdf",
+    "2": "Tchaikovsky-Romeo_and_Juliet_overture_fantasia-2.pdf",
+    "3": "Tchaikovsky-Romeo_and_Juliet_overture_fantasia-3.pdf",
+    "4": "Tchaikovsky-Romeo_and_Juliet_overture_fantasia-4.pdf",
+    "5": "Tchaikovsky-Romeo_and_Juliet_overture_fantasia-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "925009",
+    "925010",
+    "925011",
+    "925012",
+    "925013",
+    "925014",
+    "925015",
+    "925016",
+    "925017",
+    "925018",
+    "925019",
+    "925020",
+    "925021",
+    "925022"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/925009",
+  "selected_string_sources": {
+    "1": {
+      "index": "925018",
+      "filename": "PMLP3603-A_Tchaikovsky_RomeoJuliet_Violin1_IMSLP.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/925018"
+    },
+    "2": {
+      "index": "925019",
+      "filename": "PMLP3603-B_Tchaikovsky_RomeoJuliet_Violin2_IMSLP.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/925019"
+    },
+    "3": {
+      "index": "925020",
+      "filename": "PMLP3603-C_Tchaikovsky_RomeoJuliet_Viola_IMSLP.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/925020"
+    },
+    "4": {
+      "index": "925021",
+      "filename": "PMLP3603-D_Tchaikovsky_RomeoJuliet_Cello_IMSLP.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/925021"
+    },
+    "5": {
+      "index": "925022",
+      "filename": "PMLP3603-E_Tckaikovsky_RomeoJuliet_Bass_IMSLP.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/925022"
+    }
+  }
+}

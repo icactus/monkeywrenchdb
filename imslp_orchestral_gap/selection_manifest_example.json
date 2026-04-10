@@ -1,0 +1,34 @@
+{
+  "piece_slug": "Tchaikovsky-Romeo_and_Juliet",
+  "display_title": "Romeo and Juliet (overture-fantasia), TH 42",
+  "composer_last": "Tchaikovsky",
+  "selected_page": {
+    "title": "Romeo and Juliet (overture-fantasia), TH 42 (Tchaikovsky, Pyotr)",
+    "url": "https://imslp.org/wiki/Romeo_and_Juliet_(overture-fantasia),_TH_42_(Tchaikovsky,_Pyotr)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Kalmus string parts",
+    "publisher": "Kalmus",
+    "downloads": 0,
+    "why": "Kalmus was available and matched the target orchestra materials."
+  },
+  "parts": {
+    "1": "Tchaikovsky-Romeo_and_Juliet-1.pdf",
+    "2": "Tchaikovsky-Romeo_and_Juliet-2.pdf",
+    "3": "Tchaikovsky-Romeo_and_Juliet-3.pdf",
+    "4": "Tchaikovsky-Romeo_and_Juliet-4.pdf",
+    "5": "Tchaikovsky-Romeo_and_Juliet-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null
+}

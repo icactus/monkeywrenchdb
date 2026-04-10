@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IMSLP Selection Manifest",
+  "type": "object",
+  "required": [
+    "piece_slug",
+    "display_title",
+    "composer_last",
+    "selected_page",
+    "selection_basis",
+    "selected_edition",
+    "parts",
+    "part_mapping",
+    "cello_bass_shared_source",
+    "needs_review",
+    "llm_used"
+  ],
+  "properties": {
+    "piece_slug": {
+      "type": "string"
+    },
+    "display_title": {
+      "type": "string"
+    },
+    "composer_last": {
+      "type": "string"
+    },
+    "selected_page": {
+      "type": "object",
+      "required": [
+        "title",
+        "url"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "selection_basis": {
+      "type": "string",
+      "enum": [
+        "kalmus_preferred",
+        "most_downloaded_standard_edition",
+        "llm_disambiguated"
+      ]
+    },
+    "selected_edition": {
+      "type": "object",
+      "required": [
+        "label",
+        "publisher",
+        "downloads",
+        "why"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "publisher": {
+          "type": "string"
+        },
+        "downloads": {
+          "type": "integer"
+        },
+        "why": {
+          "type": "string"
+        }
+      }
+    },
+    "parts": {
+      "type": "object",
+      "required": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "properties": {
+        "1": {
+          "type": "string"
+        },
+        "2": {
+          "type": "string"
+        },
+        "3": {
+          "type": "string"
+        },
+        "4": {
+          "type": "string"
+        },
+        "5": {
+          "type": "string"
+        }
+      }
+    },
+    "part_mapping": {
+      "type": "object"
+    },
+    "cello_bass_shared_source": {
+      "type": "boolean"
+    },
+    "needs_review": {
+      "type": "boolean"
+    },
+    "llm_used": {
+      "type": "boolean"
+    },
+    "llm_confidence": {
+      "type": [
+        "number",
+        "null"
+      ]
+    }
+  }
+}

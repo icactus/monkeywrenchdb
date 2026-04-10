@@ -1,0 +1,26 @@
+{
+  "input_tsv": "imslp_orchestral_gap/missing_nonconcerto.tsv",
+  "work_queue_jsonl": "imslp_orchestral_gap/work_queue.jsonl",
+  "cache_dir": "imslp_orchestral_gap/cache",
+  "selection_manifest_jsonl": "imslp_orchestral_gap/manifests/selection_manifest.jsonl",
+  "draft_manifest_dir": "imslp_orchestral_gap/manifests/drafts",
+  "downloads_dir": "imslp_orchestral_gap/fullres-pdfs",
+  "imslp_api_account": "",
+  "imslp_api_account_env": "IMSLP_API_ACCOUNT",
+  "imslp_api_password_env": "IMSLP_API_PASSWORD",
+  "imslp_api_sleep_seconds": 3,
+  "prefer_kalmus": true,
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "llm": {
+    "enabled": true,
+    "mode": "ambiguous_only",
+    "runner": "opencode",
+    "model": "free-model-placeholder"
+  }
+}
