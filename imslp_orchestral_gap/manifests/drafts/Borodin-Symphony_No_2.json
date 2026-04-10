@@ -1,0 +1,99 @@
+{
+  "piece_slug": "Borodin-Symphony_No_2",
+  "display_title": "Symphony No.2",
+  "composer_last": "Borodin",
+  "selected_page": {
+    "title": "Symphony No.2 (Borodin, Aleksandr)",
+    "url": "https://imslp.org/wiki/Symphony_No.2_(Borodin,_Aleksandr)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "St. Petersburg: V. Bessel & Co., n.d.[1891].  Plate 2480.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Borodin-Symphony_No_2-1.pdf",
+    "2": "Borodin-Symphony_No_2-2.pdf",
+    "3": "Borodin-Symphony_No_2-3.pdf",
+    "4": "Borodin-Symphony_No_2-4.pdf",
+    "5": "Borodin-Symphony_No_2-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "601785",
+    "601786",
+    "601787",
+    "601788",
+    "601789",
+    "601790",
+    "601791",
+    "601792",
+    "601793",
+    "601794",
+    "601795",
+    "601796",
+    "601797",
+    "601798",
+    "601799",
+    "601800",
+    "601801",
+    "601802",
+    "601803",
+    "601804",
+    "601805",
+    "601806",
+    "601807",
+    "601808",
+    "601809",
+    "601810",
+    "601811",
+    "601812",
+    "601813",
+    "601814"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/601787",
+  "selected_string_sources": {
+    "1": {
+      "index": "601809",
+      "filename": "PMLP9176-IMSLP38185-PMLP09176-Borodin-Sym2.Violin-1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/601809"
+    },
+    "2": {
+      "index": "601810",
+      "filename": "PMLP9176-IMSLP38176-PMLP09176-Borodin-Sym2.Violin-2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/601810"
+    },
+    "3": {
+      "index": "601811",
+      "filename": "PMLP9176-IMSLP38185-PMLP09176-Borodin-Sym2.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/601811"
+    },
+    "4": {
+      "index": "601812",
+      "filename": "PMLP9176-IMSLP26975-PMLP09176-Borodin_-_Symphony_No2_cello-part_a.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/601812"
+    },
+    "5": {
+      "index": "601813",
+      "filename": "PMLP9176-IMSLP38186-PMLP09176-Borodin-Sym2.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/601813"
+    }
+  }
+}

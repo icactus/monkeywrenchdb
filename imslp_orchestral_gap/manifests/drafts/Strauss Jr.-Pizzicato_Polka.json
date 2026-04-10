@@ -1,0 +1,39 @@
+{
+  "piece_slug": "Strauss Jr.-Pizzicato_Polka",
+  "display_title": "Pizzicato-Polka",
+  "composer_last": "Strauss Jr.",
+  "selected_page": {
+    "title": "Neue Pizzicato-Polka, Op.449 (Strauss Jr., Johann)",
+    "url": "https://imslp.org/wiki/Neue_Pizzicato-Polka,_Op.449_(Strauss_Jr.,_Johann)"
+  },
+  "selection_basis": "llm_disambiguated",
+  "selected_edition": {
+    "label": "Scores",
+    "publisher": "Vienna/Munich: Doblinger, 1997.  Plate JSGA I-29/5.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_rating"
+  },
+  "parts": {
+    "1": "Strauss Jr.-Pizzicato_Polka-1.pdf",
+    "2": "Strauss Jr.-Pizzicato_Polka-2.pdf",
+    "3": "Strauss Jr.-Pizzicato_Polka-3.pdf",
+    "4": "Strauss Jr.-Pizzicato_Polka-4.pdf",
+    "5": "Strauss Jr.-Pizzicato_Polka-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": true,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "842754"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/842754",
+  "selected_string_sources": {}
+}

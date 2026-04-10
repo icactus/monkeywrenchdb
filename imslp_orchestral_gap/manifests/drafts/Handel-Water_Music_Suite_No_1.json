@@ -1,0 +1,47 @@
+{
+  "piece_slug": "Handel-Water_Music_Suite_No_1",
+  "display_title": "Water Music Suite No.1, HWV 348",
+  "composer_last": "Handel",
+  "selected_page": {
+    "title": "Water Music Suite No.1, HWV 348 (Handel, George Frideric)",
+    "url": "https://imslp.org/wiki/Water_Music_Suite_No.1,_HWV_348_(Handel,_George_Frideric)"
+  },
+  "selection_basis": "llm_disambiguated",
+  "selected_edition": {
+    "label": "Synthesized/MIDI / Complete / 2 Harpsichords (Gouin)",
+    "publisher": "Montréal: Les Éditions Outremontaises, 2013",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; complete_section; has_rating"
+  },
+  "parts": {
+    "1": "Handel-Water_Music_Suite_No_1-1.pdf",
+    "2": "Handel-Water_Music_Suite_No_1-2.pdf",
+    "3": "Handel-Water_Music_Suite_No_1-3.pdf",
+    "4": "Handel-Water_Music_Suite_No_1-4.pdf",
+    "5": "Handel-Water_Music_Suite_No_1-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": true,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "270459",
+    "270460",
+    "270461",
+    "270462",
+    "270463",
+    "270464",
+    "270465",
+    "270466",
+    "270467"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/270459",
+  "selected_string_sources": {}
+}

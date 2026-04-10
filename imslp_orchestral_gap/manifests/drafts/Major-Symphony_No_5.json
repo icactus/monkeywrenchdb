@@ -1,0 +1,40 @@
+{
+  "piece_slug": "Major-Symphony_No_5",
+  "display_title": "Symphony No.5, Op.79",
+  "composer_last": "Major",
+  "selected_page": {
+    "title": "Symphony No.5, Op.79 (Major, Gyula)",
+    "url": "https://imslp.org/wiki/Symphony_No.5,_Op.79_(Major,_Gyula)"
+  },
+  "selection_basis": "llm_disambiguated",
+  "selected_edition": {
+    "label": "0 / 2",
+    "publisher": "Budapest: Béla Méry, n.d. (1910s).",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_rating"
+  },
+  "parts": {
+    "1": "Major-Symphony_No_5-1.pdf",
+    "2": "Major-Symphony_No_5-2.pdf",
+    "3": "Major-Symphony_No_5-3.pdf",
+    "4": "Major-Symphony_No_5-4.pdf",
+    "5": "Major-Symphony_No_5-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": true,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "74386",
+    "74387"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/74386",
+  "selected_string_sources": {}
+}

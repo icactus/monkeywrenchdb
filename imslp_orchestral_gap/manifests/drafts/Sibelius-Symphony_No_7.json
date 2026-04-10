@@ -1,0 +1,93 @@
+{
+  "piece_slug": "Sibelius-Symphony_No_7",
+  "display_title": "Symphony No.7, Op.105",
+  "composer_last": "Sibelius",
+  "selected_page": {
+    "title": "Symphony No.7, Op.105 (Sibelius, Jean)",
+    "url": "https://imslp.org/wiki/Symphony_No.7,_Op.105_(Sibelius,_Jean)"
+  },
+  "selection_basis": "most_downloaded_standard_edition",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Copenhagen: Wilhelm Hansen, 1980.  Plate 18658a.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Sibelius-Symphony_No_7-1.pdf",
+    "2": "Sibelius-Symphony_No_7-2.pdf",
+    "3": "Sibelius-Symphony_No_7-3.pdf",
+    "4": "Sibelius-Symphony_No_7-4.pdf",
+    "5": "Sibelius-Symphony_No_7-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "624744",
+    "624745",
+    "624746",
+    "624747",
+    "624748",
+    "624749",
+    "965567",
+    "965568",
+    "965569",
+    "965570",
+    "965571",
+    "965572",
+    "965573",
+    "965574",
+    "965575",
+    "965576",
+    "965577",
+    "965578",
+    "965579",
+    "965580",
+    "965581",
+    "965582",
+    "965583",
+    "965584"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/965567",
+  "selected_string_sources": {
+    "1": {
+      "index": "624745",
+      "filename": "PMLP38350-09_Violins_I.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/624745"
+    },
+    "2": {
+      "index": "624746",
+      "filename": "PMLP38350-09_Violins_II.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/624746"
+    },
+    "3": {
+      "index": "624747",
+      "filename": "PMLP38350-10_Violas.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/624747"
+    },
+    "4": {
+      "index": "624748",
+      "filename": "PMLP38350-11_Cellos.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/624748"
+    },
+    "5": {
+      "index": "624749",
+      "filename": "PMLP38350-12_Basses.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/624749"
+    }
+  }
+}

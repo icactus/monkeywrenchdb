@@ -1,0 +1,74 @@
+{
+  "piece_slug": "Elgar-Serenade_for_String_Orchestra",
+  "display_title": "Serenade for String Orchestra, Op.20",
+  "composer_last": "Elgar",
+  "selected_page": {
+    "title": "Serenade for String Orchestra, Op.20 (Elgar, Edward)",
+    "url": "https://imslp.org/wiki/Serenade_for_String_Orchestra,_Op.20_(Elgar,_Edward)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "H. Sawano",
+    "downloads": 0,
+    "why": "partial_title_match; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Elgar-Serenade_for_String_Orchestra-1.pdf",
+    "2": "Elgar-Serenade_for_String_Orchestra-2.pdf",
+    "3": "Elgar-Serenade_for_String_Orchestra-3.pdf",
+    "4": "Elgar-Serenade_for_String_Orchestra-4.pdf",
+    "5": "Elgar-Serenade_for_String_Orchestra-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "43668",
+    "43669",
+    "43670",
+    "43671",
+    "43672"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/43668",
+  "selected_string_sources": {
+    "1": {
+      "index": "43668",
+      "filename": "PMLP34331-ee001a_vn1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/43668"
+    },
+    "2": {
+      "index": "43669",
+      "filename": "PMLP34331-ee001a_vn2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/43669"
+    },
+    "3": {
+      "index": "43670",
+      "filename": "PMLP34331-ee001a_va.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/43670"
+    },
+    "4": {
+      "index": "43671",
+      "filename": "PMLP34331-ee001a_vc.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/43671"
+    },
+    "5": {
+      "index": "43672",
+      "filename": "PMLP34331-ee001a_db.pdf",
+      "description": "Double Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/43672"
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "piece_slug": "Brahms-Tragic_Overture",
+  "display_title": "Tragic Overture, Op.81",
+  "composer_last": "Brahms",
+  "selected_page": {
+    "title": "Tragic Overture, Op.81 (Brahms, Johannes)",
+    "url": "https://imslp.org/wiki/Tragic_Overture,_Op.81_(Brahms,_Johannes)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Leipzig: Breitkopf und Härtel, n.d.(ca.1927).  Plate Orch.B. 3209.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Brahms-Tragic_Overture-1.pdf",
+    "2": "Brahms-Tragic_Overture-2.pdf",
+    "3": "Brahms-Tragic_Overture-3.pdf",
+    "4": "Brahms-Tragic_Overture-4.pdf",
+    "5": "Brahms-Tragic_Overture-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "26535",
+    "44951",
+    "44952",
+    "44953",
+    "44954",
+    "44955",
+    "44956",
+    "44957",
+    "44958",
+    "44959",
+    "44960",
+    "44961",
+    "44962",
+    "44963"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/44951",
+  "selected_string_sources": {
+    "4": {
+      "index": "26535",
+      "filename": "PMLP03582-Brahms_-_Tragic_Overture_(cello-part)a.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26535"
+    },
+    "1": {
+      "index": "44960",
+      "filename": "PMLP03582-Brahms-Op081.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/44960"
+    },
+    "2": {
+      "index": "44961",
+      "filename": "PMLP03582-Brahms-Op081.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/44961"
+    },
+    "3": {
+      "index": "44962",
+      "filename": "PMLP03582-Brahms-Op081.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/44962"
+    },
+    "5": {
+      "index": "44963",
+      "filename": "PMLP03582-Brahms-Op081.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/44963"
+    }
+  }
+}

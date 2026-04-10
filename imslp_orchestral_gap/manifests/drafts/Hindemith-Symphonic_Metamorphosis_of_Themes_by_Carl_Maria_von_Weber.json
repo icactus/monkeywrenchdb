@@ -1,0 +1,88 @@
+{
+  "piece_slug": "Hindemith-Symphonic_Metamorphosis_of_Themes_by_Carl_Maria_von_Weber",
+  "display_title": "Symphonic Metamorphosis of Themes by Carl Maria von Weber",
+  "composer_last": "Hindemith",
+  "selected_page": {
+    "title": "Symphonic Metamorphosis of Themes by Carl Maria von Weber (Hindemith, Paul)",
+    "url": "https://imslp.org/wiki/Symphonic_Metamorphosis_of_Themes_by_Carl_Maria_von_Weber_(Hindemith,_Paul)"
+  },
+  "selection_basis": "most_downloaded_standard_edition",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Mainz: B. Schott's Söhne, 1945.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Hindemith-Symphonic_Metamorphosis_of_Themes_by_Carl_Maria_von_Weber-1.pdf",
+    "2": "Hindemith-Symphonic_Metamorphosis_of_Themes_by_Carl_Maria_von_Weber-2.pdf",
+    "3": "Hindemith-Symphonic_Metamorphosis_of_Themes_by_Carl_Maria_von_Weber-3.pdf",
+    "4": "Hindemith-Symphonic_Metamorphosis_of_Themes_by_Carl_Maria_von_Weber-4.pdf",
+    "5": "Hindemith-Symphonic_Metamorphosis_of_Themes_by_Carl_Maria_von_Weber-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "312025",
+    "312028",
+    "312031",
+    "312034",
+    "312044",
+    "312045",
+    "312046",
+    "312047",
+    "312048",
+    "312049",
+    "312050",
+    "312051",
+    "542519",
+    "542520",
+    "542521",
+    "542522",
+    "542523",
+    "542524",
+    "542525"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/312025",
+  "selected_string_sources": {
+    "1": {
+      "index": "312047",
+      "filename": "PMLP503907-SinfMeta-Vln-1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/312047"
+    },
+    "2": {
+      "index": "312048",
+      "filename": "PMLP503907-SinfMeta-Vln-2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/312048"
+    },
+    "3": {
+      "index": "312049",
+      "filename": "PMLP503907-SinfMeta-Vla.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/312049"
+    },
+    "4": {
+      "index": "312050",
+      "filename": "PMLP503907-SinfMeta-Cello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/312050"
+    },
+    "5": {
+      "index": "312051",
+      "filename": "PMLP503907-SinfMeta-Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/312051"
+    }
+  }
+}

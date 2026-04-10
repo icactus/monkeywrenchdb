@@ -1,0 +1,94 @@
+{
+  "piece_slug": "Tchaikovsky-Symphony_No_3",
+  "display_title": "Symphony No.3, Op.29",
+  "composer_last": "Tchaikovsky",
+  "selected_page": {
+    "title": "Symphony No.3, Op.29 (Tchaikovsky, Pyotr)",
+    "url": "https://imslp.org/wiki/Symphony_No.3,_Op.29_(Tchaikovsky,_Pyotr)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Leipzig: Brucknerverlag, n.d.(ca.1938).",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Tchaikovsky-Symphony_No_3-1.pdf",
+    "2": "Tchaikovsky-Symphony_No_3-2.pdf",
+    "3": "Tchaikovsky-Symphony_No_3-3.pdf",
+    "4": "Tchaikovsky-Symphony_No_3-4.pdf",
+    "5": "Tchaikovsky-Symphony_No_3-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "26955",
+    "38498",
+    "38499",
+    "38500",
+    "38501",
+    "38502",
+    "965808",
+    "965809",
+    "965810",
+    "965811",
+    "965812",
+    "965813",
+    "965814",
+    "965815",
+    "965816",
+    "965817",
+    "965818",
+    "965819",
+    "965820",
+    "965821",
+    "965822",
+    "965823",
+    "965824",
+    "965825",
+    "965826"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/965808",
+  "selected_string_sources": {
+    "4": {
+      "index": "26955",
+      "filename": "PMLP02729-Tchaikovsky_-_Symphony_No3_Op29_(cello-part)a.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26955"
+    },
+    "1": {
+      "index": "38499",
+      "filename": "PMLP02729-Tchaikovsky-Op29.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38499"
+    },
+    "2": {
+      "index": "38500",
+      "filename": "PMLP02729-Tchaikovsky-Op29.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38500"
+    },
+    "3": {
+      "index": "38501",
+      "filename": "PMLP02729-Tchaikovsky-Op29.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38501"
+    },
+    "5": {
+      "index": "38502",
+      "filename": "PMLP02729-Tchaikovsky-Op29.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38502"
+    }
+  }
+}

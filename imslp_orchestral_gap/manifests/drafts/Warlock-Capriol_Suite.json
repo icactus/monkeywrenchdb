@@ -1,0 +1,74 @@
+{
+  "piece_slug": "Warlock-Capriol_Suite",
+  "display_title": "Capriol Suite",
+  "composer_last": "Warlock",
+  "selected_page": {
+    "title": "Capriol Suite (Warlock, Peter)",
+    "url": "https://imslp.org/wiki/Capriol_Suite_(Warlock,_Peter)"
+  },
+  "selection_basis": "most_downloaded_standard_edition",
+  "selected_edition": {
+    "label": "Parts / Complete",
+    "publisher": "Steve Johnson",
+    "downloads": 0,
+    "why": "partial_title_match; has_parts_section; parts_section; complete_section; string_parts_present; full_string_set; has_rating"
+  },
+  "parts": {
+    "1": "Warlock-Capriol_Suite-1.pdf",
+    "2": "Warlock-Capriol_Suite-2.pdf",
+    "3": "Warlock-Capriol_Suite-3.pdf",
+    "4": "Warlock-Capriol_Suite-4.pdf",
+    "5": "Warlock-Capriol_Suite-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "631216",
+    "631217",
+    "631218",
+    "631219",
+    "631220"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/631216",
+  "selected_string_sources": {
+    "1": {
+      "index": "631216",
+      "filename": "PMLP174204-01_Warlock_Capriol_Suite_(Violin_I).pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/631216"
+    },
+    "2": {
+      "index": "631217",
+      "filename": "PMLP174204-02_Warlock_Capriol_Suite_(Violin_II).pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/631217"
+    },
+    "3": {
+      "index": "631218",
+      "filename": "PMLP174204-03_Warlock_Capriol_Suite_(Viola).pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/631218"
+    },
+    "4": {
+      "index": "631219",
+      "filename": "PMLP174204-04_Warlock_Capriol_Suite_(Cello).pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/631219"
+    },
+    "5": {
+      "index": "631220",
+      "filename": "PMLP174204-05_Warlock_Capriol_Suite_(Contrabass).pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/631220"
+    }
+  }
+}

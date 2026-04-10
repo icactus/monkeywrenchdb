@@ -1,0 +1,91 @@
+{
+  "piece_slug": "Rachmaninoff-Symphonic_Dances",
+  "display_title": "Symphonic Dances, Op.45",
+  "composer_last": "Rachmaninoff",
+  "selected_page": {
+    "title": "Symphonic Dances, Op.45 (Rachmaninoff, Sergei)",
+    "url": "https://imslp.org/wiki/Symphonic_Dances,_Op.45_(Rachmaninoff,_Sergei)"
+  },
+  "selection_basis": "most_downloaded_standard_edition",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "New York: Charles Foley, 1941.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Rachmaninoff-Symphonic_Dances-1.pdf",
+    "2": "Rachmaninoff-Symphonic_Dances-2.pdf",
+    "3": "Rachmaninoff-Symphonic_Dances-3.pdf",
+    "4": "Rachmaninoff-Symphonic_Dances-4.pdf",
+    "5": "Rachmaninoff-Symphonic_Dances-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "308322",
+    "308325",
+    "308328",
+    "308331",
+    "308332",
+    "308343",
+    "308344",
+    "308350",
+    "308351",
+    "308352",
+    "308353",
+    "308354",
+    "308355",
+    "308356",
+    "580729",
+    "580730",
+    "580731",
+    "580732",
+    "580733",
+    "580734",
+    "580735",
+    "580736"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/308322",
+  "selected_string_sources": {
+    "1": {
+      "index": "308352",
+      "filename": "PMLP08817-r01_vn1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/308352"
+    },
+    "2": {
+      "index": "308353",
+      "filename": "PMLP08817-r02_vn2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/308353"
+    },
+    "3": {
+      "index": "308354",
+      "filename": "PMLP08817-r03_va.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/308354"
+    },
+    "4": {
+      "index": "308355",
+      "filename": "PMLP08817-r04_vc.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/308355"
+    },
+    "5": {
+      "index": "308356",
+      "filename": "PMLP08817-r05_cb.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/308356"
+    }
+  }
+}

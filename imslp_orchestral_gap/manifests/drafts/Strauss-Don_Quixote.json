@@ -1,0 +1,105 @@
+{
+  "piece_slug": "Strauss-Don_Quixote",
+  "display_title": "Don Quixote, Op.35",
+  "composer_last": "Strauss",
+  "selected_page": {
+    "title": "Don Quixote, Op.35 (Strauss, Richard)",
+    "url": "https://imslp.org/wiki/Don_Quixote,_Op.35_(Strauss,_Richard)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "0 / 2",
+    "publisher": "Munich: Jos. Aibl Verlag, 1898.  Plate R. 2886.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; string_parts_present; full_string_set; has_rating"
+  },
+  "parts": {
+    "1": "Strauss-Don_Quixote-1.pdf",
+    "2": "Strauss-Don_Quixote-2.pdf",
+    "3": "Strauss-Don_Quixote-3.pdf",
+    "4": "Strauss-Don_Quixote-4.pdf",
+    "5": "Strauss-Don_Quixote-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "27864",
+    "52188",
+    "52193",
+    "52198",
+    "52201",
+    "52202",
+    "52203",
+    "52204",
+    "52205",
+    "963201",
+    "963202",
+    "963203",
+    "963204",
+    "963205",
+    "963206",
+    "963207",
+    "963208",
+    "963209",
+    "963210",
+    "963211",
+    "963212",
+    "963213",
+    "963214",
+    "963215",
+    "963216",
+    "963217",
+    "963218",
+    "963219",
+    "963220",
+    "963221",
+    "963222",
+    "963223",
+    "963224",
+    "963225",
+    "963226",
+    "963227"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/52188",
+  "selected_string_sources": {
+    "4": {
+      "index": "27864",
+      "filename": "PMLP04977-Strauss_Don_Quixote,_Op.35_cello.pdf",
+      "description": "Cellos (Tutti)",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/27864"
+    },
+    "1": {
+      "index": "52202",
+      "filename": "PMLP04977-StraussR-Op35.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/52202"
+    },
+    "2": {
+      "index": "52203",
+      "filename": "PMLP04977-StraussR-Op35.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/52203"
+    },
+    "3": {
+      "index": "52204",
+      "filename": "PMLP04977-StraussR-Op35.Viola.pdf",
+      "description": "Violas (Solo/Tutti)",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/52204"
+    },
+    "5": {
+      "index": "52205",
+      "filename": "PMLP04977-StraussR-Op35.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/52205"
+    }
+  }
+}

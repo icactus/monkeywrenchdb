@@ -1,0 +1,85 @@
+{
+  "piece_slug": "Ravel-Rapsodie_espagnole",
+  "display_title": "Rapsodie espagnole, M.54",
+  "composer_last": "Ravel",
+  "selected_page": {
+    "title": "Rapsodie espagnole, M.54 (Ravel, Maurice)",
+    "url": "https://imslp.org/wiki/Rapsodie_espagnole,_M.54_(Ravel,_Maurice)"
+  },
+  "selection_basis": "most_downloaded_standard_edition",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Paris: Durand & Fils, 1908.  Plate D. & F. 7129.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Ravel-Rapsodie_espagnole-1.pdf",
+    "2": "Ravel-Rapsodie_espagnole-2.pdf",
+    "3": "Ravel-Rapsodie_espagnole-3.pdf",
+    "4": "Ravel-Rapsodie_espagnole-4.pdf",
+    "5": "Ravel-Rapsodie_espagnole-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "23420",
+    "27983",
+    "31218",
+    "34754",
+    "34755",
+    "35090",
+    "35091",
+    "35092",
+    "35093",
+    "35094",
+    "35095",
+    "35096",
+    "35097",
+    "35098",
+    "35099",
+    "35100"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/35090",
+  "selected_string_sources": {
+    "4": {
+      "index": "27983",
+      "filename": "PMLP05166-Ravel_Rhapsodie_Espagnole_cello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/27983"
+    },
+    "1": {
+      "index": "34754",
+      "filename": "PMLP05166-Ravel-RapsodieEspagnole.vn1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/34754"
+    },
+    "2": {
+      "index": "34755",
+      "filename": "PMLP05166-Ravel-RapsodieEspagnole.vn2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/34755"
+    },
+    "3": {
+      "index": "35099",
+      "filename": "PMLP05166-Ravel-RapsodieEspagnol.Violas.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/35099"
+    },
+    "5": {
+      "index": "35100",
+      "filename": "PMLP05166-Ravel-RapsodieEspagnol.Basses.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/35100"
+    }
+  }
+}

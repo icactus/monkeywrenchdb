@@ -1,0 +1,102 @@
+{
+  "piece_slug": "Prokofiev-Romeo_and_Juliet_2nd_suite",
+  "display_title": "Romeo and Juliet (2nd suite), Op.64ter",
+  "composer_last": "Prokofiev",
+  "selected_page": {
+    "title": "Romeo and Juliet (2nd suite), Op.64ter (Prokofiev, Sergey)",
+    "url": "https://imslp.org/wiki/Romeo_and_Juliet_(2nd_suite),_Op.64ter_(Prokofiev,_Sergey)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts / Complete",
+    "publisher": "Manuscript, n.d.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; complete_section; string_parts_present; full_string_set; has_rating"
+  },
+  "parts": {
+    "1": "Prokofiev-Romeo_and_Juliet_2nd_suite-1.pdf",
+    "2": "Prokofiev-Romeo_and_Juliet_2nd_suite-2.pdf",
+    "3": "Prokofiev-Romeo_and_Juliet_2nd_suite-3.pdf",
+    "4": "Prokofiev-Romeo_and_Juliet_2nd_suite-4.pdf",
+    "5": "Prokofiev-Romeo_and_Juliet_2nd_suite-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "332151",
+    "332152",
+    "332153",
+    "332154",
+    "332155",
+    "332156",
+    "332157",
+    "332158",
+    "332159",
+    "332160",
+    "332161",
+    "332162",
+    "332163",
+    "332164",
+    "332165",
+    "332166",
+    "332167",
+    "332168",
+    "332169",
+    "332170",
+    "332173",
+    "332174",
+    "332175",
+    "332176",
+    "332177",
+    "332178",
+    "332179",
+    "332180",
+    "332181",
+    "332182",
+    "332183",
+    "332184",
+    "332185"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/332153",
+  "selected_string_sources": {
+    "1": {
+      "index": "332181",
+      "filename": "PMLP63408-28._violin_1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/332181"
+    },
+    "2": {
+      "index": "332182",
+      "filename": "PMLP63408-29._violin_2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/332182"
+    },
+    "3": {
+      "index": "332183",
+      "filename": "PMLP63408-30._viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/332183"
+    },
+    "4": {
+      "index": "332184",
+      "filename": "PMLP63408-31._cello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/332184"
+    },
+    "5": {
+      "index": "332185",
+      "filename": "PMLP63408-32._bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/332185"
+    }
+  }
+}

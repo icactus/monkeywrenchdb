@@ -1,0 +1,76 @@
+{
+  "piece_slug": "Bizet-Carmen_Suite_No_2",
+  "display_title": "Carmen Suite No.2",
+  "composer_last": "Bizet",
+  "selected_page": {
+    "title": "Carmen Suite No.2 (Bizet, Georges)",
+    "url": "https://imslp.org/wiki/Carmen_Suite_No.2_(Bizet,_Georges)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Leipzig: Breitkopf und Härtel, n.d.(ca.1910).  Plate Orch.B. 1772/73.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Bizet-Carmen_Suite_No_2-1.pdf",
+    "2": "Bizet-Carmen_Suite_No_2-2.pdf",
+    "3": "Bizet-Carmen_Suite_No_2-3.pdf",
+    "4": "Bizet-Carmen_Suite_No_2-4.pdf",
+    "5": "Bizet-Carmen_Suite_No_2-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": true,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "26316",
+    "50105",
+    "50106",
+    "50107",
+    "50108",
+    "50109",
+    "50110",
+    "50111",
+    "50112",
+    "50113",
+    "50114",
+    "50115",
+    "50116"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/50105",
+  "selected_string_sources": {
+    "4": {
+      "index": "26316",
+      "filename": "PMLP15769-Bizet_-_Carmen_Suite_No2_(cello-part)a.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26316"
+    },
+    "1": {
+      "index": "50114",
+      "filename": "PMLP64164-Bizet-CarmenSte2.Violin.pdf",
+      "description": "Violins I, II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/50114"
+    },
+    "3": {
+      "index": "50115",
+      "filename": "PMLP64164-Bizet-CarmenSte2.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/50115"
+    },
+    "5": {
+      "index": "50116",
+      "filename": "PMLP64164-Bizet-CarmenSte2.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/50116"
+    }
+  }
+}

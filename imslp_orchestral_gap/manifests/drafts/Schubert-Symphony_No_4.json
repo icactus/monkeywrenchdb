@@ -1,0 +1,80 @@
+{
+  "piece_slug": "Schubert-Symphony_No_4",
+  "display_title": "Symphony No.4, D.417",
+  "composer_last": "Schubert",
+  "selected_page": {
+    "title": "Symphony No.4, D.417 (Schubert, Franz)",
+    "url": "https://imslp.org/wiki/Symphony_No.4,_D.417_(Schubert,_Franz)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Leipzig: Breitkopf und Härtel, n.d.(ca.1890).  Plate Orch.B. 4464.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Schubert-Symphony_No_4-1.pdf",
+    "2": "Schubert-Symphony_No_4-2.pdf",
+    "3": "Schubert-Symphony_No_4-3.pdf",
+    "4": "Schubert-Symphony_No_4-4.pdf",
+    "5": "Schubert-Symphony_No_4-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": true,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "20652",
+    "20653",
+    "26296",
+    "36166",
+    "36167",
+    "36168",
+    "36169",
+    "36170",
+    "36171",
+    "36172",
+    "36173"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/36166",
+  "selected_string_sources": {
+    "1": {
+      "index": "20652",
+      "filename": "PMLP25691-Schubert_Symphony_4_V1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/20652"
+    },
+    "2": {
+      "index": "20653",
+      "filename": "PMLP25691-Schubert_Symphony_4_V2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/20653"
+    },
+    "4": {
+      "index": "26296",
+      "filename": "PMLP25691-Schubert_-_Symphony_No4_in_C_minor_Tragic_(cello-part)a.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26296"
+    },
+    "5": {
+      "index": "26296",
+      "filename": "PMLP25691-Schubert_-_Symphony_No4_in_C_minor_Tragic_(cello-part)a.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26296"
+    },
+    "3": {
+      "index": "36173",
+      "filename": "PMLP25691-Schubert-Sym4.Viola.pdf",
+      "description": "Viola",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/36173"
+    }
+  }
+}

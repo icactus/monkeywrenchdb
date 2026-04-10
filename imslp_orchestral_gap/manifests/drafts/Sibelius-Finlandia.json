@@ -1,0 +1,82 @@
+{
+  "piece_slug": "Sibelius-Finlandia",
+  "display_title": "Finlandia, Op.26",
+  "composer_last": "Sibelius",
+  "selected_page": {
+    "title": "Finlandia, Op.26 (Sibelius, Jean)",
+    "url": "https://imslp.org/wiki/Finlandia,_Op.26_(Sibelius,_Jean)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Orchester-Bibliothek\nLeipzig: Breitkopf und Härtel, 1905.  Plate Orch.B. 1618.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Sibelius-Finlandia-1.pdf",
+    "2": "Sibelius-Finlandia-2.pdf",
+    "3": "Sibelius-Finlandia-3.pdf",
+    "4": "Sibelius-Finlandia-4.pdf",
+    "5": "Sibelius-Finlandia-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "27838",
+    "48754",
+    "48755",
+    "48756",
+    "48757",
+    "48758",
+    "48759",
+    "48760",
+    "48761",
+    "48762",
+    "48763",
+    "48764",
+    "48765"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/48754",
+  "selected_string_sources": {
+    "4": {
+      "index": "27838",
+      "filename": "PMLP06043-Sibelius_Finlandia,_Op.26_cello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/27838"
+    },
+    "1": {
+      "index": "48762",
+      "filename": "PMLP06043-Sibelius-Finlandia.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/48762"
+    },
+    "2": {
+      "index": "48763",
+      "filename": "PMLP06043-Sibelius-Finlandia.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/48763"
+    },
+    "3": {
+      "index": "48764",
+      "filename": "PMLP06043-Sibelius-Finlandia.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/48764"
+    },
+    "5": {
+      "index": "48765",
+      "filename": "PMLP06043-Sibelius-Finlandia.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/48765"
+    }
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "piece_slug": "Mendelssohn-A_Midsummer_Nights_Dream_overture",
+  "display_title": "A Midsummer Night's Dream, overture, Op.21",
+  "composer_last": "Mendelssohn",
+  "selected_page": {
+    "title": "A Midsummer Night's Dream, overture, Op.21 (Mendelssohn, Felix)",
+    "url": "https://imslp.org/wiki/A_Midsummer_Night's_Dream,_overture,_Op.21_(Mendelssohn,_Felix)"
+  },
+  "selection_basis": "llm_disambiguated",
+  "selected_edition": {
+    "label": "Complete / For Piano Quintet (Weiss)",
+    "publisher": "New York: Carl Fischer, 1917.  Plate 19354-57.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; complete_section; string_parts_present; arrangements_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Mendelssohn-A_Midsummer_Nights_Dream_overture-1.pdf",
+    "2": "Mendelssohn-A_Midsummer_Nights_Dream_overture-2.pdf",
+    "3": "Mendelssohn-A_Midsummer_Nights_Dream_overture-3.pdf",
+    "4": "Mendelssohn-A_Midsummer_Nights_Dream_overture-4.pdf",
+    "5": "Mendelssohn-A_Midsummer_Nights_Dream_overture-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": true,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "336889",
+    "336890",
+    "336891",
+    "336892",
+    "336893"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/336893",
+  "selected_string_sources": {
+    "1": {
+      "index": "336889",
+      "filename": "SIBLEY1802.25245.8cf0-39087009103468violin1.pdf",
+      "description": "Violin 1",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/336889"
+    },
+    "2": {
+      "index": "336890",
+      "filename": "SIBLEY1802.25245.46ff-39087009103468violin2.pdf",
+      "description": "Violin 2",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/336890"
+    },
+    "3": {
+      "index": "336891",
+      "filename": "SIBLEY1802.25245.07c5-39087009103468viola.pdf",
+      "description": "Viola",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/336891"
+    },
+    "4": {
+      "index": "336892",
+      "filename": "SIBLEY1802.25245.2964-39087009103468cello.pdf",
+      "description": "Cello",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/336892"
+    }
+  }
+}

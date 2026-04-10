@@ -1,0 +1,94 @@
+{
+  "piece_slug": "Bruckner-Symphony_No_6_in_A_major_WAB_106",
+  "display_title": "Symphony No.6 in A major, WAB 106",
+  "composer_last": "Bruckner",
+  "selected_page": {
+    "title": "Symphony No.6 in A major, WAB 106 (Bruckner, Anton)",
+    "url": "https://imslp.org/wiki/Symphony_No.6_in_A_major,_WAB_106_(Bruckner,_Anton)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts / 1st Published Version (Schalk Revision, 1899)",
+    "publisher": "Vienna: Ludwig Doblinger, n.d.  Plate D. 2300.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Bruckner-Symphony_No_6_in_A_major_WAB_106-1.pdf",
+    "2": "Bruckner-Symphony_No_6_in_A_major_WAB_106-2.pdf",
+    "3": "Bruckner-Symphony_No_6_in_A_major_WAB_106-3.pdf",
+    "4": "Bruckner-Symphony_No_6_in_A_major_WAB_106-4.pdf",
+    "5": "Bruckner-Symphony_No_6_in_A_major_WAB_106-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "26360",
+    "39132",
+    "39133",
+    "39134",
+    "39135",
+    "39136",
+    "970990",
+    "970991",
+    "970992",
+    "970993",
+    "970994",
+    "970995",
+    "970996",
+    "970997",
+    "970998",
+    "970999",
+    "971000",
+    "971001",
+    "971002",
+    "971003",
+    "971004",
+    "971005",
+    "971006",
+    "971007",
+    "971008"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/970990",
+  "selected_string_sources": {
+    "4": {
+      "index": "26360",
+      "filename": "PMLP16209-Bruckner_-_Symphony_No6_in_A_Major_(cello-part)a.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26360"
+    },
+    "1": {
+      "index": "39133",
+      "filename": "PMLP16209-Bruckner-Sym6.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/39133"
+    },
+    "2": {
+      "index": "39134",
+      "filename": "PMLP16209-Bruckner-Sym6.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/39134"
+    },
+    "3": {
+      "index": "39135",
+      "filename": "PMLP16209-Bruckner-Sym6.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/39135"
+    },
+    "5": {
+      "index": "39136",
+      "filename": "PMLP16209-Bruckner-Sym6.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/39136"
+    }
+  }
+}

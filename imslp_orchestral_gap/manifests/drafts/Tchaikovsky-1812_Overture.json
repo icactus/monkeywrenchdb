@@ -1,0 +1,106 @@
+{
+  "piece_slug": "Tchaikovsky-1812_Overture",
+  "display_title": "1812 Overture, Op.49",
+  "composer_last": "Tchaikovsky",
+  "selected_page": {
+    "title": "1812 Overture, Op.49 (Tchaikovsky, Pyotr)",
+    "url": "https://imslp.org/wiki/1812_Overture,_Op.49_(Tchaikovsky,_Pyotr)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Leipzig: Breitkopf & Härtel, n.d.(ca.1910).  Plate Orch.B. 2710.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Tchaikovsky-1812_Overture-1.pdf",
+    "2": "Tchaikovsky-1812_Overture-2.pdf",
+    "3": "Tchaikovsky-1812_Overture-3.pdf",
+    "4": "Tchaikovsky-1812_Overture-4.pdf",
+    "5": "Tchaikovsky-1812_Overture-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "26902",
+    "40750",
+    "40751",
+    "40752",
+    "40753",
+    "966706",
+    "966707",
+    "966708",
+    "966709",
+    "966710",
+    "966711",
+    "966712",
+    "966713",
+    "966714",
+    "966715",
+    "966716",
+    "966717",
+    "966718",
+    "966719",
+    "966720",
+    "966721",
+    "966722",
+    "966723",
+    "966724",
+    "966725",
+    "966726",
+    "966727",
+    "966728",
+    "966729",
+    "966730",
+    "966731",
+    "966732",
+    "966733",
+    "966734",
+    "966735",
+    "966736",
+    "966737"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/966706",
+  "selected_string_sources": {
+    "4": {
+      "index": "26902",
+      "filename": "PMLP03587-Tchaikovsky_-_1812_Festival_Overture_Op49_(cello-part)a.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26902"
+    },
+    "1": {
+      "index": "40750",
+      "filename": "PMLP03587-Tchaikovsky-Op49.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/40750"
+    },
+    "2": {
+      "index": "40751",
+      "filename": "PMLP03587-Tchaikovsky-Op49.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/40751"
+    },
+    "3": {
+      "index": "40752",
+      "filename": "PMLP03587-Tchaikovsky-Op49.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/40752"
+    },
+    "5": {
+      "index": "40753",
+      "filename": "PMLP03587-Tchaikovsky-Op49.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/40753"
+    }
+  }
+}

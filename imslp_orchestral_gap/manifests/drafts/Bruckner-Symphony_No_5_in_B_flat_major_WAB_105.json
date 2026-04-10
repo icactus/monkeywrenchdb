@@ -1,0 +1,94 @@
+{
+  "piece_slug": "Bruckner-Symphony_No_5_in_B_flat_major_WAB_105",
+  "display_title": "Symphony No.5 in B-flat major, WAB 105",
+  "composer_last": "Bruckner",
+  "selected_page": {
+    "title": "Symphony No.5 in B-flat major, WAB 105 (Bruckner, Anton)",
+    "url": "https://imslp.org/wiki/Symphony_No.5_in_B-flat_major,_WAB_105_(Bruckner,_Anton)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts / 2nd Version (1878)",
+    "publisher": "Alte Gesamtausgabe, Band 5. V. Symphonie B-dur\nLeipzig: Musikwissenschaftlicher Verlag, G.m.b.H., 1935.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Bruckner-Symphony_No_5_in_B_flat_major_WAB_105-1.pdf",
+    "2": "Bruckner-Symphony_No_5_in_B_flat_major_WAB_105-2.pdf",
+    "3": "Bruckner-Symphony_No_5_in_B_flat_major_WAB_105-3.pdf",
+    "4": "Bruckner-Symphony_No_5_in_B_flat_major_WAB_105-4.pdf",
+    "5": "Bruckner-Symphony_No_5_in_B_flat_major_WAB_105-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "26356",
+    "39120",
+    "39121",
+    "39122",
+    "39123",
+    "39124",
+    "966758",
+    "966759",
+    "966760",
+    "966761",
+    "966762",
+    "966763",
+    "966764",
+    "966765",
+    "966766",
+    "966767",
+    "966768",
+    "966769",
+    "966770",
+    "966771",
+    "966772",
+    "966773",
+    "966774",
+    "966775",
+    "966776"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/966758",
+  "selected_string_sources": {
+    "4": {
+      "index": "26356",
+      "filename": "PMLP10607-Bruckner_-_Symphony_No5_in_Bb_Major_(cello-part)a.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26356"
+    },
+    "1": {
+      "index": "39121",
+      "filename": "PMLP10607-Bruckner-Sym5.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/39121"
+    },
+    "2": {
+      "index": "39122",
+      "filename": "PMLP10607-Bruckner-Sym5.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/39122"
+    },
+    "3": {
+      "index": "39123",
+      "filename": "PMLP10607-Bruckner-Sym5.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/39123"
+    },
+    "5": {
+      "index": "39124",
+      "filename": "PMLP10607-Bruckner-Sym5.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/39124"
+    }
+  }
+}

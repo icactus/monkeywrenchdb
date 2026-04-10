@@ -1,0 +1,87 @@
+{
+  "piece_slug": "Kalinnikov-Symphony_No_1_in_G_minor",
+  "display_title": "Symphony No.1 in G minor",
+  "composer_last": "Kalinnikov",
+  "selected_page": {
+    "title": "Symphony No.1 in G minor (Kalinnikov, Vasily)",
+    "url": "https://imslp.org/wiki/Symphony_No.1_in_G_minor_(Kalinnikov,_Vasily)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Moscow: P. Jurgenson, n.d.[1900].  Plate 25541.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Kalinnikov-Symphony_No_1_in_G_minor-1.pdf",
+    "2": "Kalinnikov-Symphony_No_1_in_G_minor-2.pdf",
+    "3": "Kalinnikov-Symphony_No_1_in_G_minor-3.pdf",
+    "4": "Kalinnikov-Symphony_No_1_in_G_minor-4.pdf",
+    "5": "Kalinnikov-Symphony_No_1_in_G_minor-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "24593",
+    "24596",
+    "24610",
+    "24611",
+    "24612",
+    "24613",
+    "24614",
+    "24615",
+    "24616",
+    "24617",
+    "24618",
+    "574024",
+    "574025",
+    "574026",
+    "574027",
+    "574028",
+    "574029",
+    "574030"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/24593",
+  "selected_string_sources": {
+    "1": {
+      "index": "24614",
+      "filename": "PMLP55474-Kalinnikov_Symphony_1_Violin_1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/24614"
+    },
+    "2": {
+      "index": "24615",
+      "filename": "PMLP55474-Kalinnikov_Symphony_1_Violin_2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/24615"
+    },
+    "3": {
+      "index": "24616",
+      "filename": "PMLP55474-Kalinnikov_Symphony_1_Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/24616"
+    },
+    "4": {
+      "index": "24617",
+      "filename": "PMLP55474-Kalinnikov_Symphony_1_Cello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/24617"
+    },
+    "5": {
+      "index": "24618",
+      "filename": "PMLP55474-Kalinnikov_Symphony_1_Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/24618"
+    }
+  }
+}

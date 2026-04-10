@@ -1,0 +1,75 @@
+{
+  "piece_slug": "Bach-Orchestral_Suite_No_2_in_B_minor",
+  "display_title": "Orchestral Suite No.2 in B minor, BWV 1067",
+  "composer_last": "Bach",
+  "selected_page": {
+    "title": "Orchestral Suite No.2 in B minor, BWV 1067 (Bach, Johann Sebastian)",
+    "url": "https://imslp.org/wiki/Orchestral_Suite_No.2_in_B_minor,_BWV_1067_(Bach,_Johann_Sebastian)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts / Complete",
+    "publisher": "Brian Berryman",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; complete_section; string_parts_present; full_string_set; has_rating"
+  },
+  "parts": {
+    "1": "Bach-Orchestral_Suite_No_2_in_B_minor-1.pdf",
+    "2": "Bach-Orchestral_Suite_No_2_in_B_minor-2.pdf",
+    "3": "Bach-Orchestral_Suite_No_2_in_B_minor-3.pdf",
+    "4": "Bach-Orchestral_Suite_No_2_in_B_minor-4.pdf",
+    "5": "Bach-Orchestral_Suite_No_2_in_B_minor-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": true,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "462240",
+    "462241",
+    "462242",
+    "462243",
+    "462244",
+    "462245"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/462240",
+  "selected_string_sources": {
+    "1": {
+      "index": "462241",
+      "filename": "PMLP99998-Bach_Ouverture_BWV_1067_perf_edition_Violin_I.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/462241"
+    },
+    "2": {
+      "index": "462242",
+      "filename": "PMLP99998-Bach_Ouverture_BWV_1067_perf_edition_Violin_II.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/462242"
+    },
+    "3": {
+      "index": "462243",
+      "filename": "PMLP99998-Bach_Ouverture_BWV_1067_perf_edition_Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/462243"
+    },
+    "4": {
+      "index": "462244",
+      "filename": "PMLP99998-Bach_Ouverture_BWV_1067_perf_edition_Violoncello.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/462244"
+    },
+    "5": {
+      "index": "462244",
+      "filename": "PMLP99998-Bach_Ouverture_BWV_1067_perf_edition_Violoncello.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/462244"
+    }
+  }
+}

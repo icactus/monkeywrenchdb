@@ -1,0 +1,97 @@
+{
+  "piece_slug": "Beach-Symphony_in_E_minor_Op_32_Gaelic",
+  "display_title": "Symphony in E minor, Op.32 'Gaelic'",
+  "composer_last": "Beach",
+  "selected_page": {
+    "title": "Symphony in E minor, Op.32 'Gaelic' (Beach, Amy Marcy)",
+    "url": "https://imslp.org/wiki/Symphony_in_E_minor,_Op.32_'Gaelic'_(Beach,_Amy_Marcy)"
+  },
+  "selection_basis": "most_downloaded_standard_edition",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Boston: Arthur P. Schmidt, 1897.  Plate S. 437.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Beach-Symphony_in_E_minor_Op_32_Gaelic-1.pdf",
+    "2": "Beach-Symphony_in_E_minor_Op_32_Gaelic-2.pdf",
+    "3": "Beach-Symphony_in_E_minor_Op_32_Gaelic-3.pdf",
+    "4": "Beach-Symphony_in_E_minor_Op_32_Gaelic-4.pdf",
+    "5": "Beach-Symphony_in_E_minor_Op_32_Gaelic-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "588557",
+    "588558",
+    "588559",
+    "588560",
+    "588561",
+    "588562",
+    "588563",
+    "588564",
+    "588565",
+    "588566",
+    "588567",
+    "588568",
+    "588569",
+    "588570",
+    "588571",
+    "588572",
+    "588573",
+    "588574",
+    "588575",
+    "588576",
+    "588577",
+    "588578",
+    "588579",
+    "588580",
+    "588581",
+    "588582",
+    "588583",
+    "588584"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/588557",
+  "selected_string_sources": {
+    "1": {
+      "index": "588580",
+      "filename": "PMLP60094-Beach-Op32-24.vn1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/588580"
+    },
+    "2": {
+      "index": "588581",
+      "filename": "PMLP60094-Beach-Op32-25.vn2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/588581"
+    },
+    "3": {
+      "index": "588582",
+      "filename": "PMLP60094-Beach-Op32-26.va.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/588582"
+    },
+    "4": {
+      "index": "588583",
+      "filename": "PMLP60094-Beach-Op32-27.vc.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/588583"
+    },
+    "5": {
+      "index": "588584",
+      "filename": "PMLP60094-Beach-Op32-28.db.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/588584"
+    }
+  }
+}

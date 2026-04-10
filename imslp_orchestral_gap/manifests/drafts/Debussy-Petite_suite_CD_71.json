@@ -1,0 +1,83 @@
+{
+  "piece_slug": "Debussy-Petite_suite_CD_71",
+  "display_title": "Petite suite, CD 71",
+  "composer_last": "Debussy",
+  "selected_page": {
+    "title": "Petite suite, CD 71 (Debussy, Claude)",
+    "url": "https://imslp.org/wiki/Petite_suite,_CD_71_(Debussy,_Claude)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Complete / For Orchestra (Büsser)",
+    "publisher": "Paris: Durand & Cie, 1907.  Plate D. & F. 6949.",
+    "downloads": 0,
+    "why": "partial_title_match; kalmus_on_work_page; kalmus_preferred; complete_section; string_parts_present; full_string_set; arrangements_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Debussy-Petite_suite_CD_71-1.pdf",
+    "2": "Debussy-Petite_suite_CD_71-2.pdf",
+    "3": "Debussy-Petite_suite_CD_71-3.pdf",
+    "4": "Debussy-Petite_suite_CD_71-4.pdf",
+    "5": "Debussy-Petite_suite_CD_71-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": true,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "525818",
+    "525819",
+    "525820",
+    "525821",
+    "525822",
+    "525823",
+    "525824",
+    "525825",
+    "525826",
+    "525827",
+    "525828",
+    "525829",
+    "525830",
+    "525831"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/525818",
+  "selected_string_sources": {
+    "1": {
+      "index": "525827",
+      "filename": "PMLP11272-PMLUS00813-10violins1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/525827"
+    },
+    "2": {
+      "index": "525828",
+      "filename": "PMLP11272-PMLUS00814-11violins2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/525828"
+    },
+    "3": {
+      "index": "525829",
+      "filename": "PMLP11272-PMLUS00815-12violas.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/525829"
+    },
+    "4": {
+      "index": "525830",
+      "filename": "PMLP11272-PMLUS00816-13cellos.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/525830"
+    },
+    "5": {
+      "index": "525831",
+      "filename": "PMLP11272-PMLUS00817-14basses.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/525831"
+    }
+  }
+}

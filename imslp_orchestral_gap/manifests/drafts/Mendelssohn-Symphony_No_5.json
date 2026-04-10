@@ -1,0 +1,90 @@
+{
+  "piece_slug": "Mendelssohn-Symphony_No_5",
+  "display_title": "Symphony No.5, Op.107",
+  "composer_last": "Mendelssohn",
+  "selected_page": {
+    "title": "Symphony No.5, Op.107 (Mendelssohn, Felix)",
+    "url": "https://imslp.org/wiki/Symphony_No.5,_Op.107_(Mendelssohn,_Felix)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Ductus Exemplo, 2025.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Mendelssohn-Symphony_No_5-1.pdf",
+    "2": "Mendelssohn-Symphony_No_5-2.pdf",
+    "3": "Mendelssohn-Symphony_No_5-3.pdf",
+    "4": "Mendelssohn-Symphony_No_5-4.pdf",
+    "5": "Mendelssohn-Symphony_No_5-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "960720",
+    "960721",
+    "960722",
+    "960723",
+    "960724",
+    "960725",
+    "960726",
+    "960727",
+    "960728",
+    "960729",
+    "960730",
+    "960731",
+    "960732",
+    "960733",
+    "960734",
+    "960735",
+    "960736",
+    "960737",
+    "960738",
+    "960739",
+    "960740"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/960720",
+  "selected_string_sources": {
+    "1": {
+      "index": "960736",
+      "filename": "PMLP22731-17_-_Violini_I.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/960736"
+    },
+    "2": {
+      "index": "960737",
+      "filename": "PMLP22731-18_-_Violini_II.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/960737"
+    },
+    "3": {
+      "index": "960738",
+      "filename": "PMLP22731-19_-_Viole.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/960738"
+    },
+    "4": {
+      "index": "960739",
+      "filename": "PMLP22731-20_-_Violoncelli.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/960739"
+    },
+    "5": {
+      "index": "960740",
+      "filename": "PMLP22731-21_-_Contrabassi.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/960740"
+    }
+  }
+}

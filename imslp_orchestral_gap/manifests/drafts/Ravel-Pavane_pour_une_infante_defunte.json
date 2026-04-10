@@ -1,0 +1,80 @@
+{
+  "piece_slug": "Ravel-Pavane_pour_une_infante_defunte",
+  "display_title": "Pavane pour une infante défunte, M.19",
+  "composer_last": "Ravel",
+  "selected_page": {
+    "title": "Pavane pour une infante défunte, M.19 (Ravel, Maurice)",
+    "url": "https://imslp.org/wiki/Pavane_pour_une_infante_défunte,_M.19_(Ravel,_Maurice)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "0 / 2",
+    "publisher": "Paris: E. Demets, 1910.  Plate E. 1543 D.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; kalmus_on_work_page; kalmus_preferred; string_parts_present; full_string_set; has_rating"
+  },
+  "parts": {
+    "1": "Ravel-Pavane_pour_une_infante_defunte-1.pdf",
+    "2": "Ravel-Pavane_pour_une_infante_defunte-2.pdf",
+    "3": "Ravel-Pavane_pour_une_infante_defunte-3.pdf",
+    "4": "Ravel-Pavane_pour_une_infante_defunte-4.pdf",
+    "5": "Ravel-Pavane_pour_une_infante_defunte-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "494321",
+    "494322",
+    "494323",
+    "494324",
+    "494325",
+    "494326",
+    "494327",
+    "494328",
+    "494329",
+    "494330",
+    "494331"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/494321",
+  "selected_string_sources": {
+    "1": {
+      "index": "494327",
+      "filename": "PMLP03577-219a-Ravel-PavaneInfanteDefunte-07-Violon1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/494327"
+    },
+    "2": {
+      "index": "494328",
+      "filename": "PMLP03577-219a-Ravel-PavaneInfanteDefunte-08-Violon2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/494328"
+    },
+    "3": {
+      "index": "494329",
+      "filename": "PMLP03577-219a-Ravel-PavaneInfanteDefunte-09-Alto.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/494329"
+    },
+    "4": {
+      "index": "494330",
+      "filename": "PMLP03577-219a-Ravel-PavaneInfanteDefunte-10-Violoncelle.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/494330"
+    },
+    "5": {
+      "index": "494331",
+      "filename": "PMLP03577-219a-Ravel-PavaneInfanteDefunte-11-Contrebasse.pdf",
+      "description": "Double Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/494331"
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "piece_slug": "Mozart-Symphony_No_25_in_G_minor",
+  "display_title": "Symphony No.25 in G minor, K.183/173dB",
+  "composer_last": "Mozart",
+  "selected_page": {
+    "title": "Symphony No.25 in G minor, K.183/173dB (Mozart, Wolfgang Amadeus)",
+    "url": "https://imslp.org/wiki/Symphony_No.25_in_G_minor,_K.183/173dB_(Mozart,_Wolfgang_Amadeus)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Gory",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Mozart-Symphony_No_25_in_G_minor-1.pdf",
+    "2": "Mozart-Symphony_No_25_in_G_minor-2.pdf",
+    "3": "Mozart-Symphony_No_25_in_G_minor-3.pdf",
+    "4": "Mozart-Symphony_No_25_in_G_minor-4.pdf",
+    "5": "Mozart-Symphony_No_25_in_G_minor-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": true,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "28114",
+    "28115",
+    "28116",
+    "28117",
+    "28118",
+    "28119",
+    "28120",
+    "28121"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/28114",
+  "selected_string_sources": {
+    "1": {
+      "index": "28118",
+      "filename": "PMLP01544-Sinfonia_nº_25_en_Sol_menor_-_Violin_I.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/28118"
+    },
+    "2": {
+      "index": "28119",
+      "filename": "PMLP01544-Sinfonia_nº_25_en_Sol_menor_-_Violin_II.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/28119"
+    },
+    "3": {
+      "index": "28120",
+      "filename": "PMLP01544-Sinfonia_nº_25_en_Sol_menor_-_Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/28120"
+    },
+    "4": {
+      "index": "28121",
+      "filename": "PMLP01544-Sinfonia_nº_25_en_Sol_menor_-_Violoncelo_y_Contrabajo.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/28121"
+    },
+    "5": {
+      "index": "28121",
+      "filename": "PMLP01544-Sinfonia_nº_25_en_Sol_menor_-_Violoncelo_y_Contrabajo.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/28121"
+    }
+  }
+}

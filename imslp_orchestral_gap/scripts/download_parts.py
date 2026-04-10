@@ -4,6 +4,7 @@ import argparse
 import html
 import json
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from http.cookiejar import Cookie, CookieJar
@@ -69,6 +70,42 @@ def fetch_text(opener: urllib.request.OpenerDirector, url: str) -> tuple[str, st
     return final_url, payload.decode("utf-8", errors="ignore")
 
 
+def is_pdf_response(final_url: str, payload: bytes) -> bool:
+    return payload.startswith(b"%PDF-") or urllib.parse.urlparse(final_url).path.lower().endswith(".pdf")
+
+
+def rewrite_petrucci_us_linkhandler(url: str) -> str | None:
+    parsed = urllib.parse.urlparse(url)
+    if parsed.netloc not in {"www.petruccilibrary.us", "petruccilibrary.us"}:
+        return None
+    if parsed.path != "/linkhandler.php":
+        return None
+    query = urllib.parse.parse_qs(parsed.query)
+    path_values = query.get("path")
+    if not path_values:
+        return None
+    path = path_values[0].lstrip("/")
+    if not path.lower().endswith(".pdf"):
+        return None
+    return urllib.parse.urlunparse(("https", parsed.netloc, f"/{path}", "", "", ""))
+
+
+def fetch_html_or_direct_pdf(opener: urllib.request.OpenerDirector, url: str) -> tuple[str, str | None, str | None]:
+    try:
+        final_url, payload = fetch_url(opener, url)
+    except urllib.error.HTTPError as exc:
+        rewritten = rewrite_petrucci_us_linkhandler(exc.url)
+        if exc.code == 406 and rewritten:
+            return rewritten, rewritten, None
+        raise
+    if is_pdf_response(final_url, payload):
+        return final_url, final_url, None
+    rewritten = rewrite_petrucci_us_linkhandler(final_url)
+    if rewritten:
+        return rewritten, rewritten, None
+    return final_url, None, payload.decode("utf-8", errors="ignore")
+
+
 def parse_disclaimer_url(page_html: str) -> str | None:
     soup = BeautifulSoup(page_html, "html.parser")
     link = soup.find("a", href=lambda href: isinstance(href, str) and "Special:IMSLPDisclaimerAccept/" in href)
@@ -88,6 +125,14 @@ def parse_wait_data_url(page_html: str) -> str | None:
     return html.unescape(data_id)
 
 
+def parse_direct_pdf_link(page_html: str, base_url: str) -> str | None:
+    soup = BeautifulSoup(page_html, "html.parser")
+    link = soup.find("a", href=lambda href: isinstance(href, str) and ".pdf" in href.lower())
+    if not link:
+        return None
+    return urllib.parse.urljoin(base_url, html.unescape(link["href"]))
+
+
 def resolve_direct_pdf_url(
     opener: urllib.request.OpenerDirector,
     source_index: str,
@@ -98,9 +143,16 @@ def resolve_direct_pdf_url(
     for attempt in range(4):
         if sleep_seconds > 0:
             time.sleep(sleep_seconds)
-        _, page_html = fetch_text(opener, image_url)
+        page_final_url, direct_pdf_url, page_html = fetch_html_or_direct_pdf(opener, image_url)
+        if direct_pdf_url:
+            return direct_pdf_url
+        if page_html is None:
+            raise RuntimeError(f"Unable to read IMSLP response for index {source_index}.")
 
         direct_url = parse_wait_data_url(page_html)
+        if direct_url:
+            return direct_url
+        direct_url = parse_direct_pdf_link(page_html, page_final_url)
         if direct_url:
             return direct_url
 
@@ -108,8 +160,15 @@ def resolve_direct_pdf_url(
         if disclaimer_url:
             if sleep_seconds > 0:
                 time.sleep(sleep_seconds)
-            _, disclaimer_html = fetch_text(opener, disclaimer_url)
+            disclaimer_final_url, direct_pdf_url, disclaimer_html = fetch_html_or_direct_pdf(opener, disclaimer_url)
+            if direct_pdf_url:
+                return direct_pdf_url
+            if disclaimer_html is None:
+                raise RuntimeError(f"Unable to read IMSLP disclaimer response for index {source_index}.")
             direct_url = parse_wait_data_url(disclaimer_html)
+            if direct_url:
+                return direct_url
+            direct_url = parse_direct_pdf_link(disclaimer_html, disclaimer_final_url)
             if direct_url:
                 return direct_url
             continue
@@ -148,6 +207,7 @@ def download_manifest(
     downloads_dir: Path,
     sleep_seconds: float,
     force: bool,
+    dry_run: bool,
 ) -> None:
     downloads_dir.mkdir(parents=True, exist_ok=True)
     source_cache: dict[str, bytes] = {}
@@ -163,6 +223,10 @@ def download_manifest(
             print(f"skip {target_path.name}: already exists")
             continue
 
+        if dry_run:
+            print(f"would save {target_path.name} from IMSLP index {source_index}")
+            continue
+
         payload = source_cache.get(source_index)
         if payload is None:
             direct_url = resolve_direct_pdf_url(opener, source_index, sleep_seconds)
@@ -176,11 +240,20 @@ def download_manifest(
         print(f"saved {target_path.name}")
 
 
+def missing_part_numbers(manifest: dict) -> list[str]:
+    sources = manifest.get("selected_string_sources", {})
+    return [str(part_number) for part_number in range(1, 6) if str(part_number) not in sources]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Download full-resolution IMSLP part PDFs from draft manifests")
     parser.add_argument("--piece-slug", help="Only download one draft manifest by piece slug")
     parser.add_argument("--sleep-seconds", type=float, help="Delay between IMSLP requests")
     parser.add_argument("--force", action="store_true", help="Redownload files even if they already exist")
+    parser.add_argument("--include-review", action="store_true", help="Also download manifests flagged as needing review")
+    parser.add_argument("--allow-incomplete", action="store_true", help="Download manifests missing one or more string-part sources")
+    parser.add_argument("--continue-on-error", action="store_true", help="Continue with later manifests if one download fails")
+    parser.add_argument("--dry-run", action="store_true", help="Print intended downloads without contacting IMSLP")
     args = parser.parse_args()
 
     config = load_config()
@@ -197,9 +270,39 @@ def main() -> None:
     if not manifest_paths:
         raise SystemExit("No draft manifests found.")
 
+    downloaded = 0
+    skipped = 0
+    failed: list[tuple[str, str]] = []
+
     for manifest_path in manifest_paths:
         manifest = load_manifest(manifest_path)
-        download_manifest(opener, manifest, downloads_dir, sleep_seconds, args.force)
+        piece_slug = manifest.get("piece_slug", manifest_path.stem)
+        if manifest.get("needs_review") and not args.include_review:
+            print(f"skip {piece_slug}: needs review")
+            skipped += 1
+            continue
+
+        missing_parts = missing_part_numbers(manifest)
+        if missing_parts and not args.allow_incomplete:
+            print(f"skip {piece_slug}: missing part sources {', '.join(missing_parts)}")
+            skipped += 1
+            continue
+
+        try:
+            download_manifest(opener, manifest, downloads_dir, sleep_seconds, args.force, args.dry_run)
+            downloaded += 1
+        except Exception as exc:
+            failed.append((piece_slug, str(exc)))
+            print(f"error {piece_slug}: {exc}")
+            if not args.continue_on_error:
+                raise
+
+    print(f"summary: processed={downloaded} skipped={skipped} failed={len(failed)}")
+    for piece_slug, message in failed:
+        print(f"failed\t{piece_slug}\t{message}")
+
+    if failed:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

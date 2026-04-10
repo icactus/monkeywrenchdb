@@ -1,0 +1,94 @@
+{
+  "piece_slug": "Tchaikovsky-The_Sleeping_Beauty_ballet",
+  "display_title": "The Sleeping Beauty (ballet), Op.66",
+  "composer_last": "Tchaikovsky",
+  "selected_page": {
+    "title": "The Sleeping Beauty (ballet), Op.66 (Tchaikovsky, Pyotr)",
+    "url": "https://imslp.org/wiki/The_Sleeping_Beauty_(ballet),_Op.66_(Tchaikovsky,_Pyotr)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Manuscript, n.d.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Tchaikovsky-The_Sleeping_Beauty_ballet-1.pdf",
+    "2": "Tchaikovsky-The_Sleeping_Beauty_ballet-2.pdf",
+    "3": "Tchaikovsky-The_Sleeping_Beauty_ballet-3.pdf",
+    "4": "Tchaikovsky-The_Sleeping_Beauty_ballet-4.pdf",
+    "5": "Tchaikovsky-The_Sleeping_Beauty_ballet-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "165995",
+    "26938",
+    "40825",
+    "40826",
+    "40827",
+    "40828",
+    "40829",
+    "40830",
+    "40831",
+    "40832",
+    "40833",
+    "40834",
+    "40835",
+    "40836",
+    "40837",
+    "40838",
+    "40839",
+    "40840",
+    "40841",
+    "40842",
+    "40843",
+    "40844",
+    "40845",
+    "40846",
+    "40847"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/40825",
+  "selected_string_sources": {
+    "4": {
+      "index": "26938",
+      "filename": "PMLP26902-Tchaikovsky_-_Sleeping_Beauty_Op66_(cello-part)a.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26938"
+    },
+    "1": {
+      "index": "40844",
+      "filename": "PMLP26902-Tchaikovsky-Op66.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/40844"
+    },
+    "2": {
+      "index": "40845",
+      "filename": "PMLP26902-Tchaikovsky-Op66.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/40845"
+    },
+    "3": {
+      "index": "40846",
+      "filename": "PMLP26902-Tchaikovsky-Op66.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/40846"
+    },
+    "5": {
+      "index": "40847",
+      "filename": "PMLP26902-Tchaikovsky-Op66.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/40847"
+    }
+  }
+}

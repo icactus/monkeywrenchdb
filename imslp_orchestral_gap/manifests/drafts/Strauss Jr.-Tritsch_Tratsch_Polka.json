@@ -1,0 +1,40 @@
+{
+  "piece_slug": "Strauss Jr.-Tritsch_Tratsch_Polka",
+  "display_title": "Tritsch-Tratsch-Polka, Op.214",
+  "composer_last": "Strauss Jr.",
+  "selected_page": {
+    "title": "Tritsch-Tratsch-Polka, Op.214 (Strauss Jr., Johann)",
+    "url": "https://imslp.org/wiki/Tritsch-Tratsch-Polka,_Op.214_(Strauss_Jr.,_Johann)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Recordings",
+    "publisher": "New York: Columbia, No.LB 128, n.d.(ca.1950).  CHA 1088.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; has_rating"
+  },
+  "parts": {
+    "1": "Strauss Jr.-Tritsch_Tratsch_Polka-1.pdf",
+    "2": "Strauss Jr.-Tritsch_Tratsch_Polka-2.pdf",
+    "3": "Strauss Jr.-Tritsch_Tratsch_Polka-3.pdf",
+    "4": "Strauss Jr.-Tritsch_Tratsch_Polka-4.pdf",
+    "5": "Strauss Jr.-Tritsch_Tratsch_Polka-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": true,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "690576",
+    "690577"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/690576",
+  "selected_string_sources": {}
+}

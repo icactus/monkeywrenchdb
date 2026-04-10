@@ -1,0 +1,92 @@
+{
+  "piece_slug": "Mendelssohn-Symphony_No_2",
+  "display_title": "Symphony No.2, Op.52",
+  "composer_last": "Mendelssohn",
+  "selected_page": {
+    "title": "Symphony No.2, Op.52 (Mendelssohn, Felix)",
+    "url": "https://imslp.org/wiki/Symphony_No.2,_Op.52_(Mendelssohn,_Felix)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Breitkopf & Härtels Orchester-Bibliothek, No.5102\nWiesbaden: Breitkopf & Härtel, 1996.  Plate Wq. 2361.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Mendelssohn-Symphony_No_2-1.pdf",
+    "2": "Mendelssohn-Symphony_No_2-2.pdf",
+    "3": "Mendelssohn-Symphony_No_2-3.pdf",
+    "4": "Mendelssohn-Symphony_No_2-4.pdf",
+    "5": "Mendelssohn-Symphony_No_2-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "931522",
+    "931523",
+    "931524",
+    "931525",
+    "931526",
+    "931527",
+    "931528",
+    "931529",
+    "931530",
+    "931531",
+    "931532",
+    "931533",
+    "931534",
+    "931535",
+    "931536",
+    "931537",
+    "931538",
+    "931539",
+    "931540",
+    "931541",
+    "931542",
+    "931543",
+    "931544"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/931522",
+  "selected_string_sources": {
+    "1": {
+      "index": "931540",
+      "filename": "PMLP18968-198_cbI5JuOkb02J.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/931540"
+    },
+    "2": {
+      "index": "931541",
+      "filename": "PMLP18968-209_cbI5JuOkb02J.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/931541"
+    },
+    "3": {
+      "index": "931542",
+      "filename": "PMLP18968-223_cbI5JuOkb02J.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/931542"
+    },
+    "4": {
+      "index": "931543",
+      "filename": "PMLP18968-230_cbI5JuOkb02J.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/931543"
+    },
+    "5": {
+      "index": "931544",
+      "filename": "PMLP18968-238_cbI5JuOkb02J.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/931544"
+    }
+  }
+}

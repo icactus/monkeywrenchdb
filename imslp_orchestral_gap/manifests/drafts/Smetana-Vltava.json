@@ -1,0 +1,85 @@
+{
+  "piece_slug": "Smetana-Vltava",
+  "display_title": "Vltava, JB 1:112/2",
+  "composer_last": "Smetana",
+  "selected_page": {
+    "title": "Vltava, JB 1:112/2 (Smetana, Bedřich)",
+    "url": "https://imslp.org/wiki/Vltava,_JB_1:112/2_(Smetana,_Bedřich)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Leipzig: Breitkopf und Härtel, n.d.(ca.1910).  Plate Orch.B. 4961.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Smetana-Vltava-1.pdf",
+    "2": "Smetana-Vltava-2.pdf",
+    "3": "Smetana-Vltava-3.pdf",
+    "4": "Smetana-Vltava-4.pdf",
+    "5": "Smetana-Vltava-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "38565",
+    "38566",
+    "38567",
+    "38607",
+    "38608",
+    "38609",
+    "38610",
+    "38611",
+    "38612",
+    "38613",
+    "38614",
+    "38615",
+    "38616",
+    "38617",
+    "38618",
+    "928073"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/38607",
+  "selected_string_sources": {
+    "4": {
+      "index": "38567",
+      "filename": "PMLP85117-Smetana-MaVlast2_cello.pdf",
+      "description": "Cellos I, II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38567"
+    },
+    "1": {
+      "index": "38615",
+      "filename": "PMLP85117-Smetana-MaVlast2.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38615"
+    },
+    "2": {
+      "index": "38616",
+      "filename": "PMLP85117-Smetana-MaVlast2.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38616"
+    },
+    "3": {
+      "index": "38617",
+      "filename": "PMLP85117-Smetana-MaVlast2.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38617"
+    },
+    "5": {
+      "index": "38618",
+      "filename": "PMLP85117-Smetana-MaVlast2.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38618"
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "piece_slug": "Elgar-Symphony_No_1",
+  "display_title": "Symphony No.1, Op.55",
+  "composer_last": "Elgar",
+  "selected_page": {
+    "title": "Symphony No.1, Op.55 (Elgar, Edward)",
+    "url": "https://imslp.org/wiki/Symphony_No.1,_Op.55_(Elgar,_Edward)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts / Complete",
+    "publisher": "London: Novello, 1908.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; complete_section; string_parts_present; full_string_set; has_rating"
+  },
+  "parts": {
+    "1": "Elgar-Symphony_No_1-1.pdf",
+    "2": "Elgar-Symphony_No_1-2.pdf",
+    "3": "Elgar-Symphony_No_1-3.pdf",
+    "4": "Elgar-Symphony_No_1-4.pdf",
+    "5": "Elgar-Symphony_No_1-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "20138",
+    "27955",
+    "45504",
+    "45505",
+    "45506",
+    "45507",
+    "45508",
+    "45509",
+    "45510",
+    "45511",
+    "45512",
+    "45513",
+    "45514",
+    "45515",
+    "45516",
+    "45517"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/45504",
+  "selected_string_sources": {
+    "4": {
+      "index": "27955",
+      "filename": "PMLP39959-Elgar_Symphony_No.1,_Op.55_cello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/27955"
+    },
+    "1": {
+      "index": "45514",
+      "filename": "PMLP39959-Elgar-Sym1.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/45514"
+    },
+    "2": {
+      "index": "45515",
+      "filename": "PMLP39959-Elgar-Sym1.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/45515"
+    },
+    "3": {
+      "index": "45516",
+      "filename": "PMLP39959-Elgar-Sym1.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/45516"
+    },
+    "5": {
+      "index": "45517",
+      "filename": "PMLP39959-Elgar-Sym1.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/45517"
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "piece_slug": "Bach-Orchestral_Suite_No_1_in_C_major",
+  "display_title": "Orchestral Suite No.1 in C major, BWV 1066",
+  "composer_last": "Bach",
+  "selected_page": {
+    "title": "Orchestral Suite No.1 in C major, BWV 1066 (Bach, Johann Sebastian)",
+    "url": "https://imslp.org/wiki/Orchestral_Suite_No.1_in_C_major,_BWV_1066_(Bach,_Johann_Sebastian)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Leipzig: C.F. Peters, No. 4416, n.d.[1934].",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Bach-Orchestral_Suite_No_1_in_C_major-1.pdf",
+    "2": "Bach-Orchestral_Suite_No_1_in_C_major-2.pdf",
+    "3": "Bach-Orchestral_Suite_No_1_in_C_major-3.pdf",
+    "4": "Bach-Orchestral_Suite_No_1_in_C_major-4.pdf",
+    "5": "Bach-Orchestral_Suite_No_1_in_C_major-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": true,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "675870",
+    "675871",
+    "675872",
+    "675873",
+    "675874",
+    "675875",
+    "675876",
+    "675877"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/675870",
+  "selected_string_sources": {
+    "1": {
+      "index": "675873",
+      "filename": "PMLP99995-Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/675873"
+    },
+    "2": {
+      "index": "675874",
+      "filename": "PMLP99995-Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/675874"
+    },
+    "3": {
+      "index": "675875",
+      "filename": "PMLP99995-Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/675875"
+    },
+    "4": {
+      "index": "675876",
+      "filename": "PMLP99995-Cello.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/675876"
+    },
+    "5": {
+      "index": "675876",
+      "filename": "PMLP99995-Cello.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/675876"
+    }
+  }
+}

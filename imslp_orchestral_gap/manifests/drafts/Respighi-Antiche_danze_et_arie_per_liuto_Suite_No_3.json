@@ -1,0 +1,74 @@
+{
+  "piece_slug": "Respighi-Antiche_danze_et_arie_per_liuto_Suite_No_3",
+  "display_title": "Antiche danze et arie per liuto, Suite No.3",
+  "composer_last": "Respighi",
+  "selected_page": {
+    "title": "Antiche danze et arie per liuto, Suite No.3 (Respighi, Ottorino)",
+    "url": "https://imslp.org/wiki/Antiche_danze_et_arie_per_liuto,_Suite_No.3_(Respighi,_Ottorino)"
+  },
+  "selection_basis": "most_downloaded_standard_edition",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Mvrasaki",
+    "downloads": 0,
+    "why": "partial_title_match; has_parts_section; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Respighi-Antiche_danze_et_arie_per_liuto_Suite_No_3-1.pdf",
+    "2": "Respighi-Antiche_danze_et_arie_per_liuto_Suite_No_3-2.pdf",
+    "3": "Respighi-Antiche_danze_et_arie_per_liuto_Suite_No_3-3.pdf",
+    "4": "Respighi-Antiche_danze_et_arie_per_liuto_Suite_No_3-4.pdf",
+    "5": "Respighi-Antiche_danze_et_arie_per_liuto_Suite_No_3-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "750337",
+    "750338",
+    "750339",
+    "750340",
+    "750341"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/750337",
+  "selected_string_sources": {
+    "1": {
+      "index": "750337",
+      "filename": "PMLP94412-Respighi_Antiche_danze_ed_arie_Suite_3_Vn1.pdf",
+      "description": "Violins 1",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/750337"
+    },
+    "2": {
+      "index": "750338",
+      "filename": "PMLP94412-Respighi_Antiche_danze_ed_arie_Suite_3_Vn2.pdf",
+      "description": "Violins 2",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/750338"
+    },
+    "3": {
+      "index": "750339",
+      "filename": "PMLP94412-Respighi_Antiche_danze_ed_arie_Suite_3_Va.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/750339"
+    },
+    "4": {
+      "index": "750340",
+      "filename": "PMLP94412-Respighi_Antiche_danze_ed_arie_Suite_3_Vc.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/750340"
+    },
+    "5": {
+      "index": "750341",
+      "filename": "PMLP94412-Respighi_Antiche_danze_ed_arie_Suite_3_Cb.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/750341"
+    }
+  }
+}

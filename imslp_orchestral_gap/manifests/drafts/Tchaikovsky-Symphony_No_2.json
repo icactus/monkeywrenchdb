@@ -1,0 +1,94 @@
+{
+  "piece_slug": "Tchaikovsky-Symphony_No_2",
+  "display_title": "Symphony No.2, Op.17",
+  "composer_last": "Tchaikovsky",
+  "selected_page": {
+    "title": "Symphony No.2, Op.17 (Tchaikovsky, Pyotr)",
+    "url": "https://imslp.org/wiki/Symphony_No.2,_Op.17_(Tchaikovsky,_Pyotr)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts / Version B",
+    "publisher": "St. Petersburg: Bessel, n.d.[1881].  Plate 379.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Tchaikovsky-Symphony_No_2-1.pdf",
+    "2": "Tchaikovsky-Symphony_No_2-2.pdf",
+    "3": "Tchaikovsky-Symphony_No_2-3.pdf",
+    "4": "Tchaikovsky-Symphony_No_2-4.pdf",
+    "5": "Tchaikovsky-Symphony_No_2-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": true,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "26953",
+    "38160",
+    "38170",
+    "38171",
+    "38172",
+    "965699",
+    "965700",
+    "965701",
+    "965702",
+    "965703",
+    "965704",
+    "965705",
+    "965706",
+    "965707",
+    "965708",
+    "965709",
+    "965710",
+    "965711",
+    "965712",
+    "965713",
+    "965714",
+    "965715",
+    "965716",
+    "965717",
+    "965718"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/38160",
+  "selected_string_sources": {
+    "4": {
+      "index": "26953",
+      "filename": "PMLP02718-Tchaikovsky_-_Symphony_No2_Op17_(cello-part)a.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26953"
+    },
+    "5": {
+      "index": "26953",
+      "filename": "PMLP02718-Tchaikovsky_-_Symphony_No2_Op17_(cello-part)a.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26953"
+    },
+    "1": {
+      "index": "38170",
+      "filename": "PMLP02723-Tchaikovsky-Op17.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38170"
+    },
+    "2": {
+      "index": "38171",
+      "filename": "PMLP02723-Tchaikovsky-Op17.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38171"
+    },
+    "3": {
+      "index": "38172",
+      "filename": "PMLP02723-Tchaikovsky-Op17.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38172"
+    }
+  }
+}

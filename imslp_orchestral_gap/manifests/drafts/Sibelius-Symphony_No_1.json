@@ -1,0 +1,96 @@
+{
+  "piece_slug": "Sibelius-Symphony_No_1",
+  "display_title": "Symphony No.1, Op.39",
+  "composer_last": "Sibelius",
+  "selected_page": {
+    "title": "Symphony No.1, Op.39 (Sibelius, Jean)",
+    "url": "https://imslp.org/wiki/Symphony_No.1,_Op.39_(Sibelius,_Jean)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Helsinki: Fazer & Westerlund, 1902.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Sibelius-Symphony_No_1-1.pdf",
+    "2": "Sibelius-Symphony_No_1-2.pdf",
+    "3": "Sibelius-Symphony_No_1-3.pdf",
+    "4": "Sibelius-Symphony_No_1-4.pdf",
+    "5": "Sibelius-Symphony_No_1-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "27846",
+    "49621",
+    "49622",
+    "49623",
+    "49624",
+    "49625",
+    "964892",
+    "964893",
+    "964894",
+    "964895",
+    "964896",
+    "964897",
+    "964898",
+    "964899",
+    "964900",
+    "964901",
+    "964902",
+    "964903",
+    "964904",
+    "964905",
+    "964906",
+    "964907",
+    "964908",
+    "964909",
+    "964910",
+    "964911",
+    "964912"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/964892",
+  "selected_string_sources": {
+    "4": {
+      "index": "27846",
+      "filename": "PMLP38344-Sibelius_Symphony_No.1_in_E_Minor,_Op.39_cello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/27846"
+    },
+    "1": {
+      "index": "49622",
+      "filename": "PMLP38344-Sibelius-Sym1.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/49622"
+    },
+    "2": {
+      "index": "49623",
+      "filename": "PMLP38344-Sibelius-Sym1.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/49623"
+    },
+    "3": {
+      "index": "49624",
+      "filename": "PMLP38344-Sibelius-Sym1.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/49624"
+    },
+    "5": {
+      "index": "49625",
+      "filename": "PMLP38344-Sibelius-Sym1.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/49625"
+    }
+  }
+}

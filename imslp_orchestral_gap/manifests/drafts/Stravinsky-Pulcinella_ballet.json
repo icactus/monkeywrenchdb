@@ -1,0 +1,89 @@
+{
+  "piece_slug": "Stravinsky-Pulcinella_ballet",
+  "display_title": "Pulcinella (ballet), K034",
+  "composer_last": "Stravinsky",
+  "selected_page": {
+    "title": "Pulcinella (ballet), K034 (Stravinsky, Igor)",
+    "url": "https://imslp.org/wiki/Pulcinella_(ballet),_K034_(Stravinsky,_Igor)"
+  },
+  "selection_basis": "most_downloaded_standard_edition",
+  "selected_edition": {
+    "label": "Parts / Revised Version (1966)",
+    "publisher": "London: Boosey & Hawkes, n.d.(ca.1965).  Plate B. & H. 19088.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Stravinsky-Pulcinella_ballet-1.pdf",
+    "2": "Stravinsky-Pulcinella_ballet-2.pdf",
+    "3": "Stravinsky-Pulcinella_ballet-3.pdf",
+    "4": "Stravinsky-Pulcinella_ballet-4.pdf",
+    "5": "Stravinsky-Pulcinella_ballet-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "841237",
+    "841238",
+    "841239",
+    "841240",
+    "841241",
+    "841242",
+    "841243",
+    "841244",
+    "841245",
+    "841246",
+    "841247",
+    "841248",
+    "841249",
+    "841250",
+    "841251",
+    "841252",
+    "841253",
+    "841254",
+    "841255",
+    "841256"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/841242",
+  "selected_string_sources": {
+    "1": {
+      "index": "841252",
+      "filename": "PMLP180164-stravinsky-pulcinella-vn1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/841252"
+    },
+    "2": {
+      "index": "841253",
+      "filename": "PMLP180164-stravinsky-pulcinella-vn2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/841253"
+    },
+    "3": {
+      "index": "841254",
+      "filename": "PMLP180164-stravinsky-pulcinella-va.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/841254"
+    },
+    "4": {
+      "index": "841255",
+      "filename": "PMLP180164-stravinsky-pulcinella-vc.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/841255"
+    },
+    "5": {
+      "index": "841256",
+      "filename": "PMLP180164-stravinsky-pulcinella-db.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/841256"
+    }
+  }
+}

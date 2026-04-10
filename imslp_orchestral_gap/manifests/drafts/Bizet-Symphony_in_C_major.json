@@ -1,0 +1,82 @@
+{
+  "piece_slug": "Bizet-Symphony_in_C_major",
+  "display_title": "Symphony in C major",
+  "composer_last": "Bizet",
+  "selected_page": {
+    "title": "Symphony in C major (Bizet, Georges)",
+    "url": "https://imslp.org/wiki/Symphony_in_C_major_(Bizet,_Georges)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Le Concert - 2013",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Bizet-Symphony_in_C_major-1.pdf",
+    "2": "Bizet-Symphony_in_C_major-2.pdf",
+    "3": "Bizet-Symphony_in_C_major-3.pdf",
+    "4": "Bizet-Symphony_in_C_major-4.pdf",
+    "5": "Bizet-Symphony_in_C_major-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "317537",
+    "317538",
+    "317539",
+    "317540",
+    "317541",
+    "317542",
+    "317543",
+    "317544",
+    "317545",
+    "317546",
+    "317547",
+    "317548",
+    "317549"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/317537",
+  "selected_string_sources": {
+    "1": {
+      "index": "317545",
+      "filename": "PMLP42111-Bizet-Symphonie-09-Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/317545"
+    },
+    "2": {
+      "index": "317546",
+      "filename": "PMLP42111-Bizet-Symphonie-10-Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/317546"
+    },
+    "3": {
+      "index": "317547",
+      "filename": "PMLP42111-Bizet-Symphonie-11-Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/317547"
+    },
+    "4": {
+      "index": "317548",
+      "filename": "PMLP42111-Bizet-Symphonie-12-Cello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/317548"
+    },
+    "5": {
+      "index": "317549",
+      "filename": "PMLP42111-Bizet-Symphonie-13-DoubleBass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/317549"
+    }
+  }
+}

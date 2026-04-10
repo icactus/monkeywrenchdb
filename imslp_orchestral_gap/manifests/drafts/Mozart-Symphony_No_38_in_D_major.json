@@ -1,0 +1,80 @@
+{
+  "piece_slug": "Mozart-Symphony_No_38_in_D_major",
+  "display_title": "Symphony No.38 in D major, K.504",
+  "composer_last": "Mozart",
+  "selected_page": {
+    "title": "Symphony No.38 in D major, K.504 (Mozart, Wolfgang Amadeus)",
+    "url": "https://imslp.org/wiki/Symphony_No.38_in_D_major,_K.504_(Mozart,_Wolfgang_Amadeus)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Paris: Sieber fils, n.d.  Plate 327.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Mozart-Symphony_No_38_in_D_major-1.pdf",
+    "2": "Mozart-Symphony_No_38_in_D_major-2.pdf",
+    "3": "Mozart-Symphony_No_38_in_D_major-3.pdf",
+    "4": "Mozart-Symphony_No_38_in_D_major-4.pdf",
+    "5": "Mozart-Symphony_No_38_in_D_major-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": true,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "453541",
+    "453542",
+    "453543",
+    "453544",
+    "453545",
+    "453546",
+    "453547",
+    "453548",
+    "453549",
+    "453550",
+    "453551"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/453541",
+  "selected_string_sources": {
+    "1": {
+      "index": "453548",
+      "filename": "PMLP01570-121b-Mozart-Symphonie38-K504-07-Violon1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/453548"
+    },
+    "2": {
+      "index": "453549",
+      "filename": "PMLP01570-121b-Mozart-Symphonie38-K504-08-Violon2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/453549"
+    },
+    "3": {
+      "index": "453550",
+      "filename": "PMLP01570-121b-Mozart-Symphonie38-K504-09-Alto.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/453550"
+    },
+    "4": {
+      "index": "453551",
+      "filename": "PMLP01570-121b-Mozart-Symphonie38-K504-10-Basses.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/453551"
+    },
+    "5": {
+      "index": "453551",
+      "filename": "PMLP01570-121b-Mozart-Symphonie38-K504-10-Basses.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/453551"
+    }
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "piece_slug": "Stravinsky-The_Firebird_ballet",
+  "display_title": "The Firebird (ballet), K010",
+  "composer_last": "Stravinsky",
+  "selected_page": {
+    "title": "The Firebird (ballet), K010 (Stravinsky, Igor)",
+    "url": "https://imslp.org/wiki/The_Firebird_(ballet),_K010_(Stravinsky,_Igor)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Germany: Manuscript, n.d.(ca.1920-50).*",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Stravinsky-The_Firebird_ballet-1.pdf",
+    "2": "Stravinsky-The_Firebird_ballet-2.pdf",
+    "3": "Stravinsky-The_Firebird_ballet-3.pdf",
+    "4": "Stravinsky-The_Firebird_ballet-4.pdf",
+    "5": "Stravinsky-The_Firebird_ballet-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "755121",
+    "755122",
+    "755123",
+    "755124",
+    "755125",
+    "755126",
+    "755127",
+    "755128",
+    "755129",
+    "755130",
+    "755131",
+    "755132",
+    "755133",
+    "755134",
+    "755135",
+    "755136",
+    "755137",
+    "755138",
+    "755139",
+    "755140",
+    "755141",
+    "755142",
+    "755143",
+    "755144",
+    "755145",
+    "755146",
+    "755147",
+    "755148",
+    "755149",
+    "755150",
+    "755151",
+    "755152",
+    "755153",
+    "755154",
+    "755155",
+    "755156",
+    "755157",
+    "755158",
+    "755159",
+    "755160",
+    "755161",
+    "755162"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/755121",
+  "selected_string_sources": {
+    "1": {
+      "index": "755158",
+      "filename": "PMLP179424-Stravinsky_Firebird_-_35_Violins_I.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/755158"
+    },
+    "2": {
+      "index": "755159",
+      "filename": "PMLP179424-Stravinsky_Firebird_-_36_Violins_II.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/755159"
+    },
+    "3": {
+      "index": "755160",
+      "filename": "PMLP179424-Stravinsky_Firebird_-_37_Violas.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/755160"
+    },
+    "4": {
+      "index": "755161",
+      "filename": "PMLP179424-Stravinsky_Firebird_-_38_Cellos.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/755161"
+    },
+    "5": {
+      "index": "755162",
+      "filename": "PMLP179424-Stravinsky_Firebird_-_39_Basses.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/755162"
+    }
+  }
+}

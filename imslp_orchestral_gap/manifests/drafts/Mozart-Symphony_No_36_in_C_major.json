@@ -1,0 +1,83 @@
+{
+  "piece_slug": "Mozart-Symphony_No_36_in_C_major",
+  "display_title": "Symphony No.36 in C major, K.425",
+  "composer_last": "Mozart",
+  "selected_page": {
+    "title": "Symphony No.36 in C major, K.425 (Mozart, Wolfgang Amadeus)",
+    "url": "https://imslp.org/wiki/Symphony_No.36_in_C_major,_K.425_(Mozart,_Wolfgang_Amadeus)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Neue Mozart-Ausgabe, Serie IV, Werkgruppe 11,\nSinfonien, Band 8 [NMA IV/11//8]\nKassel: Bärenreiter-Verlag, 1971. Plate BA 4561.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Mozart-Symphony_No_36_in_C_major-1.pdf",
+    "2": "Mozart-Symphony_No_36_in_C_major-2.pdf",
+    "3": "Mozart-Symphony_No_36_in_C_major-3.pdf",
+    "4": "Mozart-Symphony_No_36_in_C_major-4.pdf",
+    "5": "Mozart-Symphony_No_36_in_C_major-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "394747",
+    "394748",
+    "394749",
+    "394750",
+    "394751",
+    "394752",
+    "394753",
+    "394754",
+    "394755",
+    "394756",
+    "394757",
+    "394758",
+    "394759",
+    "394760"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/394747",
+  "selected_string_sources": {
+    "1": {
+      "index": "394756",
+      "filename": "PMLP01568-10._Violin_1.PDF",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/394756"
+    },
+    "2": {
+      "index": "394757",
+      "filename": "PMLP01568-11._Violin_2.PDF",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/394757"
+    },
+    "3": {
+      "index": "394758",
+      "filename": "PMLP01568-12._Viola.PDF",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/394758"
+    },
+    "4": {
+      "index": "394759",
+      "filename": "PMLP01568-13._Cello.PDF",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/394759"
+    },
+    "5": {
+      "index": "394760",
+      "filename": "PMLP01568-14._Basso.PDF",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/394760"
+    }
+  }
+}

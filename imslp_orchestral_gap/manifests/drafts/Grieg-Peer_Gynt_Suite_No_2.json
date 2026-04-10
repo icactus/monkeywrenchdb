@@ -1,0 +1,76 @@
+{
+  "piece_slug": "Grieg-Peer_Gynt_Suite_No_2",
+  "display_title": "Peer Gynt Suite No.2, Op.55",
+  "composer_last": "Grieg",
+  "selected_page": {
+    "title": "Peer Gynt Suite No.2, Op.55 (Grieg, Edvard)",
+    "url": "https://imslp.org/wiki/Peer_Gynt_Suite_No.2,_Op.55_(Grieg,_Edvard)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts / Complete",
+    "publisher": "Leipzig: C.F. Peters, n.d.(ca.1892).  Plate 7634.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; complete_section; string_parts_present; has_rating"
+  },
+  "parts": {
+    "1": "Grieg-Peer_Gynt_Suite_No_2-1.pdf",
+    "2": "Grieg-Peer_Gynt_Suite_No_2-2.pdf",
+    "3": "Grieg-Peer_Gynt_Suite_No_2-3.pdf",
+    "4": "Grieg-Peer_Gynt_Suite_No_2-4.pdf",
+    "5": "Grieg-Peer_Gynt_Suite_No_2-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": true,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "26382",
+    "49930",
+    "49931",
+    "49932",
+    "49933",
+    "49934",
+    "49935",
+    "49936",
+    "49937",
+    "49938",
+    "49939",
+    "49940",
+    "49941"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/49930",
+  "selected_string_sources": {
+    "4": {
+      "index": "26382",
+      "filename": "PMLP02534-Grieg_-_Peer_Gynt_Suite_No2_Op55_(cello-part)a.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26382"
+    },
+    "1": {
+      "index": "49939",
+      "filename": "PMLP02534-Grieg-PGste2.Violin.pdf",
+      "description": "Violins I, II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/49939"
+    },
+    "3": {
+      "index": "49940",
+      "filename": "PMLP02534-Grieg-PGste2.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/49940"
+    },
+    "5": {
+      "index": "49941",
+      "filename": "PMLP02534-Grieg-PGste2.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/49941"
+    }
+  }
+}

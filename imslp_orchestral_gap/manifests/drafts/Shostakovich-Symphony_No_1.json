@@ -1,0 +1,96 @@
+{
+  "piece_slug": "Shostakovich-Symphony_No_1",
+  "display_title": "Symphony No.1, Op.10",
+  "composer_last": "Shostakovich",
+  "selected_page": {
+    "title": "Symphony No.1, Op.10 (Shostakovich, Dmitry)",
+    "url": "https://imslp.org/wiki/Symphony_No.1,_Op.10_(Shostakovich,_Dmitry)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Moscow: Muzsektor, n.d.[1927?].",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Shostakovich-Symphony_No_1-1.pdf",
+    "2": "Shostakovich-Symphony_No_1-2.pdf",
+    "3": "Shostakovich-Symphony_No_1-3.pdf",
+    "4": "Shostakovich-Symphony_No_1-4.pdf",
+    "5": "Shostakovich-Symphony_No_1-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "831803",
+    "831804",
+    "831805",
+    "831806",
+    "831807",
+    "831808",
+    "831809",
+    "831810",
+    "831811",
+    "831812",
+    "831813",
+    "831814",
+    "831815",
+    "831816",
+    "831817",
+    "831818",
+    "831819",
+    "831820",
+    "831821",
+    "831822",
+    "831823",
+    "831952",
+    "832398",
+    "832399",
+    "832400",
+    "832401",
+    "836438"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/831803",
+  "selected_string_sources": {
+    "1": {
+      "index": "831952",
+      "filename": "PMLP1308939-PMLUS04003-sh-s1-violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/831952"
+    },
+    "2": {
+      "index": "832398",
+      "filename": "PMLP1308939-PMLUS04005-sh-s1-violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/832398"
+    },
+    "3": {
+      "index": "832399",
+      "filename": "PMLP1308939-PMLUS04006-sh-s1-viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/832399"
+    },
+    "4": {
+      "index": "832400",
+      "filename": "PMLP1308939-PMLUS04007-sh-s1-cello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/832400"
+    },
+    "5": {
+      "index": "832401",
+      "filename": "PMLP1308939-PMLUS04008-sh-s1-bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/832401"
+    }
+  }
+}

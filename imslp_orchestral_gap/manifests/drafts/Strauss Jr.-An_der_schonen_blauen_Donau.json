@@ -1,0 +1,96 @@
+{
+  "piece_slug": "Strauss Jr.-An_der_schonen_blauen_Donau",
+  "display_title": "An der schönen blauen Donau, Op.314",
+  "composer_last": "Strauss Jr.",
+  "selected_page": {
+    "title": "An der schönen blauen Donau, Op.314 (Strauss Jr., Johann)",
+    "url": "https://imslp.org/wiki/An_der_schönen_blauen_Donau,_Op.314_(Strauss_Jr.,_Johann)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Leipzig: Breitkopf und Härtel, n.d.(ca.1920).  Plate Orch.B. 3281.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Strauss Jr.-An_der_schonen_blauen_Donau-1.pdf",
+    "2": "Strauss Jr.-An_der_schonen_blauen_Donau-2.pdf",
+    "3": "Strauss Jr.-An_der_schonen_blauen_Donau-3.pdf",
+    "4": "Strauss Jr.-An_der_schonen_blauen_Donau-4.pdf",
+    "5": "Strauss Jr.-An_der_schonen_blauen_Donau-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "17743",
+    "17744",
+    "17745",
+    "17746",
+    "17747",
+    "17748",
+    "17749",
+    "17750",
+    "17752",
+    "17753",
+    "17754",
+    "17755",
+    "17756",
+    "17757",
+    "17758",
+    "17759",
+    "17760",
+    "17761",
+    "17762",
+    "17763",
+    "17765",
+    "17766",
+    "17767",
+    "17768",
+    "17769",
+    "17770",
+    "17771"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/17754",
+  "selected_string_sources": {
+    "5": {
+      "index": "17744",
+      "filename": "Strauss_Jr_Op.314_Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/17744"
+    },
+    "4": {
+      "index": "17748",
+      "filename": "Strauss_Jr_Op.314_Cello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/17748"
+    },
+    "3": {
+      "index": "17769",
+      "filename": "Strauss_Jr_Op.314_Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/17769"
+    },
+    "1": {
+      "index": "17770",
+      "filename": "Strauss_Jr_Op.314_Violin_1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/17770"
+    },
+    "2": {
+      "index": "17771",
+      "filename": "Strauss_Jr_Op.314_Violin_2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/17771"
+    }
+  }
+}

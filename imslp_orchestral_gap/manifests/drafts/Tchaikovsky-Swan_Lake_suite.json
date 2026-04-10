@@ -1,0 +1,85 @@
+{
+  "piece_slug": "Tchaikovsky-Swan_Lake_suite",
+  "display_title": "Swan Lake (suite), Op.20a",
+  "composer_last": "Tchaikovsky",
+  "selected_page": {
+    "title": "Swan Lake (suite), Op.20a (Tchaikovsky, Pyotr)",
+    "url": "https://imslp.org/wiki/Swan_Lake_(suite),_Op.20a_(Tchaikovsky,_Pyotr)"
+  },
+  "selection_basis": "most_downloaded_standard_edition",
+  "selected_edition": {
+    "label": "Parts / Version B",
+    "publisher": "Moscow: Muzgiz, n.d.(1954).\nFirst 5 movements taken from P. Jurgenson parts for the 1900 suite.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Tchaikovsky-Swan_Lake_suite-1.pdf",
+    "2": "Tchaikovsky-Swan_Lake_suite-2.pdf",
+    "3": "Tchaikovsky-Swan_Lake_suite-3.pdf",
+    "4": "Tchaikovsky-Swan_Lake_suite-4.pdf",
+    "5": "Tchaikovsky-Swan_Lake_suite-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "26945",
+    "38241",
+    "38242",
+    "38243",
+    "38244",
+    "38245",
+    "38246",
+    "38247",
+    "38248",
+    "38249",
+    "38250",
+    "38251",
+    "38252",
+    "38253",
+    "38254",
+    "38255"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/38241",
+  "selected_string_sources": {
+    "4": {
+      "index": "26945",
+      "filename": "PMLP59697-Tchaikovsky_-_Swan_Lake_Suite_Op20a_(cello-part)a.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26945"
+    },
+    "1": {
+      "index": "38252",
+      "filename": "PMLP59697-Tchaikovsky-Op20a1953.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38252"
+    },
+    "2": {
+      "index": "38253",
+      "filename": "PMLP59697-Tchaikovsky-Op20a1953.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38253"
+    },
+    "3": {
+      "index": "38254",
+      "filename": "PMLP59697-Tchaikovsky-Op20a1953.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38254"
+    },
+    "5": {
+      "index": "38255",
+      "filename": "PMLP59697-Tchaikovsky-Op20a1953.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/38255"
+    }
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "piece_slug": "Mahler-Symphony_No_10_GMW_F58",
+  "display_title": "Symphony No.10, GMW F58",
+  "composer_last": "Mahler",
+  "selected_page": {
+    "title": "Symphony No.10, GMW F58 (Mahler, Gustav)",
+    "url": "https://imslp.org/wiki/Symphony_No.10,_GMW_F58_(Mahler,_Gustav)"
+  },
+  "selection_basis": "llm_disambiguated",
+  "selected_edition": {
+    "label": "Complete / For Orchestra (Kakamu)",
+    "publisher": "Kenzaburo Kakamu, 2011-21.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; complete_section; string_parts_present; full_string_set; arrangements_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Mahler-Symphony_No_10_GMW_F58-1.pdf",
+    "2": "Mahler-Symphony_No_10_GMW_F58-2.pdf",
+    "3": "Mahler-Symphony_No_10_GMW_F58-3.pdf",
+    "4": "Mahler-Symphony_No_10_GMW_F58-4.pdf",
+    "5": "Mahler-Symphony_No_10_GMW_F58-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": true,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "497979",
+    "498708",
+    "499530",
+    "501088",
+    "503560",
+    "542827",
+    "543264",
+    "543325",
+    "963420",
+    "963421",
+    "963422",
+    "963423",
+    "963424",
+    "963425",
+    "963426",
+    "963427",
+    "963428",
+    "963429",
+    "963430",
+    "963431",
+    "963432",
+    "963433",
+    "963434",
+    "963435",
+    "963436",
+    "963437",
+    "963438",
+    "963439",
+    "963440",
+    "963441",
+    "963442",
+    "963443",
+    "963444",
+    "963445",
+    "963446",
+    "963447",
+    "963448",
+    "963449",
+    "963450",
+    "963451",
+    "963452",
+    "963453",
+    "963454",
+    "963455"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/543325",
+  "selected_string_sources": {
+    "1": {
+      "index": "497979",
+      "filename": "PMLP495655-violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/497979"
+    },
+    "2": {
+      "index": "498708",
+      "filename": "PMLP495655-violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/498708"
+    },
+    "3": {
+      "index": "499530",
+      "filename": "PMLP495655-viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/499530"
+    },
+    "4": {
+      "index": "501088",
+      "filename": "PMLP495655-cello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/501088"
+    },
+    "5": {
+      "index": "503560",
+      "filename": "PMLP495655-bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/503560"
+    }
+  }
+}

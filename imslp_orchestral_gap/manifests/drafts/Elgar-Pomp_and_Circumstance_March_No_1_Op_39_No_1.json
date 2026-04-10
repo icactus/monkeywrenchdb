@@ -1,0 +1,105 @@
+{
+  "piece_slug": "Elgar-Pomp_and_Circumstance_March_No_1_Op_39_No_1",
+  "display_title": "Pomp and Circumstance March No.1, Op.39 No.1",
+  "composer_last": "Elgar",
+  "selected_page": {
+    "title": "Pomp and Circumstance March No.1, Op.39 No.1 (Elgar, Edward)",
+    "url": "https://imslp.org/wiki/Pomp_and_Circumstance_March_No.1,_Op.39_No.1_(Elgar,_Edward)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "London: Boosey & Co., 1902.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Elgar-Pomp_and_Circumstance_March_No_1_Op_39_No_1-1.pdf",
+    "2": "Elgar-Pomp_and_Circumstance_March_No_1_Op_39_No_1-2.pdf",
+    "3": "Elgar-Pomp_and_Circumstance_March_No_1_Op_39_No_1-3.pdf",
+    "4": "Elgar-Pomp_and_Circumstance_March_No_1_Op_39_No_1-4.pdf",
+    "5": "Elgar-Pomp_and_Circumstance_March_No_1_Op_39_No_1-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "995610",
+    "995611",
+    "995612",
+    "995613",
+    "995614",
+    "995615",
+    "995616",
+    "995617",
+    "995618",
+    "995619",
+    "995620",
+    "995621",
+    "995622",
+    "995623",
+    "995624",
+    "995625",
+    "995626",
+    "995627",
+    "995628",
+    "995629",
+    "995630",
+    "995631",
+    "995632",
+    "995633",
+    "995634",
+    "995635",
+    "995636",
+    "995637",
+    "995638",
+    "995639",
+    "995640",
+    "995641",
+    "995642",
+    "995643",
+    "995644",
+    "995645"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/995634",
+  "selected_string_sources": {
+    "5": {
+      "index": "995618",
+      "filename": "PMLP898174-elgar_pomp_and_circumstance_no.1_op.39_db.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/995618"
+    },
+    "3": {
+      "index": "995642",
+      "filename": "PMLP898174-elgar_pomp_and_circumstance_no.1_op.39_va.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/995642"
+    },
+    "4": {
+      "index": "995643",
+      "filename": "PMLP898174-elgar_pomp_and_circumstance_no.1_op.39_vc.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/995643"
+    },
+    "1": {
+      "index": "995644",
+      "filename": "PMLP898174-elgar_pomp_and_circumstance_no.1_op.39_vn1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/995644"
+    },
+    "2": {
+      "index": "995645",
+      "filename": "PMLP898174-elgar_pomp_and_circumstance_no.1_op.39_vn2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/995645"
+    }
+  }
+}

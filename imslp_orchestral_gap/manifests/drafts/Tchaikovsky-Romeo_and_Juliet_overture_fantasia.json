@@ -11,7 +11,7 @@
     "label": "Parts / 3rd Version (1880)",
     "publisher": "Berlin: Bote & Bock, n.d.[1881].  Plate 10297.\nSwitz Orchestra Library, 2024.",
     "downloads": 0,
-    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; has_rating"
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
   },
   "parts": {
     "1": "Tchaikovsky-Romeo_and_Juliet_overture_fantasia-1.pdf",

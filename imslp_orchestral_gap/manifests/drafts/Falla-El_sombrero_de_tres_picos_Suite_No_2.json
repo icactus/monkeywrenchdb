@@ -1,0 +1,87 @@
+{
+  "piece_slug": "Falla-El_sombrero_de_tres_picos_Suite_No_2",
+  "display_title": "El sombrero de tres picos, Suite No.2",
+  "composer_last": "Falla",
+  "selected_page": {
+    "title": "El sombrero de tres picos, Suite No.2 (Falla, Manuel de)",
+    "url": "https://imslp.org/wiki/El_sombrero_de_tres_picos,_Suite_No.2_(Falla,_Manuel_de)"
+  },
+  "selection_basis": "most_downloaded_standard_edition",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Pablo Hernan Borzone, 2020.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Falla-El_sombrero_de_tres_picos_Suite_No_2-1.pdf",
+    "2": "Falla-El_sombrero_de_tres_picos_Suite_No_2-2.pdf",
+    "3": "Falla-El_sombrero_de_tres_picos_Suite_No_2-3.pdf",
+    "4": "Falla-El_sombrero_de_tres_picos_Suite_No_2-4.pdf",
+    "5": "Falla-El_sombrero_de_tres_picos_Suite_No_2-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "653159",
+    "653160",
+    "653161",
+    "653162",
+    "653163",
+    "653164",
+    "653165",
+    "653166",
+    "653167",
+    "653168",
+    "653169",
+    "653170",
+    "653171",
+    "653172",
+    "653173",
+    "653174",
+    "653175",
+    "653176"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/653159",
+  "selected_string_sources": {
+    "1": {
+      "index": "653172",
+      "filename": "PMLP215154-14_de_Falla_-_El_sombrero_de_tres_picos_(Violín_I).pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/653172"
+    },
+    "2": {
+      "index": "653173",
+      "filename": "PMLP215154-15_de_Falla_-_El_sombrero_de_tres_picos_(Violín_II).pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/653173"
+    },
+    "3": {
+      "index": "653174",
+      "filename": "PMLP215154-16_de_Falla_-_El_sombrero_de_tres_picos_(Viola).pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/653174"
+    },
+    "4": {
+      "index": "653175",
+      "filename": "PMLP215154-17_de_Falla_-_El_sombrero_de_tres_picos_(Violonchelo).pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/653175"
+    },
+    "5": {
+      "index": "653176",
+      "filename": "PMLP215154-18_de_Falla_-_El_sombrero_de_tres_picos_(Contrabajo).pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/653176"
+    }
+  }
+}

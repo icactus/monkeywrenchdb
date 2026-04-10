@@ -1,0 +1,79 @@
+{
+  "piece_slug": "Prokofiev-Romeo_and_Juliet_ballet",
+  "display_title": "Romeo and Juliet (ballet), Op.64",
+  "composer_last": "Prokofiev",
+  "selected_page": {
+    "title": "Romeo and Juliet (ballet), Op.64 (Prokofiev, Sergey)",
+    "url": "https://imslp.org/wiki/Romeo_and_Juliet_(ballet),_Op.64_(Prokofiev,_Sergey)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Moscow: Muzfond, n.d.  Plate 4219.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Prokofiev-Romeo_and_Juliet_ballet-1.pdf",
+    "2": "Prokofiev-Romeo_and_Juliet_ballet-2.pdf",
+    "3": "Prokofiev-Romeo_and_Juliet_ballet-3.pdf",
+    "4": "Prokofiev-Romeo_and_Juliet_ballet-4.pdf",
+    "5": "Prokofiev-Romeo_and_Juliet_ballet-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "334614",
+    "334615",
+    "334616",
+    "334617",
+    "334618",
+    "334619",
+    "334620",
+    "334621",
+    "334622",
+    "334623"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/334614",
+  "selected_string_sources": {
+    "1": {
+      "index": "334615",
+      "filename": "PMLP79478-Prokofiev_Romeo_and_Juliet_ACT_2-4_Vln1.pdf",
+      "description": "Violins I (Act II-IV)",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/334615"
+    },
+    "2": {
+      "index": "334617",
+      "filename": "PMLP79478-Prokofiev_Romeo_and_Juliet_ACT_2-4_Vln2.pdf",
+      "description": "Violins II (Act II-IV)",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/334617"
+    },
+    "3": {
+      "index": "334619",
+      "filename": "PMLP79478-Prokofiev_Romeo_and_Juliet_ACT_2-4_Vla.pdf",
+      "description": "Violas (Act II-IV)",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/334619"
+    },
+    "4": {
+      "index": "334621",
+      "filename": "PMLP79478-Prokofiev_Romeo_and_Juliet_ACT_2-4_Vcl.pdf",
+      "description": "Cellos (Act II-IV)",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/334621"
+    },
+    "5": {
+      "index": "334623",
+      "filename": "PMLP79478-Prokofiev_Romeo_and_Juliet_ACT_2-4_Bass.pdf",
+      "description": "Basses (Act II-IV)",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/334623"
+    }
+  }
+}

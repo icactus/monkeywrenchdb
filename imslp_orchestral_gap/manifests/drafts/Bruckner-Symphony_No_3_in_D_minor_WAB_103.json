@@ -1,0 +1,82 @@
+{
+  "piece_slug": "Bruckner-Symphony_No_3_in_D_minor_WAB_103",
+  "display_title": "Symphony No.3 in D minor, WAB 103",
+  "composer_last": "Bruckner",
+  "selected_page": {
+    "title": "Symphony No.3 in D minor, WAB 103 (Bruckner, Anton)",
+    "url": "https://imslp.org/wiki/Symphony_No.3_in_D_minor,_WAB_103_(Bruckner,_Anton)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts / 2nd Version (1878)",
+    "publisher": "Neue Gesamtausgabe, Band III/III. Symphonie D-moll (Version 2) (pp.1-262)\nVienna: Musikwissenschaftlicher Verlag, 1981.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Bruckner-Symphony_No_3_in_D_minor_WAB_103-1.pdf",
+    "2": "Bruckner-Symphony_No_3_in_D_minor_WAB_103-2.pdf",
+    "3": "Bruckner-Symphony_No_3_in_D_minor_WAB_103-3.pdf",
+    "4": "Bruckner-Symphony_No_3_in_D_minor_WAB_103-4.pdf",
+    "5": "Bruckner-Symphony_No_3_in_D_minor_WAB_103-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "687627",
+    "687628",
+    "687629",
+    "687630",
+    "687631",
+    "687632",
+    "687633",
+    "687634",
+    "687635",
+    "687636",
+    "687637",
+    "687638",
+    "687639"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/687627",
+  "selected_string_sources": {
+    "1": {
+      "index": "687635",
+      "filename": "PMLP15252-09._BRUCKNER_3_OESER_REVISION_-_Violins_I.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/687635"
+    },
+    "2": {
+      "index": "687636",
+      "filename": "PMLP15252-10._BRUCKNER_3_OESER_REVISION_-_Violins_II.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/687636"
+    },
+    "3": {
+      "index": "687637",
+      "filename": "PMLP15252-11._BRUCKNER_3_OESER_REVISION_-_Violas.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/687637"
+    },
+    "4": {
+      "index": "687638",
+      "filename": "PMLP15252-12._BRUCKNER_3_OESER_REVISION_-_Cellos.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/687638"
+    },
+    "5": {
+      "index": "687639",
+      "filename": "PMLP15252-13._BRUCKNER_3_OESER_REVISION_-_Basses.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/687639"
+    }
+  }
+}

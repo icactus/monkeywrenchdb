@@ -1,0 +1,86 @@
+{
+  "piece_slug": "Tchaikovsky-The_Sleeping_Beauty_suite",
+  "display_title": "The Sleeping Beauty (suite), Op.66a",
+  "composer_last": "Tchaikovsky",
+  "selected_page": {
+    "title": "The Sleeping Beauty (suite), Op.66a (Tchaikovsky, Pyotr)",
+    "url": "https://imslp.org/wiki/The_Sleeping_Beauty_(suite),_Op.66a_(Tchaikovsky,_Pyotr)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Moscow: P. Jurgenson, n.d.(1899).  Plate 25238.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Tchaikovsky-The_Sleeping_Beauty_suite-1.pdf",
+    "2": "Tchaikovsky-The_Sleeping_Beauty_suite-2.pdf",
+    "3": "Tchaikovsky-The_Sleeping_Beauty_suite-3.pdf",
+    "4": "Tchaikovsky-The_Sleeping_Beauty_suite-4.pdf",
+    "5": "Tchaikovsky-The_Sleeping_Beauty_suite-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "1015343",
+    "569136",
+    "569137",
+    "569138",
+    "569139",
+    "569140",
+    "569141",
+    "569142",
+    "569143",
+    "569144",
+    "569145",
+    "569146",
+    "569147",
+    "569148",
+    "569149",
+    "569150",
+    "569156"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/569136",
+  "selected_string_sources": {
+    "1": {
+      "index": "569146",
+      "filename": "PMLP45537-Tchaikovsky_Sleeping_beauty_suite_Op66a_Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/569146"
+    },
+    "2": {
+      "index": "569147",
+      "filename": "PMLP45537-Tchaikovsky_Sleeping_beauty_suite_Op66a_Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/569147"
+    },
+    "3": {
+      "index": "569148",
+      "filename": "PMLP45537-Tchaikovsky_Sleeping_beauty_suite_Op66a_Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/569148"
+    },
+    "4": {
+      "index": "569149",
+      "filename": "PMLP45537-Tchaikovsky_Sleeping_beauty_suite_Op66a_Cello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/569149"
+    },
+    "5": {
+      "index": "569150",
+      "filename": "PMLP45537-Tchaikovsky_Sleeping_beauty_suite_Op66a_Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/569150"
+    }
+  }
+}

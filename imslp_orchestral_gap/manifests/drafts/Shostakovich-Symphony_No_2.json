@@ -1,0 +1,100 @@
+{
+  "piece_slug": "Shostakovich-Symphony_No_2",
+  "display_title": "Symphony No.2, Op.14",
+  "composer_last": "Shostakovich",
+  "selected_page": {
+    "title": "Symphony No.2, Op.14 (Shostakovich, Dmitry)",
+    "url": "https://imslp.org/wiki/Symphony_No.2,_Op.14_(Shostakovich,_Dmitry)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Moscow: Muzsektor, 1927.  Plate 7972.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Shostakovich-Symphony_No_2-1.pdf",
+    "2": "Shostakovich-Symphony_No_2-2.pdf",
+    "3": "Shostakovich-Symphony_No_2-3.pdf",
+    "4": "Shostakovich-Symphony_No_2-4.pdf",
+    "5": "Shostakovich-Symphony_No_2-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "938916",
+    "938917",
+    "938918",
+    "938919",
+    "938920",
+    "938921",
+    "938922",
+    "938923",
+    "938924",
+    "938925",
+    "938926",
+    "938927",
+    "938928",
+    "938929",
+    "938930",
+    "938931",
+    "938932",
+    "938933",
+    "938934",
+    "938935",
+    "938936",
+    "938937",
+    "938938",
+    "938939",
+    "938940",
+    "938941",
+    "938942",
+    "938943",
+    "938944",
+    "938945",
+    "939329"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/939329",
+  "selected_string_sources": {
+    "1": {
+      "index": "938941",
+      "filename": "PMLP1308964-PMLUS06109-shostakovich-symphony-no2-27-vn1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/938941"
+    },
+    "2": {
+      "index": "938942",
+      "filename": "PMLP1308964-PMLUS06110-shostakovich-symphony-no2-28-vn2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/938942"
+    },
+    "3": {
+      "index": "938943",
+      "filename": "PMLP1308964-PMLUS06111-shostakovich-symphony-no2-29-va.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/938943"
+    },
+    "4": {
+      "index": "938944",
+      "filename": "PMLP1308964-PMLUS06112-shostakovich-symphony-no2-30-vc.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/938944"
+    },
+    "5": {
+      "index": "938945",
+      "filename": "PMLP1308964-PMLUS06113-shostakovich-symphony-no2-31-db.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/938945"
+    }
+  }
+}

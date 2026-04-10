@@ -1,0 +1,99 @@
+{
+  "piece_slug": "Tchaikovsky-Swan_Lake_ballet",
+  "display_title": "Swan Lake (ballet), Op.20",
+  "composer_last": "Tchaikovsky",
+  "selected_page": {
+    "title": "Swan Lake (ballet), Op.20 (Tchaikovsky, Pyotr)",
+    "url": "https://imslp.org/wiki/Swan_Lake_(ballet),_Op.20_(Tchaikovsky,_Pyotr)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts / Complete",
+    "publisher": "Manuscript, n.d.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; complete_section; string_parts_present; full_string_set; has_rating"
+  },
+  "parts": {
+    "1": "Tchaikovsky-Swan_Lake_ballet-1.pdf",
+    "2": "Tchaikovsky-Swan_Lake_ballet-2.pdf",
+    "3": "Tchaikovsky-Swan_Lake_ballet-3.pdf",
+    "4": "Tchaikovsky-Swan_Lake_ballet-4.pdf",
+    "5": "Tchaikovsky-Swan_Lake_ballet-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "622793",
+    "622794",
+    "622795",
+    "622796",
+    "622797",
+    "622798",
+    "622799",
+    "622800",
+    "622801",
+    "622802",
+    "622803",
+    "622804",
+    "622805",
+    "622806",
+    "622807",
+    "622808",
+    "622809",
+    "622810",
+    "622811",
+    "622812",
+    "622813",
+    "622814",
+    "622815",
+    "622816",
+    "622817",
+    "622818",
+    "622819",
+    "622820",
+    "622821",
+    "622822"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/622805",
+  "selected_string_sources": {
+    "5": {
+      "index": "622796",
+      "filename": "PMLP9904-Il_lago_dei_cigni_-_Contrabbasso.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/622796"
+    },
+    "3": {
+      "index": "622819",
+      "filename": "PMLP9904-Il_lago_dei_cigni_-_Viole.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/622819"
+    },
+    "1": {
+      "index": "622820",
+      "filename": "PMLP9904-Il_lago_dei_cigni_-_Violino_I.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/622820"
+    },
+    "2": {
+      "index": "622821",
+      "filename": "PMLP9904-Il_lago_dei_cigni_-_Violino_II.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/622821"
+    },
+    "4": {
+      "index": "622822",
+      "filename": "PMLP9904-Il_lago_dei_cigni_-_Violoncello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/622822"
+    }
+  }
+}

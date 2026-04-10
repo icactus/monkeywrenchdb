@@ -1,0 +1,130 @@
+{
+  "piece_slug": "Mahler-Symphony_No_8_GMW_48",
+  "display_title": "Symphony No.8, GMW 48",
+  "composer_last": "Mahler",
+  "selected_page": {
+    "title": "Symphony No.8, GMW 48 (Mahler, Gustav)",
+    "url": "https://imslp.org/wiki/Symphony_No.8,_GMW_48_(Mahler,_Gustav)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts / Complete",
+    "publisher": "Vienna: Universal Edition, 1911.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; complete_section; string_parts_present; full_string_set; has_rating"
+  },
+  "parts": {
+    "1": "Mahler-Symphony_No_8_GMW_48-1.pdf",
+    "2": "Mahler-Symphony_No_8_GMW_48-2.pdf",
+    "3": "Mahler-Symphony_No_8_GMW_48-3.pdf",
+    "4": "Mahler-Symphony_No_8_GMW_48-4.pdf",
+    "5": "Mahler-Symphony_No_8_GMW_48-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "960582",
+    "960583",
+    "960584",
+    "960585",
+    "960586",
+    "960587",
+    "960588",
+    "960589",
+    "960590",
+    "960591",
+    "960592",
+    "960593",
+    "960594",
+    "960595",
+    "960596",
+    "960597",
+    "960598",
+    "960599",
+    "960600",
+    "960601",
+    "960602",
+    "960603",
+    "960604",
+    "960605",
+    "960606",
+    "960607",
+    "960608",
+    "960609",
+    "960610",
+    "960611",
+    "960612",
+    "960613",
+    "960614",
+    "960615",
+    "960616",
+    "960617",
+    "960618",
+    "960619",
+    "960620",
+    "960621",
+    "960622",
+    "960623",
+    "960624",
+    "960625",
+    "960626",
+    "960627",
+    "960628",
+    "960629",
+    "960630",
+    "960631",
+    "960632",
+    "960633",
+    "960634",
+    "960635",
+    "960636",
+    "960637",
+    "960638",
+    "960639",
+    "960640",
+    "960641",
+    "960642"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/960582",
+  "selected_string_sources": {
+    "1": {
+      "index": "960638",
+      "filename": "PMLP5693-Violins_1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/960638"
+    },
+    "2": {
+      "index": "960639",
+      "filename": "PMLP5693-Violins_2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/960639"
+    },
+    "3": {
+      "index": "960640",
+      "filename": "PMLP5693-Violas.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/960640"
+    },
+    "4": {
+      "index": "960641",
+      "filename": "PMLP5693-Cellos.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/960641"
+    },
+    "5": {
+      "index": "960642",
+      "filename": "PMLP5693-Basses.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/960642"
+    }
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "piece_slug": "Mahler-Symphony_No_4_GMW_37",
+  "display_title": "Symphony No.4, GMW 37",
+  "composer_last": "Mahler",
+  "selected_page": {
+    "title": "Symphony No.4, GMW 37 (Mahler, Gustav)",
+    "url": "https://imslp.org/wiki/Symphony_No.4,_GMW_37_(Mahler,_Gustav)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Vienna: Ludwig Doblinger, n.d.[1902].  Plate 32.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Mahler-Symphony_No_4_GMW_37-1.pdf",
+    "2": "Mahler-Symphony_No_4_GMW_37-2.pdf",
+    "3": "Mahler-Symphony_No_4_GMW_37-3.pdf",
+    "4": "Mahler-Symphony_No_4_GMW_37-4.pdf",
+    "5": "Mahler-Symphony_No_4_GMW_37-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "26425",
+    "43523",
+    "43524",
+    "43525",
+    "43526",
+    "43527",
+    "961510",
+    "961511",
+    "961512",
+    "961513",
+    "961514",
+    "961515",
+    "961516",
+    "961517",
+    "961518",
+    "961519",
+    "961520",
+    "961521",
+    "961522",
+    "961523",
+    "961524",
+    "961525",
+    "961526",
+    "961527",
+    "961528",
+    "961529",
+    "961530",
+    "961531",
+    "961532",
+    "961533",
+    "961534",
+    "961535",
+    "961536"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/961510",
+  "selected_string_sources": {
+    "4": {
+      "index": "26425",
+      "filename": "PMLP58739-Mahler_-_Symphony_No4_in_G_Major_(cello-part)a.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26425"
+    },
+    "1": {
+      "index": "43524",
+      "filename": "PMLP58739-Mahler-Sym4.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/43524"
+    },
+    "2": {
+      "index": "43525",
+      "filename": "PMLP58739-Mahler-Sym4.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/43525"
+    },
+    "3": {
+      "index": "43526",
+      "filename": "PMLP58739-Mahler-Sym4.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/43526"
+    },
+    "5": {
+      "index": "43527",
+      "filename": "PMLP58739-Mahler-Sym4.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/43527"
+    }
+  }
+}

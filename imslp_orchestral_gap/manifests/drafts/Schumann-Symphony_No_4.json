@@ -1,0 +1,92 @@
+{
+  "piece_slug": "Schumann-Symphony_No_4",
+  "display_title": "Symphony No.4, Op.120",
+  "composer_last": "Schumann",
+  "selected_page": {
+    "title": "Symphony No.4, Op.120 (Schumann, Robert)",
+    "url": "https://imslp.org/wiki/Symphony_No.4,_Op.120_(Schumann,_Robert)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts / Revised Version (1851)",
+    "publisher": "Breitkopf & Härtels Orchester-Bibliothek, No.5264\nWiesbaden: Breitkopf & Härtel, 1999.  Plate OB 5264.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Schumann-Symphony_No_4-1.pdf",
+    "2": "Schumann-Symphony_No_4-2.pdf",
+    "3": "Schumann-Symphony_No_4-3.pdf",
+    "4": "Schumann-Symphony_No_4-4.pdf",
+    "5": "Schumann-Symphony_No_4-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "947692",
+    "947693",
+    "947694",
+    "947695",
+    "947696",
+    "947697",
+    "947698",
+    "947699",
+    "947700",
+    "947701",
+    "947702",
+    "947703",
+    "947704",
+    "947705",
+    "947706",
+    "947707",
+    "947708",
+    "947709",
+    "947710",
+    "947711",
+    "947712",
+    "947713",
+    "947714"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/947692",
+  "selected_string_sources": {
+    "1": {
+      "index": "947710",
+      "filename": "PMLP11051-schumann_symphonie_nr.4_vn1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/947710"
+    },
+    "2": {
+      "index": "947711",
+      "filename": "PMLP11051-schumann_symphonie_nr.4_vn2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/947711"
+    },
+    "3": {
+      "index": "947712",
+      "filename": "PMLP11051-schumann_symphonie_nr.4_va.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/947712"
+    },
+    "4": {
+      "index": "947713",
+      "filename": "PMLP11051-schumann_symphonie_nr.4_vc.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/947713"
+    },
+    "5": {
+      "index": "947714",
+      "filename": "PMLP11051-schumann_symphonie_nr.4_db.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/947714"
+    }
+  }
+}

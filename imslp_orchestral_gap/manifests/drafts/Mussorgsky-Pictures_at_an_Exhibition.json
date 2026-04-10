@@ -1,0 +1,99 @@
+{
+  "piece_slug": "Mussorgsky-Pictures_at_an_Exhibition",
+  "display_title": "Pictures at an Exhibition",
+  "composer_last": "Mussorgsky",
+  "selected_page": {
+    "title": "Pictures at an Exhibition (Mussorgsky, Modest)",
+    "url": "https://imslp.org/wiki/Pictures_at_an_Exhibition_(Mussorgsky,_Modest)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Complete / For Orchestra (Ravel)",
+    "publisher": "Paris: Editions Russes de Musique, 1929.",
+    "downloads": 0,
+    "why": "partial_title_match; kalmus_on_work_page; kalmus_preferred; complete_section; string_parts_present; full_string_set; arrangements_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Mussorgsky-Pictures_at_an_Exhibition-1.pdf",
+    "2": "Mussorgsky-Pictures_at_an_Exhibition-2.pdf",
+    "3": "Mussorgsky-Pictures_at_an_Exhibition-3.pdf",
+    "4": "Mussorgsky-Pictures_at_an_Exhibition-4.pdf",
+    "5": "Mussorgsky-Pictures_at_an_Exhibition-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": true,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "316844",
+    "316845",
+    "316846",
+    "316847",
+    "316848",
+    "316849",
+    "316850",
+    "316851",
+    "316852",
+    "316853",
+    "316854",
+    "316855",
+    "316856",
+    "316857",
+    "316858",
+    "316859",
+    "316860",
+    "316861",
+    "316862",
+    "316863",
+    "316864",
+    "316865",
+    "316866",
+    "316867",
+    "316868",
+    "316869",
+    "316870",
+    "316871",
+    "316872",
+    "78809"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/78809",
+  "selected_string_sources": {
+    "1": {
+      "index": "316868",
+      "filename": "PMLP03722-VI.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/316868"
+    },
+    "2": {
+      "index": "316869",
+      "filename": "PMLP03722-VII.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/316869"
+    },
+    "3": {
+      "index": "316870",
+      "filename": "PMLP03722-Va.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/316870"
+    },
+    "4": {
+      "index": "316871",
+      "filename": "PMLP03722-Vc.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/316871"
+    },
+    "5": {
+      "index": "316872",
+      "filename": "PMLP03722-Cb.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/316872"
+    }
+  }
+}

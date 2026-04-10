@@ -1,0 +1,84 @@
+{
+  "piece_slug": "Bizet-LArlesienne_Suite_No_1",
+  "display_title": "L'Arlésienne Suite No.1",
+  "composer_last": "Bizet",
+  "selected_page": {
+    "title": "L'Arlésienne Suite No.1 (Bizet, Georges)",
+    "url": "https://imslp.org/wiki/L'Arlésienne_Suite_No.1_(Bizet,_Georges)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Paris: Choudens, n.d.  Plate A.C. 2543.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Bizet-LArlesienne_Suite_No_1-1.pdf",
+    "2": "Bizet-LArlesienne_Suite_No_1-2.pdf",
+    "3": "Bizet-LArlesienne_Suite_No_1-3.pdf",
+    "4": "Bizet-LArlesienne_Suite_No_1-4.pdf",
+    "5": "Bizet-LArlesienne_Suite_No_1-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": true,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "454565",
+    "454566",
+    "454567",
+    "454568",
+    "454569",
+    "454571",
+    "454573",
+    "454574",
+    "454575",
+    "454576",
+    "454577",
+    "528227",
+    "528228",
+    "528229",
+    "528230"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/454565",
+  "selected_string_sources": {
+    "1": {
+      "index": "454574",
+      "filename": "PMLP79801-157a-Bizet-Arlesienne-Suite1-10-Violon1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/454574"
+    },
+    "2": {
+      "index": "454575",
+      "filename": "PMLP79801-157a-Bizet-Arlesienne-Suite1-11-Violon2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/454575"
+    },
+    "3": {
+      "index": "454576",
+      "filename": "PMLP79801-157a-Bizet-Arlesienne-Suite1-12-Alto.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/454576"
+    },
+    "4": {
+      "index": "454577",
+      "filename": "PMLP79801-157a-Bizet-Arlesienne-Suite1-13-Basses.pdf",
+      "description": "Cellos/Double Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/454577"
+    },
+    "5": {
+      "index": "454577",
+      "filename": "PMLP79801-157a-Bizet-Arlesienne-Suite1-13-Basses.pdf",
+      "description": "Cellos/Double Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/454577"
+    }
+  }
+}

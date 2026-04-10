@@ -1,0 +1,39 @@
+{
+  "piece_slug": "Ravel-Ma_mere_lOye_ballet",
+  "display_title": "Ma mère l'Oye (ballet), M.62",
+  "composer_last": "Ravel",
+  "selected_page": {
+    "title": "Ma mère l'Oye (ballet), M.62 (Ravel, Maurice)",
+    "url": "https://imslp.org/wiki/Ma_mère_l'Oye_(ballet),_M.62_(Ravel,_Maurice)"
+  },
+  "selection_basis": "llm_disambiguated",
+  "selected_edition": {
+    "label": "Complete / For Piano (Charlot)",
+    "publisher": "Paris: Durand & Cie., 1912.  Plate D. & F. 8395.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; complete_section; arrangements_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Ravel-Ma_mere_lOye_ballet-1.pdf",
+    "2": "Ravel-Ma_mere_lOye_ballet-2.pdf",
+    "3": "Ravel-Ma_mere_lOye_ballet-3.pdf",
+    "4": "Ravel-Ma_mere_lOye_ballet-4.pdf",
+    "5": "Ravel-Ma_mere_lOye_ballet-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": true,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "151006"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/151006",
+  "selected_string_sources": {}
+}

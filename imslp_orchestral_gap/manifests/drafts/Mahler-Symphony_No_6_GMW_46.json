@@ -1,0 +1,120 @@
+{
+  "piece_slug": "Mahler-Symphony_No_6_GMW_46",
+  "display_title": "Symphony No.6, GMW 46",
+  "composer_last": "Mahler",
+  "selected_page": {
+    "title": "Symphony No.6, GMW 46 (Mahler, Gustav)",
+    "url": "https://imslp.org/wiki/Symphony_No.6,_GMW_46_(Mahler,_Gustav)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Leipzig: C.F. Kahnt Nachfolger, 1906.  Plate 4693.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Mahler-Symphony_No_6_GMW_46-1.pdf",
+    "2": "Mahler-Symphony_No_6_GMW_46-2.pdf",
+    "3": "Mahler-Symphony_No_6_GMW_46-3.pdf",
+    "4": "Mahler-Symphony_No_6_GMW_46-4.pdf",
+    "5": "Mahler-Symphony_No_6_GMW_46-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "26427",
+    "44705",
+    "44706",
+    "44707",
+    "44708",
+    "44709",
+    "961567",
+    "961568",
+    "961569",
+    "961570",
+    "961571",
+    "961572",
+    "961573",
+    "961574",
+    "961575",
+    "961576",
+    "961577",
+    "961578",
+    "961579",
+    "961580",
+    "961581",
+    "961582",
+    "961583",
+    "961584",
+    "961585",
+    "961586",
+    "961587",
+    "961588",
+    "961589",
+    "961590",
+    "961591",
+    "961592",
+    "961593",
+    "961594",
+    "961595",
+    "961596",
+    "961597",
+    "961598",
+    "961599",
+    "961600",
+    "961601",
+    "961602",
+    "961603",
+    "961604",
+    "961605",
+    "961606",
+    "961607",
+    "961608",
+    "961609",
+    "961610",
+    "961611"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/961567",
+  "selected_string_sources": {
+    "4": {
+      "index": "26427",
+      "filename": "PMLP10553-Mahler_-_Symphony_No6_in_A_minor_(cello-part)a.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/26427"
+    },
+    "1": {
+      "index": "44706",
+      "filename": "PMLP10553-Mahler-Sym6.Violin1.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/44706"
+    },
+    "2": {
+      "index": "44707",
+      "filename": "PMLP10553-Mahler-Sym6.Violin2.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/44707"
+    },
+    "3": {
+      "index": "44708",
+      "filename": "PMLP10553-Mahler-Sym6.Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/44708"
+    },
+    "5": {
+      "index": "44709",
+      "filename": "PMLP10553-Mahler-Sym6.Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/44709"
+    }
+  }
+}

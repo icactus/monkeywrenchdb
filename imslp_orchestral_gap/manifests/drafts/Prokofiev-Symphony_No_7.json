@@ -1,0 +1,103 @@
+{
+  "piece_slug": "Prokofiev-Symphony_No_7",
+  "display_title": "Symphony No.7, Op.131",
+  "composer_last": "Prokofiev",
+  "selected_page": {
+    "title": "Symphony No.7, Op.131 (Prokofiev, Sergey)",
+    "url": "https://imslp.org/wiki/Symphony_No.7,_Op.131_(Prokofiev,_Sergey)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Moscow: Muzgiz, n.d.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Prokofiev-Symphony_No_7-1.pdf",
+    "2": "Prokofiev-Symphony_No_7-2.pdf",
+    "3": "Prokofiev-Symphony_No_7-3.pdf",
+    "4": "Prokofiev-Symphony_No_7-4.pdf",
+    "5": "Prokofiev-Symphony_No_7-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": false,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "197109",
+    "197110",
+    "197111",
+    "197112",
+    "200210",
+    "437104",
+    "437105",
+    "437106",
+    "437107",
+    "437108",
+    "437109",
+    "437110",
+    "437111",
+    "437112",
+    "437113",
+    "437114",
+    "437115",
+    "437116",
+    "437117",
+    "437118",
+    "437119",
+    "437120",
+    "437121",
+    "437122",
+    "437123",
+    "437124",
+    "437125",
+    "437126",
+    "437127",
+    "437128",
+    "437129",
+    "437130",
+    "437131",
+    "437132"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/437104",
+  "selected_string_sources": {
+    "5": {
+      "index": "197109",
+      "filename": "PMLP214303-Prokofiev_7_Bass.pdf",
+      "description": "Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/197109"
+    },
+    "4": {
+      "index": "197110",
+      "filename": "PMLP214303-Prokofiev_7_Cello.pdf",
+      "description": "Cellos",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/197110"
+    },
+    "1": {
+      "index": "197111",
+      "filename": "PMLP214303-Prokofiev_7_Violin_I.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/197111"
+    },
+    "2": {
+      "index": "197112",
+      "filename": "PMLP214303-Prokofiev_7_Violin_II.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/197112"
+    },
+    "3": {
+      "index": "200210",
+      "filename": "PMLP214303-Prokofiev_7_Viola.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/200210"
+    }
+  }
+}

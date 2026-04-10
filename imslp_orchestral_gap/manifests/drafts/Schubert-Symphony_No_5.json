@@ -1,0 +1,80 @@
+{
+  "piece_slug": "Schubert-Symphony_No_5",
+  "display_title": "Symphony No.5, D.485",
+  "composer_last": "Schubert",
+  "selected_page": {
+    "title": "Symphony No.5, D.485 (Schubert, Franz)",
+    "url": "https://imslp.org/wiki/Symphony_No.5,_D.485_(Schubert,_Franz)"
+  },
+  "selection_basis": "kalmus_preferred",
+  "selected_edition": {
+    "label": "Parts",
+    "publisher": "Kassel: Bärenreiter, 1997.  Plate BA 5645.",
+    "downloads": 0,
+    "why": "partial_title_match; orchestral_instrumentation; has_parts_section; kalmus_on_work_page; kalmus_preferred; parts_section; string_parts_present; full_string_set; selection_parts_penalty; has_rating"
+  },
+  "parts": {
+    "1": "Schubert-Symphony_No_5-1.pdf",
+    "2": "Schubert-Symphony_No_5-2.pdf",
+    "3": "Schubert-Symphony_No_5-3.pdf",
+    "4": "Schubert-Symphony_No_5-4.pdf",
+    "5": "Schubert-Symphony_No_5-5.pdf"
+  },
+  "part_mapping": {
+    "1": "violin_1",
+    "2": "violin_2",
+    "3": "viola",
+    "4": "cello",
+    "5": "bass"
+  },
+  "cello_bass_shared_source": true,
+  "needs_review": false,
+  "llm_used": false,
+  "llm_confidence": null,
+  "source_file_record_ids": [
+    "897941",
+    "897942",
+    "897943",
+    "897944",
+    "897945",
+    "897946",
+    "897947",
+    "897948",
+    "897949",
+    "897950",
+    "897951"
+  ],
+  "source_file_record_permalink": "https://imslp.org/wiki/Special:ReverseLookup/897945",
+  "selected_string_sources": {
+    "1": {
+      "index": "897941",
+      "filename": "PMLP25688-D_485_1-1_Vl1_groß.pdf",
+      "description": "Violins I",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/897941"
+    },
+    "2": {
+      "index": "897942",
+      "filename": "PMLP25688-D_485_1-2_Vl2_groß.pdf",
+      "description": "Violins II",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/897942"
+    },
+    "3": {
+      "index": "897943",
+      "filename": "PMLP25688-D_485_1-3_Vla_groß.pdf",
+      "description": "Violas",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/897943"
+    },
+    "4": {
+      "index": "897944",
+      "filename": "PMLP25688-D_485_1-4_VcB_groß.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/897944"
+    },
+    "5": {
+      "index": "897944",
+      "filename": "PMLP25688-D_485_1-4_VcB_groß.pdf",
+      "description": "Cellos/Basses",
+      "permlink": "https://imslp.org/wiki/Special:ReverseLookup/897944"
+    }
+  }
+}
