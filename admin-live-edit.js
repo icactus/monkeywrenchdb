@@ -39,14 +39,14 @@
 
         if (key === "q") {
             setLiveEditMode("barline");
-        } else if (key === "s") {
+        } else if (key === "s" || key === "w") {
             setLiveEditMode("split");
         }
     });
 
     function updateIndicator() {
         indicator.textContent = liveEditMode === "split"
-            ? "EDIT MODE: SPLIT (S)"
+            ? "EDIT MODE: SPLIT (S/W)"
             : "EDIT MODE: BARLINES (Q)";
     }
 
