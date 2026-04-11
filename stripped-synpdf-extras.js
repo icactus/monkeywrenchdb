@@ -716,6 +716,26 @@ function fetchRecordings(metricArrId) {
 
 let recordingCache = {};
 window.metricArrCacheBusters = window.metricArrCacheBusters || {};
+
+function capturePosthogPieceLoad(recordingFullData, pageTitle) {
+    if (!window.posthog || typeof window.posthog.capture !== 'function') {
+        return;
+    }
+
+    window.posthog.capture('piece_loaded', {
+        piece_id: recordingFullData.piece_id,
+        piece_name: recordingFullData.piece_name,
+        composer_last: recordingFullData.composer_last,
+        metric_arr_id: recordingFullData.metric_arr_id,
+        recording_id: recordingFullData.recording_id,
+        instrument_id: recordingFullData.instrument_id,
+        instrument_name: recordingFullData.instrument_name,
+        edition_label: recordingFullData.edition_label || '',
+        page_title: pageTitle,
+        page_path: window.location.pathname
+    });
+}
+
 async function loadRecording(recordingFullData) {
     console.log(recordingFullData);
 
@@ -760,6 +780,8 @@ async function loadRecording(recordingFullData) {
         'page_title': newTitle,
         'page_path': window.location.pathname
     });
+
+    capturePosthogPieceLoad(recordingFullData, newTitle);
 }
 
 
