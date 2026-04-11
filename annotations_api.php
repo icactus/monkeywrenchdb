@@ -14,10 +14,18 @@
  * - GET  share_token=xxx: Load shared annotations (no auth required)
  */
 
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
 ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/api_debug.log');
 header('Content-Type: application/json; charset=utf-8');
+
+function annotationsApiLog($message, $context = [])
+{
+    $suffix = $context ? ' ' . json_encode($context) : '';
+    error_log('[annotations_api] ' . $message . $suffix);
+}
 
 // Session config
 if (file_exists(__DIR__ . '/session_config.php')) {
@@ -37,36 +45,49 @@ if (file_exists('phpfiles/config.php')) {
     exit;
 }
 
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 if ($conn->connect_error) {
     http_response_code(500);
-    echo json_encode(['error' => 'DB connection failed']);
+    annotationsApiLog('DB connection failed', ['error' => $conn->connect_error]);
+    echo json_encode(['error' => 'Server error']);
     exit;
 }
-mysqli_set_charset($conn, 'utf8');
+mysqli_set_charset($conn, 'utf8mb4');
 
 // Handle shared annotations (no auth required)
 if (isset($_GET['share_token'])) {
-    $token = $conn->real_escape_string($_GET['share_token']);
-    $result = $conn->query("SELECT annotation_id, user_id, metric_arr_id, name, annotation_data FROM user_annotations WHERE share_token = '$token'");
-    if ($result && $row = $result->fetch_assoc()) {
-        $is_owner = false;
-        if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] === (int) $row['user_id']) {
-            $is_owner = true;
-        }
+    try {
+        $token = $conn->real_escape_string($_GET['share_token']);
+        $result = $conn->query("SELECT annotation_id, user_id, metric_arr_id, name, annotation_data FROM user_annotations WHERE share_token = '$token'");
+        if ($result && $row = $result->fetch_assoc()) {
+            $is_owner = false;
+            if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] === (int) $row['user_id']) {
+                $is_owner = true;
+            }
 
-        echo json_encode([
-            'success' => true,
-            'id' => (int) $row['annotation_id'],
-            'metric_arr_id' => (int) $row['metric_arr_id'],
-            'name' => $row['name'],
-            'annotation_data' => json_decode($row['annotation_data']),
-            'readonly' => !$is_owner,
-            'is_owner' => $is_owner
+            echo json_encode([
+                'success' => true,
+                'id' => (int) $row['annotation_id'],
+                'metric_arr_id' => (int) $row['metric_arr_id'],
+                'name' => $row['name'],
+                'annotation_data' => json_decode($row['annotation_data']),
+                'readonly' => !$is_owner,
+                'is_owner' => $is_owner
+            ]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['error' => 'Shared annotations not found']);
+        }
+    } catch (Throwable $e) {
+        http_response_code(500);
+        annotationsApiLog('Unhandled shared annotations error', [
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
         ]);
-    } else {
-        http_response_code(404);
-        echo json_encode(['error' => 'Shared annotations not found']);
+        echo json_encode(['error' => 'Server error']);
     }
     $conn->close();
     exit;
@@ -85,6 +106,12 @@ $user_id = (int) $_SESSION['user_id'];
 $input = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
+    if ($input === null && json_last_error() !== JSON_ERROR_NONE) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid JSON body']);
+        $conn->close();
+        exit;
+    }
     $action = $input['action'] ?? '';
     $metric_arr_id = (int) ($input['metric_arr_id'] ?? 0);
     $annotation_id = (int) ($input['id'] ?? 0);
@@ -95,6 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $annotation_id = (int) ($_GET['id'] ?? 0);
 }
 
+try {
 switch ($action) {
     case 'list_all':
         // List ALL annotation sets for this user across all pieces
@@ -115,7 +143,8 @@ switch ($action) {
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
             http_response_code(500);
-            echo json_encode(['error' => 'Prepare failed: ' . $conn->error]);
+            annotationsApiLog('Failed to prepare list_all query', ['error' => $conn->error]);
+            echo json_encode(['error' => 'Server error']);
             exit;
         }
         $stmt->bind_param('i', $user_id);
@@ -239,7 +268,8 @@ switch ($action) {
             echo json_encode(['success' => true, 'message' => 'Annotations saved']);
         } else {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to save: ' . $stmt->error]);
+            annotationsApiLog('Failed to save annotations', ['annotation_id' => $annotation_id, 'user_id' => $user_id, 'error' => $stmt->error]);
+            echo json_encode(['error' => 'Failed to save annotations']);
         }
         $stmt->close();
         break;
@@ -273,7 +303,8 @@ switch ($action) {
         $stmt = $conn->prepare("INSERT INTO user_annotations (user_id, metric_arr_id, name, annotation_data, is_default) VALUES (?, ?, ?, ?, ?)");
         if (!$stmt) {
             http_response_code(500);
-            echo json_encode(['error' => 'Prepare failed: ' . $conn->error]);
+            annotationsApiLog('Failed to prepare annotation create query', ['error' => $conn->error]);
+            echo json_encode(['error' => 'Server error']);
             exit;
         }
         $stmt->bind_param('iissi', $user_id, $metric_arr_id, $name, $json_data, $is_default);
@@ -283,7 +314,8 @@ switch ($action) {
             echo json_encode(['success' => true, 'id' => $new_id, 'name' => $name, 'is_default' => (bool) $is_default]);
         } else {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to create: ' . $stmt->error]);
+            annotationsApiLog('Failed to create annotation set', ['metric_arr_id' => $metric_arr_id, 'user_id' => $user_id, 'error' => $stmt->error]);
+            echo json_encode(['error' => 'Failed to create annotation set']);
         }
         $stmt->close();
         break;
@@ -379,7 +411,8 @@ switch ($action) {
             echo json_encode(['success' => true, 'id' => $new_id, 'name' => $import_name, 'metric_arr_id' => $src_metric_arr_id]);
         } else {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to import: ' . $stmt->error]);
+            annotationsApiLog('Failed to import shared annotations', ['metric_arr_id' => $src_metric_arr_id, 'user_id' => $user_id, 'error' => $stmt->error]);
+            echo json_encode(['error' => 'Failed to import shared annotations']);
         }
         $stmt->close();
         break;
@@ -420,6 +453,16 @@ switch ($action) {
     default:
         http_response_code(400);
         echo json_encode(['error' => 'Invalid action. Use: list, load, save, create, rename, delete, import, share']);
+}
+} catch (Throwable $e) {
+    http_response_code(500);
+    annotationsApiLog('Unhandled API error', [
+        'action' => $action,
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
+    ]);
+    echo json_encode(['error' => 'Server error']);
 }
 
 $conn->close();

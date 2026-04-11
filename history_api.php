@@ -2,9 +2,11 @@
 ob_start();
 // history_api.php
 ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(E_ALL);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/api_debug.log');
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
 try {
     if (file_exists(__DIR__ . '/session_config.php')) {
@@ -50,7 +52,7 @@ try {
 
     if ($action === 'check_db') {
         ob_end_clean();
-        echo json_encode(['status' => 'db_ok', 'db_host' => DB_HOST]);
+        echo json_encode(['status' => 'db_ok']);
         exit;
     }
 
@@ -136,7 +138,8 @@ try {
         $json = json_encode($history);
         if ($json === false) {
             http_response_code(500);
-            echo json_encode(['error' => 'JSON Encode Error: ' . json_last_error_msg()]);
+            error_log('[history_api] JSON encode failed: ' . json_last_error_msg());
+            echo json_encode(['error' => 'Server error']);
         } else {
             echo $json;
         }
@@ -165,6 +168,7 @@ try {
 } catch (Throwable $e) {
     http_response_code(500);
     ob_end_clean();
-    echo json_encode(['error' => 'Critical Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine()]);
+    error_log(sprintf('[history_api] %s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()));
+    echo json_encode(['error' => 'Server error']);
 
 }

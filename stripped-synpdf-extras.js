@@ -267,7 +267,7 @@ function fetchSearchByInstrument() {
             container.empty();
 
             try {
-                var groups = JSON.parse(response);
+                var groups = typeof response === 'string' ? JSON.parse(response) : response;
             } catch (e) {
                 console.error('Invalid JSON:', response);
                 container.append('<h3 class="coming-soon">More instruments coming soon!</h3>');
@@ -634,7 +634,12 @@ function fetchRecordings(metricArrId) {
                     $('#recordings-container').html('<p>No recordings found for the selected piece</p>');
                     reject("No recordings found");
                 } else {
-                    var recordings = JSON.parse(response);
+                    var recordings = typeof response === 'string' ? JSON.parse(response) : response;
+                    if (!Array.isArray(recordings) || recordings.length === 0) {
+                        $('#recordings-container').html('<p>No recordings found for the selected piece</p>');
+                        reject("No recordings found");
+                        return;
+                    }
                     console.log('RAW API RESPONSE - first recording:', recordings[0]);
                     currentMetricArrGlobal = metricArrId;
                     var container = $('#recordings-container');
