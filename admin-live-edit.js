@@ -9,6 +9,8 @@
 
     let liveEditActive = false;
     let liveEditMode = "barline";
+    let exactBoundariesMode = false;
+    let systemStartPoint = null;
     let savedMetricArr = null;
 
     // Create UI elements
@@ -39,24 +41,44 @@
 
         if (key === "q") {
             setLiveEditMode("barline");
-        } else if (key === "s" || key === "w") {
+        } else if (key === "s") {
             setLiveEditMode("split");
+        } else if (key === "w") {
+            setLiveEditMode("system", e.shiftKey);
         }
     });
 
     function updateIndicator() {
-        indicator.textContent = liveEditMode === "split"
-            ? "EDIT MODE: SPLIT (S/W)"
-            : "EDIT MODE: BARLINES (Q)";
+        if (liveEditMode === "split") {
+            indicator.textContent = "EDIT MODE: SPLIT (S)";
+            return;
+        }
+        if (liveEditMode === "system") {
+            indicator.textContent = exactBoundariesMode
+                ? "EDIT MODE: SYSTEMS EXACT (SHIFT+W)"
+                : "EDIT MODE: SYSTEMS (W)";
+            return;
+        }
+        indicator.textContent = "EDIT MODE: BARLINES (Q)";
     }
 
-    function setLiveEditMode(mode) {
-        const isSameMode = liveEditActive && liveEditMode === mode;
+    function resetModeState() {
+        systemStartPoint = null;
+    }
+
+    function setLiveEditMode(mode, exactMode) {
+        const nextExactBoundariesMode = mode === "system" ? !!exactMode : false;
+        const isSameMode = liveEditActive
+            && liveEditMode === mode
+            && exactBoundariesMode === nextExactBoundariesMode;
+
         liveEditMode = mode;
+        exactBoundariesMode = nextExactBoundariesMode;
         updateIndicator();
 
         if (isSameMode) {
             liveEditActive = false;
+            resetModeState();
         } else {
             liveEditActive = true;
         }
@@ -76,6 +98,7 @@
             saveBtn.style.display = "none";
             document.body.style.cursor = "default";
             document.getElementById("notation").style.cursor = "default";
+            resetModeState();
         }
     }
 
@@ -102,7 +125,9 @@
         }
         event.stopPropagation();
 
-        if (liveEditMode === "split" || event.shiftKey) {
+        if (liveEditMode === "system") {
+            handleSystem(event);
+        } else if (liveEditMode === "split" || event.shiftKey) {
             handleSplit(event);
         } else {
             handleBarline(event);
@@ -284,6 +309,141 @@
                 return;
             }
         }
+    }
+
+    function getSystemSortTop(system) {
+        if (system && Array.isArray(system.csl) && system.csl.length) return system.csl[0];
+        if (system && Array.isArray(system.csr) && system.csr.length) return system.csr[0];
+        if (system && Array.isArray(system.cs) && system.cs.length) return system.cs[0];
+        return 0;
+    }
+
+    function getSystemHitBounds(system, x) {
+        const cs = Array.isArray(system?.cs) ? system.cs : [];
+        if (!cs.length) {
+            return null;
+        }
+
+        if (Array.isArray(system?.csl) && Array.isArray(system?.csr) &&
+            system.csl.length === system.csr.length &&
+            system.csl.length === cs.length &&
+            system.xs &&
+            system.xs.x2 !== system.xs.x1) {
+            const ratio = (x - system.xs.x1) / (system.xs.x2 - system.xs.x1);
+            const clampedRatio = Math.max(0, Math.min(1, ratio));
+            const ys = cs.map((_, idx) => {
+                const left = system.csl[idx];
+                const right = system.csr[idx];
+                if (typeof left === "number" && typeof right === "number") {
+                    return left + ((right - left) * clampedRatio);
+                }
+                return cs[idx];
+            });
+            return {
+                top: Math.min(...ys),
+                bottom: Math.max(...ys)
+            };
+        }
+
+        return {
+            top: Math.min(...cs),
+            bottom: Math.max(...cs)
+        };
+    }
+
+    function handleSystem(event) {
+        const ctx = getEventContext(event);
+        if (!ctx) return;
+
+        if (!systemStartPoint) {
+            systemStartPoint = {
+                x: ctx.x,
+                y: ctx.y,
+                pageIdx: ctx.pageIdx
+            };
+            console.log("System start point set:", systemStartPoint);
+            return;
+        }
+
+        if (systemStartPoint.pageIdx !== ctx.pageIdx) {
+            systemStartPoint = {
+                x: ctx.x,
+                y: ctx.y,
+                pageIdx: ctx.pageIdx
+            };
+            console.warn("System draw restarted on different page:", systemStartPoint.pageIdx);
+            return;
+        }
+
+        const metricArr = window.deMetriek$$module$synpdf || window.metric_arr$$module$synpdf;
+        const pageData = metricArr?.[ctx.pageIdx];
+        if (!pageData) {
+            systemStartPoint = null;
+            return;
+        }
+
+        pageData.cxs = Array.isArray(pageData.cxs) ? pageData.cxs : [];
+        pageData.bxs = Array.isArray(pageData.bxs) ? pageData.bxs : [];
+
+        const startX = Math.min(systemStartPoint.x, ctx.x);
+        const endX = Math.max(systemStartPoint.x, ctx.x);
+        const startY = Math.min(systemStartPoint.y, ctx.y);
+        const endY = Math.max(systemStartPoint.y, ctx.y);
+        const midX = Math.round((startX + endX) / 2);
+
+        const overlappingIndexes = [];
+        for (let j = 0; j < pageData.cxs.length; j++) {
+            const bounds = getSystemHitBounds(pageData.cxs[j], midX);
+            if (!bounds) continue;
+            if (bounds.bottom >= startY && bounds.top <= endY) {
+                overlappingIndexes.push(j);
+            }
+        }
+
+        for (let i = overlappingIndexes.length - 1; i >= 0; i--) {
+            const index = overlappingIndexes[i];
+            pageData.cxs.splice(index, 1);
+            pageData.bxs.splice(index, 1);
+        }
+
+        let newBarlines = [];
+        let optimizedCs = null;
+
+        try {
+            if (typeof window.detectBarlinesInRect === "function") {
+                const res = window.detectBarlinesInRect(startY, endY, startX, endX, event.shiftKey);
+                if (res && Array.isArray(res.barlines)) {
+                    newBarlines = res.barlines;
+                    if (!exactBoundariesMode && Array.isArray(res.cs)) {
+                        optimizedCs = res.cs;
+                    }
+                } else if (Array.isArray(res)) {
+                    newBarlines = res;
+                }
+            }
+        } catch (error) {
+            console.error("System auto-detection failed:", error);
+        }
+
+        const finalCs = (!exactBoundariesMode && optimizedCs && optimizedCs.length === 5)
+            ? optimizedCs
+            : [startY, endY];
+
+        pageData.cxs.push({
+            cs: finalCs,
+            csl: finalCs.slice(),
+            csr: finalCs.slice(),
+            xs: { x1: startX, x2: endX }
+        });
+
+        pageData.bxs.push(newBarlines && newBarlines.length ? newBarlines : [startX, endX]);
+
+        const oldCxsOrder = [...pageData.cxs];
+        pageData.cxs.sort((a, b) => getSystemSortTop(a) - getSystemSortTop(b));
+        pageData.bxs = pageData.cxs.map(system => pageData.bxs[oldCxsOrder.indexOf(system)]);
+
+        systemStartPoint = null;
+        refreshPlayer();
     }
 
     function saveToDatabase() {

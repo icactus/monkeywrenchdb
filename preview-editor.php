@@ -242,7 +242,7 @@ $is_share_link = isset($_GET['share']);
                                         script.id = 'admin-live-edit-script';
                                         script.src = 'admin-live-edit.js?v=' + new Date().getTime();
                                         script.onload = function () {
-                                            alert("Admin Tools Loaded. Press 'q' for barlines and 's' or 'w' for split mode.");
+                                            alert("Admin Tools Loaded. Press 'q' for barlines, 's' for split mode, 'w' for systems, and Shift+'w' for exact system boundaries.");
                                         };
                                         document.body.appendChild(script);
                                     }
