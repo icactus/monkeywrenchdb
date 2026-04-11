@@ -125,7 +125,9 @@
         }
         event.stopPropagation();
 
-        if (liveEditMode === "system") {
+        if (liveEditMode === "barline" && event.altKey) {
+            handleWrappedMeasureMark(event);
+        } else if (liveEditMode === "system") {
             handleSystem(event);
         } else if (liveEditMode === "split" || event.shiftKey) {
             handleSplit(event);
@@ -236,7 +238,7 @@
 
                 // Check for removal (threshold 5px)
                 for (let i = 0; i < bxs_group.length; i++) {
-                    if (Math.abs(x - bxs_group[i]) <= 5) {
+                    if (Math.abs(x - Math.abs(bxs_group[i])) <= 5) {
                         bxs_group.splice(i, 1);
                         isValueRemoved = true;
                         break;
@@ -246,7 +248,7 @@
                 // If not removed, add new
                 if (!isValueRemoved) {
                     bxs_group.push(x);
-                    bxs_group.sort((a, b) => a - b);
+                    bxs_group.sort((a, b) => Math.abs(a) - Math.abs(b));
                 }
 
                 console.log("Barline update:", isValueRemoved ? "Removed" : "Added", x);
@@ -276,9 +278,10 @@
                 let closestRight = null;
 
                 for (let i = 0; i < bxs_group.length; i++) {
-                    if (bxs_group[i] < x) closestLeft = bxs_group[i];
-                    else if (bxs_group[i] > x) {
-                        closestRight = bxs_group[i];
+                    const barlineX = Math.abs(bxs_group[i]);
+                    if (barlineX < x) closestLeft = barlineX;
+                    else if (barlineX > x) {
+                        closestRight = barlineX;
                         break;
                     }
                 }
@@ -299,13 +302,69 @@
                 for (let i = 1; i < count; i++) {
                     let newX = closestLeft + (i * step);
                     // Avoid duplicates if they somehow exist, though unlikely with math
-                    if (!bxs_group.includes(newX)) { // strict equality might fail on floats, but OK for now
+                    if (!bxs_group.some(existingX => Math.abs(existingX - newX) < 0.001)) {
                         bxs_group.push(newX);
                     }
                 }
 
-                bxs_group.sort((a, b) => a - b);
+                bxs_group.sort((a, b) => Math.abs(a) - Math.abs(b));
                 refreshPlayer();
+                return;
+            }
+        }
+    }
+
+    function handleWrappedMeasureMark(event) {
+        const ctx = getEventContext(event);
+        if (!ctx) return;
+        const { x, y, pageIdx } = ctx;
+
+        const metricArr = window.deMetriek$$module$synpdf || window.metric_arr$$module$synpdf;
+        const pageData = metricArr?.[pageIdx];
+        if (!pageData || !Array.isArray(pageData.cxs) || !Array.isArray(pageData.bxs)) {
+            return;
+        }
+
+        for (let j = 0; j < pageData.cxs.length; j++) {
+            const csGroup = pageData.cxs[j]?.cs;
+            if (!Array.isArray(csGroup) || !csGroup.length) continue;
+
+            const bounds = getSystemHitBounds(pageData.cxs[j], x);
+            if (!bounds) continue;
+
+            if (y >= bounds.top && y <= bounds.bottom) {
+                const bxsGroup = pageData.bxs[j];
+                if (!Array.isArray(bxsGroup)) return;
+
+                for (let i = 0; i < bxsGroup.length; i++) {
+                    const barlineX = Math.abs(bxsGroup[i]);
+
+                    if (Math.abs(x - barlineX) <= 10) {
+                        const isMarking = bxsGroup[i] >= 0;
+                        bxsGroup[i] = isMarking ? -barlineX : barlineX;
+
+                        const nextStaffIndex = j + 1;
+                        if (nextStaffIndex < pageData.bxs.length) {
+                            const nextBxs = pageData.bxs[nextStaffIndex];
+                            if (Array.isArray(nextBxs) && nextBxs.length > 0) {
+                                nextBxs[0] = isMarking ? -Math.abs(nextBxs[0]) : Math.abs(nextBxs[0]);
+                                nextBxs.sort((a, b) => Math.abs(a) - Math.abs(b));
+                            }
+                        } else if (pageIdx + 1 < metricArr.length) {
+                            const nextPageBxs = metricArr[pageIdx + 1]?.bxs;
+                            if (Array.isArray(nextPageBxs) && nextPageBxs.length > 0 && Array.isArray(nextPageBxs[0]) && nextPageBxs[0].length > 0) {
+                                nextPageBxs[0][0] = isMarking ? -Math.abs(nextPageBxs[0][0]) : Math.abs(nextPageBxs[0][0]);
+                                nextPageBxs[0].sort((a, b) => Math.abs(a) - Math.abs(b));
+                            }
+                        }
+
+                        bxsGroup.sort((a, b) => Math.abs(a) - Math.abs(b));
+                        refreshPlayer();
+                        return;
+                    }
+                }
+
+                console.log('No barline found within 10px of click for wrapped measure mark.');
                 return;
             }
         }
