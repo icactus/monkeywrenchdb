@@ -8,6 +8,7 @@
     console.log("Admin Live Edit Script Loaded");
 
     let liveEditActive = false;
+    let liveEditMode = "barline";
     let savedMetricArr = null;
 
     // Create UI elements
@@ -19,7 +20,7 @@
 
     const indicator = document.createElement("div");
     indicator.id = "live-edit-indicator";
-    indicator.textContent = "EDIT MODE (Q)";
+    indicator.textContent = "EDIT MODE: BARLINES (Q)";
     indicator.style.cssText = "position: fixed; top: 10px; right: 20px; z-index: 10000; padding: 5px 10px; background: rgba(0,0,0,0.7); color: #0f0; font-family: monospace; border-radius: 4px; display: none; pointer-events: none;";
     document.body.appendChild(indicator);
 
@@ -34,14 +35,33 @@
         // Ignore if typing in an input
         if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
 
-        if (e.key === "q") {
-            toggleEditMode();
+        const key = (e.key || "").toLowerCase();
+
+        if (key === "q") {
+            setLiveEditMode("barline");
+        } else if (key === "s") {
+            setLiveEditMode("split");
         }
     });
 
-    function toggleEditMode() {
-        liveEditActive = !liveEditActive;
-        console.log("Live Edit Mode:", liveEditActive ? "ON" : "OFF");
+    function updateIndicator() {
+        indicator.textContent = liveEditMode === "split"
+            ? "EDIT MODE: SPLIT (S)"
+            : "EDIT MODE: BARLINES (Q)";
+    }
+
+    function setLiveEditMode(mode) {
+        const isSameMode = liveEditActive && liveEditMode === mode;
+        liveEditMode = mode;
+        updateIndicator();
+
+        if (isSameMode) {
+            liveEditActive = false;
+        } else {
+            liveEditActive = true;
+        }
+
+        console.log("Live Edit Mode:", liveEditActive ? liveEditMode.toUpperCase() : "OFF");
 
         if (liveEditActive) {
             indicator.style.display = "block";
@@ -82,7 +102,7 @@
         }
         event.stopPropagation();
 
-        if (event.shiftKey) {
+        if (liveEditMode === "split" || event.shiftKey) {
             handleSplit(event);
         } else {
             handleBarline(event);
