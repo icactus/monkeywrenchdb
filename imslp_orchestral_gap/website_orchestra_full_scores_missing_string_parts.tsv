@@ -1,0 +1,44 @@
+piece_id	composer_last	piece_name	category_name	total_recordings_value	full_score_metric_arr_id	has_any_string_parts	missing_all_string_parts	has_complete_string_set	has_violin_1	has_violin_2	has_viola	has_cello	has_bass	missing_part_count	missing_parts	present_string_parts
+111	Verdi	Requiem	Orchestra	4	307	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+108	Bizet	Carmen Suite No.1	Orchestra	3	301	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+64	Bach	Mass in B minor, BWV 232	Orchestra	2	255	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+55	Bach	Orchestral Suite No.3 in D major, BWV 1068	Orchestra	2	197	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+165	Beethoven	Symphony No.4	Orchestra	2	458	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+86	Holst	The Planets	Orchestra	2	267	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+148	Ravel	La Valse	Orchestra	2	429	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+157	Rossini	Barber of Seville (overture)	Orchestra	2	446	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+160	Saint-Saëns	Danse macabre, Op.40	Orchestra	2	450	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+169	Strauss	Also sprach Zarathustra	Orchestra	2	469	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+158	Bach	St. Matthew Passion, BWV 244	Orchestra	1	448	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+270	Beethoven	Leonora Overture No.3	Orchestra	1	690	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+223	Beethoven	Symphony No.1	Orchestra	1	559	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+222	Beethoven	Symphony No.2	Orchestra	1	558	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+163	Beethoven	Symphony No.6	Orchestra	1	455	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+221	Beethoven	Symphony No.8	Orchestra	1	557	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+266	Bizet	L'Arlésienne Suite No.2	Orchestra	1	673	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+211	Bruckner	Symphony No.8	Orchestra	1	537	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+212	Bruckner	Symphony No.9	Orchestra	1	538	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+264	Debussy	Prélude à l’après-midi d’un faune	Orchestra	1	664	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+175	Dvořák	Symphony No.8	Orchestra	1	485	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+174	Elgar	Enigma Variations	Orchestra	1	484	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+159	Fauré	Requiem, Op.48	Orchestra	1	449	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+154	Grieg	Peer Gynt Suite No.1, Op.46	Orchestra	1	441	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+273	Mahler	Symphony No.3	Orchestra	1	696	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+214	Mahler	Symphony No.9	Orchestra	1	548	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+177	Rachmaninoff	Symphony No.2	Orchestra	1	489	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+260	Ravel	Bolero	Orchestra	1	649	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+265	Ravel	Daphnis et Chloé Suite No.2	Orchestra	1	666	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+267	Ravel	Ma mère l'Oye (Mother Goose) suite	Orchestra	1	675	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+156	Rimsky-Korsakov	Scheherazade, Op.35	Orchestra	1	445	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+268	Rossini	William Tell Overture	Orchestra	1	677	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+147	Saint-Saëns	The Carnival of the Animals	Orchestra	1	428	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+271	Schumann	Symphony No.1	Orchestra	1	692	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+235	Schumann	Symphony No.3	Orchestra	1	565	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+225	Schönberg	Chamber Symphony No.1	Orchestra	1	561	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+224	Sibelius	Symphony No.5	Orchestra	1	560	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+269	Strauss	Tod und Verklärung (Death and Transfiguration)	Orchestra	1	681	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+263	Stravinsky	The Firebird (suite - 1919 version)	Orchestra	1	662	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+275	Stravinsky	The Rite of Spring	Orchestra	1	713	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+226	Vaughan Williams	Fantasia on a Theme by Thomas Tallis	Orchestra	1	562	no	yes	no	no	no	no	no	no	5	violin_1,violin_2,viola,cello,bass
+272	Mahler	Symphony No.7	Orchestra	2	694	yes	no	no	no	no	no	no	yes	4	violin_1,violin_2,viola,cello	bass
+137	Nielsen	Symphony No.5, Op.50	Orchestra	1	384	yes	no	no	no	no	no	no	yes	4	violin_1,violin_2,viola,cello	bass

@@ -254,11 +254,13 @@ def main() -> None:
     parser.add_argument("--allow-incomplete", action="store_true", help="Download manifests missing one or more string-part sources")
     parser.add_argument("--continue-on-error", action="store_true", help="Continue with later manifests if one download fails")
     parser.add_argument("--dry-run", action="store_true", help="Print intended downloads without contacting IMSLP")
+    parser.add_argument("--draft-dir", help="Override the draft manifest directory")
+    parser.add_argument("--downloads-dir", help="Override the output downloads directory")
     args = parser.parse_args()
 
     config = load_config()
-    draft_dir = resolve_path(config.get("draft_manifest_dir"), ROOT / "manifests" / "drafts")
-    downloads_dir = resolve_path(config.get("downloads_dir"), ROOT / "fullres-pdfs")
+    draft_dir = resolve_path(args.draft_dir or config.get("draft_manifest_dir"), ROOT / "manifests" / "drafts")
+    downloads_dir = resolve_path(args.downloads_dir or config.get("downloads_dir"), ROOT / "fullres-pdfs")
     sleep_seconds = float(
         args.sleep_seconds
         if args.sleep_seconds is not None

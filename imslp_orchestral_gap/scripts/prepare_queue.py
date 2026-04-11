@@ -21,8 +21,8 @@ PART_MAPPING = {
     "5": "bass",
 }
 
-CATALOG_TOKEN_RE = re.compile(
-    r"(?:^|,\s+)(?:Op|BWV|K|KV|RV|HWV|Hob|D|Sz|M|TH|WWV|JB|S|Wq|WoO|TrV|MWV|FP|Kr|QV)\.?\s*[\w:/.-]+(?:\*+)?$",
+CATALOG_SUFFIX_RE = re.compile(
+    r"^(?:Op|BWV|K|KV|RV|HWV|Hob|D|Sz|M|TH|WWV|JB|S|Wq|WoO|TrV|MWV|FP|Kr|QV)\.?\s*[\w:/.-]+(?:\*+)?$",
     re.IGNORECASE,
 )
 TITLE_RE = re.compile(r"^(?P<work>.*) \((?P<composer_last>[^,()]+), (?P<composer_rest>[^()]*)\)$")
@@ -36,14 +36,11 @@ def ascii_fold(value: str) -> str:
 def clean_piece_name(work_title: str) -> str:
     value = work_title.strip()
 
-    # Remove catalog-like suffixes from the end while keeping useful work-type text.
-    changed = True
-    while changed:
-        changed = False
-        match = CATALOG_TOKEN_RE.search(value)
-        if match:
-            value = value[: match.start()].rstrip(", ").strip()
-            changed = True
+    # Remove comma-separated catalog suffixes from the end while keeping the real title text.
+    parts = [part.strip() for part in value.split(",")]
+    while len(parts) > 1 and CATALOG_SUFFIX_RE.match(parts[-1]):
+        parts.pop()
+    value = ", ".join(part for part in parts if part)
 
     value = value.replace("&", "and")
     value = value.replace("'", "")

@@ -30,12 +30,15 @@ This folder holds the current working state for the IMSLP orchestra-parts side p
 
 - `scripts/build_nonconcerto_list.py`: rebuilds the active non-concerto list from cached IMSLP popularity pages
 - `scripts/prepare_queue.py`: converts the active shortlist TSV into `work_queue.jsonl`
+- `scripts/prepare_priority_gap_queue.py`: converts the live website orchestra-gap TSV into an isolated priority queue
 - `scripts/imslp_api_request.py`: rate-limited IMSLP API requester
 - `scripts/fetch_work_candidates.py`: caches `type=2` and `type=3` API responses for queue items
 - `scripts/select_edition.py`: chooses a work candidate and file candidate, then writes a manifest draft
 - `scripts/download_parts.py`: downloads full-resolution PDFs from selected manifest drafts
+- `scripts/run_priority_gap_pipeline.py`: runs the isolated live-site priority workflow end to end
 - `prompts/edition_selection_prompt.md`: compact LLM prompt template for ambiguous cases
 - `fullres-pdfs/`: intended destination for final part PDFs
+- `priority_gap/`: isolated queue/cache/drafts/PDFs for live-site “full score but no string parts” priority work
 - `manifests/`: intended destination for completed manifest records
 
 ## Quick start
@@ -62,6 +65,16 @@ Example end-to-end test:
 `python imslp_orchestral_gap/scripts/fetch_work_candidates.py --piece-slug Tchaikovsky-Romeo_and_Juliet`
 
 `python imslp_orchestral_gap/scripts/select_edition.py --piece-slug Tchaikovsky-Romeo_and_Juliet`
+
+Priority live-site gap workflow:
+
+1. Refresh the live orchestra-only website gap TSV:
+   `python imslp_orchestral_gap/scripts/find_live_full_scores_missing_string_parts.py`
+2. Build the isolated priority queue:
+   `python imslp_orchestral_gap/scripts/prepare_priority_gap_queue.py`
+3. Run the isolated priority pipeline:
+   `python -u imslp_orchestral_gap/scripts/run_priority_gap_pipeline.py --sleep-seconds 3 --continue-on-error`
+4. Review outputs under `imslp_orchestral_gap/priority_gap/`.
 
 ## Queue shape
 

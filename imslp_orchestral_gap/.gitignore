@@ -1,5 +1,7 @@
 config.json
 cache/
 fullres-pdfs/
+priority_gap/cache/
+priority_gap/pdfs/
 scripts/__pycache__/
 *.log

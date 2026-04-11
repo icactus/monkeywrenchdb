@@ -15,6 +15,15 @@ ARRANGEMENT_HEADERS = {
 }
 
 
+def resolve_path(value: str | None, fallback: Path) -> Path:
+    if not value:
+        return fallback
+    path = Path(value)
+    if not path.is_absolute():
+        path = ROOT.parent / path
+    return path
+
+
 def ascii_fold(value: str) -> str:
     normalized = unicodedata.normalize("NFKD", value)
     return "".join(ch for ch in normalized if not unicodedata.combining(ch))
@@ -77,11 +86,26 @@ def get_nested_entries(file_record: dict) -> list[dict]:
 
 
 def normalized_sectionheaders(file_record: dict) -> list[str]:
-    return [normalize(header) for header in file_record.get("intvals", {}).get("sectionheaders", [])]
+    return [normalize(header) for header in sectionheaders_as_list(file_record)]
+
+
+def sectionheaders_as_list(file_record: dict) -> list[str]:
+    raw_headers = file_record.get("intvals", {}).get("sectionheaders", [])
+    if isinstance(raw_headers, dict):
+        headers = []
+        for _, value in sorted(raw_headers.items(), key=lambda item: str(item[0])):
+            if isinstance(value, str):
+                headers.append(value)
+        return headers
+    if isinstance(raw_headers, list):
+        return [header for header in raw_headers if isinstance(header, str)]
+    if isinstance(raw_headers, str):
+        return [raw_headers]
+    return []
 
 
 def build_edition_label(file_record: dict, entries: list[dict]) -> str:
-    sectionheaders = file_record.get("intvals", {}).get("sectionheaders", [])
+    sectionheaders = sectionheaders_as_list(file_record)
     filtered = [header for header in sectionheaders if header not in {"Arrangements and Transcriptions", "Selections"}]
     if filtered:
         return " / ".join(filtered)
@@ -103,7 +127,15 @@ def map_string_part_sources(entries: list[dict]) -> tuple[dict, bool]:
             "permlink": entry.get("permlink"),
         }
 
-        if re.search(r"\bviolins?\s+ii\b", description) or re.search(r"\bviolins?\s+2\b", description):
+        if (
+            re.search(r"\bviolins?\s+i\b.*\bii\b", description)
+            or re.search(r"\bviolins?\s+1\b.*\b2\b", description)
+            or re.search(r"\bviolins?\s+i,\s*ii\b", description)
+            or re.search(r"\bviolins?\s+1,\s*2\b", description)
+        ):
+            mapped["1"] = payload
+            mapped["2"] = payload
+        elif re.search(r"\bviolins?\s+ii\b", description) or re.search(r"\bviolins?\s+2\b", description):
             mapped["2"] = payload
         elif re.search(r"\bviolins?\s+i\b", description) or re.search(r"\bviolins?\s+1\b", description):
             mapped["1"] = payload
@@ -298,18 +330,17 @@ def build_manifest(queue_item: dict, work_record: dict, work_reasons: list[str],
 def main() -> None:
     parser = argparse.ArgumentParser(description="Select a cached IMSLP edition and write a draft manifest")
     parser.add_argument("--piece-slug", required=True, help="Queue item slug")
+    parser.add_argument("--queue-jsonl", help="Override the queue JSONL path")
+    parser.add_argument("--cache-dir", help="Override the cache directory")
+    parser.add_argument("--draft-dir", help="Override the draft manifest directory")
     args = parser.parse_args()
 
     config = load_config()
-    queue_path = ROOT / Path(config.get("work_queue_jsonl", "imslp_orchestral_gap/work_queue.jsonl")).name
-    cache_root = Path(config.get("cache_dir", "imslp_orchestral_gap/cache"))
-    if not cache_root.is_absolute():
-        cache_root = ROOT.parents[0] / cache_root
+    queue_path = resolve_path(args.queue_jsonl or config.get("work_queue_jsonl"), ROOT / "work_queue.jsonl")
+    cache_root = resolve_path(args.cache_dir or config.get("cache_dir"), ROOT / "cache")
     work_cache_dir = cache_root / "work"
     file_cache_dir = cache_root / "files"
-    draft_dir = Path(config.get("draft_manifest_dir", "imslp_orchestral_gap/manifests/drafts"))
-    if not draft_dir.is_absolute():
-        draft_dir = ROOT.parents[0] / draft_dir
+    draft_dir = resolve_path(args.draft_dir or config.get("draft_manifest_dir"), ROOT / "manifests" / "drafts")
     draft_dir.mkdir(parents=True, exist_ok=True)
 
     queue_item = load_queue_item(queue_path, args.piece_slug)
