@@ -4523,11 +4523,6 @@ async function detectBarlinesForYMerge(pageImageData, selected, mergeInfo) {
         }
     }
 
-    if (selected.length >= 3) {
-        var profile = deriveFullScoreBarlineProfile(pageImageData, selected);
-        return buildFullScoreBarlinesFromSelection(pageImageData, selected, mergedSystem, profile);
-    }
-
     return detectMergedSystemBarlines(pageImageData, mergedSystem, dominantSpatium);
 }
 
