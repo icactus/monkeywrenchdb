@@ -353,7 +353,7 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
     $.ajax({
         url: 'fetch_pieces.php',
         method: 'GET',
-        data: { instrumentIds: instrumentIds, instrumentName: instrumentNameArg || '' },
+        data: { instrumentIds: instrumentIds },
         dataType: 'json',
         success: function (data) {
 
@@ -368,7 +368,7 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
             }
 
             var pieces = data.pieces || [];
-            var instrumentName = (instrumentNameArg || data.instrumentName || "").trim();
+            var instrumentName = (instrumentNameArg || "").trim();
 
             // Heading (Score vs Parts)
             const instHeading = instrumentName.endsWith("Score")

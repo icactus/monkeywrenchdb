@@ -128,8 +128,7 @@ try {
     $conn->close();
 
     echo json_encode([
-        'pieces' => array_values($pieces),
-        'instrumentName' => $_GET['instrumentName'] ?? ''
+        'pieces' => array_values($pieces)
     ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     http_response_code(500);
