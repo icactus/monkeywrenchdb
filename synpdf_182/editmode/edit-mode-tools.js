@@ -657,7 +657,7 @@ function handleActiveYDragMove(event) {
     }
 }
 
-function handleActiveYDragEnd(event) {
+async function handleActiveYDragEnd(event) {
     if (!yDragState) {
         clearActiveYDragListeners();
         return;
@@ -665,7 +665,7 @@ function handleActiveYDragEnd(event) {
 
     if (yDragState.active) {
         event.preventDefault();
-        mergeSystemsInYDrag(event);
+        await mergeSystemsInYDrag(event);
         suppressNextYClick = true;
     }
 
@@ -4507,7 +4507,31 @@ function normalizePageToFullScoreSystems(pageData, pageImageData, debugInfo) {
     return true;
 }
 
-function mergeSystemsInYDrag(event) {
+async function detectBarlinesForYMerge(pageImageData, selected, mergeInfo) {
+    var mergedSystem = mergeInfo.system;
+    var dominantSpatium = mergeInfo.dominantSpatium;
+
+    if (selected.length === 2) {
+        var cnnDetected = await detectMergedSystemBarlinesWithPianoCnn(
+            pageImageData,
+            mergedSystem,
+            dominantSpatium,
+            { threshold: 0.7 }
+        );
+        if (cnnDetected && Array.isArray(cnnDetected) && cnnDetected.length >= 2) {
+            return cnnDetected;
+        }
+    }
+
+    if (selected.length >= 3) {
+        var profile = deriveFullScoreBarlineProfile(pageImageData, selected);
+        return buildFullScoreBarlinesFromSelection(pageImageData, selected, mergedSystem, profile);
+    }
+
+    return detectMergedSystemBarlines(pageImageData, mergedSystem, dominantSpatium);
+}
+
+async function mergeSystemsInYDrag(event) {
     let pageData = MetricStore.getMetricData();
     let pagenum = parseInt(document.getElementById('pagenum').value);
     if (!pageData || pagenum < 1 || pagenum >= pageData.length || !pageData[pagenum]) {
@@ -4551,7 +4575,7 @@ function mergeSystemsInYDrag(event) {
         return false;
     }
     var mergedSystem = mergeInfo.system;
-    var mergedBxs = detectMergedSystemBarlines(pageImageData, mergedSystem, mergeInfo.dominantSpatium);
+    var mergedBxs = await detectBarlinesForYMerge(pageImageData, selected, mergeInfo);
 
     for (var ri = selected.length - 1; ri >= 0; ri--) {
         pageData[pagenum].cxs.splice(selected[ri].index, 1);
