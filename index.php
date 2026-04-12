@@ -740,7 +740,7 @@ $is_share_link = isset($_GET['share']);
     <script src="js/history-manager.js?v=4"></script>
     <script src="js/favorites-manager.js?v=1"></script>
     <script src="stripped-synpdf.js?v=310"></script>
-    <script src="stripped-synpdf-extras.js?v=260"></script>
+    <script src="stripped-synpdf-extras.js?v=261"></script>
     <script>
         // Dark Mode menu toggles - wire up immediately on page load
         $(function () {
