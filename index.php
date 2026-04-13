@@ -1,12 +1,6 @@
 <?php
-if (file_exists('session_config.php')) {
-    require_once 'session_config.php';
-} else {
-    session_start();
-}
-
-// Handle share link (guests)
-$is_share_link = isset($_GET['share']);
+require __DIR__ . '/preview-editor.php';
+exit;
 ?>
 <!DOCTYPE HTML>
 <html>
