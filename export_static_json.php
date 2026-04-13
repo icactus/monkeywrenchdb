@@ -1,8 +1,10 @@
 <?php
 /**
- * One-time export: Dump metric_arr_data and times_arr_data from MySQL to static JSON files.
+ * Export metric_arr_data and times_arr_data from MySQL to static JSON files.
  *
- * Usage:  php export_static_json.php
+ * Usage:
+ *   php export_static_json.php
+ *   php export_static_json.php --recording-id=661
  *
  * Creates:
  *   /data/metrics/{metric_arr_id}.json   — one per metric_arr row
@@ -21,6 +23,15 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error . "\n");
 }
 mysqli_set_charset($conn, 'utf8');
+
+$recordingIdFilter = null;
+if (PHP_SAPI === 'cli' && !empty($argv)) {
+    foreach ($argv as $arg) {
+        if (strpos($arg, '--recording-id=') === 0) {
+            $recordingIdFilter = (int) substr($arg, strlen('--recording-id='));
+        }
+    }
+}
 
 // --- Ensure directories exist ---
 $metricsDir = __DIR__ . '/data/metrics';
@@ -106,7 +117,11 @@ echo "  Done: $countMetrics files written, $errorsMetrics errors.\n\n";
 
 // --- Export times_arr_data ---
 echo "Exporting times_arr_data...\n";
-$result = $conn->query("SELECT recording_id, times_arr_data FROM recordings WHERE times_arr_data IS NOT NULL");
+$timesSql = "SELECT recording_id, times_arr_data FROM recordings WHERE times_arr_data IS NOT NULL";
+if ($recordingIdFilter > 0) {
+    $timesSql .= " AND recording_id = " . (int) $recordingIdFilter;
+}
+$result = $conn->query($timesSql);
 $countTimes = 0;
 $errorsTimes = 0;
 

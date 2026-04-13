@@ -1,6 +1,28 @@
 <?php
 require_once 'config.php';
 
+function findTimesExportDir(): ?string
+{
+    $candidates = [
+        __DIR__ . '/../public_html/data/times',
+        __DIR__ . '/../data/times',
+    ];
+
+    foreach ($candidates as $dir) {
+        if (is_dir($dir)) {
+            return $dir;
+        }
+    }
+
+    foreach ($candidates as $dir) {
+        if (@mkdir($dir, 0755, true)) {
+            return $dir;
+        }
+    }
+
+    return null;
+}
+
 // Establish the database connection
 $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 mysqli_set_charset($mysqli, 'utf8mb4');
@@ -48,6 +70,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($stmt->affected_rows === 0) {
         die('Error in insertion: ' . $stmt->error);
     } else {
+        $recording_id = (int) $mysqli->insert_id;
+        $timesDir = findTimesExportDir();
+        if (!$timesDir) {
+            die('Error exporting static times JSON: data/times directory not found or could not be created.');
+        }
+
+        $timesPath = $timesDir . '/' . $recording_id . '.json';
+        if (file_put_contents($timesPath, $times_arr_data) === false) {
+            die('Error exporting static times JSON: failed to write ' . $timesPath);
+        }
+
         echo "success";
     }
 
