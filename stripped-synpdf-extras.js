@@ -61,7 +61,7 @@ window.__preFS = null;                   // stash zoom + position before togglin
 // --- Hi-Res PDFs toggle ---
 window.hiResPdfsEnabled = false;
 function getPdfBaseDir() {
-    return window.hiResPdfsEnabled ? './hd-pdfs/' : './pdfs/';
+    return window.hiResPdfsEnabled ? '/hd-pdfs/' : '/pdfs/';
 }
 
 const sheetMusicSvg = ` 

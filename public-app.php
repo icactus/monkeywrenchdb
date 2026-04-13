@@ -760,7 +760,7 @@ $seoLandingConfigJson = isset($seoLandingConfig)
     <script src="js/history-manager.js?v=4"></script>
     <script src="js/favorites-manager.js?v=1"></script>
     <script src="stripped-synpdf.js?v=310"></script>
-    <script src="stripped-synpdf-extras.js?v=263"></script>
+    <script src="stripped-synpdf-extras.js?v=264"></script>
     <script>
         // Dark Mode menu toggles - wire up immediately on page load
         $(function () {
