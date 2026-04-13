@@ -15,6 +15,11 @@ $baseHref = isset($baseHref) && is_string($baseHref) && $baseHref !== '' ? $base
 $seoLandingConfigJson = isset($seoLandingConfig)
     ? json_encode($seoLandingConfig, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
     : 'null';
+$isSeoLandingEntry = isset($seoLandingConfig) && is_array($seoLandingConfig);
+$bodyClasses = [];
+if ($isSeoLandingEntry) {
+    $bodyClasses[] = 'seo-landing-entry';
+}
 ?>
 <!DOCTYPE HTML>
 <html>
@@ -129,9 +134,24 @@ $seoLandingConfigJson = isset($seoLandingConfig)
             }
         } catch (e) { }
     </script>
+    <style>
+        body.seo-landing-entry:not(.recording-loaded) #notation-scroll > .tabs,
+        body.seo-landing-entry:not(.recording-loaded) #notation-scroll > .tab-contents {
+            display: none;
+        }
+
+        body.seo-landing-entry:not(.recording-loaded) #loadingMessage2 {
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #444;
+        }
+    </style>
 </head>
 
-<body>
+<body<?= $bodyClasses ? ' class="' . htmlspecialchars(implode(' ', $bodyClasses), ENT_QUOTES, 'UTF-8') . '"' : '' ?>>
     <!-- <sidebar></sidebar> -->
     <section1>
         <div id="header">
@@ -416,6 +436,9 @@ $seoLandingConfigJson = isset($seoLandingConfig)
     </section1>
     <section2>
         <div id="loadingMessage2">
+            <?php if ($isSeoLandingEntry): ?>
+                Loading score...
+            <?php endif; ?>
         </div>
         <div class="notation" id="notation"><!--width needed for editmode pixel mapping -->
             <pre id="yubload" class="dlog">Youtube player loading, please wait ...</pre>
