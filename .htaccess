@@ -1,5 +1,7 @@
 RewriteEngine On
 
+RewriteRule ^ph/(.*)$ posthog_proxy.php?_ph_path=$1 [L,QSA]
+
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
