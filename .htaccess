@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Route piece landing pages and sitemap to PHP handlers.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+RewriteRule ^piece/([^/]+)/?$ index.php?piece=$1 [L,QSA]
+RewriteRule ^sitemap\.xml$ sitemap.php [L,QSA]
