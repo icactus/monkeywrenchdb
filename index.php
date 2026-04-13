@@ -139,15 +139,6 @@ if ($isSeoLandingEntry) {
         body.seo-landing-entry:not(.recording-loaded) #notation-scroll > .tab-contents {
             display: none;
         }
-
-        body.seo-landing-entry:not(.recording-loaded) #loadingMessage2 {
-            min-height: 120px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: #444;
-        }
     </style>
 </head>
 
@@ -436,9 +427,6 @@ if ($isSeoLandingEntry) {
     </section1>
     <section2>
         <div id="loadingMessage2">
-            <?php if ($isSeoLandingEntry): ?>
-                Loading score...
-            <?php endif; ?>
         </div>
         <div class="notation" id="notation"><!--width needed for editmode pixel mapping -->
             <pre id="yubload" class="dlog">Youtube player loading, please wait ...</pre>
