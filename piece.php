@@ -45,7 +45,11 @@ $metaDescription = $pieceLanding['piece_name'] . ' by ' . $pieceLanding['compose
 $canonicalUrl = $pieceLanding['piece_url'];
 $baseHref = '/';
 $seoLandingConfig = [
+    'pieceId' => $pieceLanding['piece_id'],
     'metricArrId' => $pieceLanding['metric_arr_id'],
+    'instrumentId' => $pieceLanding['instrument_id'],
+    'instrumentName' => $pieceLanding['instrument_name'],
+    'editionLabel' => $pieceLanding['edition_label'],
     'recordingId' => $pieceLanding['recording_id'],
 ];
 

@@ -564,7 +564,7 @@ $('#pieces-container').on('click', '.pieces-link', function (event) {
 
     if (parts.length === 1) {
         // EXACTLY ONE sub-part → go straight to recordings
-        fetchRecordings(parts[0].metric_arr_id);
+        fetchRecordings(parts[0].metric_arr_id, clickedLink.data('piece-id'), parts[0]);
         currentMetricArrGlobal = parts[0].metric_arr_id;
         openTab("tab-recordings");
         return;
@@ -621,12 +621,13 @@ function generateInstrumentsDropdown(recordingId) {
 }
 
 
-function fetchRecordings(metricArrId) {
+function fetchRecordings(metricArrId, pieceId, partContext) {
     return new Promise(function (resolve, reject) {
+        const requestData = pieceId ? { pieceId: pieceId } : { metricArrId: metricArrId };
         $.ajax({
             url: 'fetchrecordings_data.php',
             method: 'GET',
-            data: { metricArrId: metricArrId },
+            data: requestData,
             success: function (response) {
                 var recordingsDropdown = $('#recordings-dropdown');
                 recordingsDropdown.empty();
@@ -635,6 +636,16 @@ function fetchRecordings(metricArrId) {
                     reject("No recordings found");
                 } else {
                     var recordings = typeof response === 'string' ? JSON.parse(response) : response;
+                    if (pieceId && partContext) {
+                        recordings = recordings.map(function (recording) {
+                            return Object.assign({}, recording, {
+                                metric_arr_id: partContext.metric_arr_id,
+                                instrument_id: partContext.instrument_id,
+                                instrument_name: partContext.instrument_name,
+                                edition_label: partContext.edition_label || null
+                            });
+                        });
+                    }
                     if (!Array.isArray(recordings) || recordings.length === 0) {
                         $('#recordings-container').html('<p>No recordings found for the selected piece</p>');
                         reject("No recordings found");
@@ -968,7 +979,7 @@ function displayMultiplePartLinks(data, clickedLink) {
             .data('metric-arr-id', item.metric_arr_id)
             .on('click', function (e) {
                 e.preventDefault();
-                fetchRecordings($(this).data('metric-arr-id'));
+                fetchRecordings($(this).data('metric-arr-id'), clickedLink.data('piece-id'), item);
                 currentMetricArrGlobal = ($(this).data('metric-arr-id'));
                 // Switch to Recordings tab
                 openTab("tab-recordings");
@@ -1731,7 +1742,16 @@ $(document).ready(function () {
         const loadPreviewData = (previewData) => {
             console.log("Preview data loaded:", previewData);
 
-            fetchRecordings(urlMetricArrId)
+            fetchRecordings(
+                urlMetricArrId,
+                seoLandingConfig ? seoLandingConfig.pieceId : null,
+                seoLandingConfig ? {
+                    metric_arr_id: seoLandingConfig.metricArrId,
+                    instrument_id: seoLandingConfig.instrumentId,
+                    instrument_name: seoLandingConfig.instrumentName,
+                    edition_label: seoLandingConfig.editionLabel
+                } : null
+            )
                 .then(recordings => {
                     // Find a template. If recordingId provided, use that, else use first.
                     let templateRecording = null;
@@ -1818,7 +1838,16 @@ $(document).ready(function () {
         } else {
             // ORIGINAL LOGIC
             // Fetch recordings based on the Metric Arrangement ID
-            fetchRecordings(urlMetricArrId)
+            fetchRecordings(
+                urlMetricArrId,
+                seoLandingConfig ? seoLandingConfig.pieceId : null,
+                seoLandingConfig ? {
+                    metric_arr_id: seoLandingConfig.metricArrId,
+                    instrument_id: seoLandingConfig.instrumentId,
+                    instrument_name: seoLandingConfig.instrumentName,
+                    edition_label: seoLandingConfig.editionLabel
+                } : null
+            )
                 .then(recordings => {
                     // Find the specific recording data from the list of recordings
                     const recordingFullData = recordings.find(rec => rec.recording_id.toString() === urlRecordingId);

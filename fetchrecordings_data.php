@@ -15,10 +15,11 @@ if (file_exists(__DIR__ . '/../phpfiles/read_only_user_config.php')) {
 }
 
 try {
+    $pieceId = isset($_GET['pieceId']) ? (int) $_GET['pieceId'] : 0;
     $metricArrId = isset($_GET['metricArrId']) ? (int) $_GET['metricArrId'] : 0;
-    if ($metricArrId <= 0) {
+    if ($pieceId <= 0 && $metricArrId <= 0) {
         http_response_code(400);
-        echo json_encode(['error' => 'Invalid metricArrId']);
+        echo json_encode(['error' => 'Invalid pieceId or metricArrId']);
         exit;
     }
 
@@ -27,30 +28,50 @@ try {
 
     // Query returns lightweight metadata only.
     // metric_arr_data and times_arr_data are now served as static JSON files.
-    $stmt = $conn->prepare("
-        SELECT 
-            metric_arr.metric_arr_id, 
-            recordings.ensemble_name, 
-            recordings.conductor_name, 
-            recordings.year, 
-            metric_arr.piece_id, 
-            composers.composer_last,
-            pieces.piece_name, 
-            metric_arr.instrument_id, 
-            instruments.instrument_name, 
-            metric_arr.edition_label,
-            recordings.youtube_id, 
-            recordings.recording_id,
-            recordings.offset_js
-        FROM metric_arr
-        JOIN pieces ON metric_arr.piece_id = pieces.piece_id
-        JOIN instruments ON metric_arr.instrument_id = instruments.instrument_id
-        JOIN recordings ON metric_arr.piece_id = recordings.piece_id
-        JOIN composers ON pieces.composer_id = composers.composer_id
-        WHERE metric_arr.metric_arr_id = ?
-    ");
+    if ($pieceId > 0) {
+        $stmt = $conn->prepare("
+            SELECT
+                recordings.ensemble_name,
+                recordings.conductor_name,
+                recordings.year,
+                pieces.piece_id,
+                composers.composer_last,
+                pieces.piece_name,
+                recordings.youtube_id,
+                recordings.recording_id,
+                recordings.offset_js
+            FROM pieces
+            JOIN recordings ON pieces.piece_id = recordings.piece_id
+            JOIN composers ON pieces.composer_id = composers.composer_id
+            WHERE pieces.piece_id = ?
+        ");
+    } else {
+        $stmt = $conn->prepare("
+            SELECT 
+                metric_arr.metric_arr_id, 
+                recordings.ensemble_name, 
+                recordings.conductor_name, 
+                recordings.year, 
+                metric_arr.piece_id, 
+                composers.composer_last,
+                pieces.piece_name, 
+                metric_arr.instrument_id, 
+                instruments.instrument_name, 
+                metric_arr.edition_label,
+                recordings.youtube_id, 
+                recordings.recording_id,
+                recordings.offset_js
+            FROM metric_arr
+            JOIN pieces ON metric_arr.piece_id = pieces.piece_id
+            JOIN instruments ON metric_arr.instrument_id = instruments.instrument_id
+            JOIN recordings ON metric_arr.piece_id = recordings.piece_id
+            JOIN composers ON pieces.composer_id = composers.composer_id
+            WHERE metric_arr.metric_arr_id = ?
+        ");
+    }
 
-    $stmt->bind_param('i', $metricArrId);
+    $filterId = $pieceId > 0 ? $pieceId : $metricArrId;
+    $stmt->bind_param('i', $filterId);
     $stmt->execute();
     $result = $stmt->get_result();
     $rows = mysqli_fetch_all($result, MYSQLI_ASSOC);

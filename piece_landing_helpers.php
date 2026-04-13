@@ -105,11 +105,12 @@ function mwResolvePieceLandingBySlug(mysqli $conn, string $slug): ?array
         }
 
         $metricStmt = $conn->prepare("
-            SELECT metric_arr_id, instrument_id
+            SELECT metric_arr_id, metric_arr.instrument_id, metric_arr.edition_label, instruments.instrument_name
             FROM metric_arr
+            JOIN instruments ON metric_arr.instrument_id = instruments.instrument_id
             WHERE piece_id = ?
             ORDER BY
-                CASE WHEN instrument_id = 39 THEN 0 ELSE 1 END,
+                CASE WHEN metric_arr.instrument_id = 39 THEN 0 ELSE 1 END,
                 metric_arr_id ASC
             LIMIT 1
         ");
@@ -145,6 +146,8 @@ function mwResolvePieceLandingBySlug(mysqli $conn, string $slug): ?array
             'piece_url' => mwGetBaseUrl() . $piece['piece_path'],
             'metric_arr_id' => (int) $metricRow['metric_arr_id'],
             'instrument_id' => (int) $metricRow['instrument_id'],
+            'instrument_name' => $metricRow['instrument_name'],
+            'edition_label' => $metricRow['edition_label'],
             'recording_id' => (int) $recordingRow['recording_id'],
         ];
     }
