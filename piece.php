@@ -49,4 +49,4 @@ $seoLandingConfig = [
     'recordingId' => $pieceLanding['recording_id'],
 ];
 
-require __DIR__ . '/public-app.php';
+require __DIR__ . '/index.php';
