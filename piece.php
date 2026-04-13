@@ -43,6 +43,7 @@ if (!$pieceLanding) {
 $pageTitle = $pieceLanding['composer_last'] . ' - ' . $pieceLanding['piece_name'] . ' | Monkey Wrench Database';
 $metaDescription = $pieceLanding['piece_name'] . ' by ' . $pieceLanding['composer_last'] . ' on Monkey Wrench Database.';
 $canonicalUrl = $pieceLanding['piece_url'];
+$baseHref = '/';
 $seoLandingConfig = [
     'metricArrId' => $pieceLanding['metric_arr_id'],
     'recordingId' => $pieceLanding['recording_id'],

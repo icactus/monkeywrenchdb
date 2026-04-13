@@ -11,6 +11,7 @@ $metaDescription = isset($metaDescription) && is_string($metaDescription) && $me
     ? $metaDescription
     : 'Sheet music synced with YouTube performances on Monkey Wrench Database.';
 $canonicalUrl = isset($canonicalUrl) && is_string($canonicalUrl) && $canonicalUrl !== '' ? $canonicalUrl : null;
+$baseHref = isset($baseHref) && is_string($baseHref) && $baseHref !== '' ? $baseHref : null;
 $seoLandingConfigJson = isset($seoLandingConfig)
     ? json_encode($seoLandingConfig, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
     : 'null';
@@ -19,6 +20,9 @@ $seoLandingConfigJson = isset($seoLandingConfig)
 <html>
 
 <head>
+    <?php if ($baseHref): ?>
+        <base href="<?= htmlspecialchars($baseHref, ENT_QUOTES, 'UTF-8') ?>">
+    <?php endif; ?>
     <!-- PostHog -->
     <script>
         (function () {
