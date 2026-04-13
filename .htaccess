@@ -1,0 +1,8 @@
+RewriteEngine On
+
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+RewriteRule ^piece/([^/]+)/?$ piece.php?piece=$1 [L,QSA]
+RewriteRule ^sitemap\.xml$ sitemap.php [L,QSA]

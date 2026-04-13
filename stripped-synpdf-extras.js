@@ -1699,8 +1699,9 @@ $(document).ready(function () {
     });
 
     const urlParams = new URLSearchParams(window.location.search);
-    const urlMetricArrId = urlParams.get('metricArrId');
-    const urlRecordingId = urlParams.get('recordingId');
+    const seoLandingConfig = window.seoLandingConfig || null;
+    const urlMetricArrId = urlParams.get('metricArrId') || (seoLandingConfig ? String(seoLandingConfig.metricArrId || '') : '');
+    const urlRecordingId = urlParams.get('recordingId') || (seoLandingConfig ? String(seoLandingConfig.recordingId || '') : '');
 
     // Capture share token if present (before pushState wipes it)
     const urlShareToken = urlParams.get('share');

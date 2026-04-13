@@ -14,7 +14,9 @@ deployment:
     - /bin/cp preview-editor.php $DEPLOYPATH
     - /bin/sh -c 'if [ -f robots.txt ]; then /bin/cp robots.txt "$DEPLOYPATH"; fi'
     - /bin/sh -c 'if [ -f .htaccess ]; then /bin/cp .htaccess "$DEPLOYPATH"; fi'
+    - /bin/sh -c 'if [ -f public-app.php ]; then /bin/cp public-app.php "$DEPLOYPATH"; fi'
     - /bin/sh -c 'if [ -f sitemap.php ]; then /bin/cp sitemap.php "$DEPLOYPATH"; fi'
+    - /bin/sh -c 'if [ -f piece.php ]; then /bin/cp piece.php "$DEPLOYPATH"; fi'
     - /bin/sh -c 'if [ -f piece_landing_helpers.php ]; then /bin/cp piece_landing_helpers.php "$DEPLOYPATH"; fi'
     - /bin/cp synpdf-editor-extension.js $DEPLOYPATH
     - /bin/cp auth_login.php $DEPLOYPATH
