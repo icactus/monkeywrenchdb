@@ -30,27 +30,6 @@ function buildPdfFilename(pieceId, instrumentId, editionLabel) {
     return `${base}.pdf`;
 }
 
-function slugifyPieceText(text) {
-    if (!text) return '';
-    const normalized = typeof text.normalize === 'function'
-        ? text.normalize('NFD')
-        : text;
-    return normalized
-        .toLowerCase()
-        .trim()
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/&/g, ' and ')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-}
-
-function buildPiecePath(composerLast, pieceName) {
-    const composerSlug = slugifyPieceText(composerLast);
-    const pieceSlug = slugifyPieceText(pieceName);
-    const slug = [composerSlug, pieceSlug].filter(Boolean).join('-');
-    return slug ? `/piece/${slug}` : '/';
-}
-
 var currentInstrumentGlobal = 0;
 var currentRecordingGlobal = 0;
 var currentMetricArrGlobal = 0;
@@ -550,7 +529,6 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
                         </a>
                       `);
 
-                    $a.attr('href', piece.piece_url || buildPiecePath(piece.composer_last, piece.piece_name));
                     $a.data('parts', piece.parts || []);
                     $row.addClass('piece-row').attr('data-search', normalizedSearch);
                     $row.append($a).append(` (${piece.total_recordings_value})♫`);
@@ -1028,8 +1006,7 @@ function handleRecordingSelection(recordingFullData) {
     loadRecording(recordingFullData)
         .then(function () {
             //Creating history so back button goes back to homepage
-            const nextPath = buildPiecePath(recordingFullData.composer_last, recordingFullData.piece_name);
-            history.pushState({ page: 'recording' }, '', nextPath);
+            history.pushState({ page: 'recording' }, '', window.location.pathname);
             // Set a global flag to indicate we’re in the recording state
             window.isRecordingState = true;
             msc_check_preload$$module$synpdf();
@@ -1722,9 +1699,8 @@ $(document).ready(function () {
     });
 
     const urlParams = new URLSearchParams(window.location.search);
-    const seoLandingConfig = window.seoLandingConfig || null;
-    const urlMetricArrId = urlParams.get('metricArrId') || (seoLandingConfig ? String(seoLandingConfig.metricArrId || '') : '');
-    const urlRecordingId = urlParams.get('recordingId') || (seoLandingConfig ? String(seoLandingConfig.recordingId || '') : '');
+    const urlMetricArrId = urlParams.get('metricArrId');
+    const urlRecordingId = urlParams.get('recordingId');
 
     // Capture share token if present (before pushState wipes it)
     const urlShareToken = urlParams.get('share');

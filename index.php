@@ -5,48 +5,8 @@ if (file_exists('session_config.php')) {
     session_start();
 }
 
-require_once __DIR__ . '/piece_landing_helpers.php';
-
 // Handle share link (guests)
 $is_share_link = isset($_GET['share']);
-$piece_slug = isset($_GET['piece']) ? trim((string) $_GET['piece']) : '';
-$has_opaque_piece_params = isset($_GET['metricArrId']) || isset($_GET['recordingId']) || isset($_GET['preview']);
-$seo_landing = null;
-$seo_title = 'monkey wrench database';
-$seo_description = 'Sheet music synced with YouTube for score study and practice.';
-$seo_canonical = mwGetBaseUrl() . '/';
-$seo_robots = ($is_share_link || $has_opaque_piece_params) ? 'noindex,follow' : 'index,follow';
-
-if ($piece_slug !== '') {
-    if (file_exists(__DIR__ . '/../phpfiles/read_only_user_config.php')) {
-        require_once __DIR__ . '/../phpfiles/read_only_user_config.php';
-    } else {
-        require_once __DIR__ . '/phpfiles/read_only_user_config.php';
-    }
-
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-
-    try {
-        $seo_conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-        $seo_conn->set_charset('utf8mb4');
-        $seo_landing = mwResolvePieceLandingBySlug($seo_conn, $piece_slug);
-        $seo_conn->close();
-    } catch (Throwable $e) {
-        error_log('index.php SEO landing error: ' . $e->getMessage());
-    }
-
-    if ($seo_landing) {
-        $seo_title = $seo_landing['composer_last'] . ' - ' . $seo_landing['piece_name'] . ' | monkey wrench database';
-        $seo_description = 'Study ' . $seo_landing['composer_last'] . ' - ' . $seo_landing['piece_name'] . ' with synced sheet music and a default recording on monkey wrench database.';
-        $seo_canonical = $seo_landing['piece_url'];
-        $seo_robots = 'index,follow';
-    } else {
-        http_response_code(404);
-        $seo_title = 'Piece Not Found | monkey wrench database';
-        $seo_description = 'This piece landing page could not be found.';
-        $seo_robots = 'noindex,follow';
-    }
-}
 ?>
 <!DOCTYPE HTML>
 <html>
@@ -119,16 +79,9 @@ if ($piece_slug !== '') {
     <meta charset="utf-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
-    <meta name="robots" content="<?php echo htmlspecialchars($seo_robots, ENT_QUOTES, 'UTF-8'); ?>" />
-    <meta name="description" content="<?php echo htmlspecialchars($seo_description, ENT_QUOTES, 'UTF-8'); ?>" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#000000" />
-    <link rel="canonical" href="<?php echo htmlspecialchars($seo_canonical, ENT_QUOTES, 'UTF-8'); ?>" />
-    <meta property="og:title" content="<?php echo htmlspecialchars($seo_title, ENT_QUOTES, 'UTF-8'); ?>" />
-    <meta property="og:description" content="<?php echo htmlspecialchars($seo_description, ENT_QUOTES, 'UTF-8'); ?>" />
-    <meta property="og:url" content="<?php echo htmlspecialchars($seo_canonical, ENT_QUOTES, 'UTF-8'); ?>" />
-    <meta property="og:type" content="website" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=33" />
@@ -146,18 +99,8 @@ if ($piece_slug !== '') {
     <?php endif; ?>
     <script>
         window.loggedInUserId = <?php echo isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : 'null'; ?>;
-        window.seoLandingConfig = <?php
-        echo $seo_landing
-            ? json_encode([
-                'metricArrId' => $seo_landing['metric_arr_id'],
-                'recordingId' => $seo_landing['recording_id'],
-                'pieceUrl' => $seo_landing['piece_url'],
-                'pieceId' => $seo_landing['piece_id'],
-            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-            : 'null';
-        ?>;
     </script>
-    <title><?php echo htmlspecialchars($seo_title, ENT_QUOTES, 'UTF-8'); ?></title>
+    <title>monkey wrench database</title>
     <!-- Load dark mode preference early to prevent flash -->
     <script>
         try {
@@ -510,11 +453,7 @@ if ($piece_slug !== '') {
             <div id="sidecontent">
 
                 <div id="composer-toggle-wrapper">
-                    <div id="composer-piece-name"><?php
-                    if ($seo_landing) {
-                        echo '<h3>' . htmlspecialchars($seo_landing['composer_last'] . ' - ' . $seo_landing['piece_name'], ENT_QUOTES, 'UTF-8') . '</h3>';
-                    }
-                    ?></div>
+                    <div id="composer-piece-name"></div>
                     <button class="mobile-only mobile-drawer-close" onclick="toggleMobileDrawer()"
                         aria-label="Close">&times;</button>
 
@@ -801,7 +740,7 @@ if ($piece_slug !== '') {
     <script src="js/history-manager.js?v=4"></script>
     <script src="js/favorites-manager.js?v=1"></script>
     <script src="stripped-synpdf.js?v=310"></script>
-    <script src="stripped-synpdf-extras.js?v=262"></script>
+    <script src="stripped-synpdf-extras.js?v=261"></script>
     <script>
         // Dark Mode menu toggles - wire up immediately on page load
         $(function () {

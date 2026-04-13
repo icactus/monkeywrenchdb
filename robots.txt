@@ -1,6 +1,2 @@
-User-agent: *
-Disallow: /preview-editor.php
-Disallow: /synpdf_182/editmode/
-Allow: /
-
-Sitemap: https://monkeywrenchdb.org/sitemap.xml
+   User-agent: *
+   Disallow: /

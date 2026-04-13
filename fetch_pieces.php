@@ -10,7 +10,6 @@ if (file_exists(__DIR__ . '/../phpfiles/read_only_user_config.php')) {
 } else {
     require_once __DIR__ . '/phpfiles/read_only_user_config.php';
 }
-require_once __DIR__ . '/piece_landing_helpers.php';
 header('Content-Type: application/json; charset=utf-8');
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
@@ -105,7 +104,6 @@ try {
                 'piece_name' => $row['piece_name'],
                 'category_name' => $row['category_name'],
                 'composer_last' => $row['composer_last'],
-                'piece_url' => mwBuildPiecePath($row['composer_last'], $row['piece_name']),
                 'metric_arr_id' => (int) $row['metric_arr_id'],
                 'total_recordings_value' => (int) $row['total_recordings_value'],
                 'solo_instrument_ids' => $soloIds,
