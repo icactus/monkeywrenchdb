@@ -543,9 +543,6 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     <svg id="star-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                     <svg id="star-filled" style="display:none" viewBox="0 0 24 24" fill="#f4c542" stroke="#f4c542" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                 </button>
-                <button class="toolbar-btn" id="more-tools-btn-mobile" onclick="toggleMobileDrawer(event)" title="More">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
-                </button>
                 <button class="toolbar-btn" id="share-btn-dock" title="Share Link" aria-label="Share Link">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="18" cy="5" r="3"/>
@@ -554,6 +551,9 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                         <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
                         <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                     </svg>
+                </button>
+                <button class="toolbar-btn" id="more-tools-btn-mobile" onclick="toggleMobileDrawer(event)" title="More">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
                 </button>
             </div>
             <div id="rollijn" class="dashed"></div>
