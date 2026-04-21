@@ -460,6 +460,9 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 #control-buttons-row .toolbar-btn:hover {
                     background: rgba(0,0,0,0.08);
                 }
+                #control-buttons-row .toolbar-btn.copied {
+                    background: rgba(33,150,243,0.18);
+                }
                 #control-buttons-row .toolbar-btn svg {
                     width: 20px;
                     height: 20px;
@@ -475,38 +478,6 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     width: 1px;
                     height: 24px;
                     background: rgba(0,0,0,0.15);
-                }
-                #extra-tools-menu-dock {
-                    display: none;
-                    position: fixed;
-                    bottom: 70px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    background: rgba(255,255,255,0.95);
-                    backdrop-filter: blur(10px);
-                    border: 1px solid rgba(0,0,0,0.1);
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-                    padding: 12px 16px;
-                    z-index: 10001;
-                    border-radius: 12px;
-                    min-width: 160px;
-                    text-align: left;
-                }
-                #extra-tools-menu-dock label:not(.toggle-switch),
-                #extra-tools-menu-dock button {
-                    display: block;
-                    width: 100%;
-                    text-align: left;
-                    padding: 8px 10px;
-                    font-size: 14px;
-                    cursor: pointer;
-                    border: none;
-                    background: transparent;
-                    border-radius: 6px;
-                }
-                #extra-tools-menu-dock label:hover,
-                #extra-tools-menu-dock button:hover {
-                    background: rgba(0,0,0,0.06);
                 }
                 /* Toggle Switch Styles */
                 .toggle-switch input:checked + .toggle-slider {
@@ -564,13 +535,15 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     <svg id="star-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                     <svg id="star-filled" style="display:none" viewBox="0 0 24 24" fill="#f4c542" stroke="#f4c542" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                 </button>
-                <div class="toolbar-divider"></div>
-                <button class="toolbar-btn" id="more-tools-btn-dock" onclick="toggleExtraToolsDock(event)" title="More">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                <button class="toolbar-btn" id="share-btn-dock" title="Share Link" aria-label="Share Link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="18" cy="5" r="3"/>
+                        <circle cx="6" cy="12" r="3"/>
+                        <circle cx="18" cy="19" r="3"/>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                    </svg>
                 </button>
-            </div>
-            <div id="extra-tools-menu-dock">
-                <button id="share-btn-dock">Share Link</button>
             </div>
             <div id="rollijn" class="dashed"></div>
             <div id="mobile-drawer-backdrop" onclick="toggleMobileDrawer(event)"></div>`
@@ -582,22 +555,6 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     if (typeof setZoomControlsEnabled === 'function') {
         setZoomControlsEnabled(!window.twoUpMode);
     }
-
-
-    // Toggle logic for the dock dropdown
-    window.toggleExtraToolsDock = function (e) {
-        e.stopPropagation();
-
-        // Detect Mobile/Tablet (Any Portrait Mode)
-        if (window.matchMedia("(orientation:portrait)").matches) {
-            window.toggleMobileDrawer(e);
-            return;
-        }
-
-        const menu = $('#extra-tools-menu-dock');
-        menu.toggle();
-    };
-
     window.toggleMobileDrawer = function (e) {
         if (e) e.stopPropagation();
         const drawer = $('sidecontentbar');
@@ -617,14 +574,6 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         }
     };
 
-    // Close on click outside
-    $(document).off('click.dockMenu').on('click.dockMenu', function (e) {
-        if (!$(e.target).closest('#extra-tools-menu-dock, #more-tools-btn-dock').length) {
-            $('#extra-tools-menu-dock').hide();
-        }
-    });
-
-    // Wire up new Dock Menu Items
     // Dark Mode - handles all dark mode toggles: mobile menu, desktop menu
     const darkModeSelectors = '#invert-check-menu-mobile, #invert-check-menu-desktop';
     $(darkModeSelectors).off('change').on('change', function () {
@@ -659,8 +608,16 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     // Share Link
     $('#share-btn-dock, #share-btn-mobile').off('click').on('click', async function () {
         const btn = $(this);
+        const isIconButton = btn.hasClass('toolbar-btn');
         const originalText = btn.text();
-        btn.text('...');
+        const originalTitle = btn.attr('title');
+
+        if (isIconButton) {
+            btn.addClass('copied');
+            btn.attr('title', 'Copying...');
+        } else {
+            btn.text('...');
+        }
 
         // Construct proper shareable URL with metricArrId and recordingId
         let url = window.location.origin + window.location.pathname;
@@ -708,11 +665,24 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         }
 
         navigator.clipboard.writeText(url).then(() => {
-            btn.text('Copied!');
-            setTimeout(() => btn.text(originalText), 2000);
+            if (isIconButton) {
+                btn.attr('title', 'Copied!');
+                setTimeout(() => {
+                    btn.removeClass('copied');
+                    btn.attr('title', originalTitle || 'Share Link');
+                }, 2000);
+            } else {
+                btn.text('Copied!');
+                setTimeout(() => btn.text(originalText), 2000);
+            }
         }).catch(err => {
             console.error('Failed to copy: ', err);
-            btn.text(originalText);
+            if (isIconButton) {
+                btn.removeClass('copied');
+                btn.attr('title', originalTitle || 'Share Link');
+            } else {
+                btn.text(originalText);
+            }
             prompt("Copy this link:", url);
         });
     });
@@ -720,7 +690,6 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     // Position toolbar centered on #notation (not viewport) when not fullscreen
     function repositionToolbar() {
         const toolbar = document.getElementById('control-buttons-row');
-        const toolbarMenu = document.getElementById('extra-tools-menu-dock');
         const annotationToolbar = document.getElementById('annotation-toolbar');
         const notation = document.getElementById('notation');
         if (!notation) return;
@@ -733,10 +702,6 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 toolbar.style.left = '50%';
                 toolbar.style.transform = 'translateX(-50%)';
             }
-            if (toolbarMenu) {
-                toolbarMenu.style.left = '50%';
-                toolbarMenu.style.transform = 'translateX(-50%)';
-            }
             if (annotationToolbar) {
                 annotationToolbar.style.left = '50%';
                 annotationToolbar.style.transform = 'translateX(-50%)';
@@ -748,10 +713,6 @@ function Wijzer$$module$synpdf(a, b, c, d) {
             if (toolbar) {
                 toolbar.style.left = centerX + 'px';
                 toolbar.style.transform = 'translateX(-50%)';
-            }
-            if (toolbarMenu) {
-                toolbarMenu.style.left = centerX + 'px';
-                toolbarMenu.style.transform = 'translateX(-50%)';
             }
             if (annotationToolbar) {
                 annotationToolbar.style.left = centerX + 'px';

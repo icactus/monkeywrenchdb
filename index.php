@@ -16,9 +16,14 @@ $seoLandingConfigJson = isset($seoLandingConfig)
     ? json_encode($seoLandingConfig, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
     : 'null';
 $isSeoLandingEntry = isset($seoLandingConfig) && is_array($seoLandingConfig);
+$hasInitialRecordingTarget = $isSeoLandingEntry
+    || (isset($_GET['metricArrId']) && (isset($_GET['recordingId']) || isset($_GET['preview']) || $is_share_link));
 $bodyClasses = [];
 if ($isSeoLandingEntry) {
     $bodyClasses[] = 'seo-landing-entry';
+}
+if ($hasInitialRecordingTarget) {
+    $bodyClasses[] = 'initial-recording-target';
 }
 ?>
 <!DOCTYPE HTML>
@@ -101,7 +106,7 @@ if ($isSeoLandingEntry) {
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=33" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=260" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=261" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -482,6 +487,28 @@ if ($isSeoLandingEntry) {
 
         <sidecontentbar>
             <div id="sidecontent">
+                <div class="homepage-sidecontent-copy">
+                    <div class="homepage-sidecontent-title">Practice Better</div>
+                    <ul class="homepage-sidecontent-list">
+                        <li>Clickable measures</li>
+                        <li>Score/part follows playback</li>
+                        <li>Switch recordings in place</li>
+                        <li>No YouTube ad breaks</li>
+                        <li>100% free</li>
+                    </ul>
+                    <div class="homepage-sidecontent-secondary">
+                        <ul class="homepage-sidecontent-list homepage-sidecontent-list-secondary">
+                            <li>Create a <a href="auth_login.php?provider=google">free account</a> to save history and favorites</li>
+                            <li>
+                                Share links to specific measures
+                                <div class="homepage-sidecontent-example">
+                                    <span class="homepage-sidecontent-example-prefix">ex:</span>
+                                    <a href="https://monkeywrenchdb.org/?metricArrId=5&recordingId=661&t=1086.2">Beethoven 5 - Trio - bass part</a>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
 
                 <div id="composer-toggle-wrapper">
                     <div id="composer-piece-name"></div>

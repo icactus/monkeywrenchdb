@@ -1,4 +1,5 @@
 <?php
+// Admin/preview shell. The public homepage/app entry point is index.php.
 if (file_exists('session_config.php')) {
     require_once 'session_config.php';
 } else {
