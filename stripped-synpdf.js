@@ -463,6 +463,9 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 #control-buttons-row .toolbar-btn.copied {
                     background: rgba(33,150,243,0.18);
                 }
+                #control-buttons-row #more-tools-btn-mobile {
+                    display: none;
+                }
                 #control-buttons-row .toolbar-btn svg {
                     width: 20px;
                     height: 20px;
@@ -501,6 +504,11 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                         height: 18px;
                     }
                 }
+                @media (orientation: portrait) {
+                    #control-buttons-row #more-tools-btn-mobile {
+                        display: flex;
+                    }
+                }
             </style>
             <div id="control-buttons-row">
                 <button class="toolbar-btn" onclick="toggleFullscreen(event)" title="Fullscreen">
@@ -534,6 +542,9 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 <button class="toolbar-btn" id="favorite-btn" onclick="toggleFavorite()" title="Add to Favorites" style="display:none;">
                     <svg id="star-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                     <svg id="star-filled" style="display:none" viewBox="0 0 24 24" fill="#f4c542" stroke="#f4c542" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </button>
+                <button class="toolbar-btn" id="more-tools-btn-mobile" onclick="toggleMobileDrawer(event)" title="More">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
                 </button>
                 <button class="toolbar-btn" id="share-btn-dock" title="Share Link" aria-label="Share Link">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -665,6 +676,9 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         }
 
         navigator.clipboard.writeText(url).then(() => {
+            if (typeof toast === 'function') {
+                toast('Link copied to clipboard!');
+            }
             if (isIconButton) {
                 btn.attr('title', 'Copied!');
                 setTimeout(() => {
