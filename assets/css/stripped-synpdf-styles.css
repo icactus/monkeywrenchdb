@@ -721,6 +721,7 @@ a {
 #header {
     height: 200px;
     display: flex;
+    position: relative;
     justify-content: center;
     overflow-x: hidden;
     padding-top: env(safe-area-inset-top);
@@ -999,6 +1000,67 @@ sidecontentbar h3 {
     background: none;
 }
 
+.mobile-homepage-info {
+    display: none !important;
+}
+
+.mobile-homepage-info-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+}
+
+.mobile-homepage-info-summary > div {
+    min-width: 0;
+}
+
+.mobile-homepage-info-summary h2 {
+    margin: 0 0 3px 0;
+    color: #1e293b;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.mobile-homepage-info-summary p {
+    margin: 0;
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.mobile-homepage-info-toggle {
+    min-width: 72px;
+    min-height: 36px;
+    padding: 0 12px;
+    border: 1px solid rgba(91, 162, 168, 0.45);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #1f5960;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.mobile-homepage-info-toggle:hover,
+.mobile-homepage-info-toggle:focus {
+    border-color: rgba(91, 162, 168, 0.75);
+    background: #ffffff;
+}
+
+.mobile-homepage-info-details {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.mobile-homepage-info-details .homepage-sidecontent-list {
+    font-size: 14px;
+}
+
 body:not(.recording-loaded) #composer-toggle-wrapper,
 body:not(.recording-loaded) #first-controls,
 body:not(.recording-loaded) .change-recording-wrapper,
@@ -1008,6 +1070,11 @@ body:not(.recording-loaded) #annotations-section {
 
 body.recording-loaded .homepage-sidecontent-copy {
     display: none;
+}
+
+body.recording-loaded .mobile-homepage-info,
+body.initial-recording-target:not(.recording-loaded) .mobile-homepage-info {
+    display: none !important;
 }
 
 #sidecontent-toggle {
@@ -1209,6 +1276,90 @@ select {
 
     .mobile-only {
         display: block !important;
+    }
+
+    body.mobile-homepage-info-open::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.28);
+        z-index: 210;
+    }
+
+    body:not(.recording-loaded):not(.initial-recording-target) .mobile-homepage-info {
+        display: block !important;
+        position: absolute;
+        top: 70px;
+        left: 50%;
+        right: auto;
+        width: min(340px, calc(100vw - 28px));
+        box-sizing: border-box;
+        padding: 12px 14px;
+        border: 1px solid rgba(91, 162, 168, 0.25);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+        transform: translateX(-50%);
+        overflow: visible;
+        white-space: normal;
+        z-index: 120;
+    }
+
+    body:not(.recording-loaded):not(.initial-recording-target) .mobile-homepage-info.is-expanded {
+        position: fixed;
+        top: max(72px, calc(env(safe-area-inset-top) + 56px));
+        left: 50%;
+        right: auto;
+        width: min(380px, calc(100vw - 28px));
+        max-height: calc(100dvh - 92px);
+        overflow-y: auto;
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.28);
+        transform: translateX(-50%);
+        z-index: 220;
+    }
+
+    .mobile-homepage-info-summary h2 {
+        font-size: 16px;
+    }
+
+    .mobile-homepage-info-summary p {
+        font-size: 13px;
+    }
+
+    .mobile-homepage-info-toggle {
+        min-height: 30px;
+        min-width: 74px;
+        padding: 0 11px;
+    }
+
+    .mobile-homepage-info-details {
+        margin: 12px -14px -12px -14px;
+        padding: 14px;
+        border-top: 1px solid rgba(148, 163, 184, 0.3);
+        border-radius: 0 0 8px 8px;
+        background: rgba(255, 255, 255, 0.98);
+    }
+
+    .mobile-homepage-info-details .homepage-sidecontent-list {
+        display: block;
+        padding-left: 1.1rem;
+        font-size: 15px;
+    }
+
+    .mobile-homepage-info-details .homepage-sidecontent-list li {
+        margin-bottom: 0.55rem;
+        line-height: 1.35;
+        list-style: disc;
+    }
+
+    .mobile-homepage-info-details .homepage-sidecontent-secondary {
+        margin-top: 10px;
+        padding-top: 10px;
+    }
+
+    .mobile-homepage-info-details .homepage-sidecontent-example {
+        margin-top: 5px;
+        font-size: 0.9em;
     }
 
     sidecontentbar {

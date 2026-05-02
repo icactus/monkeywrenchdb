@@ -1889,15 +1889,50 @@ $(document).ready(function () {
     fetchSearchByInstrument();
     resizeCanvasTrigger();
 
-    // Auto-open mobile menu/sheet on first visit
+    // Mobile homepage info starts compact in the reserved player area.
     setTimeout(() => {
-        if (window.matchMedia("(max-width: 899px) and (orientation:portrait)").matches) {
-            if (!sessionStorage.getItem('mobileMenuSeen')) {
-                if (typeof window.toggleMobileDrawer === 'function') {
-                    window.toggleMobileDrawer(); // Opens the unified bottom sheet
-                }
-                sessionStorage.setItem('mobileMenuSeen', 'true');
-            }
+        const infoPanel = document.getElementById('mobile-homepage-info');
+        if (!infoPanel || !window.matchMedia("(orientation:portrait)").matches) {
+            return;
         }
-    }, 800);
+
+        const details = document.getElementById('mobile-homepage-info-details');
+        const toggle = infoPanel.querySelector('.mobile-homepage-info-toggle');
+        if (!details || !toggle) {
+            return;
+        }
+
+        function setMobileHomepageInfoCollapsed(isCollapsed) {
+            details.hidden = isCollapsed;
+            infoPanel.classList.toggle('is-expanded', !isCollapsed);
+            document.body.classList.toggle('mobile-homepage-info-open', !isCollapsed);
+            toggle.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+            toggle.textContent = isCollapsed ? 'Details' : 'Hide';
+        }
+
+        setMobileHomepageInfoCollapsed(true);
+
+        toggle.addEventListener('click', function () {
+            setMobileHomepageInfoCollapsed(!details.hidden);
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!details.hidden && !infoPanel.contains(event.target)) {
+                setMobileHomepageInfoCollapsed(true);
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !details.hidden) {
+                setMobileHomepageInfoCollapsed(true);
+            }
+        });
+    }, 100);
+
+    // Preserve the old first-session drawer flag without opening the controls sheet.
+    try {
+        if (window.matchMedia("(max-width: 899px) and (orientation:portrait)").matches) {
+            sessionStorage.setItem('mobileMenuSeen', 'true');
+        }
+    } catch (e) { }
 });

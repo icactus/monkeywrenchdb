@@ -106,7 +106,7 @@ if ($hasInitialRecordingTarget) {
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=33" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=261" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=262" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -341,6 +341,39 @@ if ($hasInitialRecordingTarget) {
                 </div>
             </div>
 
+            <section id="mobile-homepage-info" class="mobile-only mobile-homepage-info" aria-label="Practice features">
+                <div class="mobile-homepage-info-summary">
+                    <div>
+                        <h2>Practice Better</h2>
+                        <p>Synced sheet music for focused practice.</p>
+                    </div>
+                    <button type="button" class="mobile-homepage-info-toggle" aria-expanded="false"
+                        aria-controls="mobile-homepage-info-details">
+                        Details
+                    </button>
+                </div>
+                <div id="mobile-homepage-info-details" class="mobile-homepage-info-details" hidden>
+                    <ul class="homepage-sidecontent-list">
+                        <li>Clickable measures</li>
+                        <li>Score follows playback</li>
+                        <li>Switch recordings</li>
+                        <li>No YouTube ad breaks</li>
+                        <li>100% free</li>
+                    </ul>
+                    <div class="homepage-sidecontent-secondary">
+                        <ul class="homepage-sidecontent-list homepage-sidecontent-list-secondary">
+                            <li>Create a <a href="auth_login.php?provider=google">free account</a> to save history and favorites</li>
+                            <li>
+                                Share links to specific measures
+                                <div class="homepage-sidecontent-example">
+                                    <span class="homepage-sidecontent-example-prefix">ex:</span>
+                                    <a href="https://monkeywrenchdb.org/?metricArrId=5&recordingId=661&t=1086.2">Beethoven 5 - Trio - bass part</a>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
             <div id="vidyub">
             </div>
         </div>
@@ -798,7 +831,7 @@ if ($hasInitialRecordingTarget) {
     <script src="js/history-manager.js?v=4"></script>
     <script src="js/favorites-manager.js?v=1"></script>
     <script src="stripped-synpdf.js?v=314"></script>
-    <script src="stripped-synpdf-extras.js?v=265"></script>
+    <script src="stripped-synpdf-extras.js?v=266"></script>
     <script>
         // Dark Mode menu toggles - wire up immediately on page load
         $(function () {
