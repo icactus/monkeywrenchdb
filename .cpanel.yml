@@ -51,6 +51,7 @@ deployment:
 
     - export DEPLOYPATH3=/home/monkcdmb/public_html/editmode/
     - /bin/cp synpdf_182/editmode/synpdf-edit-mode.php $DEPLOYPATH3 
+    - /bin/cp synpdf_182/editmode/CNN-editor-mode.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/ml-label-editor.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/edit-mode-tools.js $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/synpdf-edit-mode.js $DEPLOYPATH3
