@@ -958,7 +958,6 @@ $onnxWasmThreads = 1;
                         <dt>w</dt><dd>draw staff, auto-adjust</dd>
                         <dt>W</dt><dd>draw staff, exact bounds</dd>
                         <dt>F</dt><dd>toggle first quarter</dd>
-                        <dt>p</dt><dd>save metric data locally</dd>
                         <dt>S</dt><dd>save preload</dd>
                         <dt>B / C</dt><dd>record sync point</dd>
                         <dt>Backspace</dt><dd>undo sync point</dd>
