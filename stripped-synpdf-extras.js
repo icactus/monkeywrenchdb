@@ -48,6 +48,7 @@ let globalHighlightColor = '#7fd5d6';
 let blockTime2x = false; // Flag to disable time2x during recording change
 let isSwitchingRecording = false;
 let canShowDemaat = false;
+let activeStarterPieceId = null;
 //So back button will go to homepage only if on a recording
 window.isRecordingState = false;
 window.recordingFullyLoaded = false;
@@ -274,8 +275,11 @@ function fetchSearchByInstrument() {
                 return;
             }
 
-            var excludedGroups = ['Voice', 'Percussion', 'Brass'];
+            var excludedGroups = ['Voice', 'Percussion'];
             var addedSomething = false;
+            var mobileLeftGroups = $('<div class="instrument-mobile-column instrument-mobile-column-left"></div>');
+            var mobileRightGroups = $('<div class="instrument-mobile-column instrument-mobile-column-right"></div>');
+            var mobileLayoutUsed = false;
 
             Object.keys(groups).forEach(function (groupId) {
                 var instruments = groups[groupId];
@@ -292,7 +296,7 @@ function fetchSearchByInstrument() {
                     return a.instrument_ids[0] - b.instrument_ids[0];
                 });
 
-                var groupDiv = $('<div class="instrument-group"></div>');
+                var groupDiv = $('<div class="instrument-group"></div>').attr('data-group', groupNameText);
                 groupDiv.append($('<h3></h3>').text(groupNameText));
 
                 instruments.forEach(function (instrument) {
@@ -304,8 +308,23 @@ function fetchSearchByInstrument() {
                 });
 
                 container.append(groupDiv);
+                if (['Scores', 'Keyboard', 'Woodwinds'].includes(groupNameText)) {
+                    mobileLeftGroups.append(groupDiv.clone(true, true));
+                    mobileLayoutUsed = true;
+                } else if (['Strings', 'Brass'].includes(groupNameText)) {
+                    mobileRightGroups.append(groupDiv.clone(true, true));
+                    mobileLayoutUsed = true;
+                }
                 addedSomething = true;
             });
+
+            if (mobileLayoutUsed) {
+                container.append(
+                    $('<div class="instrument-mobile-layout"></div>')
+                        .append(mobileLeftGroups)
+                        .append(mobileRightGroups)
+                );
+            }
 
             if (!addedSomething) {
                 container.append('<h3 class="coming-soon" style="margin-top:1.5em;">More instruments coming soon!</h3>');
@@ -331,12 +350,13 @@ $('#instrument-links').on('click', '.instrument-link-a', function (event) {
         instrumentText = instrumentText.slice(0, lastParenthesisPosition).trim();
     }
 
-    // Disable recordings tab
-    $('.tab-header[data-tab="tab-recordings"]').addClass('disabled');
-    $('#pieces-container').empty();
+    $('#instrument-links .instrument-link').removeClass('selected');
+    $(this).closest('.instrument-link').addClass('selected');
+    activeStarterPieceId = null;
 
-    // Switch to the Pieces tab
-    openTab('tab-pieces');
+    $('#pieces-container').empty();
+    $('#recordings-container').empty();
+    $('#starter-main-empty').hide();
 
     //display animated loading
     $('#pieces-container').html('<h2 class="loading">Loading<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></h2>');
@@ -346,7 +366,7 @@ $('#instrument-links').on('click', '.instrument-link-a', function (event) {
 });
 // Make sure the click event propagates to the link when clicking the SVG
 $('#instrument-links').on('click', '.svg-icon', function () {
-    $(this).closest('.instrument-link').trigger('click');
+    $(this).closest('.instrument-link').find('.instrument-link-a').trigger('click');
 });
 
 function fetchPieces(instrumentIds, instrumentNameArg) {
@@ -375,7 +395,11 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
                 ? `${instrumentName}s`
                 : `${instrumentName} Parts`;
             console.log(instHeading);
-            container.append(`<h2>${instHeading}</h2>`);
+            container.append(`
+                <div class="starter-main-header">
+                    <h2>${instHeading}</h2>
+                </div>
+            `);
 
             // Inject search UI just under heading
             initPiecesSearchUI();
@@ -525,13 +549,14 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
                            data-id="${piece.metric_arr_id}"
                            data-piece-id="${piece.piece_id}"
                            data-instrument-id="${instrumentIds}">
-                          <b>${piece.composer_last}</b> - ${piece.piece_name}
+                          <span class="piece-title"><b>${piece.composer_last}</b> - ${piece.piece_name}</span>
+                          <span class="piece-count">${piece.total_recordings_value} recordings</span>
                         </a>
                       `);
 
                     $a.data('parts', piece.parts || []);
                     $row.addClass('piece-row').attr('data-search', normalizedSearch);
-                    $row.append($a).append(` (${piece.total_recordings_value})♫`);
+                    $row.append($a);
                     container.append($row);
                 });
             });
@@ -547,37 +572,67 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
 $('#pieces-container').on('click', '.pieces-link', function (event) {
     event.preventDefault();
 
-    // Clear out old recordings (unchanged)
-    $('#recordings-container').empty();
-    $('#recordings-container').append($('<h2>').text($(this).text()));
-    $('#recordings-container').append($('<h3>').text('Recordings'));
-
     const clickedLink = $(this);
+    const pieceRow = clickedLink.closest('.piece-row');
+    const pieceId = clickedLink.data('piece-id');
     const parts = clickedLink.data('parts') || [];
 
-    // Toggle if already open
-    const existingContainer = clickedLink.next('.instrument-links');
-    if (existingContainer.length > 0) {
-        existingContainer.toggle();
+    if (activeStarterPieceId === pieceId && pieceRow.hasClass('expanded')) {
+        pieceRow.removeClass('expanded');
+        pieceRow.next('.piece-expanded-panel').remove();
+        activeStarterPieceId = null;
         return;
     }
 
+    activeStarterPieceId = pieceId;
+    $('#pieces-container .piece-row').removeClass('expanded');
+    $('#pieces-container .piece-expanded-panel').remove();
+    pieceRow.addClass('expanded');
+    $('#recordings-container').empty();
+
+    const panel = $(`
+        <div class="piece-expanded-panel">
+            <div class="piece-part-picker"></div>
+            <div class="piece-recordings-list"></div>
+        </div>
+    `);
+    pieceRow.after(panel);
+
+    const partPicker = panel.find('.piece-part-picker');
+    const recordingsList = panel.find('.piece-recordings-list');
+
     if (parts.length === 1) {
-        // EXACTLY ONE sub-part → go straight to recordings
-        fetchRecordings(parts[0].metric_arr_id, clickedLink.data('piece-id'), parts[0]);
+        partPicker.empty();
+        recordingsList.html('<h3>Recordings</h3><p class="starter-loading">Loading recordings...</p>');
+        fetchRecordings(parts[0].metric_arr_id, pieceId, parts[0], recordingsList);
         currentMetricArrGlobal = parts[0].metric_arr_id;
-        openTab("tab-recordings");
         return;
     }
 
     if (parts.length > 1) {
-        // MULTIPLE sub-parts → render chips under this row
-        displayMultiplePartLinks(parts, clickedLink);
+        partPicker.append('<h3>Choose Part</h3>');
+        const partList = $('<div class="piece-part-list"></div>');
+        parts.forEach(function (part) {
+            var label = formatPartLabel(part);
+            var partButton = $('<button type="button" class="piece-part-button"></button>')
+                .text(label)
+                .data('metric-arr-id', part.metric_arr_id)
+                .on('click', function () {
+                    partList.find('.piece-part-button').removeClass('selected');
+                    $(this).addClass('selected');
+                    recordingsList.html('<h3>Recordings</h3><p class="starter-loading">Loading recordings...</p>');
+                    fetchRecordings($(this).data('metric-arr-id'), pieceId, part, recordingsList);
+                    currentMetricArrGlobal = $(this).data('metric-arr-id');
+                });
+            partList.append(partButton);
+        });
+        partPicker.append(partList);
+        recordingsList.html('<p class="starter-muted">Select a part to see recordings.</p>');
         return;
     }
 
     // No parts (edge case)
-    $('#recordings-container').append('<p>No parts found for this selection.</p>');
+    recordingsList.html('<p>No parts found for this selection.</p>');
 });
 
 function generateInstrumentsDropdown(recordingId) {
@@ -621,7 +676,7 @@ function generateInstrumentsDropdown(recordingId) {
 }
 
 
-function fetchRecordings(metricArrId, pieceId, partContext) {
+function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
     return new Promise(function (resolve, reject) {
         const requestData = pieceId ? { pieceId: pieceId } : { metricArrId: metricArrId };
         $.ajax({
@@ -629,10 +684,11 @@ function fetchRecordings(metricArrId, pieceId, partContext) {
             method: 'GET',
             data: requestData,
             success: function (response) {
+                var container = renderTarget ? $(renderTarget) : $('#recordings-container');
                 var recordingsDropdown = $('#recordings-dropdown');
                 recordingsDropdown.empty();
                 if (response === "No recordings found for the selected piece") {
-                    $('#recordings-container').html('<p>No recordings found for the selected piece</p>');
+                    container.html('<p>No recordings found for the selected piece</p>');
                     reject("No recordings found");
                 } else {
                     var recordings = typeof response === 'string' ? JSON.parse(response) : response;
@@ -647,13 +703,13 @@ function fetchRecordings(metricArrId, pieceId, partContext) {
                         });
                     }
                     if (!Array.isArray(recordings) || recordings.length === 0) {
-                        $('#recordings-container').html('<p>No recordings found for the selected piece</p>');
+                        container.html('<p>No recordings found for the selected piece</p>');
                         reject("No recordings found");
                         return;
                     }
                     console.log('RAW API RESPONSE - first recording:', recordings[0]);
                     currentMetricArrGlobal = metricArrId;
-                    var container = $('#recordings-container');
+                    container.empty().append('<h3>Recordings</h3>');
 
                     recordingsDropdown.append('<option value="" disabled hidden selected>Change Recording</option>');
                     recordings.sort(function (a, b) {
@@ -965,15 +1021,19 @@ $('#recordings-dropdown').change(async function () {
 });
 
 
+function formatPartLabel(part) {
+    var label = part.instrument_name + (part.part_number ? (' ' + part.part_number) : '');
+    if (part.edition_label) {
+        label += ' (' + part.edition_label + ')';
+    }
+    return label;
+}
+
 function displayMultiplePartLinks(data, clickedLink) {
     var linksContainer = $('<div class="instrument-links"></div>');
     data.forEach(function (item) {
 
-        var label = item.instrument_name + (item.part_number ? (' ' + item.part_number) : '');
-        // Add edition label if present (e.g., "Cello (Anna Magdalena Bach)")
-        if (item.edition_label) {
-            label += ' (' + item.edition_label + ')';
-        }
+        var label = formatPartLabel(item);
         var instrumentLink = $('<a href="#" class="instrument-link"></a>')
             .text(label)
             .data('metric-arr-id', item.metric_arr_id)
@@ -1057,7 +1117,8 @@ window.addEventListener('popstate', function () {
     // Otherwise, do nothing (the browser will navigate as normal)
 });
 
-$('#recordings-container').on('click', '.recordings-link', function () {
+$(document).on('click', '.recordings-link', function (event) {
+    event.preventDefault();
     let recordingFullData = $(this).data('recordingFullData');
     handleRecordingSelection(recordingFullData);
 });
@@ -1653,6 +1714,9 @@ function initPiecesSearchUI() {
     const doFilter = () => {
         const q = $input.val().trim().toLowerCase();
         const $rows = $container.find('.piece-row');
+        $container.find('.piece-expanded-panel').remove();
+        $rows.removeClass('expanded');
+        activeStarterPieceId = null;
         if (!q) {
             $rows.show();
             refreshCategoryHeadings();
@@ -1888,46 +1952,6 @@ $(document).ready(function () {
 
     fetchSearchByInstrument();
     resizeCanvasTrigger();
-
-    // Mobile homepage info starts compact in the reserved player area.
-    setTimeout(() => {
-        const infoPanel = document.getElementById('mobile-homepage-info');
-        if (!infoPanel || !window.matchMedia("(orientation:portrait)").matches) {
-            return;
-        }
-
-        const details = document.getElementById('mobile-homepage-info-details');
-        const toggle = infoPanel.querySelector('.mobile-homepage-info-toggle');
-        if (!details || !toggle) {
-            return;
-        }
-
-        function setMobileHomepageInfoCollapsed(isCollapsed) {
-            details.hidden = isCollapsed;
-            infoPanel.classList.toggle('is-expanded', !isCollapsed);
-            document.body.classList.toggle('mobile-homepage-info-open', !isCollapsed);
-            toggle.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
-            toggle.textContent = isCollapsed ? 'Details' : 'Hide';
-        }
-
-        setMobileHomepageInfoCollapsed(true);
-
-        toggle.addEventListener('click', function () {
-            setMobileHomepageInfoCollapsed(!details.hidden);
-        });
-
-        document.addEventListener('click', function (event) {
-            if (!details.hidden && !infoPanel.contains(event.target)) {
-                setMobileHomepageInfoCollapsed(true);
-            }
-        });
-
-        document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape' && !details.hidden) {
-                setMobileHomepageInfoCollapsed(true);
-            }
-        });
-    }, 100);
 
     // Preserve the old first-session drawer flag without opening the controls sheet.
     try {
