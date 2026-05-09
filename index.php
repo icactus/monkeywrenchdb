@@ -640,8 +640,8 @@ if ($hasInitialRecordingTarget) {
                 <p><b>Monkey Wrench Database</b> is built on a modified fork of <a href="https://wim.vree.org/"
                         target="_blank" rel="noopener noreferrer">Willem Vree's</a> SynPdf. Without his amazing open
                     source project, none of this would be possible.</p>
-                <p>This has been a solo passion project by Isaac Trapkus, bassist with the New York Philharmonic,
-                    started in 2021. I'm not a
+                <p>This has been a solo passion project by Isaac Trapkus, bassist with the New York Philharmonic.
+                    The project began in 2021 and finally launched in 2026. I'm not a
                     software developer by trade, so please bear with my many skill issues.</p>
                 <p>Every page of sheet music is synced by algorithmically detecting staves and barlines, with manual
                     correction (about 1 minute per page). Recordings are synced by logging timestamps while playing
