@@ -445,14 +445,12 @@ if ($hasInitialRecordingTarget) {
                     <main class="starter-main" aria-labelledby="pieces-heading">
                         <div class="starter-main-empty" id="starter-main-empty">
                             <div class="starter-empty-copy">
-                                <h2 id="pieces-heading">Find Synced Parts</h2>
-                                <p>Select an instrument to browse synced scores, parts, and recordings.</p>
+                                <h2 id="pieces-heading">Interactive Sheet Music Synced With YouTube Recordings</h2>
+                                <p>Monkey Wrench turns scores and parts into a free, open source practice player for studying YouTube without ad breaks.</p>
                                 <ul class="homepage-sidecontent-list">
-                                    <li>Click any measure to jump in the performance</li>
-                                    <li>Follow the score or part during playback</li>
-                                    <li>Switch parts and recordings without losing your place</li>
-                                    <li>YouTube without ad breaks</li>
-                                    <li>Free and open source</li>
+                                    <li>Auto-follows parts and scores while the recording plays</li>
+                                    <li>Click any measure to jump to that moment in the performance</li>
+                                    <li>Jump between part and score while keeping the same place in the music</li>
                                 </ul>
                                 <div class="homepage-sidecontent-secondary">
                                     <ul class="homepage-sidecontent-list homepage-sidecontent-list-secondary">
