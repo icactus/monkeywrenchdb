@@ -40,6 +40,7 @@ deployment:
     - /bin/mkdir -p ${DEPLOYPATH}data/recordings/by-piece
     - /bin/mkdir -p ${DEPLOYPATH}data/times
     - /bin/cp data/.htaccess ${DEPLOYPATH}data/.htaccess
+    - /bin/cp data/recordings/.htaccess ${DEPLOYPATH}data/recordings/.htaccess
 
     - export DEPLOYPATH2=/home/monkcdmb/phpfiles/
     - /bin/cp phpfiles/composers-addnew.php $DEPLOYPATH2

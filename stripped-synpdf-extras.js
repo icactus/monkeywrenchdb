@@ -49,6 +49,7 @@ let blockTime2x = false; // Flag to disable time2x during recording change
 let isSwitchingRecording = false;
 let canShowDemaat = false;
 let activeStarterPieceId = null;
+window.pieceRecordingsCache = window.pieceRecordingsCache || {};
 //So back button will go to homepage only if on a recording
 window.isRecordingState = false;
 window.recordingFullyLoaded = false;
@@ -600,6 +601,7 @@ $('#pieces-container').on('click', '.pieces-link', function (event) {
 
     const partPicker = panel.find('.piece-part-picker');
     const recordingsList = panel.find('.piece-recordings-list');
+    loadPieceRecordings(pieceId);
 
     if (parts.length === 1) {
         partPicker.empty();
@@ -675,6 +677,23 @@ function generateInstrumentsDropdown(recordingId) {
     });
 }
 
+function loadPieceRecordings(pieceId) {
+    if (!pieceId) {
+        return null;
+    }
+
+    if (!window.pieceRecordingsCache[pieceId]) {
+        window.pieceRecordingsCache[pieceId] = $.ajax({
+            url: `data/recordings/by-piece/${pieceId}.json`,
+            method: 'GET',
+            dataType: 'json',
+            cache: true
+        });
+    }
+
+    return window.pieceRecordingsCache[pieceId];
+}
+
 
 function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
     return new Promise(function (resolve, reject) {
@@ -688,12 +707,10 @@ function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
         };
 
         const request = pieceId
-            ? $.ajax({
-                url: `data/recordings/by-piece/${pieceId}.json`,
-                method: 'GET',
-                dataType: 'json',
-                cache: true
-            }).catch(loadFromSqlFallback)
+            ? loadPieceRecordings(pieceId).catch(function () {
+                delete window.pieceRecordingsCache[pieceId];
+                return loadFromSqlFallback();
+            })
             : loadFromSqlFallback();
 
         request

@@ -1,0 +1,13 @@
+# Recording metadata changes when a recording is added to a piece.
+# Keep browser cache short while allowing Cloudflare to keep an edge copy.
+Options -Indexes
+
+<FilesMatch "\.json$">
+    Header unset Cache-Control
+    Header set Cache-Control "public, max-age=300, s-maxage=31536000, stale-while-revalidate=86400"
+    Header set Content-Type "application/json; charset=utf-8"
+</FilesMatch>
+
+<FilesMatch "^(?!.*\.json$)">
+    Require all denied
+</FilesMatch>

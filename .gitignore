@@ -26,7 +26,8 @@ phpfiles/cloudflare_config.php
 assets/previews/
 audio_cache/
 data/metrics/
-data/recordings/
+data/recordings/*
+!data/recordings/.htaccess
 data/times/
 inspect_start.py
 manual_rec1.json
