@@ -30,6 +30,17 @@ function buildPdfFilename(pieceId, instrumentId, editionLabel) {
     return `${base}.pdf`;
 }
 
+function decodeHtmlEntities(value) {
+    if (value === null || value === undefined) return '';
+
+    const raw = String(value).replace(/\$([a-zA-Z][a-zA-Z0-9]+);/g, '&$1;');
+    if (!/[&][#a-zA-Z0-9]+;/.test(raw)) return raw;
+
+    decodeHtmlEntities.textarea = decodeHtmlEntities.textarea || document.createElement('textarea');
+    decodeHtmlEntities.textarea.innerHTML = raw;
+    return decodeHtmlEntities.textarea.value;
+}
+
 var currentInstrumentGlobal = 0;
 var currentRecordingGlobal = 0;
 var currentMetricArrGlobal = 0;
@@ -522,37 +533,38 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
             // Render categories + pieces
             Object.keys(orderedGroupedPieces).forEach(function (categoryName) {
                 orderedGroupedPieces[categoryName].sort(function (a, b) {
-                    var composerA = a.composer_last.toUpperCase();
-                    var composerB = b.composer_last.toUpperCase();
+                    var composerA = decodeHtmlEntities(a.composer_last).toUpperCase();
+                    var composerB = decodeHtmlEntities(b.composer_last).toUpperCase();
                     var result = composerA.localeCompare(composerB);
                     if (result === 0) {
-                        var pieceA = a.piece_name.toUpperCase();
-                        var pieceB = b.piece_name.toUpperCase();
+                        var pieceA = decodeHtmlEntities(a.piece_name).toUpperCase();
+                        var pieceB = decodeHtmlEntities(b.piece_name).toUpperCase();
                         result = pieceA.localeCompare(pieceB);
                     }
                     return result;
                 });
 
-                container.append('<h3>' + categoryName + '</h3>');
+                container.append($('<h3></h3>').text(decodeHtmlEntities(categoryName)));
 
                 orderedGroupedPieces[categoryName].forEach(function (piece) {
                     const $row = $('<p></p>');
+                    const composerName = decodeHtmlEntities(piece.composer_last);
+                    const pieceName = decodeHtmlEntities(piece.piece_name);
                     const searchText = [
-                        piece.composer_last || '',
-                        piece.piece_name || ''
+                        composerName,
+                        pieceName
                     ].join(' ').toLowerCase();
                     const normalizedSearch = stripDiacritics(searchText);
 
-                    const $a = $(`
-                        <a href="#"
-                           class="pieces-link"
-                           data-id="${piece.metric_arr_id}"
-                           data-piece-id="${piece.piece_id}"
-                           data-instrument-id="${instrumentIds}">
-                          <span class="piece-title"><b>${piece.composer_last}</b> - ${piece.piece_name}</span>
-                          <span class="piece-count">${piece.total_recordings_value} recordings</span>
-                        </a>
-                      `);
+                    const $a = $('<a href="#" class="pieces-link"></a>')
+                        .attr('data-id', piece.metric_arr_id)
+                        .attr('data-piece-id', piece.piece_id)
+                        .attr('data-instrument-id', instrumentIds);
+                    const $title = $('<span class="piece-title"></span>');
+                    $('<b></b>').text(composerName).appendTo($title);
+                    $title.append(' - ' + pieceName);
+                    $a.append($title);
+                    $a.append($('<span class="piece-count"></span>').text(`${piece.total_recordings_value} recordings`));
 
                     $a.data('parts', piece.parts || []);
                     $row.addClass('piece-row').attr('data-search', normalizedSearch);
@@ -771,16 +783,16 @@ function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
                         if (yearComparison !== 0) return yearComparison;
 
                         // Compare conductor_name
-                        var conductorComparison = (a.conductor_name || '').localeCompare(b.conductor_name || '');
+                        var conductorComparison = decodeHtmlEntities(a.conductor_name).localeCompare(decodeHtmlEntities(b.conductor_name));
                         if (conductorComparison !== 0) return conductorComparison;
 
                         // Compare ensemble_name
-                        return (a.ensemble_name || '').localeCompare(b.ensemble_name || '');
+                        return decodeHtmlEntities(a.ensemble_name).localeCompare(decodeHtmlEntities(b.ensemble_name));
                     });
                     recordings.forEach(function (recordingFullData) {
-                        var conductorName = recordingFullData.conductor_name;
-                        var ensembleName = recordingFullData.ensemble_name;
-                        var year = recordingFullData.year;
+                        var conductorName = decodeHtmlEntities(recordingFullData.conductor_name);
+                        var ensembleName = decodeHtmlEntities(recordingFullData.ensemble_name);
+                        var year = decodeHtmlEntities(recordingFullData.year);
 
                         var linkText =
                             (year ? year + ' - ' : '') +
@@ -865,15 +877,13 @@ function capturePosthogPieceLoad(recordingFullData, pageTitle) {
 }
 
 async function loadRecording(recordingFullData) {
-    console.log(recordingFullData);
-
     // Update the document title
-    let newTitle = `${recordingFullData.composer_last} - ${recordingFullData.piece_name}`;
+    let newTitle = `${decodeHtmlEntities(recordingFullData.composer_last)} - ${decodeHtmlEntities(recordingFullData.piece_name)}`;
     document.title = newTitle;
 
     // Add title to composer-piece-name Div
     let targetDiv = document.getElementById('composer-piece-name');
-    targetDiv.innerHTML = `<h3> ${newTitle}</h3> `;
+    targetDiv.replaceChildren($('<h3></h3>').text(newTitle)[0]);
 
     // Track History
     if (typeof addToHistory === 'function') {
