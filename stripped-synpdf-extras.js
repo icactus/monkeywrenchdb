@@ -395,7 +395,6 @@ function fetchPieces(instrumentIds, instrumentNameArg) {
             const instHeading = instrumentName.endsWith("Score")
                 ? `${instrumentName}s`
                 : `${instrumentName} Parts`;
-            console.log(instHeading);
             container.append(`
                 <div class="starter-main-header">
                     <h2>${instHeading}</h2>
@@ -757,7 +756,6 @@ function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
                         reject("No recordings found");
                         return;
                     }
-                    console.log('RAW API RESPONSE - first recording:', recordings[0]);
                     currentMetricArrGlobal = metricArrId;
                     container.empty().append('<h3>Recordings</h3>');
 
