@@ -678,12 +678,26 @@ function generateInstrumentsDropdown(recordingId) {
 
 function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
     return new Promise(function (resolve, reject) {
-        const requestData = pieceId ? { pieceId: pieceId } : { metricArrId: metricArrId };
-        $.ajax({
-            url: 'fetchrecordings_data.php',
-            method: 'GET',
-            data: requestData,
-            success: function (response) {
+        const loadFromSqlFallback = function () {
+            const requestData = pieceId ? { pieceId: pieceId } : { metricArrId: metricArrId };
+            return $.ajax({
+                url: 'fetchrecordings_data.php',
+                method: 'GET',
+                data: requestData
+            });
+        };
+
+        const request = pieceId
+            ? $.ajax({
+                url: `data/recordings/by-piece/${pieceId}.json`,
+                method: 'GET',
+                dataType: 'json',
+                cache: true
+            }).catch(loadFromSqlFallback)
+            : loadFromSqlFallback();
+
+        request
+            .done(function (response) {
                 var container = renderTarget ? $(renderTarget) : $('#recordings-container');
                 var recordingsDropdown = $('#recordings-dropdown');
                 recordingsDropdown.empty();
@@ -691,8 +705,27 @@ function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
                     container.html('<p>No recordings found for the selected piece</p>');
                     reject("No recordings found");
                 } else {
-                    var recordings = typeof response === 'string' ? JSON.parse(response) : response;
-                    if (pieceId && partContext) {
+                    var responseData = typeof response === 'string' ? JSON.parse(response) : response;
+                    var pieceMetadata = {};
+                    var recordings = responseData;
+                    if (responseData && Array.isArray(responseData.recordings)) {
+                        pieceMetadata = {
+                            piece_id: responseData.piece_id,
+                            composer_last: responseData.composer_last,
+                            piece_name: responseData.piece_name
+                        };
+                        recordings = responseData.recordings.map(function (recording) {
+                            return Object.assign({}, pieceMetadata, recording);
+                        });
+                    }
+
+                    if (!Array.isArray(recordings)) {
+                        container.html('<p>No recordings found for the selected piece</p>');
+                        reject("No recordings found");
+                        return;
+                    }
+
+                    if (partContext) {
                         recordings = recordings.map(function (recording) {
                             return Object.assign({}, recording, {
                                 metric_arr_id: partContext.metric_arr_id,
@@ -734,21 +767,23 @@ function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
                             (conductorName ? conductorName : '') +
                             (conductorName && ensembleName ? ' - ' : '') +
                             (ensembleName ? ensembleName : '');
-                        var link = $('<p><a href="#" class="recordings-link">' + linkText + '</a></p>');
+                        var link = $('<p><a href="#" class="recordings-link"></a></p>');
+                        link.children('a').text(linkText);
                         link.children('a').data('recordingFullData', recordingFullData); // Attach the recording data to the <a> element
                         container.append(link);
-                        var option = $('<option value="' + recordingFullData.recording_id + '">' + linkText + '</option>');
+                        var option = $('<option></option>')
+                            .attr('value', recordingFullData.recording_id)
+                            .text(linkText);
                         option.data('recordingFullData', recordingFullData);
                         recordingsDropdown.append(option);
                     });
 
                     resolve(recordings); // Resolve the Promise with the recordings data
                 }
-            },
-            error: function (error) {
+            })
+            .fail(function (error) {
                 reject(error); // Reject the Promise with the error message
-            }
-        });
+            });
     });
 }
 

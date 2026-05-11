@@ -1,5 +1,7 @@
 <?php
 require_once 'config.php';
+require_once 'cloudflare_purge.php';
+require_once 'static_recordings.php';
 
 function findTimesExportDir(): ?string
 {
@@ -79,6 +81,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $timesPath = $timesDir . '/' . $recording_id . '.json';
         if (file_put_contents($timesPath, $times_arr_data) === false) {
             die('Error exporting static times JSON: failed to write ' . $timesPath);
+        }
+
+        $recordingsPath = writePieceRecordingsJson($mysqli, (int) $piece_id);
+        if (!$recordingsPath) {
+            die('Error exporting static recordings JSON for piece_id ' . $piece_id);
+        }
+
+        $purgeResult = purgePieceRecordingsCache((int) $piece_id);
+        if (!$purgeResult['success']) {
+            error_log('Cloudflare recording metadata purge failed: ' . $purgeResult['message']);
         }
 
         echo "success";

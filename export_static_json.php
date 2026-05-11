@@ -1,14 +1,17 @@
 <?php
 /**
- * Export metric_arr_data and times_arr_data from MySQL to static JSON files.
+ * Export metric_arr_data, times_arr_data, and lightweight recording metadata
+ * from MySQL to static JSON files.
  *
  * Usage:
  *   php export_static_json.php
  *   php export_static_json.php --recording-id=661
+ *   php export_static_json.php --piece-id=169
  *
  * Creates:
  *   /data/metrics/{metric_arr_id}.json   — one per metric_arr row
  *   /data/times/{recording_id}.json      — one per recording row (times_arr_data)
+ *   /data/recordings/by-piece/{piece_id}.json — recording metadata for a piece
  */
 
 // --- DB config ---
@@ -17,6 +20,7 @@ if (file_exists(__DIR__ . '/../phpfiles/config.php')) {
 } else {
     require_once __DIR__ . '/phpfiles/config.php';
 }
+require_once __DIR__ . '/phpfiles/static_recordings.php';
 
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 if ($conn->connect_error) {
@@ -25,10 +29,13 @@ if ($conn->connect_error) {
 mysqli_set_charset($conn, 'utf8');
 
 $recordingIdFilter = null;
+$pieceIdFilter = null;
 if (PHP_SAPI === 'cli' && !empty($argv)) {
     foreach ($argv as $arg) {
         if (strpos($arg, '--recording-id=') === 0) {
             $recordingIdFilter = (int) substr($arg, strlen('--recording-id='));
+        } elseif (strpos($arg, '--piece-id=') === 0) {
+            $pieceIdFilter = (int) substr($arg, strlen('--piece-id='));
         }
     }
 }
@@ -36,11 +43,14 @@ if (PHP_SAPI === 'cli' && !empty($argv)) {
 // --- Ensure directories exist ---
 $metricsDir = __DIR__ . '/data/metrics';
 $timesDir = __DIR__ . '/data/times';
+$recordingsDir = __DIR__ . '/data/recordings/by-piece';
 
 if (!is_dir($metricsDir))
     mkdir($metricsDir, 0755, true);
 if (!is_dir($timesDir))
     mkdir($timesDir, 0755, true);
+if (!is_dir($recordingsDir))
+    mkdir($recordingsDir, 0755, true);
 
 // --- Normalize metric_arr: strip cs to [first, last], round to 1 decimal ---
 function normalizeMetricArr($jsonStr)
@@ -142,7 +152,42 @@ while ($row = $result->fetch_assoc()) {
 }
 echo "  Done: $countTimes files written, $errorsTimes errors.\n\n";
 
+// --- Export lightweight recordings by piece ---
+echo "Exporting recordings by piece...\n";
+$pieceIds = [];
+if ($pieceIdFilter > 0) {
+    $pieceIds[] = $pieceIdFilter;
+} elseif ($recordingIdFilter > 0) {
+    $pieceStmt = $conn->prepare("SELECT DISTINCT piece_id FROM recordings WHERE recording_id = ?");
+    $pieceStmt->bind_param('i', $recordingIdFilter);
+    $pieceStmt->execute();
+    $pieceResult = $pieceStmt->get_result();
+    while ($row = $pieceResult->fetch_assoc()) {
+        $pieceIds[] = (int) $row['piece_id'];
+    }
+    $pieceStmt->close();
+} else {
+    $pieceResult = $conn->query("SELECT DISTINCT piece_id FROM recordings ORDER BY piece_id ASC");
+    while ($row = $pieceResult->fetch_assoc()) {
+        $pieceIds[] = (int) $row['piece_id'];
+    }
+}
+
+$countRecordings = 0;
+$errorsRecordings = 0;
+foreach ($pieceIds as $pieceId) {
+    $path = writePieceRecordingsJson($conn, $pieceId, __DIR__);
+    if ($path === null) {
+        echo "  ERROR writing recordings JSON for piece_id {$pieceId}\n";
+        $errorsRecordings++;
+    } else {
+        $countRecordings++;
+    }
+}
+echo "  Done: $countRecordings files written, $errorsRecordings errors.\n\n";
+
 $conn->close();
 echo "Export complete.\n";
 echo "Metrics: $metricsDir/ ($countMetrics files)\n";
 echo "Times:   $timesDir/ ($countTimes files)\n";
+echo "Recordings: $recordingsDir/ ($countRecordings files)\n";

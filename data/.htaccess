@@ -7,9 +7,12 @@ RewriteEngine On
 RewriteCond %{HTTP_REFERER} !^https?://(www\.)?monkeywrenchdb\.org [NC]
 RewriteRule \.json$ - [F,L]
 
+SetEnvIf Request_URI "^/data/recordings/" mutable_recordings_json
+
 # Caching and content type for .json files
 <FilesMatch "\.json$">
-    Header set Cache-Control "public, max-age=31536000, immutable"
+    Header set Cache-Control "public, max-age=31536000, immutable" env=!mutable_recordings_json
+    Header set Cache-Control "public, max-age=300, s-maxage=31536000, stale-while-revalidate=86400" env=mutable_recordings_json
     Header set Content-Type "application/json; charset=utf-8"
 </FilesMatch>
 

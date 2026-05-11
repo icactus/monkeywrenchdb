@@ -112,3 +112,24 @@ function purgeMetricArrCache(int $metricArrId, int $pieceId, int $instrumentId):
 
     return purgeCloudflareCache($urlsToPurge);
 }
+
+/**
+ * Purge cache for the static recording metadata for a piece.
+ *
+ * @param int $pieceId The piece_id to purge
+ * @return array Result with 'success' boolean and 'message' string
+ */
+function purgePieceRecordingsCache(int $pieceId): array
+{
+    $baseUrl = SITE_BASE_URL;
+    if ($baseUrl === '') {
+        return ['success' => false, 'message' => 'Cloudflare purge skipped: SITE_BASE_URL is empty'];
+    }
+
+    $urlsToPurge = [
+        "{$baseUrl}/data/recordings/by-piece/{$pieceId}.json",
+        "{$baseUrl}/fetchrecordings_data.php?pieceId={$pieceId}",
+    ];
+
+    return purgeCloudflareCache($urlsToPurge);
+}
