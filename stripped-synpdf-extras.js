@@ -604,7 +604,6 @@ $('#pieces-container').on('click', '.pieces-link', function (event) {
 
     if (parts.length === 1) {
         partPicker.empty();
-        recordingsList.html('<h3>Recordings</h3><p class="starter-loading">Loading recordings...</p>');
         fetchRecordings(parts[0].metric_arr_id, pieceId, parts[0], recordingsList);
         currentMetricArrGlobal = parts[0].metric_arr_id;
         return;
@@ -621,7 +620,6 @@ $('#pieces-container').on('click', '.pieces-link', function (event) {
                 .on('click', function () {
                     partList.find('.piece-part-button').removeClass('selected');
                     $(this).addClass('selected');
-                    recordingsList.html('<h3>Recordings</h3><p class="starter-loading">Loading recordings...</p>');
                     fetchRecordings($(this).data('metric-arr-id'), pieceId, part, recordingsList);
                     currentMetricArrGlobal = $(this).data('metric-arr-id');
                 });
@@ -711,9 +709,16 @@ function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
                 return loadFromSqlFallback();
             })
             : loadFromSqlFallback();
+        const loadingTimer = setTimeout(function () {
+            const container = renderTarget ? $(renderTarget) : $('#recordings-container');
+            if (!container.children().length) {
+                container.html('<h3>Recordings</h3>');
+            }
+        }, 180);
 
         request
             .done(function (response) {
+                clearTimeout(loadingTimer);
                 var container = renderTarget ? $(renderTarget) : $('#recordings-container');
                 var recordingsDropdown = $('#recordings-dropdown');
                 recordingsDropdown.empty();
@@ -797,6 +802,7 @@ function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
                 }
             })
             .fail(function (error) {
+                clearTimeout(loadingTimer);
                 reject(error); // Reject the Promise with the error message
             });
     });
