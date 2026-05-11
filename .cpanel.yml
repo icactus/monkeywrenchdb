@@ -37,6 +37,7 @@ deployment:
     - /bin/cp -R synpdf_182/models $DEPLOYPATH
     - /bin/cp synpdf_182/models/.htaccess ${DEPLOYPATH}models/.htaccess
     - /bin/mkdir -p ${DEPLOYPATH}data/metrics
+    - /bin/mkdir -p ${DEPLOYPATH}data/recordings/by-piece
     - /bin/mkdir -p ${DEPLOYPATH}data/times
     - /bin/cp data/.htaccess ${DEPLOYPATH}data/.htaccess
 
@@ -46,6 +47,7 @@ deployment:
     - /bin/cp phpfiles/metric-arr-post.php $DEPLOYPATH2
     - /bin/cp phpfiles/pieces-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/submit_recording.php $DEPLOYPATH2
+    - /bin/cp phpfiles/static_recordings.php $DEPLOYPATH2
     - /bin/cp phpfiles/auth_config.example.php $DEPLOYPATH2
     - /bin/cp phpfiles/cloudflare_purge.php $DEPLOYPATH2
 

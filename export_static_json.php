@@ -20,7 +20,11 @@ if (file_exists(__DIR__ . '/../phpfiles/config.php')) {
 } else {
     require_once __DIR__ . '/phpfiles/config.php';
 }
-require_once __DIR__ . '/phpfiles/static_recordings.php';
+if (file_exists(__DIR__ . '/../phpfiles/static_recordings.php')) {
+    require_once __DIR__ . '/../phpfiles/static_recordings.php';
+} else {
+    require_once __DIR__ . '/phpfiles/static_recordings.php';
+}
 
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 if ($conn->connect_error) {
