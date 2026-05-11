@@ -2152,9 +2152,12 @@ body.initial-recording-target:not(.recording-loaded) #sidecontent {
     text-decoration: none;
 }
 
-.pieces-link:hover,
-.piece-row.expanded>.pieces-link {
+.pieces-link:hover {
     background: #eef8f8;
+}
+
+.piece-row.expanded>.pieces-link {
+    background: #f7d155;
 }
 
 .piece-title {
