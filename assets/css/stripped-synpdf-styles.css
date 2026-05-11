@@ -2015,7 +2015,7 @@ body.initial-recording-target:not(.recording-loaded) #sidecontent {
 
 #notation .starter-sidebar .instrument-link:hover,
 #notation .starter-sidebar .instrument-link.selected {
-    background: #eef8f8;
+    background: #dbe9ea;
 }
 
 #notation .starter-sidebar .instrument-link-a:hover {
