@@ -2013,9 +2013,13 @@ body.initial-recording-target:not(.recording-loaded) #sidecontent {
     padding: 6px 8px;
 }
 
-.starter-sidebar .instrument-link:hover,
-.starter-sidebar .instrument-link.selected {
-    background: #dbe9ea;
+#notation .starter-sidebar .instrument-link:hover,
+#notation .starter-sidebar .instrument-link.selected {
+    background: #eef8f8;
+}
+
+#notation .starter-sidebar .instrument-link-a:hover {
+    background: transparent;
 }
 
 .starter-sidebar .instrument-link-a {
@@ -2227,9 +2231,9 @@ body.initial-recording-target:not(.recording-loaded) #sidecontent {
     text-decoration: none;
 }
 
-.piece-recordings-list .recordings-link:hover,
-#recordings-container .recordings-link:hover {
-    background: #eef1f4;
+#notation .piece-recordings-list .recordings-link:hover,
+#notation #recordings-container .recordings-link:hover {
+    background: #eef8f8;
 }
 
 .starter-loading,
