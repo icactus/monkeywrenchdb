@@ -132,7 +132,18 @@ function setupPlayPauseButton() {
         if (ybplayer$$module$synpdf.getPlayerState() == YT.PlayerState.PLAYING) {
             ybplayer$$module$synpdf.pauseVideo();
         } else {
-            ybplayer$$module$synpdf.playVideo();
+            const recentMeasureClickTime = (typeof getRecentMeasureClickMediaTime$$module$synpdf === 'function')
+                ? getRecentMeasureClickMediaTime$$module$synpdf()
+                : null;
+            if (recentMeasureClickTime != null &&
+                typeof primeMeasureClickPlaybackStart$$module$synpdf === 'function' &&
+                typeof clearRecentMeasureClickMediaTime$$module$synpdf === 'function') {
+                clearRecentMeasureClickMediaTime$$module$synpdf();
+                primeMeasureClickPlaybackStart$$module$synpdf(recentMeasureClickTime);
+                playPause2$$module$synpdf(true, recentMeasureClickTime);
+            } else {
+                ybplayer$$module$synpdf.playVideo();
+            }
         }
         // Update the play-pause button after a delay to ensure the player's state has changed
         setTimeout(updatePlayPauseButton, 250);

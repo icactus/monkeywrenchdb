@@ -1111,19 +1111,44 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, shiftKey) {
                 var f = b < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[b + 1].t : d + 2;
                 // Use clicked box dimensions for position calculation
                 b = d + (f - d) * (a - clickedBox.x - clickedBoxOffset) / clickedBox.w;
+                const targetMediaTime = (opt$$module$synpdf.lncsr ? b : d + TOFF$$module$synpdf) + offset$$module$synpdf;
+                window.__pendingMeasureClickMediaTime = targetMediaTime;
                 if (elmed$$module$synpdf.getPlayerState() === 5) {
-                    elmed$$module$synpdf.seekTo(d + TOFF$$module$synpdf + offset$$module$synpdf);
+                    elmed$$module$synpdf.seekTo(targetMediaTime);
+                    msc_wz$$module$synpdf.time2x(targetMediaTime - offset$$module$synpdf);
                 } else {
                     c ? opt$$module$synpdf.loop && this.doLoopTag(a, clickedBox.y, b, d, f, {
                         x1: clickedBox.x + clickedBoxOffset,
                         x2: clickedBox.x + clickedBoxOffset + clickedBox.w
-                    }) : (b = (opt$$module$synpdf.lncsr ? b : d + TOFF$$module$synpdf) + offset$$module$synpdf, playPause2$$module$synpdf(!1, b));
+                    }) : playPause2$$module$synpdf(!1, targetMediaTime);
                 }
             }
             break;
         }
     }
 };
+
+function getRecentMeasureClickMediaTime$$module$synpdf() {
+    if (typeof window.__lastMeasureClickTime === 'undefined' ||
+        Date.now() - window.__lastMeasureClickTime >= 2000 ||
+        typeof window.__pendingMeasureClickMediaTime !== 'number') {
+        return null;
+    }
+    return window.__pendingMeasureClickMediaTime;
+}
+
+function clearRecentMeasureClickMediaTime$$module$synpdf() {
+    window.__lastMeasureClickTime = undefined;
+    window.__pendingMeasureClickMediaTime = undefined;
+}
+
+function primeMeasureClickPlaybackStart$$module$synpdf(mediaTime) {
+    window.__measureClickPlayMediaTime = mediaTime;
+    window.__measureClickPlaySuppressUntil = Date.now() + 1200;
+    if (msc_wz$$module$synpdf) {
+        msc_wz$$module$synpdf.time2x(mediaTime - offset$$module$synpdf);
+    }
+}
 
 function findCurrentMeasureTime() {
     return new Promise((resolve, reject) => {
@@ -2128,7 +2153,19 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
 
 function tick$$module$synpdf(a) {
     if (elmed$$module$synpdf && msc_wz$$module$synpdf && (!yubchk$$module$synpdf || elmed$$module$synpdf == ybplayer$$module$synpdf)) {
-        var b = (yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime) - offset$$module$synpdf;
+        var mediaTime = yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime;
+        var b = mediaTime - offset$$module$synpdf;
+        if (window.__measureClickPlaySuppressUntil &&
+            Date.now() < window.__measureClickPlaySuppressUntil &&
+            typeof window.__measureClickPlayMediaTime === 'number') {
+            if (Math.abs(mediaTime - window.__measureClickPlayMediaTime) > 0.2) {
+                msc_wz$$module$synpdf.time2x(window.__measureClickPlayMediaTime - offset$$module$synpdf);
+                scrollFlag = 0;
+                return;
+            }
+            window.__measureClickPlaySuppressUntil = 0;
+            window.__measureClickPlayMediaTime = undefined;
+        }
         if (isSwitchingRecording || blockTime2x) {
             console.log("Tick blocked. Time:", b, "Switching:", isSwitchingRecording, "blockTime2x:", blockTime2x);
         } else if (a && 0 != a % 10) {
@@ -2583,17 +2620,12 @@ function keyDown$$module$synpdf(a) {
             a.preventDefault &&
                 a.preventDefault();
             if (!elmed$$module$synpdf) break;
-            // If user clicked on a measure recently (within 2 seconds), use that time
-            // currentMeasureTime is set by x2time when user clicks on a measure
             var time;
-            if (typeof window.__lastMeasureClickTime !== 'undefined' &&
-                Date.now() - window.__lastMeasureClickTime < 2000) {
-                time = currentMeasureTime + offset$$module$synpdf;
-                window.__lastMeasureClickTime = undefined; // Clear it after use
-                // Immediately update visual cursor to prevent flicker
-                if (msc_wz$$module$synpdf) {
-                    msc_wz$$module$synpdf.time2x(currentMeasureTime);
-                }
+            const recentMeasureClickTime = getRecentMeasureClickMediaTime$$module$synpdf();
+            if (recentMeasureClickTime != null) {
+                time = recentMeasureClickTime;
+                clearRecentMeasureClickMediaTime$$module$synpdf();
+                primeMeasureClickPlaybackStart$$module$synpdf(time);
             } else {
                 time = yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime;
             }
