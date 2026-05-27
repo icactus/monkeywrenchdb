@@ -1355,6 +1355,59 @@ function pageTopInNotation(pageNum) {
     return $cv.length ? canvasYInNotation($cv) : null;
 }
 
+function refreshCurrentMeasureHighlightAfterResize(preserveScroll) {
+    const wz = (typeof msc_wz$$module$synpdf !== 'undefined') ? msc_wz$$module$synpdf : null;
+    if (!wz || typeof wz.time2x !== 'function') return;
+
+    const scroller = document.getElementById('notation-scroll');
+    const scrollTop = scroller ? scroller.scrollTop : 0;
+    const scrollLeft = scroller ? scroller.scrollLeft : 0;
+    const scrollBehavior = scroller ? scroller.style["scroll-behavior"] : '';
+    const preserveHidden = $('.demaat').length > 0 && $('.demaat').toArray().every(function (el) {
+        return getComputedStyle(el).display === 'none';
+    });
+    const t = (typeof wz.cursorTime === 'number')
+        ? wz.cursorTime
+        : ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
+            - (offset$$module$synpdf || 0));
+
+    xcurprev$$module$synpdf = -1;
+    ycurprev$$module$synpdf = -1;
+    scrollYCurPrev$$module$synpdf = -1;
+
+    try {
+        wz.time2x(t);
+    } finally {
+        if (preserveHidden) {
+            $('.demaat').hide();
+            $('.linked-maatloper').hide();
+        }
+        if (preserveScroll && scroller) {
+            scroller.style["scroll-behavior"] = "auto";
+            scroller.scrollTop = scrollTop;
+            scroller.scrollLeft = scrollLeft;
+            scroller.style["scroll-behavior"] = scrollBehavior;
+        }
+    }
+}
+
+function getSynpdfPausedState() {
+    const internalPaused = msc_wz$$module$synpdf && msc_wz$$module$synpdf.paused;
+
+    let actualPlayerPaused = false;
+    if (typeof yubchk$$module$synpdf !== 'undefined' && yubchk$$module$synpdf) {
+        actualPlayerPaused = !elmed$$module$synpdf || elmed$$module$synpdf.getPlayerState?.() !== 1;
+    } else if (elmed$$module$synpdf) {
+        actualPlayerPaused = elmed$$module$synpdf.paused;
+    }
+
+    return {
+        internalPaused,
+        actualPlayerPaused,
+        isPaused: internalPaused || actualPlayerPaused
+    };
+}
+
 // RESIZE ALL CANVASES USING CSS
 function resizeDematenAndCanvas(scaleAmount) {
     const sc = document.getElementById('notation-scroll');
@@ -1374,21 +1427,9 @@ function resizeDematenAndCanvas(scaleAmount) {
         var notationDivRect = notationDiv.getBoundingClientRect();
         scaleCanvasElements(scaleAmount);
 
-        // Skip ALL navigation when paused - check both internal state AND actual player state
-        var internalPaused = msc_wz$$module$synpdf && msc_wz$$module$synpdf.paused;
-
-        // Check actual player paused state (YouTube or HTML5)
-        var actualPlayerPaused = false;
-        if (typeof yubchk$$module$synpdf !== 'undefined' && yubchk$$module$synpdf) {
-            // YouTube - paused if not playing (state !== 1)
-            actualPlayerPaused = !elmed$$module$synpdf || elmed$$module$synpdf.getPlayerState?.() !== 1;
-        } else if (elmed$$module$synpdf) {
-            // HTML5 video
-            actualPlayerPaused = elmed$$module$synpdf.paused;
-        }
-
-        var isPaused = internalPaused || actualPlayerPaused;
-        console.log('[resizeDematenAndCanvas] isPaused:', isPaused, 'internal:', internalPaused, 'actual:', actualPlayerPaused);
+        const pausedState = getSynpdfPausedState();
+        var isPaused = pausedState.isPaused;
+        console.log('[resizeDematenAndCanvas] isPaused:', isPaused, 'internal:', pausedState.internalPaused, 'actual:', pausedState.actualPlayerPaused);
 
         if (!isPaused && window.msc_wz$$module$synpdf) {
             msc_wz$$module$synpdf.setOffsetX();
@@ -1398,10 +1439,7 @@ function resizeDematenAndCanvas(scaleAmount) {
         var newNotationDivRect = notationDiv.getBoundingClientRect();
         deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount);
 
-        // Only navigate to current measure if NOT paused
-        if (!isPaused && msc_wz$$module$synpdf) {
-            msc_wz$$module$synpdf.time2x((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf);
-        }
+        refreshCurrentMeasureHighlightAfterResize(isPaused);
     }
 }
 
@@ -1571,10 +1609,8 @@ function resizePageFitToWidth() {
     requestAnimationFrame(function () {
         requestAnimationFrame(function () {
             if (window.msc_wz$$module$synpdf) {
-                var t = (elmed$$module$synpdf?.getCurrentTime?.()
-                    ?? elmed$$module$synpdf?.currentTime ?? 0)
-                    - (offset$$module$synpdf || 0);
-                msc_wz$$module$synpdf.time2x(t);
+                const pausedState = getSynpdfPausedState();
+                refreshCurrentMeasureHighlightAfterResize(pausedState.isPaused);
             }
         });
     });
