@@ -947,9 +947,18 @@ async function sendVarToSynpdf(recordingFullData) {
         ? `data/metrics/${metricId}.json?v=${encodeURIComponent(metricCacheBust)}`
         : `data/metrics/${metricId}.json`;
 
+    const metricPromise = fetch(metricUrl).then(r => r.json());
+    const timesPromise = recordingFullData.times_arr_data
+        ? Promise.resolve(
+            typeof recordingFullData.times_arr_data === 'string'
+                ? JSON.parse(recordingFullData.times_arr_data)
+                : recordingFullData.times_arr_data
+        )
+        : fetch(`data/times/${recordingId}.json`).then(r => r.json());
+
     const [metricData, timesData] = await Promise.all([
-        fetch(metricUrl).then(r => r.json()),
-        fetch(`data/times/${recordingId}.json`).then(r => r.json())
+        metricPromise,
+        timesPromise
     ]);
 
     deMetriek$$module$synpdf = metric_arr$$module$synpdf = metricData;
@@ -1944,7 +1953,7 @@ $(document).ready(function () {
                         const recordingFullData = JSON.parse(JSON.stringify(templateRecording));
 
                         // OVERRIDE DATA
-                        // times_arr_data must be a JSON string since sendVarToSynpdf calls JSON.parse on it
+                        // Keep the preview payload compatible with older generated links.
                         recordingFullData.times_arr_data = typeof previewData.times_arr_data === 'string'
                             ? previewData.times_arr_data
                             : JSON.stringify(previewData.times_arr_data);

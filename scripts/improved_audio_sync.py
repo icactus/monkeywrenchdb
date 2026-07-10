@@ -13,7 +13,7 @@ import multiprocessing
 #_pool_f1_hires = None
 #_pool_f2_hires = None
 
-from dtaidistance import dtw_ndim
+from dtaidistance import dtw_cc, dtw_ndim
 
 
 def _micro_refine_core(y1_slice, y2_slice, t1_local_sec, t2_est_local_sec, y1_start_sec, y2_start_sec, sr):
@@ -276,6 +276,107 @@ class AudioSync:
         
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
+
+    def _summarize_path_runs(self, path):
+        """
+        Summarize consecutive one-sided DTW runs.
+
+        Horizontal run: rec2 advances while rec1 is frozen.
+        Vertical run: rec1 advances while rec2 is frozen.
+        """
+        if len(path) < 2:
+            return {
+                "diag_steps": 0,
+                "horiz_steps": 0,
+                "vert_steps": 0,
+                "jump_steps": 0,
+                "runs": [],
+            }
+
+        diag_steps = 0
+        horiz_steps = 0
+        vert_steps = 0
+        jump_steps = 0
+        runs = []
+
+        current_kind = None
+        run_start_idx = None
+        run_start = None
+        run_end = None
+
+        def close_run():
+            nonlocal current_kind, run_start_idx, run_start, run_end
+            if current_kind is None or run_start is None or run_end is None:
+                current_kind = None
+                run_start_idx = None
+                run_start = None
+                run_end = None
+                return
+
+            di_total = run_end[0] - run_start[0]
+            dj_total = run_end[1] - run_start[1]
+            rec1_span_sec = di_total * self.hop_length / self.sr
+            rec2_span_sec = dj_total * self.hop_length / self.sr
+            run_span_sec = max(rec1_span_sec, rec2_span_sec)
+            runs.append({
+                "kind": current_kind,
+                "start_path_idx": int(run_start_idx),
+                "end_path_idx": int(run_start_idx + max(di_total, dj_total)),
+                "start_i": int(run_start[0]),
+                "start_j": int(run_start[1]),
+                "end_i": int(run_end[0]),
+                "end_j": int(run_end[1]),
+                "rec1_time_start": float(run_start[0] * self.hop_length / self.sr),
+                "rec1_time_end": float(run_end[0] * self.hop_length / self.sr),
+                "rec2_time_start": float(run_start[1] * self.hop_length / self.sr),
+                "rec2_time_end": float(run_end[1] * self.hop_length / self.sr),
+                "rec1_span_sec": float(rec1_span_sec),
+                "rec2_span_sec": float(rec2_span_sec),
+                "run_span_sec": float(run_span_sec),
+            })
+            current_kind = None
+            run_start_idx = None
+            run_start = None
+            run_end = None
+
+        for idx in range(1, len(path)):
+            prev_i, prev_j = path[idx - 1]
+            curr_i, curr_j = path[idx]
+            di = curr_i - prev_i
+            dj = curr_j - prev_j
+
+            if di == 1 and dj == 1:
+                diag_steps += 1
+                close_run()
+                continue
+
+            if di == 0 and dj == 1:
+                horiz_steps += 1
+                kind = "horiz"
+            elif di == 1 and dj == 0:
+                vert_steps += 1
+                kind = "vert"
+            else:
+                jump_steps += 1
+                close_run()
+                continue
+
+            if current_kind != kind:
+                close_run()
+                current_kind = kind
+                run_start_idx = idx - 1
+                run_start = path[idx - 1]
+            run_end = path[idx]
+
+        close_run()
+
+        return {
+            "diag_steps": diag_steps,
+            "horiz_steps": horiz_steps,
+            "vert_steps": vert_steps,
+            "jump_steps": jump_steps,
+            "runs": runs,
+        }
             
     # ... (skipping to run_hybrid_sync)
 
@@ -488,12 +589,85 @@ class AudioSync:
         f1_c = np.ascontiguousarray(f1, dtype=np.float64)
         f2_c = np.ascontiguousarray(f2, dtype=np.float64)
         
-        path = dtw_ndim.warping_path(f1_c, f2_c, window=window_frames, penalty=0.0, use_c=True)
-        
+        _, compact_paths = dtw_ndim.warping_paths_fast(
+            f1_c,
+            f2_c,
+            window=window_frames,
+            penalty=0.0,
+            compact=True,
+        )
+        print(
+            "  Compact DTW matrix: "
+            f"{compact_paths.shape[0]} x {compact_paths.shape[1]} "
+            f"({compact_paths.nbytes / 1024 / 1024:.1f} MB)"
+        )
+        path = dtw_cc.best_path_compact(
+            compact_paths,
+            len(f1_c),
+            len(f2_c),
+            window=window_frames,
+            penalty=0.0,
+        )
+
         elapsed = time.time() - start
         print(f"  Path length: {len(path)}")
+        path_summary = self._summarize_path_runs(path)
+        total_steps = (
+            path_summary["diag_steps"]
+            + path_summary["horiz_steps"]
+            + path_summary["vert_steps"]
+            + path_summary["jump_steps"]
+        )
+        if total_steps > 0:
+            diag_pct = 100.0 * path_summary["diag_steps"] / total_steps
+            horiz_pct = 100.0 * path_summary["horiz_steps"] / total_steps
+            vert_pct = 100.0 * path_summary["vert_steps"] / total_steps
+            print(
+                "  Step mix: "
+                f"diag={path_summary['diag_steps']} ({diag_pct:.1f}%), "
+                f"rec2-only={path_summary['horiz_steps']} ({horiz_pct:.1f}%), "
+                f"rec1-only={path_summary['vert_steps']} ({vert_pct:.1f}%)"
+            )
+        if path_summary["jump_steps"] > 0:
+            print(f"  Warning: non-unit DTW steps detected: {path_summary['jump_steps']}")
+
+        runs = path_summary["runs"]
+        if runs:
+            longest_h = max((r for r in runs if r["kind"] == "horiz"), key=lambda r: r["run_span_sec"], default=None)
+            longest_v = max((r for r in runs if r["kind"] == "vert"), key=lambda r: r["run_span_sec"], default=None)
+            if longest_h is not None:
+                print(
+                    "  Longest rec2-only run: "
+                    f"{longest_h['run_span_sec']:.3f}s "
+                    f"(rec1 ~{longest_h['rec1_time_start']:.3f}s, "
+                    f"rec2 {longest_h['rec2_time_start']:.3f}->{longest_h['rec2_time_end']:.3f}s)"
+                )
+            if longest_v is not None:
+                print(
+                    "  Longest rec1-only run: "
+                    f"{longest_v['run_span_sec']:.3f}s "
+                    f"(rec1 {longest_v['rec1_time_start']:.3f}->{longest_v['rec1_time_end']:.3f}s, "
+                    f"rec2 ~{longest_v['rec2_time_start']:.3f}s)"
+                )
+
+            suspicious_runs = [r for r in runs if r["run_span_sec"] >= 1.0]
+            print(f"  One-sided runs >= 1.0s: {len(suspicious_runs)}")
+            for run in sorted(suspicious_runs, key=lambda r: r["run_span_sec"], reverse=True)[:5]:
+                if run["kind"] == "horiz":
+                    desc = (
+                        f"rec2-only {run['run_span_sec']:.3f}s "
+                        f"at rec1 ~{run['rec1_time_start']:.3f}s, "
+                        f"rec2 {run['rec2_time_start']:.3f}->{run['rec2_time_end']:.3f}s"
+                    )
+                else:
+                    desc = (
+                        f"rec1-only {run['run_span_sec']:.3f}s "
+                        f"at rec1 {run['rec1_time_start']:.3f}->{run['rec1_time_end']:.3f}s, "
+                        f"rec2 ~{run['rec2_time_start']:.3f}s"
+                    )
+                print(f"    - {desc}")
         print(f"  Computation time: {elapsed:.2f}s")
-        
+
         return path
 
     def local_refine(self, f1_hires, f2_hires, t1_sec, t2_est_sec, 
@@ -713,6 +887,9 @@ class AudioSync:
         
         from scipy.interpolate import interp1d
         coarse_mapper = interp1d(u_i, u_j_avg, kind='linear', fill_value="extrapolate")
+
+        rec1_duration_sec = max(len(f1_coarse) - 1, 0) * self.hop_length / self.sr
+        rec2_duration_sec = max(len(f2_coarse) - 1, 0) * self.hop_length / self.sr
         
         # --- BI-DIRECTIONAL ANCHOR INTERPOLATION ---
         if bwd_mapper is not None:
@@ -759,10 +936,33 @@ class AudioSync:
                 t1_rel = 0
                 
             t1_frame = int(t1_rel * self.sr / self.hop_length)
-            
-            # Map via anchor mapper
-            t2_frame_est = mapper(t1_frame)
+
+            t1_frame_idx = max(0, min(int(t1_frame), len(f1_coarse) - 1))
+
+            raw_matches = frame_map.get(t1_frame_idx, [])
+            plateau_count = len(raw_matches)
+            if plateau_count > 0:
+                plateau_span_frames = float(max(raw_matches) - min(raw_matches))
+            else:
+                plateau_span_frames = 0.0
+
+            # Compare the raw forward mapper against the backward-anchor remap.
+            t2_frame_forward = float(coarse_mapper(t1_frame))
+            t2_frame_est = float(mapper(t1_frame))
+            t2_forward = float(t2_frame_forward * self.hop_length / self.sr)
             t2_mapped = float(t2_frame_est * self.hop_length / self.sr)
+            mapper_shift_sec = t2_mapped - t2_forward
+
+            if len(anchor_u_i) > 0:
+                anchor_insert = int(np.searchsorted(anchor_u_i, t1_frame_idx))
+                anchor_candidates = []
+                if anchor_insert < len(anchor_u_i):
+                    anchor_candidates.append(abs(int(anchor_u_i[anchor_insert]) - t1_frame_idx))
+                if anchor_insert > 0:
+                    anchor_candidates.append(abs(int(anchor_u_i[anchor_insert - 1]) - t1_frame_idx))
+                nearest_anchor_frames = min(anchor_candidates) if anchor_candidates else len(f1_coarse)
+            else:
+                nearest_anchor_frames = len(f1_coarse)
             
             # --- Local Cross-Correlation Refinement ---
             if do_refine:
@@ -776,7 +976,6 @@ class AudioSync:
                 t2_refined = t2_mapped
                 refine_delta = 0.0
                 # Compute feature distance at mapped position (for confidence scoring)
-                t1_frame_idx = max(0, min(int(t1_frame), len(f1_coarse) - 1))
                 t2_frame_idx = max(0, min(int(t2_frame_est), len(f2_coarse) - 1))
                 
                 u = f1_coarse[t1_frame_idx]
@@ -790,15 +989,25 @@ class AudioSync:
                     cos_sim = np.dot(u, v) / (u_norm * v_norm)
                     cos_sim = max(-1.0, min(1.0, cos_sim))
                     feature_dist = float(1.0 - cos_sim)
-            
+
+            rec1_edge_sec = min(t1_rel, max(0.0, rec1_duration_sec - t1_rel))
+            rec2_edge_sec = min(t2_refined, max(0.0, rec2_duration_sec - t2_refined))
+
             results.append({
                 "index": i,
                 "mix": mix_num,
                 "t": t2_refined,
                 "t_coarse": round(t2_mapped, 6),
+                "t_forward": round(t2_forward, 6),
                 "t_refined": round(t2_refined, 6),
                 "refine_delta": round(refine_delta, 6),
-                "feature_distance": round(feature_dist, 4)
+                "feature_distance": round(feature_dist, 4),
+                "plateau_count": int(plateau_count),
+                "plateau_span_sec": round(plateau_span_frames * self.hop_length / self.sr, 6),
+                "nearest_anchor_sec": round(nearest_anchor_frames * self.hop_length / self.sr, 6),
+                "mapper_shift_sec": round(mapper_shift_sec, 6),
+                "rec1_edge_sec": round(rec1_edge_sec, 6),
+                "rec2_edge_sec": round(rec2_edge_sec, 6)
             })
         
         elapsed = time.time() - t_start

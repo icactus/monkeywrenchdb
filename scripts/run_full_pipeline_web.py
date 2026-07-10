@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from improved_audio_sync import AudioSync
 
 
-def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_list, max_duration=None, timestamps_list_rec2=None, rec1_timestamps_offset=0.0, rec2_timestamps_offset=0.0, stream_file=None, feature_mode="chroma_onset20"):
+def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_list, max_duration=None, timestamps_list_rec2=None, rec1_timestamps_offset=0.0, rec2_timestamps_offset=0.0, stream_file=None, feature_mode="chroma_onset20", hop_length=2048):
     """
     Run the DTW sync pipeline with custom parameters.
     
@@ -60,7 +60,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         print(f"  Rec1: offset={offset1}s, end={end1 or 'full'}")
         print(f"  Rec2: offset={offset2}s, end={end2 or 'full'}")
         
-        syncer = AudioSync()  # Initialize BEFORE calculation
+        syncer = AudioSync(hop_length=hop_length)  # Initialize BEFORE calculation
         
         def parse_time(t):
             if t is None: return None
@@ -85,6 +85,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             
         print(f"  Effective End1: {effective_end1}")
         print(f"  Effective End2: {effective_end2}")
+        print(f"  Hop Length: {syncer.hop_length}")
         
         # Feature mode: "full", "chroma", "chroma_delta", "chroma_onset"
         FEATURE_MODE = feature_mode if feature_mode else "chroma_onset20"
@@ -197,7 +198,12 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 "t": round(item['t'], 3),
             }
             # Carry through diagnostic fields from map_timestamps
-            for k in ('t_coarse', 't_refined', 'refine_delta', 'snap_delta', 'smoothed', 'smooth_delta', 'feature_distance'):
+            for k in (
+                't_coarse', 't_forward', 't_refined', 'refine_delta', 'snap_delta',
+                'smoothed', 'smooth_delta', 'feature_distance', 'plateau_count',
+                'plateau_span_sec', 'nearest_anchor_sec', 'mapper_shift_sec',
+                'rec1_edge_sec', 'rec2_edge_sec'
+            ):
                 if k in item:
                     entry[k] = item[k]
             final_results.append(entry)
@@ -225,7 +231,12 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 "index": item['index'],
                 "t": round(item['t'] - first_mapped_t, 3),
             }
-            for k in ('t_coarse', 't_refined', 'refine_delta', 'snap_delta', 'smoothed', 'smooth_delta'):
+            for k in (
+                't_coarse', 't_forward', 't_refined', 'refine_delta', 'snap_delta',
+                'smoothed', 'smooth_delta', 'plateau_count', 'plateau_span_sec',
+                'nearest_anchor_sec', 'mapper_shift_sec', 'rec1_edge_sec',
+                'rec2_edge_sec'
+            ):
                 if k in item:
                     entry[k] = item[k]
             zero_based_results.append(entry)
@@ -270,6 +281,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             
             disagree = abs(t2_chroma - t2_mfcc)
             disagreements.append(disagree)
+            item['t_mfcc'] = round(t2_mfcc, 4)
             item['cross_feature_disagree'] = round(disagree, 4)
         
         # Statistics
@@ -335,6 +347,7 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             
             disagree = abs(t2_pred - pos_in_y2_original)
             rev_disagreements.append(disagree)
+            item['t_reverse_pred'] = round(pos_in_y2_original, 4)
             item['reverse_disagree'] = round(disagree, 4)
         
         rev_median = float(np.median(rev_disagreements))
@@ -385,6 +398,13 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         
         num_low_energy = sum(1 for f in low_energy_flags if f['is_low'])
         print(f"  Found {num_low_energy} timestamps in low-energy (silence) zones")
+
+        EDGE_ZONE_SEC = 2.0
+        edge_zone_count = sum(
+            1 for item in final_results
+            if min(item.get('rec1_edge_sec', 999.0), item.get('rec2_edge_sec', 999.0)) <= EDGE_ZONE_SEC
+        )
+        print(f"  Edge-zone timestamps (within {EDGE_ZONE_SEC:.1f}s of start/end in either recording): {edge_zone_count}")
         
         for i, item in enumerate(final_results):
             item['low_energy'] = bool(low_energy_flags[i]['is_low'])
@@ -590,6 +610,15 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         print(f"    HIGH:   {high_count}")
         print(f"    MEDIUM: {med_count} (max(XF, Rev) disagreement 0.6-1.2s)")
         print(f"    LOW:    {low_count} (max(XF, Rev) disagreement >1.2s)")
+        edge_review_count = sum(
+            1 for item in final_results
+            if item['confidence'] in ('LOW', 'MEDIUM')
+            and min(item.get('rec1_edge_sec', 999.0), item.get('rec2_edge_sec', 999.0)) <= EDGE_ZONE_SEC
+        )
+        nonzero_plateaus = [item.get('plateau_span_sec', 0.0) for item in final_results if item.get('plateau_count', 0) > 1]
+        max_plateau = max(nonzero_plateaus) if nonzero_plateaus else 0.0
+        print(f"    Manual-review points in edge zone: {edge_review_count}")
+        print(f"    Max DTW plateau span at requested timestamps: {max_plateau:.3f}s")
         
         # Print LOW and MEDIUM confidence offenders (these need manual review)
         manual_review = [(i, final_results[i]) for i in range(len(final_results)) 
@@ -598,13 +627,17 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
             # Sort by index for easy sequential review
             manual_review.sort(key=lambda x: x[0])
             print(f"\n  🚩 Timestamps Needing Manual Review ({len(manual_review)} items):")
-            print(f"  {'Index':>5} | {'Mix':>5} | {'Conf':>6} | {'Feat Dist':>10} | {'RT Error':>10} | {'XF Disagr':>10} | {'Rev Disag':>10} | {'T (Rec2)':>10}")
-            print("  " + "-" * 105)
+            print(f"  {'Index':>5} | {'Mix':>5} | {'Conf':>6} | {'XF Dis':>7} | {'Rev Dis':>7} | {'Edge':>6} | {'Plat':>6} | {'Shift':>7} | {'Fwd→Out':>15}")
+            print("  " + "-" * 98)
             for idx, item_data in manual_review:
                 item = item_data
                 xf_disagree = item.get('cross_feature_disagree', 0.0)
                 rev_disagree = item.get('reverse_disagree', 0.0)
-                print(f"  {idx:5d} | {item['mix']:5d} | {item['confidence']:>6} | {item.get('feature_distance', 0.0):10.4f} | {item.get('rt_error', 0.0):9.4f}s | {xf_disagree:9.3f}s | {rev_disagree:9.3f}s | {item['t']:10.3f}s")
+                edge_sec = min(item.get('rec1_edge_sec', 999.0), item.get('rec2_edge_sec', 999.0))
+                plateau_span = item.get('plateau_span_sec', 0.0)
+                mapper_shift = item.get('mapper_shift_sec', 0.0)
+                t_forward = item.get('t_forward', item.get('t_coarse', item['t']))
+                print(f"  {idx:5d} | {item['mix']:5d} | {item['confidence']:>6} | {xf_disagree:7.3f} | {rev_disagree:7.3f} | {edge_sec:6.3f} | {plateau_span:6.3f} | {mapper_shift:+7.3f} | {t_forward:7.3f}→{item['t']:7.3f}")
             print("\n")
         # ========================================================================
         # Step 3: Ground Truth Comparison (Optional)
@@ -698,7 +731,10 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                             'feat_dist': final_results[i].get('feature_distance', 0.0),
                             'gap_dev': final_results[i].get('gap_dev', 0.0),
                             'xf_disagree': xf,
-                            'max_disagree': max(xf, rev)
+                            'max_disagree': max(xf, rev),
+                            'edge_sec': min(final_results[i].get('rec1_edge_sec', 999.0), final_results[i].get('rec2_edge_sec', 999.0)),
+                            'plateau_span_sec': final_results[i].get('plateau_span_sec', 0.0),
+                            'mapper_shift_sec': final_results[i].get('mapper_shift_sec', 0.0)
                         })
                 else:
                     # Check for False Positive (Low Error but Flagged for Review)
@@ -708,7 +744,10 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                             'mix': final_results[i]['mix'],
                             'error': err_snapped,
                             'prop_err': prop_err,
-                            'conf': final_results[i].get('confidence')
+                            'conf': final_results[i].get('confidence'),
+                            'edge_sec': min(final_results[i].get('rec1_edge_sec', 999.0), final_results[i].get('rec2_edge_sec', 999.0)),
+                            'plateau_span_sec': final_results[i].get('plateau_span_sec', 0.0),
+                            'mapper_shift_sec': final_results[i].get('mapper_shift_sec', 0.0)
                         })
                 
                 # Did refinement help or hurt?
@@ -755,18 +794,18 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
                 if false_negatives:
                     print(f"\n  ⚠️  UNFLAGGED ERRORS (False Negatives): {len(false_negatives)}")
                     print(f"      Measurements with significant error (>15% and >0.15s) but marked HIGH confidence.")
-                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Pred':>8} | {'GT':>8} | {'Max Dis':>8}")
-                    print("  " + "-" * 75)
+                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Pred':>8} | {'GT':>8} | {'Max Dis':>8} | {'Edge':>6} | {'Plat':>6} | {'Shift':>7}")
+                    print("  " + "-" * 102)
                     for fn in false_negatives:
-                        print(f"  {fn['index']:4d} | {fn['mix']:5d} | {fn['error']:8.3f}s | {fn['prop_err']*100:7.1f}% | {fn['t_pred']:8.3f}s | {fn['t_gt']:8.3f}s | {fn['max_disagree']:8.3f}")
+                        print(f"  {fn['index']:4d} | {fn['mix']:5d} | {fn['error']:8.3f}s | {fn['prop_err']*100:7.1f}% | {fn['t_pred']:8.3f}s | {fn['t_gt']:8.3f}s | {fn['max_disagree']:8.3f} | {fn['edge_sec']:6.3f} | {fn['plateau_span_sec']:6.3f} | {fn['mapper_shift_sec']:+7.3f}")
 
                 if false_positives:
                     print(f"\n  ⚠️  OVER-FLAGGED (False Positives): {len(false_positives)}")
                     print(f"      Measurements that are highly accurate (<15% error) but flagged anyway.")
-                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Conf':>6}")
-                    print("  " + "-" * 60)
+                    print(f"  {'Idx':>4} | {'Mix':>5} | {'Error':>8} | {'% Err':>8} | {'Conf':>6} | {'Edge':>6} | {'Plat':>6} | {'Shift':>7}")
+                    print("  " + "-" * 88)
                     for fp in false_positives:
-                        print(f"  {fp['index']:4d} | {fp['mix']:5d} | {fp['error']:8.3f}s | {fp['prop_err']*100:7.1f}% | {fp['conf']:>6}")
+                        print(f"  {fp['index']:4d} | {fp['mix']:5d} | {fp['error']:8.3f}s | {fp['prop_err']*100:7.1f}% | {fp['conf']:>6} | {fp['edge_sec']:6.3f} | {fp['plateau_span_sec']:6.3f} | {fp['mapper_shift_sec']:+7.3f}")
                 else:
                     print(f"\n  ✅  Zero Over-flagged! All flagged points have genuine errors.")
 
@@ -777,7 +816,12 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         print("=" * 60)
     
     # Create final clean output array with diagnostic fields
-    diag_keys = ['cross_feature_disagree', 'low_energy', 'confidence', 'feature_distance']
+    diag_keys = [
+        'cross_feature_disagree', 'reverse_disagree', 'low_energy', 'confidence',
+        'feature_distance', 't_coarse', 't_forward', 't_mfcc', 't_reverse_pred',
+        'plateau_count', 'plateau_span_sec', 'nearest_anchor_sec',
+        'mapper_shift_sec', 'rec1_edge_sec', 'rec2_edge_sec'
+    ]
     def _clean(r):
         d = {'t': r['t'], 'mix': r['mix'], 'index': r['index']}
         for k in diag_keys:
@@ -796,6 +840,4 @@ def run_pipeline_custom(url1, url2, offset1, end1, offset2, end2, timestamps_lis
         'first_mapped_t': first_mapped_t,
         'logs': logs
     }
-
-
 
