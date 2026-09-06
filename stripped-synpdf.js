@@ -2976,6 +2976,12 @@ function toggleTwoUpMode(on = !window.twoUpMode) {
     document.getElementById('notation-scroll')
         .classList.toggle('two-up', window.twoUpMode);
 
+    // Each mode rebuilds pages at its own viewport width. Do not carry the
+    // previous spread's fit multiplier into those freshly sized pages.
+    window.__cssScale = 1;
+    window.__deMScale = 1;
+    if (!window.twoUpMode) window.__didInitialOneUpFit = false;
+
     resizePdfSyn$$module$synpdf(); // this calls readPdfdoc -> rebuild shells -> render visible
 
     if (window.twoUpMode && typeof resizePageFitToHeight === 'function') {

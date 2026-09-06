@@ -896,12 +896,10 @@ async function loadRecording(recordingFullData) {
     let targetDiv = document.getElementById('composer-piece-name');
     targetDiv.replaceChildren($('<h3></h3>').text(newTitle)[0]);
 
-    // Show the piece name in the header in place of the site name
-    const headerTitle = document.querySelector('#monkeywrench-logo-text h2');
-    if (headerTitle) {
-        headerTitle.textContent = newTitle;
-        headerTitle.title = newTitle;
-    }
+    // Mobile header shows the piece name; desktop keeps the site name
+    // and shows the piece title in the sidebar instead.
+    window.__recordingTitle = newTitle;
+    updateHeaderTitle();
 
     // Track History
     if (typeof addToHistory === 'function') {
@@ -1583,8 +1581,9 @@ function resizePageFitToHeight() {
     const first = scroller.querySelector('canvas');
     if (!first || viewportH <= 0 || viewportW <= 0) return;
 
-    const pageW = first.clientWidth || 1;
-    const pageH = first.clientHeight || 1;
+    // Match the fractional CSS dimensions that scaleCanvasElements multiplies.
+    const pageW = parseFloat(first.style.width) || first.getBoundingClientRect().width || 1;
+    const pageH = parseFloat(first.style.height) || first.getBoundingClientRect().height || 1;
 
     // Column gap between the two columns (from CSS)
     const styles = getComputedStyle(scroller);
@@ -1596,8 +1595,9 @@ function resizePageFitToHeight() {
     const heightFit = viewportH / pageH;
 
     // In 2-up we must also fit the whole spread width (two pages + the column gap)
-    const spreadW = window.twoUpMode ? (pageW * 2 + colGap) : pageW;
-    const widthFit = viewportW / spreadW;
+    const widthFit = window.twoUpMode
+        ? (viewportW - colGap) / (pageW * 2)
+        : viewportW / pageW;
 
     // In 2-up pick the tighter scale; in 1-up the widthFit equals the single page width, so min() is also safe
     let scale = Math.min(heightFit, widthFit);
@@ -1620,6 +1620,8 @@ function resizePageFitToWidth() {
     // On mobile, subtract a small safety buffer to prevent horizontal scrolling due to rounding/safe-areas
     if (window.innerWidth < 900) {
         viewportW -= 4;
+    } else {
+        viewportW -= 1; // Leave room for fractional browser layout rounding.
     }
     const first = scroller.querySelector('canvas');
     if (!first) return;
@@ -1630,8 +1632,13 @@ function resizePageFitToWidth() {
         parseFloat(styles.columnGap) ||
         parseFloat(styles.getPropertyValue('--page-gap')) || 0;
 
-    const contentW = window.twoUpMode ? (first.clientWidth * 2 + colGap) : first.clientWidth;
-    const scaleAmount = Math.max(0.1, Math.min(4.0, viewportW / contentW)) * 100;
+    // clientWidth rounds to whole pixels, so it can report a fit while the
+    // actual canvas is still wider. Scale from the same CSS width we modify.
+    const pageW = parseFloat(first.style.width) || first.getBoundingClientRect().width;
+    if (pageW <= 0 || viewportW <= 0) return;
+    const contentW = window.twoUpMode ? pageW * 2 : pageW;
+    const availableW = window.twoUpMode ? viewportW - colGap : viewportW;
+    const scaleAmount = Math.max(0.1, Math.min(4.0, availableW / contentW)) * 100;
 
     resizeDematenAndCanvas(scaleAmount);
 
