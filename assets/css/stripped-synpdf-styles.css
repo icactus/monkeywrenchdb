@@ -915,11 +915,12 @@ sidecontentbar {
         padding: 1em;
     }
 
-    /* Keep the overlay player from sprawling across the score */
+    /* Keep the overlay player from sprawling across the score.
+       200px floor per YouTube embed minimums. */
     #vid,
     #vidyub {
         width: 240px;
-        height: 150px;
+        height: 200px;
     }
 }
 
@@ -929,11 +930,12 @@ sidecontentbar {
         grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
     }
 
-    /* Keep the overlay player from sprawling across the score */
+    /* Keep the overlay player from sprawling across the score.
+       200px floor per YouTube embed minimums. */
     #vid,
     #vidyub {
         width: 240px;
-        height: 150px;
+        height: 200px;
     }
 }
 
