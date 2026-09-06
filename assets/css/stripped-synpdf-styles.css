@@ -915,26 +915,29 @@ sidecontentbar {
         padding: 1em;
     }
 
-    /* Keep the overlay player from sprawling across the score.
-       200px floor per YouTube embed minimums. */
+    /* Match the 260px sidebar; 200px floor per YouTube embed minimums. */
     #vid,
     #vidyub {
-        width: 240px;
+        width: 260px;
         height: 200px;
     }
 }
 
 @media screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
-    /* Portrait keeps the bottom-sheet sidebar; just slim the homepage grid */
+    /* Tablet portrait uses the desktop sidebar (bottom sheet is phones only) */
+    sidecontentbar {
+        width: 260px;
+        padding: 1em;
+    }
+
     .starter-browser {
         grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
     }
 
-    /* Keep the overlay player from sprawling across the score.
-       200px floor per YouTube embed minimums. */
+    /* Player matches the 260px sidebar; 200px floor per YouTube minimums. */
     #vid,
     #vidyub {
-        width: 240px;
+        width: 260px;
         height: 200px;
     }
 }
@@ -1252,7 +1255,7 @@ select {
 }
 
 /* Any PORTRAIT device: Use bottom sheet layout */
-@media screen and (orientation: portrait) {
+@media screen and (orientation: portrait) and (max-width: 767px) {
     section2 {
         flex-direction: column;
         margin-top: 0px;
@@ -1295,7 +1298,7 @@ select {
     }
 }
 
-@media screen and (orientation:portrait) {
+@media screen and (orientation:portrait) and (max-width: 767px) {
     /* Additional mobile-specific styles (sidecontentbar handled in 1024px portrait breakpoint) */
 
     /* Share and speed live in the bottom toolbar; keep them out of the drawer */

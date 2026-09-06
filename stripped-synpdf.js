@@ -587,7 +587,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                         font-size: 6px;
                     }
                 }
-                @media (orientation: portrait) {
+                @media (max-width: 767px) and (orientation: portrait) {
                     #control-buttons-row #more-tools-btn-mobile {
                         display: flex;
                     }
