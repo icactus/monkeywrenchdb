@@ -1652,8 +1652,7 @@ function setZoomControlsEnabled(enabled) {
     if (!row) return;
     const selectors = [
         'button[onclick^="resizeDematenAndCanvas("]',
-        'button[onclick="resizePageFitToWidth()"]',
-        'button[onclick="resizePageFitToHeight()"]'
+        'button[onclick="resizePageFitToWidth()"]'
     ];
     selectors.forEach(sel =>
         row.querySelectorAll(sel).forEach(btn => {

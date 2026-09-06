@@ -482,8 +482,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     height: 24px;
                     background: rgba(0,0,0,0.15);
                 }
-                #control-buttons-row .toolbar-speed,
-                #control-buttons-row .toolbar-speed-divider {
+                #control-buttons-row .toolbar-speed {
                     display: none;
                 }
                 #control-buttons-row .toolbar-speed {
@@ -491,21 +490,28 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     gap: 2px;
                 }
                 #control-buttons-row .toolbar-speed button {
-                    background: transparent;
+                    background: rgba(91,162,168,0.16);
                     border: none;
                     cursor: pointer;
-                    width: 28px;
-                    height: 32px;
+                    width: 36px;
+                    height: 36px;
                     border-radius: 50%;
-                    font-size: 16px;
+                    font-size: 18px;
+                    font-weight: 700;
                     line-height: 1;
-                    color: #333;
+                    color: #2c5c61;
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    transition: background 0.15s ease, transform 0.1s ease;
+                    touch-action: manipulation;
                 }
                 #control-buttons-row .toolbar-speed button:hover {
-                    background: rgba(0,0,0,0.08);
+                    background: rgba(91,162,168,0.3);
+                }
+                #control-buttons-row .toolbar-speed button:active {
+                    background: rgba(91,162,168,0.4);
+                    transform: scale(0.92);
                 }
                 #control-buttons-row .toolbar-speed-stack {
                     display: flex;
@@ -529,18 +535,21 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     color: #333;
                 }
                 /* Mobile: keep only fullscreen / fit-width / 2-up, then speed,
-                   then play / fav / share. Zoom + fit-height are pinch-redundant. */
+                   then play / fav / share. Zoom is pinch-redundant, so the zoom
+                   buttons are desktop-only. Dividers off, spacing on. */
                 @media screen and (max-width: 767px), screen and (max-height: 500px) and (orientation: landscape) {
-                    #control-buttons-row .toolbar-fit-height,
+                    #control-buttons-row {
+                        gap: 6px;
+                    }
+                    #control-buttons-row .toolbar-divider {
+                        display: none !important;
+                    }
                     #control-buttons-row .toolbar-zoom-out,
                     #control-buttons-row .toolbar-zoom-in {
                         display: none !important;
                     }
                     #control-buttons-row .toolbar-speed {
                         display: flex;
-                    }
-                    #control-buttons-row .toolbar-speed-divider {
-                        display: block;
                     }
                 }
                 /* Toggle Switch Styles */
@@ -553,8 +562,8 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 @media (max-width: 600px) {
                     #control-buttons-row {
                         max-width: calc(100vw - 20px);
-                        padding: 6px 10px;
-                        gap: 0px;
+                        padding: 6px 8px;
+                        gap: 2px;
                         border-radius: 30px;
                     }
                     #control-buttons-row .toolbar-btn {
@@ -565,7 +574,12 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                         height: 18px;
                     }
                     #control-buttons-row .toolbar-speed button {
-                        width: 24px;
+                        width: 30px;
+                        height: 30px;
+                        font-size: 16px;
+                    }
+                    #control-buttons-row .toolbar-speed-label {
+                        font-size: 6px;
                     }
                 }
                 @media (orientation: portrait) {
@@ -581,9 +595,6 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 <div class="toolbar-divider"></div>
                 <button class="toolbar-btn" onclick="resizePageFitToWidth()" title="Fit Width">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="8 8 4 12 8 16"/><polyline points="16 8 20 12 16 16"/><line x1="4" y1="4" x2="4" y2="20"/><line x1="20" y1="4" x2="20" y2="20"/></svg>
-                </button>
-                <button class="toolbar-btn toolbar-fit-height" onclick="resizePageFitToHeight()" title="Fit Height">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="12" y1="4" x2="12" y2="20"/><polyline points="8 8 12 4 16 8"/><polyline points="8 16 12 20 16 16"/><line x1="4" y1="4" x2="20" y2="4"/><line x1="4" y1="20" x2="20" y2="20"/></svg>
                 </button>
                 <button class="toolbar-btn" onclick="toggleTwoUpMode()" id="two-up-button" title="Two-Page View">
                     <svg viewBox="0 0 24 24" style="fill:none; stroke:#555; stroke-width:2px; stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="8" height="16" rx="1" /><path d="M4 8h4 M4 12h4 M4 16h4" /><rect x="14" y="4" width="8" height="16" rx="1" /><path d="M16 8h4 M16 12h4 M16 16h4" /></svg>
@@ -601,7 +612,6 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     <span class="toolbar-speed-stack"><span class="toolbar-speed-label">Playback rate</span><span id="toolbar-speed-val">1.00x</span></span>
                     <button onclick="incrementSpeed()" aria-label="Speed up">+</button>
                 </div>
-                <div class="toolbar-divider toolbar-speed-divider"></div>
                 <button class="toolbar-btn" id="play-pause-button" title="Play/Pause">
                     <svg id="play-icon" viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                     <svg id="pause-icon" style="display:none" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
