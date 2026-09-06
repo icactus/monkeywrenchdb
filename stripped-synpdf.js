@@ -1646,6 +1646,11 @@ function readPdfdoc$$module$synpdf() {
     rendering$$module$synpdf = 1;
 
     // Reset caches and observer
+    renderingQueue.clear();
+    Object.values(activeRenderTasks).forEach(task => task.cancel());
+    activeRenderTasks = {};
+    renderingStatus = {};
+    renderedCanvasesQueue.clear();
     pageCache = {}; pageView = {};
     if (observer) observer.disconnect();
     initIntersectionObserver();
@@ -1685,7 +1690,10 @@ async function buildAllPageShells$$module$synpdf() {
         cnvL.classList.remove('rendered');
         cnvL = compPage$$module$synpdf(cnvL, p, cumulativeHeight); // same top for both pages in a spread
         if (observer) observer.observe(cnvL);
-        if (p === 1) renderPageIfNotRendered(1);
+        if (p === 1) {
+            pageRenderPriorities.set(1, 0);
+            renderPageIfNotRendered(1);
+        }
 
         let rowMaxH = cssHL;
         let step = 1;
@@ -1909,6 +1917,9 @@ function updateMaxRenderedPages() {
 
 updateMaxRenderedPages(); // safe now that window.twoUpMode is set
 let visiblePages = new Set();
+let pageRenderPriorities = new Map();
+let previousRenderScrollTop = 0;
+let renderScrollDirection = 1;
 var renderingStatus = {}; // Tracks the rendering status of each page
 let activeRenderTasks = {}; // Tracks active PDF RenderTasks for cancellation
 
@@ -1922,29 +1933,33 @@ class RenderingQueue {
         this.concurrency = concurrency;
     }
 
-    enqueue(task) {
-        this.queue.push(task);
-        this.runNext();
+    enqueue(task, priority, onDiscard) {
+        this.queue.push({ task, priority, onDiscard });
+        // Batch an observer update so visible pages precede speculative work.
+        queueMicrotask(() => this.runNext());
     }
 
     runNext() {
-        if (this.running >= this.concurrency || this.queue.length === 0) {
-            return;
-        }
-
-        const task = this.queue.shift();
-        this.running++;
-        task().then(() => {
-            this.running--;
-            this.runNext();
-        }).catch(error => {
-            console.error('Rendering task failed:', error);
-            this.running--;
-            this.runNext();
+        this.queue = this.queue.filter(job => {
+            if (Number.isFinite(job.priority())) return true;
+            job.onDiscard();
+            return false;
         });
+        this.queue.sort((a, b) => a.priority() - b.priority());
+        while (this.running < this.concurrency && this.queue.length) {
+            const job = this.queue.shift();
+            this.running++;
+            Promise.resolve().then(job.task).catch(error => {
+                console.error('Rendering task failed:', error);
+            }).finally(() => {
+                this.running--;
+                this.runNext();
+            });
+        }
     }
 
     clear() {
+        this.queue.forEach(job => job.onDiscard());
         this.queue = [];
     }
 }
@@ -1954,38 +1969,59 @@ const renderingQueue = new RenderingQueue(2); // Example: 2 concurrent tasks
 
 // Initialize IntersectionObserver
 function initIntersectionObserver() {
-    const vMargin = Math.round(window.innerHeight * (twoUpMode ? 0.8 : 0.5));
+    if (observer) observer.disconnect();
+    visiblePages.clear();
+    pageRenderPriorities.clear();
+    previousRenderScrollTop = document.getElementById('notation-scroll')?.scrollTop || 0;
+    renderScrollDirection = 1;
     const options = {
         root: document.getElementById('notation-scroll'),
-        rootMargin: `${vMargin}px 0px`, // preload well before entering viewport
-        threshold: 0.01
+        // Track actual visibility; neighboring pages are scheduled separately.
+        rootMargin: '0px',
+        threshold: 0
     };
     observer = new IntersectionObserver(handleIntersect, options);
 }
 
 // Callback for IntersectionObserver
 function handleIntersect(entries) {
+    const scroller = document.getElementById('notation-scroll');
+    const scrollTop = scroller?.scrollTop || 0;
+    if (scrollTop !== previousRenderScrollTop) {
+        renderScrollDirection = scrollTop > previousRenderScrollTop ? 1 : -1;
+        previousRenderScrollTop = scrollTop;
+    }
     entries.forEach(entry => {
         const canvas = entry.target;
+        if (document.getElementById(canvas.id) !== canvas) return;
         const pageNumber = parseInt(canvas.id.replace('canvas', ''), 10);
 
         if (entry.isIntersecting) {
             visiblePages.add(pageNumber);
-            renderPageIfNotRendered(pageNumber);
-            const max = pdfDoc$$module$synpdf.numPages || nPage$$module$synpdf || 1;
-            // preload ±2 vertically
-            [pageNumber - 2, pageNumber - 1, pageNumber + 1, pageNumber + 2]
-                .filter(p => p >= 1 && p <= max)
-                .forEach(renderPageIfNotRendered);
-            // in 2-up, also preload the buddy page of the spread
-            if (twoUpMode) {
-                const buddy = (pageNumber % 2 === 1) ? pageNumber + 1 : pageNumber - 1;
-                if (buddy >= 1 && buddy <= max) renderPageIfNotRendered(buddy);
-            }
         } else {
             visiblePages.delete(pageNumber);
         }
     });
+
+    pageRenderPriorities.clear();
+    const max = pdfDoc$$module$synpdf.numPages || 0;
+    const spreadSize = window.twoUpMode ? 2 : 1;
+    const prioritize = (page, priority) => {
+        if (page < 1 || page > max) return;
+        pageRenderPriorities.set(page, Math.min(priority, pageRenderPriorities.get(page) ?? Infinity));
+    };
+    visiblePages.forEach(page => {
+        prioritize(page, 0);
+        const spreadStart = spreadSize === 2 ? page - ((page - 1) % 2) : page;
+        for (let side = 0; side < spreadSize; side++) {
+            prioritize(spreadStart + side, 1); // include the other half of a spread
+            prioritize(spreadStart + side + renderScrollDirection * spreadSize, 2);
+            prioritize(spreadStart + side - renderScrollDirection * spreadSize, 3);
+        }
+    });
+    // Reprioritize existing jobs and remove pages left behind by a jump.
+    [...pageRenderPriorities.keys()].forEach(renderPageIfNotRendered);
+    renderingQueue.runNext();
 }
 
 // Function to render a page if it hasn't been rendered yet
@@ -1995,16 +2031,35 @@ function renderPageIfNotRendered(pageIndex) {
     if (!canvas) return;
 
     // Already rendering or done
-    if (renderingStatus[pageIndex] === 'rendering' || canvas.classList.contains('rendered')) return;
-    renderingStatus[pageIndex] = 'rendering';
+    if (canvas.classList.contains('rendered')) {
+        // Refresh recency when revisiting a cached page.
+        renderedCanvasesQueue.delete(canvasId);
+        renderedCanvasesQueue.add(canvasId);
+        return;
+    }
+    if (renderingStatus[pageIndex] === 'rendering' || renderingStatus[pageIndex] === 'queued') return;
+    const pdf = pdfDoc$$module$synpdf;
+    const cache = pageCache;
+    const isCurrent = () => pdfDoc$$module$synpdf === pdf &&
+        document.getElementById(canvasId) === canvas;
+    const priority = () => isCurrent() ? (pageRenderPriorities.get(pageIndex) ?? Infinity) : Infinity;
+    const discard = () => {
+        if (isCurrent()) renderingStatus[pageIndex] = 'idle';
+    };
+    renderingStatus[pageIndex] = 'queued';
 
     // Enqueue the actual raster work (keeps concurrency under control)
     renderingQueue.enqueue(() => {
-        const pagePromise = pageCache[pageIndex]
-            ? Promise.resolve(pageCache[pageIndex])
-            : pdfDoc$$module$synpdf.getPage(pageIndex).then(p => { pageCache[pageIndex] = p; return p; });
+        if (!Number.isFinite(priority())) { discard(); return; }
+        renderingStatus[pageIndex] = 'rendering';
+        const pagePromise = cache[pageIndex]
+            ? Promise.resolve(cache[pageIndex])
+            : pdf.getPage(pageIndex).then(p => { cache[pageIndex] = p; return p; });
+        let renderTask;
 
         return pagePromise.then(function (page) {
+            // A scroll or score switch may have happened while getPage awaited data.
+            if (!Number.isFinite(priority())) return false;
             const devicePixelRatio = window.devicePixelRatio || 1;
             const pv = pageView[pageIndex] || { w: page._pageInfo.view[2], h: page._pageInfo.view[3], rotation: page.rotate || 0 };
             const baseScale = deMetriek$$module$synpdf[0] / pv.w; // logical page width / natural width
@@ -2012,10 +2067,9 @@ function renderPageIfNotRendered(pageIndex) {
             const viewport = page.getViewport({ scale: enhancedScale, rotation: pv.rotation || 0 });
 
             const ctx = canvas.getContext('2d');
-            ctx.imageSmoothingEnabled = !phoneCheck;
-
             canvas.width = Math.floor(viewport.width);
             canvas.height = Math.floor(viewport.height);
+            ctx.imageSmoothingEnabled = !phoneCheck;
             // CSS size is already correct from shell build
 
             // Cancel any pending render task for this page
@@ -2025,25 +2079,29 @@ function renderPageIfNotRendered(pageIndex) {
             }
 
             // Start new render task
-            const renderTask = page.render({ canvasContext: ctx, viewport: viewport });
+            renderTask = page.render({ canvasContext: ctx, viewport: viewport });
             activeRenderTasks[pageIndex] = renderTask;
 
-            return renderTask.promise;
-        }).then(() => {
-            delete activeRenderTasks[pageIndex];
+            return renderTask.promise.then(() => true);
+        }).then(rendered => {
+            if (!isCurrent()) { clearCanvas(canvas); return; }
+            if (!rendered) { discard(); return; }
             canvas.classList.add('rendered');
             renderingStatus[pageIndex] = 'rendered';
             manageRenderedCanvases(canvasId);
         }).catch(err => {
-            delete activeRenderTasks[pageIndex];
+            discard();
             if (err.name === 'RenderingCancelledException') {
                 // Ignore cancellation errors
                 return;
             }
             console.error(`[PDF] Render failed for page ${pageIndex}: `, err);
-            renderingStatus[pageIndex] = 'idle';
+        }).finally(() => {
+            if (renderTask && activeRenderTasks[pageIndex] === renderTask) {
+                delete activeRenderTasks[pageIndex];
+            }
         });
-    });
+    }, priority, discard);
 }
 
 // Function to manage the rendered canvases queue
@@ -2060,7 +2118,7 @@ function manageRenderedCanvases(canvasId) {
     renderedCanvasesQueue.add(canvasId);
 
     // If the number of rendered pages exceeds the maximum, remove the oldest
-    if (renderedCanvasesQueue.size > MAX_RENDERED_PAGES) {
+    while (renderedCanvasesQueue.size > MAX_RENDERED_PAGES) {
         let toDrop = null;
         for (const id of renderedCanvasesQueue) {
             const p = parseInt(id.replace('canvas', ''), 10);
@@ -2070,13 +2128,8 @@ function manageRenderedCanvases(canvasId) {
             }
         }
 
-        if (!toDrop) {
-            // All loaded pages are marked visible
-            // If the count is much higher than max, trim down
-            if (renderedCanvasesQueue.size > MAX_RENDERED_PAGES * 1.5) {
-                toDrop = renderedCanvasesQueue.values().next().value; // drop oldest
-            }
-        }
+        // Never erase a page the reader can currently see, even when zoomed out.
+        if (!toDrop) break;
 
         if (toDrop) {
             renderedCanvasesQueue.delete(toDrop);
@@ -2088,8 +2141,9 @@ function manageRenderedCanvases(canvasId) {
 
 // Function to clear a canvas
 function clearCanvas(canvas) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // CSS dimensions preserve layout while the large pixel buffer is released.
+    canvas.width = 1;
+    canvas.height = 1;
     canvas.classList.remove('rendered'); // Mark the canvas as not rendered
 }
 
@@ -2731,6 +2785,7 @@ let vpTimer;
 function reflowForViewportChange() {
     // Re-evaluate phone heuristics (affects scale cap)
     phoneCheck = isPhone(); // was only set on DOM ready
+    updateMaxRenderedPages();
     // Force fresh high-res draws at the new CSS width/DPR
     renderingStatus = {};
     renderedCanvasesQueue.clear();
@@ -2833,6 +2888,7 @@ $(document).ready(function () {
     initPreload$$module$synpdf()
     phoneCheck = isPhone();
     window.twoUpMode = false;
+    updateMaxRenderedPages();
     const sc = document.getElementById('notation-scroll');
     if (sc) sc.classList.remove('two-up');
     $("body").keydown(keyDown$$module$synpdf);
