@@ -140,6 +140,23 @@ if ($hasInitialRecordingTarget) {
         } catch (e) { }
     </script>
     <style>
+        /* Keep the homepage player's controls visible and interactive when idle. */
+        #notation > #control-buttons-row.toolbar-hidden {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Give the homepage's two-page player a separate controls row. The
+           scroller's remaining height is what fit-to-height uses for the PDF. */
+        #notation:has(> #notation-scroll.two-up) > #control-buttons-row {
+            position: static;
+            transform: none !important; /* Override JS floating-toolbar centering. */
+            align-self: center;
+            flex: 0 0 auto;
+            order: 1;
+            margin: 8px auto 20px;
+        }
+
         body.seo-landing-entry:not(.recording-loaded) #notation-scroll > .tabs,
         body.seo-landing-entry:not(.recording-loaded) #notation-scroll > .tab-contents,
         body.seo-landing-entry:not(.recording-loaded) #starter-browser {
