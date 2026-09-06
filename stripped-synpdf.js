@@ -445,6 +445,11 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     align-items: center;
                     z-index: 100; /* Standardized: Controls (was 10000) */
                     border: 1px solid rgba(0,0,0,0.08);
+                    transition: opacity 0.25s ease;
+                }
+                #control-buttons-row.toolbar-hidden {
+                    opacity: 0;
+                    pointer-events: none;
                 }
                 #control-buttons-row .toolbar-btn {
                     background: transparent;
@@ -483,14 +488,12 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     background: rgba(0,0,0,0.15);
                 }
                 #control-buttons-row .toolbar-speed {
-                    display: none;
-                }
-                #control-buttons-row .toolbar-speed {
+                    display: flex;
                     align-items: center;
                     gap: 2px;
                 }
                 #control-buttons-row .toolbar-speed button {
-                    background: rgba(91,162,168,0.16);
+                    background: rgba(0,0,0,0.06);
                     border: none;
                     cursor: pointer;
                     width: 36px;
@@ -499,7 +502,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     font-size: 18px;
                     font-weight: 700;
                     line-height: 1;
-                    color: #2c5c61;
+                    color: #333;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -507,10 +510,10 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     touch-action: manipulation;
                 }
                 #control-buttons-row .toolbar-speed button:hover {
-                    background: rgba(91,162,168,0.3);
+                    background: rgba(0,0,0,0.12);
                 }
                 #control-buttons-row .toolbar-speed button:active {
-                    background: rgba(91,162,168,0.4);
+                    background: rgba(0,0,0,0.18);
                     transform: scale(0.92);
                 }
                 #control-buttons-row .toolbar-speed-stack {
@@ -547,9 +550,6 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     #control-buttons-row .toolbar-zoom-out,
                     #control-buttons-row .toolbar-zoom-in {
                         display: none !important;
-                    }
-                    #control-buttons-row .toolbar-speed {
-                        display: flex;
                     }
                 }
                 /* Toggle Switch Styles */
@@ -819,6 +819,40 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     repositionToolbar();
     $(document).on('fullscreenchange webkitfullscreenchange', repositionToolbar);
     $(window).on('resize', repositionToolbar);
+
+    // Auto-hide the floating toolbar after a few seconds idle so it never
+    // covers the bottom measures; any activity brings it straight back.
+    if (!window.__toolbarAutohideInit) {
+        window.__toolbarAutohideInit = true;
+        const TOOLBAR_IDLE_MS = 3000;
+        let toolbarIdleTimer = null;
+        const getToolbar = () => document.getElementById('control-buttons-row');
+        function scheduleToolbarHide() {
+            clearTimeout(toolbarIdleTimer);
+            toolbarIdleTimer = setTimeout(() => {
+                const bar = getToolbar();
+                if (!bar) return;
+                // Stay visible while the pointer rests on the toolbar itself.
+                if (bar.matches(':hover')) {
+                    scheduleToolbarHide();
+                } else {
+                    bar.classList.add('toolbar-hidden');
+                }
+            }, TOOLBAR_IDLE_MS);
+        }
+        function wakeToolbar() {
+            const bar = getToolbar();
+            if (bar) bar.classList.remove('toolbar-hidden');
+            scheduleToolbarHide();
+        }
+        const notationEl = document.getElementById('notation');
+        if (notationEl) {
+            ['pointermove', 'pointerdown', 'touchstart', 'wheel', 'keydown'].forEach(evt =>
+                notationEl.addEventListener(evt, wakeToolbar, { passive: true })
+            );
+        }
+        scheduleToolbarHide();
+    }
 
     initIntersectionObserver(); // Initialize observer for page rendering 
     setupPlayPauseButton();
