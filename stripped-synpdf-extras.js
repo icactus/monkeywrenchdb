@@ -1705,15 +1705,14 @@ function resizePageFitToWidth() {
     const availableW = window.twoUpMode ? viewportW - colGap : viewportW;
     const scaleAmount = Math.max(0.1, Math.min(4.0, availableW / contentW)) * 100;
 
-    resizeDematenAndCanvas(scaleAmount);
+    resizeDematenAndCanvas(scaleAmount, true);
 
-    // After fit-to-width, scroll to the currently active measure
-    // Use double rAF to ensure layout has settled after resize
+    // Refresh the highlight after layout settles, keeping the PDF anchor's
+    // corrected scroll position even when playback is active.
     requestAnimationFrame(function () {
         requestAnimationFrame(function () {
             if (window.msc_wz$$module$synpdf) {
-                const pausedState = getSynpdfPausedState();
-                refreshCurrentMeasureHighlightAfterResize(pausedState.isPaused);
+                refreshCurrentMeasureHighlightAfterResize(true);
             }
         });
     });
