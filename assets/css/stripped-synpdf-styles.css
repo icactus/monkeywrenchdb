@@ -790,6 +790,25 @@ a {
     margin: 0;
 }
 
+/* When a piece is loaded the header shows the piece name, not the site name */
+body.recording-loaded #logotext-line2 {
+    display: none;
+}
+
+body.recording-loaded #monkeywrench-logo-text h2 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100vw - 180px);
+}
+
+@media screen and (max-width: 767px) {
+    body.recording-loaded #monkeywrench-logo-text h2 {
+        font-size: 1.1em;
+        max-width: calc(100vw - 150px);
+    }
+}
+
 #monkeywrench-logo-text,
 .nav-menu>a:link,
 #monkeywrench-logo-text,
@@ -1249,6 +1268,11 @@ select {
 
 @media screen and (orientation:portrait) {
     /* Additional mobile-specific styles (sidecontentbar handled in 1024px portrait breakpoint) */
+
+    /* Share lives in the bottom toolbar; keep it out of the drawer */
+    sidecontentbar div.mobile-only {
+        display: none !important;
+    }
 
     .sidecontenbar-min-height {
         min-height: 25vh;

@@ -896,6 +896,13 @@ async function loadRecording(recordingFullData) {
     let targetDiv = document.getElementById('composer-piece-name');
     targetDiv.replaceChildren($('<h3></h3>').text(newTitle)[0]);
 
+    // Show the piece name in the header in place of the site name
+    const headerTitle = document.querySelector('#monkeywrench-logo-text h2');
+    if (headerTitle) {
+        headerTitle.textContent = newTitle;
+        headerTitle.title = newTitle;
+    }
+
     // Track History
     if (typeof addToHistory === 'function') {
         addToHistory(recordingFullData.piece_id, recordingFullData.metric_arr_id, recordingFullData.recording_id);
@@ -1219,6 +1226,10 @@ let playbackSpeed = 1;
 
 function updateSpeedField() {
     speedField.value = (playbackSpeed.toFixed(2) + 'x');
+    const toolbarSpeedVal = document.getElementById('toolbar-speed-val');
+    if (toolbarSpeedVal) {
+        toolbarSpeedVal.textContent = (playbackSpeed.toFixed(2) + 'x');
+    }
 }
 
 //set the playback speed to 1 by default

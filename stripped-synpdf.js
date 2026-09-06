@@ -482,6 +482,53 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     height: 24px;
                     background: rgba(0,0,0,0.15);
                 }
+                #control-buttons-row .toolbar-speed,
+                #control-buttons-row .toolbar-speed-divider {
+                    display: none;
+                }
+                #control-buttons-row .toolbar-speed {
+                    align-items: center;
+                    gap: 2px;
+                }
+                #control-buttons-row .toolbar-speed button {
+                    background: transparent;
+                    border: none;
+                    cursor: pointer;
+                    width: 28px;
+                    height: 32px;
+                    border-radius: 50%;
+                    font-size: 16px;
+                    line-height: 1;
+                    color: #333;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                #control-buttons-row .toolbar-speed button:hover {
+                    background: rgba(0,0,0,0.08);
+                }
+                #control-buttons-row #toolbar-speed-val {
+                    font-size: 12px;
+                    font-weight: 600;
+                    min-width: 44px;
+                    text-align: center;
+                    color: #333;
+                }
+                /* Mobile: keep only fullscreen / fit-width / 2-up, then speed,
+                   then play / fav / share. Zoom + fit-height are pinch-redundant. */
+                @media screen and (max-width: 767px), screen and (max-height: 500px) and (orientation: landscape) {
+                    #control-buttons-row .toolbar-fit-height,
+                    #control-buttons-row .toolbar-zoom-out,
+                    #control-buttons-row .toolbar-zoom-in {
+                        display: none !important;
+                    }
+                    #control-buttons-row .toolbar-speed {
+                        display: flex;
+                    }
+                    #control-buttons-row .toolbar-speed-divider {
+                        display: block;
+                    }
+                }
                 /* Toggle Switch Styles */
                 .toggle-switch input:checked + .toggle-slider {
                     background: #4CAF50;
@@ -518,13 +565,26 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 <button class="toolbar-btn" onclick="resizePageFitToWidth()" title="Fit Width">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="8 8 4 12 8 16"/><polyline points="16 8 20 12 16 16"/><line x1="4" y1="4" x2="4" y2="20"/><line x1="20" y1="4" x2="20" y2="20"/></svg>
                 </button>
-                <button class="toolbar-btn" onclick="resizePageFitToHeight()" title="Fit Height">
+                <button class="toolbar-btn toolbar-fit-height" onclick="resizePageFitToHeight()" title="Fit Height">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="12" y1="4" x2="12" y2="20"/><polyline points="8 8 12 4 16 8"/><polyline points="8 16 12 20 16 16"/><line x1="4" y1="4" x2="20" y2="4"/><line x1="4" y1="20" x2="20" y2="20"/></svg>
                 </button>
                 <button class="toolbar-btn" onclick="toggleTwoUpMode()" id="two-up-button" title="Two-Page View">
-                    <svg viewBox="0 0 24 24" style="fill:none; stroke:#555; stroke-width:2px; stroke-linecap:round; stroke-linejoin:round"><rect x="2" y="4" width="8" height="16" rx="1" /><path d="M4 8h4 M4 12h4 M4 16h4" /><rect x="14" y="4" width="8" height="16" rx="1" /><path d="M16 8h4 M16 12h4 M16 16h4" /></svg>
+                    <svg viewBox="0 0 24 24" style="fill:none; stroke:#555; stroke-width:2px; stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="8" height="16" rx="1" /><path d="M4 8h4 M4 12h4 M4 16h4" /><rect x="14" y="4" width="8" height="16" rx="1" /><path d="M16 8h4 M16 12h4 M16 16h4" /></svg>
                 </button>
                 <div class="toolbar-divider"></div>
+                <button class="toolbar-btn toolbar-zoom-out" onclick="resizeDematenAndCanvas(90)" title="Zoom Out">
+                    <svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7" fill="none" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke-width="2"/><line x1="7" y1="10" x2="13" y2="10" stroke-width="2"/></svg>
+                </button>
+                <button class="toolbar-btn toolbar-zoom-in" onclick="resizeDematenAndCanvas(110)" title="Zoom In">
+                    <svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7" fill="none" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke-width="2"/><line x1="7" y1="10" x2="13" y2="10" stroke-width="2"/><line x1="10" y1="7" x2="10" y2="13" stroke-width="2"/></svg>
+                </button>
+                <div class="toolbar-divider"></div>
+                <div class="toolbar-speed" title="Playback speed">
+                    <button onclick="decrementSpeed()" aria-label="Slow down">−</button>
+                    <span id="toolbar-speed-val">1.00x</span>
+                    <button onclick="incrementSpeed()" aria-label="Speed up">+</button>
+                </div>
+                <div class="toolbar-divider toolbar-speed-divider"></div>
                 <button class="toolbar-btn" onclick="resizeDematenAndCanvas(90)" title="Zoom Out">
                     <svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7" fill="none" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke-width="2"/><line x1="7" y1="10" x2="13" y2="10" stroke-width="2"/></svg>
                 </button>
