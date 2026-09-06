@@ -1439,13 +1439,56 @@ function getSynpdfPausedState() {
     };
 }
 
+// Remember a point on the PDF itself, so resizing earlier pages and centering
+// narrower pages cannot move the passage currently in the middle of the view.
+function capturePdfZoomAnchor(scroller) {
+    const viewport = scroller.getBoundingClientRect();
+    const centerX = viewport.left + scroller.clientLeft + scroller.clientWidth / 2;
+    const centerY = viewport.top + scroller.clientTop + scroller.clientHeight / 2;
+    let anchor = null;
+    let nearestDistance = Infinity;
+    for (const page of scroller.querySelectorAll('canvas[id^="canvas"]')) {
+        const rect = page.getBoundingClientRect();
+        if (!rect.width || !rect.height) continue;
+        const x = Math.max(rect.left, Math.min(centerX, rect.right));
+        const y = Math.max(rect.top, Math.min(centerY, rect.bottom));
+        const distance = (x - centerX) ** 2 + (y - centerY) ** 2;
+        if (distance >= nearestDistance) continue;
+        nearestDistance = distance;
+        anchor = {
+            page,
+            x: (x - rect.left) / rect.width,
+            y: (y - rect.top) / rect.height,
+            viewportX: x - viewport.left - scroller.clientLeft,
+            viewportY: y - viewport.top - scroller.clientTop
+        };
+    }
+    return anchor;
+}
+
+function restorePdfZoomAnchor(scroller, anchor) {
+    const viewport = scroller.getBoundingClientRect();
+    const rect = anchor.page.getBoundingClientRect();
+    const left = scroller.scrollLeft + rect.left + anchor.x * rect.width
+        - viewport.left - scroller.clientLeft - anchor.viewportX;
+    const top = scroller.scrollTop + rect.top + anchor.y * rect.height
+        - viewport.top - scroller.clientTop - anchor.viewportY;
+    // Zoom and its scroll correction must happen together, without animation.
+    const behavior = scroller.style.scrollBehavior;
+    scroller.style.scrollBehavior = 'auto';
+    scroller.scrollLeft = left;
+    scroller.scrollTop = top;
+    scroller.style.scrollBehavior = behavior;
+}
+
 // RESIZE ALL CANVASES USING CSS
-function resizeDematenAndCanvas(scaleAmount) {
+function resizeDematenAndCanvas(scaleAmount, preserveViewport = false) {
     const sc = document.getElementById('notation-scroll');
     if (sc?.classList.contains('two-up') && window.__twoUpLockZoom && !window.__TwoUpAllowScaleOnce) {
         return; // ignore zoom in/out while 2-up
     }
     window.__TwoUpAllowScaleOnce = false;
+    const zoomAnchor = preserveViewport && sc ? capturePdfZoomAnchor(sc) : null;
 
     const k = (scaleAmount / 100);      // multiply factor this call
     window.__cssScale *= k;             // remember the cumulative canvas CSS scale
@@ -1470,7 +1513,8 @@ function resizeDematenAndCanvas(scaleAmount) {
         var newNotationDivRect = notationDiv.getBoundingClientRect();
         deMaten$$module$synpdf = scaleNestedArray(deMaten$$module$synpdf, scaleAmount);
 
-        refreshCurrentMeasureHighlightAfterResize(isPaused);
+        refreshCurrentMeasureHighlightAfterResize(isPaused || !!zoomAnchor);
+        if (zoomAnchor) restorePdfZoomAnchor(sc, zoomAnchor);
     }
 }
 

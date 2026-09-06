@@ -600,10 +600,10 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     <svg viewBox="0 0 24 24" style="fill:none; stroke:#555; stroke-width:2px; stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="8" height="16" rx="1" /><path d="M4 8h4 M4 12h4 M4 16h4" /><rect x="14" y="4" width="8" height="16" rx="1" /><path d="M16 8h4 M16 12h4 M16 16h4" /></svg>
                 </button>
                 <div class="toolbar-divider"></div>
-                <button class="toolbar-btn toolbar-zoom-out" onclick="resizeDematenAndCanvas(90)" title="Zoom Out">
+                <button class="toolbar-btn toolbar-zoom-out" onclick="resizeDematenAndCanvas(90, true)" title="Zoom Out">
                     <svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7" fill="none" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke-width="2"/><line x1="7" y1="10" x2="13" y2="10" stroke-width="2"/></svg>
                 </button>
-                <button class="toolbar-btn toolbar-zoom-in" onclick="resizeDematenAndCanvas(110)" title="Zoom In">
+                <button class="toolbar-btn toolbar-zoom-in" onclick="resizeDematenAndCanvas(110, true)" title="Zoom In">
                     <svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7" fill="none" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke-width="2"/><line x1="7" y1="10" x2="13" y2="10" stroke-width="2"/><line x1="10" y1="7" x2="10" y2="13" stroke-width="2"/></svg>
                 </button>
                 <div class="toolbar-divider"></div>
