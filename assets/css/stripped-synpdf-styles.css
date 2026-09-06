@@ -914,12 +914,26 @@ sidecontentbar {
         width: 260px;
         padding: 1em;
     }
+
+    /* Keep the overlay player from sprawling across the score */
+    #vid,
+    #vidyub {
+        width: 240px;
+        height: 150px;
+    }
 }
 
 @media screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
     /* Portrait keeps the bottom-sheet sidebar; just slim the homepage grid */
     .starter-browser {
         grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+    }
+
+    /* Keep the overlay player from sprawling across the score */
+    #vid,
+    #vidyub {
+        width: 240px;
+        height: 150px;
     }
 }
 
