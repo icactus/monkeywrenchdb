@@ -887,6 +887,27 @@ function capturePosthogPieceLoad(recordingFullData, pageTitle) {
     });
 }
 
+// Header title follows the viewport: piece name on mobile, site name on desktop.
+const headerTitleQuery = window.matchMedia('(max-width: 767px), (max-height: 500px) and (orientation: landscape)');
+const siteHeaderTitleEl = document.querySelector('#monkeywrench-logo-text h2');
+const siteHeaderTitle = siteHeaderTitleEl ? siteHeaderTitleEl.textContent : 'MONKEY WRENCH DATABASE';
+function updateHeaderTitle() {
+    const headerTitle = document.querySelector('#monkeywrench-logo-text h2');
+    if (!headerTitle) return;
+    if (headerTitleQuery.matches && window.__recordingTitle) {
+        headerTitle.textContent = window.__recordingTitle;
+        headerTitle.title = window.__recordingTitle;
+    } else {
+        headerTitle.textContent = siteHeaderTitle;
+        headerTitle.title = '';
+    }
+}
+if (typeof headerTitleQuery.addEventListener === 'function') {
+    headerTitleQuery.addEventListener('change', updateHeaderTitle);
+} else if (typeof headerTitleQuery.addListener === 'function') {
+    headerTitleQuery.addListener(updateHeaderTitle);
+}
+
 async function loadRecording(recordingFullData) {
     // Update the document title
     let newTitle = `${decodeHtmlEntities(recordingFullData.composer_last)} - ${decodeHtmlEntities(recordingFullData.piece_name)}`;
@@ -896,12 +917,10 @@ async function loadRecording(recordingFullData) {
     let targetDiv = document.getElementById('composer-piece-name');
     targetDiv.replaceChildren($('<h3></h3>').text(newTitle)[0]);
 
-    // Show the piece name in the header in place of the site name
-    const headerTitle = document.querySelector('#monkeywrench-logo-text h2');
-    if (headerTitle) {
-        headerTitle.textContent = newTitle;
-        headerTitle.title = newTitle;
-    }
+    // Mobile header shows the piece name; desktop keeps the site name
+    // and shows the piece title in the sidebar instead.
+    window.__recordingTitle = newTitle;
+    updateHeaderTitle();
 
     // Track History
     if (typeof addToHistory === 'function') {

@@ -790,22 +790,19 @@ a {
     margin: 0;
 }
 
-/* When a piece is loaded the header shows the piece name, not the site name */
-body.recording-loaded #logotext-line2 {
-    display: none;
-}
+/* Mobile: header shows the piece name instead of the site name.
+   Desktop keeps the site name up top and the piece title in the sidebar. */
+@media screen and (max-width: 767px), screen and (max-height: 500px) and (orientation: landscape) {
+    body.recording-loaded #logotext-line2 {
+        display: none;
+    }
 
-body.recording-loaded #monkeywrench-logo-text h2 {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: calc(100vw - 180px);
-}
-
-@media screen and (max-width: 767px) {
     body.recording-loaded #monkeywrench-logo-text h2 {
-        font-size: 1.1em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
         max-width: calc(100vw - 150px);
+        font-size: 1.1em;
     }
 }
 
@@ -1305,10 +1302,10 @@ select {
     #composer-toggle-wrapper {
         display: flex !important;
         flex-direction: row !important;
-        justify-content: space-between;
+        justify-content: flex-end;
         align-items: center;
         padding-top: 20px;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
         flex-wrap: nowrap !important;
         /* Prevent wrapping */
     }
@@ -1320,20 +1317,9 @@ select {
         white-space: nowrap;
     }
 
+    /* Title lives in the header on mobile; hide the sidebar copy */
     #composer-piece-name {
-        margin-bottom: 0;
-        flex: 1;
-        /* Take available space */
-        min-width: 0;
-        /* Allow text truncation */
-        padding-right: 10px;
-    }
-
-    #composer-piece-name h3 {
-        margin: 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        display: none !important;
     }
 
 
@@ -1686,20 +1672,9 @@ select {
 
 
 
+    /* Title lives in the header on mobile; hide the sidebar copy */
     #composer-piece-name {
-        display: block;
-        margin-bottom: 4px;
-        text-align: center;
-    }
-
-    #composer-piece-name h3 {
-        font-size: 11px;
-        margin: 0;
-        line-height: 1.2;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 184px;
+        display: none !important;
     }
 
     /* Ultra Compact Controls */
