@@ -1269,8 +1269,12 @@ select {
 @media screen and (orientation:portrait) {
     /* Additional mobile-specific styles (sidecontentbar handled in 1024px portrait breakpoint) */
 
-    /* Share lives in the bottom toolbar; keep it out of the drawer */
+    /* Share and speed live in the bottom toolbar; keep them out of the drawer */
     sidecontentbar div.mobile-only {
+        display: none !important;
+    }
+
+    sidecontentbar #speed-control {
         display: none !important;
     }
 
@@ -1711,15 +1715,12 @@ select {
         flex-direction: column;
     }
 
-    /* Speed Control First */
+    /* Speed lives in the bottom toolbar on mobile; hide the sidebar one */
     #speed-control {
-        order: 1;
-        margin: 2px 0;
+        display: none !important;
     }
 
-    /* Change Part Second */
     #change-part-wrapper {
-        order: 2;
         margin: 2px 0;
     }
 

@@ -507,6 +507,20 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 #control-buttons-row .toolbar-speed button:hover {
                     background: rgba(0,0,0,0.08);
                 }
+                #control-buttons-row .toolbar-speed-stack {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    line-height: 1.15;
+                }
+                #control-buttons-row .toolbar-speed-label {
+                    font-size: 7px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.08em;
+                    color: #888;
+                    white-space: nowrap;
+                }
                 #control-buttons-row #toolbar-speed-val {
                     font-size: 12px;
                     font-weight: 600;
@@ -539,16 +553,19 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 @media (max-width: 600px) {
                     #control-buttons-row {
                         max-width: calc(100vw - 20px);
-                        padding: 6px 12px;
+                        padding: 6px 10px;
                         gap: 0px;
                         border-radius: 30px;
                     }
                     #control-buttons-row .toolbar-btn {
-                        padding: 6px;
+                        padding: 5px;
                     }
                     #control-buttons-row .toolbar-btn svg {
                         width: 18px;
                         height: 18px;
+                    }
+                    #control-buttons-row .toolbar-speed button {
+                        width: 24px;
                     }
                 }
                 @media (orientation: portrait) {
@@ -581,17 +598,10 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                 <div class="toolbar-divider"></div>
                 <div class="toolbar-speed" title="Playback speed">
                     <button onclick="decrementSpeed()" aria-label="Slow down">−</button>
-                    <span id="toolbar-speed-val">1.00x</span>
+                    <span class="toolbar-speed-stack"><span class="toolbar-speed-label">Playback rate</span><span id="toolbar-speed-val">1.00x</span></span>
                     <button onclick="incrementSpeed()" aria-label="Speed up">+</button>
                 </div>
                 <div class="toolbar-divider toolbar-speed-divider"></div>
-                <button class="toolbar-btn" onclick="resizeDematenAndCanvas(90)" title="Zoom Out">
-                    <svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7" fill="none" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke-width="2"/><line x1="7" y1="10" x2="13" y2="10" stroke-width="2"/></svg>
-                </button>
-                <button class="toolbar-btn" onclick="resizeDematenAndCanvas(110)" title="Zoom In">
-                    <svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7" fill="none" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke-width="2"/><line x1="7" y1="10" x2="13" y2="10" stroke-width="2"/><line x1="10" y1="7" x2="10" y2="13" stroke-width="2"/></svg>
-                </button>
-                <div class="toolbar-divider"></div>
                 <button class="toolbar-btn" id="play-pause-button" title="Play/Pause">
                     <svg id="play-icon" viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                     <svg id="pause-icon" style="display:none" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
