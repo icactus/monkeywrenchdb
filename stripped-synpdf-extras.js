@@ -896,10 +896,12 @@ async function loadRecording(recordingFullData) {
     let targetDiv = document.getElementById('composer-piece-name');
     targetDiv.replaceChildren($('<h3></h3>').text(newTitle)[0]);
 
-    // Mobile header shows the piece name; desktop keeps the site name
-    // and shows the piece title in the sidebar instead.
-    window.__recordingTitle = newTitle;
-    updateHeaderTitle();
+    // Show the piece name in the header in place of the site name
+    const headerTitle = document.querySelector('#monkeywrench-logo-text h2');
+    if (headerTitle) {
+        headerTitle.textContent = newTitle;
+        headerTitle.title = newTitle;
+    }
 
     // Track History
     if (typeof addToHistory === 'function') {
