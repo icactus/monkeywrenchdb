@@ -154,7 +154,7 @@ if ($hasInitialRecordingTarget) {
             align-self: center;
             flex: 0 0 auto;
             order: 1;
-            margin: 8px auto 20px;
+            margin: 6px auto 8px;
         }
 
         body.seo-landing-entry:not(.recording-loaded) #notation-scroll > .tabs,
@@ -802,7 +802,7 @@ if ($hasInitialRecordingTarget) {
     </div>
     <script src="js/history-manager.js?v=4"></script>
     <script src="js/favorites-manager.js?v=1"></script>
-    <script src="stripped-synpdf.js?v=323"></script>
+    <script src="stripped-synpdf.js?v=324"></script>
     <script src="stripped-synpdf-extras.js?v=280"></script>
     <script>
         // Dark Mode menu toggles - wire up immediately on page load

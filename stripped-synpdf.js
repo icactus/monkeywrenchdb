@@ -431,7 +431,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
             `<style>
                 #control-buttons-row {
                     position: fixed;
-                    bottom: 20px;
+                    bottom: 8px;
                     left: 50%;
                     transform: translateX(-50%);
                     background: rgba(240, 240, 245, 0.95);
@@ -441,6 +441,11 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     padding: 8px 20px;
                     box-shadow: 0 4px 20px rgba(0,0,0,0.18);
                     display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    width: max-content;
+                    max-width: calc(100% - 20px);
+                    box-sizing: border-box;
                     gap: 12px;
                     align-items: center;
                     z-index: 100; /* Standardized: Controls (was 10000) */
@@ -537,10 +542,10 @@ function Wijzer$$module$synpdf(a, b, c, d) {
                     text-align: center;
                     color: #333;
                 }
-                /* Mobile: keep only fullscreen / fit-width / 2-up, then speed,
+                /* Tablet/mobile: keep only fullscreen / fit-width / 2-up, then speed,
                    then play / fav / share. Zoom is pinch-redundant, so the zoom
                    buttons are desktop-only. Dividers off, spacing on. */
-                @media screen and (max-width: 767px), screen and (max-height: 500px) and (orientation: landscape) {
+                @media screen and (max-width: 1024px), screen and (max-height: 500px) and (orientation: landscape) {
                     #control-buttons-row {
                         gap: 6px;
                     }
@@ -805,7 +810,12 @@ function Wijzer$$module$synpdf(a, b, c, d) {
             const notationRect = notation.getBoundingClientRect();
             const centerX = notationRect.left + (notationRect.width / 2);
             if (toolbar) {
-                toolbar.style.left = centerX + 'px';
+                // Center on the score while keeping the complete toolbar on screen.
+                const halfWidth = toolbar.getBoundingClientRect().width / 2;
+                const viewportWidth = document.documentElement.clientWidth;
+                const safeCenterX = Math.max(halfWidth + 10,
+                    Math.min(centerX, viewportWidth - halfWidth - 10));
+                toolbar.style.left = safeCenterX + 'px';
                 toolbar.style.transform = 'translateX(-50%)';
             }
             if (annotationToolbar) {
@@ -818,7 +828,12 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     // Initial positioning and on fullscreen change or window resize
     repositionToolbar();
     $(document).on('fullscreenchange webkitfullscreenchange', repositionToolbar);
-    $(window).on('resize', repositionToolbar);
+    // The canvas resize setup clears jQuery resize listeners; keep this one native.
+    if (window.__repositionPlayerToolbar) {
+        window.removeEventListener('resize', window.__repositionPlayerToolbar);
+    }
+    window.__repositionPlayerToolbar = repositionToolbar;
+    window.addEventListener('resize', repositionToolbar);
 
     // Auto-hide the floating toolbar after a few seconds idle so it never
     // covers the bottom measures; any activity brings it straight back.
