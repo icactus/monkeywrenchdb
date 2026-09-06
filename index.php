@@ -140,6 +140,13 @@ if ($hasInitialRecordingTarget) {
         } catch (e) { }
     </script>
     <style>
+        /* Tablet and mobile playback speed lives in the bottom toolbar. */
+        @media screen and (max-width: 1024px) {
+            sidecontentbar #speed-control {
+                display: none;
+            }
+        }
+
         /* Keep the homepage player's controls visible and interactive when idle. */
         #notation > #control-buttons-row.toolbar-hidden {
             opacity: 1;
