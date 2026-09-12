@@ -9,6 +9,9 @@ deployment:
     - /bin/cp get_preload.php $DEPLOYPATH
     - /bin/cp get_recording_instruments.php $DEPLOYPATH
     - /bin/cp index.php $DEPLOYPATH
+    - /bin/cp homepage.php $DEPLOYPATH
+    - /bin/cp fetch_catalog.php $DEPLOYPATH
+    - /bin/cp homepage-mockup.html $DEPLOYPATH
     - /bin/cp stripped-synpdf-extras.js $DEPLOYPATH
     - /bin/cp stripped-synpdf.js $DEPLOYPATH
     - /bin/cp preview-editor.php $DEPLOYPATH

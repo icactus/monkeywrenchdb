@@ -70,6 +70,34 @@ window.__cssScale = window.__cssScale || 1;    // multiplies canvas.style width/
 window.__deMScale = window.__deMScale || 1;    // multiplies x,y,w,h in deMaten
 window.__isTogglingFullscreen = false;   // suppress auto-zoom during FS transitions
 window.__preFS = null;                   // stash zoom + position before toggling
+window.MW = window.MW || {};
+let __mwSwitchSeq = 0;
+window.MW.player = {
+    get instrumentId() { return currentInstrumentGlobal; },
+    set instrumentId(v) { currentInstrumentGlobal = v; },
+    get metricArrId() { return currentMetricArrGlobal; },
+    set metricArrId(v) { currentMetricArrGlobal = v; },
+    get recordingId() { return currentRecordingGlobal; },
+    set recordingId(v) { currentRecordingGlobal = v; },
+    get pieceId() { return window.currentPieceGlobal; },
+    set pieceId(v) { window.currentPieceGlobal = v; },
+    get recordingData() { return window.currentRecordingFullData; },
+    set recordingData(v) { window.currentRecordingFullData = v; },
+    get cssScale() { return window.__cssScale; },
+    set cssScale(v) { window.__cssScale = v; },
+    get deMScale() { return window.__deMScale; },
+    set deMScale(v) { window.__deMScale = v; },
+    get preFS() { return window.__preFS; },
+    set preFS(v) { window.__preFS = v; },
+    get switching() { return isSwitchingRecording; },
+    set switching(v) { isSwitchingRecording = v; },
+    get blockTime2x() { return blockTime2x; },
+    set blockTime2x(v) { blockTime2x = v; },
+    get bypassTick() { return bypassTickFlag; },
+    set bypassTick(v) { bypassTickFlag = v; },
+    get switchSeq() { return __mwSwitchSeq; },
+    nextSwitch() { return ++__mwSwitchSeq; }
+};
 
 // --- Hi-Res PDFs toggle ---
 window.hiResPdfsEnabled = false;
@@ -628,7 +656,7 @@ $('#pieces-container').on('click', '.pieces-link', function (event) {
     if (parts.length === 1) {
         partPicker.empty();
         fetchRecordings(parts[0].metric_arr_id, pieceId, parts[0], recordingsList);
-        currentMetricArrGlobal = parts[0].metric_arr_id;
+        window.MW.player.metricArrId = parts[0].metric_arr_id;
         return;
     }
 
@@ -644,7 +672,7 @@ $('#pieces-container').on('click', '.pieces-link', function (event) {
                     partList.find('.piece-part-button').removeClass('selected');
                     $(this).addClass('selected');
                     fetchRecordings($(this).data('metric-arr-id'), pieceId, part, recordingsList);
-                    currentMetricArrGlobal = $(this).data('metric-arr-id');
+                    window.MW.player.metricArrId = $(this).data('metric-arr-id');
                 });
             partList.append(partButton);
         });
@@ -784,7 +812,7 @@ function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
                         reject("No recordings found");
                         return;
                     }
-                    currentMetricArrGlobal = metricArrId;
+                    window.MW.player.metricArrId = metricArrId;
                     container.empty().append('<h3>Recordings</h3>');
 
                     recordingsDropdown.append('<option value="" disabled hidden selected>Change Recording</option>');
@@ -914,6 +942,8 @@ async function loadRecording(recordingFullData) {
         localStorage.setItem('mw-home-part-' + recordingFullData.piece_id, JSON.stringify(Number(recordingFullData.metric_arr_id)));
         localStorage.setItem('mw-home-recording-' + recordingFullData.piece_id, JSON.stringify(Number(recordingFullData.recording_id)));
     } catch (e) {}
+    window.MW.player.cssScale = 1;
+    window.MW.player.deMScale = 1;
     // Update the document title
     let newTitle = `${decodeHtmlEntities(recordingFullData.composer_last)} - ${decodeHtmlEntities(recordingFullData.piece_name)}`;
     document.title = newTitle;
@@ -935,7 +965,7 @@ async function loadRecording(recordingFullData) {
     // Create a unique ID for the recording
     let metricId = recordingFullData.metric_arr_id;
     let recordingId = recordingFullData.recording_id;
-    currentRecordingFullData = recordingFullData; // Global variable for testing
+    window.MW.player.recordingData = recordingFullData;
     let storedId = metricId + '-' + recordingId;
 
     // Check if the data is already stored in the cache
@@ -1031,9 +1061,11 @@ function fetchNewInstrument(metricArrId) {
 $('#instruments-dropdown').change(function () {
     const selectedOption = $(this).find('option:selected');
     const instrumentData = selectedOption.data('instrumentData');
+    if (!instrumentData || !instrumentData.metric_arr_id) return;
+    const seq = window.MW.player.nextSwitch();
     console.log('INSTRUMENT DROPDOWN DATA:', instrumentData);
-    currentInstrumentGlobal = instrumentData.instrument_id;
-    currentMetricArrGlobal = instrumentData.metric_arr_id;
+    window.MW.player.instrumentId = instrumentData.instrument_id;
+    window.MW.player.metricArrId = instrumentData.metric_arr_id;
     document.getElementById("notation-scroll").innerHTML = "";  // Clear notation section
 
     // Get current recording from dropdown to ensure preloaded data
@@ -1042,6 +1074,7 @@ $('#instruments-dropdown').change(function () {
 
     fetchNewInstrument(instrumentData.metric_arr_id)
         .then(partData => {
+            if (seq !== window.MW.player.switchSeq) return;
             renderedCanvasesQueue = [];
             renderingTasks = [];
             renderedCanvasesQueue = new Set();
@@ -1055,11 +1088,12 @@ $('#instruments-dropdown').change(function () {
                 instrument_id: instrumentData.instrument_id,
                 instrument_name: instrumentData.displayText,
                 edition_label: instrumentData.edition_label,
-                pdf_file_name: `${getPdfBaseDir()}${buildPdfFilename(currentRecordingFullData.piece_id, instrumentData.instrument_id, instrumentData.edition_label)}`
+                pdf_file_name: `${getPdfBaseDir()}${buildPdfFilename(window.MW.player.recordingData.piece_id, instrumentData.instrument_id, instrumentData.edition_label)}`
             };
 
             loadRecording(updatedRecordingFullData)
                 .then(() => {
+                    if (seq !== window.MW.player.switchSeq) return;
                     msc_wz$$module$synpdf = null;
                     newInstrumentTime2xFlag = 1;
                     twoUpInitialScrollPending = window.twoUpMode ? true : false;
@@ -1081,13 +1115,16 @@ $('#instruments-dropdown').change(function () {
 $('#recordings-dropdown').change(async function () {
     const selectedOption = $(this).find('option:selected');
     const recordingFullData = selectedOption.data('recordingFullData');
-    currentRecordingGlobal = recordingFullData.recording_id;
-    bypassTickFlag = 1;
-    blockTime2x = true;
-    isSwitchingRecording = true; // Set flag during switch
+    if (!recordingFullData || !recordingFullData.recording_id) return;
+    const seq = window.MW.player.nextSwitch();
+    window.MW.player.recordingId = recordingFullData.recording_id;
+    window.MW.player.bypassTick = 1;
+    window.MW.player.blockTime2x = true;
+    window.MW.player.switching = true;
 
     // Fetch times_arr from static file
     const timesData = await fetch(`data/times/${recordingFullData.recording_id}.json`).then(r => r.json());
+    if (seq !== window.MW.player.switchSeq) return;
     deTijden$$module$synpdf = times_arr$$module$synpdf = timesData;
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
@@ -1101,6 +1138,7 @@ $('#recordings-dropdown').change(async function () {
 
     findCurrentMeasureTime()
         .then(() => {
+            if (seq !== window.MW.player.switchSeq) return;
             newPlayerCue = (currentMeasureTime !== undefined ? currentMeasureTime : (currentTime - offset$$module$synpdf)) + offset$$module$synpdf + TOFF$$module$synpdf;
             console.log("Target time for new video (newPlayerCue):", newPlayerCue);
 
@@ -1119,6 +1157,7 @@ $('#recordings-dropdown').change(async function () {
             }
         })
         .catch((error) => {
+            if (seq !== window.MW.player.switchSeq) return;
             console.error("Error finding measure time:", error);
             newPlayerCue = currentTime;
             if (wasPlaying) {
@@ -1157,7 +1196,7 @@ function displayMultiplePartLinks(data, clickedLink) {
             .on('click', function (e) {
                 e.preventDefault();
                 fetchRecordings($(this).data('metric-arr-id'), clickedLink.data('piece-id'), item);
-                currentMetricArrGlobal = ($(this).data('metric-arr-id'));
+                window.MW.player.metricArrId = ($(this).data('metric-arr-id'));
                 // Switch to Recordings tab
                 openTab("tab-recordings");
             });
@@ -1175,10 +1214,10 @@ function handleRecordingSelection(recordingFullData) {
 
     let recordingId = recordingFullData.recording_id;
     // Setting the global instrument and recording values for dropdown use
-    currentInstrumentGlobal = recordingFullData.instrument_id;
-    currentRecordingGlobal = recordingFullData.recording_id;
-    window.currentPieceGlobal = recordingFullData.piece_id; // For favorites
-    window.currentMetricArrGlobal = recordingFullData.metric_arr_id; // Ensure this is set for annotations
+    window.MW.player.instrumentId = recordingFullData.instrument_id;
+    window.MW.player.recordingId = recordingFullData.recording_id;
+    window.MW.player.pieceId = recordingFullData.piece_id;
+    window.MW.player.metricArrId = recordingFullData.metric_arr_id;
 
     document.getElementById("notation-scroll").innerHTML = "";  // clear notation section so it looks responsive faster
 
@@ -1201,13 +1240,13 @@ function handleRecordingSelection(recordingFullData) {
             $("#sidecontent").show();
             generateInstrumentsDropdown(recordingId)
                 .then(function () {
-                    $('#instruments-dropdown').val(currentInstrumentGlobal);
-                    $('#recordings-dropdown').val(currentRecordingGlobal);
+                    $('#instruments-dropdown').val(window.MW.player.instrumentId);
+                    $('#recordings-dropdown').val(window.MW.player.recordingId);
                     window.recordingFullyLoaded = true;
 
                     // Initialize annotations for logged-in users
-                    if (typeof window.initAnnotations === 'function' && window.currentMetricArrGlobal) {
-                        window.initAnnotations(window.currentMetricArrGlobal);
+                    if (typeof window.initAnnotations === 'function' && window.MW.player.metricArrId) {
+                        window.initAnnotations(window.MW.player.metricArrId);
                         // Force show pen button in case initAnnotations failed to style it
                         const penBtn = document.getElementById('annotation-edit-btn');
                         if (penBtn) penBtn.style.display = 'flex';
@@ -1298,7 +1337,7 @@ function refreshAfterFullscreen() {
         }
 
         const scroller = document.getElementById('notation-scroll');
-        const pre = window.__preFS || {};
+        const pre = window.MW.player.preFS || {};
 
         // Delay zoom adjustment until after reflowForViewportChange's async logic completes
         requestAnimationFrame(() => {
@@ -1321,8 +1360,8 @@ function refreshAfterFullscreen() {
                         if (typeof resizePageFitToHeight === 'function') {
                             resizePageFitToHeight();
                         }
-                    } else if (!pre.inTwoUp && pre.scale && window.__cssScale) {
-                        const ratio = pre.scale / window.__cssScale;
+                    } else if (!pre.inTwoUp && pre.scale && window.MW.player.cssScale) {
+                        const ratio = pre.scale / window.MW.player.cssScale;
                         if (Math.abs(ratio - 1) > 1e-3) {
                             resizeDematenAndCanvas(ratio * 100);
                         }
@@ -1340,7 +1379,7 @@ function refreshAfterFullscreen() {
 
                 scroller?.focus();
                 window.__isTogglingFullscreen = false;
-                window.__preFS = null;
+                window.MW.player.preFS = null;
             });
         });
     }, 100);
@@ -1354,8 +1393,8 @@ function toggleFullscreen(event) {
     const scroller = document.getElementById('notation-scroll');
 
     // Save current zoom + position so we can restore after the FS swap
-    window.__preFS = {
-        scale: window.__cssScale || 1,
+    window.MW.player.preFS = {
+        scale: window.MW.player.cssScale || 1,
         inTwoUp: !!scroller?.classList.contains('two-up'),
         cursorTime: window.msc_wz$$module$synpdf?.cursorTime ?? null,
         scrollTopRatio: scroller
@@ -1526,8 +1565,8 @@ function resizeDematenAndCanvas(scaleAmount, preserveViewport = false) {
     const zoomAnchor = preserveViewport && sc ? capturePdfZoomAnchor(sc) : null;
 
     const k = (scaleAmount / 100);      // multiply factor this call
-    window.__cssScale *= k;             // remember the cumulative canvas CSS scale
-    window.__deMScale *= k;             // remember the cumulative deMaten scale
+    window.MW.player.cssScale *= k;
+    window.MW.player.deMScale *= k;
 
     var canvas = document.getElementsByTagName('canvas')[0];
     if (canvas) {
@@ -1772,8 +1811,8 @@ function addShareButtonListener() {
     const shareButton = document.getElementById('share-button');
     if (shareButton) {
         shareButton.addEventListener('click', function () {
-            const metricArrId = currentMetricArrGlobal;
-            const recordingId = currentRecordingGlobal;
+            const metricArrId = window.MW.player.metricArrId;
+            const recordingId = window.MW.player.recordingId;
 
             if (metricArrId && recordingId) {
                 // Dynamically construct the base URL using the current window location
@@ -1834,14 +1873,14 @@ function toggleHiResPdfs() {
     window.hiResPdfsEnabled = !window.hiResPdfsEnabled;
 
     // Recompute the current score's path
-    const piece = (window.currentRecordingFullData?.piece_id);
-    const inst = (window.currentInstrumentGlobal ?? window.currentRecordingFullData?.instrument_id);
+    const piece = (window.MW.player.recordingData?.piece_id);
+    const inst = (window.MW.player.instrumentId ?? window.MW.player.recordingData?.instrument_id);
     if (!piece || !inst) {
         toast(`Hi-res PDFs ${window.hiResPdfsEnabled ? 'ON' : 'OFF'}`);
         return;
     }
 
-    const edition = window.currentRecordingFullData?.edition_label;
+    const edition = window.MW.player.recordingData?.edition_label;
     const newPath = `${getPdfBaseDir()}${buildPdfFilename(piece, inst, edition)}`;
 
     // Remember where we are (musical time) so rebuild doesn’t jump
@@ -1859,7 +1898,7 @@ function toggleHiResPdfs() {
     }
 
     // Update globals + reload pages
-    window.currentRecordingFullData.pdf_file_name = newPath; // keep cache entry aligned
+    window.MW.player.recordingData.pdf_file_name = newPath;
     window.pdf_file$$module$synpdf = newPath;
     readPdf$$module$synpdf(window.pdf_file$$module$synpdf, 'url');
 
@@ -2018,9 +2057,9 @@ $(document).ready(function () {
 
     if (urlMetricArrId && (urlRecordingId || urlPreview || hashData)) {
         // Set global variables
-        currentMetricArrGlobal = urlMetricArrId;
+        window.MW.player.metricArrId = urlMetricArrId;
         // If preview, we might not have a real recording ID, but we need something non-null
-        currentRecordingGlobal = urlRecordingId || 999999;
+        window.MW.player.recordingId = urlRecordingId || 999999;
 
         // Get time parameter if present (for seeking)
         const urlStartTime = parseFloat(urlParams.get('t')) || 0;
@@ -2066,7 +2105,7 @@ $(document).ready(function () {
 
 
                         // Store for editor access
-                        window.currentRecordingFullData = recordingFullData;
+                        window.MW.player.recordingData = recordingFullData;
 
                         // Store fix list globally because the hash is cleared by handleRecordingSelection
                         if (previewData.fix_list) {
