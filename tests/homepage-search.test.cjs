@@ -30,19 +30,37 @@ test('multi-word query requires every word', () => {
     assert.equal(h.findByClass(h.els()['study-results'], 'study-empty').length, 1);
 });
 
-test('instrument filter puts matches first, scores included, others hidden', () => {
+test('instrument filter shows only pieces with a matching part', () => {
     h.resetFilters();
     h.chooseInstrument('Violin');
-    assert.deepEqual(h.titles(), ['Symphony No. 5', 'Symphony No. 9', 'Cello Suite No. 1', 'Requiem']);
-    assert.match(h.els()['study-count'].textContent, /4 pieces/);
+    assert.deepEqual(h.titles(), ['Symphony No. 5', 'Symphony No. 9']);
+    assert.equal(h.els()['study-count'].textContent, '2 pieces · Your instrument first');
 });
 
-test('score-only fallback offers the score, part-less pieces stay hidden', () => {
-    h.resetFilters();
+test('full-score fallback goes only to strings browsing Orchestra or Opera', async () => {
+    const score = id => ({ metric_arr_id: id, instrument_id: 6, instrument_name: 'Full Score', is_score: true });
+    const part = (id, name) => ({ metric_arr_id: id, instrument_id: 5, instrument_name: name, part_number: '1', is_score: false });
+    const work = (id, title, category, parts) => ({ piece_id: id, piece_name: title, composer_first: 'Wolfgang Amadeus', composer_last: 'Mozart', category_name: category, solo_instrument_id: 0, recording_count: 0, parts });
+    const catalog = [
+        work(21, 'Symphony', 'Orchestra', [part(71, 'Violin'), score(72)]),
+        work(22, 'Opera Gala', 'Opera', [score(73)]),
+        work(23, 'Sonata', 'Solo', [part(74, 'Piano')]),
+    ];
+    h.buildContext(undefined, { pieces: catalog });
+    await h.settled();
+    h.chooseInstrument('Violin');
+    assert.deepEqual(h.titles(), ['Symphony', 'Opera Gala']);
+    const notes = h.findByClass(h.els()['study-results'], 'study-material-note').map(el => el.textContent);
+    assert.deepEqual(notes, ['Full score only']);
+    assert.equal(h.els()['study-count'].textContent, '2 pieces · Your instrument first, scores included');
     h.chooseInstrument('Oboe');
-    const got = h.titles();
-    assert.ok(got.includes('Requiem'), 'score-only piece should remain visible, got: ' + got);
-    assert.ok(!got.includes('Nocturne'), 'piece with no score and no oboe part should hide');
+    assert.deepEqual(h.titles(), []);
+    assert.equal(h.findByClass(h.els()['study-results'], 'study-empty').length, 1);
+    h.chooseInstrument('Piano');
+    assert.deepEqual(h.titles(), ['Sonata']);
+    assert.equal(h.els()['study-count'].textContent, '1 piece · Your instrument first');
+    h.buildContext();
+    await h.settled();
 });
 
 test('single-recording works open a chooser and start only after recording selection', async () => {
@@ -187,7 +205,7 @@ test('category tabs filter the library, combine with search, and persist', async
     const tabs = () => h.findByClass(h.els()['study-categories'], 'study-category');
     const labels = () => tabs().map(b => b.textContent);
     const tab = name => tabs().find(b => b.textContent === name || b.textContent.startsWith(name + ' ('));
-    assert.deepEqual(labels(), ['All (5)', 'Solo (2)', 'Choral (1)', 'Orchestral (2)']);
+    assert.deepEqual(labels(), ['All (5)', 'Orchestra (2)', 'Solo (2)', 'Choral Works (1)']);
     assert.equal(tab('All')['aria-pressed'], 'true');
     await h.fire(tab('Solo'), 'click');
     assert.deepEqual(h.titles(), ['Cello Suite No. 1', 'Nocturne']);
@@ -198,7 +216,7 @@ test('category tabs filter the library, combine with search, and persist', async
     assert.deepEqual(labels(), ['All (1)', 'Solo (1)']);
     h.searchFor('');
     assert.deepEqual(h.titles(), ['Cello Suite No. 1', 'Nocturne']);
-    assert.deepEqual(labels(), ['All (5)', 'Solo (2)', 'Choral (1)', 'Orchestral (2)']);
+    assert.deepEqual(labels(), ['All (5)', 'Orchestra (2)', 'Solo (2)', 'Choral Works (1)']);
     assert.equal(JSON.parse(h.ctx().localStorage.getItem('mw-home-state')).category, 'Solo');
     await h.fire(h.els()['study-reset'], 'click');
     assert.deepEqual(h.titles(), ['Cello Suite No. 1', 'Symphony No. 5', 'Nocturne', 'Symphony No. 9', 'Requiem']);
@@ -207,7 +225,7 @@ test('category tabs filter the library, combine with search, and persist', async
 
 test('a saved category restores on load', async () => {
     h.buildContext(undefined, { storage: {
-        'mw-home-state': JSON.stringify({ query: '', view: 'library', category: 'Choral', scroll: 0 }),
+        'mw-home-state': JSON.stringify({ query: '', view: 'library', category: 'Choral Works', scroll: 0 }),
     } });
     await h.settled();
     assert.deepEqual(h.titles(), ['Requiem']);
@@ -221,10 +239,10 @@ test('tab counts follow the search query without switching tabs', async () => {
     const labels = () => h.findByClass(h.els()['study-categories'], 'study-category').map(b => b.textContent);
     h.searchFor('symphony');
     assert.deepEqual(h.titles(), ['Symphony No. 5', 'Symphony No. 9']);
-    assert.deepEqual(labels(), ['All (2)', 'Orchestral (2)']);
+    assert.deepEqual(labels(), ['All (2)', 'Orchestra (2)']);
     assert.equal(h.els()['study-results-heading'].textContent, 'Search results');
     h.searchFor('');
-    assert.deepEqual(labels(), ['All (5)', 'Solo (2)', 'Choral (1)', 'Orchestral (2)']);
+    assert.deepEqual(labels(), ['All (5)', 'Orchestra (2)', 'Solo (2)', 'Choral Works (1)']);
 });
 
 test('tabs rescope to the selected instrument and reset a stale category', async () => {
@@ -256,5 +274,5 @@ test('heading names the category-instrument scope', async () => {
     h.chooseInstrument('Cello');
     await h.fire(tab('Solo'), 'click');
     assert.equal(h.els()['study-results-heading'].textContent, 'Solo for cello');
-    assert.equal(h.els()['study-count'].textContent, '1 piece · Solo · Your instrument first, scores included');
+    assert.equal(h.els()['study-count'].textContent, '1 piece · Solo · Your instrument first');
 });

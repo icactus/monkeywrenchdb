@@ -58,6 +58,16 @@
         if (/chamber/i.test(part.instrument_name)) return 'Score';
         return 'Full score';
     }
+    // Stopgap until per-piece instrumentation data exists: a score fallback is
+    // only meaningful to players who read full scores, so offer it to string
+    // players browsing orchestral-scale works. Everyone else sees only pieces
+    // with a real part for their instrument.
+    const SCORE_FALLBACK_INSTRUMENTS = ['Violin', 'Viola', 'Cello', 'Double Bass'];
+    const SCORE_FALLBACK_CATEGORIES = ['Orchestra', 'Opera'];
+    function scoreFallbackAllowed(piece) {
+        return SCORE_FALLBACK_INSTRUMENTS.includes(state.instrument)
+            && SCORE_FALLBACK_CATEGORIES.includes(piece.category_name);
+    }
     function preferredPart(piece) {
         const eligible = state.instrument ? piece.parts.filter(p => p.instrument_name === state.instrument && !p.is_score) : piece.parts;
         const remembered = read('part-' + piece.piece_id);
@@ -65,7 +75,7 @@
             || (!state.instrument && eligible.find(p => p.is_score))
             || eligible.find(p => p.instrument_id === piece.solo_instrument_id)
             || eligible.find(p => !p.edition_label && (!p.part_number || p.part_number === '1'))
-            || eligible[0] || piece.parts.find(p => p.is_score) || null;
+            || eligible[0] || (scoreFallbackAllowed(piece) ? piece.parts.find(p => p.is_score) : null);
     }
     function availableParts(piece) {
         return state.instrument ? piece.parts.filter(p => p.instrument_name === state.instrument && !p.is_score) : piece.parts;
@@ -288,7 +298,7 @@
         $('results-heading').textContent = words.length ? 'Search results' : state.category && state.instrument ? state.category + ' for ' + state.instrument.toLowerCase() : state.category || (state.instrument ? 'Music for ' + state.instrument.toLowerCase() : 'Find your next piece');
         const bits = [];
         if (state.category) bits.push(state.category);
-        if (state.instrument) bits.push('Your instrument first, scores included');
+        if (state.instrument) bits.push('Your instrument first' + (matches.some(m => preferredPart(m)?.is_score) ? ', scores included' : ''));
         $('count').textContent = matches.length + ' ' + (matches.length === 1 ? 'piece' : 'pieces') + (bits.length ? ' · ' + bits.join(' · ') : ' in the library');
         $('clear-search').hidden = !search.value; $('reset').hidden = !search.value && !state.instrument && !state.category;
         const list = $('results'); list.replaceChildren(...matches.map(p => pieceRow(p)));

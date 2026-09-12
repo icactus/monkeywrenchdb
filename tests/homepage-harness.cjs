@@ -7,19 +7,19 @@ const vm = require('node:vm');
 const SOURCE = fs.readFileSync(path.join(__dirname, '../js/homepage.js'), 'utf8');
 
 const FIXTURE_PIECES = [
-    { piece_id: 1, piece_name: 'Symphony No. 5', composer_first: 'Ludwig van', composer_last: 'Beethoven', category_name: 'Orchestral', solo_instrument_id: 0, recording_count: 2, parts: [
+    { piece_id: 1, piece_name: 'Symphony No. 5', composer_first: 'Ludwig van', composer_last: 'Beethoven', category_name: 'Orchestra', solo_instrument_id: 0, recording_count: 2, parts: [
         { metric_arr_id: 11, instrument_id: 5, instrument_name: 'Violin', part_number: '1', instrument_key: '', edition_label: null, is_score: false },
         { metric_arr_id: 12, instrument_id: 6, instrument_name: 'Full Score', part_number: null, instrument_key: '', edition_label: null, is_score: true } ] },
     { piece_id: 2, piece_name: 'Cello Suite No. 1', composer_first: 'Johann Sebastian', composer_last: 'Bach', category_name: 'Solo', solo_instrument_id: 7, recording_count: 1, parts: [
         { metric_arr_id: 21, instrument_id: 7, instrument_name: 'Cello', part_number: null, instrument_key: '', edition_label: null, is_score: false },
         { metric_arr_id: 22, instrument_id: 6, instrument_name: 'Full Score', part_number: null, instrument_key: '', edition_label: null, is_score: true } ] },
-    { piece_id: 3, piece_name: 'Symphony No. 9', composer_first: 'Antonín', composer_last: 'Dvořák', category_name: 'Orchestral', solo_instrument_id: 0, recording_count: 3, parts: [
+    { piece_id: 3, piece_name: 'Symphony No. 9', composer_first: 'Antonín', composer_last: 'Dvořák', category_name: 'Orchestra', solo_instrument_id: 0, recording_count: 3, parts: [
         { metric_arr_id: 31, instrument_id: 5, instrument_name: 'Violin', part_number: '1', instrument_key: '', edition_label: null, is_score: false },
         { metric_arr_id: 32, instrument_id: 5, instrument_name: 'Violin', part_number: '2', instrument_key: '', edition_label: null, is_score: false },
         { metric_arr_id: 33, instrument_id: 6, instrument_name: 'Full Score', part_number: null, instrument_key: '', edition_label: null, is_score: true } ] },
     { piece_id: 4, piece_name: 'Nocturne', composer_first: 'Frédéric', composer_last: 'Chopin', category_name: 'Solo', solo_instrument_id: 8, recording_count: 1, parts: [
         { metric_arr_id: 41, instrument_id: 8, instrument_name: 'Piano', part_number: null, instrument_key: '', edition_label: null, is_score: false } ] },
-    { piece_id: 5, piece_name: 'Requiem', composer_first: 'Wolfgang Amadeus', composer_last: 'Mozart', category_name: 'Choral', solo_instrument_id: 0, recording_count: 0, parts: [
+    { piece_id: 5, piece_name: 'Requiem', composer_first: 'Wolfgang Amadeus', composer_last: 'Mozart', category_name: 'Choral Works', solo_instrument_id: 0, recording_count: 0, parts: [
         { metric_arr_id: 51, instrument_id: 9, instrument_name: 'Choral Score', part_number: null, instrument_key: '', edition_label: null, is_score: true } ] },
 ];
 
