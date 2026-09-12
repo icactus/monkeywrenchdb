@@ -13,7 +13,7 @@ $metaDescription = isset($metaDescription) && is_string($metaDescription) && $me
 $canonicalUrl = isset($canonicalUrl) && is_string($canonicalUrl) && $canonicalUrl !== '' ? $canonicalUrl : null;
 $baseHref = isset($baseHref) && is_string($baseHref) && $baseHref !== '' ? $baseHref : null;
 $seoLandingConfigJson = isset($seoLandingConfig)
-    ? json_encode($seoLandingConfig, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+    ? json_encode($seoLandingConfig, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)
     : 'null';
 $isSeoLandingEntry = isset($seoLandingConfig) && is_array($seoLandingConfig);
 $hasInitialRecordingTarget = $isSeoLandingEntry

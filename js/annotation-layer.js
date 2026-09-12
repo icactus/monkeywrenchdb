@@ -902,9 +902,13 @@
             // Format date
             const date = set.updated_at ? new Date(set.updated_at).toLocaleDateString() : '';
 
+            // IDs are numeric DB keys; coerce so a crafted value can't break out of the inline handler.
+            const setId = Number(set.id) || 0;
+            const setMetricArrId = Number(set.metric_arr_id) || 0;
+            const setRecordingId = Number(set.recording_id) || 0;
             // Use loadPieceFromHistory for navigation (same as history)
             const clickHandler = set.recording_id ?
-                `loadPieceFromHistory(${set.metric_arr_id}, ${set.recording_id}); toggleAnnotationsManager();` :
+                `loadPieceFromHistory(${setMetricArrId}, ${setRecordingId}); toggleAnnotationsManager();` :
                 `showAnnotationMessage('No recording found for this piece', true);`;
 
             li.innerHTML = `
@@ -916,8 +920,8 @@
                     <span class="annotation-item-date">${date}</span>
                 </div>
                 <div class="annotation-item-actions">
-                    <button onclick="event.stopPropagation(); renameAnnotationSetPrompt(${set.id}, '${escapeHtml(set.name)}', this)" title="Rename"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
-                    <button class="delete-btn" onclick="event.stopPropagation(); deleteAnnotationSetById(${set.id}, this)" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                    <button onclick="event.stopPropagation(); renameAnnotationSetPrompt(${setId}, this)" title="Rename"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteAnnotationSetById(${setId}, this)" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 </div>
             `;
             list.appendChild(li);
@@ -943,7 +947,11 @@
     }
 
     // Rename annotation set inline
-    window.renameAnnotationSetPrompt = async function (id, currentName, btnElement) {
+    // Note: the current name is read from the row's own text content so a
+    // crafted set name can never break out of an inline handler string.
+    window.renameAnnotationSetPrompt = async function (id, second, third) {
+        // Backward compatibility: old inline calls passed (id, name, button).
+        const btnElement = third instanceof Element ? third : (second instanceof Element ? second : null);
         // Find the list item containing this rename button
         const li = btnElement ? btnElement.closest('li') : document.querySelector(`[data-annotation-id="${id}"]`);
         if (!li) return;
@@ -985,11 +993,12 @@
         // Insert temp actions after original actions
         actionsDiv.parentNode.insertBefore(tempActions, actionsDiv.nextSibling);
 
-        // Replace name element with input
+        // Replace name element with input (current name comes from the DOM,
+        // never from an inline handler string).
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'annotation-rename-input';
-        input.value = currentName;
+        input.value = nameEl.textContent;
         input.style.cssText = `
             font-size: inherit;
             font-family: inherit;
@@ -1150,7 +1159,7 @@
     // Helper to escape HTML
     function escapeHtml(text) {
         const div = document.createElement('div');
-        div.textContent = text;
+        div.textContent = text == null ? '' : String(text);
         return div.innerHTML;
     }
 

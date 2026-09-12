@@ -49,7 +49,7 @@
     $onnxWasmThreads = $isLocalHost ? 1 : 4;
     ?>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=12"></script>
+    <script src="correction-log-tools.js?v=17"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
@@ -61,7 +61,7 @@
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
-    <script src="synpdf-edit-mode.js?v=81"></script>
+    <script src="synpdf-edit-mode.js?v=86"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
     <script src="barline-detect-v2.js?v=<?php echo $barlineDetectVer; ?>"></script>
@@ -830,7 +830,7 @@
                             style="max-width:100%; width:100%; box-sizing:border-box; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                             <option value="">Select piece...</option>
                             <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
-                                <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
+                                <option value="<?php echo htmlspecialchars((string) $pieceId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $pieceName, ENT_QUOTES, 'UTF-8'); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

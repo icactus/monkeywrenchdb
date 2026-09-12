@@ -53,7 +53,7 @@
     $onnxWasmThreads = $isLocalHost ? 1 : 4;
     ?>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=15"></script>
+    <script src="correction-log-tools.js?v=17"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
@@ -72,7 +72,7 @@
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
-    <script src="synpdf-edit-mode.js?v=84"></script>
+    <script src="synpdf-edit-mode.js?v=86"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
@@ -877,7 +877,7 @@
                             <label for="composers_list">Current Composer List</label>
                             <select name="composers_list">
                                 <?php foreach ($composersArray as $id => $name): ?>
-                                    <option value="<?php echo $id; ?>"><?php echo $name; ?></option>
+                                    <option value="<?php echo htmlspecialchars((string) $id, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $name, ENT_QUOTES, 'UTF-8'); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -895,7 +895,7 @@
                             <label for="composer_id">Composer Name</label>
                             <select name="composer_id">
                                 <?php foreach ($composersArray as $composer_id => $name): ?>
-                                    <option value="<?php echo $composer_id; ?>"><?php echo $name; ?></option>
+                                    <option value="<?php echo htmlspecialchars((string) $composer_id, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $name, ENT_QUOTES, 'UTF-8'); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -903,7 +903,7 @@
                             <label for="category_id">Category:</label>
                             <select name="category_id">
                                 <?php foreach ($categoriesArray as $category_id => $category_display): ?>
-                                    <option value="<?php echo $category_id; ?>"><?php echo $category_display; ?></option>
+                                    <option value="<?php echo htmlspecialchars((string) $category_id, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $category_display, ENT_QUOTES, 'UTF-8'); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -914,7 +914,7 @@
                                 <option value="" <?php echo !isset($_POST['solo_instrument_id']) || $_POST['solo_instrument_id'] == "" ? 'selected' : ''; ?>>None</option>
 
                                 <?php foreach ($instrumentsArray as $instrument_id => $instrument_display): ?>
-                                    <option value="<?php echo $instrument_id; ?>" <?php echo isset($_POST['solo_instrument_id']) && $_POST['solo_instrument_id'] == $instrument_id ? 'selected' : ''; ?>><?php echo $instrument_display; ?></option>
+                                    <option value="<?php echo htmlspecialchars((string) $instrument_id, ENT_QUOTES, 'UTF-8'); ?>" <?php echo isset($_POST['solo_instrument_id']) && $_POST['solo_instrument_id'] == $instrument_id ? 'selected' : ''; ?>><?php echo htmlspecialchars((string) $instrument_display, ENT_QUOTES, 'UTF-8'); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -928,7 +928,7 @@
                             <select class="dropdown-menu" id="piece_id1">
                                 <option value="">Select piece...</option>
                                 <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
-                                    <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
+                                    <option value="<?php echo htmlspecialchars((string) $pieceId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $pieceName, ENT_QUOTES, 'UTF-8'); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -951,14 +951,14 @@
                             <select class="dropdown-menu" name="piece_id">
                                 <option value="">Select piece...</option>
                                 <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
-                                    <option value="<?php echo $pieceId; ?>"><?php echo $pieceName; ?></option>
+                                    <option value="<?php echo htmlspecialchars((string) $pieceId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $pieceName, ENT_QUOTES, 'UTF-8'); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <select name="instrument_id">
                             <option value="">Select an instrument...</option>
                             <?php foreach ($instrumentsArray as $instrumentId => $instrumentName): ?>
-                                <option value="<?php echo $instrumentId; ?>"><?php echo $instrumentName; ?></option>
+                                <option value="<?php echo htmlspecialchars((string) $instrumentId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $instrumentName, ENT_QUOTES, 'UTF-8'); ?></option>
                             <?php endforeach; ?>
                         </select>
                         <div>

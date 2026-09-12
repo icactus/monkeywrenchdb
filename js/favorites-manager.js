@@ -3,6 +3,12 @@
  * Handles fetching, displaying, and managing user favorites.
  */
 
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text == null ? '' : String(text);
+    return div.innerHTML;
+}
+
 function fetchFavorites() {
     fetch('favorites_api.php?action=get')
         .then(res => res.json())
@@ -28,14 +34,14 @@ function fetchFavorites() {
                 const dateStr = new Date(item.created_at).toLocaleDateString();
 
                 li.innerHTML = `
-                    <a href="javascript:void(0)" 
-                       onclick="loadPieceFromFavorite(${item.metric_arr_id}, ${item.recording_id}, ${item.piece_id}); toggleFavoritesMenu();" 
+                    <a href="javascript:void(0)"
+                       onclick="loadPieceFromFavorite(${Number(item.metric_arr_id) || 0}, ${Number(item.recording_id) || 0}, ${Number(item.piece_id) || 0}); toggleFavoritesMenu();"
                        class="favorites-entry-content">
-                        <p class="favorites-composer">${item.composer_name}</p>
-                        <p class="favorites-piece">${item.piece_name}</p>
-                        <p class="favorites-date">Saved ${dateStr}</p>
+                        <p class="favorites-composer">${escapeHtml(item.composer_name)}</p>
+                        <p class="favorites-piece">${escapeHtml(item.piece_name)}</p>
+                        <p class="favorites-date">Saved ${escapeHtml(dateStr)}</p>
                     </a>
-                    <button class="favorites-delete" onclick="deleteFavoriteItem(event, ${item.id})" title="Remove from favorites"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                    <button class="favorites-delete" onclick="deleteFavoriteItem(event, ${Number(item.id) || 0})" title="Remove from favorites"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 `;
                 list.appendChild(li);
             });

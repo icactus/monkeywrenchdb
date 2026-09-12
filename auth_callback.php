@@ -110,14 +110,20 @@ if ($provider === 'google') {
         if ($user_id == 0) {
             // If UPDATE happened, insert_id might be 0, fetch ID manually if needed or query based on unique key
             // For session, we usually rely on the DB ID
-            $res = $mysqli->query("SELECT id, role FROM users WHERE oauth_provider = '$providerName' AND oauth_uid = '$oauth_uid'");
-            $row = $res->fetch_assoc();
+            $lookup = $mysqli->prepare("SELECT id, role FROM users WHERE oauth_provider = ? AND oauth_uid = ?");
+            $lookup->bind_param("ss", $providerName, $oauth_uid);
+            $lookup->execute();
+            $row = $lookup->get_result()->fetch_assoc();
+            $lookup->close();
             $user_id = $row['id'];
             $user_role = $row['role'];
         } else {
             // Update happened, but we need the role (it might have changed manually)
-            $res = $mysqli->query("SELECT role FROM users WHERE id = $user_id");
-            $row = $res->fetch_assoc();
+            $lookup = $mysqli->prepare("SELECT role FROM users WHERE id = ?");
+            $lookup->bind_param("i", $user_id);
+            $lookup->execute();
+            $row = $lookup->get_result()->fetch_assoc();
+            $lookup->close();
             $user_role = $row['role'];
         }
 

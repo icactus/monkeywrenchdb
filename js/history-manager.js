@@ -16,6 +16,12 @@ function getRelativeTime(dateString) {
     return date.toLocaleDateString();
 }
 
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text == null ? '' : String(text);
+    return div.innerHTML;
+}
+
 function fetchHistory() {
     fetch('history_api.php?action=get')
         .then(res => res.json())
@@ -42,14 +48,14 @@ function fetchHistory() {
                 const timestamp = getRelativeTime(item.viewed_at);
 
                 li.innerHTML = `
-                    <a href="javascript:void(0)" 
-                       onclick="loadPieceFromHistory(${item.metric_arr_id}, ${item.recording_id}); toggleHistoryMenu();" 
+                    <a href="javascript:void(0)"
+                       onclick="loadPieceFromHistory(${Number(item.metric_arr_id) || 0}, ${Number(item.recording_id) || 0}); toggleHistoryMenu();"
                        class="history-entry-content">
-                        <p class="history-composer">${item.composer_name}</p>
-                        <p class="history-piece">${item.piece_name}</p>
-                        <p class="history-timestamp">${timestamp}</p>
+                        <p class="history-composer">${escapeHtml(item.composer_name)}</p>
+                        <p class="history-piece">${escapeHtml(item.piece_name)}</p>
+                        <p class="history-timestamp">${escapeHtml(timestamp)}</p>
                     </a>
-                    <button class="history-delete" onclick="deleteHistoryItem(event, ${item.id})" title="Remove from history"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                    <button class="history-delete" onclick="deleteHistoryItem(event, ${Number(item.id) || 0})" title="Remove from history"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 `;
                 list.appendChild(li);
             });
