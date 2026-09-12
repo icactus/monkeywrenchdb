@@ -2,6 +2,7 @@
 // Small metadata-only catalog for client-side search. Never include sync arrays here.
 ini_set('display_errors', '0');
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: private, max-age=300, must-revalidate');
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 try {
     require_once file_exists(__DIR__ . '/../phpfiles/read_only_user_config.php')
@@ -12,14 +13,14 @@ try {
         c.composer_first, c.composer_last, pc.category_name,
         m.metric_arr_id, m.edition_label, i.instrument_id, i.instrument_name,
         i.part_number, i.instrument_key, g.instrument_group_name,
-        rc.recording_count
+        COALESCE(rc.recording_count, 0) AS recording_count
         FROM pieces p
         JOIN composers c ON c.composer_id = p.composer_id
         LEFT JOIN piece_categories pc ON pc.category_id = p.category_id
         JOIN metric_arr m ON m.piece_id = p.piece_id
         JOIN instruments i ON i.instrument_id = m.instrument_id
         JOIN instrument_group g ON g.instrument_group_id = i.instrument_group_id
-        JOIN (SELECT piece_id, COUNT(*) recording_count FROM recordings GROUP BY piece_id) rc ON rc.piece_id = p.piece_id
+        LEFT JOIN (SELECT piece_id, COUNT(*) recording_count FROM recordings GROUP BY piece_id) rc ON rc.piece_id = p.piece_id
         ORDER BY c.composer_last, p.piece_name, i.instrument_id, m.metric_arr_id");
     $pieces = [];
     $instruments = [];

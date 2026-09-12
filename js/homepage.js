@@ -63,9 +63,10 @@
     }
     function recordingsFor(piece) {
         if (!recordingRequests.has(piece.piece_id)) {
-            const promise = Promise.resolve(window.loadPieceRecordings(piece.piece_id))
+            const promise = Promise.resolve()
+                .then(() => window.loadPieceRecordings(piece.piece_id))
                 .catch(() => {
-                    delete window.pieceRecordingsCache[piece.piece_id];
+                    if (window.pieceRecordingsCache) delete window.pieceRecordingsCache[piece.piece_id];
                     return json('fetchrecordings_data.php?pieceId=' + piece.piece_id);
                 })
                 .then(data => {
@@ -89,7 +90,9 @@
         try {
             const recordings = await recordingsFor(piece);
             // Reuse the player entry point, with the Change Recording menu already populated.
-            const dropdown = document.getElementById('recordings-dropdown'); dropdown.replaceChildren();
+            const dropdown = document.getElementById('recordings-dropdown');
+            if (!dropdown) throw new Error('Player controls are unavailable. Please reload the page.');
+            dropdown.replaceChildren();
             recordings.forEach(r => {
                 const option = node('option', '', [recordingName(r), recordingCredit(r)].filter(Boolean).join(' · '));
                 option.value = r.recording_id;
@@ -103,6 +106,7 @@
             write('recording-' + piece.piece_id, recording.recording_id);
             persist();
             window.handleRecordingSelection(fullRecording(piece, part, recording));
+            launching = false;
         } catch (error) {
             message(error.message); launching = false; if (trigger) trigger.disabled = false;
         }
@@ -178,7 +182,7 @@
     function openSaved(piece) {
         search.value = piece.piece_name; state.query = search.value;
         if (!preferredPart(piece)) { state.instrument = ''; instrument.value = ''; write('instrument', ''); }
-        showView('library'); renderLibrary(); openPiece(piece, preferredPart(piece));
+        openPiece(piece, preferredPart(piece));
     }
     function renderFavorites() {
         if (!window.loggedInUserId) return;
@@ -296,8 +300,12 @@
                 const requestedPiece = pieces.find(p => p.piece_id === Number(new URLSearchParams(location.search).get('pieceId')));
                 if (requestedPiece) { state.query = requestedPiece.piece_name; search.value = state.query; state.instrument = ''; instrument.value = ''; state.view = 'library'; }
                 catalogLoaded = true; renderLibrary(); showView(state.view); await loadAccount().catch(error => message(error.message));
-                if (requestedPiece) await openPiece(requestedPiece, preferredPart(requestedPiece), null, false);
-                else if (saved.expanded && state.view === 'library') {
+                if (requestedPiece) {
+                    const url = new URL(location.href);
+                    url.searchParams.delete('pieceId');
+                    history.replaceState(null, '', url);
+                    await openPiece(requestedPiece, preferredPart(requestedPiece), null, false);
+                }                else if (saved.expanded && state.view === 'library') {
                     const piece = pieces.find(p => p.piece_id === saved.expanded), part = piece?.parts.find(p => p.metric_arr_id === saved.metric);
                     if (piece && part) await openPiece(piece, part, null, false);
                 }

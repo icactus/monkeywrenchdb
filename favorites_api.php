@@ -86,11 +86,18 @@ try {
         }
 
         // A catalog favorite has no recording yet; preserve existing player context on re-save.
-        $sql = "INSERT INTO user_favorites (user_id, piece_id, metric_arr_id, recording_id) 
-                VALUES (?, ?, ?, ?) 
+        // NULLs are inlined as literals because bind_param("i", $null) stores 0, not NULL.
+        $metricSql = $metric_arr_id === null ? 'NULL' : '?';
+        $recSql = $recording_id === null ? 'NULL' : '?';
+        $sql = "INSERT INTO user_favorites (user_id, piece_id, metric_arr_id, recording_id)
+                VALUES (?, ?, $metricSql, $recSql)
                 ON DUPLICATE KEY UPDATE metric_arr_id = COALESCE(VALUES(metric_arr_id), metric_arr_id), recording_id = COALESCE(VALUES(recording_id), recording_id), created_at = NOW()";
         $stmt = $mysqli->prepare($sql);
-        $stmt->bind_param("iiii", $user_id, $piece_id, $metric_arr_id, $recording_id);
+        $types = 'ii';
+        $params = [$user_id, $piece_id];
+        if ($metric_arr_id !== null) { $types .= 'i'; $params[] = $metric_arr_id; }
+        if ($recording_id !== null) { $types .= 'i'; $params[] = $recording_id; }
+        $stmt->bind_param($types, ...$params);
 
         if (!$stmt->execute()) {
             throw new Exception("Insert failed: " . $stmt->error);
