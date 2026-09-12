@@ -1,5 +1,5 @@
 <div id="study-home" class="study-home">
-    <button type="button" id="study-construction-notice" class="study-construction-notice" aria-label="Dismiss announcement">🚧 <strong>We're under heavy construction</strong> — big design changes rolling out. Thanks for bearing with us! <span style="white-space:nowrap;">(<?php echo date('F j, Y'); ?>)</span> <span aria-hidden="true">×</span></button>
+    <div id="study-construction-notice" class="study-construction-notice" role="status">🚧 <strong>We're under heavy construction</strong> — big design changes rolling out. Thanks for bearing with us! <span style="white-space:nowrap;">(<?php echo date('F j, Y'); ?>)</span> <button type="button" id="study-construction-dismiss" class="study-construction-dismiss" aria-label="Dismiss announcement">×</button></div>
     <section class="study-search-panel" aria-labelledby="study-heading">
         <h1 id="study-heading">What are you working on?</h1>
         <p class="study-intro">Find your part. Follow a performance. Get to know every measure.</p>
@@ -29,6 +29,7 @@
         <p id="study-message" role="status" hidden></p>
         <section id="study-library-panel" role="tabpanel" aria-labelledby="study-library-tab">
             <div class="study-section-head"><div><h2 id="study-results-heading">Find your next piece</h2><p id="study-count" role="status" aria-live="polite">Loading the library…</p></div><button id="study-reset" class="study-text-button" hidden>Clear filters</button></div>
+            <div id="study-categories" class="study-categories" role="group" aria-label="Filter by category" hidden></div>
             <div id="study-results" class="study-results"></div>
         </section>
         <section id="study-history-panel" role="tabpanel" aria-labelledby="study-history-tab" hidden><div class="study-section-head"><div><h2>History</h2><p>Your recent pieces, ready to reopen.</p></div></div><div id="study-history-list" class="study-results"></div></section>

@@ -13,11 +13,12 @@
     const write = (key, value) => { try { localStorage.setItem('mw-home-' + key, JSON.stringify(value)); } catch {} };
     const saved = read('state', {});
     const notice = document.getElementById('study-construction-notice');
-    if (notice) {
+    const dismissNotice = document.getElementById('study-construction-dismiss');
+    if (notice && dismissNotice) {
         if (read('notice-dismissed', false)) notice.hidden = true;
-        notice.addEventListener('click', () => { notice.hidden = true; write('notice-dismissed', true); });
+        dismissNotice.addEventListener('click', () => { notice.hidden = true; write('notice-dismissed', true); });
     }
-    const state = { query: typeof saved.query === 'string' ? saved.query : '', instrument: read('instrument', ''), view: views.includes(saved.view) ? saved.view : 'library', expanded: null, part: null };
+    const state = { query: typeof saved.query === 'string' ? saved.query : '', instrument: read('instrument', ''), view: views.includes(saved.view) ? saved.view : 'library', expanded: null, part: null, category: typeof saved.category === 'string' ? saved.category : '' };
     let pieces = [], suggestions = [], activeSuggestion = -1, candidates = [], catalogLoaded = false;
     let favorites = new Map(), historyItems = [], accountLoaded = false, accountRequest = null;
     let launching = false, catalogRequest = null;
@@ -26,7 +27,7 @@
     const node = (tag, className, text) => { const el = document.createElement(tag); el.className = className; if (text != null) el.textContent = text; return el; };
     const button = (label, className, action) => { const el = node('button', className, label); el.type = 'button'; el.addEventListener('click', action); return el; };
     const message = text => { $('message').textContent = text; $('message').hidden = !text; };
-    const persist = () => write('state', { query: search.value, view: state.view, scroll: window.scrollY });
+    const persist = () => write('state', { query: search.value, view: state.view, scroll: window.scrollY, category: state.category });
     const json = async (url, options) => {
         const response = await fetch(url, options);
         const data = await response.json();
@@ -272,23 +273,67 @@
         h3.append(title); summary.append(star(piece), h3); row.append(summary);
         if (expanded) row.append(chooser(piece)); return row;
     }
-    function renderLibrary() {
+    const byComposer = (a, b) => a.composer_last.localeCompare(b.composer_last) || a.piece_name.localeCompare(b.piece_name);
+    function scopePieces() {
         const words = normalize(search.value).trim().split(/\s+/).filter(Boolean);
-        const byComposer = (a, b) => a.composer_last.localeCompare(b.composer_last) || a.piece_name.localeCompare(b.piece_name);
-        const matches = pieces.filter(p => preferredPart(p) && words.every(word => p.search.includes(word)))
-            .sort((a, b) => (state.instrument ? Number(b.parts.some(p => p.instrument_name === state.instrument && !p.is_score)) - Number(a.parts.some(p => p.instrument_name === state.instrument && !p.is_score)) : 0) || byComposer(a, b));
+        return { words, scoped: pieces.filter(p => preferredPart(p) && words.every(word => p.search.includes(word))) };
+    }
+    function sortPieces(a, b) {
+        return (state.instrument ? Number(b.parts.some(p => p.instrument_name === state.instrument && !p.is_score)) - Number(a.parts.some(p => p.instrument_name === state.instrument && !p.is_score)) : 0) || byComposer(a, b);
+    }
+    function renderLibrary() {
+        const { words, scoped } = scopePieces();
+        const matches = scoped.filter(p => !state.category || p.category_name === state.category).sort(sortPieces);
         if (!matches.some(p => p.piece_id === state.expanded)) state.expanded = null;
-        $('results-heading').textContent = words.length ? 'Search results' : state.instrument ? 'Music for ' + state.instrument.toLowerCase() : 'Find your next piece';
-        $('count').textContent = matches.length + ' ' + (matches.length === 1 ? 'piece' : 'pieces') + (state.instrument ? ' · Your instrument first, scores included' : ' in the library');
-        $('clear-search').hidden = !search.value; $('reset').hidden = !search.value && !state.instrument;
+        $('results-heading').textContent = words.length ? 'Search results' : state.category && state.instrument ? state.category + ' for ' + state.instrument.toLowerCase() : state.category || (state.instrument ? 'Music for ' + state.instrument.toLowerCase() : 'Find your next piece');
+        const bits = [];
+        if (state.category) bits.push(state.category);
+        if (state.instrument) bits.push('Your instrument first, scores included');
+        $('count').textContent = matches.length + ' ' + (matches.length === 1 ? 'piece' : 'pieces') + (bits.length ? ' · ' + bits.join(' · ') : ' in the library');
+        $('clear-search').hidden = !search.value; $('reset').hidden = !search.value && !state.instrument && !state.category;
         const list = $('results'); list.replaceChildren(...matches.map(p => pieceRow(p)));
         if (!matches.length) empty(list, 'No matching pieces. Try a shorter title, another composer, or another instrument.');
         updateStars();
+        renderCategories();
+    }
+    const CATEGORY_ORDER = ['Orchestra', 'Solo + Orchestra', 'Solo + Piano', 'Solo', 'Opera', 'Chamber', 'Chamber Music', 'Choral Works', 'Choral'];
+    let categories = [];
+    function setCategory(name) {
+        state.category = name; state.expanded = null; showView('library');
+        if (catalogLoaded) { renderLibrary(); }
+        persist();
+    }
+    function renderCategories(opts = {}) {
+        const box = $('categories'); if (!box) return;
+        categories = [...new Set(pieces.map(p => p.category_name).filter(Boolean))].sort((a, b) => {
+            const ai = CATEGORY_ORDER.indexOf(a), bi = CATEGORY_ORDER.indexOf(b);
+            return ((ai === -1 ? CATEGORY_ORDER.length : ai) - (bi === -1 ? CATEGORY_ORDER.length : bi)) || a.localeCompare(b);
+        });
+        const { scoped } = scopePieces();
+        const counts = new Map();
+        scoped.forEach(p => { if (p.category_name) counts.set(p.category_name, (counts.get(p.category_name) || 0) + 1); });
+        if (opts.resetStale && state.category && !counts.has(state.category)) state.category = '';
+        box.replaceChildren();
+        [['All', '', scoped.length]].concat(categories.filter(name => counts.has(name)).map(name => [name, name, counts.get(name)])).forEach(([label, value, count]) => {
+            const n = value === '' ? scoped.length : count;
+            const active = state.category === value;
+            const tab = button(label + ' (' + n + ')', 'study-category', () => setCategory(value));
+            tab.setAttribute('aria-pressed', String(active));
+            tab.setAttribute('aria-label', (value === '' ? 'Show all categories' : 'Filter by ' + value) + ', ' + n + (n === 1 ? ' piece' : ' pieces'));
+            box.append(tab);
+        });
+        box.hidden = counts.size < 2;
     }
     function closeSuggestions() { $('suggestions').hidden = true; search.setAttribute('aria-expanded', 'false'); search.removeAttribute('aria-activedescendant'); activeSuggestion = -1; }
+    function changeInstrument(name) {
+        state.instrument = name; instrument.value = name; write('instrument', name);
+        if (catalogLoaded) renderCategories({ resetStale: true });
+        changeSearch(); closeSuggestions();
+    }
     function selectSuggestion(item) {
-        if (item.type === 'Instrument') { state.instrument = item.value; instrument.value = item.value; write('instrument', item.value); search.value = ''; }
-        else search.value = item.value;
+        if (item.type === 'Category') { search.value = ''; setCategory(item.value); closeSuggestions(); search.focus(); return; }
+        if (item.type === 'Instrument') { search.value = ''; changeInstrument(item.value); search.focus(); return; }
+        search.value = item.value;
         changeSearch(); closeSuggestions(); search.focus();
     }
     function suggest() {
@@ -325,13 +370,14 @@
                     piece.composerLabel = composersBySurname.get(normalize(piece.composer_last).trim()).size > 1 ? abbreviated : piece.composer_last;
                     piece.search += ' ' + normalize(abbreviated);
                 });
+                renderCategories({ resetStale: true });
                 instrument.replaceChildren(node('option', '', 'All instruments')); instrument.firstChild.value = '';
                 const names = data.instruments.map(decode); names.forEach(name => { const option = node('option', '', name); option.value = name; instrument.append(option); });
                 if (!names.includes(state.instrument)) state.instrument = ''; instrument.value = state.instrument; search.value = state.query;
                 candidates = names.map(value => ({ value, type: 'Instrument', alias: value === 'Double Bass' ? 'bass contrabass' : '' }))
-                    .concat([...new Map(pieces.map(p => [p.composer, { value: p.composerLabel, alias: p.composer, type: 'Composer' }])).values()], ['Concerto', 'Symphony', 'Sonata', 'Suite'].map(value => ({ value, type: 'Keyword' })), pieces.map(p => ({ value: p.piece_name, type: 'Work' })));
+                    .concat([...new Map(pieces.map(p => [p.composer, { value: p.composerLabel, alias: p.composer, type: 'Composer' }])).values()], ['Concerto', 'Symphony', 'Sonata', 'Suite'].map(value => ({ value, type: 'Keyword' })), categories.map(value => ({ value, type: 'Category' })), pieces.map(p => ({ value: p.piece_name, type: 'Work' })));
                 const requestedPiece = pieces.find(p => p.piece_id === Number(new URLSearchParams(location.search).get('pieceId')));
-                if (requestedPiece) { state.query = requestedPiece.piece_name; search.value = state.query; state.instrument = ''; instrument.value = ''; state.view = 'library'; }
+                if (requestedPiece) { state.query = requestedPiece.piece_name; search.value = state.query; state.instrument = ''; instrument.value = ''; state.category = ''; state.view = 'library'; }
                 catalogLoaded = true; renderLibrary(); showView(state.view); await loadAccount().catch(error => message(error.message));
                 if (requestedPiece) {
                     const url = new URL(location.href);
@@ -360,10 +406,10 @@
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); activeSuggestion = (activeSuggestion + (event.key === 'ArrowDown' ? 1 : -1) + suggestions.length) % suggestions.length; [...$('suggestions').children].forEach((el, i) => el.setAttribute('aria-selected', String(i === activeSuggestion))); search.setAttribute('aria-activedescendant', 'study-suggestion-' + activeSuggestion); }
         if (event.key === 'Enter' && activeSuggestion >= 0) { event.preventDefault(); selectSuggestion(suggestions[activeSuggestion]); }
     });
-    instrument.addEventListener('change', () => { state.instrument = instrument.value; write('instrument', state.instrument); changeSearch(); closeSuggestions(); });
+    instrument.addEventListener('change', () => changeInstrument(instrument.value));
     $('search-form').addEventListener('submit', event => { event.preventDefault(); changeSearch(); closeSuggestions(); });
     $('clear-search').addEventListener('click', () => { search.value = ''; changeSearch(); search.focus(); });
-    $('reset').addEventListener('click', () => { search.value = ''; instrument.value = ''; state.instrument = ''; write('instrument', ''); changeSearch(); });
+    $('reset').addEventListener('click', () => { search.value = ''; instrument.value = ''; state.instrument = ''; write('instrument', ''); state.category = ''; if (catalogLoaded) renderCategories(); changeSearch(); });
     root.querySelectorAll('[data-study-query]').forEach(el => el.addEventListener('click', () => { search.value = el.dataset.studyQuery; changeSearch(); search.focus(); }));
     document.addEventListener('keydown', event => { if (root.isConnected && !document.body.classList.contains('recording-loaded') && event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) { event.preventDefault(); search.focus(); } });
     window.addEventListener('pagehide', () => { if (root.isConnected) persist(); });

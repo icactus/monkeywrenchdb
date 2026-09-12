@@ -171,11 +171,90 @@ test('construction notice dismisses on click and stays dismissed', async () => {
     h.buildContext();
     await h.settled();
     const notice = () => h.ctx().document.getElementById('study-construction-notice');
+    const dismiss = () => h.ctx().document.getElementById('study-construction-dismiss');
     assert.equal(notice().hidden, false);
-    await h.fire(notice(), 'click');
+    await h.fire(dismiss(), 'click');
     assert.equal(notice().hidden, true);
     assert.equal(h.ctx().localStorage.getItem('mw-home-notice-dismissed'), 'true');
     h.buildContext(undefined, { storage: { 'mw-home-notice-dismissed': 'true' } });
     await h.settled();
     assert.equal(notice().hidden, true);
+});
+
+test('category tabs filter the library, combine with search, and persist', async () => {
+    h.buildContext();
+    await h.settled();
+    const tabs = () => h.findByClass(h.els()['study-categories'], 'study-category');
+    const labels = () => tabs().map(b => b.textContent);
+    const tab = name => tabs().find(b => b.textContent === name || b.textContent.startsWith(name + ' ('));
+    assert.deepEqual(labels(), ['All (5)', 'Solo (2)', 'Choral (1)', 'Orchestral (2)']);
+    assert.equal(tab('All')['aria-pressed'], 'true');
+    await h.fire(tab('Solo'), 'click');
+    assert.deepEqual(h.titles(), ['Cello Suite No. 1', 'Nocturne']);
+    assert.equal(h.els()['study-count'].textContent, '2 pieces · Solo');
+    assert.equal(h.els()['study-results-heading'].textContent, 'Solo');
+    h.searchFor('nocturne');
+    assert.deepEqual(h.titles(), ['Nocturne']);
+    assert.deepEqual(labels(), ['All (1)', 'Solo (1)']);
+    h.searchFor('');
+    assert.deepEqual(h.titles(), ['Cello Suite No. 1', 'Nocturne']);
+    assert.deepEqual(labels(), ['All (5)', 'Solo (2)', 'Choral (1)', 'Orchestral (2)']);
+    assert.equal(JSON.parse(h.ctx().localStorage.getItem('mw-home-state')).category, 'Solo');
+    await h.fire(h.els()['study-reset'], 'click');
+    assert.deepEqual(h.titles(), ['Cello Suite No. 1', 'Symphony No. 5', 'Nocturne', 'Symphony No. 9', 'Requiem']);
+    assert.equal(tab('All')['aria-pressed'], 'true');
+});
+
+test('a saved category restores on load', async () => {
+    h.buildContext(undefined, { storage: {
+        'mw-home-state': JSON.stringify({ query: '', view: 'library', category: 'Choral', scroll: 0 }),
+    } });
+    await h.settled();
+    assert.deepEqual(h.titles(), ['Requiem']);
+    const tabs = h.findByClass(h.els()['study-categories'], 'study-category');
+    assert.equal(tabs.find(b => b.textContent.startsWith('Choral'))['aria-pressed'], 'true');
+});
+
+test('tab counts follow the search query without switching tabs', async () => {
+    h.buildContext();
+    await h.settled();
+    const labels = () => h.findByClass(h.els()['study-categories'], 'study-category').map(b => b.textContent);
+    h.searchFor('symphony');
+    assert.deepEqual(h.titles(), ['Symphony No. 5', 'Symphony No. 9']);
+    assert.deepEqual(labels(), ['All (2)', 'Orchestral (2)']);
+    assert.equal(h.els()['study-results-heading'].textContent, 'Search results');
+    h.searchFor('');
+    assert.deepEqual(labels(), ['All (5)', 'Solo (2)', 'Choral (1)', 'Orchestral (2)']);
+});
+
+test('tabs rescope to the selected instrument and reset a stale category', async () => {
+    const part = name => ({ metric_arr_id: 1, instrument_id: 5, instrument_name: name, is_score: false });
+    const work = (id, title, category, instrument) => ({ piece_id: id, piece_name: title, composer_first: 'Johannes', composer_last: 'Brahms', category_name: category, solo_instrument_id: 0, recording_count: 0, parts: [part(instrument)] });
+    h.buildContext(undefined, { pieces: [
+        work(11, 'Symphony', 'Orchestra', 'Violin'),
+        work(12, 'Sonata', 'Solo', 'Cello'),
+        work(13, 'Quintet', 'Chamber', 'Viola'),
+    ] });
+    await h.settled();
+    const tabs = () => h.findByClass(h.els()['study-categories'], 'study-category');
+    const labels = () => tabs().map(b => b.textContent);
+    const tab = name => tabs().find(b => b.textContent === name || b.textContent.startsWith(name + ' ('));
+    assert.deepEqual(labels(), ['All (3)', 'Orchestra (1)', 'Solo (1)', 'Chamber (1)']);
+    await h.fire(tab('Chamber'), 'click');
+    assert.deepEqual(h.titles(), ['Quintet']);
+    h.chooseInstrument('Violin');
+    assert.deepEqual(labels(), ['All (1)', 'Orchestra (1)']);
+    assert.deepEqual(h.titles(), ['Symphony']);
+    assert.equal(tab('All')['aria-pressed'], 'true');
+});
+
+test('heading names the category-instrument scope', async () => {
+    h.buildContext();
+    await h.settled();
+    const tabs = () => h.findByClass(h.els()['study-categories'], 'study-category');
+    const tab = name => tabs().find(b => b.textContent === name || b.textContent.startsWith(name + ' ('));
+    h.chooseInstrument('Cello');
+    await h.fire(tab('Solo'), 'click');
+    assert.equal(h.els()['study-results-heading'].textContent, 'Solo for cello');
+    assert.equal(h.els()['study-count'].textContent, '1 piece · Solo · Your instrument first, scores included');
 });

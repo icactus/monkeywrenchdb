@@ -91,9 +91,9 @@ function buildContext(sourceOverride, options = {}) {
     allElements = [];
     launched = [];
     els = {};
-    const staticIds = ['study-home', 'study-construction-notice', 'study-search', 'study-instrument', 'study-suggestions',
+    const staticIds = ['study-home', 'study-construction-notice', 'study-construction-dismiss', 'study-search', 'study-instrument', 'study-suggestions',
         'study-message', 'study-results', 'study-count', 'study-results-heading',
-        'study-clear-search', 'study-reset', 'study-search-form', 'recordings-dropdown',
+        'study-clear-search', 'study-reset', 'study-search-form', 'study-categories', 'recordings-dropdown',
         'study-library-panel', 'study-history-panel', 'study-favorites-panel',
         'study-library-tab', 'study-history-tab', 'study-favorites-tab',
         'study-history-list', 'study-favorites-list'];
@@ -175,9 +175,12 @@ function chooseInstrument(name) {
 
 function resetFilters() {
     els['study-search'].value = '';
-    fire(els['study-clear-search'], 'click');
+    fire(els['study-search'], 'input');
     els['study-instrument'].value = '';
     fire(els['study-instrument'], 'change');
+    const all = findByClass(els['study-categories'], 'study-category')
+        .find(b => b.textContent === 'All' || String(b.textContent).startsWith('All ('));
+    if (all && all['aria-pressed'] !== 'true') fire(all, 'click');
 }
 
 function titleButton(name) {
