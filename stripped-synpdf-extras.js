@@ -72,6 +72,7 @@ window.__isTogglingFullscreen = false;   // suppress auto-zoom during FS transit
 window.__preFS = null;                   // stash zoom + position before toggling
 window.MW = window.MW || {};
 let __mwSwitchSeq = 0;
+let __mwPartSwitchSeq = 0;
 window.MW.player = {
     get instrumentId() { return currentInstrumentGlobal; },
     set instrumentId(v) { currentInstrumentGlobal = v; },
@@ -98,6 +99,41 @@ window.MW.player = {
     get switchSeq() { return __mwSwitchSeq; },
     nextSwitch() { return ++__mwSwitchSeq; }
 };
+
+function clearPlayerLoadError(kind) {
+    document.getElementById('player-load-error-' + kind)?.remove();
+    const overlay = document.getElementById('player-load-errors');
+    if (overlay && !overlay.children.length) overlay.remove();
+}
+
+function showPlayerLoadError(kind, text, retry) {
+    clearPlayerLoadError(kind);
+    let overlay = document.getElementById('player-load-errors');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'player-load-errors';
+        document.getElementById('notation').append(overlay);
+    }
+    const card = document.createElement('div');
+    card.id = 'player-load-error-' + kind;
+    card.setAttribute('role', 'alert');
+    const info = document.createElement('p');
+    info.textContent = text;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'Retry';
+    button.addEventListener('click', () => { clearPlayerLoadError(kind); retry(); });
+    card.append(info, button);
+    overlay.append(card);
+}
+
+async function fetchPlayerJson(url) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Request failed (' + response.status + ')');
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+    return data;
+}
 
 // --- Hi-Res PDFs toggle ---
 window.hiResPdfsEnabled = false;
@@ -936,7 +972,7 @@ if (typeof headerTitleQuery.addEventListener === 'function') {
     headerTitleQuery.addListener(updateHeaderTitle);
 }
 
-async function loadRecording(recordingFullData) {
+async function loadRecording(recordingFullData, partSeq = null) {
     // Remember the exact numbered part/edition, including changes made in the player.
     try {
         localStorage.setItem('mw-home-part-' + recordingFullData.piece_id, JSON.stringify(Number(recordingFullData.metric_arr_id)));
@@ -973,7 +1009,7 @@ async function loadRecording(recordingFullData) {
     // If data exists in cache, refresh its pdf path to match current mode
     if (storedData) {
         storedData.pdf_file_name = `${getPdfBaseDir()}${buildPdfFilename(storedData.piece_id, storedData.instrument_id, storedData.edition_label)}`;
-        await sendVarToSynpdf(storedData);
+        await sendVarToSynpdf(storedData, partSeq);
     } else {
         // If data does not exist in cache, create it with the correct base dir
         console.log('Building PDF filename:', { piece: recordingFullData.piece_id, inst: recordingFullData.instrument_id, edition: recordingFullData.edition_label });
@@ -982,7 +1018,7 @@ async function loadRecording(recordingFullData) {
         recordingFullData.pdf_file_name = pdfFileName;
         recordingFullData.timestamp = Date.now();
         recordingCache[storedId] = recordingFullData;
-        await sendVarToSynpdf(recordingFullData);
+        await sendVarToSynpdf(recordingFullData, partSeq);
     }
 
     // Send a page view event to Google Analytics with the updated title
@@ -996,7 +1032,8 @@ async function loadRecording(recordingFullData) {
 
 
 // Fetch metric_arr and times_arr from static JSON files in parallel
-async function sendVarToSynpdf(recordingFullData) {
+async function sendVarToSynpdf(recordingFullData, partSeq = null) {
+    const recordingSeq = window.MW.player.switchSeq;
     pdf_file$$module$synpdf = recordingFullData.pdf_file_name;
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
@@ -1008,22 +1045,26 @@ async function sendVarToSynpdf(recordingFullData) {
         ? `data/metrics/${metricId}.json?v=${encodeURIComponent(metricCacheBust)}`
         : `data/metrics/${metricId}.json`;
 
-    const metricPromise = fetch(metricUrl).then(r => r.json());
+    const metricPromise = fetchPlayerJson(metricUrl);
     const timesPromise = recordingFullData.times_arr_data
         ? Promise.resolve(
             typeof recordingFullData.times_arr_data === 'string'
                 ? JSON.parse(recordingFullData.times_arr_data)
                 : recordingFullData.times_arr_data
         )
-        : fetch(`data/times/${recordingId}.json`).then(r => r.json());
+        : fetchPlayerJson(`data/times/${recordingId}.json`);
 
     const [metricData, timesData] = await Promise.all([
         metricPromise,
         timesPromise
     ]);
 
+    if (partSeq !== null && partSeq !== __mwPartSwitchSeq) return;
     deMetriek$$module$synpdf = metric_arr$$module$synpdf = metricData;
-    deTijden$$module$synpdf = times_arr$$module$synpdf = timesData;
+    // A recording switch may finish while the part's metrics are downloading.
+    if (recordingSeq === window.MW.player.switchSeq) {
+        deTijden$$module$synpdf = times_arr$$module$synpdf = timesData;
+    }
 }
 
 
@@ -1043,38 +1084,30 @@ function addInvertButtonListener() {
 }
 
 function fetchNewInstrument(metricArrId) {
-    return new Promise((resolve, reject) => {
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", "get_new_instrument_data.php?metricId=" + metricArrId, true);
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                let partData = JSON.parse(xhr.responseText);
-                resolve(partData);
-            } else if (xhr.readyState === 4) {
-                reject(xhr.status);
-            }
-        };
-        xhr.send();
-    });
+    return fetchPlayerJson('get_new_instrument_data.php?metricId=' + metricArrId);
 }
 
 $('#instruments-dropdown').change(function () {
     const selectedOption = $(this).find('option:selected');
     const instrumentData = selectedOption.data('instrumentData');
     if (!instrumentData || !instrumentData.metric_arr_id) return;
-    const seq = window.MW.player.nextSwitch();
+    const seq = ++__mwPartSwitchSeq;
+    clearPlayerLoadError('part');
+    clearPlayerLoadError('pdf');
     console.log('INSTRUMENT DROPDOWN DATA:', instrumentData);
     window.MW.player.instrumentId = instrumentData.instrument_id;
     window.MW.player.metricArrId = instrumentData.metric_arr_id;
+    if (currentPdfLoadingTask$$module$synpdf) {
+        currentPdfLoadingTask$$module$synpdf.destroy();
+        currentPdfLoadingTask$$module$synpdf = null;
+    }
     document.getElementById("notation-scroll").innerHTML = "";  // Clear notation section
 
-    // Get current recording from dropdown to ensure preloaded data
-    const recordingOption = $('#recordings-dropdown').find('option:selected');
-    const recordingFullData = recordingOption.data('recordingFullData') || {};
-
+    // Read the recording after metadata arrives, since it may change in the meantime.
     fetchNewInstrument(instrumentData.metric_arr_id)
         .then(partData => {
-            if (seq !== window.MW.player.switchSeq) return;
+            if (seq !== __mwPartSwitchSeq) return;
+            const recordingFullData = $('#recordings-dropdown').find('option:selected').data('recordingFullData') || {};
             renderedCanvasesQueue = [];
             renderingTasks = [];
             renderedCanvasesQueue = new Set();
@@ -1091,9 +1124,9 @@ $('#instruments-dropdown').change(function () {
                 pdf_file_name: `${getPdfBaseDir()}${buildPdfFilename(window.MW.player.recordingData.piece_id, instrumentData.instrument_id, instrumentData.edition_label)}`
             };
 
-            loadRecording(updatedRecordingFullData)
+            return loadRecording(updatedRecordingFullData, seq)
                 .then(() => {
-                    if (seq !== window.MW.player.switchSeq) return;
+                    if (seq !== __mwPartSwitchSeq) return;
                     msc_wz$$module$synpdf = null;
                     newInstrumentTime2xFlag = 1;
                     twoUpInitialScrollPending = window.twoUpMode ? true : false;
@@ -1105,10 +1138,13 @@ $('#instruments-dropdown').change(function () {
                     if (typeof initAnnotations === 'function') {
                         initAnnotations(partData.metric_arr_id);
                     }
-                })
-                .catch(error => console.error(`Error loading recording: ${error}`));
+                });
         })
-        .catch(error => console.error(`Error fetching new instrument: ${error}`));
+        .catch(error => {
+            if (seq !== __mwPartSwitchSeq) return;
+            console.error('Part load failed:', error);
+            showPlayerLoadError('part', 'Could not load this part. Check your connection and try again.', () => $('#instruments-dropdown').trigger('change'));
+        });
 });
 
 
@@ -1117,17 +1153,31 @@ $('#recordings-dropdown').change(async function () {
     const recordingFullData = selectedOption.data('recordingFullData');
     if (!recordingFullData || !recordingFullData.recording_id) return;
     const seq = window.MW.player.nextSwitch();
+    clearPlayerLoadError('recording');
     window.MW.player.recordingId = recordingFullData.recording_id;
     window.MW.player.bypassTick = 1;
     window.MW.player.blockTime2x = true;
     window.MW.player.switching = true;
 
     // Fetch times_arr from static file
-    const timesData = await fetch(`data/times/${recordingFullData.recording_id}.json`).then(r => r.json());
+    let timesData;
+    try {
+        timesData = await fetchPlayerJson(`data/times/${recordingFullData.recording_id}.json`);
+    } catch (error) {
+        if (seq !== window.MW.player.switchSeq) return;
+        window.MW.player.bypassTick = 0;
+        window.MW.player.blockTime2x = false;
+        window.MW.player.switching = false;
+        console.error('Recording load failed:', error);
+        showPlayerLoadError('recording', 'Could not load this recording. Check your connection and try again.', () => $('#recordings-dropdown').trigger('change'));
+        return;
+    }
     if (seq !== window.MW.player.switchSeq) return;
     deTijden$$module$synpdf = times_arr$$module$synpdf = timesData;
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
+    window.MW.player.recordingData = { ...window.MW.player.recordingData,
+        recording_id: recordingFullData.recording_id, offset_js: recordingFullData.offset_js, youtube_id: recordingFullData.youtube_id };
 
     dummyPlayer$$module$synpdf.clearKlok();
     console.log("Switch started. Blocking time2x, hiding overlay, stopping tick.");
@@ -1258,6 +1308,10 @@ function handleRecordingSelection(recordingFullData) {
         })
         .catch(function (error) {
             console.error("An error occurred while loading recording:", error);
+            showPlayerLoadError('part', 'Could not load this piece. Check your connection and try again.', () => {
+                clearPlayerLoadError('part');
+                handleRecordingSelection(recordingFullData);
+            });
         });
 }
 //Listener so back button goes to homepage but only if on recording page

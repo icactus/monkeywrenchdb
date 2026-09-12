@@ -105,3 +105,31 @@ test('starring while signed out asks for sign-in', async () => {
     await h.fire(h.starButtons()[0], 'click');
     assert.match(h.els()['study-message'].textContent, /Sign in/);
 });
+
+test('an instrument filter still lets a violinist choose the second part', async () => {
+    h.resetFilters();
+    h.chooseInstrument('Violin');
+    h.launched().length = 0;
+    await h.fire(h.titleButton('Symphony No. 9'), 'click');
+    assert.equal(h.launched().length, 0, 'multiple matching parts must not autostart');
+    let panel = h.ctx().document.getElementById('study-chooser-3');
+    const materials = h.findByClass(panel, 'study-materials')[0];
+    assert.deepEqual(materials.children.map(b => b.textContent), ['Violin 1', 'Violin 2']);
+    await h.fire(materials.children[1], 'click');
+    panel = h.ctx().document.getElementById('study-chooser-3');
+    const recording = h.findByClass(panel, 'study-recording')[0];
+    await h.fire(h.findByClass(recording, 'study-open')[0], 'click');
+    assert.equal(h.launched()[0].metric_arr_id, 32);
+});
+
+test('returning to the homepage ignores previously saved expanded recordings', async () => {
+    h.buildContext(undefined, { storage: {
+        'mw-home-state': JSON.stringify({ query: 'Symphony', view: 'library', expanded: 1, metric: 11, scroll: 0 }),
+        'mw-home-instrument': JSON.stringify('Violin'),
+    } });
+    await h.settled();
+    assert.equal(h.els()['study-search'].value, 'Symphony');
+    assert.equal(h.els()['study-instrument'].value, 'Violin');
+    assert.equal(h.findByClass(h.els()['study-results'], 'study-chooser').length, 0);
+    assert.equal('expanded' in JSON.parse(h.ctx().localStorage.getItem('mw-home-state')), false);
+});

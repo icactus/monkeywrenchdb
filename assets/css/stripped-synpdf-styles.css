@@ -682,6 +682,31 @@ a {
     color: #003954;
 }
 
+#notation { position: relative; }
+#player-load-errors {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 24px;
+    background: rgba(245, 247, 247, .92);
+    color: #233e45;
+    text-align: center;
+}
+#player-load-errors button {
+    padding: 10px 24px;
+    border: 1px solid #376a73;
+    border-radius: 6px;
+    background: #376a73;
+    color: white;
+    cursor: pointer;
+}
+#player-load-errors button:focus-visible { outline: 3px solid #aa7510; outline-offset: 3px; }
+
 #notation-scroll {
     position: relative;
     flex: 1;

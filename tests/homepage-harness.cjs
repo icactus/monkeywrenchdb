@@ -38,7 +38,7 @@ function makeEl(tag) {
         hidden: false, value: '', id: '', title: '', tabIndex: 0, href: '', parent: null, _l: {},
         append(...items) { items.flat().forEach(c => { if (c !== null && c !== undefined && c !== false) { el.children.push(c); if (c && typeof c === 'object') c.parent = el; } }); },
         appendChild(c) { el.append(c); return c; },
-        replaceChildren(...items) { el.children = []; el.append(...items); },
+        replaceChildren(...items) { el.children.forEach(c => { c.parent = null; }); el.children = []; el.append(...items); },
         addEventListener(type, fn) { el._l[type] = fn; },
         removeEventListener() {},
         setAttribute(k, v) { el[k] = v; },
@@ -46,7 +46,7 @@ function makeEl(tag) {
         focus() {}, click() {}, remove() {},
         closest() { return null; },
         contains() { return true; },
-        get isConnected() { return true; },
+        get isConnected() { return el.parent ? el.parent.isConnected : Object.values(els || {}).includes(el); },
         get firstChild() { return el.children[0]; },
         querySelector(sel) { return findAll(el, sel)[0] || null; },
         querySelectorAll(sel) { return findAll(el, sel); },
@@ -87,7 +87,7 @@ function fire(el, type, event = {}) {
 
 let ctx, els, launched;
 
-function buildContext(sourceOverride) {
+function buildContext(sourceOverride, options = {}) {
     allElements = [];
     launched = [];
     els = {};
@@ -105,7 +105,7 @@ function buildContext(sourceOverride) {
     els['study-search'].value = '';
     els['study-search'].focus = () => {};
 
-    const store = {};
+    const store = { ...options.storage };
     const catalog = { pieces: FIXTURE_PIECES, instruments: ['Cello', 'Piano', 'Violin'] };
 
     ctx = {
@@ -113,7 +113,7 @@ function buildContext(sourceOverride) {
         URLSearchParams,
         URL,
         document: {
-            getElementById: id => els[id] || allElements.find(e => e.id === id) || null,
+            getElementById: id => els[id] || allElements.find(e => e.id === id && e.isConnected) || null,
             createElement: tag => makeEl(tag),
             activeElement: { tagName: 'BODY' },
             addEventListener() {},

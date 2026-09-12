@@ -21,7 +21,7 @@
     const node = (tag, className, text) => { const el = document.createElement(tag); el.className = className; if (text != null) el.textContent = text; return el; };
     const button = (label, className, action) => { const el = node('button', className, label); el.type = 'button'; el.addEventListener('click', action); return el; };
     const message = text => { $('message').textContent = text; $('message').hidden = !text; };
-    const persist = () => write('state', { query: search.value, view: state.view, scroll: window.scrollY, expanded: state.expanded, metric: state.part?.metric_arr_id });
+    const persist = () => write('state', { query: search.value, view: state.view, scroll: window.scrollY });
     const json = async (url, options) => {
         const response = await fetch(url, options);
         const data = await response.json();
@@ -60,6 +60,9 @@
             || eligible.find(p => p.instrument_id === piece.solo_instrument_id)
             || eligible.find(p => !p.edition_label && (!p.part_number || p.part_number === '1'))
             || eligible[0] || piece.parts.find(p => p.is_score) || null;
+    }
+    function availableParts(piece) {
+        return state.instrument ? piece.parts.filter(p => p.instrument_name === state.instrument && !p.is_score) : piece.parts;
     }
     function recordingsFor(piece) {
         if (!recordingRequests.has(piece.piece_id)) {
@@ -202,8 +205,8 @@
             const recordings = await recordingsFor(piece);
             if (state.expanded !== piece.piece_id || !panel.isConnected) return;
             if (!recordings.length) { empty(holder, 'No recordings are available for this piece yet.'); return; }
-            // With no chosen instrument and several materials, let the user choose a part first.
-            if (allowSingle && recordings.length === 1 && (state.instrument || piece.parts.length === 1 || trigger)) { await start(piece, part, recordings[0], trigger); return; }
+            // An instrument preference can still have several numbered parts or editions.
+            if (allowSingle && recordings.length === 1 && (availableParts(piece).length <= 1 || (!state.instrument && trigger))) { await start(piece, part, recordings[0], trigger); return; }
             renderRecordings(piece, recordings, holder);
         } catch (error) { if (panel.isConnected) empty(holder, 'Could not load recordings.', () => openPiece(piece, state.part, null, false)); }
         persist();
@@ -228,9 +231,10 @@
         info.append(heading, node('p', '', piece.recording_count + ' recordings · ' + partLabel(state.part)));
         const close = button('Close ↑', 'study-text-button', () => { state.expanded = null; renderLibrary(); $('title-' + piece.piece_id)?.focus({ preventScroll: true }); persist(); });
         top.append(info, close); panel.append(top);
-        if (!state.instrument && piece.parts.length > 1) {
+        const parts = availableParts(piece);
+        if (parts.length > 1) {
             const materials = node('div', 'study-materials', ''); materials.setAttribute('role', 'group'); materials.setAttribute('aria-label', 'Study material');
-            piece.parts.forEach(part => { const b = button(partLabel(part), 'study-open', () => openPiece(piece, part, null, false)); b.setAttribute('aria-pressed', String(part.metric_arr_id === state.part.metric_arr_id)); materials.append(b); }); panel.append(materials);
+            parts.forEach(part => { const b = button(partLabel(part), 'study-open', () => openPiece(piece, part, null, false)); b.setAttribute('aria-pressed', String(part.metric_arr_id === state.part.metric_arr_id)); materials.append(b); }); panel.append(materials);
         }
         const recordings = node('div', 'study-recordings', ''); empty(recordings, 'Loading recordings…'); panel.append(recordings); return panel;
     }
@@ -306,9 +310,6 @@
                     url.searchParams.delete('pieceId');
                     history.replaceState(null, '', url);
                     await openPiece(requestedPiece, preferredPart(requestedPiece), null, false);
-                }                else if (saved.expanded && state.view === 'library') {
-                    const piece = pieces.find(p => p.piece_id === saved.expanded), part = piece?.parts.find(p => p.metric_arr_id === saved.metric);
-                    if (piece && part) await openPiece(piece, part, null, false);
                 }
                 if (Number.isFinite(saved.scroll)) requestAnimationFrame(() => window.scrollTo(0, saved.scroll));
             } catch (error) { $('count').textContent = 'Library unavailable'; empty($('results'), error.message, loadCatalog); }

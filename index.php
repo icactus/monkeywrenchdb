@@ -106,7 +106,7 @@ if ($hasInitialRecordingTarget) {
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=34" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=276" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=277" />
     <link rel="stylesheet" href="assets/css/homepage.css?v=3" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -778,9 +778,9 @@ if ($hasInitialRecordingTarget) {
     </div>
     <script src="js/history-manager.js?v=6"></script>
     <script src="js/favorites-manager.js?v=3"></script>
-    <script src="stripped-synpdf.js?v=327"></script>
-    <script src="stripped-synpdf-extras.js?v=282"></script>
-    <script src="js/homepage.js?v=3"></script>
+    <script src="stripped-synpdf.js?v=328"></script>
+    <script src="stripped-synpdf-extras.js?v=283"></script>
+    <script src="js/homepage.js?v=4"></script>
     <script>
         // Dark Mode menu toggles - wire up immediately on page load
         $(function () {

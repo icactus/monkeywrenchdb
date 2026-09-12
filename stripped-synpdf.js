@@ -1856,6 +1856,7 @@ async function buildAllPageShells$$module$synpdf() {
 }
 
 function readPdf$$module$synpdf(pdfData, dataType) {
+    if (typeof clearPlayerLoadError === 'function') clearPlayerLoadError('pdf');
     // Cancel any existing PDF load
     if (currentPdfLoadingTask$$module$synpdf) {
         console.debug("[PDF] Cancelling previous load");
@@ -1939,6 +1940,7 @@ function readPdf$$module$synpdf(pdfData, dataType) {
 
         // Progress handler
         loadingTask.onProgress = function (progressData) {
+            if (currentPdfLoadingTask$$module$synpdf !== loadingTask) return;
             if (shouldUpdate) {
                 const currentTime = new Date().getTime();
                 const elapsedTime = (currentTime - startTime) / 1000;
@@ -1974,6 +1976,7 @@ function readPdf$$module$synpdf(pdfData, dataType) {
         // Handle PDF load
         loadingTask.promise
             .then(function (pdf) {
+                if (currentPdfLoadingTask$$module$synpdf !== loadingTask) return;
                 console.debug("[PDF] PDF.js loaded successfully");
                 currentPdfLoadingTask$$module$synpdf = null; // Clear on success
                 pdfDoc$$module$synpdf = pdf;
@@ -1982,6 +1985,7 @@ function readPdf$$module$synpdf(pdfData, dataType) {
                 readPdfdoc$$module$synpdf();
             })
             .catch(function (error) {
+                if (currentPdfLoadingTask$$module$synpdf !== loadingTask) return;
                 currentPdfLoadingTask$$module$synpdf = null; // Clear on failure
                 // Ignore cancellation/termination errors (expected when switching parts or retrying)
                 if (error.name === "RenderingCancelledException" ||
@@ -1991,6 +1995,9 @@ function readPdf$$module$synpdf(pdfData, dataType) {
                     return;
                 }
                 console.error("[PDF] PDF.js load failed:", error);
+                if (typeof showPlayerLoadError === 'function') {
+                    showPlayerLoadError('pdf', 'Could not load the PDF. Check your connection and try again.', retryPdfLoad$$module$synpdf);
+                }
                 // Add detailed error handling
                 if (error.name === "InvalidPDFException") {
                     console.error("[PDF] Corrupted PDF structure:", error.message);
@@ -2771,10 +2778,11 @@ function pauseer$$module$synpdf() {
 }
 
 function keyDown$$module$synpdf(a) {
-    // --- guard: if typing in any input/textarea, ignore shortcuts ---
+    // Homepage controls and native form/button actions own their keyboard events.
+    if (!document.body.classList.contains('recording-loaded') || a.defaultPrevented || a.isDefaultPrevented?.()) return;
     var activeEl = document.activeElement;
-    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-        return; // let the input handle keys normally
+    if (activeEl && (activeEl.isContentEditable || activeEl.closest('input, textarea, select, button, a[href], [role="button"], [role="tab"]'))) {
+        return;
     }
     var b = a.key,
         c = 1;
