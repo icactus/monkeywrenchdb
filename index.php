@@ -105,9 +105,9 @@ if ($hasInitialRecordingTarget) {
     <meta name="theme-color" content="#000000" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
-    <link rel="stylesheet" href="assets/css/fonts.css?v=33" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=275" />
-    <link rel="stylesheet" href="assets/css/homepage.css?v=2" />
+    <link rel="stylesheet" href="assets/css/fonts.css?v=34" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=276" />
+    <link rel="stylesheet" href="assets/css/homepage.css?v=3" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -116,7 +116,7 @@ if ($hasInitialRecordingTarget) {
     <script src="jquery.min.js"></script>
     <?php if (false): // Markings Mode Disabled ?>
         <?php if (isset($_SESSION['user_id']) || $is_share_link): ?>
-            <script src="js/annotation-layer.js?v=105"></script>
+            <script src="js/annotation-layer.js?v=106"></script>
         <?php endif; ?>
     <?php endif; ?>
     <script>
@@ -776,11 +776,11 @@ if ($hasInitialRecordingTarget) {
     <div id="notification">
         Link copied to clipboard!
     </div>
-    <script src="js/history-manager.js?v=5"></script>
-    <script src="js/favorites-manager.js?v=2"></script>
-    <script src="stripped-synpdf.js?v=326"></script>
-    <script src="stripped-synpdf-extras.js?v=281"></script>
-    <script src="js/homepage.js?v=2"></script>
+    <script src="js/history-manager.js?v=6"></script>
+    <script src="js/favorites-manager.js?v=3"></script>
+    <script src="stripped-synpdf.js?v=327"></script>
+    <script src="stripped-synpdf-extras.js?v=282"></script>
+    <script src="js/homepage.js?v=3"></script>
     <script>
         // Dark Mode menu toggles - wire up immediately on page load
         $(function () {
