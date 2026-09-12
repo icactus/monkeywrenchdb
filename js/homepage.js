@@ -12,6 +12,11 @@
     const read = (key, fallback = null) => { try { return JSON.parse(localStorage.getItem('mw-home-' + key)) ?? fallback; } catch { return fallback; } };
     const write = (key, value) => { try { localStorage.setItem('mw-home-' + key, JSON.stringify(value)); } catch {} };
     const saved = read('state', {});
+    const notice = document.getElementById('study-construction-notice');
+    if (notice) {
+        if (read('notice-dismissed', false)) notice.hidden = true;
+        notice.addEventListener('click', () => { notice.hidden = true; write('notice-dismissed', true); });
+    }
     const state = { query: typeof saved.query === 'string' ? saved.query : '', instrument: read('instrument', ''), view: views.includes(saved.view) ? saved.view : 'library', expanded: null, part: null };
     let pieces = [], suggestions = [], activeSuggestion = -1, candidates = [], catalogLoaded = false;
     let favorites = new Map(), historyItems = [], accountLoaded = false, accountRequest = null;
@@ -163,18 +168,30 @@
         }).finally(() => { accountRequest = null; });
         return accountRequest;
     }
+    function rowButton(piece, action) {
+        const title = button('', 'study-title', action);
+        const label = node('span', 'study-row-label', '');
+        const composer = node('span', 'study-composer', piece.composerLabel);
+        composer.title = piece.composer;
+        label.append(composer, node('span', 'study-title-divider', ' — '), node('span', 'study-work-name', piece.piece_name));
+        const chevron = node('span', 'study-chevron', '›'); chevron.setAttribute('aria-hidden', 'true');
+        title.append(label, chevron);
+        return title;
+    }
     function sessionRow(piece, item) {
-        const row = node('article', 'study-piece', ''), summary = node('div', 'study-summary', ''), info = node('div', '', '');
+        const row = node('article', 'study-piece study-history-row', '');
         const part = piece.parts.find(p => p.metric_arr_id === Number(item.metric_arr_id));
-        info.append(node('div', 'study-composer', piece.composer), node('h3', '', piece.piece_name), node('p', 'study-history-info', [part ? partLabel(part) : '', decode(item.conductor_name), decode(item.ensemble_name), item.viewed_at ? 'Opened ' + item.viewed_at : ''].filter(Boolean).join(' · ')));
-        const actions = node('div', 'study-actions', '');
-        actions.append(button('Reopen →', 'study-open primary', async event => {
+        const title = rowButton(piece, async event => {
+            const trigger = event.currentTarget;
             try {
                 const recordings = await recordingsFor(piece), recording = recordings.find(r => r.recording_id === Number(item.recording_id));
-                if (part && recording) await start(piece, part, recording, event.currentTarget);
+                if (part && recording) await start(piece, part, recording, trigger);
                 else openSaved(piece);
             } catch (error) { message(error.message); }
-        })); summary.append(info, actions); row.append(summary); return row;
+        });
+        title.querySelector('.study-row-label').append(node('span', 'study-history-info', [part ? partLabel(part) : '', decode(item.conductor_name), decode(item.ensemble_name), item.viewed_at ? 'Opened ' + item.viewed_at : ''].filter(Boolean).join(' · ')));
+        title.setAttribute('aria-label', 'Reopen ' + piece.composerLabel + ' — ' + piece.piece_name);
+        row.append(title); return row;
     }
     function renderHistory() {
         const list = $('history-list'); if (!window.loggedInUserId) return;
@@ -194,7 +211,7 @@
         if (!list.children.length) empty(list, 'No favorites yet. Select the star beside a piece to save it here.');
         updateStars();
     }
-    async function openPiece(piece, part, trigger, allowSingle = true) {
+    async function openPiece(piece, part) {
         closeSuggestions(); message('');
         if (!part) return;
         state.expanded = piece.piece_id; state.part = part; showView('library'); renderLibrary();
@@ -205,10 +222,8 @@
             const recordings = await recordingsFor(piece);
             if (state.expanded !== piece.piece_id || !panel.isConnected) return;
             if (!recordings.length) { empty(holder, 'No recordings are available for this piece yet.'); return; }
-            // An instrument preference can still have several numbered parts or editions.
-            if (allowSingle && recordings.length === 1 && (availableParts(piece).length <= 1 || (!state.instrument && trigger))) { await start(piece, part, recordings[0], trigger); return; }
             renderRecordings(piece, recordings, holder);
-        } catch (error) { if (panel.isConnected) empty(holder, 'Could not load recordings.', () => openPiece(piece, state.part, null, false)); }
+        } catch (error) { if (panel.isConnected) empty(holder, 'Could not load recordings.', () => openPiece(piece, state.part)); }
         persist();
     }
     function renderRecordings(piece, recordings, holder) {
@@ -217,11 +232,11 @@
         const last = read('recording-' + piece.piece_id, recent ? Number(recent.recording_id) : null);
         const sorted = [...recordings].sort((a, b) => Number(b.recording_id === last) - Number(a.recording_id === last) || (parseInt(a.year) || 0) - (parseInt(b.year) || 0) || recordingName(a).localeCompare(recordingName(b)));
         sorted.forEach(recording => {
-            const row = node('div', 'study-recording', ''), info = node('div', '', ''), name = node('div', 'study-recording-name', recordingName(recording));
+            const row = button('', 'study-recording', event => start(piece, state.part, recording, event.currentTarget)), info = node('span', '', ''), name = node('span', 'study-recording-name', recordingName(recording));
             if (recording.recording_id === last) name.append(node('span', 'study-last', 'Last practiced'));
-            info.append(name, node('div', 'study-recording-credit', recordingCredit(recording)));
-            const go = button('Start →', 'study-open primary', event => start(piece, state.part, recording, event.currentTarget));
-            go.setAttribute('aria-label', 'Start ' + piece.piece_name + ' with ' + recordingName(recording)); row.append(info, go); holder.append(row);
+            info.append(name, node('span', 'study-recording-credit', recordingCredit(recording)));
+            const arrow = node('span', 'study-chevron', '→'); arrow.setAttribute('aria-hidden', 'true');
+            row.setAttribute('aria-label', 'Start ' + piece.piece_name + ' with ' + recordingName(recording)); row.append(info, arrow); holder.append(row);
         });
     }
     function chooser(piece) {
@@ -234,28 +249,28 @@
         const parts = availableParts(piece);
         if (parts.length > 1) {
             const materials = node('div', 'study-materials', ''); materials.setAttribute('role', 'group'); materials.setAttribute('aria-label', 'Study material');
-            parts.forEach(part => { const b = button(partLabel(part), 'study-open', () => openPiece(piece, part, null, false)); b.setAttribute('aria-pressed', String(part.metric_arr_id === state.part.metric_arr_id)); materials.append(b); }); panel.append(materials);
+            parts.forEach(part => { const b = button(partLabel(part), 'study-open', () => openPiece(piece, part)); b.setAttribute('aria-pressed', String(part.metric_arr_id === state.part.metric_arr_id)); materials.append(b); }); panel.append(materials);
         }
         const recordings = node('div', 'study-recordings', ''); empty(recordings, 'Loading recordings…'); panel.append(recordings); return panel;
     }
     function pieceRow(piece, savedView = false) {
         const expanded = !savedView && state.expanded === piece.piece_id;
         const row = node('article', 'study-piece' + (expanded ? ' expanded' : ''), ''); row.dataset.pieceId = piece.piece_id;
-        const summary = node('div', 'study-summary', ''), heading = node('div', 'study-piece-heading', ''), info = node('div', '', ''), h3 = node('h3', '', '');
-        const title = button(piece.piece_name, 'study-title', () => savedView ? openSaved(piece) : openPiece(piece, preferredPart(piece)));
+        const summary = node('div', 'study-summary', ''), h3 = node('h3', '', '');
+        const title = rowButton(piece, () => {
+            if (savedView) return openSaved(piece);
+            if (expanded) {
+                state.expanded = null; renderLibrary(); $('title-' + piece.piece_id)?.focus({ preventScroll: true }); persist(); return;
+            }
+            const pending = openPiece(piece, preferredPart(piece));
+            $('title-' + piece.piece_id)?.focus({ preventScroll: true });
+            return pending;
+        });
         if (!savedView) { title.id = 'study-title-' + piece.piece_id; title.setAttribute('aria-expanded', String(expanded)); if (expanded) title.setAttribute('aria-controls', 'study-chooser-' + piece.piece_id); }
-        h3.append(title); info.append(node('div', 'study-composer', piece.composer), h3); heading.append(star(piece), info);
-        const actions = node('div', 'study-actions', ''), part = preferredPart(piece), score = piece.parts.find(p => p.is_score);
-        const action = (label, material, primary) => actions.append(button(label, 'study-open' + (primary ? ' primary' : ''), event => savedView ? openSaved(piece) : openPiece(piece, material, event.currentTarget)));
-        if (savedView) actions.append(button('Open piece →', 'study-open primary', () => openSaved(piece)));
-        else if (state.instrument) { if (part && !part.is_score) action(state.instrument, part, true); else if (score) action(scoreLabel(score), score, false); }
-        else {
-            const parts = piece.parts.filter(p => !p.is_score);
-            if (parts.length === 1) action(parts[0].instrument_name, parts.includes(part) ? part : parts[0], true);
-            else if (parts.length > 1) actions.append(button('Choose a part', 'study-open primary', () => openPiece(piece, parts.includes(part) ? part : parts[0], null, false)));
-            if (score) action(scoreLabel(score), score, !parts.length);
-        }
-        summary.append(heading, actions); row.append(summary); if (expanded) row.append(chooser(piece)); return row;
+        const part = preferredPart(piece);
+        if (state.instrument && part?.is_score) title.querySelector('.study-row-label').append(node('span', 'study-material-note', scoreLabel(part) + ' only'));
+        h3.append(title); summary.append(star(piece), h3); row.append(summary);
+        if (expanded) row.append(chooser(piece)); return row;
     }
     function renderLibrary() {
         const words = normalize(search.value).trim().split(/\s+/).filter(Boolean);
@@ -297,11 +312,24 @@
                     piece.composer = [piece.composer_first, piece.composer_last].filter(Boolean).join(' ');
                     piece.search = normalize([piece.piece_name, piece.composer, piece.category_name, ...piece.parts.map(part => part.instrument_name), ...piece.parts.filter(part => part.is_score).map(() => 'full score')].join(' ')); return piece;
                 });
+                // Disambiguate across the whole catalog, so labels stay stable as filters change.
+                const composersBySurname = new Map();
+                pieces.forEach(piece => {
+                    const surname = normalize(piece.composer_last).trim();
+                    if (!composersBySurname.has(surname)) composersBySurname.set(surname, new Set());
+                    composersBySurname.get(surname).add(normalize(piece.composer_first).trim());
+                });
+                pieces.forEach(piece => {
+                    const initials = (piece.composer_first.match(/\p{L}[\p{L}\p{M}]*/gu) || []).map(word => [...word][0].toUpperCase()).join('');
+                    const abbreviated = [initials, piece.composer_last].filter(Boolean).join(' ');
+                    piece.composerLabel = composersBySurname.get(normalize(piece.composer_last).trim()).size > 1 ? abbreviated : piece.composer_last;
+                    piece.search += ' ' + normalize(abbreviated);
+                });
                 instrument.replaceChildren(node('option', '', 'All instruments')); instrument.firstChild.value = '';
                 const names = data.instruments.map(decode); names.forEach(name => { const option = node('option', '', name); option.value = name; instrument.append(option); });
                 if (!names.includes(state.instrument)) state.instrument = ''; instrument.value = state.instrument; search.value = state.query;
                 candidates = names.map(value => ({ value, type: 'Instrument', alias: value === 'Double Bass' ? 'bass contrabass' : '' }))
-                    .concat([...new Set(pieces.map(p => p.composer))].map(value => ({ value, type: 'Composer' })), ['Concerto', 'Symphony', 'Sonata', 'Suite'].map(value => ({ value, type: 'Keyword' })), pieces.map(p => ({ value: p.piece_name, type: 'Work' })));
+                    .concat([...new Map(pieces.map(p => [p.composer, { value: p.composerLabel, alias: p.composer, type: 'Composer' }])).values()], ['Concerto', 'Symphony', 'Sonata', 'Suite'].map(value => ({ value, type: 'Keyword' })), pieces.map(p => ({ value: p.piece_name, type: 'Work' })));
                 const requestedPiece = pieces.find(p => p.piece_id === Number(new URLSearchParams(location.search).get('pieceId')));
                 if (requestedPiece) { state.query = requestedPiece.piece_name; search.value = state.query; state.instrument = ''; instrument.value = ''; state.view = 'library'; }
                 catalogLoaded = true; renderLibrary(); showView(state.view); await loadAccount().catch(error => message(error.message));
@@ -309,7 +337,7 @@
                     const url = new URL(location.href);
                     url.searchParams.delete('pieceId');
                     history.replaceState(null, '', url);
-                    await openPiece(requestedPiece, preferredPart(requestedPiece), null, false);
+                    await openPiece(requestedPiece, preferredPart(requestedPiece));
                 }
                 if (Number.isFinite(saved.scroll)) requestAnimationFrame(() => window.scrollTo(0, saved.scroll));
             } catch (error) { $('count').textContent = 'Library unavailable'; empty($('results'), error.message, loadCatalog); }

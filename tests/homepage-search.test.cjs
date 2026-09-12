@@ -45,10 +45,12 @@ test('score-only fallback offers the score, part-less pieces stay hidden', () =>
     assert.ok(!got.includes('Nocturne'), 'piece with no score and no oboe part should hide');
 });
 
-test('single recording with a single part starts the player directly', async () => {
+test('single-recording works open a chooser and start only after recording selection', async () => {
     h.resetFilters();
     h.launched().length = 0;
     await h.fire(h.titleButton('Nocturne'), 'click');
+    assert.equal(h.launched().length, 0);
+    await h.fire(h.findByClass(h.els()['study-results'], 'study-recording')[0], 'click');
     assert.equal(h.launched().length, 1);
     assert.equal(h.launched()[0].piece_id, 4);
     assert.equal(h.launched()[0].metric_arr_id, 41);
@@ -59,7 +61,9 @@ test('launch guard resets so a second start works', async () => {
     h.resetFilters();
     h.launched().length = 0;
     await h.fire(h.titleButton('Nocturne'), 'click');
-    await h.fire(h.titleButton('Nocturne'), 'click');
+    const recording = h.findByClass(h.els()['study-results'], 'study-recording')[0];
+    await h.fire(recording, 'click');
+    await h.fire(recording, 'click');
     assert.equal(h.launched().length, 2);
 });
 
@@ -86,13 +90,13 @@ test('zero-recording piece opens an empty chooser, not the player', async () => 
     assert.equal(h.findByClass(panel, 'study-empty').length, 1);
 });
 
-test('choose a part opens the chooser instead of autostarting', async () => {
+test('piece row opens part choices without separate action buttons', async () => {
     h.resetFilters();
     h.launched().length = 0;
     const row = h.findByClass(h.els()['study-results'], 'study-piece').find(r => String(r.dataset.pieceId) === '3');
     assert.ok(row, 'expected a row for piece 3');
-    const btn = h.findByClass(row, 'study-open').find(b => b.textContent === 'Choose a part');
-    assert.ok(btn, 'expected a Choose a part button');
+    assert.equal(h.findByClass(row, 'study-open').length, 0);
+    const btn = h.titleButton('Symphony No. 9');
     await h.fire(btn, 'click');
     assert.equal(h.launched().length, 0);
     const panel = h.ctx().document.getElementById('study-chooser-3');
@@ -118,7 +122,7 @@ test('an instrument filter still lets a violinist choose the second part', async
     await h.fire(materials.children[1], 'click');
     panel = h.ctx().document.getElementById('study-chooser-3');
     const recording = h.findByClass(panel, 'study-recording')[0];
-    await h.fire(h.findByClass(recording, 'study-open')[0], 'click');
+    await h.fire(recording, 'click');
     assert.equal(h.launched()[0].metric_arr_id, 32);
 });
 
@@ -132,4 +136,46 @@ test('returning to the homepage ignores previously saved expanded recordings', a
     assert.equal(h.els()['study-instrument'].value, 'Violin');
     assert.equal(h.findByClass(h.els()['study-results'], 'study-chooser').length, 0);
     assert.equal('expanded' in JSON.parse(h.ctx().localStorage.getItem('mw-home-state')), false);
+});
+
+test('surnames are sufficient when each composer has a distinct surname', () => {
+    h.resetFilters();
+    assert.deepEqual(h.findByClass(h.els()['study-results'], 'study-composer').map(el => el.textContent),
+        ['Bach', 'Beethoven', 'Chopin', 'Dvořák', 'Mozart']);
+});
+
+test('piece rows toggle closed and keep only one recording chooser open', async () => {
+    h.resetFilters();
+    await h.fire(h.titleButton('Symphony No. 5'), 'click');
+    await h.fire(h.titleButton('Symphony No. 9'), 'click');
+    assert.equal(h.findByClass(h.els()['study-results'], 'study-chooser').length, 1);
+    assert.equal(h.ctx().document.getElementById('study-chooser-1'), null);
+    await h.fire(h.titleButton('Symphony No. 9'), 'click');
+    assert.equal(h.findByClass(h.els()['study-results'], 'study-chooser').length, 0);
+});
+
+test('shared surnames use initials, remain stable under filtering, and retain full-name search', async () => {
+    const part = { metric_arr_id: 21, instrument_id: 7, instrument_name: 'Cello', is_score: false };
+    const work = (id, first, title) => ({ piece_id: id, piece_name: title, composer_first: first, composer_last: 'Bach', parts: [part], recording_count: 0 });
+    h.buildContext(undefined, { pieces: [work(1, 'Johann Sebastian', 'Suite 1'), work(2, 'Johann Sebastian', 'Suite 2'), work(3, 'Carl Philipp Emanuel', 'Concerto')] });
+    await h.settled();
+    const labels = () => h.findByClass(h.els()['study-results'], 'study-composer').map(el => el.textContent);
+    assert.deepEqual(labels(), ['CPE Bach', 'JS Bach', 'JS Bach']);
+    h.searchFor('Suite 1'); assert.deepEqual(labels(), ['JS Bach']);
+    h.searchFor('Johann Sebastian'); assert.equal(h.titles().length, 2);
+    h.searchFor('JS Bach'); assert.equal(h.titles().length, 2);
+    h.searchFor('CPE Bach'); assert.deepEqual(h.titles(), ['Concerto']);
+});
+
+test('construction notice dismisses on click and stays dismissed', async () => {
+    h.buildContext();
+    await h.settled();
+    const notice = () => h.ctx().document.getElementById('study-construction-notice');
+    assert.equal(notice().hidden, false);
+    await h.fire(notice(), 'click');
+    assert.equal(notice().hidden, true);
+    assert.equal(h.ctx().localStorage.getItem('mw-home-notice-dismissed'), 'true');
+    h.buildContext(undefined, { storage: { 'mw-home-notice-dismissed': 'true' } });
+    await h.settled();
+    assert.equal(notice().hidden, true);
 });

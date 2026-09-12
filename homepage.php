@@ -1,5 +1,5 @@
 <div id="study-home" class="study-home">
-    <div class="study-construction-notice" role="status" style="background:#fff8e1;border:1px solid #f0d27a;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#5d4a0a;">🚧 <strong>We're under heavy construction</strong> — big design changes rolling out. Thanks for bearing with us! <span style="white-space:nowrap;">(<?php echo date('F j, Y'); ?>)</span></div>
+    <button type="button" id="study-construction-notice" class="study-construction-notice" aria-label="Dismiss announcement">🚧 <strong>We're under heavy construction</strong> — big design changes rolling out. Thanks for bearing with us! <span style="white-space:nowrap;">(<?php echo date('F j, Y'); ?>)</span> <span aria-hidden="true">×</span></button>
     <section class="study-search-panel" aria-labelledby="study-heading">
         <h1 id="study-heading">What are you working on?</h1>
         <p class="study-intro">Find your part. Follow a performance. Get to know every measure.</p>

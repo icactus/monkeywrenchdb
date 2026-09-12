@@ -91,7 +91,7 @@ function buildContext(sourceOverride, options = {}) {
     allElements = [];
     launched = [];
     els = {};
-    const staticIds = ['study-home', 'study-search', 'study-instrument', 'study-suggestions',
+    const staticIds = ['study-home', 'study-construction-notice', 'study-search', 'study-instrument', 'study-suggestions',
         'study-message', 'study-results', 'study-count', 'study-results-heading',
         'study-clear-search', 'study-reset', 'study-search-form', 'recordings-dropdown',
         'study-library-panel', 'study-history-panel', 'study-favorites-panel',
@@ -106,7 +106,7 @@ function buildContext(sourceOverride, options = {}) {
     els['study-search'].focus = () => {};
 
     const store = { ...options.storage };
-    const catalog = { pieces: FIXTURE_PIECES, instruments: ['Cello', 'Piano', 'Violin'] };
+    const catalog = { pieces: options.pieces || FIXTURE_PIECES, instruments: ['Cello', 'Piano', 'Violin'] };
 
     ctx = {
         console,
@@ -160,7 +160,7 @@ async function settled() {
 }
 
 function titles() {
-    return findByClass(els['study-results'], 'study-title').map(b => b.textContent);
+    return findByClass(els['study-results'], 'study-work-name').map(b => b.textContent);
 }
 
 function searchFor(query) {
@@ -181,7 +181,7 @@ function resetFilters() {
 }
 
 function titleButton(name) {
-    const found = findByClass(els['study-results'], 'study-title').filter(b => b.textContent === name);
+    const found = findByClass(els['study-results'], 'study-title').filter(b => findByClass(b, 'study-work-name')[0]?.textContent === name);
     assert.equal(found.length, 1, 'expected one title button for ' + name);
     return found[0];
 }
