@@ -909,6 +909,11 @@ if (typeof headerTitleQuery.addEventListener === 'function') {
 }
 
 async function loadRecording(recordingFullData) {
+    // Remember the exact numbered part/edition, including changes made in the player.
+    try {
+        localStorage.setItem('mw-home-part-' + recordingFullData.piece_id, JSON.stringify(Number(recordingFullData.metric_arr_id)));
+        localStorage.setItem('mw-home-recording-' + recordingFullData.piece_id, JSON.stringify(Number(recordingFullData.recording_id)));
+    } catch (e) {}
     // Update the document title
     let newTitle = `${decodeHtmlEntities(recordingFullData.composer_last)} - ${decodeHtmlEntities(recordingFullData.piece_name)}`;
     document.title = newTitle;
@@ -1299,13 +1304,24 @@ function refreshAfterFullscreen() {
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 if (isFullscreen) {
-                    // Start by fitting to width
-                    if (typeof resizePageFitToWidth === 'function') {
+                    // 2-up stays a clear fit-to-height, same as outside fullscreen.
+                    // Fit-to-width here overscales the spread so the toolbar covers music.
+                    const inTwoUp = !!scroller?.classList.contains('two-up') || !!pre.inTwoUp;
+                    if (inTwoUp) {
+                        if (typeof resizePageFitToHeight === 'function') {
+                            resizePageFitToHeight();
+                        }
+                    } else if (typeof resizePageFitToWidth === 'function') {
                         resizePageFitToWidth();
                     }
                 } else {
                     // Exiting fullscreen: restore previous zoom in 1-up (2-up uses fit-to-height logic)
-                    if (!pre.inTwoUp && pre.scale && window.__cssScale) {
+                    const inTwoUp = !!scroller?.classList.contains('two-up') || !!pre.inTwoUp;
+                    if (inTwoUp) {
+                        if (typeof resizePageFitToHeight === 'function') {
+                            resizePageFitToHeight();
+                        }
+                    } else if (!pre.inTwoUp && pre.scale && window.__cssScale) {
                         const ratio = pre.scale / window.__cssScale;
                         if (Math.abs(ratio - 1) > 1e-3) {
                             resizeDematenAndCanvas(ratio * 100);
@@ -1620,7 +1636,11 @@ function resizeCanvasTrigger() {
     window.addEventListener("orientationchange", function () {
         window.__isRotating = true; // Set flag to suppress resize events
         setTimeout(function () {
-            if (typeof resizePageFitToWidth === 'function') {
+            if (document.getElementById('notation-scroll')?.classList.contains('two-up')) {
+                if (typeof resizePageFitToHeight === 'function') {
+                    resizePageFitToHeight();
+                }
+            } else if (typeof resizePageFitToWidth === 'function') {
                 resizePageFitToWidth();
             }
             // Reset flag after layout settles
@@ -2153,7 +2173,7 @@ $(document).ready(function () {
         $(this).text($(this).text() === "[show]" ? "[hide]" : "[show]");
     });
 
-    fetchSearchByInstrument();
+    if (!document.getElementById('study-home')) fetchSearchByInstrument();
     resizeCanvasTrigger();
 
     // Preserve the old first-session drawer flag without opening the controls sheet.

@@ -60,10 +60,11 @@ try {
     function fetchHistory($mysqli, $user_id)
     {
         $sql = "
-            SELECT uh.id, uh.piece_id, uh.metric_arr_id, uh.recording_id, uh.viewed_at, p.piece_name, c.composer_last as composer_name 
+            SELECT uh.id, uh.piece_id, uh.metric_arr_id, uh.recording_id, uh.viewed_at, p.piece_name, c.composer_last as composer_name, r.conductor_name, r.ensemble_name 
             FROM user_history uh
             JOIN pieces p ON uh.piece_id = p.piece_id
             JOIN composers c ON p.composer_id = c.composer_id
+            LEFT JOIN recordings r ON r.recording_id = uh.recording_id
             WHERE uh.user_id = ?
             ORDER BY uh.viewed_at DESC
         ";

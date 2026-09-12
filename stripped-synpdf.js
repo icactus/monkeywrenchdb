@@ -117,9 +117,10 @@ function addToHistory(pieceId, metricArrId, recordingId) {
     })
         .then(res => res.json())
         .then(data => {
-            if (!data.success) {
+            if (data.status !== 'success') {
                 console.warn("Failed to add history:", data.error);
             }
+            window.dispatchEvent(new CustomEvent('mw-account-changed'));
             // If the history menu is open, refresh it
             const modal = document.getElementById('history-modal');
             if (modal && modal.classList.contains('visible')) {
@@ -241,6 +242,7 @@ window.toggleFavorite = function () {
             .then(data => {
                 if (data.status === 'success') {
                     updateFavoriteButton(false);
+                    window.dispatchEvent(new CustomEvent('mw-account-changed'));
                 }
             })
             .catch(err => console.error('Favorite delete error:', err));
@@ -258,6 +260,7 @@ window.toggleFavorite = function () {
             .then(data => {
                 if (data.status === 'success') {
                     updateFavoriteButton(true);
+                    window.dispatchEvent(new CustomEvent('mw-account-changed'));
                 } else if (data.error) {
                     console.error('Favorite API error:', data.error);
                 }

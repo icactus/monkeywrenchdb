@@ -29,7 +29,7 @@ function fetchFavorites() {
 
                 li.innerHTML = `
                     <a href="javascript:void(0)" 
-                       onclick="loadPieceFromFavorite(${item.metric_arr_id}, ${item.recording_id}); toggleFavoritesMenu();" 
+                       onclick="loadPieceFromFavorite(${item.metric_arr_id}, ${item.recording_id}, ${item.piece_id}); toggleFavoritesMenu();" 
                        class="favorites-entry-content">
                         <p class="favorites-composer">${item.composer_name}</p>
                         <p class="favorites-piece">${item.piece_name}</p>
@@ -47,9 +47,13 @@ function fetchFavorites() {
         });
 }
 
-function loadPieceFromFavorite(metricArrId, recordingId) {
+function loadPieceFromFavorite(metricArrId, recordingId, pieceId) {
     if (!metricArrId || !recordingId) {
-        alert("This favorite is missing context data.");
+        if (pieceId) {
+            const url = new URL('.', document.baseURI);
+            url.searchParams.set('pieceId', pieceId);
+            window.location.href = url.toString();
+        } else alert("This favorite is missing its piece ID.");
         return;
     }
 
@@ -78,6 +82,7 @@ function deleteFavoriteItem(event, favoriteId) {
         .then(data => {
             if (data.status === 'success') {
                 fetchFavorites(); // Reload list
+                window.dispatchEvent(new CustomEvent('mw-account-changed'));
             } else {
                 alert("Failed to delete: " + (data.error || 'Unknown error'));
             }

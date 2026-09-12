@@ -68,17 +68,27 @@ try {
     // 4. Handle Actions
     if ($action === 'add') {
         $piece_id = intval($_POST['piece_id'] ?? 0);
-        $metric_arr_id = intval($_POST['metric_arr_id'] ?? 0);
-        $recording_id = intval($_POST['recording_id'] ?? 0);
+        $metric_arr_id = intval($_POST['metric_arr_id'] ?? 0) ?: null;
+        $recording_id = intval($_POST['recording_id'] ?? 0) ?: null;
 
         if ($piece_id <= 0) {
             throw new Exception("Invalid piece_id");
         }
 
-        // Use INSERT ... ON DUPLICATE KEY UPDATE to handle re-favoriting
+        $check = $mysqli->prepare('SELECT piece_id FROM pieces WHERE piece_id = ?');
+        $check->bind_param('i', $piece_id); $check->execute();
+        if (!$check->get_result()->fetch_assoc()) throw new Exception('Unknown piece');
+        foreach ([['metric_arr', 'metric_arr_id', $metric_arr_id], ['recordings', 'recording_id', $recording_id]] as [$table, $column, $contextId]) {
+            if ($contextId === null) continue;
+            $check = $mysqli->prepare("SELECT $column FROM $table WHERE $column = ? AND piece_id = ?");
+            $check->bind_param('ii', $contextId, $piece_id); $check->execute();
+            if (!$check->get_result()->fetch_assoc()) throw new Exception('Invalid piece context');
+        }
+
+        // A catalog favorite has no recording yet; preserve existing player context on re-save.
         $sql = "INSERT INTO user_favorites (user_id, piece_id, metric_arr_id, recording_id) 
                 VALUES (?, ?, ?, ?) 
-                ON DUPLICATE KEY UPDATE metric_arr_id = VALUES(metric_arr_id), recording_id = VALUES(recording_id), created_at = NOW()";
+                ON DUPLICATE KEY UPDATE metric_arr_id = COALESCE(VALUES(metric_arr_id), metric_arr_id), recording_id = COALESCE(VALUES(recording_id), recording_id), created_at = NOW()";
         $stmt = $mysqli->prepare($sql);
         $stmt->bind_param("iiii", $user_id, $piece_id, $metric_arr_id, $recording_id);
 

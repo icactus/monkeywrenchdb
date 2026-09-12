@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Your practice starts here · Monkey Wrench</title>
+<style>
+@font-face{font-family:Pixel;src:url('assets/fonts/PixelOperator.ttf');font-display:swap}
+:root{--ink:#233e45;--muted:#62757a;--teal:#376a73;--line:#dde5e5;--yellow:#f7d155}
+*{box-sizing:border-box}body{margin:0;background:#f5f7f7;color:var(--ink);font:15px/1.5 system-ui,-apple-system,sans-serif}button,input,select{font:inherit;color:inherit}button,a,select{touch-action:manipulation}button{cursor:pointer}a{color:inherit;text-decoration:none}button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #aa7510;outline-offset:4px}[hidden]{display:none!important}
+.header{background:linear-gradient(145deg,#f7d155 0%,#e4c262 30%,#5ba2a8 70%,#376a73 100%);padding:23px 32px 70px}.header-inner{max-width:1160px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:13px;color:#1b4b5e}.brand img{width:49px;height:49px;image-rendering:pixelated}.wordmark{font:30px/1 Pixel,monospace}.tagline{font:17px Pixel,monospace;margin-top:5px}.nav{display:flex;align-items:center;gap:25px;font-size:13px;color:#143c46}.nav a:last-child{padding:9px 17px;border:1px solid #234e5960;border-radius:7px;background:#ffffff35}
+main{max-width:1160px;margin:-38px auto 0;padding:0 28px 30px;position:relative}.search-panel{background:white;border:1px solid var(--line);border-radius:14px;padding:38px 42px 29px;box-shadow:0 5px 18px #26494f08}.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:1.7px;font-weight:700;color:var(--teal)}h1{font-size:clamp(29px,3.6vw,43px);font-weight:550;letter-spacing:-1.6px;line-height:1.15;margin:12px 0}p{margin:0}.intro{color:var(--muted);font-size:14px}.search-controls{display:grid;grid-template-columns:1fr 215px;gap:14px;margin-top:27px}.field-label{display:block;font-size:11px;font-weight:650;margin-bottom:8px}.search-wrap{position:relative;min-width:0}.input-box{height:55px;border:1px solid #91aaae;border-radius:8px;display:flex;align-items:center;gap:12px;padding:0 15px;background:#fff}.input-box:focus-within{border-color:var(--teal);box-shadow:0 0 0 3px #5ba2a820}.input-box svg{width:20px;flex-shrink:0;color:var(--teal)}input[type=search]{border:0;background:none;outline:none;min-width:0;width:100%;font-size:15px}input::-webkit-search-cancel-button{display:none}.clear{border:0;background:none;font-size:22px;padding:0 3px;color:var(--muted)}kbd{font:11px system-ui;color:#7b8a8d;border:1px solid var(--line);padding:1px 6px;border-radius:4px}select{width:100%;height:55px;border:1px solid #c4d1d3;border-radius:8px;background:#f9fbfb;padding:0 13px}.search-hint{display:flex;gap:20px;justify-content:space-between;margin-top:13px;font-size:11px;color:var(--muted)}.examples button{border:0;background:none;padding:0 3px;text-decoration:underline;text-underline-offset:3px;color:var(--teal);font-size:11px}
+.suggestions{position:absolute;top:calc(100% + 7px);left:0;right:0;z-index:5;background:#fff;border:1px solid #bacdce;border-radius:9px;box-shadow:0 12px 28px #233e451a;padding:6px}.suggestion{padding:10px 12px;display:flex;justify-content:space-between;gap:15px;cursor:pointer;border-radius:5px;font-size:13px}.suggestion[aria-selected=true],.suggestion:hover{background:#edf5f5}.suggestion small{color:var(--muted);font-size:10px;white-space:nowrap}.suggestion b{font-weight:550}
+.content{display:grid;grid-template-columns:minmax(0,1fr) 248px;gap:32px;margin-top:32px}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}h2{font-size:19px;letter-spacing:-.4px;font-weight:600;margin:0}.sub{font-size:12px;color:var(--muted);margin-top:3px}.text-button{border:0;background:none;color:var(--teal);font-size:12px;padding:6px;text-decoration:underline;text-underline-offset:3px}.results{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:white}.piece{padding:20px;display:grid;grid-template-columns:minmax(0,1fr);gap:15px;border-bottom:1px solid var(--line)}.piece:last-child{border-bottom:0}.composer{font-size:11px;color:var(--muted);margin-bottom:3px}.piece h3{margin:0;font-size:16px;font-weight:600;letter-spacing:-.2px}.piece-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:13px}.availability{font-size:11px;color:var(--muted)}.availability.available{color:#33725a}.actions{display:flex;gap:7px;flex-shrink:0;margin-left:auto}.open{border:1px solid #cddbdd;background:white;border-radius:6px;padding:7px 10px;font-size:11px}.open.primary{background:var(--teal);border-color:var(--teal);color:white}.open:hover{filter:brightness(.94)}.empty{padding:35px 25px}.empty h3{font-size:17px;margin:0 0 6px}.empty p{font-size:13px;color:var(--muted)}.result-footer{font-size:11px;color:var(--muted);padding:14px 2px}
+.aside{padding-top:2px}.aside h2{font-size:15px}.recent{margin:15px 0 26px;border-left:2px solid #d3e1e1;padding-left:14px}.recent button{background:none;border:0;padding:0;text-align:left;font-weight:600;font-size:13px}.recent p{font-size:11px;color:var(--muted);margin-top:5px}.practice-note{background:#eaf1f1;border:1px solid #d7e4e4;border-radius:9px;padding:21px}.practice-note .icon{font-size:21px;color:var(--teal);margin-bottom:10px}.practice-note h3{font-size:15px;margin:0 0 8px;font-weight:600}.practice-note p{font-size:12px;color:#536d73;line-height:1.8}.practice-note a{display:inline-block;font-size:12px;font-weight:600;color:var(--teal);margin-top:15px}.explore{margin-top:24px}.explore p{font-size:12px;color:var(--muted);margin:6px 0 12px}.chips{display:flex;gap:7px;flex-wrap:wrap}.chips button{border:1px solid #cedcdd;border-radius:20px;background:white;padding:6px 11px;font-size:11px}.chips button:hover{background:#eaf1f1}.footer{border-top:1px solid var(--line);margin-top:24px;padding-top:17px;display:flex;justify-content:space-between;gap:12px;font-size:10px;color:var(--muted)}.skip{position:absolute;top:-80px;left:10px;z-index:10;padding:10px;background:white}.skip:focus{top:10px}dialog{border:1px solid var(--line);border-radius:12px;max-width:460px;width:calc(100% - 36px);padding:28px;color:var(--ink)}dialog::backdrop{background:#17333c70}dialog h2{margin:13px 0}dialog p{font-size:14px;color:var(--muted);margin-bottom:20px}dialog .open{font-size:13px}dialog .close-dialog{float:right;border:0;background:none;font-size:22px}
+@media(max-width:800px){.content{grid-template-columns:1fr}.aside{display:grid;grid-template-columns:1fr 1fr;gap:20px}.explore{margin:0}.recent-section{grid-column:1/-1}.recent{margin-bottom:0}.nav{gap:15px}.wordmark{font-size:25px}.search-panel{padding:28px}.header{padding-left:24px;padding-right:24px}.piece-bottom{flex-wrap:wrap}}
+@media(max-width:540px){.header{padding:19px 18px 63px}.brand{gap:8px}.brand img{width:36px;height:36px}.wordmark{font-size:20px}.tagline{font-size:13px}.nav a:first-child{display:none}.nav a:last-child{padding:7px 9px;font-size:11px}main{padding:0 14px 24px}.search-panel{padding:25px 20px 21px}h1{font-size:31px;letter-spacing:-1px}.intro{font-size:13px}.search-controls{grid-template-columns:1fr;margin-top:23px;gap:16px}.instrument-field{display:flex;align-items:center;gap:12px}.instrument-field .field-label{margin:0;white-space:nowrap}.instrument-field select{height:42px}.search-hint{display:block}.remember{margin-top:9px}.input-box{padding:0 10px}.input-box input{font-size:16px}kbd{display:none}.content{margin-top:24px;gap:24px}.piece{padding:17px 14px;gap:11px;grid-template-columns:minmax(0,1fr)}.piece h3{font-size:15px}.piece-bottom{gap:10px}.actions{flex-wrap:wrap}.aside{display:block}.practice-note{margin-top:22px}.explore{margin-top:22px}.footer{flex-direction:column}.suggestion{padding:10px 7px}.suggestion small{font-size:9px}}
+
+/* Recording selection stays attached to the work and material. */
+.piece.expanded{background:#fbfdfd;box-shadow:inset 3px 0 var(--teal)}
+.piece-title{border:0;background:none;text-align:left;padding:0;font:inherit;letter-spacing:inherit;font-weight:inherit}.piece-title:hover{color:var(--teal);text-decoration:underline;text-underline-offset:4px}
+.recording-chooser{grid-column:1/-1;min-width:0;margin:3px 0 0;padding:20px 0 0;border-top:1px solid #d5e3e4}
+.chooser-top{display:flex;align-items:start;justify-content:space-between;gap:15px;margin-bottom:16px}.chooser-top h4{font-size:15px;margin:0;font-weight:650}.chooser-top p{font-size:11px;color:var(--muted);margin-top:3px}.collapse{border:0;background:none;padding:2px 4px;font-size:12px;color:var(--teal)}
+.materials{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:18px}.materials-label{font-size:11px;color:var(--muted);margin-right:4px}.material{border:1px solid #cddbdd;border-radius:6px;background:white;font-size:11px;padding:7px 10px}.material[aria-pressed=true]{background:#e2eeee;border-color:#619096;color:#254f57;font-weight:650}
+.recording-list{border:1px solid #dae5e5;border-radius:8px;background:white;overflow:hidden}.recording-row{display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid #e5ecec}.recording-row:last-child{border-bottom:0}.recording-number{color:#849a9e;font:15px Pixel,monospace;min-width:19px}.recording-info{flex:1;min-width:0}.recording-name{font-size:13px;font-weight:600}.recording-credit{color:var(--muted);font-size:11px;margin-top:3px}.last-practiced{display:inline-block;margin-left:8px;color:#3d7260;font-size:9px;font-weight:500;background:#edf5ee;border-radius:4px;padding:2px 5px}.recording-start{white-space:nowrap;flex-shrink:0}.chooser-note{font-size:10px;color:var(--muted);margin-top:12px}
+@media(max-width:540px){.recording-row{padding:13px 11px;gap:8px;flex-wrap:wrap}.recording-number{min-width:16px}.recording-info{flex-basis:calc(100% - 26px)}.recording-start{margin-left:24px}.last-practiced{margin:4px 0 0;display:table}.chooser-top h4{font-size:14px}.recording-chooser{padding-top:17px}.materials{gap:6px}.material{padding:7px 8px}}
+
+.content{display:block}.library-tabs{display:flex;gap:24px;border-bottom:1px solid var(--line);margin-bottom:24px}.library-tabs button{border:0;border-bottom:3px solid transparent;background:none;padding:0 2px 12px;font-size:14px;color:var(--muted)}.library-tabs button[aria-selected=true]{color:var(--teal);border-bottom-color:var(--teal);font-weight:650}.history-session{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px;border-bottom:1px solid var(--line)}.history-session:last-child{border-bottom:0}.history-session h3{font-size:15px;margin:2px 0 6px}.history-session p{font-size:12px;color:var(--muted)}.history-session .open{flex-shrink:0}.nav a:last-child{display:block}
+@media(max-width:800px){.library-tabs,#history-panel,#favorites-panel{display:none!important}}
+
+.piece-heading{display:flex;align-items:center;gap:12px}.favorite-toggle{border:0;background:none;color:var(--muted);font-size:22px;line-height:1;padding:8px;flex-shrink:0;border-radius:5px}.favorite-toggle:hover{background:#edf3f3}.favorite-toggle[aria-pressed=true]{color:#8a6610}.favorite-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+
+@media(max-width:800px){
+ .piece{padding:10px 12px;gap:10px}
+ .piece-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px}
+ .piece-heading{gap:5px;min-width:0}
+ .piece-heading>div{min-width:0}
+ .piece-heading .favorite-toggle{padding:6px 3px;min-width:28px;min-height:36px}
+ .piece .composer{font-size:10px;line-height:1.3;margin-bottom:3px}
+ .piece h3{font-size:13px;line-height:1.35}
+ .piece-bottom{margin:0;gap:0}
+ .piece-bottom .actions{flex-direction:column;flex-wrap:nowrap;gap:4px;width:90px}
+ .piece-bottom .open{min-height:32px;padding:5px 7px;font-size:10px;line-height:1.3}
+ .recording-chooser{margin-top:0}
+}
+@media(min-width:541px) and (max-width:800px){.piece-bottom .actions{flex-direction:row;width:auto}.piece-bottom .open{min-width:80px}.piece h3{font-size:14px}}
+
+.recording-row{padding:9px 12px;gap:10px}
+.recording-chooser{padding-top:14px}
+.chooser-top{margin-bottom:12px}
+@media(max-width:800px){
+ .recording-row{display:grid;grid-template-columns:minmax(0,1fr) auto;padding:8px 10px;gap:8px}
+ .recording-number{display:none}
+ .recording-info{min-width:0}
+ .recording-name{font-size:12px;line-height:1.35}
+ .recording-credit{font-size:10px;line-height:1.35;margin-top:2px}
+ .recording-start{margin:0;min-height:32px;padding:6px 9px;font-size:10px}
+ .last-practiced{display:inline-block;margin:2px 0 0 5px;font-size:8px;padding:1px 4px}
+ .chooser-top{gap:8px;margin-bottom:10px}
+ .chooser-top h4{font-size:13px}
+ .chooser-note{margin-top:8px}
+}
+</style>
+</head>
+<body>
+<a href="#main" class="skip">Skip to content</a>
+<header class="header"><div class="header-inner"><a class="brand" href="homepage-study-mockup.html"><img src="assets/img/monkeywrench-monkey100x100.png" alt="" width="49" height="49"><div><div class="wordmark">MONKEY WRENCH DATABASE</div><div class="tagline">sheet music synced with youtube</div></div></a><nav class="nav" aria-label="Main navigation"><a href="auth_login.php?provider=google">Sign in</a></nav></div></header>
+<main id="main">
+<section class="search-panel" aria-labelledby="heading"><h1 id="heading">What are you working on?</h1><p class="intro">Find your part. Follow a performance. Get to know every measure.</p>
+<form id="search-form" role="search"><div class="search-controls"><div><label class="field-label" for="search">Find a piece</label><div class="search-wrap"><div class="input-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="search" type="search" placeholder="Composer, piece, or instrument…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggestions"><button class="clear" id="clear-search" type="button" aria-label="Clear search" hidden>×</button><kbd aria-hidden="true">/</kbd></div><div class="suggestions" id="suggestions" role="listbox" aria-label="Search suggestions" hidden></div></div></div><div class="instrument-field"><label class="field-label" for="instrument">My instrument</label><select id="instrument"><option>All instruments</option>Violin</option><option>Viola</option><option>Cello</option><option>Double bass</option><option>Flute</option><option>Oboe</option><option>Clarinet</option><option>Bassoon</option><option>French horn</option><option>Trumpet</option><option>Trombone</option><option>Piano</option></select></div></div><div class="search-hint"><div class="examples">Try <button type="button" data-query="Beethoven">Beethoven</button>, <button type="button" data-query="concerto">concerto</button>, or <button type="button" data-query="La Mer">La Mer</button></div><div class="remember">Your instrument is optional. We’ll remember it here.</div></div></form>
+</section>
+<div class="content">
+<div class="library-tabs" role="tablist" aria-label="Library views"><button id="library-tab" role="tab" aria-selected="true" aria-controls="library-panel">Library</button><button id="history-tab" role="tab" aria-selected="false" aria-controls="history-panel" tabindex="-1">History</button><button id="favorites-tab" role="tab" aria-selected="false" aria-controls="favorites-panel" tabindex="-1">Favorites</button></div>
+<section id="favorites-panel" role="tabpanel" aria-labelledby="favorites-tab" tabindex="0" hidden><div class="section-head"><div><h2>Favorites</h2><p class="sub">Pieces you’ve saved for another practice session.</p></div></div><div class="results" id="favorites-list"></div></section>
+<section id="history-panel" role="tabpanel" aria-labelledby="history-tab" tabindex="0" hidden><div class="section-head"><div><h2>History</h2><p class="sub">Your recent practice sessions, ready to resume.</p></div></div><div class="results" id="history-list"></div></section>
+<section id="library-panel" role="tabpanel" aria-labelledby="library-tab" tabindex="0"><div class="library-results"><div class="section-head"><div><h2 id="results-heading">Find your next piece</h2><p class="sub" id="count" role="status" aria-live="polite"></p></div><button class="text-button" id="reset" hidden>Clear filters</button></div><div class="results" id="results"></div><p class="result-footer" id="result-footer">Choose a part or full score to start studying.</p></div></section>
+</div>
+<footer class="footer"><span>Free, open source, and made for practice.</span><span>Homepage concept · Sample repertoire, recordings, and availability</span></footer>
+</main>
+<dialog id="preview"><button class="close-dialog" aria-label="Close preview">×</button><div class="eyebrow">Study preview</div><h2 id="preview-title"></h2><p id="preview-copy"></p><button class="open primary" id="back">Back to finding music</button></dialog>
+<script>
+// Illustrative catalog: instrumentation is deliberately separate from available parts.
+const strings=['Violin','Viola','Cello','Double bass'];
+const orchestra=[...strings,'Flute','Oboe','Clarinet','Bassoon','French horn','Trumpet','Trombone'];
+const pieces=[
+ {title:'Symphony No. 5 in C minor',composer:'Ludwig van Beethoven',detail:'Op. 67',instruments:orchestra,parts:[...strings,'Flute','Clarinet','Bassoon','French horn'],score:true},
+ {title:'Symphony No. 4 in E minor',composer:'Johannes Brahms',detail:'Op. 98',instruments:orchestra,parts:strings,score:true},
+ {title:'La Mer',composer:'Claude Debussy',detail:'Three symphonic sketches',instruments:orchestra,parts:[...strings,'Flute'],score:true},
+ {title:'Cello Concerto in B minor',composer:'Antonín Dvořák',detail:'Op. 104',instruments:orchestra,parts:['Cello'],score:true},
+ {title:'Cello Concerto in E minor',composer:'Edward Elgar',detail:'Op. 85',instruments:orchestra,parts:[],score:true},
+ {title:'Cello Suite No. 1 in G major',composer:'Johann Sebastian Bach',detail:'BWV 1007',instruments:['Cello'],parts:['Cello'],score:false},
+ {title:'Violin Concerto in D major',composer:'Pyotr Ilyich Tchaikovsky',detail:'Op. 35',instruments:orchestra,parts:['Violin'],score:true},
+ {title:'Clair de lune',composer:'Claude Debussy',detail:'Suite bergamasque',instruments:['Piano'],parts:['Piano'],score:false}
+];
+const $=id=>document.getElementById(id), search=$('search'), instrument=$('instrument');
+const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const read=key=>{try{return localStorage.getItem('mw-study-mockup-'+key)}catch{return null}};
+const save=(key,value)=>{try{localStorage.setItem('mw-study-mockup-'+key,value)}catch{}};
+if([...instrument.options].some(o=>o.value===read('instrument')))instrument.value=read('instrument');
+function node(tag,className,text){const n=document.createElement(tag);n.className=className;n.textContent=text;return n}
+// These performance labels are illustrative, not a live availability listing.
+const orchestralRecordings = [
+ ['Carlos Kleiber', 'Vienna Philharmonic'],
+ ['Herbert von Karajan', 'Berlin Philharmonic'],
+ ['Leonard Bernstein', 'Vienna Philharmonic'],
+ ['Claudio Abbado', 'Berlin Philharmonic'],
+ ['Simon Rattle', 'Berlin Philharmonic'],
+ ['Gustavo Dudamel', 'Simón Bolívar Symphony Orchestra'],
+ ['John Eliot Gardiner', 'Orchestre Révolutionnaire et Romantique'],
+ ['Nikolaus Harnoncourt', 'Chamber Orchestra of Europe'],
+ ['Bernard Haitink', 'London Symphony Orchestra']
+];
+const recordingSamples = [
+ orchestralRecordings,
+ orchestralRecordings.slice(0,4),
+ [['Claudio Abbado','Lucerne Festival Orchestra'],['Bernard Haitink','Royal Concertgebouw Orchestra'],['Simon Rattle','Berlin Philharmonic']],
+ [['Mstislav Rostropovich','Berlin Philharmonic · Herbert von Karajan'],['Jacqueline du Pré','Chicago Symphony Orchestra · Daniel Barenboim'],['Yo-Yo Ma','New York Philharmonic · Kurt Masur'],['Alisa Weilerstein','Czech Philharmonic · Jiří Bělohlávek']],
+ [['Jacqueline du Pré','London Symphony Orchestra · John Barbirolli'],['Sheku Kanneh-Mason','London Symphony Orchestra · Simon Rattle']],
+ [['Yo-Yo Ma','Solo cello']],
+ [['Hilary Hahn','Violin · Orchestral performance'],['Janine Jansen','Violin · Orchestral performance'],['Itzhak Perlman','Violin · Orchestral performance']],
+ [['Seong-Jin Cho','Solo piano']]
+];
+pieces.forEach((p,i)=>{p.id=i;p.recordings=recordingSamples[i].map(([name,credit],j)=>({id:String(i)+'-'+j,name,credit}))});
+let expandedPiece=null;
+let selectedMaterial=null;
+function materialLabel(material){return material.replace(/ part$/, '')}
+function materialsFor(p){return [...p.parts.map(part=>part+' part'),...(p.score?['Full score']:[])]}
+function defaultMaterial(p){const preferred=instrument.value+' part';return materialsFor(p).includes(preferred)?preferred:p.score?'Full score':materialsFor(p)[0]}
+function startPractice(p,material,recording){
+ closeSuggestions();
+ save('last-recording-'+p.id,recording.id);
+ const session={title:p.title,material,recordingId:recording.id};
+ save('recent',JSON.stringify(session));
+ save('history',JSON.stringify([session,...readHistory().filter(item=>!(item.title===session.title&&item.material===material&&item.recordingId===recording.id))].slice(0,30)));
+ renderHistory();
+ $('preview-title').textContent=p.title;
+ $('preview-copy').replaceChildren(node('strong','',materialLabel(material)),node('p','',recording.name+' · '+recording.credit),node('span','','This is where the practice player would open, with your material and recording ready. Recording choices and availability are illustrative in this mockup.'));
+ $('preview').showModal();
+ // Update the last-used label without rebuilding the dialog's launching button.
+ if(expandedPiece===p.id)updateRecordingLabels(p);
+}
+function updateRecordingLabels(p){
+ const list=$('recordings-'+p.id);if(!list)return;
+ const last=read('last-recording-'+p.id);
+ list.querySelectorAll('.last-practiced').forEach(el=>el.remove());
+ const row=[...list.children].find(el=>el.dataset.recording===last);
+ if(row)row.querySelector('.recording-name').append(node('span','last-practiced','Last practiced'));
+}
+function openPiece(p,material){
+ closeSuggestions();
+ selectedMaterial=material||defaultMaterial(p);
+ if(p.recordings.length===1){startPractice(p,selectedMaterial,p.recordings[0]);return}
+ expandedPiece=p.id;
+ render();
+ $('chooser-heading-'+p.id).focus({preventScroll:true});
+}
+function readHistory(){
+ try{const history=JSON.parse(read('history'));if(Array.isArray(history))return history.filter(item=>item&&typeof item.title==='string');const recent=JSON.parse(read('recent'));return recent?[recent]:[]}catch{return []}
+}
+function renderHistory(){
+ const list=$('history-list');list.replaceChildren();
+ readHistory().forEach(session=>{
+  const p=pieces.find(p=>p.title===session.title);if(!p)return;
+  const recording=p.recordings.find(r=>r.id===session.recordingId);
+  const material=materialsFor(p).includes(session.material)?session.material:defaultMaterial(p);
+  const row=node('article','history-session',''),info=node('div','','');
+  info.append(node('div','composer',p.composer),node('h3','',p.title),node('p','',materialLabel(material)+(recording?' · '+recording.name:' · Choose a recording')));
+  const resume=node('button','open primary',recording?'Resume →':'Choose recording →');
+  resume.setAttribute('aria-label',(recording?'Resume ':'Choose recording for ')+p.title+' · '+materialLabel(material));
+  resume.addEventListener('click',()=>{
+   if(recording){startPractice(p,material,recording);return}
+   search.value=p.title;instrument.value='All instruments';save('instrument',instrument.value);showView('library');openPiece(p,material);
+  });row.append(info,resume);list.append(row);
+ });
+ if(!list.children.length){const empty=node('div','empty','');empty.append(node('h3','','No practice history yet'),node('p','','Open a piece and choose a recording. Your recent sessions will appear here.'));list.append(empty)}
+}
+function readFavorites(){
+ try{const saved=JSON.parse(read('favorites'));return Array.isArray(saved)?saved.filter(title=>typeof title==='string'):[]}catch{return []}
+}
+function favoriteButton(p){
+ const button=node('button','favorite-toggle','');button.dataset.favorite=p.title;
+ updateFavoriteButton(button,readFavorites().includes(p.title));
+ button.addEventListener('click',()=>{
+  const favorites=readFavorites(),saved=favorites.includes(p.title);
+  save('favorites',JSON.stringify(saved?favorites.filter(title=>title!==p.title):[p.title,...favorites]));
+  const fromFavorites=!!button.closest('#favorites-list');
+  document.querySelectorAll('[data-favorite]').forEach(b=>updateFavoriteButton(b,readFavorites().includes(b.dataset.favorite)));
+  renderFavorites();
+  if(fromFavorites)$('favorites-tab').focus({preventScroll:true});
+ });return button;
+}
+function updateFavoriteButton(button,saved){
+ button.textContent=saved?'★':'☆';button.setAttribute('aria-pressed',String(saved));
+ button.setAttribute('aria-label',(saved?'Remove from favorites: ':'Save to favorites: ')+button.dataset.favorite);
+ button.title=saved?'Remove from favorites':'Save to favorites';
+}
+function renderFavorites(){
+ const list=$('favorites-list');list.replaceChildren();
+ readFavorites().forEach(title=>{
+  const p=pieces.find(p=>p.title===title);if(!p)return;
+  const row=node('article','history-session',''),info=node('div','','');
+  info.append(node('div','composer',p.composer),node('h3','',p.title),node('p','',p.recordings.length+' '+(p.recordings.length===1?'recording':'recordings')));
+  const actions=node('div','favorite-actions',''),open=node('button','open primary','Open piece →');
+  open.setAttribute('aria-label','Open '+p.title);
+  open.addEventListener('click',()=>{
+   const material=defaultMaterial(p);search.value=p.title;
+   if(instrument.value!=='All instruments'&&!p.instruments.includes(instrument.value)){instrument.value='All instruments';save('instrument',instrument.value)}
+   showView('library');render();openPiece(p,material);
+  });actions.append(favoriteButton(p),open);row.append(info,actions);list.append(row);
+ });
+ if(!list.children.length){const empty=node('div','empty','');empty.append(node('h3','','No favorites yet'),node('p','','Select the star beside a piece to save it here.'));list.append(empty)}
+}
+const wideScreen=matchMedia('(min-width:801px)');
+const views=['library','history','favorites'];
+function showView(view){
+ const current=wideScreen.matches&&views.includes(view)?view:'library';
+ views.forEach(name=>{const selected=name===current;$(name+'-panel').hidden=!selected;$(name+'-tab').setAttribute('aria-selected',String(selected));$(name+'-tab').tabIndex=selected?0:-1});
+}
+views.forEach((name,index)=>{
+ $(name+'-tab').addEventListener('click',()=>showView(name));
+ $(name+'-tab').addEventListener('keydown',e=>{
+  if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+  e.preventDefault();const target=e.key==='Home'?views[0]:e.key==='End'?views.at(-1):views[(index+(e.key==='ArrowRight'?1:-1)+views.length)%views.length];showView(target);$(target+'-tab').focus();
+ });
+});
+wideScreen.addEventListener('change',()=>{if(!wideScreen.matches){const hadTabFocus=document.activeElement.closest('.library-tabs')||document.activeElement.closest('#history-panel, #favorites-panel');showView('library');if(hadTabFocus)search.focus()}});
+function recordingChooser(p){
+ const panel=node('section','recording-chooser','');panel.id='chooser-'+p.id;panel.setAttribute('aria-labelledby','chooser-heading-'+p.id);
+ const top=node('div','chooser-top',''),heading=node('div','','');
+ const title=node('h4','','Choose your starting recording');title.id='chooser-heading-'+p.id;title.tabIndex=-1;
+ heading.append(title,node('p','',p.recordings.length+' performances · '+materialLabel(selectedMaterial)));
+ const collapse=node('button','collapse','Close ↑');collapse.setAttribute('aria-label','Close recordings for '+p.title);
+ collapse.addEventListener('click',()=>{expandedPiece=null;render();$('piece-title-'+p.id).focus({preventScroll:true})});
+ top.append(heading,collapse);panel.append(top);
+ const materials=node('div','materials','');materials.setAttribute('role','group');materials.setAttribute('aria-label','Study material');materials.append(node('span','materials-label','Open with'));
+ materialsFor(p).forEach(material=>{
+  const button=node('button','material',materialLabel(material));button.setAttribute('aria-pressed',String(material===selectedMaterial));
+  button.addEventListener('click',()=>{
+   selectedMaterial=material;
+   materials.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+   heading.querySelector('p').textContent=p.recordings.length+' performances · '+materialLabel(selectedMaterial);
+   panel.querySelectorAll('.recording-start').forEach((b,i)=>b.setAttribute('aria-label','Start practicing '+materialLabel(selectedMaterial)+' with '+sorted[i].name));
+  });materials.append(button);
+ });if(instrument.value==='All instruments'&&materialsFor(p).length>1)panel.append(materials);
+ const list=node('div','recording-list','');list.id='recordings-'+p.id;
+ const last=read('last-recording-'+p.id);
+ const sorted=[...p.recordings].sort((a,b)=>Number(b.id===last)-Number(a.id===last));
+ sorted.forEach((recording,i)=>{
+  const row=node('div','recording-row','');row.dataset.recording=recording.id;
+  const number=node('span','recording-number',String(i+1).padStart(2,'0'));number.setAttribute('aria-hidden','true');
+  const info=node('div','recording-info',''),name=node('div','recording-name',recording.name);
+  if(recording.id===last)name.append(node('span','last-practiced','Last practiced'));
+  info.append(name,node('div','recording-credit',recording.credit));
+  const start=node('button','open primary recording-start','Start →');start.setAttribute('aria-label','Start practicing '+materialLabel(selectedMaterial)+' with '+recording.name);
+  start.addEventListener('click',()=>startPractice(p,selectedMaterial,recording));
+  row.append(number,info,start);list.append(row);
+ });panel.append(list,node('p','chooser-note','You can switch recordings while you practice.'));
+ return panel;
+}
+function render(){
+ showView('library');
+ const words=normalize(search.value).trim().split(/\s+/).filter(Boolean),selected=instrument.value,all=selected==='All instruments';
+ const found=pieces.filter(p=>(all||p.instruments.includes(selected))&&words.every(w=>normalize([p.title,p.composer,p.detail,...p.instruments].join(' ')).includes(w))).sort((a,b)=>all?0:Number(b.parts.includes(selected))-Number(a.parts.includes(selected)));
+ if(!found.some(p=>p.id===expandedPiece))expandedPiece=null;
+ $('results-heading').textContent=words.length?'Search results':all?'Find your next piece':'Music for '+selected.toLowerCase();
+ $('count').textContent=found.length+' '+(found.length===1?'piece':'pieces')+(all?' in this selection':' · Your part first, full scores included');
+ $('reset').hidden=!words.length&&all;$('clear-search').hidden=!search.value;$('results').replaceChildren();
+ found.forEach(p=>{
+  const expanded=expandedPiece===p.id;
+  const row=node('article','piece'+(expanded?' expanded':''),'');
+  const body=node('div','piece-summary',''),heading=node('h3','',''),title=node('button','piece-title',p.title);title.id='piece-title-'+p.id;
+  function connect(button,material){
+   if(p.recordings.length>1){button.setAttribute('aria-expanded',String(expanded));if(expanded)button.setAttribute('aria-controls','chooser-'+p.id)}
+   button.addEventListener('click',()=>openPiece(p,material));
+  }
+  connect(title,null);heading.append(title);const pieceHeading=node('div','piece-heading',''),pieceInfo=node('div','','');pieceInfo.append(node('div','composer',p.composer),heading);pieceHeading.append(favoriteButton(p),pieceInfo);body.append(pieceHeading);
+  const bottom=node('div','piece-bottom',''),actions=node('div','actions','');
+  const part=all?(p.parts.length===1?p.parts[0]:null):(p.parts.includes(selected)?selected:null);
+  
+  function action(text,material,primary){const b=node('button','open'+(primary?' primary':''),text);connect(b,material);actions.append(b)}
+  if(part)action(part,part+' part',true);
+  else if(all&&p.parts.length)action('Choose a part',p.parts[0]+' part',true);
+  if(p.score&&(all||!part))action('Full score','Full score',all&&!part&&!p.parts.length);
+  bottom.append(actions);body.append(bottom);row.append(body);
+  if(expanded)row.append(recordingChooser(p));
+  $('results').append(row);
+ });
+ if(!found.length){const empty=node('div','empty','');empty.append(node('h3','','No matching pieces'),node('p','','Try a composer’s surname, a shorter title, or another instrument.'));$('results').append(empty)}
+ $('result-footer').hidden=!found.length;
+}
+const candidates=[...new Set(pieces.map(p=>p.composer))].map(value=>({value,type:'Composer'})).concat([...instrument.options].slice(1).map(o=>({value:o.value,type:'Instrument'})),['Concerto','Symphony','Suite'].map(value=>({value,type:'Keyword'})),pieces.map(p=>({value:p.title,type:'Work'})));
+let suggestions=[],active=-1;
+function closeSuggestions(){$('suggestions').hidden=true;search.setAttribute('aria-expanded','false');search.removeAttribute('aria-activedescendant');active=-1}
+function choose(item){if(item.type==='Instrument'){instrument.value=item.value;save('instrument',item.value);expandedPiece=null;search.value=''}else search.value=item.value;closeSuggestions();render();search.focus()}
+function suggest(){const q=normalize(search.value).trim();closeSuggestions();if(!q)return;suggestions=candidates.filter(c=>normalize(c.value).includes(q)).slice(0,6);$('suggestions').replaceChildren();if(!suggestions.length)return;suggestions.forEach((item,i)=>{const el=node('div','suggestion','');el.id='suggestion-'+i;el.setAttribute('role','option');el.setAttribute('aria-selected','false');el.append(node('b','',item.value),node('small','',item.type));el.addEventListener('pointerdown',e=>e.preventDefault());el.addEventListener('click',()=>choose(item));$('suggestions').append(el)});$('suggestions').hidden=false;search.setAttribute('aria-expanded','true')}
+search.addEventListener('input',()=>{render();suggest()});search.addEventListener('focus',suggest);search.addEventListener('blur',closeSuggestions);
+search.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();closeSuggestions();return}if($('suggestions').hidden)return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();active=(active+(e.key==='ArrowDown'?1:-1)+suggestions.length)%suggestions.length;[...$('suggestions').children].forEach((el,i)=>el.setAttribute('aria-selected',String(i===active)));search.setAttribute('aria-activedescendant','suggestion-'+active)}if(e.key==='Enter'&&active>=0){e.preventDefault();choose(suggestions[active])}});
+instrument.addEventListener('change',()=>{save('instrument',instrument.value);expandedPiece=null;closeSuggestions();render()});$('search-form').addEventListener('submit',e=>{e.preventDefault();closeSuggestions();render()});$('clear-search').addEventListener('click',()=>{search.value='';closeSuggestions();render();search.focus()});$('reset').addEventListener('click',()=>{search.value='';instrument.value='All instruments';save('instrument',instrument.value);expandedPiece=null;closeSuggestions();render()});document.querySelectorAll('[data-query]').forEach(b=>b.addEventListener('click',()=>{search.value=b.dataset.query;render();search.focus();suggest()}));document.addEventListener('keydown',e=>{if(e.key==='/'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName)&&!$('preview').open){e.preventDefault();search.focus()}});$('back').addEventListener('click',()=>$('preview').close());document.querySelector('.close-dialog').addEventListener('click',()=>$('preview').close());renderHistory();renderFavorites();render();
+</script>
+</body>
+</html>

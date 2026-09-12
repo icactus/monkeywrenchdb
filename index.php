@@ -106,7 +106,8 @@ if ($hasInitialRecordingTarget) {
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=33" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=274" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=275" />
+    <link rel="stylesheet" href="assets/css/homepage.css?v=1" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -461,39 +462,7 @@ if ($hasInitialRecordingTarget) {
         <div class="notation" id="notation"><!--width needed for editmode pixel mapping -->
             <pre id="yubload" class="dlog">Youtube player loading, please wait ...</pre>
             <div id="notation-scroll">
-                <div id="starter-browser" class="starter-browser">
-                    <aside class="starter-sidebar" aria-label="Instruments">
-                        <div class="search-content instrument-container" id="instrument-links"></div>
-                        <div class="starter-sidebar-scroll-cue" aria-hidden="true">More instruments ↓</div>
-                    </aside>
-                    <main class="starter-main" aria-labelledby="pieces-heading">
-                        <div class="starter-main-empty" id="starter-main-empty">
-                            <div class="starter-empty-copy">
-                                <h2 id="pieces-heading">Interactive Sheet Music Synced With YouTube Recordings</h2>
-                                <p>Monkey Wrench turns scores and parts into a free, open source practice player for studying YouTube without ad breaks.</p>
-                                <ul class="homepage-sidecontent-list">
-                                    <li>Auto-follows parts and scores while the recording plays</li>
-                                    <li>Click any measure to jump to that moment in the performance</li>
-                                    <li>Jump between part and score while keeping the same place in the music</li>
-                                </ul>
-                                <div class="homepage-sidecontent-secondary">
-                                    <ul class="homepage-sidecontent-list homepage-sidecontent-list-secondary">
-                                        <li>Create a <a href="auth_login.php?provider=google">free account</a> to save history and favorites</li>
-                                        <li>
-                                            Share links to specific measures
-                                            <div class="homepage-sidecontent-example">
-                                                <span class="homepage-sidecontent-example-prefix">ex:</span>
-                                                <a href="https://monkeywrenchdb.org/?metricArrId=5&recordingId=661&t=1086.2">Beethoven 5 - Trio - bass part</a>
-                                            </div>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="search-content" id="pieces-container"></div>
-                        <div class="search-content" id="recordings-container" hidden></div>
-                    </main>
-                </div>
+                <?php require __DIR__ . '/homepage.php'; ?>
             </div>
         </div>
 
@@ -807,10 +776,11 @@ if ($hasInitialRecordingTarget) {
     <div id="notification">
         Link copied to clipboard!
     </div>
-    <script src="js/history-manager.js?v=4"></script>
-    <script src="js/favorites-manager.js?v=1"></script>
-    <script src="stripped-synpdf.js?v=325"></script>
-    <script src="stripped-synpdf-extras.js?v=280"></script>
+    <script src="js/history-manager.js?v=5"></script>
+    <script src="js/favorites-manager.js?v=2"></script>
+    <script src="stripped-synpdf.js?v=326"></script>
+    <script src="stripped-synpdf-extras.js?v=281"></script>
+    <script src="js/homepage.js?v=1"></script>
     <script>
         // Dark Mode menu toggles - wire up immediately on page load
         $(function () {

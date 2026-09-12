@@ -96,6 +96,7 @@ function deleteHistoryItem(event, historyId) {
         .then(data => {
             if (data.status === 'success') {
                 fetchHistory(); // Reload list
+                window.dispatchEvent(new CustomEvent('mw-account-changed'));
             } else {
                 alert("Failed to delete: " + (data.error || 'Unknown error'));
             }
