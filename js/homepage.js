@@ -247,7 +247,8 @@
         else if (state.instrument) { if (part && !part.is_score) action(state.instrument, part, true); else if (score) action(scoreLabel(score), score, false); }
         else {
             const parts = piece.parts.filter(p => !p.is_score);
-            if (parts.length) action(parts.length === 1 ? parts[0].instrument_name : 'Choose a part', parts.includes(part) ? part : parts[0], true);
+            if (parts.length === 1) action(parts[0].instrument_name, parts.includes(part) ? part : parts[0], true);
+            else if (parts.length > 1) actions.append(button('Choose a part', 'study-open primary', () => openPiece(piece, parts.includes(part) ? part : parts[0], null, false)));
             if (score) action(scoreLabel(score), score, !parts.length);
         }
         summary.append(heading, actions); row.append(summary); if (expanded) row.append(chooser(piece)); return row;

@@ -86,6 +86,20 @@ test('zero-recording piece opens an empty chooser, not the player', async () => 
     assert.equal(h.findByClass(panel, 'study-empty').length, 1);
 });
 
+test('choose a part opens the chooser instead of autostarting', async () => {
+    h.resetFilters();
+    h.launched().length = 0;
+    const row = h.findByClass(h.els()['study-results'], 'study-piece').find(r => String(r.dataset.pieceId) === '3');
+    assert.ok(row, 'expected a row for piece 3');
+    const btn = h.findByClass(row, 'study-open').find(b => b.textContent === 'Choose a part');
+    assert.ok(btn, 'expected a Choose a part button');
+    await h.fire(btn, 'click');
+    assert.equal(h.launched().length, 0);
+    const panel = h.ctx().document.getElementById('study-chooser-3');
+    assert.ok(panel, 'chooser panel should render');
+    assert.equal(h.findByClass(panel, 'study-materials').length, 1);
+});
+
 test('starring while signed out asks for sign-in', async () => {
     h.resetFilters();
     await h.fire(h.starButtons()[0], 'click');
