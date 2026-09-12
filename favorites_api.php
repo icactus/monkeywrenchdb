@@ -93,11 +93,11 @@ try {
                 VALUES (?, ?, $metricSql, $recSql)
                 ON DUPLICATE KEY UPDATE metric_arr_id = COALESCE(VALUES(metric_arr_id), metric_arr_id), recording_id = COALESCE(VALUES(recording_id), recording_id), created_at = NOW()";
         $stmt = $mysqli->prepare($sql);
-        $types = 'ii';
-        $params = [$user_id, $piece_id];
-        if ($metric_arr_id !== null) { $types .= 'i'; $params[] = $metric_arr_id; }
-        if ($recording_id !== null) { $types .= 'i'; $params[] = $recording_id; }
-        $stmt->bind_param($types, ...$params);
+        // bind_param takes references, so spread (...) fatals; branch explicitly.
+        if ($metric_arr_id !== null && $recording_id !== null) $stmt->bind_param('iiii', $user_id, $piece_id, $metric_arr_id, $recording_id);
+        elseif ($metric_arr_id !== null) $stmt->bind_param('iii', $user_id, $piece_id, $metric_arr_id);
+        elseif ($recording_id !== null) $stmt->bind_param('iii', $user_id, $piece_id, $recording_id);
+        else $stmt->bind_param('ii', $user_id, $piece_id);
 
         if (!$stmt->execute()) {
             throw new Exception("Insert failed: " . $stmt->error);
