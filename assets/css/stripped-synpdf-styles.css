@@ -2676,9 +2676,15 @@ html.inverted .starter-sidebar .instrument-link {
     color: var(--mw-text);
 }
 
-html.inverted #notation .starter-sidebar .instrument-link:hover,
-html.inverted #notation .starter-sidebar .instrument-link.selected {
+html.inverted #notation .starter-sidebar .instrument-link:hover {
     background: var(--mw-surface-3);
+}
+
+html.inverted #notation .starter-sidebar .instrument-link.selected {
+    background: rgba(91, 162, 168, 0.3);
+    box-shadow: inset 3px 0 var(--mw-accent-bright);
+    color: #fff;
+    font-weight: 600;
 }
 
 html.inverted .starter-sidebar .sheet-music-icon {

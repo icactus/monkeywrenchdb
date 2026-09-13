@@ -40,6 +40,8 @@ html.inverted .study-piece{border-bottom-color:#2f4046}
 html.inverted .study-piece.expanded{background:#202d31}
 html.inverted .study-category{background:#243136;border-color:#2f4046;color:#9fb0b3}
 html.inverted .study-category:hover{background:#2b3c42}
+html.inverted .study-category[aria-pressed=true]{background:#2f6b72;border-color:#7cc4ca;color:#fff;box-shadow:0 0 0 1px #7cc4ca}
+html.inverted .study-category[aria-pressed=true]:hover{background:#35747b}
 html.inverted .study-construction-notice{background:#243136;border-color:#2f4046;color:#9fb0b3}
 html.inverted .study-construction-dismiss{color:#9fb0b3}
 html.inverted .study-construction-dismiss:hover{background:#2b3c42;color:#e6eded}
