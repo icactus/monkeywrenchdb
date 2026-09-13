@@ -680,7 +680,7 @@ $is_share_link = isset($_GET['share']);
     </button>
     <script src="js/history-manager.js?v=4"></script>
     <script src="js/favorites-manager.js?v=1"></script>
-    <script src="stripped-synpdf.js?v=332"></script>
+    <script src="stripped-synpdf.js?v=333"></script>
     <script src="stripped-synpdf-extras.js?v=271"></script>
     <script>
         window.setDarkMode = function (isDark) {

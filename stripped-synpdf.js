@@ -2349,10 +2349,10 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
 }
 
 
-function tick$$module$synpdf(a) {
+function tick$$module$synpdf(frameCount) {
     if (elmed$$module$synpdf && msc_wz$$module$synpdf && (!yubchk$$module$synpdf || elmed$$module$synpdf == ybplayer$$module$synpdf)) {
         var mediaTime = yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime;
-        var b = mediaTime - offset$$module$synpdf;
+        var scoreTime = mediaTime - offset$$module$synpdf;
         if (window.__measureClickPlaySuppressUntil &&
             Date.now() < window.__measureClickPlaySuppressUntil &&
             typeof window.__measureClickPlayMediaTime === 'number') {
@@ -2365,51 +2365,51 @@ function tick$$module$synpdf(a) {
             window.__measureClickPlayMediaTime = undefined;
         }
         if (isSwitchingRecording || blockTime2x) {
-            console.log("Tick blocked. Time:", b, "Switching:", isSwitchingRecording, "blockTime2x:", blockTime2x);
-        } else if (a && 0 != a % 10) {
+            console.log("Tick blocked. Time:", scoreTime, "Switching:", isSwitchingRecording, "blockTime2x:", blockTime2x);
+        } else if (frameCount && 0 != frameCount % 10) {
             // Skip update to throttle calls
         } else {
-            msc_wz$$module$synpdf.time2x(b);
+            msc_wz$$module$synpdf.time2x(scoreTime);
         }
         scrollFlag = 0;
     }
 }
 
 //Long-click/touch handling
-function kliklang$$module$synpdf(a) {
-    void 0 == touchDev$$module$synpdf && (touchDev$$module$synpdf = "touchstart" == a.type);
+function kliklang$$module$synpdf(startEvent) {
+    void 0 == touchDev$$module$synpdf && (touchDev$$module$synpdf = "touchstart" == startEvent.type);
 
     // Allow 2-finger gestures (pinch zoom) to bubble up - only intercept single-finger touches
-    if (a.type === "touchstart" && a.originalEvent && a.originalEvent.touches && a.originalEvent.touches.length >= 2) {
+    if (startEvent.type === "touchstart" && startEvent.originalEvent && startEvent.originalEvent.touches && startEvent.originalEvent.touches.length >= 2) {
         return; // Let pinch zoom handler on notation-scroll handle it
     }
 
-    var b = touchDev$$module$synpdf ? $(this) : $("body");
-    a.stopPropagation();
-    if (hideMenuHelp$$module$synpdf(0) || touchDev$$module$synpdf && "mousedown" == a.type) a.preventDefault();
+    var $gestureTarget = touchDev$$module$synpdf ? $(this) : $("body");
+    startEvent.stopPropagation();
+    if (hideMenuHelp$$module$synpdf(0) || touchDev$$module$synpdf && "mousedown" == startEvent.type) startEvent.preventDefault();
     else {
         touch_moved$$module$synpdf = 0;
-        a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
-        var c = a.clientY,
-            d = a.clientX;
+        var touchPoint = touchDev$$module$synpdf ? startEvent.originalEvent.changedTouches[0] : startEvent;
+        var startClientY = touchPoint.clientY,
+            startClientX = touchPoint.clientX;
         touch_tb$$module$synpdf = (new Date).getTime();
-        var e = a.shiftKey;
-        b.on(touchDev$$module$synpdf ? "touchmove" : "mousemove",
-            function (a) {
-                a.stopPropagation();
-                a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
-                touch_moved$$module$synpdf = 10 < Math.abs(a.clientY - c) + Math.abs(a.clientX - d);
+        var shiftHeld = touchPoint.shiftKey;
+        $gestureTarget.on(touchDev$$module$synpdf ? "touchmove" : "mousemove",
+            function (moveEvent) {
+                moveEvent.stopPropagation();
+                var movePoint = touchDev$$module$synpdf ? moveEvent.originalEvent.changedTouches[0] : moveEvent;
+                touch_moved$$module$synpdf = 10 < Math.abs(movePoint.clientY - startClientY) + Math.abs(movePoint.clientX - startClientX);
             });
-        b.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function (a) {
-            a.stopPropagation();
-            if (a.cancelable) a.preventDefault();
-            b.off("mousemove touchmove mouseup touchend");
+        $gestureTarget.on(touchDev$$module$synpdf ? "touchend" : "mouseup", function (endEvent) {
+            endEvent.stopPropagation();
+            if (endEvent.cancelable) endEvent.preventDefault();
+            $gestureTarget.off("mousemove touchmove mouseup touchend");
             if (!touch_moved$$module$synpdf) {
-                a = touchDev$$module$synpdf ? a.originalEvent.changedTouches[0] : a;
+                var endPoint = touchDev$$module$synpdf ? endEvent.originalEvent.changedTouches[0] : endEvent;
                 var longPress = 500 < (new Date).getTime() - touch_tb$$module$synpdf;
                 const $sc = $("#notation-scroll");
-                const aX = a.clientX - $sc.offset().left + $sc.scrollLeft(); // notation-space X
-                const aY = a.clientY - $sc.offset().top + $sc.scrollTop();   // notation-space Y
+                const notationX = endPoint.clientX - $sc.offset().left + $sc.scrollLeft(); // notation-space X
+                const notationY = endPoint.clientY - $sc.offset().top + $sc.scrollTop();   // notation-space Y
 
                 // Double-tap detection for mobile
                 var now = Date.now();
@@ -2422,7 +2422,7 @@ function kliklang$$module$synpdf(a) {
                     window.__lastTapTime = now;
                 }
 
-                longPress && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(aX, aY) : msc_wz$$module$synpdf.x2time(aX, aY, longPress, isDoubleTap || e);
+                longPress && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(notationX, notationY) : msc_wz$$module$synpdf.x2time(notationX, notationY, longPress, isDoubleTap || shiftHeld);
 
 
             }
@@ -2615,59 +2615,59 @@ function seekToPromise(time) {
     });
 }
 
-function yubload$$module$synpdf(a) {
-    function b(a) {
-        $("#yubuse").attr("disabled", a);
-        $("#yublbl").css("color", a ? "#aaa" : "#000");
-        $("#yubload").toggle(a)
+function yubload$$module$synpdf(readyCallback) {
+    function setLoadingDisabled(isDisabled) {
+        $("#yubuse").attr("disabled", isDisabled);
+        $("#yublbl").css("color", isDisabled ? "#aaa" : "#000");
+        $("#yubload").toggle(isDisabled)
     }
-    a && (onYouTubeAPIContinue$$module$synpdf = a);
-    "undefined" == typeof YT ? (b(!0), $("#yubuse").prop("checked", !1), $.getScript("https://www.youtube.com/iframe_api")) : (b(!1), onYouTubeAPIContinue$$module$synpdf())
+    readyCallback && (onYouTubeAPIContinue$$module$synpdf = readyCallback);
+    "undefined" == typeof YT ? (setLoadingDisabled(!0), $("#yubuse").prop("checked", !1), $.getScript("https://www.youtube.com/iframe_api")) : (setLoadingDisabled(!1), onYouTubeAPIContinue$$module$synpdf())
 }
 
-function setPlayer$$module$synpdf(a, b) {
-    b = b.replace("www.dropbox", "dl.dropboxusercontent").split("?")[0];
-    mediaFnm$$module$synpdf = 0 == b.indexOf("http") ? b : a;
-    a = a.split("?")[0];
+function setPlayer$$module$synpdf(mediaUrl, srcUrl) {
+    srcUrl = srcUrl.replace("www.dropbox", "dl.dropboxusercontent").split("?")[0];
+    mediaFnm$$module$synpdf = 0 == srcUrl.indexOf("http") ? srcUrl : mediaUrl;
+    mediaUrl = mediaUrl.split("?")[0];
     $("#vid, #aud").attr("src", "");
     ybplayer$$module$synpdf && ybplayer$$module$synpdf.stopVideo();
     dummyPlayer$$module$synpdf.pause();
-    var c = 0 <= opt$$module$synpdf.btime ? opt$$module$synpdf.btime : offset$$module$synpdf;
-    if (a) {
+    var startTimeFallback = 0 <= opt$$module$synpdf.btime ? opt$$module$synpdf.btime : offset$$module$synpdf;
+    if (mediaUrl) {
         yubchk$$module$synpdf = 0;
-        if (/\.webm$|\.mp4$/i.test(a)) {
-            a = $("#vid");
-            if (0 == a.length) return;
+        if (/\.webm$|\.mp4$/i.test(mediaUrl)) {
+            mediaUrl = $("#vid");
+            if (0 == mediaUrl.length) return;
             $("#vidyub, #aud").css("display",
                 "none")
         } else {
-            a = $("#aud");
-            if (0 == a.length) return;
+            mediaUrl = $("#aud");
+            if (0 == mediaUrl.length) return;
             $("#vidyub, #vid").css("display", "none")
         }
-        a.css("display", "inline-block");
-        elmed$$module$synpdf = a.get(0);
-        /\.ogg$/i.test(b) && (elmed$$module$synpdf.canPlayType("audio/ogg") || (b = b.replace(/\.ogg$/i, ".mp3")));
-        /\.webm$/i.test(b) && (elmed$$module$synpdf.canPlayType("video/webm") || (b = b.replace(/\.webm$/i, ".mp4")));
-        a.attr("src", b);
-        a.on("playing", function () {
+        mediaUrl.css("display", "inline-block");
+        elmed$$module$synpdf = mediaUrl.get(0);
+        /\.ogg$/i.test(srcUrl) && (elmed$$module$synpdf.canPlayType("audio/ogg") || (srcUrl = srcUrl.replace(/\.ogg$/i, ".mp3")));
+        /\.webm$/i.test(srcUrl) && (elmed$$module$synpdf.canPlayType("video/webm") || (srcUrl = srcUrl.replace(/\.webm$/i, ".mp4")));
+        mediaUrl.attr("src", srcUrl);
+        mediaUrl.on("playing", function () {
             dummyPlayer$$module$synpdf.setKlok(null, 0);
             setPauseState$$module$synpdf(!1)
         });
-        a.on("pause", function () {
+        mediaUrl.on("pause", function () {
             dummyPlayer$$module$synpdf.clearKlok();
             setPauseState$$module$synpdf(!0)
         });
-        a.on("loadedmetadata", function () {
+        mediaUrl.on("loadedmetadata", function () {
             setNotationHeight$$module$synpdf();
-            elmed$$module$synpdf.currentTime = c
+            elmed$$module$synpdf.currentTime = startTimeFallback
         });
         setNotationHeight$$module$synpdf()
         // below media_height is changed from 30% to 200px
     } else yubchk$$module$synpdf = 1, opt$$module$synpdf.media_height || (opt$$module$synpdf.media_height = "200px"), $("#vid, #aud").css("display", "none"), $("#vidyub").css("display", "inline-block"), yubload$$module$synpdf(function () {
         elmed$$module$synpdf = ybplayer$$module$synpdf;
         // Use URL start time override if set (for share links with ?t=), otherwise use default
-        var startTime = (window.urlStartTimeOverride > 0) ? window.urlStartTimeOverride : c;
+        var startTime = (window.urlStartTimeOverride > 0) ? window.urlStartTimeOverride : startTimeFallback;
         if (window.urlStartTimeOverride) {
             console.log('Using URL start time override:', startTime);
             delete window.urlStartTimeOverride; // Clear after use
@@ -2734,37 +2734,37 @@ function do_count_in$$module$synpdf(a, b) {
     }
 }
 
-function playPause$$module$synpdf(a, b) {
+function playPause$$module$synpdf(playSpec, startDelayMs) {
     if (elmed$$module$synpdf) {
-        var c = a.split(":"),
-            d = "true" == c[0],
-            e = parseFloat(c[1]);
-        c = "true" == c[2];
-        var f = yubchk$$module$synpdf ? elmed$$module$synpdf.getPlayerState() : 0,
-            g = yubchk$$module$synpdf ? 1 != f : elmed$$module$synpdf.paused;
-        yubchk$$module$synpdf ? 5 != f && elmed$$module$synpdf.seekTo(e, !0) : elmed$$module$synpdf.currentTime = e;
+        var specParts = playSpec.split(":"),
+            shouldPlay = "true" == specParts[0],
+            seekTimeSeconds = parseFloat(specParts[1]);
+        var wantCountIn = "true" == specParts[2];
+        var playerState = yubchk$$module$synpdf ? elmed$$module$synpdf.getPlayerState() : 0,
+            isPausedNeedingPlay = yubchk$$module$synpdf ? 1 != playerState : elmed$$module$synpdf.paused;
+        yubchk$$module$synpdf ? 5 != playerState && elmed$$module$synpdf.seekTo(seekTimeSeconds, !0) : elmed$$module$synpdf.currentTime = seekTimeSeconds;
         // make 2-up snap on this seek/cue
         if (document.getElementById('notation-scroll')?.classList.contains('two-up')) {
             window.twoUpInitialScrollPending = true;
             window.__twoUpPrevPage = undefined;
         }
-        msc_wz$$module$synpdf && msc_wz$$module$synpdf.time2x(e - offset$$module$synpdf);
-        if (d) {
-            if (g) {
-                if (c) {
-                    do_count_in$$module$synpdf(a,
-                        b);
+        msc_wz$$module$synpdf && msc_wz$$module$synpdf.time2x(seekTimeSeconds - offset$$module$synpdf);
+        if (shouldPlay) {
+            if (isPausedNeedingPlay) {
+                if (wantCountIn) {
+                    do_count_in$$module$synpdf(playSpec,
+                        startDelayMs);
                     return
                 }
-                if (b) {
+                if (startDelayMs) {
                     setTimeout(function () {
-                        playPause$$module$synpdf(a, 0)
-                    }, b);
+                        playPause$$module$synpdf(playSpec, 0)
+                    }, startDelayMs);
                     return
                 }
                 yubchk$$module$synpdf ? elmed$$module$synpdf.playVideo() : elmed$$module$synpdf.play()
-            } else yubchk$$module$synpdf ? 5 != f && elmed$$module$synpdf.pauseVideo() : elmed$$module$synpdf.pause();
-            msc_wz$$module$synpdf && (msc_wz$$module$synpdf.paused = !g)
+            } else yubchk$$module$synpdf ? 5 != playerState && elmed$$module$synpdf.pauseVideo() : elmed$$module$synpdf.pause();
+            msc_wz$$module$synpdf && (msc_wz$$module$synpdf.paused = !isPausedNeedingPlay)
         }
     }
 }
@@ -2782,42 +2782,42 @@ function pauseer$$module$synpdf() {
     yubchk$$module$synpdf ? 1 == elmed$$module$synpdf.getPlayerState() && elmed$$module$synpdf.pauseVideo() : elmed$$module$synpdf.paused || elmed$$module$synpdf.pause()
 }
 
-function keyDown$$module$synpdf(a) {
+function keyDown$$module$synpdf(keyEvent) {
     // Homepage controls and native form/button actions own their keyboard events.
-    if (!document.body.classList.contains('recording-loaded') || a.defaultPrevented || a.isDefaultPrevented?.()) return;
+    if (!document.body.classList.contains('recording-loaded') || keyEvent.defaultPrevented || keyEvent.isDefaultPrevented?.()) return;
     var activeEl = document.activeElement;
     if (activeEl && (activeEl.isContentEditable || activeEl.closest('input, textarea, select, button, a[href], [role="button"], [role="tab"]'))) {
         return;
     }
-    var b = a.key,
-        c = 1;
-    switch (b) {
+    var pressedKey = keyEvent.key,
+        handled = 1;
+    switch (pressedKey) {
         case "ArrowLeft":
         case "Left":
-            msc_wz$$module$synpdf.goMsre(0, a);
+            msc_wz$$module$synpdf.goMsre(0, keyEvent);
             break;
         case "ArrowRight":
         case "Right":
-            msc_wz$$module$synpdf.goMsre(1, a);
+            msc_wz$$module$synpdf.goMsre(1, keyEvent);
             break;
         case "ArrowUp":
         case "Up":
-            msc_wz$$module$synpdf.goUpDown(0, 0, a);
+            msc_wz$$module$synpdf.goUpDown(0, 0, keyEvent);
             break;
         case "ArrowDown":
         case "Down":
-            msc_wz$$module$synpdf.goUpDown(1, 0, a);
+            msc_wz$$module$synpdf.goUpDown(1, 0, keyEvent);
             break;
         case "PageUp":
-            msc_wz$$module$synpdf.goUpDown(0, 1, a);
+            msc_wz$$module$synpdf.goUpDown(0, 1, keyEvent);
             break;
         case "PageDown":
-            msc_wz$$module$synpdf.goUpDown(1, 1, a);
+            msc_wz$$module$synpdf.goUpDown(1, 1, keyEvent);
             break;
         case "Spacebar":
         case " ":
-            a.preventDefault &&
-                a.preventDefault();
+            keyEvent.preventDefault &&
+                keyEvent.preventDefault();
             if (!elmed$$module$synpdf) break;
             var time;
             const recentMeasureClickTime = getRecentMeasureClickMediaTime$$module$synpdf();
@@ -2838,9 +2838,9 @@ function keyDown$$module$synpdf(a) {
             $("#btns").click();
             break;
         case "h":
-            if (a.altKey) {
+            if (keyEvent.altKey) {
                 toggleHiResPdfs();
-                a.preventDefault();
+                keyEvent.preventDefault();
             } else {
                 $("#help").toggleClass("showhlp");
                 $("#about").toggleClass("showabout", !1);
@@ -2866,7 +2866,7 @@ function keyDown$$module$synpdf(a) {
             break;
 
         default:
-            c = 0
+            handled = 0
     }
 }
 
