@@ -2987,11 +2987,18 @@ html.inverted .piece-part-button {
     color: var(--mw-text);
 }
 
-html.inverted .piece-part-button:hover,
-html.inverted .piece-part-button.selected {
+html.inverted .piece-part-button:hover {
     background: var(--mw-surface-3);
-    border-color: var(--mw-accent);
+    border-color: var(--mw-faint);
     color: #fff;
+}
+
+html.inverted .piece-part-button.selected {
+    background: rgba(91, 162, 168, 0.3);
+    border-color: var(--mw-accent-bright);
+    color: #fff;
+    box-shadow: 0 0 0 1px var(--mw-accent-bright);
+    font-weight: 600;
 }
 
 html.inverted .piece-recordings-list .recordings-link,
