@@ -2411,41 +2411,454 @@ body.initial-recording-target:not(.recording-loaded) #sidecontent {
 
 
 
+:root {
+    color-scheme: light;
+}
+
 html.inverted {
-    filter: invert(100%);
-    transition: filter 0.5s ease;
+    color-scheme: dark;
+    --mw-bg: #131a1c;
+    --mw-surface: #1c2629;
+    --mw-surface-2: #243136;
+    --mw-surface-3: #2b3c42;
+    --mw-border: #2f4046;
+    --mw-border-soft: #26353a;
+    --mw-text: #e6eded;
+    --mw-muted: #9fb0b3;
+    --mw-faint: #7b8f93;
+    --mw-accent: #5ba2a8;
+    --mw-accent-bright: #7cc4ca;
+    --mw-input-bg: #243136;
+    --mw-hover: #243136;
+    transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-html.inverted #vidyub,
-html.inverted #monkey-logo,
-html.inverted #notation-scroll canvas {
-    filter: invert(100%) !important;
+html.inverted,
+html.inverted body {
+    background: var(--mw-bg);
+    color: var(--mw-text);
 }
 
-/* Ensure fullscreen containers are inverted so children can 'un-invert' back to light colors */
-html.inverted #notation:fullscreen,
-html.inverted #vidyub:fullscreen,
-html.inverted #notation:-webkit-full-screen,
-html.inverted #vidyub:-webkit-full-screen {
-    filter: invert(100%) !important;
+html.inverted body {
+    transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-html.inverted #vidyub:fullscreen {
-    filter: invert(100%) !important;
+html.inverted a {
+    color: var(--mw-accent-bright);
 }
 
-html.inverted #vidyub:-webkit-full-screen {
-    filter: invert(100%) !important;
+html.inverted #header {
+    background: linear-gradient(145deg, #1a2b2e 0%, #1e3439 45%, #162326 100%);
+}
+
+html.inverted #monkeywrench-logo-text,
+html.inverted #monkeywrench-logo-text a,
+html.inverted #monkeywrench-logo-text h2,
+html.inverted #logotext-line2 {
+    color: #e8f0f0;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+html.inverted .nav-menu a,
+html.inverted .nav-link {
+    color: #c8d6d6;
+}
+
+html.inverted .nav-menu a:hover,
+html.inverted .nav-link:hover {
+    color: #fff;
+}
+
+html.inverted .nav-user-trigger {
+    background: rgba(91, 162, 168, 0.22);
+    border-color: rgba(91, 162, 168, 0.45);
+}
+
+html.inverted .nav-user-name {
+    color: var(--mw-text);
+}
+
+html.inverted .nav-user-chevron {
+    color: var(--mw-muted);
+}
+
+html.inverted .nav-dropdown-menu,
+html.inverted #mobile-header-menu {
+    background: var(--mw-surface);
+    border: 1px solid var(--mw-border);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+html.inverted .nav-dropdown-menu a,
+html.inverted #mobile-header-menu a {
+    color: var(--mw-text);
+}
+
+html.inverted .nav-dropdown-menu a:hover,
+html.inverted #mobile-header-menu a:hover,
+html.inverted #mobile-header-menu a:active {
+    background: var(--mw-surface-2);
+    color: #fff !important;
+}
+
+html.inverted .nav-dropdown-row {
+    color: var(--mw-text);
+}
+
+html.inverted .nav-dropdown-divider,
+html.inverted .mobile-menu-divider {
+    background: var(--mw-border);
+}
+
+html.inverted .nav-dropdown-label {
+    color: var(--mw-faint);
+}
+
+html.inverted .mobile-menu-greeting {
+    color: var(--mw-muted);
+    border-bottom-color: var(--mw-border);
+}
+
+html.inverted .mobile-menu-login {
+    background: var(--mw-surface-2) !important;
+    color: var(--mw-text) !important;
+    border-color: var(--mw-border) !important;
+}
+
+html.inverted .mobile-menu-login:hover {
+    background: var(--mw-surface-3) !important;
+    border-color: var(--mw-faint) !important;
+}
+
+html.inverted #mobile-header-burger svg {
+    color: var(--mw-text);
+    background: rgba(28, 38, 41, 0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+html.inverted sidecontentbar {
+    background: var(--mw-surface);
+    border-left-color: var(--mw-border);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
+    color: var(--mw-text);
+}
+
+html.inverted sidecontentbar h3 {
+    color: var(--mw-muted);
+}
+
+html.inverted #composer-piece-name h3,
+html.inverted .homepage-sidecontent-title,
+html.inverted .homepage-sidecontent-copy {
+    color: var(--mw-text);
+}
+
+html.inverted .homepage-sidecontent-list-secondary {
+    color: var(--mw-muted);
+}
+
+html.inverted .homepage-sidecontent-copy a:link,
+html.inverted .homepage-sidecontent-copy a:visited,
+html.inverted .homepage-sidecontent-copy a:active,
+html.inverted .starter-empty-copy a:link,
+html.inverted .starter-empty-copy a:visited,
+html.inverted .starter-empty-copy a:active {
+    color: var(--mw-accent-bright);
+}
+
+html.inverted .homepage-sidecontent-secondary {
+    border-top-color: var(--mw-border);
+}
+
+html.inverted #sidecontent select,
+html.inverted #speedField,
+html.inverted #pieces-search,
+html.inverted .starter-main #pieces-search {
+    background: var(--mw-input-bg);
+    border-color: var(--mw-border);
+    color: var(--mw-text);
+    box-shadow: none;
+}
+
+html.inverted #sidecontent select:hover {
+    border-color: var(--mw-faint);
 }
 
 html.inverted select option {
-    background-color: #222 !important;
-    color: #eee !important;
+    background-color: #243136 !important;
+    color: #e6eded !important;
 }
 
-/* Un-invert color swatches in dark mode so they show true colors */
-html.inverted .color-swatch {
-    filter: invert(100%);
+html.inverted #decrementButton,
+html.inverted #incrementButton {
+    background: var(--mw-surface-2);
+    border-color: var(--mw-border);
+    color: var(--mw-text);
+}
+
+html.inverted #incrementButton:hover,
+html.inverted #decrementButton:hover {
+    background: var(--mw-surface-3);
+    border-color: var(--mw-faint);
+}
+
+html.inverted .notation {
+    background: #1a2224;
+    box-shadow: rgba(0, 0, 0, 0.5) 0px 2px 4px, rgba(0, 0, 0, 0.4) 0px 7px 13px -3px, rgba(0, 0, 0, 0.4) 0px -3px 0px inset;
+}
+
+html.inverted .notation canvas {
+    background: #fff;
+    filter: brightness(0.9);
+}
+
+html.inverted .tabs {
+    background-color: var(--mw-surface);
+    border-bottom-color: var(--mw-border);
+}
+
+html.inverted .tab-header-row::before {
+    background: var(--mw-border);
+}
+
+html.inverted .tab-header h2 {
+    color: var(--mw-faint);
+}
+
+html.inverted .tab-header.active h2 {
+    color: var(--mw-text);
+}
+
+html.inverted .tab-content {
+    color: var(--mw-text);
+}
+
+html.inverted .tab-header:hover {
+    background-color: var(--mw-surface-2);
+}
+
+html.inverted .stepper-circle {
+    background: var(--mw-surface-3);
+    border-color: var(--mw-border);
+    color: var(--mw-muted);
+}
+
+html.inverted .tab-header.disabled .stepper-circle {
+    background: var(--mw-surface);
+    border-color: var(--mw-border);
+    color: var(--mw-faint);
+}
+
+html.inverted .tab-header.disabled h2 {
+    color: var(--mw-faint);
+}
+
+html.inverted .search-content,
+html.inverted .starter-browser {
+    background: var(--mw-surface);
+    border-top-color: var(--mw-border);
+    color: var(--mw-text);
+}
+
+html.inverted .starter-sidebar {
+    background: #182224;
+    border-right-color: var(--mw-border);
+    color: var(--mw-text);
+}
+
+html.inverted .starter-sidebar .instrument-group h3,
+html.inverted .starter-main #pieces-container > h3 {
+    color: var(--mw-muted);
+    border-bottom-color: var(--mw-border);
+}
+
+html.inverted .starter-sidebar .instrument-link {
+    color: var(--mw-text);
+}
+
+html.inverted #notation .starter-sidebar .instrument-link:hover,
+html.inverted #notation .starter-sidebar .instrument-link.selected {
+    background: var(--mw-surface-3);
+}
+
+html.inverted .starter-sidebar .sheet-music-icon {
+    color: var(--mw-muted);
+}
+
+html.inverted .starter-main-empty,
+html.inverted .starter-empty-copy,
+html.inverted .starter-empty-copy > p {
+    color: var(--mw-muted);
+}
+
+html.inverted .pieces-link {
+    color: var(--mw-text);
+}
+
+html.inverted .piece-row {
+    border-bottom-color: var(--mw-border-soft);
+}
+
+html.inverted #control-buttons-row {
+    background-color: var(--mw-surface);
+    border-top-color: var(--mw-border);
+}
+
+html.inverted .control-buttons {
+    background-color: transparent;
+    color: var(--mw-text);
+}
+
+html.inverted .history-modal,
+html.inverted .favorites-modal,
+html.inverted .annotations-modal {
+    background: var(--mw-surface);
+    border: 1px solid var(--mw-border);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+html.inverted .history-header,
+html.inverted .favorites-header,
+html.inverted .annotations-header {
+    border-bottom-color: var(--mw-border);
+}
+
+html.inverted .history-header h3,
+html.inverted .favorites-header h3,
+html.inverted .annotations-header h3,
+html.inverted .history-composer,
+html.inverted .favorites-composer {
+    color: var(--mw-text);
+}
+
+html.inverted .history-entry-content,
+html.inverted .favorites-entry-content {
+    color: var(--mw-text);
+}
+
+html.inverted .history-piece,
+html.inverted .favorites-piece {
+    color: var(--mw-muted);
+}
+
+html.inverted .history-timestamp,
+html.inverted .favorites-date {
+    color: var(--mw-faint);
+}
+
+html.inverted .history-list li,
+html.inverted .favorites-list li,
+html.inverted .annotations-list li {
+    border-bottom-color: var(--mw-border-soft);
+}
+
+html.inverted .history-list li:hover,
+html.inverted .favorites-list li:hover {
+    background: var(--mw-surface-2);
+}
+
+html.inverted .history-close,
+html.inverted .favorites-close,
+html.inverted .annotations-close,
+html.inverted .history-delete,
+html.inverted .favorites-delete {
+    color: var(--mw-muted);
+}
+
+html.inverted .history-close:hover,
+html.inverted .favorites-close:hover,
+html.inverted .history-delete:hover,
+html.inverted .favorites-delete:hover {
+    background: var(--mw-surface-3);
+    color: var(--mw-text);
+}
+
+html.inverted .history-clear-btn,
+html.inverted .annotations-new-btn {
+    background: var(--mw-surface-2);
+    border-top-color: var(--mw-border);
+    color: var(--mw-muted);
+}
+
+html.inverted .history-clear-btn:hover {
+    background: var(--mw-surface-3);
+    color: var(--mw-text);
+}
+
+html.inverted .annotations-empty {
+    color: var(--mw-muted);
+}
+
+html.inverted #annotation-toggle-btn {
+    background: var(--mw-accent);
+}
+
+html.inverted #player-load-errors {
+    background: rgba(19, 26, 28, 0.94);
+    color: var(--mw-text);
+}
+
+html.inverted #notification {
+    background: var(--mw-surface-2);
+    color: var(--mw-text);
+    border: 1px solid var(--mw-border);
+}
+
+html.inverted #share-btn-mobile {
+    background: var(--mw-surface-2);
+    color: var(--mw-text);
+}
+
+html.inverted #mobile-drawer-backdrop,
+html.inverted .modal-backdrop {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+html.inverted sidecontentbar.active,
+html.inverted sidecontentbar {
+    background: var(--mw-surface);
+}
+
+html.inverted #darkmode-fab {
+    background: var(--mw-surface-2);
+    border-color: var(--mw-border);
+    color: #f2f5f5;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+html.inverted #darkmode-fab:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+}
+
+html.inverted .toggle-slider {
+    background: #3a4d53;
+}
+
+html.inverted #menu,
+html.inverted #mbar {
+    background-color: var(--mw-surface-2);
+    color: var(--mw-text);
+}
+
+html.inverted select {
+    background-color: var(--mw-input-bg);
+    color: var(--mw-text);
+}
+
+html.inverted input[type="text"],
+html.inverted input[type="number"],
+html.inverted input[type="search"] {
+    background: var(--mw-input-bg);
+    border-color: var(--mw-border);
+    color: var(--mw-text);
+}
+
+html.inverted ::-webkit-scrollbar-track {
+    background: var(--mw-surface);
+}
+
+html.inverted ::-webkit-scrollbar-thumb {
+    background: var(--mw-surface-3);
 }
 
 #instruments-dropdown {
@@ -3183,6 +3596,59 @@ body.hand-cursor-active #pdf-container {
 
 .toggle-switch input:checked+.toggle-slider .toggle-slider-knob {
     transform: translateX(20px);
+}
+
+/* Dark mode floating toggle (desktop only) */
+#darkmode-fab {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+    z-index: 900;
+    color: #333;
+}
+
+#darkmode-fab:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24);
+}
+
+#darkmode-fab svg {
+    width: 22px;
+    height: 22px;
+}
+
+#darkmode-fab .darkmode-icon-sun {
+    display: none;
+}
+
+html.inverted #darkmode-fab .darkmode-icon-moon {
+    display: none;
+}
+
+html.inverted #darkmode-fab .darkmode-icon-sun {
+    display: block;
+}
+
+@media screen and (max-width: 767px) {
+    #darkmode-fab {
+        display: none !important;
+    }
+}
+
+@media screen and (max-height: 500px) and (orientation: landscape) {
+    #darkmode-fab {
+        display: none !important;
+    }
 }
 
 #share-btn-mobile {

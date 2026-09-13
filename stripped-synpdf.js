@@ -673,31 +673,36 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         }
     };
 
-    // Dark Mode - handles all dark mode toggles: mobile menu, desktop menu
-    const darkModeSelectors = '#invert-check-menu-mobile, #invert-check-menu-desktop';
-    $(darkModeSelectors).off('change').on('change', function () {
-        const isDark = $(this).is(':checked');
-        $(darkModeSelectors).prop('checked', isDark);
+    // Dark Mode - mobile menu checkbox + desktop floating button, persisted in localStorage
+    const applyDarkModeState = function (isDark) {
+        if (typeof window.setDarkMode === 'function') {
+            window.setDarkMode(isDark);
+            return;
+        }
+        document.documentElement.classList.toggle('inverted', isDark);
         $('html').toggleClass('inverted', isDark);
-
-        // Swap monkey logo for dark mode
+        $('#invert-check-menu-mobile').prop('checked', isDark);
         const logo = document.getElementById('monkey-logo');
         if (logo) {
             logo.src = isDark
                 ? 'assets/img/monkeydark.png'
                 : 'assets/img/monkeywrench-monkey100x100.png';
         }
-
-        // Persist preference to localStorage
         try {
             localStorage.setItem('darkMode', isDark ? '1' : '0');
         } catch (e) { /* ignore storage errors */ }
+    };
+    $('#invert-check-menu-mobile, #invert-check-menu-desktop').off('change').on('change', function () {
+        applyDarkModeState($(this).is(':checked'));
+    });
+    $('#darkmode-fab').off('click').on('click', function () {
+        applyDarkModeState(!document.documentElement.classList.contains('inverted'));
     });
 
     // Sync checkbox and logo with loaded dark mode preference (from head script)
     try {
         const isDark = localStorage.getItem('darkMode') === '1';
-        $(darkModeSelectors).prop('checked', isDark);
+        $('#invert-check-menu-mobile, #invert-check-menu-desktop').prop('checked', isDark);
         const logo = document.getElementById('monkey-logo');
         if (logo && isDark) {
             logo.src = 'assets/img/monkeydark.png';

@@ -25,3 +25,24 @@ body.initial-recording-target #study-home,body.recording-loaded #study-home{disp
 .study-suggestion>span:first-child{min-width:0;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
 .study-suggestion small{white-space:normal;text-align:right;flex:none}
 .study-recording-name,.study-recording-credit{overflow-wrap:anywhere;word-break:break-word}
+/* Dark palette: homepage stays dark, score pages stay light */
+html.inverted body:not(.recording-loaded):not(.initial-recording-target){background:#131a1c}
+html.inverted .study-home{--ink:#e6eded;--muted:#9fb0b3;--teal:#7cc4ca;--line:#2f4046;color:var(--ink)}
+html.inverted .study-home a{color:var(--teal)}
+html.inverted .study-search-panel{background:#1c2629;border-color:#2f4046;box-shadow:0 5px 18px rgba(0,0,0,.4)}
+html.inverted .study-input-box{background:#243136;border-color:#2f4046}
+html.inverted .study-input-box input{color:#e6eded}
+html.inverted .study-home select{background:#243136;border-color:#2f4046;color:#e6eded}
+html.inverted .study-suggestions{background:#1c2629;border-color:#2f4046;box-shadow:0 12px 28px rgba(0,0,0,.5)}
+html.inverted .study-suggestion[aria-selected=true],html.inverted .study-suggestion:hover{background:#243136}
+html.inverted .study-results{background:#1c2629;border-color:#2f4046}
+html.inverted .study-piece{border-bottom-color:#2f4046}
+html.inverted .study-piece.expanded{background:#202d31}
+html.inverted .study-category{background:#243136;border-color:#2f4046;color:#9fb0b3}
+html.inverted .study-category:hover{background:#2b3c42}
+html.inverted .study-construction-notice{background:#243136;border-color:#2f4046;color:#9fb0b3}
+html.inverted .study-construction-dismiss{color:#9fb0b3}
+html.inverted .study-construction-dismiss:hover{background:#2b3c42;color:#e6eded}
+html.inverted .study-home kbd{color:#9fb0b3;border-color:#2f4046}
+@media(hover:hover){html.inverted .study-title:hover,html.inverted .study-recording:hover{background:#243136}}
+html.inverted .study-title:active,html.inverted .study-recording:active{background:#2b3c42}

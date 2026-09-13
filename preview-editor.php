@@ -34,7 +34,7 @@ $is_share_link = isset($_GET['share']);
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=33" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=262" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=279" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -193,14 +193,6 @@ $is_share_link = isset($_GET['share']);
                                             Live Edit
                                         </a>
                                     <?php endif; ?>
-                                    <div class="nav-dropdown-divider"></div>
-                                    <div class="nav-dropdown-row">
-                                        <span>Dark Mode</span>
-                                        <label class="toggle-switch">
-                                            <input type="checkbox" id="invert-check-menu-desktop">
-                                            <span class="toggle-slider"><span class="toggle-slider-knob"></span></span>
-                                        </label>
-                                    </div>
                                     <div class="nav-dropdown-divider"></div>
                                     <a href="auth_logout.php" class="nav-dropdown-logout">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -680,39 +672,47 @@ $is_share_link = isset($_GET['share']);
     <div id="notification">
         Link copied to clipboard!
     </div>
+    <button id="darkmode-fab" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <svg class="darkmode-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+        <svg class="darkmode-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5" />
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+        </svg>
+    </button>
     <script src="js/history-manager.js?v=4"></script>
     <script src="js/favorites-manager.js?v=1"></script>
-    <script src="stripped-synpdf.js?v=319"></script>
+    <script src="stripped-synpdf.js?v=329"></script>
     <script src="stripped-synpdf-extras.js?v=270"></script>
     <script>
-        // Dark Mode menu toggles - wire up immediately on page load
-        $(function () {
-            const darkModeSelectors = '#invert-check-menu-mobile, #invert-check-menu-desktop';
-
-            // Sync checkboxes with current state
-            const isDark = $('html').hasClass('inverted');
-            $(darkModeSelectors).prop('checked', isDark);
-
-            // Update logo if dark
-            if (isDark) {
-                const logo = document.getElementById('monkey-logo');
-                if (logo) logo.src = 'assets/img/monkeydark.png';
+        window.setDarkMode = function (isDark) {
+            document.documentElement.classList.toggle('inverted', isDark);
+            $('html').toggleClass('inverted', isDark);
+            $('#invert-check-menu-mobile').prop('checked', isDark);
+            const logo = document.getElementById('monkey-logo');
+            if (logo) {
+                logo.src = isDark ? 'assets/img/monkeydark.png' : 'assets/img/monkeywrench-monkey100x100.png';
             }
-
-            // Handle toggle changes
-            $(darkModeSelectors).on('change', function () {
-                const isDark = $(this).is(':checked');
-                $(darkModeSelectors).prop('checked', isDark);
-                $('html').toggleClass('inverted', isDark);
-
-                const logo = document.getElementById('monkey-logo');
-                if (logo) {
-                    logo.src = isDark ? 'assets/img/monkeydark.png' : 'assets/img/monkeywrench-monkey100x100.png';
-                }
-
-                try {
-                    localStorage.setItem('darkMode', isDark ? '1' : '0');
-                } catch (e) { }
+            try {
+                localStorage.setItem('darkMode', isDark ? '1' : '0');
+            } catch (e) { }
+        };
+        $(function () {
+            const isDark = $('html').hasClass('inverted');
+            window.setDarkMode(isDark);
+            $('#invert-check-menu-mobile').off('change.darkmode').on('change.darkmode', function () {
+                window.setDarkMode($(this).is(':checked'));
+            });
+            $('#darkmode-fab').off('click.darkmode').on('click.darkmode', function () {
+                window.setDarkMode(!document.documentElement.classList.contains('inverted'));
             });
         });
 
