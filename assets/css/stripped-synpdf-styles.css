@@ -2700,8 +2700,51 @@ html.inverted .piece-row {
 }
 
 html.inverted #control-buttons-row {
-    background-color: var(--mw-surface);
-    border-top-color: var(--mw-border);
+    background-color: rgba(28, 38, 41, 0.95);
+    border-color: var(--mw-border);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+html.inverted #control-buttons-row .toolbar-btn {
+    color: #eef4f4;
+}
+
+html.inverted #control-buttons-row .toolbar-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+html.inverted #control-buttons-row .toolbar-btn svg {
+    fill: #eef4f4;
+    stroke: #eef4f4;
+}
+
+html.inverted #control-buttons-row #two-up-button svg {
+    stroke: #eef4f4 !important;
+}
+
+html.inverted #control-buttons-row .toolbar-divider {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+html.inverted #control-buttons-row .toolbar-speed button {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+html.inverted #control-buttons-row .toolbar-speed button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+html.inverted #control-buttons-row .toolbar-speed button:active {
+    background: rgba(255, 255, 255, 0.26);
+}
+
+html.inverted #control-buttons-row .toolbar-speed-label {
+    color: var(--mw-muted);
+}
+
+html.inverted #control-buttons-row #toolbar-speed-val {
+    color: var(--mw-text);
 }
 
 html.inverted .control-buttons {
