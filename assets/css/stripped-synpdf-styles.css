@@ -2861,6 +2861,106 @@ html.inverted ::-webkit-scrollbar-thumb {
     background: var(--mw-surface-3);
 }
 
+html.inverted #help,
+html.inverted #about {
+    background: var(--mw-surface);
+    border: 1px solid var(--mw-border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    color: var(--mw-text);
+}
+
+html.inverted .modal-header {
+    border-bottom-color: var(--mw-border);
+}
+
+html.inverted .modal-header h3 {
+    color: var(--mw-text);
+}
+
+html.inverted .modal-close {
+    background: var(--mw-surface-2);
+    color: var(--mw-muted);
+}
+
+html.inverted .modal-close:hover {
+    background: var(--mw-surface-3);
+    color: var(--mw-text);
+}
+
+html.inverted .modal-content {
+    color: var(--mw-text);
+}
+
+html.inverted .help-note {
+    border-top-color: var(--mw-border);
+}
+
+html.inverted .helptbl td {
+    border-bottom-color: var(--mw-border-soft);
+}
+
+html.inverted .helptbl td:first-child {
+    color: var(--mw-text);
+}
+
+html.inverted .helptbl td:last-child {
+    color: var(--mw-muted);
+}
+
+html.inverted .piece-expanded-panel {
+    background: #182224;
+    border-bottom-color: var(--mw-border);
+}
+
+html.inverted .piece-expanded-panel h3 {
+    color: var(--mw-muted);
+}
+
+html.inverted .piece-part-button {
+    background: var(--mw-surface-2);
+    border-color: var(--mw-border);
+    color: var(--mw-text);
+}
+
+html.inverted .piece-part-button:hover,
+html.inverted .piece-part-button.selected {
+    background: var(--mw-surface-3);
+    border-color: var(--mw-accent);
+    color: #fff;
+}
+
+html.inverted .piece-recordings-list .recordings-link,
+html.inverted #recordings-container .recordings-link {
+    color: var(--mw-text);
+}
+
+html.inverted #notation .piece-recordings-list .recordings-link:hover,
+html.inverted #notation #recordings-container .recordings-link:hover {
+    background: var(--mw-surface-3);
+}
+
+html.inverted #notation .pieces-link:hover {
+    background: var(--mw-surface-2);
+}
+
+html.inverted #notation .piece-row.expanded > .pieces-link {
+    background: rgba(255, 195, 0, 0.16);
+}
+
+html.inverted .piece-count,
+html.inverted .starter-loading,
+html.inverted .starter-muted {
+    color: var(--mw-muted);
+}
+
+html.inverted .starter-sidebar::after {
+    background: linear-gradient(to bottom, rgba(24, 34, 36, 0), #182224 70%);
+}
+
+html.inverted .starter-sidebar-scroll-cue {
+    color: var(--mw-muted);
+}
+
 #instruments-dropdown {
     width: 200px;
 }
