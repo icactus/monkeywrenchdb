@@ -1962,7 +1962,7 @@ function readPdf$$module$synpdf(pdfData, dataType) {
                         <div id="progress-container" style="width: 100%; text-align: center; margin: 20px 0;">
                             <progress id="progress-bar" value="0" max="100" style="width: 80%; height: 20px;"></progress>
                             <div id="progress-info" style="margin-top: 10px; font-size: 20px;"></div>
-                            <button id="pdf-retry-btn" onclick="retryPdfLoad$$module$synpdf()" style="margin-top: 12px; padding: 8px 20px; font-size: 14px; cursor: pointer; background: #f0f0f5; border: 1px solid #ccc; border-radius: 6px;">Retry</button>
+                            <button id="pdf-retry-btn" class="pdf-retry-btn" onclick="retryPdfLoad$$module$synpdf()">Retry</button>
                         </div>
                     `);
                 }

@@ -2853,6 +2853,28 @@ html.inverted input[type="search"] {
     color: var(--mw-text);
 }
 
+.pdf-retry-btn {
+    margin-top: 12px;
+    padding: 8px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    background: #f0f0f5;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    color: #333;
+}
+
+html.inverted .pdf-retry-btn {
+    background: var(--mw-surface-2);
+    border-color: var(--mw-border);
+    color: var(--mw-text);
+}
+
+html.inverted .pdf-retry-btn:hover {
+    background: var(--mw-surface-3);
+    color: #fff;
+}
+
 html.inverted ::-webkit-scrollbar-track {
     background: var(--mw-surface);
 }
