@@ -141,13 +141,6 @@ if ($hasInitialRecordingTarget) {
         } catch (e) { }
     </script>
     <style>
-        /* Tablet and mobile playback speed lives in the bottom toolbar. */
-        @media screen and (max-width: 1024px) {
-            sidecontentbar #speed-control {
-                display: none;
-            }
-        }
-
         /* Keep the homepage player's controls visible and interactive when idle. */
         #notation > #control-buttons-row.toolbar-hidden {
             opacity: 1;
@@ -507,16 +500,6 @@ if ($hasInitialRecordingTarget) {
                                 <option value="" disabled hidden selected>Change Part</option>
                             </select>
                         </div>
-                        <div id="speed-control">
-                            <div id="speed-title">
-                                <h3>Speed</h3>
-                            </div>
-                            <div id="speed-content">
-                                <button id="decrementButton">-</button>
-                                <button id="incrementButton">+</button>
-                                <input type="text" id="speedField" readonly>
-                            </div>
-                        </div>
                     </div>
                 </div>
                 <div class="change-recording-wrapper">
@@ -787,7 +770,7 @@ if ($hasInitialRecordingTarget) {
     <script src="js/history-manager.js?v=6"></script>
     <script src="js/favorites-manager.js?v=3"></script>
     <script src="stripped-synpdf.js?v=332"></script>
-    <script src="stripped-synpdf-extras.js?v=283"></script>
+    <script src="stripped-synpdf-extras.js?v=284"></script>
     <script src="js/homepage.js?v=10"></script>
     <script>
         // Dark Mode: mobile menu toggle + desktop floating button, persisted in localStorage

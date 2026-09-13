@@ -1334,15 +1334,18 @@ $(document).on('click', '.recordings-link', function (event) {
 });
 
 
-// Speed control has to go in this file so that it loads after elements
+// Speed is controlled from the bottom toolbar (#control-buttons-row).
+// The sidebar speed control was removed; guard the legacy refs.
 const incrementButton = document.getElementById('incrementButton');
 const decrementButton = document.getElementById('decrementButton');
-const speedField = document.getElementById('speedField');
 
 let playbackSpeed = 1;
 
 function updateSpeedField() {
-    speedField.value = (playbackSpeed.toFixed(2) + 'x');
+    const speedField = document.getElementById('speedField');
+    if (speedField) {
+        speedField.value = (playbackSpeed.toFixed(2) + 'x');
+    }
     const toolbarSpeedVal = document.getElementById('toolbar-speed-val');
     if (toolbarSpeedVal) {
         toolbarSpeedVal.textContent = (playbackSpeed.toFixed(2) + 'x');
@@ -1370,8 +1373,8 @@ function decrementSpeed() {
     updateSpeedField();
 }
 
-incrementButton.addEventListener('click', incrementSpeed);
-decrementButton.addEventListener('click', decrementSpeed);
+if (incrementButton) incrementButton.addEventListener('click', incrementSpeed);
+if (decrementButton) decrementButton.addEventListener('click', decrementSpeed);
 // One handler for all vendor events
 let __fsRefreshPending = false;
 function refreshAfterFullscreen() {

@@ -413,16 +413,6 @@ $is_share_link = isset($_GET['share']);
                                 <option value="" disabled hidden selected>Change Part</option>
                             </select>
                         </div>
-                        <div id="speed-control">
-                            <div id="speed-title">
-                                <h3>Speed</h3>
-                            </div>
-                            <div id="speed-content">
-                                <button id="decrementButton">-</button>
-                                <button id="incrementButton">+</button>
-                                <input type="text" id="speedField" readonly>
-                            </div>
-                        </div>
                     </div>
                 </div>
                 <div class="change-recording-wrapper">
@@ -691,7 +681,7 @@ $is_share_link = isset($_GET['share']);
     <script src="js/history-manager.js?v=4"></script>
     <script src="js/favorites-manager.js?v=1"></script>
     <script src="stripped-synpdf.js?v=332"></script>
-    <script src="stripped-synpdf-extras.js?v=270"></script>
+    <script src="stripped-synpdf-extras.js?v=271"></script>
     <script>
         window.setDarkMode = function (isDark) {
             document.documentElement.classList.toggle('inverted', isDark);
