@@ -2447,8 +2447,42 @@ html.inverted a {
     color: var(--mw-accent-bright);
 }
 
-/* Keep the yellow-to-teal header gradient in dark mode too, so header
-   text/icons keep their light-mode colors for contrast. */
+/* Dark mode header: darkened brand gradient (amber glow into deep teal)
+   so white heading text and login/about/help links stay readable. */
+html.inverted #header {
+    background: linear-gradient(145deg, #54400f 0%, #274b52 55%, #131e21 100%);
+}
+
+html.inverted #monkeywrench-logo-text,
+html.inverted #monkeywrench-logo-text a,
+html.inverted #monkeywrench-logo-text h2,
+html.inverted #logotext-line2 {
+    color: #f2f5f5;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+html.inverted .nav-menu a,
+html.inverted .nav-link {
+    color: #d6e2e2;
+}
+
+html.inverted .nav-menu a:hover,
+html.inverted .nav-link:hover {
+    color: #fff;
+}
+
+html.inverted .nav-user-trigger {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+html.inverted .nav-user-name {
+    color: #f2f5f5;
+}
+
+html.inverted .nav-user-chevron {
+    color: #c8d6d6;
+}
 
 html.inverted .nav-dropdown-menu,
 html.inverted #mobile-header-menu {
@@ -2496,6 +2530,12 @@ html.inverted .mobile-menu-login {
 html.inverted .mobile-menu-login:hover {
     background: var(--mw-surface-3) !important;
     border-color: var(--mw-faint) !important;
+}
+
+html.inverted #mobile-header-burger svg {
+    color: #f2f5f5;
+    background: rgba(19, 26, 28, 0.9);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 html.inverted sidecontentbar {

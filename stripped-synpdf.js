@@ -682,6 +682,12 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         document.documentElement.classList.toggle('inverted', isDark);
         $('html').toggleClass('inverted', isDark);
         $('#invert-check-menu-mobile').prop('checked', isDark);
+        const logo = document.getElementById('monkey-logo');
+        if (logo) {
+            logo.src = isDark
+                ? 'assets/img/monkeydark.png'
+                : 'assets/img/monkeywrench-monkey100x100.png';
+        }
         try {
             localStorage.setItem('darkMode', isDark ? '1' : '0');
         } catch (e) { /* ignore storage errors */ }
@@ -693,10 +699,14 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         applyDarkModeState(!document.documentElement.classList.contains('inverted'));
     });
 
-    // Sync checkbox with loaded dark mode preference (from head script)
+    // Sync checkbox and logo with loaded dark mode preference (from head script)
     try {
         const isDark = localStorage.getItem('darkMode') === '1';
         $('#invert-check-menu-mobile, #invert-check-menu-desktop').prop('checked', isDark);
+        const logo = document.getElementById('monkey-logo');
+        if (logo && isDark) {
+            logo.src = 'assets/img/monkeydark.png';
+        }
     } catch (e) { /* ignore storage errors */ }
 
     // Share Link

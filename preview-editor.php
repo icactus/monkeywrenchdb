@@ -34,7 +34,7 @@ $is_share_link = isset($_GET['share']);
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=33" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=285" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=286" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -690,13 +690,17 @@ $is_share_link = isset($_GET['share']);
     </button>
     <script src="js/history-manager.js?v=4"></script>
     <script src="js/favorites-manager.js?v=1"></script>
-    <script src="stripped-synpdf.js?v=331"></script>
+    <script src="stripped-synpdf.js?v=332"></script>
     <script src="stripped-synpdf-extras.js?v=270"></script>
     <script>
         window.setDarkMode = function (isDark) {
             document.documentElement.classList.toggle('inverted', isDark);
             $('html').toggleClass('inverted', isDark);
             $('#invert-check-menu-mobile').prop('checked', isDark);
+            const logo = document.getElementById('monkey-logo');
+            if (logo) {
+                logo.src = isDark ? 'assets/img/monkeydark.png' : 'assets/img/monkeywrench-monkey100x100.png';
+            }
             try {
                 localStorage.setItem('darkMode', isDark ? '1' : '0');
             } catch (e) { }

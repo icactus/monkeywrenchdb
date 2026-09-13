@@ -106,7 +106,7 @@ if ($hasInitialRecordingTarget) {
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=34" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=285" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=286" />
     <link rel="stylesheet" href="assets/css/homepage.css?v=11" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -786,16 +786,19 @@ if ($hasInitialRecordingTarget) {
     </button>
     <script src="js/history-manager.js?v=6"></script>
     <script src="js/favorites-manager.js?v=3"></script>
-    <script src="stripped-synpdf.js?v=331"></script>
+    <script src="stripped-synpdf.js?v=332"></script>
     <script src="stripped-synpdf-extras.js?v=283"></script>
     <script src="js/homepage.js?v=10"></script>
     <script>
         // Dark Mode: mobile menu toggle + desktop floating button, persisted in localStorage
-        // Header keeps its yellow-to-teal gradient, so the standard logo is used in both modes.
         window.setDarkMode = function (isDark) {
             document.documentElement.classList.toggle('inverted', isDark);
             $('html').toggleClass('inverted', isDark);
             $('#invert-check-menu-mobile').prop('checked', isDark);
+            const logo = document.getElementById('monkey-logo');
+            if (logo) {
+                logo.src = isDark ? 'assets/img/monkeydark.png' : 'assets/img/monkeywrench-monkey100x100.png';
+            }
             try {
                 localStorage.setItem('darkMode', isDark ? '1' : '0');
             } catch (e) { }
