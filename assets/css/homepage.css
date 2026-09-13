@@ -52,5 +52,6 @@ html.inverted .study-recording{border-bottom-color:#2f4046}
 html.inverted .study-chooser{border-top-color:#2f4046}
 html.inverted .study-open{background:#243136;border-color:#2f4046;color:#e6eded}
 html.inverted .study-open.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+html.inverted .study-open[aria-pressed=true]{background:#2f6b72;border-color:#7cc4ca;color:#fff;font-weight:650;box-shadow:0 0 0 1px #7cc4ca}
 html.inverted .study-last{background:#243136;color:#7cc4ca}
 html.inverted .study-title:active,html.inverted .study-recording:active{background:#2b3c42}
