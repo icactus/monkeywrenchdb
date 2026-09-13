@@ -44,5 +44,11 @@ html.inverted .study-construction-notice{background:#243136;border-color:#2f4046
 html.inverted .study-construction-dismiss{color:#9fb0b3}
 html.inverted .study-construction-dismiss:hover{background:#2b3c42;color:#e6eded}
 html.inverted .study-home kbd{color:#9fb0b3;border-color:#2f4046}
+html.inverted .study-recordings{background:#1c2629;border-color:#2f4046}
 @media(hover:hover){html.inverted .study-title:hover,html.inverted .study-recording:hover{background:#243136}}
+html.inverted .study-recording{border-bottom-color:#2f4046}
+html.inverted .study-chooser{border-top-color:#2f4046}
+html.inverted .study-open{background:#243136;border-color:#2f4046;color:#e6eded}
+html.inverted .study-open.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+html.inverted .study-last{background:#243136;color:#7cc4ca}
 html.inverted .study-title:active,html.inverted .study-recording:active{background:#2b3c42}

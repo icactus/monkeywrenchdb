@@ -107,7 +107,7 @@ if ($hasInitialRecordingTarget) {
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=34" />
     <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=281" />
-    <link rel="stylesheet" href="assets/css/homepage.css?v=8" />
+    <link rel="stylesheet" href="assets/css/homepage.css?v=9" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
