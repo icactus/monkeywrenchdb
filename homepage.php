@@ -28,7 +28,7 @@
         </div>
         <p id="study-message" role="status" hidden></p>
         <section id="study-library-panel" role="tabpanel" aria-labelledby="study-library-tab">
-            <div class="study-section-head"><div><h2 id="study-results-heading">Find your next piece</h2></div><button id="study-reset" class="study-text-button" hidden>Clear filters</button></div>
+            <div class="study-section-head"><div><h2 id="study-results-heading">Browse</h2></div><button id="study-reset" class="study-text-button" hidden>Clear filters</button></div>
             <div id="study-categories" class="study-categories" role="group" aria-label="Filter by category" hidden></div>
             <div id="study-results" class="study-results"></div>
         </section>

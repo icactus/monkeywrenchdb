@@ -295,7 +295,7 @@
         const { words, scoped } = scopePieces();
         const matches = scoped.filter(p => !state.category || p.category_name === state.category).sort(sortPieces);
         if (!matches.some(p => p.piece_id === state.expanded)) state.expanded = null;
-        $('results-heading').textContent = words.length ? 'Search results' : state.category && state.instrument ? state.category + ' for ' + state.instrument.toLowerCase() : state.category || (state.instrument ? 'Music for ' + state.instrument.toLowerCase() : 'Find your next piece');
+        $('results-heading').textContent = words.length ? 'Search results' : state.category && state.instrument ? state.category + ' for ' + state.instrument.toLowerCase() : state.category || (state.instrument ? 'Music for ' + state.instrument.toLowerCase() : 'Browse');
         $('clear-search').hidden = !search.value; $('reset').hidden = !search.value && !state.instrument && !state.category;
         const list = $('results'); list.replaceChildren(...matches.map(p => pieceRow(p)));
         if (!matches.length) empty(list, 'No matching pieces. Try a shorter title, another composer, or another instrument.');
