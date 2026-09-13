@@ -2447,40 +2447,8 @@ html.inverted a {
     color: var(--mw-accent-bright);
 }
 
-html.inverted #header {
-    background: linear-gradient(145deg, #1a2b2e 0%, #1e3439 45%, #162326 100%);
-}
-
-html.inverted #monkeywrench-logo-text,
-html.inverted #monkeywrench-logo-text a,
-html.inverted #monkeywrench-logo-text h2,
-html.inverted #logotext-line2 {
-    color: #e8f0f0;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-}
-
-html.inverted .nav-menu a,
-html.inverted .nav-link {
-    color: #c8d6d6;
-}
-
-html.inverted .nav-menu a:hover,
-html.inverted .nav-link:hover {
-    color: #fff;
-}
-
-html.inverted .nav-user-trigger {
-    background: rgba(91, 162, 168, 0.22);
-    border-color: rgba(91, 162, 168, 0.45);
-}
-
-html.inverted .nav-user-name {
-    color: var(--mw-text);
-}
-
-html.inverted .nav-user-chevron {
-    color: var(--mw-muted);
-}
+/* Keep the yellow-to-teal header gradient in dark mode too, so header
+   text/icons keep their light-mode colors for contrast. */
 
 html.inverted .nav-dropdown-menu,
 html.inverted #mobile-header-menu {
@@ -2528,12 +2496,6 @@ html.inverted .mobile-menu-login {
 html.inverted .mobile-menu-login:hover {
     background: var(--mw-surface-3) !important;
     border-color: var(--mw-faint) !important;
-}
-
-html.inverted #mobile-header-burger svg {
-    color: var(--mw-text);
-    background: rgba(28, 38, 41, 0.95);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 html.inverted sidecontentbar {
