@@ -2972,6 +2972,18 @@ html.inverted .helptbl td {
     border-bottom-color: var(--mw-border-soft);
 }
 
+html.inverted .helptbl {
+    border-color: var(--mw-border);
+}
+
+html.inverted .helptbl tr:nth-child(even) {
+    background-color: var(--mw-surface-2);
+}
+
+html.inverted .helptbl td:nth-child(3) {
+    border-left-color: var(--mw-border);
+}
+
 html.inverted .helptbl td:first-child {
     color: var(--mw-text);
 }
