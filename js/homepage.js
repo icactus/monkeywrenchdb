@@ -296,10 +296,6 @@
         const matches = scoped.filter(p => !state.category || p.category_name === state.category).sort(sortPieces);
         if (!matches.some(p => p.piece_id === state.expanded)) state.expanded = null;
         $('results-heading').textContent = words.length ? 'Search results' : state.category && state.instrument ? state.category + ' for ' + state.instrument.toLowerCase() : state.category || (state.instrument ? 'Music for ' + state.instrument.toLowerCase() : 'Find your next piece');
-        const bits = [];
-        if (state.category) bits.push(state.category);
-        if (state.instrument) bits.push('Your instrument first' + (matches.some(m => preferredPart(m)?.is_score) ? ', scores included' : ''));
-        $('count').textContent = matches.length + ' ' + (matches.length === 1 ? 'piece' : 'pieces') + (bits.length ? ' · ' + bits.join(' · ') : ' in the library');
         $('clear-search').hidden = !search.value; $('reset').hidden = !search.value && !state.instrument && !state.category;
         const list = $('results'); list.replaceChildren(...matches.map(p => pieceRow(p)));
         if (!matches.length) empty(list, 'No matching pieces. Try a shorter title, another composer, or another instrument.');
@@ -323,16 +319,22 @@
         const counts = new Map();
         scoped.forEach(p => { if (p.category_name) counts.set(p.category_name, (counts.get(p.category_name) || 0) + 1); });
         if (opts.resetStale && state.category && !counts.has(state.category)) state.category = '';
-        box.replaceChildren();
-        [['All', '', scoped.length]].concat(categories.filter(name => counts.has(name)).map(name => [name, name, counts.get(name)])).forEach(([label, value, count]) => {
-            const n = value === '' ? scoped.length : count;
-            const active = state.category === value;
+        // Keep the active filter visible even when nothing in scope matches it,
+        // and never leave the row empty: a lone category stands alone.
+        const names = categories.filter(name => counts.has(name) || name === state.category);
+        const makeTab = (label, value, n) => {
             const tab = button(label + ' (' + n + ')', 'study-category', () => setCategory(value));
-            tab.setAttribute('aria-pressed', String(active));
+            tab.setAttribute('aria-pressed', String(state.category === value));
             tab.setAttribute('aria-label', (value === '' ? 'Show all categories' : 'Filter by ' + value) + ', ' + n + (n === 1 ? ' piece' : ' pieces'));
-            box.append(tab);
-        });
-        box.hidden = counts.size < 2;
+            return tab;
+        };
+        box.replaceChildren();
+        if (names.length <= 1) box.append(makeTab(names[0] || 'All', names[0] || '', names[0] ? counts.get(names[0]) || 0 : scoped.length));
+        else {
+            box.append(makeTab('All', '', scoped.length));
+            names.forEach(name => box.append(makeTab(name, name, counts.get(name) || 0)));
+        }
+        box.hidden = false;
     }
     function closeSuggestions() { $('suggestions').hidden = true; search.setAttribute('aria-expanded', 'false'); search.removeAttribute('aria-activedescendant'); activeSuggestion = -1; }
     function changeInstrument(name) {
@@ -396,7 +398,7 @@
                     await openPiece(requestedPiece, preferredPart(requestedPiece));
                 }
                 if (Number.isFinite(saved.scroll)) requestAnimationFrame(() => window.scrollTo(0, saved.scroll));
-            } catch (error) { $('count').textContent = 'Library unavailable'; empty($('results'), error.message, loadCatalog); }
+            } catch (error) { empty($('results'), error.message, loadCatalog); }
             finally { catalogRequest = null; }
         })(); return catalogRequest;
     }

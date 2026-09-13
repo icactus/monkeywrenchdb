@@ -780,7 +780,7 @@ if ($hasInitialRecordingTarget) {
     <script src="js/favorites-manager.js?v=3"></script>
     <script src="stripped-synpdf.js?v=328"></script>
     <script src="stripped-synpdf-extras.js?v=283"></script>
-    <script src="js/homepage.js?v=9"></script>
+    <script src="js/homepage.js?v=10"></script>
     <script>
         // Dark Mode menu toggles - wire up immediately on page load
         $(function () {

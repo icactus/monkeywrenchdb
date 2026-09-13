@@ -17,7 +17,7 @@
                 </div>
                 <div class="study-instrument-field"><label for="study-instrument">My instrument</label><select id="study-instrument"><option value="">All instruments</option></select></div>
             </div>
-            <div class="study-search-hint"><div>Try <button type="button" data-study-query="Beethoven">Beethoven</button>, <button type="button" data-study-query="concerto">concerto</button>, or <button type="button" data-study-query="La Mer">La Mer</button></div><span>Your instrument is optional. We’ll remember it here.</span></div>
+            <div class="study-search-hint"><div>Try <button type="button" data-study-query="Beethoven">Beethoven</button>, <button type="button" data-study-query="concerto">concerto</button>, or <button type="button" data-study-query="La Mer">La Mer</button></div></div>
         </form>
     </section>
     <div class="study-content">
@@ -28,7 +28,7 @@
         </div>
         <p id="study-message" role="status" hidden></p>
         <section id="study-library-panel" role="tabpanel" aria-labelledby="study-library-tab">
-            <div class="study-section-head"><div><h2 id="study-results-heading">Find your next piece</h2><p id="study-count" role="status" aria-live="polite">Loading the library…</p></div><button id="study-reset" class="study-text-button" hidden>Clear filters</button></div>
+            <div class="study-section-head"><div><h2 id="study-results-heading">Find your next piece</h2></div><button id="study-reset" class="study-text-button" hidden>Clear filters</button></div>
             <div id="study-categories" class="study-categories" role="group" aria-label="Filter by category" hidden></div>
             <div id="study-results" class="study-results"></div>
         </section>

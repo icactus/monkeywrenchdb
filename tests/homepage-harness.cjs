@@ -92,7 +92,7 @@ function buildContext(sourceOverride, options = {}) {
     launched = [];
     els = {};
     const staticIds = ['study-home', 'study-construction-notice', 'study-construction-dismiss', 'study-search', 'study-instrument', 'study-suggestions',
-        'study-message', 'study-results', 'study-count', 'study-results-heading',
+        'study-message', 'study-results', 'study-results-heading',
         'study-clear-search', 'study-reset', 'study-search-form', 'study-categories', 'recordings-dropdown',
         'study-library-panel', 'study-history-panel', 'study-favorites-panel',
         'study-library-tab', 'study-history-tab', 'study-favorites-tab',
