@@ -211,7 +211,7 @@
         if (!list.children.length) empty(list, 'No history yet. Open a piece and choose a recording to get started.');
     }
     function openSaved(piece) {
-        search.value = piece.piece_name; state.query = search.value;
+        search.value = piece.piece_name; state.query = search.value; state.category = '';
         if (!preferredPart(piece)) { state.instrument = ''; instrument.value = ''; write('instrument', ''); }
         openPiece(piece, preferredPart(piece));
     }
@@ -346,7 +346,7 @@
         if (item.type === 'Category') { search.value = ''; setCategory(item.value); closeSuggestions(); search.focus(); return; }
         if (item.type === 'Instrument') { search.value = ''; changeInstrument(item.value); search.focus(); return; }
         search.value = item.value;
-        changeSearch(); closeSuggestions(); search.focus();
+        changeSearch({ clearCategory: true }); closeSuggestions(); if (search.blur) search.blur();
     }
     function suggest() {
         closeSuggestions(); const q = normalize(search.value).trim(); if (!q) return;
@@ -358,7 +358,11 @@
             el.append(node('span', '', item.value), node('small', '', item.type)); el.addEventListener('pointerdown', e => e.preventDefault()); el.addEventListener('click', () => selectSuggestion(item)); list.append(el);
         }); list.hidden = false; search.setAttribute('aria-expanded', 'true');
     }
-    function changeSearch() { state.query = search.value; state.expanded = null; showView('library'); if (catalogLoaded) renderLibrary(); persist(); }
+    function changeSearch(opts = {}) {
+        // A new query always resets the Orchestra/Solo/etc filter; only the instrument persists.
+        if (opts.clearCategory || search.value !== state.query) state.category = '';
+        state.query = search.value; state.expanded = null; showView('library'); if (catalogLoaded) renderLibrary(); persist();
+    }
     async function loadCatalog() {
         if (catalogRequest) return catalogRequest;
         catalogRequest = (async () => {
@@ -419,10 +423,10 @@
         if (event.key === 'Enter' && activeSuggestion >= 0) { event.preventDefault(); selectSuggestion(suggestions[activeSuggestion]); }
     });
     instrument.addEventListener('change', () => changeInstrument(instrument.value));
-    $('search-form').addEventListener('submit', event => { event.preventDefault(); changeSearch(); closeSuggestions(); });
-    $('clear-search').addEventListener('click', () => { search.value = ''; changeSearch(); search.focus(); });
+    $('search-form').addEventListener('submit', event => { event.preventDefault(); changeSearch({ clearCategory: true }); closeSuggestions(); if (search.blur) search.blur(); });
+    $('clear-search').addEventListener('click', () => { search.value = ''; changeSearch({ clearCategory: true }); search.focus(); });
     $('reset').addEventListener('click', () => { search.value = ''; instrument.value = ''; state.instrument = ''; write('instrument', ''); state.category = ''; if (catalogLoaded) renderCategories(); changeSearch(); });
-    root.querySelectorAll('[data-study-query]').forEach(el => el.addEventListener('click', () => { search.value = el.dataset.studyQuery; changeSearch(); search.focus(); }));
+    root.querySelectorAll('[data-study-query]').forEach(el => el.addEventListener('click', () => { search.value = el.dataset.studyQuery; changeSearch({ clearCategory: true }); if (search.blur) search.blur(); }));
     document.addEventListener('keydown', event => { if (root.isConnected && !document.body.classList.contains('recording-loaded') && event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) { event.preventDefault(); search.focus(); } });
     window.addEventListener('pagehide', () => { if (root.isConnected) persist(); });
     // Events from the existing account menus/player keep the new tabs synchronized.

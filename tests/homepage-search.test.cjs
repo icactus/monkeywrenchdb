@@ -196,7 +196,7 @@ test('construction notice dismisses on click and stays dismissed', async () => {
     assert.equal(notice().hidden, true);
 });
 
-test('category tabs filter the library, combine with search, and persist', async () => {
+test('category tabs filter the library, clear on a new search, instrument persists', async () => {
     h.buildContext();
     await h.settled();
     const tabs = () => h.findByClass(h.els()['study-categories'], 'study-category');
@@ -207,13 +207,24 @@ test('category tabs filter the library, combine with search, and persist', async
     await h.fire(tab('Solo'), 'click');
     assert.deepEqual(h.titles(), ['Cello Suite No. 1', 'Nocturne']);
     assert.equal(h.els()['study-results-heading'].textContent, 'Solo');
+    // A new search always clears the Orchestra/Solo/etc filter.
     h.searchFor('nocturne');
     assert.deepEqual(h.titles(), ['Nocturne']);
-    assert.deepEqual(labels(), ['Solo (1)']);
+    assert.equal(h.els()['study-results-heading'].textContent, 'Search results');
+    assert.equal(tab('Solo')?.['aria-pressed'] ?? 'false', 'false');
+    // Clearing the query shows everything; category does not stick.
     h.searchFor('');
-    assert.deepEqual(h.titles(), ['Cello Suite No. 1', 'Nocturne']);
+    assert.deepEqual(h.titles(), ['Cello Suite No. 1', 'Symphony No. 5', 'Nocturne', 'Symphony No. 9', 'Requiem']);
     assert.deepEqual(labels(), ['All (5)', 'Orchestra (2)', 'Solo (2)', 'Choral Works (1)']);
-    assert.equal(JSON.parse(h.ctx().localStorage.getItem('mw-home-state')).category, 'Solo');
+    assert.equal(JSON.parse(h.ctx().localStorage.getItem('mw-home-state')).category, '');
+    // Only the instrument persists across a new search.
+    h.chooseInstrument('Violin');
+    await h.fire(tab('Orchestra'), 'click');
+    assert.deepEqual(h.titles(), ['Symphony No. 5', 'Symphony No. 9']);
+    h.searchFor('symphony');
+    assert.deepEqual(h.titles(), ['Symphony No. 5', 'Symphony No. 9']);
+    assert.equal(h.els()['study-instrument'].value, 'Violin');
+    assert.equal(tab('Orchestra')?.['aria-pressed'] ?? 'false', 'false');
     await h.fire(h.els()['study-reset'], 'click');
     assert.deepEqual(h.titles(), ['Cello Suite No. 1', 'Symphony No. 5', 'Nocturne', 'Symphony No. 9', 'Requiem']);
     assert.equal(tab('All')['aria-pressed'], 'true');
@@ -286,7 +297,7 @@ test('a lone category stands alone instead of hiding the tabs', async () => {
     assert.deepEqual(h.titles(), ['Overture', 'Symphony']);
 });
 
-test('empty results still show a tab, and a stale filter shows its zero', async () => {
+test('empty results still show a tab, and a new search clears a stale filter', async () => {
     h.buildContext();
     await h.settled();
     const tabs = () => h.findByClass(h.els()['study-categories'], 'study-category');
@@ -298,7 +309,7 @@ test('empty results still show a tab, and a stale filter shows its zero', async 
     h.searchFor('');
     await h.fire(tab('Solo'), 'click');
     h.searchFor('symphony');
-    assert.deepEqual(h.titles(), []);
-    assert.deepEqual(labels(), ['All (2)', 'Orchestra (2)', 'Solo (0)']);
-    assert.equal(tab('Solo')['aria-pressed'], 'true');
+    assert.deepEqual(h.titles(), ['Symphony No. 5', 'Symphony No. 9']);
+    assert.deepEqual(labels(), ['Orchestra (2)']);
+    assert.equal(tab('Solo'), undefined);
 });
