@@ -313,3 +313,13 @@ test('empty results still show a tab, and a new search clears a stale filter', a
     assert.deepEqual(labels(), ['Orchestra (2)']);
     assert.equal(tab('Solo'), undefined);
 });
+
+test('numbered works sort numerically, not lexicographically', async () => {
+    const part = { metric_arr_id: 21, instrument_id: 7, instrument_name: 'Cello', is_score: false };
+    const work = (id, title) => ({ piece_id: id, piece_name: title, composer_first: 'Ludwig van', composer_last: 'Beethoven', parts: [part], recording_count: 0 });
+    h.buildContext(undefined, { pieces: [work(1, 'Symphony No. 13'), work(2, 'Symphony No. 7'), work(3, 'Symphony No. 9')] });
+    await h.settled();
+    assert.deepEqual(h.titles(), ['Symphony No. 7', 'Symphony No. 9', 'Symphony No. 13']);
+    h.buildContext();
+    await h.settled();
+});

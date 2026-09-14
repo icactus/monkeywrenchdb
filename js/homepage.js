@@ -241,7 +241,7 @@
         holder.replaceChildren();
         const recent = historyItems.find(item => Number(item.piece_id) === piece.piece_id);
         const last = read('recording-' + piece.piece_id, recent ? Number(recent.recording_id) : null);
-        const sorted = [...recordings].sort((a, b) => Number(b.recording_id === last) - Number(a.recording_id === last) || (parseInt(a.year) || 0) - (parseInt(b.year) || 0) || recordingName(a).localeCompare(recordingName(b)));
+        const sorted = [...recordings].sort((a, b) => Number(b.recording_id === last) - Number(a.recording_id === last) || (parseInt(a.year) || 0) - (parseInt(b.year) || 0) || recordingName(a).localeCompare(recordingName(b), undefined, { numeric: true }));
         sorted.forEach(recording => {
             const row = button('', 'study-recording', event => start(piece, state.part, recording, event.currentTarget)), info = node('span', '', ''), name = node('span', 'study-recording-name', recordingName(recording));
             if (recording.recording_id === last) name.append(node('span', 'study-last', 'Last practiced'));
@@ -283,7 +283,7 @@
         h3.append(title); summary.append(star(piece), h3); row.append(summary);
         if (expanded) row.append(chooser(piece)); return row;
     }
-    const byComposer = (a, b) => a.composer_last.localeCompare(b.composer_last) || a.piece_name.localeCompare(b.piece_name);
+    const byComposer = (a, b) => a.composer_last.localeCompare(b.composer_last, undefined, { numeric: true }) || a.piece_name.localeCompare(b.piece_name, undefined, { numeric: true });
     function scopePieces() {
         const words = normalize(search.value).trim().split(/\s+/).filter(Boolean);
         return { words, scoped: pieces.filter(p => preferredPart(p) && words.every(word => p.search.includes(word))) };
