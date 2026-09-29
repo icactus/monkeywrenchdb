@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Live CNN-only barline benchmark</title>
+    <style>
+        body { font: 14px/1.4 system-ui, sans-serif; margin: 20px; }
+        #page-canvas { display: none; }
+        pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    </style>
+</head>
+<body>
+    <h1>Live CNN-only barline benchmark</h1>
+    <p id="status">Loading detector…</p>
+    <canvas id="page-canvas"></canvas>
+    <pre id="output"></pre>
+    <input id="sysprf" type="checkbox" hidden>
+    <div id="menu" hidden>
+        <input id="drmpl" value="0.4">
+        <input id="drmpl2" value="0.1">
+        <input id="mtdrmpl" value="0.8">
+    </div>
+    <div id="err" hidden></div>
+    <div id="notation" hidden></div>
+
+    <script src="jquery.min.js"></script>
+    <script src="pdf.min.js"></script>
+    <script>
+        window.barlineBenchmarkLogs = [];
+        (function () {
+            var originalWarn = console.warn.bind(console);
+            var originalError = console.error.bind(console);
+            function capture(level, args) {
+                window.barlineBenchmarkLogs.push({
+                    level: level,
+                    message: Array.prototype.map.call(args, function (value) {
+                        if (value instanceof Error) return value.stack || value.message;
+                        if (typeof value === 'string') return value;
+                        try { return JSON.stringify(value); } catch (_error) { return String(value); }
+                    }).join(' ')
+                });
+            }
+            console.warn = function () {
+                capture('warn', arguments);
+                originalWarn.apply(console, arguments);
+            };
+            console.error = function () {
+                capture('error', arguments);
+                originalError.apply(console, arguments);
+            };
+        })();
+        window.BarlinePatchCnnOnnxConfig = {
+            enabled: true,
+            modelUrl: '../models/barline-patch-cnn-3x6.onnx',
+            metadataUrl: '../models/barline-patch-cnn-3x6.onnx.json',
+            wasmRoot: new URL('vendor/onnxruntime/', window.location.href).href,
+            wasmThreads: 1
+        };
+    </script>
+    <script src="vendor/onnxruntime/ort.wasm.min.js"></script>
+    <script src="barline-patch-cnn-runtime.js"></script>
+    <script src="synpdf-edit-mode.js?v=87"></script>
+    <script src="../models/barline-patch-cnn-3x6-browser.js"></script>
+    <script src="barline-detect-v2.js"></script>
+    <script src="barline-cnn-benchmark-exclusions.js?v=1"></script>
+    <script>
+    (function () {
+        'use strict';
+
+        var params = new URLSearchParams(window.location.search);
+        var sourceIds = (params.get('sources') || 'test-page').split(',').map(function (value) {
+            return value.trim();
+        }).filter(Boolean);
+        var tolerance = Math.max(0, Number(params.get('tolerance') || 6));
+        var threshold = Math.max(0, Math.min(1, Number(params.get('threshold') || 0.62)));
+        var includePatches = params.get('includePatches') === '1';
+        var geometryMode = params.get('geometry') || 'multi-band';
+        var geometryOnly = params.get('geometryOnly') === '1';
+        var callbackUrl = params.get('callback') || '/__barline_benchmark_result';
+        var statusNode = document.getElementById('status');
+        var outputNode = document.getElementById('output');
+        var canvas = document.getElementById('page-canvas');
+        var exclusionManifest = { sources: {} };
+
+        function setStatus(text) {
+            statusNode.textContent = text;
+        }
+
+        function sourcePaths(sourceId) {
+            if (sourceId === 'test-page') {
+                return {
+                    pdf: '../test-page.pdf',
+                    truth: 'test-page-ground-truth-barlines.json'
+                };
+            }
+            if (!/^\d+-\d+$/.test(sourceId)) {
+                throw new Error('Invalid source id: ' + sourceId);
+            }
+            return {
+                pdf: '../../pdfs/' + sourceId + '.pdf',
+                pendingTruth: 'training-folder/' + sourceId + '-td.json',
+                truth: 'training-folder/processed/' + sourceId + '-td.json'
+            };
+        }
+
+        async function fetchJson(url) {
+            var response = await fetch(url, { cache: 'no-store' });
+            if (!response.ok) throw new Error(url + ' returned HTTP ' + response.status);
+            return response.json();
+        }
+
+        function seedLines(system) {
+            if (!system) return [];
+            if (Array.isArray(system.cs) && system.cs.length >= 2) return system.cs.slice();
+            if (Array.isArray(system.csl) && Array.isArray(system.csr) &&
+                system.csl.length >= 2 && system.csl.length === system.csr.length) {
+                return system.csl.map(function (leftY, index) {
+                    return (Number(leftY) + Number(system.csr[index])) / 2;
+                });
+            }
+            return [];
+        }
+
+        function systemCenter(system) {
+            var lines = seedLines(system).map(Number).filter(Number.isFinite);
+            if (!lines.length) return null;
+            return (Math.min.apply(null, lines) + Math.max.apply(null, lines)) / 2;
+        }
+
+        function systemSpatium(system) {
+            var lines = seedLines(system).map(Number).filter(Number.isFinite).sort(function (a, b) { return a - b; });
+            if (lines.length < 2) return 8;
+            var gaps = [];
+            for (var index = 1; index < lines.length; index++) {
+                var gap = lines[index] - lines[index - 1];
+                if (gap > 0) gaps.push(gap);
+            }
+            if (!gaps.length) return 8;
+            gaps.sort(function (a, b) { return a - b; });
+            return gaps[Math.floor(gaps.length / 2)];
+        }
+
+        function matchSystems(gtSystems, liveSystems, exclusions) {
+            var possible = [];
+            gtSystems.forEach(function (gtSystem, gtIndex) {
+                if (exclusions.truthIndices.has(gtIndex)) return;
+                var gtCenter = systemCenter(gtSystem);
+                var maxDistance = Math.max(20, 2.5 * systemSpatium(gtSystem));
+                liveSystems.forEach(function (liveSystem, liveIndex) {
+                    if (exclusions.liveIndices.has(liveIndex)) return;
+                    var liveCenter = systemCenter(liveSystem);
+                    if (gtCenter === null || liveCenter === null) return;
+                    var distance = Math.abs(gtCenter - liveCenter);
+                    if (distance <= maxDistance) {
+                        possible.push({ gtIndex: gtIndex, liveIndex: liveIndex, distance: distance });
+                    }
+                });
+            });
+            possible.sort(function (a, b) {
+                return a.distance - b.distance || a.gtIndex - b.gtIndex || a.liveIndex - b.liveIndex;
+            });
+            var usedGt = new Set();
+            var usedLive = new Set();
+            var matches = [];
+            possible.forEach(function (candidate) {
+                if (usedGt.has(candidate.gtIndex) || usedLive.has(candidate.liveIndex)) return;
+                usedGt.add(candidate.gtIndex);
+                usedLive.add(candidate.liveIndex);
+                matches.push(candidate);
+            });
+            matches.sort(function (a, b) { return a.gtIndex - b.gtIndex; });
+            return { matches: matches, usedGt: usedGt, usedLive: usedLive };
+        }
+
+        function matchXs(truthXs, predictedXs, matchTolerance) {
+            var possible = [];
+            truthXs.forEach(function (truthX, truthIndex) {
+                predictedXs.forEach(function (predictedX, predictedIndex) {
+                    var distance = Math.abs(truthX - predictedX);
+                    if (distance <= matchTolerance) {
+                        possible.push({
+                            truthIndex: truthIndex,
+                            predictedIndex: predictedIndex,
+                            truthX: truthX,
+                            predictedX: predictedX,
+                            distance: distance
+                        });
+                    }
+                });
+            });
+            possible.sort(function (a, b) {
+                return a.distance - b.distance || a.truthIndex - b.truthIndex || a.predictedIndex - b.predictedIndex;
+            });
+            var usedTruth = new Set();
+            var usedPredicted = new Set();
+            var matches = [];
+            possible.forEach(function (candidate) {
+                if (usedTruth.has(candidate.truthIndex) || usedPredicted.has(candidate.predictedIndex)) return;
+                usedTruth.add(candidate.truthIndex);
+                usedPredicted.add(candidate.predictedIndex);
+                matches.push(candidate);
+            });
+            return { matches: matches, usedTruth: usedTruth, usedPredicted: usedPredicted };
+        }
+
+        function blankStage() {
+            return { count: 0, tp: 0, fp: 0, fn: 0, precision: 0, recall: 0, f1: 0 };
+        }
+
+        function finishStage(stage, truthTotal) {
+            stage.fn = Math.max(0, truthTotal - stage.tp);
+            stage.precision = stage.tp + stage.fp ? stage.tp / (stage.tp + stage.fp) : 0;
+            stage.recall = truthTotal ? stage.tp / truthTotal : 0;
+            stage.f1 = stage.precision + stage.recall
+                ? 2 * stage.precision * stage.recall / (stage.precision + stage.recall)
+                : 0;
+            return stage;
+        }
+
+        function internalTruthXs(pageTruth, systemIndex) {
+            var xs = pageTruth.bxs && pageTruth.bxs[systemIndex];
+            if (!Array.isArray(xs) || xs.length <= 2) return [];
+            return xs.slice(1, -1).map(function (x) { return Math.abs(Number(x)); }).filter(Number.isFinite);
+        }
+
+        function applyTruthBoundaries(system, existingBarlines) {
+            var cloned = JSON.parse(JSON.stringify(system));
+            if (Array.isArray(existingBarlines) && existingBarlines.length >= 2) {
+                cloned.xs = {
+                    x1: Math.round(Math.abs(existingBarlines[0])),
+                    x2: Math.round(Math.abs(existingBarlines[existingBarlines.length - 1]))
+                };
+            }
+            return cloned;
+        }
+
+        function finalInternalXs(detected, system, truthBoundaries) {
+            var x1 = system && system.xs ? Number(system.xs.x1) : NaN;
+            var x2 = system && system.xs ? Number(system.xs.x2) : NaN;
+            var truthX1 = Array.isArray(truthBoundaries) && truthBoundaries.length >= 2
+                ? Math.abs(Number(truthBoundaries[0])) : NaN;
+            var truthX2 = Array.isArray(truthBoundaries) && truthBoundaries.length >= 2
+                ? Math.abs(Number(truthBoundaries[truthBoundaries.length - 1])) : NaN;
+            var minGap = Math.max(3, Math.round(2 * systemSpatium(system)));
+            return (detected || []).map(Number).filter(function (x) {
+                if (!Number.isFinite(x)) return false;
+                if (Number.isFinite(x1) && Math.abs(x - x1) < minGap) return false;
+                if (Number.isFinite(x2) && Math.abs(x - x2) < minGap) return false;
+                if (Number.isFinite(truthX1) && Math.abs(x - truthX1) < minGap) return false;
+                if (Number.isFinite(truthX2) && Math.abs(x - truthX2) < minGap) return false;
+                return true;
+            });
+        }
+
+        function isStructuralEndpointCandidate(candidateSpec, system, truthBoundaries) {
+            if (!candidateSpec || !system || !system.xs) return false;
+            var x = Number(candidateSpec.xCol);
+            var spatium = Number(candidateSpec.spatium);
+            var x1 = Number(system.xs.x1);
+            var x2 = Number(system.xs.x2);
+            var truthX1 = Array.isArray(truthBoundaries) && truthBoundaries.length >= 2
+                ? Math.abs(Number(truthBoundaries[0])) : NaN;
+            var truthX2 = Array.isArray(truthBoundaries) && truthBoundaries.length >= 2
+                ? Math.abs(Number(truthBoundaries[truthBoundaries.length - 1])) : NaN;
+            var minGap = Math.max(3, Math.round(2 * (Number.isFinite(spatium) ? spatium : 8)));
+            return (Number.isFinite(x1) && Math.abs(x - x1) < minGap) ||
+                (Number.isFinite(x2) && Math.abs(x - x2) < minGap) ||
+                (Number.isFinite(truthX1) && Math.abs(x - truthX1) < minGap) ||
+                (Number.isFinite(truthX2) && Math.abs(x - truthX2) < minGap);
+        }
+
+        function patchToBase64(patch) {
+            var bytes = new Uint8Array(patch.length);
+            for (var index = 0; index < patch.length; index++) bytes[index] = patch[index] >= 0.5 ? 1 : 0;
+            return btoa(String.fromCharCode.apply(null, bytes));
+        }
+
+        function sumPerf(target, perf) {
+            target.systems += 1;
+            ['scanMs', 'cnnTimeMs', 'nmsMs', 'totalMs', 'candidateCount', 'cnnCalls', 'acceptedCount'].forEach(function (key) {
+                target[key] += Number(perf[key] || 0);
+            });
+        }
+
+        async function renderPage(pdfDocument, pageNumber, width) {
+            var page = await pdfDocument.getPage(pageNumber);
+            var pageWidth = page._pageInfo && page._pageInfo.view ? page._pageInfo.view[2] : page.getViewport({ scale: 1 }).width;
+            var viewport = page.getViewport({ scale: width / pageWidth });
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            var context = canvas.getContext('2d', { alpha: false });
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+            return { page: page, context: context };
+        }
+
+        async function benchmarkSource(sourceId, totals, runtimeMetadata) {
+            var paths = sourcePaths(sourceId);
+            setStatus('Loading ' + sourceId + '…');
+            var truth;
+            if (paths.pendingTruth) {
+                var pendingResponse = await fetch(paths.pendingTruth, { cache: 'no-store' });
+                if (pendingResponse.ok) truth = await pendingResponse.json();
+                else if (pendingResponse.status !== 404) throw new Error('Pending truth returned HTTP ' + pendingResponse.status);
+            }
+            if (!truth) truth = await fetchJson(paths.truth);
+            var exclusionPlan = BarlineBenchmarkExclusions.validatePlan(
+                truth, exclusionManifest.sources[sourceId] || { systems: [] }
+            );
+            var renderWidth = Number(truth[0]);
+            if (!Number.isFinite(renderWidth) || renderWidth <= 0) {
+                throw new Error(sourceId + ' has an invalid metric width');
+            }
+
+            var loadingTask = pdfjsLib.getDocument(paths.pdf);
+            var pdfDocument = await loadingTask.promise;
+            var sourceResult = {
+                source: sourceId,
+                pdfPages: pdfDocument.numPages,
+                truthPages: Math.max(0, truth.length - 1),
+                pages: []
+            };
+            var pageCount = Math.min(pdfDocument.numPages, truth.length - 1);
+
+            for (var pageNumber = 1; pageNumber <= pageCount; pageNumber++) {
+                setStatus('Benchmarking ' + sourceId + ', page ' + pageNumber + '/' + pageCount + '…');
+                var rendered = await renderPage(pdfDocument, pageNumber, renderWidth);
+                var pageTruth = truth[pageNumber] || { cxs: [], bxs: [] };
+
+                opt$$module$synpdf = Object.assign({}, opt_default$$module$synpdf, {
+                    advncd: 1,
+                    fixwd: renderWidth,
+                    pagewd: renderWidth,
+                    onestf: 1,
+                    seln: 0,
+                    skipn: 0
+                });
+                skipn$$module$synpdf = 0;
+                witArr$$module$synpdf = [];
+
+                var geometryStart = performance.now();
+                var livePage = geometryMode === 'single-quarter'
+                    ? countPix$$module$synpdf(canvas, 0)
+                    : geometryMode === 'multi-band'
+                        ? countPixMultiBands$$module$synpdf(canvas, 0)
+                    : geometryMode === 'four-quarter'
+                        ? countPixFourQuarters$$module$synpdf(canvas, 0)
+                        : countPixBothQuarters$$module$synpdf(canvas, 0);
+                var geometryMs = performance.now() - geometryStart;
+                var pixels = rendered.context.getImageData(0, 0, canvas.width, canvas.height).data;
+                var stride = canvas.width * 4;
+                var gtSystems = Array.isArray(pageTruth.cxs) ? pageTruth.cxs : [];
+                var liveSystems = Array.isArray(livePage.cxs) ? livePage.cxs : [];
+                var exclusions = BarlineBenchmarkExclusions.pageMask(pageTruth, liveSystems,
+                    exclusionPlan.filter(function (entry) { return entry.page === pageNumber; }));
+                var eligibleTruthCount = gtSystems.length - exclusions.truthIndices.size;
+                var eligibleLiveCount = liveSystems.length - exclusions.liveIndices.size;
+                var systemMatch = matchSystems(gtSystems, liveSystems, exclusions);
+                totals.excluded.truthSystems += exclusions.truthIndices.size;
+                totals.excluded.liveSystems += exclusions.liveIndices.size;
+                totals.excluded.truthInternal += exclusions.summary.truthInternal;
+                var gtForLive = new Map();
+                systemMatch.matches.forEach(function (match) { gtForLive.set(match.liveIndex, match.gtIndex); });
+
+                var pageResult = {
+                    page: pageNumber,
+                    width: canvas.width,
+                    height: canvas.height,
+                    geometryMs: geometryMs,
+                    geometry: {
+                        truthSystems: eligibleTruthCount,
+                        detectedSystems: eligibleLiveCount,
+                        matchedSystems: systemMatch.matches.length,
+                        missedTruthSystems: eligibleTruthCount - systemMatch.matches.length,
+                        extraDetectedSystems: eligibleLiveCount - systemMatch.matches.length,
+                        matches: systemMatch.matches,
+                        quarterDebug: livePage.quarterDebug || null
+                    },
+                    truthInternalCount: 0,
+                    attribution: { geometry: 0, proposal: 0, cnn: 0, suppression: 0, detected: 0 },
+                    systems: []
+                };
+
+                if (exclusions.truthIndices.size) pageResult.exclusions = exclusions.summary;
+
+                gtSystems.forEach(function (_system, gtIndex) {
+                    if (exclusions.truthIndices.has(gtIndex)) return;
+                    pageResult.truthInternalCount += internalTruthXs(pageTruth, gtIndex).length;
+                });
+
+                if (geometryOnly) {
+                    pageResult.systems = liveSystems.map(function (system, liveIndex) {
+                        return {
+                            liveIndex: liveIndex,
+                            truthIndex: gtForLive.has(liveIndex) ? gtForLive.get(liveIndex) : null,
+                            quarterSource: Array.isArray(livePage.quarterSources)
+                                ? livePage.quarterSources[liveIndex]
+                                : 'single_quarter',
+                            center: systemCenter(system),
+                            boundaries: system.xs
+                        };
+                    }).filter(function (system) { return !exclusions.liveIndices.has(system.liveIndex); });
+                    gtSystems.forEach(function (_gtSystem, gtIndex) {
+                        if (exclusions.truthIndices.has(gtIndex)) return;
+                        if (systemMatch.usedGt.has(gtIndex)) return;
+                        var missedCount = internalTruthXs(pageTruth, gtIndex).length;
+                        pageResult.attribution.geometry += missedCount;
+                        totals.attribution.geometry += missedCount;
+                    });
+                    totals.truthInternal += pageResult.truthInternalCount;
+                    totals.geometry.truthSystems += eligibleTruthCount;
+                    totals.geometry.detectedSystems += eligibleLiveCount;
+                    totals.geometry.matchedSystems += systemMatch.matches.length;
+                    totals.performance.geometryMs += geometryMs;
+                    sourceResult.pages.push(pageResult);
+                    rendered.page.cleanup();
+                    canvas.width = 1;
+                    canvas.height = 1;
+                    await new Promise(function (resolve) { setTimeout(resolve, 0); });
+                    continue;
+                }
+
+                for (var liveIndex = 0; liveIndex < liveSystems.length; liveIndex++) {
+                    if (exclusions.liveIndices.has(liveIndex)) continue;
+                    var gtIndex = gtForLive.has(liveIndex) ? gtForLive.get(liveIndex) : null;
+                    var truthBoundaries = gtIndex !== null ? pageTruth.bxs[gtIndex] : null;
+                    // Edit Mode rebuilds pageData with countPix() immediately before CNN-only
+                    // detection, then uses that same V1 result for the structural endpoints.
+                    var boundarySeed = livePage.bxs[liveIndex];
+                    var system = applyTruthBoundaries(liveSystems[liveIndex], boundarySeed);
+                    var diagnostics = [];
+                    var perfStats = {};
+                    var capturedCandidateSpecs = [];
+                    var originalPredictBatch = BarlinePatchCNN.predictBatchCandidatesAsync;
+                    BarlinePatchCNN.predictBatchCandidatesAsync = function (pixelData, candidateStride, width, candidates) {
+                        capturedCandidateSpecs = candidates.map(function (candidate) {
+                            return {
+                                xCol: Number(candidate.xCol),
+                                staffTop: Number(candidate.staffTop),
+                                staffBot: Number(candidate.staffBot),
+                                spatium: Number(candidate.spatium)
+                            };
+                        });
+                        return originalPredictBatch.apply(BarlinePatchCNN, arguments);
+                    };
+                    var detected;
+                    try {
+                        detected = await Promise.resolve(BarlineDetectV2.findBarLinesV2(
+                            system,
+                            stride,
+                            pixels,
+                            canvas.width,
+                            {
+                                allowV1Fallback: false,
+                                classifierMode: 'cnn_only',
+                                cnnThreshold: threshold,
+                                diagnostics: diagnostics,
+                                perfStats: perfStats
+                            }
+                        ));
+                    } finally {
+                        BarlinePatchCNN.predictBatchCandidatesAsync = originalPredictBatch;
+                    }
+                    if (capturedCandidateSpecs.length !== diagnostics.length) {
+                        throw new Error(
+                            sourceId + ' page ' + pageNumber + ' system ' + liveIndex +
+                            ': captured ' + capturedCandidateSpecs.length + ' crop specs for ' +
+                            diagnostics.length + ' diagnostics'
+                        );
+                    }
+                    sumPerf(totals.performance, perfStats);
+
+                    var candidateRows = diagnostics.map(function (entry, candidateIndex) {
+                        var spec = capturedCandidateSpecs[candidateIndex];
+                        return {
+                            diagnostic: entry,
+                            spec: spec,
+                            structuralEndpoint: isStructuralEndpointCandidate(spec, system, truthBoundaries),
+                            evaluationIndex: null
+                        };
+                    });
+                    var evaluatedCandidateRows = candidateRows.filter(function (row) { return !row.structuralEndpoint; });
+                    evaluatedCandidateRows.forEach(function (row, evaluationIndex) { row.evaluationIndex = evaluationIndex; });
+                    var proposalXs = evaluatedCandidateRows.map(function (row) { return Number(row.diagnostic.x); }).filter(Number.isFinite);
+                    var cnnRows = evaluatedCandidateRows.filter(function (row) {
+                        return row.diagnostic.cnnScore !== null && Number(row.diagnostic.cnnScore) >= threshold;
+                    });
+                    var cnnXs = cnnRows.map(function (row) { return Number(row.diagnostic.x); }).filter(Number.isFinite);
+                    var finalXs = finalInternalXs(detected, system, truthBoundaries);
+                    var truthXs = gtIndex !== null ? internalTruthXs(pageTruth, gtIndex) : [];
+                    var proposalMatch = matchXs(truthXs, proposalXs, tolerance);
+                    var cnnMatch = matchXs(truthXs, cnnXs, tolerance);
+                    var finalMatch = matchXs(truthXs, finalXs, tolerance);
+
+                    totals.proposal.count += proposalXs.length;
+                    totals.proposal.tp += proposalMatch.matches.length;
+                    totals.proposal.fp += proposalXs.length - proposalMatch.matches.length;
+                    totals.cnn.count += cnnXs.length;
+                    totals.cnn.tp += cnnMatch.matches.length;
+                    totals.cnn.fp += cnnXs.length - cnnMatch.matches.length;
+                    totals.final.count += finalXs.length;
+                    totals.final.tp += finalMatch.matches.length;
+                    totals.final.fp += finalXs.length - finalMatch.matches.length;
+
+                    var attribution = [];
+                    truthXs.forEach(function (truthX, truthIndex) {
+                        var stage;
+                        if (!proposalMatch.usedTruth.has(truthIndex)) stage = 'proposal';
+                        else if (!cnnMatch.usedTruth.has(truthIndex)) stage = 'cnn';
+                        else if (!finalMatch.usedTruth.has(truthIndex)) stage = 'suppression';
+                        else stage = 'detected';
+                        pageResult.attribution[stage] += 1;
+                        totals.attribution[stage] += 1;
+                        attribution.push({ x: truthX, stage: stage });
+                    });
+
+                    var serializedCandidates = candidateRows.map(function (row) {
+                        var entry = row.diagnostic;
+                        var candidateResult = {
+                            x: entry.x,
+                            cnnScore: entry.cnnScore,
+                            blackness: entry.features && entry.features.blackness,
+                            connectivity: entry.features && entry.features.connectivity,
+                            vetoReason: entry.vetoReason,
+                            structuralEndpoint: row.structuralEndpoint,
+                            crop: row.spec
+                        };
+                        if (includePatches && !row.structuralEndpoint) {
+                            var isMatchedPositive = proposalMatch.usedPredicted.has(row.evaluationIndex);
+                            var isNearTruthDuplicate = !isMatchedPositive && truthXs.some(function (truthX) {
+                                return Math.abs(Number(entry.x) - truthX) <= tolerance;
+                            });
+                            if (!isNearTruthDuplicate) {
+                                var inputShape = runtimeMetadata.input_shape || [64, 32, 1];
+                                var cropConfig = runtimeMetadata.crop_config || {};
+                                var patch = BarlinePatchCNN.cropCandidatePatch(
+                                    pixels,
+                                    stride,
+                                    canvas.width,
+                                    row.spec.xCol,
+                                    row.spec.staffTop,
+                                    row.spec.staffBot,
+                                    row.spec.spatium,
+                                    cropConfig.x_spatiums == null ? 1.5 : cropConfig.x_spatiums,
+                                    cropConfig.y_spatiums == null ? 1.0 : cropConfig.y_spatiums,
+                                    inputShape[1],
+                                    inputShape[0]
+                                );
+                                if (!patch) throw new Error('Could not reproduce candidate patch at x=' + entry.x);
+                                candidateResult.trainingLabel = isMatchedPositive ? 1 : 0;
+                                candidateResult.patchBase64 = patchToBase64(patch);
+                            }
+                        }
+                        return candidateResult;
+                    });
+
+                    pageResult.systems.push({
+                        liveIndex: liveIndex,
+                        truthIndex: gtIndex,
+                        quarterSource: Array.isArray(livePage.quarterSources)
+                            ? livePage.quarterSources[liveIndex]
+                            : 'single_quarter',
+                        center: systemCenter(system),
+                        spatium: systemSpatium(system),
+                        boundaries: system.xs,
+                        truthInternal: truthXs,
+                        proposals: proposalXs,
+                        cnnAccepted: cnnXs,
+                        finalInternal: finalXs,
+                        matches: {
+                            proposal: proposalMatch.matches,
+                            cnn: cnnMatch.matches,
+                            final: finalMatch.matches
+                        },
+                        attribution: attribution,
+                        candidates: serializedCandidates,
+                        performance: perfStats
+                    });
+                }
+
+                gtSystems.forEach(function (_gtSystem, gtIndex) {
+                    if (exclusions.truthIndices.has(gtIndex)) return;
+                    if (systemMatch.usedGt.has(gtIndex)) return;
+                    var missedCount = internalTruthXs(pageTruth, gtIndex).length;
+                    pageResult.attribution.geometry += missedCount;
+                    totals.attribution.geometry += missedCount;
+                });
+
+                totals.truthInternal += pageResult.truthInternalCount;
+                totals.geometry.truthSystems += eligibleTruthCount;
+                totals.geometry.detectedSystems += eligibleLiveCount;
+                totals.geometry.matchedSystems += systemMatch.matches.length;
+                totals.performance.geometryMs += geometryMs;
+                sourceResult.pages.push(pageResult);
+
+                rendered.page.cleanup();
+                canvas.width = 1;
+                canvas.height = 1;
+                await new Promise(function (resolve) { setTimeout(resolve, 0); });
+            }
+
+            await loadingTask.destroy();
+            return sourceResult;
+        }
+
+        async function sendResult(result) {
+            outputNode.textContent = JSON.stringify(result, null, 2);
+            document.documentElement.dataset.status = result.ok ? 'complete' : 'error';
+            try {
+                await fetch(callbackUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(result)
+                });
+            } catch (callbackError) {
+                console.error('Could not deliver benchmark result:', callbackError);
+            }
+        }
+
+        async function run() {
+            var startedAt = new Date().toISOString();
+            var wallStart = performance.now();
+            var totals = {
+                truthInternal: 0,
+                excluded: { truthSystems: 0, liveSystems: 0, truthInternal: 0 },
+                geometry: { truthSystems: 0, detectedSystems: 0, matchedSystems: 0 },
+                proposal: blankStage(),
+                cnn: blankStage(),
+                final: blankStage(),
+                attribution: { geometry: 0, proposal: 0, cnn: 0, suppression: 0, detected: 0 },
+                performance: {
+                    geometryMs: 0,
+                    systems: 0,
+                    scanMs: 0,
+                    cnnTimeMs: 0,
+                    nmsMs: 0,
+                    totalMs: 0,
+                    candidateCount: 0,
+                    cnnCalls: 0,
+                    acceptedCount: 0
+                }
+            };
+
+            try {
+                exclusionManifest = await fetchJson('training-folder/barline-cnn-exclusions.json');
+                if (exclusionManifest.version !== 1 || !exclusionManifest.sources) {
+                    throw new Error('Invalid single-staff exclusion manifest');
+                }
+                var onnxResources = null;
+                if (!geometryOnly) {
+                    setStatus('Initializing the ONNX CNN runtime…');
+                    onnxResources = await BarlinePatchCNN.loadAsync();
+                    if (!onnxResources || !onnxResources.session || !onnxResources.metadata) {
+                        throw new Error('ONNX CNN initialization failed; refusing the slow JavaScript fallback');
+                    }
+                }
+                var sources = [];
+                for (var sourceIndex = 0; sourceIndex < sourceIds.length; sourceIndex++) {
+                    sources.push(await benchmarkSource(
+                        sourceIds[sourceIndex],
+                        totals,
+                        onnxResources ? onnxResources.metadata : null
+                    ));
+                }
+                if (!geometryOnly) {
+                    finishStage(totals.proposal, totals.truthInternal);
+                    finishStage(totals.cnn, totals.truthInternal);
+                    finishStage(totals.final, totals.truthInternal);
+                }
+                totals.geometry.precision = totals.geometry.detectedSystems
+                    ? totals.geometry.matchedSystems / totals.geometry.detectedSystems : 0;
+                totals.geometry.recall = totals.geometry.truthSystems
+                    ? totals.geometry.matchedSystems / totals.geometry.truthSystems : 0;
+                totals.geometry.f1 = totals.geometry.precision + totals.geometry.recall
+                    ? 2 * totals.geometry.precision * totals.geometry.recall /
+                        (totals.geometry.precision + totals.geometry.recall)
+                    : 0;
+                var result = {
+                    ok: true,
+                    benchmark: geometryOnly ? 'live-geometry-only' : 'live-cnn-only',
+                    startedAt: startedAt,
+                    finishedAt: new Date().toISOString(),
+                    wallMs: performance.now() - wallStart,
+                    settings: {
+                        sources: sourceIds,
+                        xTolerancePx: tolerance,
+                        cnnThreshold: threshold,
+                        endpointsExcluded: true,
+                        rasterizer: 'bundled PDF.js',
+                        geometry: 'countPix onestf=1',
+                        geometryMode: geometryMode,
+                        geometryOnly: geometryOnly,
+                        classifierMode: geometryOnly ? 'not_run' : 'cnn_only',
+                        allowV1Fallback: false,
+                        onnxWasmThreads: 1,
+                        trainingPatchesIncluded: includePatches
+                    },
+                    runtime: geometryOnly ? { backend: 'not_run' } : {
+                        backend: 'onnx-wasm',
+                        inputShape: onnxResources.metadata.input_shape,
+                        cropConfig: onnxResources.metadata.crop_config
+                    },
+                    totals: totals,
+                    sources: sources
+                };
+                setStatus('Complete.');
+                await sendResult(result);
+            } catch (error) {
+                console.error(error);
+                setStatus('Failed: ' + error.message);
+                await sendResult({
+                    ok: false,
+                    benchmark: 'live-cnn-only',
+                    startedAt: startedAt,
+                    finishedAt: new Date().toISOString(),
+                    wallMs: performance.now() - wallStart,
+                    error: error && error.stack ? error.stack : String(error),
+                    browserLogs: window.barlineBenchmarkLogs
+                });
+            }
+        }
+
+        run();
+    })();
+    </script>
+</body>
+</html>

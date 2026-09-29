@@ -1,0 +1,20 @@
+{
+  "purpose": "validation",
+  "baseline": "spatial42",
+  "primary_miss_cost": 2,
+  "miss_costs": [1, 2, 3],
+  "minimum_recall": 0.99,
+  "models": {
+    "spatial42": {"benchmark": "../synpdf_182/models/candidates/barline-patch-cnn-3x6-live-spatial-v1-validation-0812.json"},
+    "spatial7": {"benchmark": "../synpdf_182/models/candidates/barline-patch-cnn-3x6-live-spatial-seed7-validation-0519.json"},
+    "gap42": {"benchmark": "../synpdf_182/models/candidates/barline-patch-cnn-3x6-live-v1-validation-062.json", "threshold": 0.183},
+    "expanded42": {"benchmark": "../synpdf_182/models/candidates/barline-patch-cnn-3x6-live-spatial-expanded-real-v2-validation-05885.json"}
+  },
+  "ensembles": [
+    {"name": "spatial_pair", "members": ["spatial42", "spatial7"], "method": "centered_logit_mean"}
+  ],
+  "sweep": {
+    "thresholds": {"min": 0.05, "max": 0.95, "step": 0.05},
+    "nms_gap_scales": [0.75, 1, 1.25]
+  }
+}

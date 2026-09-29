@@ -1244,6 +1244,9 @@ function drawRes$$module$synpdf(colorIntensityArr, imgWidth, imgHeight, pixelDat
     a = a.filter(function (a) {
         return a.t >= e
     });
+    // Some narrow scan bands contain no usable horizontal peaks. Treat that
+    // pass as an empty result so the other bands can still supply geometry.
+    if (!a.length) return [];
     b = function (a, b) {
         var c = 0,
             d = {};
@@ -1620,6 +1623,16 @@ function countPix$$module$synpdf(image, sliceIndex) {
     var colorIntensityArray = [];
     var loopStartOffset = 3 * g / 4, loopEndOffset = g;  // Some calculations for the loop parameters
     opt$$module$synpdf.eerst && (loopStartOffset = 0, loopEndOffset = g / 4);  // Change loop offsets based on opt$$module$synpdf.eerst
+    // Benchmark/recovery scans can explicitly choose another horizontal band.
+    // The regular Edit Mode path leaves staffScanBand unset and is unchanged.
+    if (Array.isArray(opt$$module$synpdf.staffScanBand) && opt$$module$synpdf.staffScanBand.length === 2) {
+        var scanStart = Math.max(0, Math.min(1, Number(opt$$module$synpdf.staffScanBand[0])));
+        var scanEnd = Math.max(scanStart, Math.min(1, Number(opt$$module$synpdf.staffScanBand[1])));
+        if (isFinite(scanStart) && isFinite(scanEnd) && scanEnd > scanStart) {
+            loopStartOffset = scanStart * g;
+            loopEndOffset = scanEnd * g;
+        }
+    }
     for (currentRow = 0; currentRow < imageHeight; currentRow++) {  // Go through each row in the image
         var colorSum = 0;  // Initialize colorSum, which will contain sum of pixels' color
         for (pixelIndex = currentPixelOffset + loopStartOffset; pixelIndex < currentPixelOffset + loopEndOffset; pixelIndex += 4)
@@ -1636,6 +1649,190 @@ function countPix$$module$synpdf(image, sliceIndex) {
         cxs: drawResResult,  // Return the results
         bxs: sliceIndex
     }
+}
+
+function getStaffSystemCenter$$module$synpdf(system) {
+    if (!system || !Array.isArray(system.cs) || !system.cs.length) return null;
+    var lines = system.cs.map(Number).filter(isFinite).sort(function (a, b) { return a - b; });
+    if (!lines.length) return null;
+    return (lines[0] + lines[lines.length - 1]) / 2;
+}
+
+function getStaffSystemSpatium$$module$synpdf(system) {
+    if (!system || !Array.isArray(system.cs) || system.cs.length < 2) return 8;
+    var lines = system.cs.map(Number).filter(isFinite).sort(function (a, b) { return a - b; });
+    var gaps = [];
+    for (var index = 1; index < lines.length; index++) {
+        var gap = lines[index] - lines[index - 1];
+        if (gap > 0) gaps.push(gap);
+    }
+    if (!gaps.length) return 8;
+    gaps.sort(function (a, b) { return a - b; });
+    return gaps[Math.floor(gaps.length / 2)];
+}
+
+function getStaffSystemWidth$$module$synpdf(system) {
+    if (!system || !system.xs) return 0;
+    var x1 = Number(system.xs.x1);
+    var x2 = Number(system.xs.x2);
+    return isFinite(x1) && isFinite(x2) ? Math.max(0, x2 - x1) : 0;
+}
+
+function medianNumber$$module$synpdf(values) {
+    var sorted = values.map(Number).filter(isFinite).sort(function (a, b) { return a - b; });
+    return sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
+}
+
+function mergeStaffScanPasses$$module$synpdf(passes, pageWidth) {
+    var merged = [];
+    var debug = {};
+
+    function appendPageSystems(pageData, source, isBaseline) {
+        if (!pageData || !Array.isArray(pageData.cxs)) return;
+        debug[source + 'Count'] = pageData.cxs.length;
+        pageData.cxs.forEach(function (system, index) {
+            var center = getStaffSystemCenter$$module$synpdf(system);
+            var spatium = getStaffSystemSpatium$$module$synpdf(system);
+            var width = getStaffSystemWidth$$module$synpdf(system);
+            var baselineWidths = merged.filter(function (entry) { return entry.isBaseline; })
+                .map(function (entry) { return getStaffSystemWidth$$module$synpdf(entry.system); })
+                .filter(function (value) { return value > 0; });
+            var typicalWidth = medianNumber$$module$synpdf(baselineWidths);
+            var minimumAlternateWidth = typicalWidth ? typicalWidth * 0.70 : Number(pageWidth || 0) * 0.55;
+            var tooNarrow = !isBaseline && minimumAlternateWidth > 0 && width < minimumAlternateWidth;
+            var duplicate = !isBaseline && merged.some(function (existing) {
+                var existingCenter = getStaffSystemCenter$$module$synpdf(existing.system);
+                var existingSpatium = getStaffSystemSpatium$$module$synpdf(existing.system);
+                // The old 1.75-spatium tolerance treated visibly displaced readings of
+                // the same staff as two systems. Single-staff systems are much farther
+                // apart than three spatia, so this remains conservative.
+                var tolerance = Math.max(20, Math.round(3 * Math.max(spatium, existingSpatium)));
+                return center !== null && existingCenter !== null && Math.abs(center - existingCenter) <= tolerance;
+            });
+            if (tooNarrow || duplicate) return;
+            merged.push({
+                system: system,
+                barlines: Array.isArray(pageData.bxs) ? pageData.bxs[index] : [],
+                source: source,
+                isBaseline: isBaseline
+            });
+        });
+    }
+
+    (passes || []).forEach(function (pass, index) {
+        appendPageSystems(pass && pass.result, pass && pass.source || ('pass_' + index), index === 0);
+    });
+
+    merged.sort(function (a, b) {
+        return (getStaffSystemCenter$$module$synpdf(a.system) || 0) -
+            (getStaffSystemCenter$$module$synpdf(b.system) || 0);
+    });
+    return {
+        cxs: merged.map(function (entry) { return entry.system; }),
+        bxs: merged.map(function (entry) { return entry.barlines; }),
+        quarterSources: merged.map(function (entry) { return entry.source; }),
+        quarterDebug: Object.assign(debug, {
+            addedAlternateCount: merged.filter(function (entry) { return !entry.isBaseline; }).length,
+            addedFirstQuarterCount: merged.filter(function (entry) { return entry.source === 'first_quarter'; }).length
+        })
+    };
+}
+
+function runStaffScanPass$$module$synpdf(image, band, firstMode) {
+    opt$$module$synpdf.eerst = firstMode ? 1 : 0;
+    opt$$module$synpdf.staffScanBand = band;
+    skipn$$module$synpdf = parseInt(opt$$module$synpdf.skipn) || 0;
+    return countPix$$module$synpdf(image, 0);
+}
+
+function countPixBothQuarters$$module$synpdf(image, sliceIndex) {
+    var previousEerst = opt$$module$synpdf.eerst;
+    var previousBand = opt$$module$synpdf.staffScanBand;
+    var previousSkipn = skipn$$module$synpdf;
+    var lastQuarter;
+    var firstQuarter;
+
+    try {
+        lastQuarter = runStaffScanPass$$module$synpdf(image, [0.75, 1], false);
+        firstQuarter = runStaffScanPass$$module$synpdf(image, [0, 0.25], true);
+    } finally {
+        opt$$module$synpdf.eerst = previousEerst;
+        opt$$module$synpdf.staffScanBand = previousBand;
+        skipn$$module$synpdf = previousSkipn;
+    }
+
+    var merged = mergeStaffScanPasses$$module$synpdf([
+        { source: 'last_quarter', result: lastQuarter },
+        { source: 'first_quarter', result: firstQuarter }
+    ], image.width);
+    if (sliceIndex) {
+        var selectedIndex = Math.max(0, parseInt(sliceIndex) - 1);
+        merged.cxs = merged.cxs.slice(selectedIndex, selectedIndex + 1);
+        merged.bxs = merged.bxs.slice(selectedIndex, selectedIndex + 1);
+        merged.quarterSources = merged.quarterSources.slice(selectedIndex, selectedIndex + 1);
+    }
+    return merged;
+}
+
+function countPixFourQuarters$$module$synpdf(image, sliceIndex) {
+    var previousEerst = opt$$module$synpdf.eerst;
+    var previousBand = opt$$module$synpdf.staffScanBand;
+    var previousSkipn = skipn$$module$synpdf;
+    var passes;
+
+    try {
+        passes = [
+            { source: 'last_quarter', result: runStaffScanPass$$module$synpdf(image, [0.75, 1], false) },
+            { source: 'first_quarter', result: runStaffScanPass$$module$synpdf(image, [0, 0.25], true) },
+            { source: 'middle_left_quarter', result: runStaffScanPass$$module$synpdf(image, [0.25, 0.5], true) },
+            { source: 'middle_right_quarter', result: runStaffScanPass$$module$synpdf(image, [0.5, 0.75], true) }
+        ];
+    } finally {
+        opt$$module$synpdf.eerst = previousEerst;
+        opt$$module$synpdf.staffScanBand = previousBand;
+        skipn$$module$synpdf = previousSkipn;
+    }
+
+    var merged = mergeStaffScanPasses$$module$synpdf(passes, image.width);
+    if (sliceIndex) {
+        var selectedIndex = Math.max(0, parseInt(sliceIndex) - 1);
+        merged.cxs = merged.cxs.slice(selectedIndex, selectedIndex + 1);
+        merged.bxs = merged.bxs.slice(selectedIndex, selectedIndex + 1);
+        merged.quarterSources = merged.quarterSources.slice(selectedIndex, selectedIndex + 1);
+    }
+    return merged;
+}
+
+function countPixMultiBands$$module$synpdf(image, sliceIndex) {
+    var previousEerst = opt$$module$synpdf.eerst;
+    var previousBand = opt$$module$synpdf.staffScanBand;
+    var previousSkipn = skipn$$module$synpdf;
+    var passes;
+
+    try {
+        passes = [
+            { source: 'last_quarter', result: runStaffScanPass$$module$synpdf(image, [0.75, 1], false) },
+            { source: 'first_quarter', result: runStaffScanPass$$module$synpdf(image, [0, 0.25], true) },
+            { source: 'middle_left_quarter', result: runStaffScanPass$$module$synpdf(image, [0.25, 0.5], true) },
+            { source: 'middle_right_quarter', result: runStaffScanPass$$module$synpdf(image, [0.5, 0.75], true) },
+            { source: 'shifted_left_quarter', result: runStaffScanPass$$module$synpdf(image, [0.125, 0.375], true) },
+            { source: 'scan_01875', result: runStaffScanPass$$module$synpdf(image, [0.1875, 0.4375], true) },
+            { source: 'eighth_0', result: runStaffScanPass$$module$synpdf(image, [0, 0.125], true) },
+        ];
+    } finally {
+        opt$$module$synpdf.eerst = previousEerst;
+        opt$$module$synpdf.staffScanBand = previousBand;
+        skipn$$module$synpdf = previousSkipn;
+    }
+
+    var merged = mergeStaffScanPasses$$module$synpdf(passes, image.width);
+    if (sliceIndex) {
+        var selectedIndex = Math.max(0, parseInt(sliceIndex) - 1);
+        merged.cxs = merged.cxs.slice(selectedIndex, selectedIndex + 1);
+        merged.bxs = merged.bxs.slice(selectedIndex, selectedIndex + 1);
+        merged.quarterSources = merged.quarterSources.slice(selectedIndex, selectedIndex + 1);
+    }
+    return merged;
 }
 
 function countVsys$$module$synpdf(a, b, c) {

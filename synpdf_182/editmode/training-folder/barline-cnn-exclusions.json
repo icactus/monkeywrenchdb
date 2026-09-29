@@ -1,0 +1,289 @@
+{
+  "version": 1,
+  "description": "Explicit source-specific exclusions. Pages are 1-based; systemIndex is 0-based. cs guards against stale indices after truth edits. Ground-truth annotations are preserved.",
+  "sources": {
+    "75-5": {
+      "systems": [
+        {
+          "page": 2,
+          "systemIndex": 12,
+          "cs": [
+            1171,
+            1273
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 3,
+          "systemIndex": 11,
+          "cs": [
+            1161,
+            1274
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 4,
+          "systemIndex": 0,
+          "cs": [
+            114,
+            220
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 4,
+          "systemIndex": 1,
+          "cs": [
+            292,
+            412
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 4,
+          "systemIndex": 5,
+          "cs": [
+            773,
+            882
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 5,
+          "systemIndex": 6,
+          "cs": [
+            649,
+            743
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 5,
+          "systemIndex": 7,
+          "cs": [
+            792,
+            884
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 5,
+          "systemIndex": 9,
+          "cs": [
+            1041,
+            1146
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 5,
+          "systemIndex": 10,
+          "cs": [
+            1195,
+            1285
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 6,
+          "systemIndex": 0,
+          "cs": [
+            113,
+            212
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 6,
+          "systemIndex": 1,
+          "cs": [
+            286,
+            385
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 6,
+          "systemIndex": 2,
+          "cs": [
+            460,
+            560
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 6,
+          "systemIndex": 3,
+          "cs": [
+            639,
+            740
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 6,
+          "systemIndex": 4,
+          "cs": [
+            812,
+            913
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 6,
+          "systemIndex": 5,
+          "cs": [
+            987,
+            1097
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 6,
+          "systemIndex": 6,
+          "cs": [
+            1162,
+            1275
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 8,
+          "systemIndex": 8,
+          "cs": [
+            878,
+            990
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 9,
+          "systemIndex": 10,
+          "cs": [
+            992,
+            1096
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 10,
+          "systemIndex": 9,
+          "cs": [
+            917,
+            1012
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 11,
+          "systemIndex": 9,
+          "cs": [
+            991,
+            1090
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 11,
+          "systemIndex": 10,
+          "cs": [
+            1156,
+            1269
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 12,
+          "systemIndex": 0,
+          "cs": [
+            126,
+            245
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 12,
+          "systemIndex": 1,
+          "cs": [
+            321,
+            438
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 12,
+          "systemIndex": 9,
+          "cs": [
+            1151,
+            1265
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 13,
+          "systemIndex": 6,
+          "cs": [
+            659,
+            775
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 13,
+          "systemIndex": 7,
+          "cs": [
+            831,
+            934
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 13,
+          "systemIndex": 8,
+          "cs": [
+            989,
+            1106
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 13,
+          "systemIndex": 9,
+          "cs": [
+            1179,
+            1272
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 14,
+          "systemIndex": 0,
+          "cs": [
+            123,
+            216
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 14,
+          "systemIndex": 7,
+          "cs": [
+            787,
+            901
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        },
+        {
+          "page": 14,
+          "systemIndex": 9,
+          "cs": [
+            1056,
+            1168
+          ],
+          "reason": "Paired divisi staves; outside single-staff CNN evaluation and training."
+        }
+      ]
+    }
+  }
+}
