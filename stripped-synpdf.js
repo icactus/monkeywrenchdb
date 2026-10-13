@@ -11,23 +11,29 @@
 //  This is a heavily modified and stripped version of Synpdf v.182. The original software
 //  can be found at https://wim.vree.org/js2/index.html.
 
-// Immediately Invoked Async Function for Initialization
-(async function initializePDFjs() {
-    try {
-        // Dynamically import the PDF.js module
-        const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.min.mjs');
-
-        // Attach the imported module to the global window object
-        window.pdfjsLib = pdfjsLib;
-
-        // Configure PDF.js Worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs';
-
-
-    } catch (error) {
-        console.error('Failed to load PDF.js:', error);
+// The legacy build includes the polyfills needed by Safari on iPadOS 16.
+// Keep the library and worker on the same version and serve both locally.
+let pdfjsReady$$module$synpdf = null;
+function initializePDFjs() {
+    if (!pdfjsReady$$module$synpdf) {
+        pdfjsReady$$module$synpdf = import('./assets/vendor/pdfjs/4.9.155/pdf.min.mjs')
+            .then(function (pdfjsLib) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+                    './assets/vendor/pdfjs/4.9.155/pdf.worker.min.mjs', window.location.href
+                ).href;
+                window.pdfjsLib = pdfjsLib;
+                return pdfjsLib;
+            })
+            .catch(function (error) {
+                pdfjsReady$$module$synpdf = null; // Allow Retry after a failed import.
+                throw error;
+            });
     }
-})();
+    return pdfjsReady$$module$synpdf;
+}
+initializePDFjs().catch(function (error) {
+    console.error('Failed to load PDF.js:', error);
+});
 
 // History Logic
 function toggleHistoryMenu() {
@@ -1860,7 +1866,7 @@ async function buildAllPageShells$$module$synpdf() {
     }
 }
 
-function readPdf$$module$synpdf(pdfData, dataType) {
+async function readPdf$$module$synpdf(pdfData, dataType) {
     if (typeof clearPlayerLoadError === 'function') clearPlayerLoadError('pdf');
     // Cancel any existing PDF load
     if (currentPdfLoadingTask$$module$synpdf) {
@@ -1870,7 +1876,7 @@ function readPdf$$module$synpdf(pdfData, dataType) {
     }
 
     // Store params for retry
-    lastPdfLoadParams$$module$synpdf = { pdfData, dataType };
+    const loadParams = lastPdfLoadParams$$module$synpdf = { pdfData, dataType };
 
     initGlobals$$module$synpdf();
 
@@ -1940,7 +1946,21 @@ function readPdf$$module$synpdf(pdfData, dataType) {
         };
         console.debug("[PDF] PDF.js options:", pdfjsOptions);
 
-        const loadingTask = pdfjsLib.getDocument(pdfjsOptions);
+        let loadingTask;
+        try {
+            const pdfjsLib = globalThis.pdfjsLib || await initializePDFjs();
+            // A different score may have been selected while the module loaded.
+            if (lastPdfLoadParams$$module$synpdf !== loadParams) return;
+            loadingTask = pdfjsLib.getDocument(pdfjsOptions);
+        } catch (error) {
+            if (lastPdfLoadParams$$module$synpdf !== loadParams) return;
+            // Import/startup failures happen before a loading task exists.
+            console.error('[PDF] PDF.js startup failed:', error);
+            if (typeof showPlayerLoadError === 'function') {
+                showPlayerLoadError('pdf', 'Could not load the PDF. Check your connection and try again.', retryPdfLoad$$module$synpdf);
+            }
+            return;
+        }
         currentPdfLoadingTask$$module$synpdf = loadingTask; // Store for cancellation
 
         // Progress handler

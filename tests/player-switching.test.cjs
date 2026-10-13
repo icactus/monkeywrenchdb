@@ -128,7 +128,7 @@ test('a PDF download failure shows Retry and retries the same PDF', async () => 
             const task = { promise: new Promise((_, no) => { reject = no; }), destroy() {} };
             requests.push({ options, reject }); return task;
         } } });
-    vm.runInContext(playerSource.slice(playerSource.indexOf('function readPdf$$module$synpdf'), playerSource.indexOf('let renderedPages = 1;')), c);
+    vm.runInContext(playerSource.slice(playerSource.indexOf('async function readPdf$$module$synpdf'), playerSource.indexOf('let renderedPages = 1;')), c);
     c.readPdf$$module$synpdf('/pdfs/1-2.pdf', 'url');
     requests[0].reject(new Error('offline')); await flush();
     assert.match(errors[0].text, /Could not load the PDF/);

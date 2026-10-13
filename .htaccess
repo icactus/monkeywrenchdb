@@ -1,5 +1,8 @@
 RewriteEngine On
 
+# PDF.js modules must have a JavaScript MIME type for Safari's module loader.
+AddType text/javascript .mjs
+
 RewriteRule ^ph/(.*)$ posthog_proxy.php?_ph_path=$1 [L,QSA]
 
 RewriteCond %{REQUEST_FILENAME} -f [OR]

@@ -769,7 +769,7 @@ if ($hasInitialRecordingTarget) {
     </button>
     <script src="js/history-manager.js?v=6"></script>
     <script src="js/favorites-manager.js?v=3"></script>
-    <script src="stripped-synpdf.js?v=334"></script>
+    <script src="stripped-synpdf.js?v=335"></script>
     <script src="stripped-synpdf-extras.js?v=286"></script>
     <script src="js/homepage.js?v=13"></script>
     <script>
