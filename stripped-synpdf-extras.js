@@ -73,6 +73,7 @@ window.__preFS = null;                   // stash zoom + position before togglin
 window.MW = window.MW || {};
 let __mwSwitchSeq = 0;
 let __mwPartSwitchSeq = 0;
+let __mwPartsDropdownSeq = 0;
 window.MW.player = {
     get instrumentId() { return currentInstrumentGlobal; },
     set instrumentId(v) { currentInstrumentGlobal = v; },
@@ -721,44 +722,33 @@ $('#pieces-container').on('click', '.pieces-link', function (event) {
     recordingsList.html('<p>No parts found for this selection.</p>');
 });
 
-function generateInstrumentsDropdown(recordingId) {
-    return new Promise(function (resolve, reject) {
-        var dropdown = document.getElementById("instruments-dropdown");
-        // Clear the menu but keep the default
-        dropdown.innerHTML = "";
-        var defaultOption = document.createElement("option");
-        defaultOption.textContent = "Change Part";
-        defaultOption.disabled = true;
-        defaultOption.hidden = true;
-        defaultOption.selected = true;
-        dropdown.appendChild(defaultOption);
+async function generateInstrumentsDropdown(recordingId) {
+    const seq = ++__mwPartsDropdownSeq;
+    const dropdown = document.getElementById('instruments-dropdown');
+    const defaultOption = document.createElement('option');
+    defaultOption.textContent = 'Change Part';
+    defaultOption.disabled = true;
+    defaultOption.hidden = true;
+    defaultOption.selected = true;
+    dropdown.replaceChildren(defaultOption);
 
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", "get_recording_instruments.php?recordingId=" + recordingId, true);
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    var data = JSON.parse(xhr.responseText);
-                    for (var i = 0; i < data.length; i++) {
-                        var option = document.createElement("option");
-                        option.value = data[i].instrument_id;
-                        option.textContent = data[i].displayText;
+    // Escape old browser entries. Part saves also purge this URL at the CDN.
+    const data = await fetchPlayerJson(
+        'get_recording_instruments.php?recordingId=' + encodeURIComponent(recordingId) + '&v=parts-2',
+        { cache: 'no-store' }
+    );
+    if (seq !== __mwPartsDropdownSeq) return;
+    if (!Array.isArray(data)) throw new Error('Invalid part list');
 
-                        // Attach the full data as a data attribute
-                        option.dataset.instrumentData = JSON.stringify(data[i]);
-                        dropdown.appendChild(option);
-                    }
-                    resolve();
-                } else {
-                    reject("Error: " + xhr.status);
-                }
-            }
-        };
-        xhr.onerror = function () {
-            reject("Error: Request failed");
-        };
-        xhr.send();
-    });
+    for (const part of data) {
+        const option = document.createElement('option');
+        // An instrument can have multiple editions; select the actual metric array.
+        option.value = String(part.metric_arr_id);
+        option.textContent = decodeHtmlEntities(part.displayText);
+        option.dataset.instrumentData = JSON.stringify(part);
+        dropdown.appendChild(option);
+    }
+    dropdown.value = String(window.MW.player.metricArrId);
 }
 
 function loadPieceRecordings(pieceId) {
@@ -1287,7 +1277,6 @@ function handleRecordingSelection(recordingFullData) {
             $("#sidecontent").show();
             generateInstrumentsDropdown(recordingId)
                 .then(function () {
-                    $('#instruments-dropdown').val(window.MW.player.instrumentId);
                     $('#recordings-dropdown').val(window.MW.player.recordingId);
                     window.recordingFullyLoaded = true;
 

@@ -684,7 +684,7 @@ $is_share_link = isset($_GET['share']);
     <script src="js/favorites-manager.js?v=1"></script>
     <script src="js/contact-email.js?v=1" defer></script>
     <script src="stripped-synpdf.js?v=336"></script>
-    <script src="stripped-synpdf-extras.js?v=274"></script>
+    <script src="stripped-synpdf-extras.js?v=275"></script>
     <script>
         window.setDarkMode = function (isDark) {
             document.documentElement.classList.toggle('inverted', isDark);

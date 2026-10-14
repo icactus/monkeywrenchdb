@@ -43,6 +43,19 @@ function purgeCloudflareCache(array $urls): array
         return ['success' => true, 'message' => 'No URLs to purge'];
     }
 
+    // A piece with many recordings can exceed a single purge request's limit.
+    if (count($urls) > 30) {
+        $failures = [];
+        foreach (array_chunk($urls, 30) as $batch) {
+            $result = purgeCloudflareCache($batch);
+            if (!$result['success']) $failures[] = $result['message'];
+        }
+        return [
+            'success' => empty($failures),
+            'message' => empty($failures) ? 'Cache purged successfully for ' . count($urls) . ' URLs' : implode('; ', $failures),
+        ];
+    }
+
     $zoneId = CLOUDFLARE_ZONE_ID;
     $apiToken = CLOUDFLARE_API_TOKEN;
 
@@ -97,7 +110,7 @@ function purgeMetricJsonCache(int $metricArrId): array
 }
 
 /** Purge a metric array and its related metadata endpoints. */
-function purgeMetricArrCache(int $metricArrId, int $pieceId, int $instrumentId): array
+function purgeMetricArrCache(int $metricArrId, int $pieceId, int $instrumentId, array $recordingIds = []): array
 {
     $baseUrl = SITE_BASE_URL;
     if ($baseUrl === '') {
@@ -115,10 +128,18 @@ function purgeMetricArrCache(int $metricArrId, int $pieceId, int $instrumentId):
 
         // Pieces list (will include this metric_arr in parts)
         "{$baseUrl}/fetch_pieces.php?instrumentIds={$instrumentId}",
-
-        // Recording instruments dropdown
-        // Note: This requires recording_id which we might not have here
+        "{$baseUrl}/fetch_catalog.php",
+        "{$baseUrl}/fetchinstruments_data.php",
     ];
+
+    // Every recording of this piece shares its available parts. Purge both
+    // existing clients' URLs and the new URL that bypasses old browser entries.
+    foreach (array_unique(array_map('intval', $recordingIds)) as $recordingId) {
+        if ($recordingId <= 0) continue;
+        $url = "{$baseUrl}/get_recording_instruments.php?recordingId={$recordingId}";
+        $urlsToPurge[] = $url;
+        $urlsToPurge[] = $url . '&v=parts-2';
+    }
 
     return purgeCloudflareCache($urlsToPurge);
 }

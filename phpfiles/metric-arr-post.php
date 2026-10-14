@@ -133,6 +133,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $metric_arr_data = $_POST['metric_arr_data'];
     $edition_label = isset($_POST['edition_label']) && trim($_POST['edition_label']) !== '' ? trim($_POST['edition_label']) : null;
 
+    // A new part changes the dropdown for every recording of this piece.
+    $recordingIds = [];
+    $recordingStmt = $mysqli->prepare("SELECT recording_id FROM recordings WHERE piece_id = ?");
+    $recordingStmt->bind_param('i', $piece_id);
+    $recordingStmt->execute();
+    $recordingRows = $recordingStmt->get_result();
+    while ($recordingRow = $recordingRows->fetch_assoc()) {
+        $recordingIds[] = (int) $recordingRow['recording_id'];
+    }
+    $recordingStmt->close();
+
     $originalSize = strlen($metric_arr_data);
     try {
         $metric_arr_data_processed = processMetricData($metric_arr_data);
@@ -216,7 +227,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             file_put_contents("$staticDir/$existingMetricArrId.json", $metric_arr_data_processed);
 
             // Purge Cloudflare cache for this metric_arr
-            $purgeResult = purgeMetricArrCache($existingMetricArrId, $piece_id, $instrument_id);
+            $purgeResult = purgeMetricArrCache($existingMetricArrId, $piece_id, $instrument_id, $recordingIds);
 
             $response .= "The data has been updated.<br>";
             $stmt_update->close();
@@ -283,7 +294,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     file_put_contents("$staticDir/$newMetricArrId.json", $metric_arr_data_processed);
 
                     // Purge Cloudflare cache for related endpoints
-                    $purgeResult = purgeMetricArrCache($newMetricArrId, $piece_id, $instrument_id);
+                    $purgeResult = purgeMetricArrCache($newMetricArrId, $piece_id, $instrument_id, $recordingIds);
 
                     $response .= "The data has been inserted.<br>";
                 } else {

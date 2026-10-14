@@ -5,6 +5,8 @@ error_reporting(E_ALL);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/api_debug.log');
 header('Content-Type: application/json; charset=utf-8');
+// Parts can be added while returning visitors still have this piece cached.
+header('Cache-Control: no-store');
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
