@@ -6,17 +6,20 @@ The old load path used the legacy quarter-width row profile and enabled automati
 
 Staff discovery is a deterministic image heuristic, separate from the barline CNN. It is not an optimal general staff detector: it estimates staff spacing from row projections, reconstructs five-line bundles, and merges alternate readings using center and relative-width checks. The CNN cannot recover a staff that this stage omits. In particular, the relative-width filter can exclude short cue staves; page 6 of this PDF contains one. Divisi and cue merging remain manual.
 
-The revised workflow starts with individual staves and uses `scanPageMetrics$$module$synpdf()` for displayed-page computation, background load computation, and CNN preparation. The single-staff branch uses the existing seven-band discovery; explicitly disabling single-staff mode retains legacy grouping. The all-pages CNN button now visits each page once, reapplies single-staff mode after navigation, rebuilds geometry from that page's rendered pixels, and runs the same detector as the current-page button. It no longer performs a separate geometry-fit pass or computes unused CNN render fits.
+PDFs initially load with normal system grouping. Single-staff processing is enabled explicitly after loading, using the single-staves checkbox or the CNN buttons. `scanPageMetrics$$module$synpdf()` handles displayed-page computation, background load computation, and CNN preparation: its single-staff branch uses the existing seven-band discovery, while normal mode retains legacy grouping. The all-pages CNN button visits each page once, reapplies single-staff mode after navigation, rebuilds geometry from that page's rendered pixels, and runs the same detector as the current-page button. It no longer performs a separate geometry-fit pass or computes unused CNN render fits.
+
+Opening another local document resets single-staff mode, its checkbox, and the previous document's saved per-page options. Initialization copies the defaults so running single-staff processing cannot change the defaults for later documents. This corrects the initial release's single-staff-on-load behavior, which split full scores unintentionally.
 
 Band bounds now align to whole RGBA pixels. Previously, some fractions and render widths produced fractional byte indices (`undefined` pixel values and NaN row profiles), or began in the middle of a pixel and sampled alpha as a color channel. The first-quarter option now selects the baseline merge pass, preserving short staves that a normal first-quarter scan finds instead of rejecting them as narrow alternates.
 
 ## Validation
 
-- Headless Chrome, actual editor load and button handlers, render width 1000: loading, checking single staves, and completing the CNN all-pages run agree on staff counts `[13, 14, 13, 13, 13, 13, 14, 14]`.
+- Initial single-staff-default release: headless Chrome, actual editor load and button handlers, render width 1000: loading, checking single staves, and completing the CNN all-pages run agreed on staff counts `[13, 14, 13, 13, 13, 13, 14, 14]`. Normal loading now intentionally uses grouped systems until single-staff processing is explicitly selected.
 - Page 4 retains 13 staff systems; running the current-page CNN after the batch produces identical stored page geometry and barlines. The check also seeds saved per-page `onestf: 0` options to exercise navigation restoration.
 - The nine-document, 63-page labeled geometry benchmark retains 630/630 matched staves and zero extra systems after the scan-index changes.
 - The full CNN benchmark on those documents also retains 630/630 staves. With the workspace's existing model weights, internal barlines total 1,736 true positives, 96 false positives, and six false negatives (one proposal miss and five CNN misses). None is attributed to missing staff geometry. This run is not a before/after model comparison; weights were already modified in the workspace and were left untouched.
 - Node regression tests cover RGBA band alignment at even and odd widths, selecting the shared discovery path, preserving a first-quarter short staff, restoring scan options, batch navigation with saved grouping options, and cleanup on detector failure.
+- Follow-up regression tests verify normal grouped loading, explicit single-staff selection, immutable defaults, and resetting mode and saved page options when opening a full score after a single-staff run.
 - JavaScript syntax, PHP lint, and changed-file whitespace checks pass.
 
 Commands:
@@ -28,4 +31,4 @@ python scripts/run_barline_cnn_browser_benchmark.py \
   --geometry-only --out artifacts/edit-mode-108-investigation/regression-after.json
 ```
 
-The original reported page-4 loss was not reproduced at the default width with the local workspace code before these changes: its raw and prepared geometry both contained 13 staves. The change addresses observed pipeline divergence and concrete scan bugs, rather than claiming a confirmed explanation for that exact production symptom. This is a workflow improvement, not a model retrain or a new general staff detector. No production deployment was performed.
+The original reported page-4 loss was not reproduced at the default width with the local workspace code before these changes: its raw and prepared geometry both contained 13 staves. The change addresses observed pipeline divergence and concrete scan bugs, rather than claiming a confirmed explanation for that exact production symptom. This is a workflow improvement, not a model retrain or a new general staff detector. Initial benchmarking was local; the workflow was subsequently deployed.

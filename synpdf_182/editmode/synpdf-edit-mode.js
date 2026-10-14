@@ -86,7 +86,7 @@ var msc_VERSION$$module$synpdf = 182,
         lastSynced: -2,
         eerst: 0,
         sysprf: 0,
-        onestf: 1
+        onestf: 0
     },
     //advanced options for identifying measures//
     adv_names$$module$synpdf = {
@@ -107,7 +107,8 @@ window.onYouTubeIframeAPIReady = yubApiReady$$module$synpdf;
 
 function initPreload$$module$synpdf() {
     //sets options to default//
-    opt$$module$synpdf = opt_default$$module$synpdf;
+    opt$$module$synpdf = Object.assign({}, opt_default$$module$synpdf);
+    adv_parms$$module$synpdf = {};
     $("#yubuse").prop("checked", !1);
     $("#yvdlbl, #vidyub").css("display", "none");
     msc_credits$$module$synpdf = void 0;
@@ -1607,7 +1608,7 @@ function drawRes$$module$synpdf(colorIntensityArr, imgWidth, imgHeight, pixelDat
 }
 
 // Loading, option changes, and CNN preparation use the same staff discovery.
-// Keep individual staves by default; explicit system grouping uses the legacy scan.
+// Normal loading keeps systems grouped; single-staff discovery is explicitly enabled.
 function scanPageMetrics$$module$synpdf(image, sliceIndex) {
     return opt$$module$synpdf.onestf
         ? countPixMultiBands$$module$synpdf(image, sliceIndex)
@@ -2160,6 +2161,12 @@ function readLocalFile$$module$synpdf(file = null) {
         $("#err").text("Selected file is invalid.");
         return;
     }
+
+    // A new document starts with normal system detection, even after running
+    // single-staff CNN processing on the previous document.
+    opt$$module$synpdf.onestf = 0;
+    adv_parms$$module$synpdf = {};
+    $("#menu input#onestf").prop("checked", false);
 
     pdfFnm$$module$synpdf = selectedFile.name;
     scoreFnm$$module$synpdf = selectedFile.name.split(".")[0];

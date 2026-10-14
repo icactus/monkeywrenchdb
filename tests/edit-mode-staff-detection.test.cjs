@@ -36,16 +36,66 @@ test('all scan bands read whole RGBA pixels at odd and even render widths', () =
     }
 });
 
-test('load and recomputation use multi-band discovery; explicit grouping stays available', () => {
-    const { context } = scanner(1000);
+function documentHarness() {
+    const checkbox = { checked: false };
+    const reads = [];
+    const context = vm.createContext({
+        console,
+        $: () => ({
+            prop: (name, value) => { if (name === 'checked') checkbox.checked = value; },
+            css() {}, html() {}, text() {}
+        }),
+        initLoopRec$$module$synpdf() {},
+        FileReader: class { readAsArrayBuffer(file) { reads.push(file); } }
+    });
+    const defaults = staffSource.slice(staffSource.indexOf('    opt_default$$module$synpdf = {'),
+        staffSource.indexOf('    //advanced options for identifying measures//'));
+    vm.runInContext('var ' + defaults.trim().replace(/,$/, ';'), context);
+    vm.runInContext(staffSource.slice(staffSource.indexOf('function initPreload$$module$synpdf('),
+        staffSource.indexOf('function initGlobals$$module$synpdf(')), context);
+    vm.runInContext(staffSource.slice(staffSource.indexOf('function readLocalFile$$module$synpdf('),
+        staffSource.indexOf('function readMedia$$module$synpdf(')), context);
+    vm.runInContext(staffFunctions, context);
+    context.initPreload$$module$synpdf();
+    return { context, checkbox, reads };
+}
+
+test('normal loading uses grouped discovery until single-staff mode is explicitly enabled', () => {
+    const { context } = documentHarness();
     let selected;
     context.countPixMultiBands$$module$synpdf = () => { selected = 'multi'; return {}; };
     context.countPix$$module$synpdf = () => { selected = 'legacy'; return {}; };
     context.scanPageMetrics$$module$synpdf({}, 0);
-    assert.equal(selected, 'multi');
-    context.opt$$module$synpdf.onestf = 0;
-    context.scanPageMetrics$$module$synpdf({}, 0);
     assert.equal(selected, 'legacy');
+    context.opt$$module$synpdf.onestf = 1;
+    context.scanPageMetrics$$module$synpdf({}, 0);
+    assert.equal(selected, 'multi');
+});
+
+test('single-staff processing cannot mutate the defaults for the next initialization', () => {
+    const { context } = documentHarness();
+    context.opt$$module$synpdf.onestf = 1;
+    context.adv_parms$$module$synpdf[4] = { onestf: 1 };
+    context.initPreload$$module$synpdf();
+    assert.equal(context.opt_default$$module$synpdf.onestf, 0);
+    assert.equal(context.opt$$module$synpdf.onestf, 0);
+    assert.notEqual(context.opt$$module$synpdf, context.opt_default$$module$synpdf);
+    assert.deepEqual(plain(context.adv_parms$$module$synpdf), {});
+});
+
+test('opening a new full score after CNN processing resets single-staff mode and saved page options', () => {
+    const { context, checkbox, reads } = documentHarness();
+    context.opt$$module$synpdf.onestf = 1;
+    context.opt$$module$synpdf.fixwd = 1200;
+    context.adv_parms$$module$synpdf[4] = { onestf: 1 };
+    checkbox.checked = true;
+    const file = { name: 'full-score.pdf' };
+    context.readLocalFile$$module$synpdf(file);
+    assert.equal(context.opt$$module$synpdf.onestf, 0);
+    assert.equal(checkbox.checked, false);
+    assert.deepEqual(plain(context.adv_parms$$module$synpdf), {});
+    assert.equal(context.opt$$module$synpdf.fixwd, 1200);
+    assert.deepEqual(reads, [file]);
 });
 
 test('first-quarter selection retains a real short staff and restores scan options', () => {
