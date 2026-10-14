@@ -1483,6 +1483,7 @@ function getSystemSortTop(system) {
 }
 
 document.addEventListener('keydown', function (event) {
+    if (isEditorKeyboardInput(event) || event.ctrlKey || event.metaKey || event.altKey) return;
     const synbox = document.querySelector('#synbox');
     if (synbox && synbox.checked) {
         return;
@@ -5137,11 +5138,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-document.querySelectorAll('input[type="text"], textarea').forEach(function (input) {
-    input.addEventListener('keydown', function (e) {
-        e.stopPropagation();
-    });
-});
 
 
 //Prevent resize with mousewheel on the notation section as this redisplays the advanced settings
@@ -5697,6 +5693,7 @@ $(document).ready(function () {
 });
 
 document.addEventListener('keyup', function (event) {
+    if (isEditorKeyboardInput(event) || event.ctrlKey || event.metaKey || event.altKey) return;
     if (!splitInputState) {
         return;
     }

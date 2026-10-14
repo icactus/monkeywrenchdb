@@ -2437,12 +2437,23 @@ function pauseer$$module$synpdf() {
 //Global scroll position variable
 let initialScrollTop = window.scrollY; // Store the initial scroll position
 
+// Global shortcuts must leave form controls and IME input to the browser.
+function isEditorKeyboardInput(event) {
+    var originalEvent = event.originalEvent || event;
+    if (originalEvent.isComposing || originalEvent.keyCode === 229) return true;
+    return [event.target, document.activeElement].some(function (element) {
+        return element && (
+            element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' ||
+            element.tagName === 'SELECT' || element.isContentEditable
+        );
+    });
+}
+
 function keyDown$$module$synpdf(a) {
-    // --- guard: if typing in any input/textarea, ignore shortcuts ---
-    var activeEl = document.activeElement;
-    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-        return; // let the input handle keys normally
-    }
+    if (isEditorKeyboardInput(a)) return;
+    // Preserve Ctrl+, / Ctrl+. for sync offsets; leave other modified keys alone.
+    if (a.altKey || a.metaKey || (a.ctrlKey &&
+        !(opt$$module$synpdf.synbox && (a.key === ',' || a.key === '.')))) return;
     var b = a.key,
         c = 1;
     switch (b) {
