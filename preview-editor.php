@@ -516,9 +516,10 @@ $is_share_link = isset($_GET['share']);
                 <button class="modal-close" onclick="toggleAboutLinkMenu()" aria-label="Close">&times;</button>
             </div>
             <div class="modal-content">
-                <p><b>Monkey Wrench Database</b> is built on a modified fork of <a href="https://wim.vree.org/"
-                        target="_blank" rel="noopener noreferrer">Willem Vree's</a> SynPdf. Without his amazing open
-                    source project, none of this would be possible.</p>
+                <p><b>Monkey Wrench Database</b> is a free and open-source project built on a modified version of
+                    <a href="https://wim.vree.org/js2/index.html" target="_blank" rel="noopener noreferrer">Wim Vree's SynPdf</a>.
+                    The source code is available on <a href="https://github.com/icactus/monkeywrenchdb"
+                        target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
                 <p>This has been a solo passion project by Isaac Trapkus, bassist with the New York Philharmonic,
                     started in 2021. I'm not a
                     software developer by trade, so please bear with my many skill issues.</p>
