@@ -560,9 +560,8 @@
             })
             .then(data => {
                 if (data.success) {
-                    alert(data.cache_purge && !data.cache_purge.success
-                        ? "Saved successfully, but cache refresh failed: " + data.cache_purge.message
-                        : "Saved successfully!");
+                    // The viewer uses fresh metric URLs even if CDN purging is unavailable.
+                    alert("Saved successfully!");
                     // Optional: Update lastSynced locally or UI feedback
                 } else {
                     alert("Error saving: " + data.message);

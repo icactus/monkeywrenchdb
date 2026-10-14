@@ -165,6 +165,9 @@ try {
                     ]);
                 } else {
                     $purgeResult = purgeMetricJsonCache((int) $metricArrId);
+                    if (!$purgeResult['success']) {
+                        error_log('Live Edit metric ' . $metricArrId . ' saved; optional CDN purge failed: ' . $purgeResult['message']);
+                    }
                     echo json_encode([
                         'success' => true,
                         'message' => 'Updated successfully.',
