@@ -1066,7 +1066,7 @@ function getCurrentPageCanvas() {
     return canvases.length ? canvases[canvases.length - 1] : null;
 }
 
-function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf) {
+function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf, useMultiBandStaffScan) {
     var canvas = getCurrentPageCanvas();
     if (!canvas || typeof countPix$$module$synpdf !== 'function') {
         return null;
@@ -1078,7 +1078,10 @@ function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf)
     }
 
     try {
-        var pageData = countPix$$module$synpdf(canvas, parseInt(opt$$module$synpdf.seln));
+        var scanFunction = useMultiBandStaffScan && typeof scanPageMetrics$$module$synpdf === 'function'
+            ? scanPageMetrics$$module$synpdf
+            : countPix$$module$synpdf;
+        var pageData = scanFunction(canvas, parseInt(opt$$module$synpdf.seln));
         if (!pageData || !pageData.cxs) {
             return null;
         }
@@ -1243,18 +1246,6 @@ function runPagePianoGeometryOnly(options) {
     return true;
 }
 
-async function preparePageForCNN(pagenum, lastPage) {
-    setBatchButtonState(true, pagenum, lastPage, 'cnn');
-    if (getDisplayedPageNumber() !== pagenum) {
-        await goToRenderedPage(pagenum, { forceRerender: true });
-    }
-    await recomputeCurrentPageWithCurrentOptions(pagenum);
-    if (!runPageGeometryOnly({ suppressRefresh: true, suppressAlerts: true })) {
-        throw new Error('Failed to fit staff geometry on page ' + pagenum + ' during CNN prep');
-    }
-    return deMetriek$$module$synpdf[pagenum] || null;
-}
-
 function waitForRenderIdle(timeoutMs) {
     var hasTimeout = typeof timeoutMs === 'number' && isFinite(timeoutMs) && timeoutMs > 0;
     return new Promise(function (resolve, reject) {
@@ -1358,14 +1349,6 @@ function setSingleStaffMode(isEnabled) {
     if (singleStaffInput) {
         singleStaffInput.checked = !!isEnabled;
     }
-}
-
-async function recomputeCurrentPageWithCurrentOptions(targetPage) {
-    await waitForRenderIdle();
-    resizePdfSyn$$module$synpdf();
-    await waitForRenderedPage(targetPage, {
-        requireNewCanvas: true
-    });
 }
 
 function normalizeDetectedSystemBarlines(system, detectedBarlines, existingBarlines) {
@@ -5214,8 +5197,8 @@ $(document).ready(function () {
         }
 
         let pageData = deMetriek$$module$synpdf[pagenum];
-        if (runMode === 'cnn_only' && !options.skipSingleStaffPrep) {
-            pageData = rebuildCurrentPageMetricData(pagenum, true) || pageData;
+        if (runMode === 'cnn_only') {
+            pageData = rebuildCurrentPageMetricData(pagenum, true, undefined, true) || pageData;
         }
         if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
             alert("No staff systems found on this page to detect barlines for.");
@@ -5269,7 +5252,7 @@ $(document).ready(function () {
             const detected = await Promise.resolve(BarlineDetectV2.findBarLinesV2(system, stride, pixelData, width, perSystemOpts));
             systemDiagnostics[index] = perSystemOpts.diagnostics.slice();
             systemPerf[index] = perSystemOpts.perfStats;
-            systemRenderGeometry[index] = systemSupportsRenderGeometryFit(system)
+            systemRenderGeometry[index] = runMode !== 'cnn_only' && systemSupportsRenderGeometryFit(system)
                 ? BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width)
                 : null;
             v2Barlines.push(detected);
@@ -5362,22 +5345,16 @@ $(document).ready(function () {
         var lastPage = deMetriek$$module$synpdf.length - 1;
         batchDetectionInProgress = true;
         try {
-            setSingleStaffMode(true);
-            for (var prepPageNum = 1; prepPageNum <= lastPage; prepPageNum++) {
-                await preparePageForCNN(prepPageNum, lastPage);
-            }
-
-            if (lastPage >= 1) {
-                setBatchButtonState(true, 1, lastPage, 'cnn');
-                await goToRenderedPage(1, { forceRerender: true });
-            }
-
             for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
                 setBatchButtonState(true, pageNum, lastPage, 'cnn');
                 if (getDisplayedPageNumber() !== pageNum) {
                     await goToRenderedPage(pageNum, { forceRerender: true });
                 }
-                var ok = await runPageBarlineDetection(runMode, { suppressRefresh: true, skipSingleStaffPrep: true });
+                // Navigation restores per-page options, including onestf. Apply
+                // single-staff mode on each page and rebuild immediately before
+                // inference, exactly as the current-page CNN button does.
+                setSingleStaffMode(true);
+                var ok = await runPageBarlineDetection(runMode, { suppressRefresh: true });
                 if (!ok) {
                     throw new Error('Detection failed on page ' + pageNum);
                 }

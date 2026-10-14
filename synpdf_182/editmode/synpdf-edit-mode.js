@@ -86,7 +86,7 @@ var msc_VERSION$$module$synpdf = 182,
         lastSynced: -2,
         eerst: 0,
         sysprf: 0,
-        onestf: 0
+        onestf: 1
     },
     //advanced options for identifying measures//
     adv_names$$module$synpdf = {
@@ -881,7 +881,7 @@ async function precomputeAdvancedMetrics$$module$synpdf() {
                 viewport: viewport
             }).promise;
 
-            var metricPage = countPix$$module$synpdf(canvas, parseInt(opt$$module$synpdf.seln));
+            var metricPage = scanPageMetrics$$module$synpdf(canvas, parseInt(opt$$module$synpdf.seln));
             deMetriek$$module$synpdf[pageNum] = metricPage.cxs.length ? metricPage : { cxs: [], bxs: [] };
             await new Promise(function (resolve) { setTimeout(resolve, 20); });
         }
@@ -979,7 +979,7 @@ function disableScrolling() {
 function compPage$$module$synpdf(a, b, c) {
     var d = deMetriek$$module$synpdf[b];
     if (!d || opt$$module$synpdf.advncd && !pageNumChanged$$module$synpdf) {
-        d = countPix$$module$synpdf(a, parseInt(opt$$module$synpdf.seln));
+        d = scanPageMetrics$$module$synpdf(a, parseInt(opt$$module$synpdf.seln));
         if (0 == d.cxs.length) return {
             height: 0
         };
@@ -1606,6 +1606,14 @@ function drawRes$$module$synpdf(colorIntensityArr, imgWidth, imgHeight, pixelDat
     return b
 }
 
+// Loading, option changes, and CNN preparation use the same staff discovery.
+// Keep individual staves by default; explicit system grouping uses the legacy scan.
+function scanPageMetrics$$module$synpdf(image, sliceIndex) {
+    return opt$$module$synpdf.onestf
+        ? countPixMultiBands$$module$synpdf(image, sliceIndex)
+        : countPix$$module$synpdf(image, sliceIndex);
+}
+
 function countPix$$module$synpdf(image, sliceIndex) {
     var pixelIndex, avgRowColor;  // Define the local variables
     var imageWidth = image.width;  // Get the width of the image
@@ -1621,16 +1629,18 @@ function countPix$$module$synpdf(image, sliceIndex) {
     };
     var currentPixelOffset = 0;  // Initialize variables for the upcoming loop
     var colorIntensityArray = [];
-    var loopStartOffset = 3 * g / 4, loopEndOffset = g;  // Some calculations for the loop parameters
-    opt$$module$synpdf.eerst && (loopStartOffset = 0, loopEndOffset = g / 4);  // Change loop offsets based on opt$$module$synpdf.eerst
-    // Benchmark/recovery scans can explicitly choose another horizontal band.
-    // The regular Edit Mode path leaves staffScanBand unset and is unchanged.
+    var loopStartOffset = 4 * Math.floor(0.75 * imageWidth), loopEndOffset = g;
+    opt$$module$synpdf.eerst && (loopStartOffset = 0, loopEndOffset = 4 * Math.floor(0.25 * imageWidth));
+    // Multi-band discovery chooses a band for each pass; an explicit grouped
+    // scan uses the editor's first/last-quarter option.
     if (Array.isArray(opt$$module$synpdf.staffScanBand) && opt$$module$synpdf.staffScanBand.length === 2) {
         var scanStart = Math.max(0, Math.min(1, Number(opt$$module$synpdf.staffScanBand[0])));
         var scanEnd = Math.max(scanStart, Math.min(1, Number(opt$$module$synpdf.staffScanBand[1])));
         if (isFinite(scanStart) && isFinite(scanEnd) && scanEnd > scanStart) {
-            loopStartOffset = scanStart * g;
-            loopEndOffset = scanEnd * g;
+            // Bands must begin on an RGBA pixel boundary. Fractional byte
+            // indices yield undefined pixels/NaN at many render widths.
+            loopStartOffset = 4 * Math.floor(scanStart * imageWidth);
+            loopEndOffset = 4 * Math.ceil(scanEnd * imageWidth);
         }
     }
     for (currentRow = 0; currentRow < imageHeight; currentRow++) {  // Go through each row in the image
@@ -1819,6 +1829,14 @@ function countPixMultiBands$$module$synpdf(image, sliceIndex) {
             { source: 'scan_01875', result: runStaffScanPass$$module$synpdf(image, [0.1875, 0.4375], true) },
             { source: 'eighth_0', result: runStaffScanPass$$module$synpdf(image, [0, 0.125], true) },
         ];
+        // Honor the editor's chosen primary scan. In particular, a short cue
+        // found by the first-quarter option must not become an alternate that
+        // is discarded by the relative-width filter.
+        if (previousEerst) {
+            var primaryPass = passes[0];
+            passes[0] = passes[1];
+            passes[1] = primaryPass;
+        }
     } finally {
         opt$$module$synpdf.eerst = previousEerst;
         opt$$module$synpdf.staffScanBand = previousBand;
