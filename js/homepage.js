@@ -118,7 +118,7 @@
                 window.jQuery(option).data('recordingFullData', fullRecording(piece, part, r)); dropdown.append(option);
             });
             // Verify required local sync assets before the player removes the homepage DOM.
-            const response = await Promise.all([fetch('data/metrics/' + part.metric_arr_id + '.json?v=2', { cache: 'no-cache' }), fetch('data/times/' + recording.recording_id + '.json')]);
+            const response = await Promise.all([fetch('data/metrics/' + part.metric_arr_id + '.json?v=2&_fresh=' + Date.now(), { cache: 'no-cache' }), fetch('data/times/' + recording.recording_id + '.json')]);
             if (response.some(r => !r.ok)) throw new Error('This score or recording is missing its sync data. Please choose another recording or run the local data setup.');
             await Promise.all(response.map(r => r.json()));
             write('part-' + piece.piece_id, part.metric_arr_id);

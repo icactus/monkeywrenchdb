@@ -32,6 +32,7 @@ test('returning visitors get newly added parts instead of their cached dropdown'
     const browserCache = new Map([[oldUrl, [firstViolin]]]);
     let savedParts = [firstViolin, secondViolin];
     const h = setup(async (url, options) => {
+        assert.equal(options.method, 'POST', 'read fresh metadata even when CDN GET caching overrides origin headers');
         const rows = options?.cache === 'no-store' ? savedParts : browserCache.get(url) || savedParts;
         browserCache.set(url, rows);
         return response(rows);

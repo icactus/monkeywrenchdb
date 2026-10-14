@@ -93,7 +93,7 @@ test('homepage checks current barlines before launching a recording', async () =
     await h.fire(h.titleButton('Nocturne'), 'click');
     await h.fire(h.findByClass(h.els()['study-results'], 'study-recording')[0], 'click');
     const metricRequest = requests.find(r => r.url.includes('data/metrics/'));
-    assert.equal(metricRequest.url, 'data/metrics/41.json?v=2');
+    assert.match(metricRequest.url, /^data\/metrics\/41\.json\?v=2&_fresh=\d+$/);
     assert.equal(metricRequest.options.cache, 'no-cache');
     assert.equal(h.launched().length, 1);
 });

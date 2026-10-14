@@ -773,8 +773,8 @@ if ($hasInitialRecordingTarget) {
     <script src="js/favorites-manager.js?v=3"></script>
     <script src="js/contact-email.js?v=1" defer></script>
     <script src="stripped-synpdf.js?v=336"></script>
-    <script src="stripped-synpdf-extras.js?v=288"></script>
-    <script src="js/homepage.js?v=15"></script>
+    <script src="stripped-synpdf-extras.js?v=289"></script>
+    <script src="js/homepage.js?v=16"></script>
     <script>
         // Dark Mode: mobile menu toggle + desktop floating button, persisted in localStorage
         window.setDarkMode = function (isDark) {

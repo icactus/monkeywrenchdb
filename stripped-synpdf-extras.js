@@ -732,10 +732,11 @@ async function generateInstrumentsDropdown(recordingId) {
     defaultOption.selected = true;
     dropdown.replaceChildren(defaultOption);
 
-    // Escape old browser entries. Part saves also purge this URL at the CDN.
+    // POST bypasses the CDN's forced GET caching, even if a purge fails.
+    // This endpoint only reads metadata; it does not change the part.
     const data = await fetchPlayerJson(
         'get_recording_instruments.php?recordingId=' + encodeURIComponent(recordingId) + '&v=parts-2',
-        { cache: 'no-store' }
+        { method: 'POST', cache: 'no-store' }
     );
     if (seq !== __mwPartsDropdownSeq) return;
     if (!Array.isArray(data)) throw new Error('Invalid part list');
@@ -1029,9 +1030,9 @@ async function sendVarToSynpdf(recordingFullData, partSeq = null) {
 
     const metricId = recordingFullData.metric_arr_id;
     const recordingId = recordingFullData.recording_id;
-    // Move existing browsers off the old year-long immutable URL. The new
-    // response revalidates on every load, including edits made by another user.
-    const metricUrl = `data/metrics/${metricId}.json?v=2`;
+    // The CDN can override origin revalidation headers. A fresh URL also works
+    // when its purge credential is unavailable, including after another user saves.
+    const metricUrl = `data/metrics/${metricId}.json?v=2&_fresh=${Date.now()}`;
     const metricPromise = fetchPlayerJson(metricUrl, { cache: 'no-cache' });
     const timesPromise = recordingFullData.times_arr_data
         ? Promise.resolve(

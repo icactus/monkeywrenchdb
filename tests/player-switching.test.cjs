@@ -74,7 +74,7 @@ test('late metrics from an obsolete part cannot overwrite the selected part', as
     h.part({}); await flush();
     h.part({ metric_arr_id: 43, instrument_id: 3 }); await flush();
     metrics.resolve(response(['obsolete metrics'])); await flush();
-    assert.equal(h.context.metric_arr$$module$synpdf[0].url, 'data/metrics/43.json?v=2');
+    assert.match(h.context.metric_arr$$module$synpdf[0].url, /^data\/metrics\/43\.json\?v=2&_fresh=\d+$/);
     assert.deepEqual(h.pdfs, ['/pdfs/1-3.pdf']);
 });
 
@@ -95,6 +95,24 @@ test('refreshing after another editor saves revalidates cached barlines', async 
     assert.deepEqual(await openPart(), ['first saved barlines']);
     savedBarlines = ['corrected barlines saved by another editor'];
     assert.deepEqual(await openPart(), savedBarlines);
+});
+
+test('barlines refresh even when CDN caching overrides revalidation and purges fail', async () => {
+    const h = setup(), fetch = h.context.fetch;
+    const edgeCache = new Map();
+    let now = 1000, savedBarlines = ['original barlines'];
+    h.context.Date = { now: () => now };
+    h.context.fetch = async url => {
+        if (!url.includes('metrics/')) return fetch(url);
+        // This CDN ignores request cache directives and keeps every GET URL.
+        if (!edgeCache.has(url)) edgeCache.set(url, savedBarlines);
+        return response(edgeCache.get(url));
+    };
+    h.part({}); await flush();
+    assert.deepEqual(h.context.metric_arr$$module$synpdf, ['original barlines']);
+    savedBarlines = ['corrected barlines']; now++;
+    h.part({}); await flush();
+    assert.deepEqual(h.context.metric_arr$$module$synpdf, savedBarlines);
 });
 
 test('a failed part request displays a working Retry over the PDF area', async () => {
