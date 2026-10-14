@@ -82,6 +82,22 @@ test('launch guard resets so a second start works', async () => {
     assert.equal(h.launched().length, 2);
 });
 
+test('homepage checks current barlines before launching a recording', async () => {
+    h.buildContext();
+    await h.settled();
+    const requests = [], fetch = h.ctx().fetch;
+    h.ctx().fetch = async (url, options) => {
+        requests.push({ url, options });
+        return fetch(url, options);
+    };
+    await h.fire(h.titleButton('Nocturne'), 'click');
+    await h.fire(h.findByClass(h.els()['study-results'], 'study-recording')[0], 'click');
+    const metricRequest = requests.find(r => r.url.includes('data/metrics/'));
+    assert.equal(metricRequest.url, 'data/metrics/41.json?v=2');
+    assert.equal(metricRequest.options.cache, 'no-cache');
+    assert.equal(h.launched().length, 1);
+});
+
 test('multiple recordings render a chooser sorted by year', async () => {
     h.resetFilters();
     h.launched().length = 0;
@@ -206,11 +222,9 @@ test('category tabs filter the library, clear on a new search, instrument persis
     assert.equal(tab('All')['aria-pressed'], 'true');
     await h.fire(tab('Solo'), 'click');
     assert.deepEqual(h.titles(), ['Cello Suite No. 1', 'Nocturne']);
-    assert.equal(h.els()['study-results-heading'].textContent, 'Solo');
     // A new search always clears the Orchestra/Solo/etc filter.
     h.searchFor('nocturne');
     assert.deepEqual(h.titles(), ['Nocturne']);
-    assert.equal(h.els()['study-results-heading'].textContent, 'Search results');
     assert.equal(tab('Solo')?.['aria-pressed'] ?? 'false', 'false');
     // Clearing the query shows everything; category does not stick.
     h.searchFor('');
@@ -247,7 +261,6 @@ test('tab counts follow the search query without switching tabs', async () => {
     h.searchFor('symphony');
     assert.deepEqual(h.titles(), ['Symphony No. 5', 'Symphony No. 9']);
     assert.deepEqual(labels(), ['Orchestra (2)']);
-    assert.equal(h.els()['study-results-heading'].textContent, 'Search results');
     h.searchFor('');
     assert.deepEqual(labels(), ['All (5)', 'Orchestra (2)', 'Solo (2)', 'Choral Works (1)']);
 });
@@ -271,16 +284,6 @@ test('tabs rescope to the selected instrument and reset a stale category', async
     assert.deepEqual(labels(), ['Orchestra (1)']);
     assert.deepEqual(h.titles(), ['Symphony']);
     assert.equal(tab('Orchestra')['aria-pressed'], 'false');
-});
-
-test('heading names the category-instrument scope', async () => {
-    h.buildContext();
-    await h.settled();
-    const tabs = () => h.findByClass(h.els()['study-categories'], 'study-category');
-    const tab = name => tabs().find(b => b.textContent === name || b.textContent.startsWith(name + ' ('));
-    h.chooseInstrument('Cello');
-    await h.fire(tab('Solo'), 'click');
-    assert.equal(h.els()['study-results-heading'].textContent, 'Solo for cello');
 });
 
 test('a lone category stands alone instead of hiding the tabs', async () => {

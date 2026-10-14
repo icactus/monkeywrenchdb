@@ -31,6 +31,11 @@ if (file_exists('phpfiles/config.php')) {
 
 mysqli_report(MYSQLI_REPORT_OFF);
 
+$purgeHelper = file_exists(__DIR__ . '/phpfiles/cloudflare_purge.php')
+    ? __DIR__ . '/phpfiles/cloudflare_purge.php'
+    : __DIR__ . '/../phpfiles/cloudflare_purge.php';
+require_once $purgeHelper;
+
 function normalizeMetricDataForStorage($jsonData)
 {
     $data = json_decode($jsonData);
@@ -108,11 +113,11 @@ try {
         echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $conn->connect_error]);
         exit;
     }
-    mysqli_set_charset($conn, 'utf8');
+    mysqli_set_charset($conn, 'utf8mb4');
 
     // 3. Process Request
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $metricArrId = $_POST['metric_arr_id'] ?? null;
+        $metricArrId = filter_var($_POST['metric_arr_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         $metricArrData = $_POST['metric_arr_data'] ?? null;
 
         if (!$metricArrId || !$metricArrData) {
@@ -152,16 +157,19 @@ try {
                 $writeOk = file_put_contents($staticFile, $metricArrDataProcessed);
 
                 if ($writeOk === false) {
+                    http_response_code(500);
                     echo json_encode([
-                        'success' => true,
+                        'success' => false,
                         'message' => 'DB updated but static file write failed.',
                         'cache_bust' => (string) round(microtime(true) * 1000),
                     ]);
                 } else {
+                    $purgeResult = purgeMetricJsonCache((int) $metricArrId);
                     echo json_encode([
                         'success' => true,
                         'message' => 'Updated successfully.',
                         'cache_bust' => (string) round(microtime(true) * 1000),
+                        'cache_purge' => $purgeResult,
                     ]);
                 }
             } else {

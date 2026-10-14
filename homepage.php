@@ -26,12 +26,12 @@
         </div>
         <p id="study-message" role="status" hidden></p>
         <section id="study-library-panel" role="tabpanel" aria-labelledby="study-library-tab">
-            <div class="study-section-head"><div><h2 id="study-results-heading">Browse</h2></div><button id="study-reset" class="study-text-button" hidden>Clear filters</button></div>
+            <button id="study-reset" class="study-text-button" hidden>Clear filters</button>
             <div id="study-categories" class="study-categories" role="group" aria-label="Filter by category" hidden></div>
             <div id="study-results" class="study-results"></div>
         </section>
-        <section id="study-history-panel" role="tabpanel" aria-labelledby="study-history-tab" hidden><div class="study-section-head"><div><h2>History</h2><p>Your recent pieces, ready to reopen.</p></div></div><div id="study-history-list" class="study-results"></div></section>
-        <section id="study-favorites-panel" role="tabpanel" aria-labelledby="study-favorites-tab" hidden><div class="study-section-head"><div><h2>Favorites</h2><p>Pieces you’ve saved for another practice session.</p></div></div><div id="study-favorites-list" class="study-results"></div></section>
+        <section id="study-history-panel" role="tabpanel" aria-labelledby="study-history-tab" hidden><div id="study-history-list" class="study-results"></div></section>
+        <section id="study-favorites-panel" role="tabpanel" aria-labelledby="study-favorites-tab" hidden><div id="study-favorites-list" class="study-results"></div></section>
     </div>
     <footer class="study-footer">Free, open source, and made for practice.</footer>
 </div>

@@ -74,8 +74,27 @@ test('late metrics from an obsolete part cannot overwrite the selected part', as
     h.part({}); await flush();
     h.part({ metric_arr_id: 43, instrument_id: 3 }); await flush();
     metrics.resolve(response(['obsolete metrics'])); await flush();
-    assert.equal(h.context.metric_arr$$module$synpdf[0].url, 'data/metrics/43.json');
+    assert.equal(h.context.metric_arr$$module$synpdf[0].url, 'data/metrics/43.json?v=2');
     assert.deepEqual(h.pdfs, ['/pdfs/1-3.pdf']);
+});
+
+test('refreshing after another editor saves revalidates cached barlines', async () => {
+    // Both the old immutable URL and a previously loaded new URL may be cached.
+    const cache = new Map([['data/metrics/42.json', ['old immutable barlines']]]);
+    let savedBarlines = ['first saved barlines'];
+    const openPart = async () => {
+        const h = setup(), fetch = h.context.fetch;
+        h.context.fetch = async (url, options) => {
+            if (!url.includes('metrics/')) return fetch(url, options);
+            if (!cache.has(url) || options?.cache === 'no-cache') cache.set(url, savedBarlines);
+            return response(cache.get(url));
+        };
+        h.part({}); await flush();
+        return h.context.metric_arr$$module$synpdf;
+    };
+    assert.deepEqual(await openPart(), ['first saved barlines']);
+    savedBarlines = ['corrected barlines saved by another editor'];
+    assert.deepEqual(await openPart(), savedBarlines);
 });
 
 test('a failed part request displays a working Retry over the PDF area', async () => {

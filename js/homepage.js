@@ -118,7 +118,7 @@
                 window.jQuery(option).data('recordingFullData', fullRecording(piece, part, r)); dropdown.append(option);
             });
             // Verify required local sync assets before the player removes the homepage DOM.
-            const response = await Promise.all([fetch('data/metrics/' + part.metric_arr_id + '.json'), fetch('data/times/' + recording.recording_id + '.json')]);
+            const response = await Promise.all([fetch('data/metrics/' + part.metric_arr_id + '.json?v=2', { cache: 'no-cache' }), fetch('data/times/' + recording.recording_id + '.json')]);
             if (response.some(r => !r.ok)) throw new Error('This score or recording is missing its sync data. Please choose another recording or run the local data setup.');
             await Promise.all(response.map(r => r.json()));
             write('part-' + piece.piece_id, part.metric_arr_id);
@@ -292,10 +292,9 @@
         return (state.instrument ? Number(b.parts.some(p => p.instrument_name === state.instrument && !p.is_score)) - Number(a.parts.some(p => p.instrument_name === state.instrument && !p.is_score)) : 0) || byComposer(a, b);
     }
     function renderLibrary() {
-        const { words, scoped } = scopePieces();
+        const { scoped } = scopePieces();
         const matches = scoped.filter(p => !state.category || p.category_name === state.category).sort(sortPieces);
         if (!matches.some(p => p.piece_id === state.expanded)) state.expanded = null;
-        $('results-heading').textContent = words.length ? 'Search results' : state.category && state.instrument ? state.category + ' for ' + state.instrument.toLowerCase() : state.category || (state.instrument ? 'Music for ' + state.instrument.toLowerCase() : 'Browse');
         $('clear-search').hidden = !search.value; $('reset').hidden = !search.value && !state.instrument && !state.category;
         const list = $('results'); list.replaceChildren(...matches.map(p => pieceRow(p)));
         if (!matches.length) empty(list, 'No matching pieces. Try a shorter title, another composer, or another instrument.');

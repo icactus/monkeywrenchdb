@@ -560,13 +560,9 @@
             })
             .then(data => {
                 if (data.success) {
-                    const cacheBust = data.cache_bust || Date.now();
-                    window.metricArrCacheBusters = window.metricArrCacheBusters || {};
-                    window.metricArrCacheBusters[metricArrId] = cacheBust;
-                    if (window.currentRecordingFullData && String(window.currentRecordingFullData.metric_arr_id) === String(metricArrId)) {
-                        window.currentRecordingFullData.metric_arr_cache_bust = cacheBust;
-                    }
-                    alert("Saved successfully!");
+                    alert(data.cache_purge && !data.cache_purge.success
+                        ? "Saved successfully, but cache refresh failed: " + data.cache_purge.message
+                        : "Saved successfully!");
                     // Optional: Update lastSynced locally or UI feedback
                 } else {
                     alert("Error saving: " + data.message);

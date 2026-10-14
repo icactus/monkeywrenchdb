@@ -127,8 +127,8 @@ function showPlayerLoadError(kind, text, retry) {
     overlay.append(card);
 }
 
-async function fetchPlayerJson(url) {
-    const response = await fetch(url);
+async function fetchPlayerJson(url, options) {
+    const response = await fetch(url, options);
     if (!response.ok) throw new Error('Request failed (' + response.status + ')');
     const data = await response.json();
     if (data.error) throw new Error(data.error);
@@ -930,7 +930,6 @@ function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
 
 
 let recordingCache = {};
-window.metricArrCacheBusters = window.metricArrCacheBusters || {};
 
 function capturePosthogPieceLoad(recordingFullData, pageTitle) {
     if (!window.posthog || typeof window.posthog.capture !== 'function') {
@@ -1040,12 +1039,10 @@ async function sendVarToSynpdf(recordingFullData, partSeq = null) {
 
     const metricId = recordingFullData.metric_arr_id;
     const recordingId = recordingFullData.recording_id;
-    const metricCacheBust = recordingFullData.metric_arr_cache_bust || window.metricArrCacheBusters[metricId];
-    const metricUrl = metricCacheBust
-        ? `data/metrics/${metricId}.json?v=${encodeURIComponent(metricCacheBust)}`
-        : `data/metrics/${metricId}.json`;
-
-    const metricPromise = fetchPlayerJson(metricUrl);
+    // Move existing browsers off the old year-long immutable URL. The new
+    // response revalidates on every load, including edits made by another user.
+    const metricUrl = `data/metrics/${metricId}.json?v=2`;
+    const metricPromise = fetchPlayerJson(metricUrl, { cache: 'no-cache' });
     const timesPromise = recordingFullData.times_arr_data
         ? Promise.resolve(
             typeof recordingFullData.times_arr_data === 'string'

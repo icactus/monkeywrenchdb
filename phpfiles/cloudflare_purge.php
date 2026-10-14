@@ -81,13 +81,22 @@ function purgeCloudflareCache(array $urls): array
 }
 
 /**
- * Purge cache for a specific metric_arr record (and related endpoints)
- * 
+ * Purge both the legacy and revalidating URLs for a metric JSON file.
+ *
  * @param int $metricArrId The metric_arr_id to purge
- * @param int $pieceId The piece_id (for purging fetch_pieces)
- * @param int $instrumentId The instrument_id (for purging related endpoints)
  * @return array Result with 'success' boolean and 'message' string
  */
+function purgeMetricJsonCache(int $metricArrId): array
+{
+    if (SITE_BASE_URL === '') {
+        return ['success' => false, 'message' => 'Cloudflare purge skipped: SITE_BASE_URL is empty'];
+    }
+
+    $url = rtrim(SITE_BASE_URL, '/') . "/data/metrics/{$metricArrId}.json";
+    return purgeCloudflareCache([$url, $url . '?v=2']);
+}
+
+/** Purge a metric array and its related metadata endpoints. */
 function purgeMetricArrCache(int $metricArrId, int $pieceId, int $instrumentId): array
 {
     $baseUrl = SITE_BASE_URL;
@@ -102,6 +111,7 @@ function purgeMetricArrCache(int $metricArrId, int $pieceId, int $instrumentId):
 
         // Static JSON file
         "{$baseUrl}/data/metrics/{$metricArrId}.json",
+        "{$baseUrl}/data/metrics/{$metricArrId}.json?v=2",
 
         // Pieces list (will include this metric_arr in parts)
         "{$baseUrl}/fetch_pieces.php?instrumentIds={$instrumentId}",
