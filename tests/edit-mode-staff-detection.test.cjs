@@ -107,12 +107,37 @@ test('first-quarter selection retains a real short staff and restores scan optio
     context.runStaffScanPass$$module$synpdf = (_image, band) => ({
         cxs: band[0] === 0 ? [short, full] : [full], bxs: band[0] === 0 ? [[45, 256], [45, 960]] : [[45, 960]]
     });
-    const result = context.countPixMultiBands$$module$synpdf({ width: 1000 }, 0);
+    const image = { width: 1000, height: 1, getContext: () => ({ getImageData: () => ({ data: new Uint8ClampedArray(4000) }) }) };
+    const result = context.countPixMultiBands$$module$synpdf(image, 0);
     assert.deepEqual(plain(result.cxs), [short, full]);
     assert.deepEqual(plain(result.bxs), [[45, 256], [45, 960]]);
     assert.equal(context.opt$$module$synpdf.eerst, 1);
     assert.equal(context.opt$$module$synpdf.staffScanBand, undefined);
     assert.equal(context.skipn$$module$synpdf, 3);
+});
+
+test('multi-band discovery reads pixels once per scan and refreshes them for the next scan', () => {
+    const { context } = scanner(1000);
+    let reads = 0;
+    const analyses = [];
+    const image = { width: 1000, height: 3, getContext: () => ({ getImageData: () => {
+        reads++;
+        return { data: new Uint8ClampedArray(12000).fill(reads) };
+    } }) };
+    context.drawRes$$module$synpdf = (_rows, _width, _height, _pixels, analysis) => {
+        analyses.push(analysis);
+        return [];
+    };
+    context.countPixMultiBands$$module$synpdf(image, 0);
+    assert.equal(reads, 1);
+    assert.equal(analyses.length, 7);
+    assert(analyses.every(a => a === analyses[0]));
+    assert.equal(analyses[0].rgbSums[0], 3);
+    context.countPixMultiBands$$module$synpdf(image, 0);
+    assert.equal(reads, 2);
+    assert.equal(analyses.length, 14);
+    assert.notEqual(analyses[0], analyses[7]);
+    assert.equal(analyses[7].rgbSums[0], 6);
 });
 
 function batchHarness(failPage) {
