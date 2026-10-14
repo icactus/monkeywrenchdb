@@ -106,8 +106,8 @@ if ($hasInitialRecordingTarget) {
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=34" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=287" />
-    <link rel="stylesheet" href="assets/css/homepage.css?v=11" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=288" />
+    <link rel="stylesheet" href="assets/css/homepage.css?v=13" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -241,6 +241,10 @@ if ($hasInitialRecordingTarget) {
                                 <a href="auth_logout.php" class="mobile-menu-logout">Logout</a>
                             <?php endif; ?>
                         </div>
+                        <a id="about-link" href="javascript:void(0)" onclick="toggleAboutLinkMenu(); return false;"
+                            class="nav-link">About</a>
+                        <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;"
+                            class="nav-link">Help</a>
                         <?php if (isset($_SESSION['user_id'])): ?>
                             <div class="nav-user-dropdown">
                                 <button class="nav-user-trigger" onclick="toggleUserDropdown(event)">
@@ -318,7 +322,7 @@ if ($hasInitialRecordingTarget) {
                                         const rect = trigger.getBoundingClientRect();
                                         menu.style.position = 'fixed';
                                         menu.style.top = (rect.bottom + 8) + 'px';
-                                        menu.style.left = rect.left + 'px';
+                                        menu.style.left = Math.max(12, rect.right - menu.offsetWidth) + 'px';
                                         menu.classList.add('open');
                                     }
                                 }
@@ -344,10 +348,6 @@ if ($hasInitialRecordingTarget) {
                         <?php else: ?>
                             <a href="auth_login.php?provider=google" class="nav-link">Login</a>
                         <?php endif; ?>
-                        <a id="about-link" href="javascript:void(0)" onclick="toggleAboutLinkMenu(); return false;"
-                            class="nav-link">About</a>
-                        <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;"
-                            class="nav-link">Help</a>
                     </div>
                 </div>
             </div>
@@ -772,7 +772,7 @@ if ($hasInitialRecordingTarget) {
     <script src="js/history-manager.js?v=6"></script>
     <script src="js/favorites-manager.js?v=3"></script>
     <script src="js/contact-email.js?v=1" defer></script>
-    <script src="stripped-synpdf.js?v=335"></script>
+    <script src="stripped-synpdf.js?v=336"></script>
     <script src="stripped-synpdf-extras.js?v=286"></script>
     <script src="js/homepage.js?v=13"></script>
     <script>

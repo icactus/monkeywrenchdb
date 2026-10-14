@@ -1,8 +1,6 @@
 <div id="study-home" class="study-home">
     <div id="study-construction-notice" class="study-construction-notice" role="status">🚧 <strong>We're under heavy construction</strong> — big design changes rolling out. Thanks for bearing with us! <span style="white-space:nowrap;">(October 13, 2026)</span> <button type="button" id="study-construction-dismiss" class="study-construction-dismiss" aria-label="Dismiss announcement">×</button></div>
-    <section class="study-search-panel" aria-labelledby="study-heading">
-        <h1 id="study-heading">What are you working on?</h1>
-        <p class="study-intro">Find your part. Follow a performance. Get to know every measure.</p>
+    <section class="study-search-panel" aria-label="Find sheet music">
         <form id="study-search-form" role="search">
             <div class="study-search-controls">
                 <div><label for="study-search">Find a piece</label>

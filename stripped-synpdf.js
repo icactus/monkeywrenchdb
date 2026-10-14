@@ -51,8 +51,8 @@ function toggleHistoryMenu() {
             const rect = userTrigger.getBoundingClientRect();
             modal.style.position = 'fixed';
             modal.style.top = (rect.bottom + 8) + 'px';
-            modal.style.left = rect.left + 'px';
-            modal.style.right = 'auto';
+            modal.style.left = 'auto';
+            modal.style.right = Math.max(12, document.documentElement.clientWidth - rect.right) + 'px';
             modal.style.transform = 'none';
         } else {
             // Mobile: clear inline styles so CSS centering takes over
@@ -160,8 +160,8 @@ window.toggleFavoritesMenu = function () {
             const rect = userTrigger.getBoundingClientRect();
             modal.style.position = 'fixed';
             modal.style.top = (rect.bottom + 8) + 'px';
-            modal.style.left = rect.left + 'px';
-            modal.style.right = 'auto';
+            modal.style.left = 'auto';
+            modal.style.right = Math.max(12, document.documentElement.clientWidth - rect.right) + 'px';
             modal.style.transform = 'none';
         } else {
             // Mobile: clear inline styles so CSS centering takes over

@@ -34,7 +34,7 @@ $is_share_link = isset($_GET['share']);
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=33" />
-    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=287" />
+    <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=288" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -133,6 +133,10 @@ $is_share_link = isset($_GET['share']);
                                 <a href="auth_logout.php" class="mobile-menu-logout">Logout</a>
                             <?php endif; ?>
                         </div>
+                        <a id="about-link" href="javascript:void(0)" onclick="toggleAboutLinkMenu(); return false;"
+                            class="nav-link">About</a>
+                        <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;"
+                            class="nav-link">Help</a>
                         <?php if (isset($_SESSION['user_id'])): ?>
                             <div class="nav-user-dropdown">
                                 <button class="nav-user-trigger" onclick="toggleUserDropdown(event)">
@@ -210,7 +214,7 @@ $is_share_link = isset($_GET['share']);
                                         const rect = trigger.getBoundingClientRect();
                                         menu.style.position = 'fixed';
                                         menu.style.top = (rect.bottom + 8) + 'px';
-                                        menu.style.left = rect.left + 'px';
+                                        menu.style.left = Math.max(12, rect.right - menu.offsetWidth) + 'px';
                                         menu.classList.add('open');
                                     }
                                 }
@@ -236,10 +240,6 @@ $is_share_link = isset($_GET['share']);
                         <?php else: ?>
                             <a href="auth_login.php?provider=google" class="nav-link">Login</a>
                         <?php endif; ?>
-                        <a id="about-link" href="javascript:void(0)" onclick="toggleAboutLinkMenu(); return false;"
-                            class="nav-link">About</a>
-                        <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;"
-                            class="nav-link">Help</a>
                     </div>
                 </div>
             </div>
@@ -683,7 +683,7 @@ $is_share_link = isset($_GET['share']);
     <script src="js/history-manager.js?v=4"></script>
     <script src="js/favorites-manager.js?v=1"></script>
     <script src="js/contact-email.js?v=1" defer></script>
-    <script src="stripped-synpdf.js?v=335"></script>
+    <script src="stripped-synpdf.js?v=336"></script>
     <script src="stripped-synpdf-extras.js?v=271"></script>
     <script>
         window.setDarkMode = function (isDark) {

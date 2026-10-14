@@ -744,6 +744,7 @@ a {
 }
 
 #header {
+    --desktop-player-width: 350px;
     height: 200px;
     display: flex;
     position: relative;
@@ -858,6 +859,56 @@ a {
     align-items: center;
 }
 
+/* Desktop utilities stay inside the content column, clear of the video. */
+@media screen and (min-width: 768px) and (min-height: 501px) {
+    #logo-bar-wrapper {
+        box-sizing: border-box;
+        min-width: 0;
+        padding: 16px 24px;
+    }
+
+    #logo-link {
+        flex: 0 0 auto;
+    }
+
+    #header-content-column {
+        flex: 1;
+        min-width: 0;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2px 24px;
+    }
+
+    #logo-bar {
+        flex: 0 0 auto;
+    }
+
+    .nav-menu {
+        flex: 0 0 auto;
+        margin-left: auto;
+    }
+
+    body.recording-loaded #logo-bar-wrapper,
+    body.initial-recording-target #logo-bar-wrapper {
+        width: calc(100% - var(--desktop-player-width));
+        max-width: none;
+        margin-left: 0;
+        margin-right: var(--desktop-player-width);
+    }
+}
+
+@media screen and (min-width: 768px) and (max-width: 1100px) and (min-height: 501px) {
+    #header-content-column {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nav-menu {
+        align-self: flex-end;
+    }
+}
 
 
 #vid,
@@ -867,7 +918,7 @@ a {
     top: 0;
     right: 0;
     align-self: end;
-    width: 350px;
+    width: var(--desktop-player-width);
     height: 200px;
     z-index: 50;
     /* Standardized: Player (below Sidebar 100/Menu 200) */
@@ -935,6 +986,9 @@ sidecontentbar {
 
 /* Tablet: slim the sidebar so the score keeps ~3/4 of the width */
 @media screen and (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+    #header {
+        --desktop-player-width: 260px;
+    }
     sidecontentbar {
         width: 260px;
         padding: 1em;
@@ -943,12 +997,15 @@ sidecontentbar {
     /* Match the 260px sidebar; 200px floor per YouTube embed minimums. */
     #vid,
     #vidyub {
-        width: 260px;
+        width: var(--desktop-player-width);
         height: 200px;
     }
 }
 
 @media screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+    #header {
+        --desktop-player-width: 260px;
+    }
     /* Tablet portrait uses the desktop sidebar (bottom sheet is phones only) */
     sidecontentbar {
         width: 260px;
@@ -962,7 +1019,7 @@ sidecontentbar {
     /* Player matches the 260px sidebar; 200px floor per YouTube minimums. */
     #vid,
     #vidyub {
-        width: 260px;
+        width: var(--desktop-player-width);
         height: 200px;
     }
 }
