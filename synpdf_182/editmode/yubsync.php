@@ -5,6 +5,7 @@
     <meta name="robots" content="noindex">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode - Simplified</title>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">

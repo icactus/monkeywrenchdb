@@ -3430,6 +3430,7 @@ $(document).ready(function () {
         !play_list$$module$synpdf || playLstIx$$module$synpdf >= play_list$$module$synpdf.length || (msc_preload$$module$synpdf(play_list$$module$synpdf[playLstIx$$module$synpdf]), playLstIx$$module$synpdf += 1)
     });
     window.addEventListener("message", function (a) {
+        if (typeof a.data !== "string") return;
         "play" == a.data && keyDown$$module$synpdf({
             key: " "
         });
