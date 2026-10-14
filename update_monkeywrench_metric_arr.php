@@ -31,11 +31,6 @@ if (file_exists('phpfiles/config.php')) {
 
 mysqli_report(MYSQLI_REPORT_OFF);
 
-$purgeHelper = file_exists(__DIR__ . '/phpfiles/cloudflare_purge.php')
-    ? __DIR__ . '/phpfiles/cloudflare_purge.php'
-    : __DIR__ . '/../phpfiles/cloudflare_purge.php';
-require_once $purgeHelper;
-
 function normalizeMetricDataForStorage($jsonData)
 {
     $data = json_decode($jsonData);
@@ -164,15 +159,10 @@ try {
                         'cache_bust' => (string) round(microtime(true) * 1000),
                     ]);
                 } else {
-                    $purgeResult = purgeMetricJsonCache((int) $metricArrId);
-                    if (!$purgeResult['success']) {
-                        error_log('Live Edit metric ' . $metricArrId . ' saved; optional CDN purge failed: ' . $purgeResult['message']);
-                    }
                     echo json_encode([
                         'success' => true,
                         'message' => 'Updated successfully.',
                         'cache_bust' => (string) round(microtime(true) * 1000),
-                        'cache_purge' => $purgeResult,
                     ]);
                 }
             } else {

@@ -560,7 +560,7 @@
             })
             .then(data => {
                 if (data.success) {
-                    // The viewer uses fresh metric URLs even if CDN purging is unavailable.
+                    // The viewer loads saved edits using a fresh metric URL.
                     alert("Saved successfully!");
                     // Optional: Update lastSynced locally or UI feedback
                 } else {

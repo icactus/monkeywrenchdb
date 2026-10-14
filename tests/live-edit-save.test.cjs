@@ -35,10 +35,8 @@ async function save(result, ok = true) {
     return alerts;
 }
 
-test('saved edits report success when the optional Cloudflare purge is rejected', async () => {
-    assert.deepEqual(await save({ success: true, cache_purge: {
-        success: false, message: 'Cloudflare error: Authentication error'
-    } }), ['Saved successfully!']);
+test('saved edits report success without a CDN purge response', async () => {
+    assert.deepEqual(await save({ success: true }), ['Saved successfully!']);
 });
 
 test('database save failures still show an error', async () => {
