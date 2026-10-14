@@ -593,7 +593,7 @@ if ($hasInitialRecordingTarget) {
                     </tr>
                 </table>
                 <p class="help-note">This project is a work in progress. Want to help? Email
-                    <b>icactusmusic AT gmail DOT com</b>
+                    <b><a href="#contact-email" data-contact-email>icactusmusic AT gmail DOT com</a></b>
                 </p>
             </div>
         </div>
@@ -614,7 +614,8 @@ if ($hasInitialRecordingTarget) {
                     correction (about 1 minute per page). Recordings are synced by logging timestamps while playing
                     through at 1–2x speed.</p>
                 <p>Without the help of volunteers, this database will not be able to scale. If you find this project
-                    valuable and want to contribute, I'd love to hear from you: <b>icactusmusic AT gmail DOT com</b></p>
+                    valuable and want to contribute, I'd love to hear from you:
+                    <b><a href="#contact-email" data-contact-email>icactusmusic AT gmail DOT com</a></b></p>
             </div>
         </div>
     </section3>
@@ -770,6 +771,7 @@ if ($hasInitialRecordingTarget) {
     </button>
     <script src="js/history-manager.js?v=6"></script>
     <script src="js/favorites-manager.js?v=3"></script>
+    <script src="js/contact-email.js?v=1" defer></script>
     <script src="stripped-synpdf.js?v=335"></script>
     <script src="stripped-synpdf-extras.js?v=286"></script>
     <script src="js/homepage.js?v=13"></script>
