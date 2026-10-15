@@ -75,6 +75,7 @@
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
     <script src="synpdf-edit-mode.js?v=95"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
+    <script src="part-count-check.js?v=1" defer></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
     <?php if ($pianoBarlineCnnBrowserJsVer > 0) { ?>
@@ -785,6 +786,12 @@
         #part-workflow button:disabled { opacity: .55; cursor: wait; }
         #part-workflow .primary-action { background: #dbeafe; font-weight: bold; }
         #part-workflow .workflow-note { color: #555; }
+        #barline-detection-progress { margin: 10px 0; }
+        #barline-detection-progress progress { display: block; width: 100%; height: 18px; margin-top: 5px; }
+        #part-count-check { border-left: 3px solid #94a3b8; padding: 6px 10px; margin-top: 10px; }
+        #part-count-check[data-state="match"] { border-color: #16a34a; }
+        #part-count-check[data-state="mismatch"], #part-count-check[data-state="error"] { border-color: #d97706; }
+        #part-count-check button { margin: 4px 0; }
 
         #pdf-workspace { flex: 1 1 auto; min-width: 0; }
         #pdf-workspace #notation { width: calc(100% - var(--notation-scrollbar-lane)); overflow-x: auto; }
@@ -938,11 +945,15 @@
                         <p>Use the PDF file picker above, or load an existing part in Part Details.
                             Wait for page metrics to finish. Loading uses normal system grouping.</p>
                     </li>
-                    <li><strong>Detect staves and barlines</strong>
+                    <li><strong>Detect barlines</strong>
                         <p>Try the current page first, then process the whole part.</p>
-                        <button id="run-cnn-btn" type="button">Detect current page (single-staff CNN)</button>
+                        <button id="run-cnn-btn" type="button" data-idle-label="Detect barlines (current page)">Detect barlines (current page)</button>
                         <button id="run-cnn-all-btn" class="primary-action" type="button"
-                            data-idle-label="Detect all pages (single-staff CNN)">Detect all pages (single-staff CNN)</button>
+                            data-idle-label="Detect barlines">Detect barlines</button>
+                        <div id="barline-detection-progress" hidden aria-busy="false">
+                            <span id="barline-detection-status" role="status" aria-live="polite"></span>
+                            <progress id="barline-detection-meter" max="100" value="0" aria-label="Barline detection progress"></progress>
+                        </div>
                         <p class="workflow-note">Detection rebuilds staves and replaces barlines.
                             Run it before manual corrections; rerunning can overwrite your work.</p>
                     </li>
@@ -952,6 +963,12 @@
                             W: draw a missing staff. Y: refit a staff, or drag across staves/systems to merge.
                             The system where the drag starts supplies the barlines.
                             Ctrl-click a system to merge the whole page using its barlines.</p>
+                        <div id="part-count-check" data-state="idle">
+                            <p><strong>Compare with an existing part</strong></p>
+                            <p id="part-count-status" role="status" aria-live="polite">Load a PDF to compare its detix count with a saved part for the same piece.</p>
+                            <p class="workflow-note">Includes the final endpoint. A wrapped measure counts once.</p>
+                            <button id="part-count-recheck" type="button">Recheck saved part</button>
+                        </div>
                     </li>
                     <li><strong>Add the reviewed part</strong>
                         <p>Open Part Details, choose the piece and instrument, and check the edition.

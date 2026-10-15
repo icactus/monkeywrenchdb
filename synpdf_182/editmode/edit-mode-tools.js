@@ -1145,9 +1145,51 @@ function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf,
     }
 }
 
+var barlineDetectionProgress = null;
+
+function startBarlineDetectionProgress(totalPages) {
+    barlineDetectionProgress = { totalPages: totalPages, completedPages: 0 };
+    const panel = document.getElementById('barline-detection-progress');
+    if (!panel) return;
+    panel.hidden = false;
+    panel.setAttribute('aria-busy', 'true');
+    document.getElementById('barline-detection-meter').value = 0;
+    document.getElementById('barline-detection-status').textContent = 'Starting barline detection…';
+}
+
+async function updateBarlineDetectionProgress(pageNumber, completedSystems, totalSystems) {
+    if (!barlineDetectionProgress) return;
+    const progress = barlineDetectionProgress;
+    const fraction = totalSystems ? completedSystems / totalSystems : 0;
+    const percent = Math.floor(100 * (progress.completedPages + fraction) / progress.totalPages);
+    const status = document.getElementById('barline-detection-status');
+    const meter = document.getElementById('barline-detection-meter');
+    if (meter) meter.value = percent;
+    if (status) status.textContent = 'Page ' + pageNumber + ' · ' +
+        (totalSystems ? 'Staff ' + completedSystems + ' of ' + totalSystems : 'Finding staves…') +
+        ' · ' + percent + '%';
+    // A frame followed by a new task lets the browser paint before CPU-heavy work.
+    await new Promise(function (resolve) {
+        requestAnimationFrame(function () { setTimeout(resolve, 0); });
+    });
+}
+
+function finishBarlineDetectionProgress(error) {
+    const progress = barlineDetectionProgress;
+    barlineDetectionProgress = null;
+    if (!progress) return;
+    const panel = document.getElementById('barline-detection-progress');
+    const status = document.getElementById('barline-detection-status');
+    const meter = document.getElementById('barline-detection-meter');
+    if (panel) panel.setAttribute('aria-busy', 'false');
+    if (meter && !error) meter.value = 100;
+    if (status) status.textContent = error ? 'Barline detection stopped: ' + error :
+        'Barline detection complete · ' + progress.totalPages + (progress.totalPages === 1 ? ' page' : ' pages');
+}
+
 function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
     const batchButtons = [
-        ['#run-cnn-all-btn', 'cnn', 'Run CNN-only All Pages', 'Detecting single staves and barlines…'],
+        ['#run-cnn-all-btn', 'cnn', 'Detect barlines', 'Detecting barlines…'],
         ['#run-piano-all-btn', 'piano', 'Run Piano All Pages', 'Regrouping piano staves…'],
         ['#run-piano-geom-all-btn', 'piano_geom', 'Run Piano Geometry All Pages', 'Rebuilding piano staves…'],
         ['#run-piano-cnn-all-btn', 'piano_cnn', 'Run Piano CNN All Pages', 'Detecting piano barlines…'],
@@ -1161,6 +1203,9 @@ function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
             : idleLabel);
     });
     $('#run-cnn-btn, #run-v2-btn, #run-geom-btn, #export-td-btn, #pdf-edit-toolbar button, #addnewmetricform input[type=submit]').prop('disabled', isRunning);
+    const currentPageButton = $('#run-cnn-btn');
+    currentPageButton.text(isRunning && activeMode === 'cnn_page' ? 'Detecting barlines…' :
+        currentPageButton.attr('data-idle-label') || 'Detect barlines (current page)');
 }
 
 function runPageGeometryOnly(options) {
@@ -1489,11 +1534,11 @@ function applyRenderGeometryToSystem(system, renderGeometry, options) {
 
     system.csl = leftLines;
     system.csr = rightLines;
-    if (!Array.isArray(system.cs) || system.cs.length !== leftLines.length) {
-        system.cs = leftLines.map(function (leftY, index) {
-            return Math.round((leftY + rightLines[index]) / 2);
-        });
-    }
+    // The next fit uses cs as its seed, while drawing uses the edge lines.
+    // Keep all three arrays consistent even when their lengths are unchanged.
+    system.cs = leftLines.map(function (leftY, index) {
+        return Math.round((leftY + rightLines[index]) / 2);
+    });
     return system;
 }
 
@@ -2059,14 +2104,24 @@ function getSystemTopSeedY(system, xJson) {
     return null;
 }
 
-function shiftSystemSeedToTopLine(system, targetTopY) {
+function shiftSystemSeedToTopLine(system, targetTopY, targetX) {
     var shifted = cloneSystemForGeometrySeed(system);
     var currentTopY = null;
 
+    // Recover older fits that updated the edges but left their central seed stale.
+    if (Array.isArray(shifted.csl) && Array.isArray(shifted.csr) &&
+        shifted.csl.length >= 2 && shifted.csl.length === shifted.csr.length) {
+        shifted.cs = shifted.csl.map(function (leftY, index) {
+            return Math.round((leftY + shifted.csr[index]) / 2);
+        });
+    }
     if (Array.isArray(shifted.csl) && shifted.csl.length) {
         currentTopY = shifted.csl[0];
     } else if (Array.isArray(shifted.cs) && shifted.cs.length) {
         currentTopY = shifted.cs[0];
+    }
+    if (Number.isFinite(targetX)) {
+        currentTopY = getSystemTopBottomAtX(shifted, targetX).top;
     }
     if (typeof currentTopY !== 'number' || !isFinite(currentTopY)) {
         return shifted;
@@ -2092,8 +2147,8 @@ function findNearestSystemIndexForPoint(pageData, pagenum, x, y) {
     var bestIndex = -1;
     var bestDistance = Infinity;
     for (let j = 0; j < pageData.cxs.length; j++) {
-        let cs_group = pageData.cxs[j].cs;
-        let hitBounds = getSystemHitBounds(pagenum, j, cs_group, x);
+        // Diagnostic overlays can describe an older fit. Select from live geometry.
+        let hitBounds = getSystemTopBottomAtX(pageData.cxs[j], x);
         if (y >= hitBounds.top && y <= hitBounds.bottom) {
             return j;
         }
@@ -4834,7 +4889,7 @@ function handleSCxs(event) {
     }
 
     var rect = notation.getBoundingClientRect();
-    var x = Math.round(event.clientX - rect.left);
+    var x = Math.round(event.clientX - rect.left + notation.scrollLeft);
     var y = Math.round(event.clientY - rect.top + notation.scrollTop);
     var systemIndex = findNearestSystemIndexForPoint(pageData[pagenum], pagenum, x, y);
     if (systemIndex < 0) {
@@ -4845,7 +4900,8 @@ function handleSCxs(event) {
     var existingBarlines = pageData[pagenum].bxs && pageData[pagenum].bxs[systemIndex];
     var seededSystem = shiftSystemSeedToTopLine(
         applyExistingBoundaryXs(cloneSystemForGeometrySeed(system), existingBarlines),
-        y
+        y,
+        x
     );
     var renderGeometry = BarlineDetectV2.buildRenderGeometry(
         seededSystem,
@@ -5342,6 +5398,7 @@ $(document).ready(function () {
 
         let pageData = deMetriek$$module$synpdf[pagenum];
         if (runMode === 'cnn_only') {
+            await updateBarlineDetectionProgress(pagenum, 0, 0);
             pageData = rebuildCurrentPageMetricData(pagenum, true, undefined, true) || pageData;
         }
         if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
@@ -5391,6 +5448,9 @@ $(document).ready(function () {
         const systemPerf = [];
         let v2Barlines = [];
         for (let index = 0; index < systemsForDetection.length; index++) {
+            if (runMode === 'cnn_only') {
+                await updateBarlineDetectionProgress(pagenum, index, systemsForDetection.length);
+            }
             const system = systemsForDetection[index];
             const perSystemOpts = Object.assign({}, detectionOpts, { diagnostics: [], perfStats: {} });
             const detected = await Promise.resolve(BarlineDetectV2.findBarLinesV2(system, stride, pixelData, width, perSystemOpts));
@@ -5400,6 +5460,9 @@ $(document).ready(function () {
                 ? BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width)
                 : null;
             v2Barlines.push(detected);
+        }
+        if (runMode === 'cnn_only') {
+            await updateBarlineDetectionProgress(pagenum, systemsForDetection.length, systemsForDetection.length);
         }
 
         if (v2Barlines && v2Barlines.length === pageData.cxs.length) {
@@ -5478,6 +5541,24 @@ $(document).ready(function () {
         }
     }
 
+    async function runCurrentPageBarlineDetection() {
+        if (batchDetectionInProgress) return;
+        batchDetectionInProgress = true;
+        startBarlineDetectionProgress(1);
+        setBatchButtonState(true, getDisplayedPageNumber(), getDisplayedPageNumber(), 'cnn_page');
+        var error = null;
+        try {
+            if (!await runPageBarlineDetection('cnn_only')) error = 'Could not process the current page.';
+        } catch (err) {
+            error = err.message;
+            console.error('Current-page barline detection aborted:', err);
+        } finally {
+            batchDetectionInProgress = false;
+            setBatchButtonState(false);
+            finishBarlineDetectionProgress(error);
+        }
+    }
+
     async function runAllPagesBarlineDetection(runMode) {
         if (batchDetectionInProgress) return;
         if (runMode !== 'cnn_only') return;
@@ -5488,9 +5569,12 @@ $(document).ready(function () {
 
         var lastPage = deMetriek$$module$synpdf.length - 1;
         batchDetectionInProgress = true;
+        startBarlineDetectionProgress(lastPage);
+        var error = null;
         try {
             for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
                 setBatchButtonState(true, pageNum, lastPage, 'cnn');
+                await updateBarlineDetectionProgress(pageNum, 0, 0);
                 if (getDisplayedPageNumber() !== pageNum) {
                     await goToRenderedPage(pageNum, { forceRerender: true });
                 }
@@ -5502,15 +5586,18 @@ $(document).ready(function () {
                 if (!ok) {
                     throw new Error('Detection failed on page ' + pageNum);
                 }
+                barlineDetectionProgress.completedPages++;
             }
             requestRefresh({ preferLiveData: true });
             console.log('CNN-only dev detection completed for all pages.');
         } catch (err) {
+            error = err.message;
             console.error('All-pages CNN detection aborted:', err);
             alert('All-pages CNN detection stopped: ' + err.message);
         } finally {
             batchDetectionInProgress = false;
             setBatchButtonState(false);
+            finishBarlineDetectionProgress(error);
         }
     }
 
@@ -5815,7 +5902,7 @@ $(document).ready(function () {
     });
 
     $('#run-cnn-btn').on('click', async function () {
-        await runPageBarlineDetection('cnn_only');
+        await runCurrentPageBarlineDetection();
     });
     $('#run-cnn-all-btn').on('click', function () {
         runAllPagesBarlineDetection('cnn_only');

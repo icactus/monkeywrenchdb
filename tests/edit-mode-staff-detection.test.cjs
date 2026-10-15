@@ -163,8 +163,15 @@ function batchHarness(failPage) {
         requestRefresh: () => {}, alert: m => alerts.push(m),
         console: { log() {}, error() {} }
     });
+    const elements = new Map(['barline-detection-progress', 'barline-detection-status', 'barline-detection-meter'].map(id => [id, {
+        hidden: true, value: 0, textContent: '', setAttribute(name, value) { this[name] = value; }
+    }]));
+    context.document = { getElementById: id => elements.get(id) };
+    context.requestAnimationFrame = fn => fn();
+    context.setTimeout = fn => fn();
+    vm.runInContext(toolsSource.slice(toolsSource.indexOf('var barlineDetectionProgress ='), toolsSource.indexOf('function setBatchButtonState(')), context);
     vm.runInContext(toolsSource.slice(toolsSource.indexOf('    async function runAllPagesBarlineDetection('), toolsSource.indexOf('    function runCurrentPagePianoNormalize(')), context);
-    return { context, visited, detections, buttonStates, alerts };
+    return { context, visited, detections, buttonStates, alerts, elements };
 }
 
 test('all-pages CNN uses fresh current-page preparation once per page, despite restored options', async () => {
@@ -177,6 +184,9 @@ test('all-pages CNN uses fresh current-page preparation once per page, despite r
     assert.equal(h.context.batchDetectionInProgress, false);
     assert.deepEqual(h.buttonStates.at(-1), [false]);
     assert.deepEqual(h.alerts, []);
+    assert.equal(h.elements.get('barline-detection-meter').value, 100);
+    assert.match(h.elements.get('barline-detection-status').textContent, /complete · 3 pages/);
+    assert.equal(h.elements.get('barline-detection-progress')['aria-busy'], 'false');
 });
 
 test('failed CNN page stops subsequent processing and restores buttons', async () => {
@@ -186,4 +196,35 @@ test('failed CNN page stops subsequent processing and restores buttons', async (
     assert.equal(h.context.batchDetectionInProgress, false);
     assert.deepEqual(h.buttonStates.at(-1), [false]);
     assert.match(h.alerts[0], /Detection failed on page 2/);
+    assert.equal(h.elements.get('barline-detection-meter').value, 33);
+    assert.match(h.elements.get('barline-detection-status').textContent, /stopped: Detection failed on page 2/);
+    assert.equal(h.elements.get('barline-detection-progress')['aria-busy'], 'false');
+});
+
+test('progress reports page and staff completion before yielding to the browser', async () => {
+    const h = batchHarness();
+    let painted;
+    h.context.requestAnimationFrame = fn => {
+        painted = h.elements.get('barline-detection-status').textContent;
+        fn();
+    };
+    h.context.startBarlineDetectionProgress(4);
+    h.context.barlineDetectionProgress.completedPages = 1;
+    await h.context.updateBarlineDetectionProgress(2, 3, 6);
+    assert.equal(h.elements.get('barline-detection-progress').hidden, false);
+    assert.equal(h.elements.get('barline-detection-meter').value, 37);
+    assert.equal(painted, 'Page 2 · Staff 3 of 6 · 37%');
+});
+
+test('current-page failure clears busy state and allows retry', async () => {
+    const h = batchHarness(3);
+    vm.runInContext(toolsSource.slice(toolsSource.indexOf('    async function runCurrentPageBarlineDetection('), toolsSource.indexOf('    async function runAllPagesBarlineDetection(')), h.context);
+    await h.context.runCurrentPageBarlineDetection();
+    assert.equal(h.context.batchDetectionInProgress, false);
+    assert.equal(h.elements.get('barline-detection-progress')['aria-busy'], 'false');
+    assert.match(h.elements.get('barline-detection-status').textContent, /stopped/);
+    h.context.runPageBarlineDetection = async () => true;
+    await h.context.runCurrentPageBarlineDetection();
+    assert.equal(h.elements.get('barline-detection-meter').value, 100);
+    assert.match(h.elements.get('barline-detection-status').textContent, /complete · 1 page$/);
 });

@@ -200,7 +200,7 @@ test('batch progress preserves workflow labels and locks toolbar and Save Part u
         if (!elements.has(selector)) elements.set(selector, { disabled: false, label: '', idle: '' });
         return elements.get(selector);
     };
-    element('#run-cnn-all-btn').idle = 'Detect all pages (single-staff CNN)';
+    element('#run-cnn-all-btn').idle = 'Detect barlines';
     const context = vm.createContext({
         $: selector => {
             const selected = selector.split(', ').map(element);
@@ -219,7 +219,7 @@ test('batch progress preserves workflow labels and locks toolbar and Save Part u
     assert.equal(element('#pdf-edit-toolbar button').disabled, true);
     assert.equal(element('#addnewmetricform input[type=submit]').disabled, true);
     context.setBatchButtonState(false);
-    assert.equal(element('#run-cnn-all-btn').label, 'Detect all pages (single-staff CNN)');
+    assert.equal(element('#run-cnn-all-btn').label, 'Detect barlines');
     assert.equal(element('#run-piano-all-btn').label, 'Run Piano All Pages');
     assert.equal(element('#pdf-edit-toolbar button').disabled, false);
     assert.equal(element('#addnewmetricform input[type=submit]').disabled, false);
