@@ -82,3 +82,13 @@ Validation: seven new regression tests bring the targeted editor suite to 40 pas
 In Y mode, Ctrl-click inside a system merges every system on the current page into one, taking the clicked system's exact barlines and horizontal boundaries. The merged geometry spans every system's full vertical extent. Other pages are unchanged. The click does not refit a staff or run detection, and clicks in page margins or gaps do not trigger the operation. The toolbar tooltip and workflow instructions describe this shortcut.
 
 Five additional regression tests cover the page-wide shortcut, clicked-source selection, signed/fractional barlines, invalid clicks and gesture suppression, bringing the targeted editor suite to 45 passing tests. A local Chrome test used real Ctrl-mousedown/mouseup events on `pdfs/108-39.pdf` and confirmed the whole page merged with the clicked source's barlines and full page-system extent. Artifacts are in `artifacts/edit-mode-y-ctrl-click/`; this follow-up has not been deployed.
+
+## Threshold freeze guard and global view width
+
+The old `countVsys` boundary-run loop could freeze the tab and grow its temporary array without limit. A reconstructed staff outside the image yields undefined pixel reads and NaN column values. At such a column, both loop comparisons fail, the index never advances, and the loop keeps pushing the same interval. A synthetic out-of-image candidate reproduced the old failure under a 50 ms VM timeout, without opening a PDF.
+
+The scanner now rejects nonfinite, out-of-image, reversed and zero-height candidates. It explicitly advances past invalid columns and handles an empty boundary-run array before indexing its first entry. The whitespace cache follows accepted candidates. The renderer also tolerates an empty result without dereferencing a missing final system/measure. The existing threshold ranges remain available.
+
+Page width is now a global view setting, removed from the per-page scan-parameter list. Navigation therefore ignores widths stored in older per-page settings while retaining each page's actual detection thresholds. Width buttons, shortcuts and the numeric menu field reuse reviewed geometry and render only the displayed page in page-editing mode. Stored coordinates are scaled to the common width; other pages are not rasterized or redetected because of the width change.
+
+Validation: 52 targeted editor tests pass, including bounded synthetic regression cases for the runaway array, empty scans, corrupted pixel profiles, global width across navigation and numeric width entry. No Mahler 6 PDF was loaded or tested for this investigation. JavaScript/PHP syntax and changed-file whitespace checks pass. These follow-up changes have not yet been committed or deployed.

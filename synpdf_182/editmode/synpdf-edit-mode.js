@@ -100,8 +100,8 @@ var msc_VERSION$$module$synpdf = 182,
         zwgrens: 1,
         voorna: 1,
         mtdrmpl: 1,
-        dx: 1,
-        fixwd: 1
+        dx: 1
+        // PDF width is a global view setting, never a per-page scan parameter.
     };
 window.onYouTubeIframeAPIReady = yubApiReady$$module$synpdf;
 
@@ -779,6 +779,12 @@ function knip$$module$synpdf(a, b, c) {
 }
 
 function addDummySys$$module$synpdf() {
+    // A scan containing only invalid candidates can legitimately be empty.
+    // Keep the editor usable so the detection settings can be adjusted again.
+    if (!Cs$$module$synpdf.length || !deMaten$$module$synpdf.length) {
+        $("#render, #wait").toggle(!1);
+        return;
+    }
     var a = Cs$$module$synpdf[Cs$$module$synpdf.length - 1],
         b = a.xs.x2;
     Cs$$module$synpdf.push({
@@ -1965,6 +1971,17 @@ function countPixMultiBands$$module$synpdf(image, sliceIndex) {
 
 function countVsys$$module$synpdf(a, b, c, analysis) {
     var rgbSums = analysis && analysis.rgbSums;
+    if (!Number.isFinite(b) || b <= 0 || b % 4 !== 0 || !Array.isArray(a)) return [];
+    var pixelRows = Math.floor((rgbSums ? rgbSums.length * 4 : (c ? c.length : 0)) / b);
+    // Low thresholds can reconstruct noise as a staff outside the image.
+    // Reading those rows produces NaN column profiles, not usable boundaries.
+    a = a.filter(function (lines) {
+        return Array.isArray(lines) && lines.length >= 2 && lines.every(function (y, index) {
+            return Number.isFinite(y) && Math.round(y) >= 0 && Math.round(y) < pixelRows &&
+                (index === 0 || y > lines[index - 1]);
+        }) && Math.round(lines[lines.length - 1]) > Math.round(lines[0]);
+    });
+    witArr$$module$synpdf = [];
     var d, e, f, g = [],
         p = [],
         m = [];
@@ -1982,15 +1999,15 @@ function countVsys$$module$synpdf(a, b, c, analysis) {
             h.push(k / (3 * (l - n)))
         }
         for (d = k = 0; d < h.length; ++d) h[d] > k && (k = h[d]);
-        witArr$$module$synpdf[f] = k * opt$$module$synpdf.zwgrens;
         d = Math.floor(h.length / 2);
         e = d + d / 2;
         for (n = 0; d < e; d++) l = h[d], l > k - 10 && (n += 1);
         if (!(5 < n) || opt$$module$synpdf.eerst) {
-            g.push(a[f]);
             l = [];
             for (d = 0; d < h.length;)
-                if (h[d] > k - 15) d += 1;
+                // Invalid pixels must advance too. Otherwise both comparisons
+                // with NaN fail and l.push repeats forever at the same column.
+                if (!Number.isFinite(h[d]) || h[d] > k - 15) d += 1;
                 else {
                     for (e =
                         d; d < h.length && h[d] <= k - 5;) d += 1;
@@ -1998,6 +2015,9 @@ function countVsys$$module$synpdf(a, b, c, analysis) {
                 } l.sort(function (a, b) {
                     return b[1] - b[0] - (a[1] - a[0])
                 });
+            if (!l.length) continue;
+            g.push(a[f]);
+            witArr$$module$synpdf.push(k * opt$$module$synpdf.zwgrens);
             h = l[0][0];
             d = l[0][1];
             m.push({
@@ -3214,6 +3234,10 @@ function checkMenu$$module$synpdf(a) {
                 setFullscreen$$module$synpdf();
                 break;
             case "fixwd":
+                opt$$module$synpdf.fixwd = Number(opt$$module$synpdf.fixwd);
+                opt$$module$synpdf.manualPageWidth = true;
+                pageNumChanged$$module$synpdf = 1;
+                updatePdfWidthLabel$$module$synpdf();
                 resizePdfSyn$$module$synpdf()
         }
     }

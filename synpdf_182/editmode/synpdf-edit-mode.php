@@ -73,7 +73,7 @@
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
-    <script src="synpdf-edit-mode.js?v=93"></script>
+    <script src="synpdf-edit-mode.js?v=94"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
@@ -1159,9 +1159,9 @@
                 <button type="button" data-edit-mode="y" aria-pressed="false" title="Y: drag to merge systems using the starting system’s barlines; Ctrl-click a system to merge the whole page" data-tooltip="Y: drag to merge · Ctrl-click: merge whole page">Refit / merge</button>
                 <button type="button" data-edit-mode="s" aria-pressed="false" title="Split a multimeasure rest (S)" data-tooltip="Split rest · S, or Shift-click in barline mode">Split rest</button>
                 <span class="toolbar-divider" aria-hidden="true"></span>
-                <button type="button" id="pdf-width-decrease" aria-label="Decrease PDF width" title="Decrease PDF width (− or _)" data-tooltip="Narrower · − / _">−</button>
+                <button type="button" id="pdf-width-decrease" aria-label="Decrease PDF width" title="Decrease global PDF width (− or _)" data-tooltip="Narrower · − / _ · Applies across pages">−</button>
                 <output id="pdf-width-value" aria-label="PDF width">1000 px</output>
-                <button type="button" id="pdf-width-increase" aria-label="Increase PDF width" title="Increase PDF width (+ or =)" data-tooltip="Wider · + / =">+</button>
+                <button type="button" id="pdf-width-increase" aria-label="Increase PDF width" title="Increase global PDF width (+ or =)" data-tooltip="Wider · + / = · Applies across pages">+</button>
                 <button type="button" id="toolbar-add-part" title="Open part details to add or save this part" data-tooltip="Choose piece and instrument, then Save Part">Part details / Save</button>
             </div>
         <div id="notation">
