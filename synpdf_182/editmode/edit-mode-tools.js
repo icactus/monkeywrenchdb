@@ -340,7 +340,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }, true);
 
         notation.addEventListener('mousedown', function handleYMouseDown(event) {
-            if (!YisActive || event.button !== 0) {
+            if (!YisActive || event.button !== 0 || event.ctrlKey) {
                 return;
             }
 
@@ -4528,7 +4528,10 @@ function buildYMergeFromSelection(selected, startX, startY) {
     var nearestDistance = Infinity;
     selected.forEach(function (item) {
         var bounds = getSystemTopBottomAtX(item.system, startX);
-        var distance = Math.max(bounds.top - startY, startY - bounds.bottom, 0);
+        var verticalDistance = Math.max(bounds.top - startY, startY - bounds.bottom, 0);
+        var xs = item.system.xs;
+        var horizontalDistance = xs ? Math.max(xs.x1 - startX, startX - xs.x2, 0) : 0;
+        var distance = Math.hypot(horizontalDistance, verticalDistance);
         if (distance < nearestDistance) {
             source = item;
             nearestDistance = distance;
@@ -4567,7 +4570,11 @@ function buildYMergeFromSelection(selected, startX, startY) {
 }
 
 function mergeSystemsInYDrag(event) {
-    if (!yDragState || !notation) return false;
+    return mergeSystemsInYSelection(event, false);
+}
+
+function mergeSystemsInYSelection(event, wholePage) {
+    if (!notation || (!wholePage && !yDragState)) return false;
     let pageData = MetricStore.getMetricData();
     let pagenum = parseInt(document.getElementById('pagenum').value);
     if (!pageData || pagenum < 1 || pagenum >= pageData.length || !pageData[pagenum] ||
@@ -4578,10 +4585,12 @@ function mergeSystemsInYDrag(event) {
     const rect = notation.getBoundingClientRect();
     const endX = Math.round(event.clientX - rect.left + notation.scrollLeft);
     const endY = Math.round(event.clientY - rect.top + notation.scrollTop);
-    const minX = Math.min(yDragState.startX, endX);
-    const maxX = Math.max(yDragState.startX, endX);
-    const minY = Math.min(yDragState.startY, endY);
-    const maxY = Math.max(yDragState.startY, endY);
+    const startX = wholePage ? endX : yDragState.startX;
+    const startY = wholePage ? endY : yDragState.startY;
+    const minX = Math.min(startX, endX);
+    const maxX = Math.max(startX, endX);
+    const minY = Math.min(startY, endY);
+    const maxY = Math.max(startY, endY);
     const selected = [];
 
     for (let j = 0; j < pageData[pagenum].cxs.length; j++) {
@@ -4591,13 +4600,20 @@ function mergeSystemsInYDrag(event) {
             Math.round((minX + maxX) / 2),
             maxX
         ]);
-        if (!(bounds.bottom < minY || bounds.top > maxY)) {
+        if (wholePage || !(bounds.bottom < minY || bounds.top > maxY)) {
             selected.push({ index: j, system: sys, bxs: (pageData[pagenum].bxs[j] || []).slice() });
         }
     }
 
     if (selected.length < 2) return false;
-    var mergeInfo = buildYMergeFromSelection(selected, yDragState.startX, yDragState.startY);
+    // A page-wide merge needs an actual clicked source. Clicking the page
+    // margin or the gap between systems must not combine the whole page.
+    if (wholePage && !selected.some(function (item) {
+        var bounds = getSystemTopBottomAtX(item.system, startX);
+        var xs = item.system.xs;
+        return xs && startX >= xs.x1 && startX <= xs.x2 && startY >= bounds.top && startY <= bounds.bottom;
+    })) return false;
+    var mergeInfo = buildYMergeFromSelection(selected, startX, startY);
     if (!mergeInfo) {
         alert('Could not merge these systems. Start on a system with valid barlines and boundaries.');
         return false;
@@ -4628,6 +4644,12 @@ function handleYCxs(event) {
     }
     if (suppressNextYClick) {
         suppressNextYClick = false;
+        return true;
+    }
+
+    if (event.ctrlKey) {
+        event.preventDefault();
+        mergeSystemsInYSelection(event, true);
         return true;
     }
 

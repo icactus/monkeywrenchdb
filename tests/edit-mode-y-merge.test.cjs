@@ -30,10 +30,11 @@ function harness(systems, bars, startY, endY) {
         detectMergedSystemBarlines: () => { throw new Error('Y merge must not redetect barlines'); },
         hideYSelectionBox: () => cleanup.push('hide'),
         clearActiveYDragListeners: () => cleanup.push('listeners'),
-        suppressNextYClick: false
+        suppressNextYClick: false,
+        YisActive: true
     });
     for (const name of ['getSystemEnvelopeLines', 'getSystemTopBottomAtX', 'getSystemVerticalEnvelope',
-        'getSystemSortTop', 'buildYMergeFromSelection', 'mergeSystemsInYDrag', 'handleActiveYDragEnd']) {
+        'getSystemSortTop', 'buildYMergeFromSelection', 'mergeSystemsInYSelection', 'mergeSystemsInYDrag', 'handleActiveYDragEnd', 'handleYCxs']) {
         vm.runInContext(definition(name), context);
     }
     const event = { clientX: 500 + 100 - 30, clientY: endY + 200 - 80, preventDefault() {} };
@@ -117,4 +118,66 @@ test('finishing a Y drag suppresses the following click before it can refit anot
     assert.equal(h.context.yDragState, null);
     assert.deepEqual(h.cleanup, ['hide', 'listeners']);
     assert.equal(h.writes.length, 1);
+});
+
+
+test('Ctrl-click in Y mode merges the entire current page using the clicked middle system', () => {
+    const h = harness([upper, middle, lower, other], [upperBars, middleBars, lowerBars, otherBars], 115, 340);
+    h.context.yDragState = null; // A click has no drag selection.
+    let prevented = false;
+    assert.equal(h.context.handleYCxs({ ...h.event, ctrlKey: true, preventDefault() { prevented = true; } }), true);
+    assert.equal(prevented, true);
+    assert.equal(h.writes.length, 1);
+    assert.equal(h.writes[0][1].cxs.length, 1);
+    assert.deepEqual(h.writes[0][1].cxs[0].csl, [100, 920]);
+    assert.deepEqual(h.writes[0][1].bxs, [middleBars]);
+    assert.deepEqual(h.writes[0][2], h.input[2]);
+    assert.deepEqual(h.alerts, []);
+    assert.deepEqual(h.refreshes, [{ preferLiveData: true }]);
+});
+
+test('Ctrl-click can use a bottom system including its signed and fractional barlines', () => {
+    const h = harness([upper, middle, lower], [upperBars, middleBars, lowerBars], 115, 600);
+    h.context.yDragState = null;
+    h.context.handleYCxs({ ...h.event, ctrlKey: true });
+    assert.deepEqual(h.writes[0][1].bxs, [lowerBars]);
+    assert.deepEqual(h.writes[0][1].cxs[0].csr, [102, 624]);
+});
+
+test('Ctrl-click outside a system, with no usable source, or on a one-system page leaves metrics unchanged', () => {
+    for (const [systems, bars, endY, clientX] of [
+        [[upper, lower], [upperBars, lowerBars], 360, 500], // gap
+        [[upper, lower], [upperBars, lowerBars], 115, 5], // margin
+        [[upper, lower], [[], lowerBars], 115, 500],
+        [[upper], [upperBars], 115, 500]
+    ]) {
+        const h = harness(systems, bars, 115, endY);
+        h.context.yDragState = null;
+        h.context.handleYCxs({ ...h.event, clientX: clientX + 100 - 30, ctrlKey: true });
+        assert.deepEqual(h.writes, []);
+        assert.deepEqual(h.refreshes, []);
+    }
+});
+
+test('Ctrl-click outside Y mode and the click following a drag cannot trigger a page-wide merge', () => {
+    const h = harness([upper, lower], [upperBars, lowerBars], 115, 600);
+    h.context.YisActive = false;
+    assert.equal(h.context.handleYCxs({ ...h.event, ctrlKey: true }), false);
+    h.context.YisActive = true;
+    h.context.suppressNextYClick = true;
+    assert.equal(h.context.handleYCxs({ ...h.event, ctrlKey: true }), true);
+    assert.equal(h.context.suppressNextYClick, false);
+    assert.deepEqual(h.writes, []);
+});
+
+
+test('Ctrl-click chooses the system under the pointer when systems share the same vertical range', () => {
+    const left = { ...upper, xs: { x1: 50, x2: 450 } };
+    const right = { ...upper, xs: { x1: 550, x2: 950 } };
+    const bars = [550, -700.5, 950];
+    const h = harness([left, right], [[50, 200, 450], bars], 115, 115);
+    h.context.yDragState = null;
+    h.context.handleYCxs({ ...h.event, clientX: 700 + 100 - 30, ctrlKey: true });
+    assert.deepEqual(h.writes[0][1].bxs, [bars]);
+    assert.deepEqual(h.writes[0][1].cxs[0].xs, { x1: 550, x2: 950 });
 });

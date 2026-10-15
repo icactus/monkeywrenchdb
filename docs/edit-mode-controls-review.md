@@ -76,3 +76,9 @@ Y-mode dragging now combines all selected staves or systems using the barlines f
 The merged vertical geometry includes the complete envelopes of all selected systems, including systems containing multiple staves and sparse top/bottom bounds. Other systems and pages retain their own geometry and barlines. This manual merge does not call a CNN or regenerate barlines. A single Y click retains its existing staff-refitting behavior.
 
 Validation: seven new regression tests bring the targeted editor suite to 40 passing tests. A Chrome check loaded the 45-page full score `pdfs/108-39.pdf`, split an existing system into two test fragments, and used real mouse events to drag upward from the lower fragment. The merged result retained the full original vertical extent, the lower source's exact signed barlines, the expected number of systems and active Y mode. No browser errors occurred. Local artifacts are in `artifacts/edit-mode-y-merge/`; no database writes or deployment were performed for this follow-up.
+
+### Ctrl-click for the whole page
+
+In Y mode, Ctrl-click inside a system merges every system on the current page into one, taking the clicked system's exact barlines and horizontal boundaries. The merged geometry spans every system's full vertical extent. Other pages are unchanged. The click does not refit a staff or run detection, and clicks in page margins or gaps do not trigger the operation. The toolbar tooltip and workflow instructions describe this shortcut.
+
+Five additional regression tests cover the page-wide shortcut, clicked-source selection, signed/fractional barlines, invalid clicks and gesture suppression, bringing the targeted editor suite to 45 passing tests. A local Chrome test used real Ctrl-mousedown/mouseup events on `pdfs/108-39.pdf` and confirmed the whole page merged with the clicked source's barlines and full page-system extent. Artifacts are in `artifacts/edit-mode-y-ctrl-click/`; this follow-up has not been deployed.
