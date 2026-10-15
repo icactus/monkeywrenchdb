@@ -77,7 +77,7 @@ if (!$piece_id || !$part_id) {
 }
 
 $sql = "
-  SELECT metric_arr_data AS metric_json, edition_label
+  SELECT metric_arr_id, metric_arr_data AS metric_json, edition_label
   FROM metric_arr
   WHERE piece_id = ? AND instrument_id = ?
   ORDER BY metric_arr_id DESC
@@ -107,6 +107,7 @@ if ($metric === null && json_last_error() !== JSON_ERROR_NONE) {
 $edition_label = $row['edition_label'] ?? null;
 
 echo json_encode([
+  'metric_arr_id' => (int) $row['metric_arr_id'],
   'pdf_file' => buildPdfFilename($piece_id, $part_id, $edition_label),
   'metric_arr' => $metric,
   'edition_label' => $edition_label,

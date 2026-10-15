@@ -410,6 +410,7 @@ function populateSyncPartDropdown(parts, pieceId) {
 }
 
 async function bootFromDB(pieceId, partId) {
+    if (window.YubSyncLiveEdit?.active) throw new Error('Save or cancel score corrections before loading another score.');
     const url = `./get_metric_arr.php?piece_id=${encodeURIComponent(pieceId)}&part=${encodeURIComponent(partId)}`;
     const r = await fetch(url, { cache: 'no-store' });
     if (!r.ok) {
@@ -417,6 +418,14 @@ async function bootFromDB(pieceId, partId) {
         throw new Error(txt || `Failed to load metric_arr (${r.status})`);
     }
     const data = await r.json();
+    if (window.YubSyncLiveEdit?.active) throw new Error('Save or cancel score corrections before loading another score.');
+
+    // Bind edits to the loaded row, never to dropdowns changed after loading.
+    window.yubsyncMetricContext = {
+        metricArrId: Number(data.metric_arr_id),
+        pieceId: String(pieceId), partId: String(partId), pdfFile: data.pdf_file,
+        metrics: data.metric_arr
+    };
 
     // Set globals for synpdf boot:
     window.pdf_file$$module$synpdf = '../pdfs/' + data.pdf_file;      // e.g., "100-82.pdf"

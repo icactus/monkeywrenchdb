@@ -156,12 +156,14 @@ try {
                     echo json_encode([
                         'success' => false,
                         'message' => 'DB updated but static file write failed.',
+                        'metric_saved' => true,
                         'cache_bust' => (string) round(microtime(true) * 1000),
                     ]);
                 } else {
                     echo json_encode([
                         'success' => true,
                         'message' => 'Updated successfully.',
+                        'metric_saved' => true,
                         'cache_bust' => (string) round(microtime(true) * 1000),
                     ]);
                 }

@@ -72,6 +72,8 @@ deployment:
     - /bin/cp synpdf_182/editmode/get_recordings_already_synced.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/yubsync.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/yubsync-tools.js $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/yubsync-live-edit.js $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/yubsync-live-edit.css $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/synpdf-full-yubsync2.js $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/get_metric_arr.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/get_parts.php $DEPLOYPATH3

@@ -641,6 +641,7 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
     }
 };
 Wijzer$$module$synpdf.prototype.keySync = function (keyType) {
+    if (window.YubSyncLiveEdit?.active) return;
     if (opt$$module$synpdf.synbox) {
         this.paused && keyDown$$module$synpdf({
             key: " "
@@ -748,6 +749,7 @@ Wijzer$$module$synpdf.prototype.startSync = function () {
         a.mix < deMaten$$module$synpdf.length - 1 && playPause2$$module$synpdf(!1, a.t + TOFF$$module$synpdf + offset$$module$synpdf)
 };
 Wijzer$$module$synpdf.prototype.setTmargin = function () {
+    if (window.YubSyncLiveEdit?.active) return;
     var a = $("#notation").offset().top,
         b = $("#rollijn").offset().top;
     b < a && (b = a + 15, $("#rollijn").css("top", b + "px"));
@@ -963,8 +965,20 @@ function knip$$module$synpdf(a, b, c) {
     d.forEach(function (a) {
         a.cs = a.cs.map(function (a) {
             return 1 * a + c;
-        })
+        });
+        ['csl', 'csr'].forEach(function (key) {
+            if (Array.isArray(a[key])) a[key] = a[key].map(function (y) { return y + c; });
+        });
     });
+    function verticalBounds(system, x) {
+        var left = system.csl, right = system.csr;
+        if (!Array.isArray(left) || !Array.isArray(right) || left.length < 2 || left.length !== right.length) {
+            return { top: system.cs[0], bottom: system.cs[system.cs.length - 1] };
+        }
+        var ratio = Math.max(0, Math.min(1, (x - system.xs.x1) / (system.xs.x2 - system.xs.x1 || 1)));
+        return { top: left[0] + (right[0] - left[0]) * ratio,
+            bottom: left[left.length - 1] + (right[right.length - 1] - left[left.length - 1]) * ratio };
+    }
     var e;
     for (e = 0; e < d.length; ++e) {
         var f = d[e].cs;
@@ -975,6 +989,9 @@ function knip$$module$synpdf(a, b, c) {
             // Use absolute values for coordinates (negative = split marker)
             var n = Math.abs(m[f]);
             var l = Math.abs(m[f + 1]);
+            var leftBounds = verticalBounds(d[e], n), rightBounds = verticalBounds(d[e], l);
+            g = Math.min(leftBounds.top, rightBounds.top);
+            p = Math.max(leftBounds.bottom, rightBounds.bottom);
 
             // If LEFT barline is negative, this is a continuation segment
             // Add it to the previous measure's linkedBoxes instead of creating new entry
@@ -1013,6 +1030,10 @@ function knip$$module$synpdf(a, b, c) {
 }
 
 function addDummySys$$module$synpdf() {
+    if (!Cs$$module$synpdf.length || !deMaten$$module$synpdf.length) {
+        $("#render").toggle(!1);
+        return;
+    }
     var a = Cs$$module$synpdf[Cs$$module$synpdf.length - 1],
         b = a.xs.x2;
     Cs$$module$synpdf.push({
@@ -1071,6 +1092,7 @@ function hideNotationLoader() {
 }
 
 function readPdfdoc$$module$synpdf() {
+    if (window.YubSyncLiveEdit?.active) return;
     opt$$module$synpdf.pagewd = opt$$module$synpdf.advncd ? opt$$module$synpdf.fixwd : deNot$$module$synpdf.clientWidth;
     schaalMetriek$$module$synpdf();
     Cs$$module$synpdf = [];
@@ -1216,6 +1238,8 @@ function compPage$$module$synpdf(a, b, c) {
         deMetriek$$module$synpdf[b] = d
     }
     pageNumChanged$$module$synpdf = 0;
+    a.dataset.pdfPage = b;
+    a.dataset.pageOffset = c;
     a = knip$$module$synpdf(a, d, c);
     pageStfIx$$module$synpdf.push(Cs$$module$synpdf.length);
     Cs$$module$synpdf = Cs$$module$synpdf.concat(d.cxs);
@@ -1241,6 +1265,7 @@ function goJpeg$$module$synpdf(a) {   //allows loading of jpeg sheet music
 }
 
 function tick$$module$synpdf(a) {
+    if (window.YubSyncLiveEdit?.active) return;
     if (elmed$$module$synpdf && msc_wz$$module$synpdf && (!yubchk$$module$synpdf || elmed$$module$synpdf == ybplayer$$module$synpdf)) {
         var b = (yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime) - offset$$module$synpdf;
         var c = b;
@@ -2021,6 +2046,7 @@ function do_count_in$$module$synpdf(a, b) {
 }
 
 function playPause$$module$synpdf(a, b) {
+    if (window.YubSyncLiveEdit?.active) return;
     if (elmed$$module$synpdf) {
         var c = a.split(":"),
             d = "true" == c[0],
@@ -2072,6 +2098,8 @@ function pauseer$$module$synpdf() {
 let initialScrollTop = window.scrollY; // Store the initial scroll position
 
 function keyDown$$module$synpdf(a) {
+    if (window.YubSyncLiveEdit?.active) return;
+    if (a.target?.closest?.('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
     var b = a.key,
         c = 1;
     switch (b) {
@@ -2521,6 +2549,8 @@ function schaalMetriek$$module$synpdf() {
             a.cs.forEach(function (c, d) {
                 return a.cs[d] = c * b
             });
+            if (Array.isArray(a.csl)) a.csl = a.csl.map(function (y) { return y * b; });
+            if (Array.isArray(a.csr)) a.csr = a.csr.map(function (y) { return y * b; });
             a.xs.x1 *= b;
             a.xs.x2 *= b
         }), a.bxs.forEach(function (a) {
@@ -2529,6 +2559,30 @@ function schaalMetriek$$module$synpdf() {
             })
         }))
     })
+}
+
+// Geometry corrections reuse the rendered PDF canvases and the existing player.
+// knip/addDummySys generate placeholder timings, so retain the caller's exact array.
+function refreshMetricGeometry$$module$synpdf() {
+    var timings = deTijden$$module$synpdf;
+    deTijden$$module$synpdf = [];
+    deMaten$$module$synpdf = [];
+    Cs$$module$synpdf = [];
+    pageStfIx$$module$synpdf = [];
+    try {
+        document.querySelectorAll('#notation canvas[data-pdf-page]').forEach(function (canvas) {
+            var page = deMetriek$$module$synpdf[Number(canvas.dataset.pdfPage)];
+            knip$$module$synpdf(canvas, page, Number(canvas.dataset.pageOffset));
+            pageStfIx$$module$synpdf.push(Cs$$module$synpdf.length);
+            Cs$$module$synpdf = Cs$$module$synpdf.concat(page.cxs);
+        });
+        if (Cs$$module$synpdf.length && deMaten$$module$synpdf.length) addDummySys$$module$synpdf();
+    } finally {
+        deTijden$$module$synpdf = timings;
+    }
+    maatStrepen$$module$synpdf();
+    xcurprev$$module$synpdf = ycurprev$$module$synpdf = -1;
+    msc_wz$$module$synpdf.drawRepTokens();
 }
 
 function resetIntf$$module$synpdf(a) {
@@ -2908,6 +2962,7 @@ $(document).ready(function () {
         !play_list$$module$synpdf || playLstIx$$module$synpdf >= play_list$$module$synpdf.length || (msc_preload$$module$synpdf(play_list$$module$synpdf[playLstIx$$module$synpdf]), playLstIx$$module$synpdf += 1)
     });
     window.addEventListener("message", function (a) {
+        if (typeof a.data !== 'string') return;
         "play" == a.data && keyDown$$module$synpdf({
             key: " "
         });
