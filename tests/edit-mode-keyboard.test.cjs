@@ -42,6 +42,7 @@ function setup() {
         cancelPendingSplitInput: () => actions.push('cancel'),
         updateSplitInputPopup: () => actions.push('popup'),
         persistMetricData: () => actions.push('persist'),
+        changeBarlineThreshold: direction => actions.push(['barline-threshold', direction]),
         toggleQActivity: () => actions.push('mode'),
         toggleNActivity: () => actions.push('mode'),
         toggleSActivity: () => actions.push('mode'),
@@ -77,7 +78,7 @@ test('Shift+M opens the panel and its fields keep typing, navigation and deletio
         h.context.document.activeElement = { tagName };
         for (const sync of [false, true]) {
             h.context.opt$$module$synpdf.synbox = sync;
-            for (const key of ['a', 'q', 'e', 's', 'd', 'p', 'M', 'S', '1', ' ', '+', '=', '-', '_', '.', ',', 'Backspace', 'ArrowDown', 'Escape']) {
+            for (const key of ['a', 'q', 'e', 's', 'd', 'p', 'M', 'S', '1', ' ', '+', '=', '-', '_', '.', '/', ',', 'Backspace', 'ArrowDown', 'Escape']) {
                 assert.equal(h.key(key).prevented, false, `${tagName}: ${key}`);
             }
         }
@@ -115,7 +116,7 @@ test('browser shortcuts bypass editor actions while explicit Ctrl sync offsets s
     const h = setup();
     h.context.splitInputState = { value: '12' };
     for (const modifier of ['ctrlKey', 'metaKey', 'altKey']) {
-        for (const key of ['a', 's', 'S', 'p', 'f', 'm', '1', '+', '=', '-', '_', 'ArrowLeft']) {
+        for (const key of ['a', 's', 'S', 'p', 'f', 'm', '1', '+', '=', '-', '_', '.', '/', 'ArrowLeft']) {
             assert.equal(h.key(key, { [modifier]: true }).prevented, false);
         }
     }
@@ -222,4 +223,20 @@ test('batch progress preserves workflow labels and locks toolbar and Save Part u
     assert.equal(element('#run-piano-all-btn').label, 'Run Piano All Pages');
     assert.equal(element('#pdf-edit-toolbar button').disabled, false);
     assert.equal(element('#addnewmetricform input[type=submit]').disabled, false);
+});
+
+
+test('period decreases and slash increases the barline threshold outside sync mode', () => {
+    const h = setup();
+    assert.equal(h.key('.').prevented, true);
+    assert.equal(h.key('/').prevented, true);
+    assert.deepEqual(h.actions, [['barline-threshold', -1], ['barline-threshold', 1]]);
+});
+
+test('period keeps its timing shortcut in sync mode and slash does not change detection there', () => {
+    const h = setup();
+    h.context.opt$$module$synpdf.synbox = true;
+    h.key('.');
+    h.key('/');
+    assert.deepEqual(h.actions, [['timing', 0.1]]);
 });

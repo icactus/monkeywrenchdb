@@ -73,7 +73,7 @@
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
-    <script src="synpdf-edit-mode.js?v=94"></script>
+    <script src="synpdf-edit-mode.js?v=95"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
@@ -830,6 +830,8 @@
             z-index: 40;
         }
         .toolbar-divider { height: 24px; border-left: 1px solid #ccc; margin: 0 3px; }
+        #barline-threshold-value { min-width: 32px; text-align: center; font-size: 13px; }
+        #barline-threshold-label { font-size: 13px; }
         #pdf-width-value { min-width: 64px; text-align: center; font-size: 13px; }
 
         #match-info {
@@ -1162,6 +1164,11 @@
                 <button type="button" id="pdf-width-decrease" aria-label="Decrease PDF width" title="Decrease global PDF width (− or _)" data-tooltip="Narrower · − / _ · Applies across pages">−</button>
                 <output id="pdf-width-value" aria-label="PDF width">1000 px</output>
                 <button type="button" id="pdf-width-increase" aria-label="Increase PDF width" title="Increase global PDF width (+ or =)" data-tooltip="Wider · + / = · Applies across pages">+</button>
+                <span class="toolbar-divider" aria-hidden="true"></span>
+                <span id="barline-threshold-label">Barline threshold</span>
+                <button type="button" id="barline-threshold-decrease" aria-label="Decrease barline threshold" title="Decrease image-based barline threshold (.) — include weaker lines" data-tooltip="More barlines · . · Replaces this page’s barlines">−</button>
+                <output id="barline-threshold-value" aria-labelledby="barline-threshold-label">0.80</output>
+                <button type="button" id="barline-threshold-increase" aria-label="Increase barline threshold" title="Increase image-based barline threshold (/) — keep stronger lines" data-tooltip="Fewer barlines · / · Replaces this page’s barlines">+</button>
                 <button type="button" id="toolbar-add-part" title="Open part details to add or save this part" data-tooltip="Choose piece and instrument, then Save Part">Part details / Save</button>
             </div>
         <div id="notation">

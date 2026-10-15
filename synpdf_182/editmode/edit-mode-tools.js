@@ -299,6 +299,10 @@ function bindPdfEditToolbar() {
                 case 'pdf-width-increase':
                     changePdfWidth$$module$synpdf(button.id === 'pdf-width-increase' ? 1 : -1);
                     break;
+                case 'barline-threshold-decrease':
+                case 'barline-threshold-increase':
+                    changeBarlineThreshold(button.id === 'barline-threshold-increase' ? 1 : -1);
+                    break;
                 case 'toolbar-add-part': {
                     $('#database-menus').show();
                     const form = document.getElementById('addnewmetricform');
@@ -1510,6 +1514,89 @@ function getSystemSortTop(system) {
     return 0;
 }
 
+function updateBarlineThresholdControl() {
+    var value = Number(opt$$module$synpdf.mtdrmpl);
+    var output = document.getElementById('barline-threshold-value');
+    if (output) output.textContent = Number.isFinite(value) ? value.toFixed(2) : '—';
+    var input = document.getElementById('mtdrmpl');
+    if (input && Number.isFinite(value)) input.value = value;
+}
+
+function applyCurrentPageBarlineThreshold() {
+    var button = document.getElementById('barline-threshold-increase');
+    if (rendering$$module$synpdf || (button && button.disabled)) return false;
+    var data = MetricStore.getMetricData();
+    var pageNum = getDisplayedPageNumber();
+    var page = data && data[pageNum];
+    var image = getCurrentPageImageData();
+    if (!page || !Array.isArray(page.cxs) || !page.cxs.length || !image) return false;
+
+    var height = Math.floor(image.pixelData.length / image.stride);
+    var sums = new Uint16Array(image.width * height);
+    for (var i = 0; i < sums.length; i++) {
+        var offset = i * 4;
+        sums[i] = image.pixelData[offset] + image.pixelData[offset + 1] + image.pixelData[offset + 2];
+    }
+    var previousWhite = witArr$$module$synpdf;
+    var previousSpatium = spatium$$module$synpdf;
+    var barlines = [];
+    try {
+        page.cxs.forEach(function (system) {
+            var top = Math.round(system.cs[0]);
+            var bottom = Math.round(system.cs[system.cs.length - 1]);
+            if (!Number.isFinite(top) || !Number.isFinite(bottom) || top < 0 || bottom >= height || bottom <= top) {
+                throw new Error('Staff bounds are outside the current page.');
+            }
+            // Rebuild the image detector's brightness baseline for this existing
+            // system; a prior scan's cache may belong to different staff groups.
+            var white = 0;
+            for (var x = 0; x < image.width; x++) {
+                var total = 0;
+                for (var y = top; y < bottom; y++) total += sums[y * image.width + x];
+                white = Math.max(white, total / (3 * (bottom - top)));
+            }
+            witArr$$module$synpdf = [white * opt$$module$synpdf.zwgrens];
+            // Sparse merged systems describe an envelope, not a single staff's
+            // four spaces. Retain the last measured staff spacing for them.
+            spatium$$module$synpdf = system.cs.length > 2 ? getSystemEstimatedSpatium(system) : previousSpatium;
+            if (!Number.isFinite(spatium$$module$synpdf) || spatium$$module$synpdf <= 0) spatium$$module$synpdf = 8;
+            var detected = findBarLines$$module$synpdf([system], image.stride, image.pixelData, { rgbSums: sums })[0];
+            if (!Array.isArray(detected) || !detected.every(Number.isFinite)) throw new Error('Invalid barline result.');
+            barlines.push(detected);
+        });
+    } catch (error) {
+        console.error('Barline threshold update failed:', error);
+        return false;
+    } finally {
+        witArr$$module$synpdf = previousWhite;
+        spatium$$module$synpdf = previousSpatium;
+    }
+    page.bxs = barlines;
+    MetricStore.setMetricData(data, { clone: false });
+    if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.updateAcceptedBarlinesForPage) {
+        SynpdfCorrectionTools.updateAcceptedBarlinesForPage(pageNum, page);
+    }
+    // Repaint the existing staff geometry, without rescanning or undoing Y merges.
+    pageNumChanged$$module$synpdf = 1;
+    resizePdfSyn$$module$synpdf();
+    return true;
+}
+
+function changeBarlineThreshold(direction) {
+    var previous = Number(opt$$module$synpdf.mtdrmpl);
+    if (!Number.isFinite(previous)) previous = 0.8;
+    var next = Math.max(0, Math.min(1, Math.round((previous + direction * 0.01) * 100) / 100));
+    if (next === previous) return false;
+    opt$$module$synpdf.mtdrmpl = next;
+    if (!applyCurrentPageBarlineThreshold()) {
+        opt$$module$synpdf.mtdrmpl = previous;
+        updateBarlineThresholdControl();
+        return false;
+    }
+    updateBarlineThresholdControl();
+    return true;
+}
+
 document.addEventListener('keydown', function (event) {
     if (isEditorKeyboardInput(event) || event.ctrlKey || event.metaKey || event.altKey) return;
     const synbox = document.querySelector('#synbox');
@@ -1666,21 +1753,14 @@ document.addEventListener('keydown', function (event) {
             opt$$module$synpdf.drmpl2 = ((Math.round(opt$$module$synpdf.drmpl2 * 10) + 1) / 10);
             resizePdfSyn$$module$synpdf();
             break;
-        //        case ',':
-        //            if (parseFloat(opt$$module$synpdf.mtdrmpl) <= 0) {
-        //                break;
-        //            };
-        //            opt$$module$synpdf.mtdrmpl = ((Math.round(opt$$module$synpdf.mtdrmpl * 100) - 1) / 100);
-        //            resizePdfSyn$$module$synpdf();
-        //            break;
-        //        // Now, whenever you update opt$$module$synpdf.drmpl, it also updates the input field:
-        //        case '.':
-        //            if (parseFloat(opt$$module$synpdf.mtdrmpl) >= 1) {
-        //            break
-        //            };
-        //            opt$$module$synpdf.mtdrmpl = ((Math.round(opt$$module$synpdf.mtdrmpl * 100) + 1) / 100);
-        //            resizePdfSyn$$module$synpdf();
-        //            break;
+        case '.':
+            event.preventDefault();
+            changeBarlineThreshold(-1);
+            break;
+        case '/':
+            event.preventDefault();
+            changeBarlineThreshold(1);
+            break;
         case '\\':
             if (opt$$module$synpdf.eerst === 1) {
                 opt$$module$synpdf.eerst = 0;

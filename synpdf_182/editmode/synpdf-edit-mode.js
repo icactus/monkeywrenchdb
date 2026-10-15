@@ -824,6 +824,7 @@ function getNotationRenderWidth$$module$synpdf() {
 function readPdfdoc$$module$synpdf() {
     opt$$module$synpdf.pagewd = (opt$$module$synpdf.advncd || opt$$module$synpdf.manualPageWidth) ? opt$$module$synpdf.fixwd : getNotationRenderWidth$$module$synpdf();
     updatePdfWidthLabel$$module$synpdf();
+    if (typeof updateBarlineThresholdControl === "function") updateBarlineThresholdControl();
     schaalMetriek$$module$synpdf();
     Cs$$module$synpdf = [];
     pageStfIx$$module$synpdf = [];
@@ -3226,9 +3227,15 @@ function checkMenu$$module$synpdf(a) {
                 break;
             case "zwgrens":
             case "voorna":
-            case "mtdrmpl":
             case "dx":
                 resizePdfSyn$$module$synpdf();
+                break;
+            case "mtdrmpl":
+                opt$$module$synpdf.mtdrmpl = Number(opt$$module$synpdf.mtdrmpl);
+                if (typeof applyCurrentPageBarlineThreshold === "function") {
+                    applyCurrentPageBarlineThreshold();
+                    updateBarlineThresholdControl();
+                } else resizePdfSyn$$module$synpdf();
                 break;
             case "fscr":
                 setFullscreen$$module$synpdf();
