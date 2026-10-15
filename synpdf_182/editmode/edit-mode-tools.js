@@ -697,7 +697,7 @@ function handleActiveYDragMove(event) {
     }
 }
 
-async function handleActiveYDragEnd(event) {
+function handleActiveYDragEnd(event) {
     if (!yDragState) {
         clearActiveYDragListeners();
         return;
@@ -705,7 +705,7 @@ async function handleActiveYDragEnd(event) {
 
     if (yDragState.active) {
         event.preventDefault();
-        await mergeSystemsInYDrag(event);
+        mergeSystemsInYDrag(event);
         suppressNextYClick = true;
     }
 
@@ -4519,35 +4519,59 @@ function normalizePageToFullScoreSystems(pageData, pageImageData, debugInfo) {
     return true;
 }
 
-async function detectBarlinesForYMerge(pageImageData, selected, mergeInfo) {
-    var mergedSystem = mergeInfo.system;
-    var dominantSpatium = mergeInfo.dominantSpatium;
+function buildYMergeFromSelection(selected, startX, startY) {
+    if (!Array.isArray(selected) || selected.length < 2) return null;
 
-    if (selected.length === 2) {
-        var cnnDetected = await detectMergedSystemBarlinesWithPianoCnn(
-            pageImageData,
-            mergedSystem,
-            dominantSpatium,
-            { threshold: 0.7 }
-        );
-        if (cnnDetected && Array.isArray(cnnDetected) && cnnDetected.length >= 2) {
-            return cnnDetected;
+    // Choose the source from the actual gesture origin, before ordering the
+    // merged geometry. An upward drag must retain the lower system's bars.
+    var source = null;
+    var nearestDistance = Infinity;
+    selected.forEach(function (item) {
+        var bounds = getSystemTopBottomAtX(item.system, startX);
+        var distance = Math.max(bounds.top - startY, startY - bounds.bottom, 0);
+        if (distance < nearestDistance) {
+            source = item;
+            nearestDistance = distance;
         }
-    }
+    });
+    if (!source || !Array.isArray(source.bxs) || source.bxs.length < 2 ||
+        !source.bxs.every(Number.isFinite)) return null;
 
-    return detectMergedSystemBarlines(pageImageData, mergedSystem, dominantSpatium);
+    var xs = {
+        x1: Math.abs(source.bxs[0]),
+        x2: Math.abs(source.bxs[source.bxs.length - 1])
+    };
+    if (xs.x2 <= xs.x1) return null;
+    var leftTop = Infinity, leftBottom = -Infinity;
+    var rightTop = Infinity, rightBottom = -Infinity;
+    selected.forEach(function (item) {
+        // Read each complete system envelope. Representative five-line bundles
+        // describe individual staves and can truncate an existing full score.
+        var left = getSystemTopBottomAtX(item.system, xs.x1);
+        var right = getSystemTopBottomAtX(item.system, xs.x2);
+        leftTop = Math.min(leftTop, left.top);
+        leftBottom = Math.max(leftBottom, left.bottom);
+        rightTop = Math.min(rightTop, right.top);
+        rightBottom = Math.max(rightBottom, right.bottom);
+    });
+    if (![leftTop, leftBottom, rightTop, rightBottom].every(Number.isFinite)) return null;
+    return {
+        system: {
+            cs: [(leftTop + rightTop) / 2, (leftBottom + rightBottom) / 2],
+            csl: [leftTop, leftBottom],
+            csr: [rightTop, rightBottom],
+            xs: xs
+        },
+        bxs: source.bxs.slice()
+    };
 }
 
-async function mergeSystemsInYDrag(event) {
+function mergeSystemsInYDrag(event) {
+    if (!yDragState || !notation) return false;
     let pageData = MetricStore.getMetricData();
     let pagenum = parseInt(document.getElementById('pagenum').value);
-    if (!pageData || pagenum < 1 || pagenum >= pageData.length || !pageData[pagenum]) {
-        return false;
-    }
-
-    const pageImageData = getCurrentPageImageData();
-    if (!pageImageData) {
-        alert("No page pixel data available from the current canvas. Please reload the page.");
+    if (!pageData || pagenum < 1 || pagenum >= pageData.length || !pageData[pagenum] ||
+        !Array.isArray(pageData[pagenum].cxs) || !Array.isArray(pageData[pagenum].bxs)) {
         return false;
     }
 
@@ -4572,32 +4596,26 @@ async function mergeSystemsInYDrag(event) {
         }
     }
 
-    if (selected.length < 2) {
-        return false;
-    }
-
-    var mergeInfo = buildMergedSystemFromSelection(selected);
+    if (selected.length < 2) return false;
+    var mergeInfo = buildYMergeFromSelection(selected, yDragState.startX, yDragState.startY);
     if (!mergeInfo) {
-        alert("Could not derive staff lines for the merged system.");
+        alert('Could not merge these systems. Start on a system with valid barlines and boundaries.');
         return false;
     }
-    var mergedSystem = mergeInfo.system;
-    var mergedBxs = await detectBarlinesForYMerge(pageImageData, selected, mergeInfo);
 
-    for (var ri = selected.length - 1; ri >= 0; ri--) {
-        pageData[pagenum].cxs.splice(selected[ri].index, 1);
-        pageData[pagenum].bxs.splice(selected[ri].index, 1);
-    }
-
-    pageData[pagenum].cxs.push(mergedSystem);
-    pageData[pagenum].bxs.push(mergedBxs);
-
-    var oldCxsOrder = pageData[pagenum].cxs.slice();
-    var oldBxsOrder = pageData[pagenum].bxs.slice();
-    pageData[pagenum].cxs.sort(function (a, b) { return getSystemSortTop(a) - getSystemSortTop(b); });
-    pageData[pagenum].bxs = pageData[pagenum].cxs.map(function (system) {
-        return oldBxsOrder[oldCxsOrder.indexOf(system)];
+    // Remove by original index, regardless of the systems' vertical ordering.
+    selected.map(function (item) { return item.index; }).sort(function (a, b) { return b - a; }).forEach(function (index) {
+        pageData[pagenum].cxs.splice(index, 1);
+        pageData[pagenum].bxs.splice(index, 1);
     });
+    pageData[pagenum].cxs.push(mergeInfo.system);
+    pageData[pagenum].bxs.push(mergeInfo.bxs);
+
+    var pairs = pageData[pagenum].cxs.map(function (system, index) {
+        return { system: system, bxs: pageData[pagenum].bxs[index] };
+    }).sort(function (a, b) { return getSystemSortTop(a.system) - getSystemSortTop(b.system); });
+    pageData[pagenum].cxs = pairs.map(function (item) { return item.system; });
+    pageData[pagenum].bxs = pairs.map(function (item) { return item.bxs; });
 
     MetricStore.setMetricData(pageData, { clone: false });
     requestRefresh({ preferLiveData: true });

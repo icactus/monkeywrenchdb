@@ -947,7 +947,8 @@
                     <li><strong>Review every page</strong>
                         <p>Check missing staves, divisi, system boundaries, barlines and multimeasure rests.</p>
                         <p>Q: add/remove barlines. Shift-click in Q mode: split a multimeasure rest.
-                            W: draw a missing staff. Y: refit or merge staves.</p>
+                            W: draw a missing staff. Y: refit a staff, or drag across staves/systems to merge.
+                            The system where the drag starts supplies the barlines.</p>
                     </li>
                     <li><strong>Add the reviewed part</strong>
                         <p>Open Part Details, choose the piece and instrument, and check the edition.
@@ -1154,7 +1155,7 @@
                 <span class="toolbar-divider" aria-hidden="true"></span>
                 <button type="button" data-edit-mode="q" aria-pressed="false" title="Edit barlines (Q)" data-tooltip="Edit barlines · Q">Barlines</button>
                 <button type="button" data-edit-mode="w" aria-pressed="false" title="Draw a staff with automatic line fitting (W)" data-tooltip="Draw staff · W">Draw staff</button>
-                <button type="button" data-edit-mode="y" aria-pressed="false" title="Refit or merge staves (Y)" data-tooltip="Refit / merge · Y">Refit / merge</button>
+                <button type="button" data-edit-mode="y" aria-pressed="false" title="Refit staves or drag to merge systems using the starting system’s barlines (Y)" data-tooltip="Y · Drag to merge; starting system supplies barlines">Refit / merge</button>
                 <button type="button" data-edit-mode="s" aria-pressed="false" title="Split a multimeasure rest (S)" data-tooltip="Split rest · S, or Shift-click in barline mode">Split rest</button>
                 <span class="toolbar-divider" aria-hidden="true"></span>
                 <button type="button" id="pdf-width-decrease" aria-label="Decrease PDF width" title="Decrease PDF width (− or _)" data-tooltip="Narrower · − / _">−</button>

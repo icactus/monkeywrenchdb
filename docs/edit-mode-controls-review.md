@@ -68,3 +68,11 @@ Model readiness cannot be inferred from button names or patch-level training acc
 - 33 targeted Node tests cover editor shortcuts, form/IME/browser shortcut exclusions, shared staff discovery, background metrics, message handling, width bounds, preservation of sloped geometry and signed barlines, batch labels/locks and the PHP save conversion at widths 500, 900, 1000, 1100 and 3000.
 - A local Chrome check used the main template with PHP session/database rendering removed, the actual editor scripts and `priority_gap/pdfs/108-1.pdf`. It exercised mode activation, width button increase, Shift+minus decrease, preservation of an inserted barline, opening Part Details and the hover shortcut. No page errors or duplicate IDs were observed. Artifacts are in `artifacts/edit-mode-toolbar/`.
 - PHP and JavaScript syntax and changed-file whitespace checks pass. Database writes and production deployment were not part of this validation.
+
+## Y-mode merges for parts and full scores
+
+Y-mode dragging now combines all selected staves or systems using the barlines from the system at the gesture origin. Dragging upward therefore uses the lower starting system, rather than the topmost system in the selection. Signed continuation markers and fractional barline positions are copied exactly. The source barline boundaries also define the merged horizontal extent.
+
+The merged vertical geometry includes the complete envelopes of all selected systems, including systems containing multiple staves and sparse top/bottom bounds. Other systems and pages retain their own geometry and barlines. This manual merge does not call a CNN or regenerate barlines. A single Y click retains its existing staff-refitting behavior.
+
+Validation: seven new regression tests bring the targeted editor suite to 40 passing tests. A Chrome check loaded the 45-page full score `pdfs/108-39.pdf`, split an existing system into two test fragments, and used real mouse events to drag upward from the lower fragment. The merged result retained the full original vertical extent, the lower source's exact signed barlines, the expected number of systems and active Y mode. No browser errors occurred. Local artifacts are in `artifacts/edit-mode-y-merge/`; no database writes or deployment were performed for this follow-up.
