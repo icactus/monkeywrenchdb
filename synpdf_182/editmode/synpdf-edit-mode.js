@@ -816,7 +816,8 @@ function getNotationRenderWidth$$module$synpdf() {
 }
 
 function readPdfdoc$$module$synpdf() {
-    opt$$module$synpdf.pagewd = opt$$module$synpdf.advncd ? opt$$module$synpdf.fixwd : getNotationRenderWidth$$module$synpdf();
+    opt$$module$synpdf.pagewd = (opt$$module$synpdf.advncd || opt$$module$synpdf.manualPageWidth) ? opt$$module$synpdf.fixwd : getNotationRenderWidth$$module$synpdf();
+    updatePdfWidthLabel$$module$synpdf();
     schaalMetriek$$module$synpdf();
     Cs$$module$synpdf = [];
     pageStfIx$$module$synpdf = [];
@@ -2582,6 +2583,30 @@ function isEditorKeyboardInput(event) {
     });
 }
 
+function updatePdfWidthLabel$$module$synpdf() {
+    var output = document.getElementById('pdf-width-value');
+    if (output) output.textContent = Math.round(opt$$module$synpdf.fixwd) + ' px';
+}
+
+function changePdfWidth$$module$synpdf(direction) {
+    var increaseButton = document.getElementById('pdf-width-increase');
+    if (rendering$$module$synpdf || (increaseButton && increaseButton.disabled)) return false;
+    var width = Number(opt$$module$synpdf.fixwd) || 1000;
+    var nextWidth = Math.max(500, Math.min(3000, width + direction * 100));
+    if (nextWidth === width) return false;
+    opt$$module$synpdf.fixwd = nextWidth;
+    opt$$module$synpdf.manualPageWidth = true;
+    $('#fixwd').val(nextWidth);
+    updatePdfWidthLabel$$module$synpdf();
+    if (pdfDoc$$module$synpdf && (pdfDoc$$module$synpdf.numPages || pdfDoc$$module$synpdf.src)) {
+        // A width change scales existing reviewed metrics. It must not cause
+        // compPage to rescan the displayed page and replace manual corrections.
+        pageNumChanged$$module$synpdf = 1;
+        resizePdfSyn$$module$synpdf();
+    }
+    return true;
+}
+
 function keyDown$$module$synpdf(a) {
     if (isEditorKeyboardInput(a)) return;
     // Preserve Ctrl+, / Ctrl+. for sync offsets; leave other modified keys alone.
@@ -2634,10 +2659,13 @@ function keyDown$$module$synpdf(a) {
             break;
         case "+":
         case "=":
-            setSpeed$$module$synpdf(1);
+            a.preventDefault && a.preventDefault();
+            changePdfWidth$$module$synpdf(1);
             break;
         case "-":
-            setSpeed$$module$synpdf(-1);
+        case "_":
+            a.preventDefault && a.preventDefault();
+            changePdfWidth$$module$synpdf(-1);
             break;
         case "Escape":
             $("#menu, #saveDlg").toggle(!1);
@@ -3035,9 +3063,9 @@ function schaalMetriek$$module$synpdf() {
     null == a ? (a = opt$$module$synpdf.pagewd, b = a / 1E3) : deMetriek$$module$synpdf[0] != opt$$module$synpdf.pagewd && (a = opt$$module$synpdf.pagewd, b = a / deMetriek$$module$synpdf[0]);
     deMetriek$$module$synpdf[0] = a;
     1 != b && deMetriek$$module$synpdf.forEach(function (a, d) {
-        0 != d && (a.cxs.forEach(function (a) {
-            a.cs.forEach(function (c, d) {
-                return a.cs[d] = c * b
+        0 != d && a && (a.cxs.forEach(function (a) {
+            ['cs', 'csl', 'csr'].forEach(function (key) {
+                if (Array.isArray(a[key])) a[key] = a[key].map(function (value) { return value * b; });
             });
             a.xs.x1 *= b;
             a.xs.x2 *= b

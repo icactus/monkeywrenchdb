@@ -73,7 +73,7 @@
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
-    <script src="synpdf-edit-mode.js?v=92"></script>
+    <script src="synpdf-edit-mode.js?v=93"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
@@ -760,6 +760,78 @@
             background: #555;
         }
 
+        #part-workflow {
+            margin-bottom: 20px;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        #part-workflow h2 { margin: 0 0 8px; font-size: 18px; }
+        #part-workflow ol { margin: 12px 0; padding-left: 22px; }
+        #part-workflow li { margin-bottom: 16px; }
+        #part-workflow p { margin: 6px 0; }
+        #part-workflow button {
+            display: block;
+            width: 100%;
+            margin-top: 7px;
+            padding: 9px;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            background: #fff;
+            color: #222;
+            text-align: left;
+            cursor: pointer;
+        }
+        #part-workflow button:disabled { opacity: .55; cursor: wait; }
+        #part-workflow .primary-action { background: #dbeafe; font-weight: bold; }
+        #part-workflow .workflow-note { color: #555; }
+
+        #pdf-workspace { flex: 1 1 auto; min-width: 0; }
+        #pdf-workspace #notation { width: calc(100% - var(--notation-scrollbar-lane)); overflow-x: auto; }
+        #pdf-edit-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            padding: 10px 6px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 6px 6px 0 0;
+        }
+        #pdf-edit-toolbar button {
+            position: relative;
+            padding: 7px 10px;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            background: #fff;
+            color: #222;
+            cursor: pointer;
+        }
+        #pdf-edit-toolbar button[aria-pressed="true"] { background: #dbeafe; border-color: #2563eb; }
+        #pdf-edit-toolbar button:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+        #pdf-edit-toolbar button:disabled { opacity: .5; cursor: wait; }
+        #pdf-edit-toolbar button:is(:hover, :focus-visible)::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            min-width: max-content;
+            max-width: 260px;
+            padding: 6px 9px;
+            color: #fff;
+            background: #222;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: normal;
+            pointer-events: none;
+            z-index: 40;
+        }
+        .toolbar-divider { height: 24px; border-left: 1px solid #ccc; margin: 0 3px; }
+        #pdf-width-value { min-width: 64px; text-align: center; font-size: 13px; }
+
         #match-info {
             font-size: 12px;
             color: #666;
@@ -799,10 +871,9 @@
             <div id="crediv">
                 <div id="credits"></div>
                 <div id="credits2"></div>
-                <p><!-- page coordinate editing section info -->Coordinate logging: <span id="indicator"
-                        class="inactive-indicator">OFF</span> Q toggles on/off for adding or removing barlines, E logs CNN examples
-                    (shift-click to split multimeasure rests),<br> W draws a new staff (click top-left then
-                    bottom-right; shift-click for auto-snap to lines), Y refits or merges staves</p>
+                <p>Editing mode: <span id="indicator" class="inactive-indicator">OFF</span>.
+                    Press Q to edit barlines, W to draw a missing staff, or Y to refit or merge staves.
+                    Press the same key again to leave that mode.</p>
             </div>
         </div>
         <div id="sync">
@@ -842,7 +913,7 @@
                         max="30"></input></label>
                 <label class="mexp" id="lu"><span>page number:</span> <input type="number" step="1" min="1"
                         id="pagenum"></input></label>
-                <label class="mexp" id="l6"><span>page width:</span> <input type="number" step="10" min="1000"
+                <label class="mexp" id="l6"><span>page width:</span> <input type="number" step="10" min="500" max="3000"
                         id="fixwd"></label>
                 <label class="mexp" id="lj"><span>no menu:</span> <input id="no_menu" type="checkbox"></label>
                 <label class="mexp" id="implbl"><span>import:</span> <input id="impbox" type="checkbox"></label>
@@ -857,12 +928,42 @@
         <input id="knop" type="button" value="play">
 
         <div id="database-menus-wrapper">
+            <section id="part-workflow" aria-labelledby="part-workflow-title">
+                <h2 id="part-workflow-title">Prepare an instrument part</h2>
+                <p>For parts written on single staves. Handle divisi manually during review.</p>
+                <ol>
+                    <li><strong>Load the PDF</strong>
+                        <p>Use the PDF file picker above, or load an existing part in Part Details.
+                            Wait for page metrics to finish. Loading uses normal system grouping.</p>
+                    </li>
+                    <li><strong>Detect staves and barlines</strong>
+                        <p>Try the current page first, then process the whole part.</p>
+                        <button id="run-cnn-btn" type="button">Detect current page (single-staff CNN)</button>
+                        <button id="run-cnn-all-btn" class="primary-action" type="button"
+                            data-idle-label="Detect all pages (single-staff CNN)">Detect all pages (single-staff CNN)</button>
+                        <p class="workflow-note">Detection rebuilds staves and replaces barlines.
+                            Run it before manual corrections; rerunning can overwrite your work.</p>
+                    </li>
+                    <li><strong>Review every page</strong>
+                        <p>Check missing staves, divisi, system boundaries, barlines and multimeasure rests.</p>
+                        <p>Q: add/remove barlines. Shift-click in Q mode: split a multimeasure rest.
+                            W: draw a missing staff. Y: refit or merge staves.</p>
+                    </li>
+                    <li><strong>Add the reviewed part</strong>
+                        <p>Open Part Details, choose the piece and instrument, and check the edition.
+                            Use Save Part to upload the PDF and its reviewed staves and barlines.</p>
+                        <p class="workflow-note">Edits stay in this browser until you save the part.</p>
+                    </li>
+                </ol>
+            </section>
             <div id="database-menu-top">
-                <h3>Database Controls</h3>
+                <h3>Part Details</h3>
                 <button id="database-menu-toggle"
                     onclick="$('#database-menus').toggle(); return false;">Show/Hide</button>
             </div>
             <div id="database-menus">
+                <details id="catalog-tools">
+                    <summary>Create a composer or piece (admin)</summary>
                 <!-- inputs for adding piece data -->
                 <form class="inputform" id="addnewcomposerform" method="POST">
                     <div style="display:flex;">
@@ -922,6 +1023,7 @@
                         <input type="submit" value="Submit" />
                     </div>
                 </form>
+                </details>
                 <form class="inputform" id="loadGroundTruthScore" method="POST" onsubmit="return false;">
                     <div style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
                         <div>
@@ -940,7 +1042,7 @@
                             </select>
                         </div>
                         <div>
-                            <button type="button" id="loadBtn">Load PDF &amp; TD Ref</button>
+                            <button type="button" id="loadBtn">Load existing part</button>
                         </div>
                     </div>
                 </form>
@@ -948,7 +1050,7 @@
                 <form class="inputform" id="addnewmetricform" method="POST" enctype="multipart/form-data">
                     <div style="display:flex;">
                         <div>
-                            <label for="piece_id">Add New Part Data</label>
+                            <label for="piece_id">Piece</label>
                             <select class="dropdown-menu" name="piece_id">
                                 <option value="">Select piece...</option>
                                 <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
@@ -972,12 +1074,12 @@
                             <label for="fknp2_hd">HD pdf</label>
                             <input type="file" id="fknp2_hd" name="file_hd" accept=".pdf" />
                         </div>
-                        <input type="submit" name="save" value="Save" />
+                        <input type="submit" name="save" value="Save Part" />
                     </div>
                 </form>
                 <!-- Advanced Tools (collapsed) -->
                 <details id="advanced-tools">
-                    <summary>Advanced Tools</summary>
+                    <summary>Expert tools, other layouts and diagnostics</summary>
                     <div class="tools-content">
                         <div>
                             <label for="detix-input">Goto detix</label>
@@ -995,42 +1097,44 @@
                             <button id="refresh-btn">Refresh</button>
                             <span id="match-info"></span>
                         </div>
-                        <div style="margin-top: 8px;">
-                            <button id="run-geom-btn" type="button"
-                                style="background:#7fd37f; color:#000; font-weight:bold;">Fit Staff Geometry Only</button>
-                            <button id="run-v2-btn" type="button"
-                                style="background:#00d4ff; color:#000; font-weight:bold; margin-left:8px;">Run V2 ML Detection</button>
-                            <button id="run-cnn-btn" type="button"
-                                style="background:#ffb000; color:#000; font-weight:bold; margin-left:8px;">Run CNN-only (dev)</button>
-                            <button id="run-cnn-all-btn" type="button"
-                                style="background:#ff8a00; color:#000; font-weight:bold; margin-left:8px;">Run CNN-only All Pages</button>
-                            <button id="run-piano-all-btn" type="button"
-                                style="background:#d7a6ff; color:#000; font-weight:bold; margin-left:8px;">Run Piano All Pages</button>
-                            <button id="run-piano-geom-all-btn" type="button"
-                                style="background:#b98cff; color:#000; font-weight:bold; margin-left:8px;">Run Piano Geometry All Pages</button>
-                            <button id="run-piano-cnn-all-btn" type="button"
-                                style="background:#9d7dff; color:#000; font-weight:bold; margin-left:8px;">Run Piano CNN All Pages</button>
-                            <button id="run-fullscore-all-btn" type="button"
-                                style="background:#b7d9ff; color:#000; font-weight:bold; margin-left:8px;">Run Full Score All Pages</button>
-                            <button id="export-td-btn" type="button"
-                                style="background:#4caf50; color:#fff; font-weight:bold; margin-left:8px;">Export TD JSON</button>
+                        <div>
+                            <p><strong>Geometry repair and older detector</strong></p>
+                            <button id="run-geom-btn" type="button">Refit staff geometry (current page)</button>
+                            <button id="run-v2-btn" type="button">Older random forest detector (current page)</button>
+                            <p>The single-staff CNN already rebuilds its own staves; a separate geometry pass is not required.</p>
                         </div>
+                        <div>
+                            <p><strong>Piano and full scores — specialist workflows</strong></p>
+                            <p>These are outside the volunteer instrument-part workflow. Piano CNN requires
+                                correctly paired staves. Geometry preparation also replaces barlines using heuristics.</p>
+                            <button id="run-piano-geom-all-btn" type="button"
+                                data-idle-label="1. Rebuild and pair piano staves (all pages)">1. Rebuild and pair piano staves (all pages)</button>
+                            <button id="run-piano-cnn-all-btn" type="button"
+                                data-idle-label="2. Detect piano barlines with CNN (all pages)">2. Detect piano barlines with CNN (all pages)</button>
+                            <button id="run-piano-all-btn" type="button"
+                                data-idle-label="Regroup existing piano staves + heuristic barlines (all pages)">Regroup existing piano staves + heuristic barlines (all pages)</button>
+                            <button id="run-fullscore-all-btn" type="button"
+                                data-idle-label="Regroup full score + heuristic barlines (all pages)">Regroup full score + heuristic barlines (all pages)</button>
+                        </div>
+                        <p>Model training: E logs CNN examples. Correction files contain training feedback;
+                            they are separate from saving a part.</p>
+                        <button id="export-td-btn" type="button">Export training data JSON (expert)</button>
                         <div style="margin-top: 8px; min-width: 260px;">
                             <label style="display:flex;align-items:center;gap:6px;">
                                 <input id="show-v2-candidates" type="checkbox" />
-                                <span>Show V2 candidates</span>
+                                <span>Show detector candidates</span>
                             </label>
                         </div>
                         <div style="margin-top: 8px; min-width: 100%;">
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
                                 <button id="copy-correction-log" type="button">Copy corrections</button>
-                                <button id="save-correction-log" type="button">Save corrections file</button>
-                                <button id="undo-correction-log" type="button">Undo last</button>
+                                <button id="save-correction-log" type="button">Save training corrections</button>
+                                <button id="undo-correction-log" type="button">Remove last training log entry</button>
                                 <button id="clear-correction-log" type="button">Clear current PDF corrections</button>
                                 <span id="correction-log-status" style="font-size:11px;color:#666;"></span>
                             </div>
                             <textarea id="correction-log-output" readonly
-                                placeholder="Manual barline corrections for the current PDF will appear here after you run V2 and use Q mode."></textarea>
+                                placeholder="Training corrections for the current PDF appear here after detection and manual editing."></textarea>
                         </div>
                         <div style="margin-top: 8px;">
                             <div id="detix-box" style="font-size: 11px; color: #666;"></div>
@@ -1042,8 +1146,25 @@
         </div>
     </section1>
     <section2>
+        <div id="pdf-workspace">
+            <div id="pdf-edit-toolbar" role="group" aria-label="PDF part editing tools">
+                <button type="button" id="toolbar-open-pdf" title="Open a PDF" data-tooltip="Open a PDF">Open PDF</button>
+                <button type="button" id="toolbar-prev-page" title="Previous page (Shift+D)" data-tooltip="Previous page · Shift+D">← Page</button>
+                <button type="button" id="toolbar-next-page" title="Next page (D)" data-tooltip="Next page · D">Page →</button>
+                <span class="toolbar-divider" aria-hidden="true"></span>
+                <button type="button" data-edit-mode="q" aria-pressed="false" title="Edit barlines (Q)" data-tooltip="Edit barlines · Q">Barlines</button>
+                <button type="button" data-edit-mode="w" aria-pressed="false" title="Draw a staff with automatic line fitting (W)" data-tooltip="Draw staff · W">Draw staff</button>
+                <button type="button" data-edit-mode="y" aria-pressed="false" title="Refit or merge staves (Y)" data-tooltip="Refit / merge · Y">Refit / merge</button>
+                <button type="button" data-edit-mode="s" aria-pressed="false" title="Split a multimeasure rest (S)" data-tooltip="Split rest · S, or Shift-click in barline mode">Split rest</button>
+                <span class="toolbar-divider" aria-hidden="true"></span>
+                <button type="button" id="pdf-width-decrease" aria-label="Decrease PDF width" title="Decrease PDF width (− or _)" data-tooltip="Narrower · − / _">−</button>
+                <output id="pdf-width-value" aria-label="PDF width">1000 px</output>
+                <button type="button" id="pdf-width-increase" aria-label="Increase PDF width" title="Increase PDF width (+ or =)" data-tooltip="Wider · + / =">+</button>
+                <button type="button" id="toolbar-add-part" title="Open part details to add or save this part" data-tooltip="Choose piece and instrument, then Save Part">Part details / Save</button>
+            </div>
         <div id="notation">
         </div>
+        </div><!-- pdf-workspace -->
         <!--<pre id="err"></pre> hiding error bottom console-->
         <sidecontent>
         </sidecontent>
@@ -1092,7 +1213,7 @@
             </tr>
             <tr>
                 <td><b>+</b>/<b>-</b></td>
-                <td>increase / decrease speed</td>
+                <td>increase / decrease PDF width (also = and _)</td>
                 <td><b>m</b></td>
                 <td>toggle menu</td>
             </tr>

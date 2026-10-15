@@ -58,7 +58,7 @@ $onnxWasmThreads = 1;
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
-    <script src="synpdf-edit-mode.js?v=92"></script>
+    <script src="synpdf-edit-mode.js?v=93"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
@@ -914,7 +914,7 @@ $onnxWasmThreads = 1;
                         max="30"></input></label>
                 <label class="mexp" id="lu"><span>page number:</span> <input type="number" step="1" min="1"
                         id="pagenum"></input></label>
-                <label class="mexp" id="l6"><span>page width:</span> <input type="number" step="10" min="1000"
+                <label class="mexp" id="l6"><span>page width:</span> <input type="number" step="10" min="500" max="3000"
                         id="fixwd"></label>
                 <label class="mexp" id="lj"><span>no menu:</span> <input id="no_menu" type="checkbox"></label>
                 <label class="mexp" id="implbl"><span>import:</span> <input id="impbox" type="checkbox"></label>
@@ -952,7 +952,7 @@ $onnxWasmThreads = 1;
                         <dt>M</dt><dd>toggle menu</dd>
                         <dt>A</dt><dd>toggle advanced</dd>
                         <dt>L</dt><dd>toggle line cursor</dd>
-                        <dt>+ / -</dt><dd>change speed</dd>
+                        <dt>+ / -</dt><dd>change PDF width</dd>
                         <dt>d / D</dt><dd>next / previous page</dd>
                         <dt>q</dt><dd>barline edit mode</dd>
                         <dt>y</dt><dd>refit / merge staves</dd>
@@ -1094,7 +1094,7 @@ $onnxWasmThreads = 1;
             </tr>
             <tr>
                 <td><b>+</b>/<b>-</b></td>
-                <td>increase / decrease speed</td>
+                <td>increase / decrease PDF width (also = and _)</td>
                 <td><b>m</b></td>
                 <td>toggle menu</td>
             </tr>

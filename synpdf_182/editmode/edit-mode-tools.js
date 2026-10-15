@@ -34,6 +34,9 @@ function refreshModeTooltip() {
     var tooltip = document.getElementById('tooltip');
     if (!tooltip) return;
     tooltip.innerHTML = getActiveModeTooltipLabel();
+    document.querySelectorAll('#pdf-edit-toolbar [data-edit-mode]').forEach(function (button) {
+        button.setAttribute('aria-pressed', String(button.dataset.editMode.toUpperCase() === getActiveModeTooltipLabel()));
+    });
 }
 
 function getSystemHitBounds(pageNumber, systemIndex, csGroup, xJson) {
@@ -272,6 +275,42 @@ function toggleExclusiveMode(mode) {
     }
 }
 
+function bindPdfEditToolbar() {
+    const toolbar = document.getElementById('pdf-edit-toolbar');
+    if (!toolbar) return;
+    toolbar.addEventListener('click', function (event) {
+        const button = event.target.closest('button');
+        if (!button || button.disabled) return;
+        if (button.dataset.editMode) {
+            if (!msc_wz$$module$synpdf || rendering$$module$synpdf) return;
+            toggleExclusiveMode(button.dataset.editMode);
+        } else {
+            switch (button.id) {
+                case 'toolbar-open-pdf':
+                    document.getElementById('fknp').click();
+                    break;
+                case 'toolbar-prev-page':
+                case 'toolbar-next-page':
+                    if (!msc_wz$$module$synpdf || rendering$$module$synpdf) return;
+                    keyDown$$module$synpdf({ key: button.id === 'toolbar-prev-page' ? 'PageUp' : 'PageDown' });
+                    persistMetricData();
+                    break;
+                case 'pdf-width-decrease':
+                case 'pdf-width-increase':
+                    changePdfWidth$$module$synpdf(button.id === 'pdf-width-increase' ? 1 : -1);
+                    break;
+                case 'toolbar-add-part': {
+                    $('#database-menus').show();
+                    const form = document.getElementById('addnewmetricform');
+                    form.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                    form.querySelector('select[name="piece_id"]').focus({ preventScroll: true });
+                    break;
+                }
+            }
+        }
+    });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     indicatorElement = document.getElementById('indicator');
     notation = document.getElementById('notation');
@@ -279,6 +318,7 @@ document.addEventListener("DOMContentLoaded", function () {
     ensureSplitInputPopup();
     ensureSplitSelectionBox();
     ensureYSelectionBox();
+    bindPdfEditToolbar();
 
     if (notation) {
         notation.addEventListener('mousedown', function handleSplitMouseDown(event) {
@@ -1102,33 +1142,21 @@ function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf,
 }
 
 function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
-    var cnnAllBtn = $('#run-cnn-all-btn');
-    var pianoAllBtn = $('#run-piano-all-btn');
-    var pianoGeomAllBtn = $('#run-piano-geom-all-btn');
-    var pianoCnnAllBtn = $('#run-piano-cnn-all-btn');
-    var fullScoreAllBtn = $('#run-fullscore-all-btn');
-    var cnnBtn = $('#run-cnn-btn');
-    var v2Btn = $('#run-v2-btn');
-    var geomBtn = $('#run-geom-btn');
-    if (isRunning) {
-        cnnAllBtn.prop('disabled', true).text(activeMode === 'cnn' ? 'Running CNN All… ' + currentPage + '/' + lastPage : 'Run CNN-only All Pages');
-        pianoAllBtn.prop('disabled', true).text(activeMode === 'piano' ? 'Running Piano All… ' + currentPage + '/' + lastPage : 'Run Piano All Pages');
-        pianoGeomAllBtn.prop('disabled', true).text(activeMode === 'piano_geom' ? 'Running Piano Geometry… ' + currentPage + '/' + lastPage : 'Run Piano Geometry All Pages');
-        pianoCnnAllBtn.prop('disabled', true).text(activeMode === 'piano_cnn' ? 'Running Piano CNN… ' + currentPage + '/' + lastPage : 'Run Piano CNN All Pages');
-        fullScoreAllBtn.prop('disabled', true).text(activeMode === 'fullscore' ? 'Running Full Score… ' + currentPage + '/' + lastPage : 'Run Full Score All Pages');
-        cnnBtn.prop('disabled', true);
-        v2Btn.prop('disabled', true);
-        geomBtn.prop('disabled', true);
-    } else {
-        cnnAllBtn.prop('disabled', false).text('Run CNN-only All Pages');
-        pianoAllBtn.prop('disabled', false).text('Run Piano All Pages');
-        pianoGeomAllBtn.prop('disabled', false).text('Run Piano Geometry All Pages');
-        pianoCnnAllBtn.prop('disabled', false).text('Run Piano CNN All Pages');
-        fullScoreAllBtn.prop('disabled', false).text('Run Full Score All Pages');
-        cnnBtn.prop('disabled', false);
-        v2Btn.prop('disabled', false);
-        geomBtn.prop('disabled', false);
-    }
+    const batchButtons = [
+        ['#run-cnn-all-btn', 'cnn', 'Run CNN-only All Pages', 'Detecting single staves and barlines…'],
+        ['#run-piano-all-btn', 'piano', 'Run Piano All Pages', 'Regrouping piano staves…'],
+        ['#run-piano-geom-all-btn', 'piano_geom', 'Run Piano Geometry All Pages', 'Rebuilding piano staves…'],
+        ['#run-piano-cnn-all-btn', 'piano_cnn', 'Run Piano CNN All Pages', 'Detecting piano barlines…'],
+        ['#run-fullscore-all-btn', 'fullscore', 'Run Full Score All Pages', 'Regrouping full score…']
+    ];
+    batchButtons.forEach(function (entry) {
+        const button = $(entry[0]);
+        const idleLabel = button.attr('data-idle-label') || entry[2];
+        button.prop('disabled', isRunning).text(isRunning && activeMode === entry[1]
+            ? entry[3] + ' ' + currentPage + '/' + lastPage
+            : idleLabel);
+    });
+    $('#run-cnn-btn, #run-v2-btn, #run-geom-btn, #export-td-btn, #pdf-edit-toolbar button, #addnewmetricform input[type=submit]').prop('disabled', isRunning);
 }
 
 function runPageGeometryOnly(options) {

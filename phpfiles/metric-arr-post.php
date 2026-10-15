@@ -95,25 +95,11 @@ function scaleValues($item, $scaleFactor)
         }
         return $item;
     } elseif (is_object($item)) {
-        if (property_exists($item, 'cs') && is_array($item->cs)) {
-            foreach ($item->cs as $key => $val) {
-                if (is_numeric($val)) {
-                    $item->cs[$key] = round($val * $scaleFactor, 1);
-                }
-            }
-            if (count($item->cs) > 1) {
-                $item->cs = [$item->cs[0], end($item->cs)];
-            } else {
-                $item->cs = [round($item->cs[0] * $scaleFactor, 1)];
-            }
-        }
-        if (property_exists($item, 'xs') && is_object($item->xs)) {
-            if (property_exists($item->xs, 'x1') && is_numeric($item->xs->x1)) {
-                $item->xs->x1 = round($item->xs->x1 * $scaleFactor, 1);
-            }
-            if (property_exists($item->xs, 'x2') && is_numeric($item->xs->x2)) {
-                $item->xs->x2 = round($item->xs->x2 * $scaleFactor, 1);
-            }
+        // Keep the compact top/bottom staff representation. The recursive
+        // numeric branch below scales every coordinate exactly once, including
+        // cs, xs, slope endpoints and signed barlines.
+        if (property_exists($item, 'cs') && is_array($item->cs) && count($item->cs) > 1) {
+            $item->cs = [$item->cs[0], end($item->cs)];
         }
         foreach ($item as $key => $value) {
             $item->$key = scaleValues($value, $scaleFactor);
