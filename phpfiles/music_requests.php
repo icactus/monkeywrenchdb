@@ -78,9 +78,10 @@ function mwRequestRequireAdmin(mysqli $db, int $userId): void
 function mwRequestQuota(mysqli $db, int $userId): array
 {
     $stmt = $db->prepare("SELECT
-        COALESCE(SUM(status IN ('requested', 'in_progress')), 0) AS open_count,
-        MAX(created_at) AS last_created,
-        GREATEST(0, COALESCE(TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), DATE_ADD(MAX(created_at), INTERVAL 7 DAY)), 0)) AS wait_seconds
+        COALESCE(SUM(deleted_at IS NULL AND status IN ('requested', 'in_progress')), 0) AS open_count,
+        GREATEST(0, COALESCE(TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), DATE_ADD(
+            MAX(CASE WHEN deleted_at IS NULL OR status IN ('added', 'unable_to_add') THEN created_at END),
+            INTERVAL 7 DAY)), 0)) AS wait_seconds
         FROM music_requests WHERE user_id = ?");
     $stmt->bind_param('i', $userId);
     $stmt->execute();
@@ -131,6 +132,7 @@ function mwRequestList(mysqli $db, int $userId, bool $admin, string $filter = ''
 {
     if ($admin) mwRequestRequireAdmin($db, $userId);
     $where = $admin ? '1 = 1' : 'r.user_id = ' . (int) $userId;
+    $where .= ' AND r.deleted_at IS NULL';
     if ($filter === 'open') $where .= " AND r.status IN ('requested', 'in_progress')";
     elseif (isset(MW_REQUEST_STATUSES[$filter])) $where .= " AND r.status = '" . $db->real_escape_string($filter) . "'";
     $offset = (max(1, $page) - 1) * 25;
@@ -145,7 +147,7 @@ function mwRequestReplies(mysqli $db, int $userId, bool $admin, array $requestId
     if ($admin) mwRequestRequireAdmin($db, $userId);
     $ids = implode(',', array_map('intval', $requestIds));
     $owner = $admin ? '' : ' AND r.user_id = ' . (int) $userId;
-    $rows = $db->query("SELECT m.* FROM music_request_replies m JOIN music_requests r ON r.id = m.request_id WHERE r.id IN ($ids) $owner ORDER BY m.id")->fetch_all(MYSQLI_ASSOC);
+    $rows = $db->query("SELECT m.* FROM music_request_replies m JOIN music_requests r ON r.id = m.request_id WHERE r.id IN ($ids) AND r.deleted_at IS NULL $owner ORDER BY m.id")->fetch_all(MYSQLI_ASSOC);
     $threads = [];
     foreach ($rows as $row) $threads[(int) $row['request_id']][] = $row;
     return $threads;
@@ -158,7 +160,7 @@ function mwRequestRespond(mysqli $db, int $adminId, int $requestId, string $stat
     if ($message !== null) $message = mwRequestText($message, 'reply', 5000);
     $db->begin_transaction();
     try {
-        $stmt = $db->prepare('SELECT id FROM music_requests WHERE id = ? FOR UPDATE');
+        $stmt = $db->prepare('SELECT id FROM music_requests WHERE id = ? AND deleted_at IS NULL FOR UPDATE');
         $stmt->bind_param('i', $requestId);
         $stmt->execute();
         if (!$stmt->get_result()->fetch_assoc()) throw new InvalidArgumentException('This request could not be found.');
@@ -174,6 +176,30 @@ function mwRequestRespond(mysqli $db, int $adminId, int $requestId, string $stat
         }
         $db->commit();
         return $replyId;
+    } catch (Throwable $e) {
+        $db->rollback();
+        throw $e;
+    }
+}
+
+function mwRequestDelete(mysqli $db, int $userId, int $requestId): void
+{
+    $db->begin_transaction();
+    try {
+        // Use the same row lock as admin responses so deletion cannot race a reply.
+        $stmt = $db->prepare('SELECT id FROM music_requests WHERE id = ? AND user_id = ? AND deleted_at IS NULL FOR UPDATE');
+        $stmt->bind_param('ii', $requestId, $userId);
+        $stmt->execute();
+        if (!$stmt->get_result()->fetch_assoc()) throw new DomainException('This request could not be found.');
+        $stmt = $db->prepare('DELETE FROM music_request_replies WHERE request_id = ?');
+        $stmt->bind_param('i', $requestId);
+        $stmt->execute();
+        // Erase the content; quota excludes deleted unfinished requests to refund them.
+        // Finished requests retain their submission timestamp for the weekly limit.
+        $stmt = $db->prepare("UPDATE music_requests SET composer_name = '', piece_name = '', part_name = '', youtube_url = NULL, deleted_at = UTC_TIMESTAMP(), updated_at = UTC_TIMESTAMP() WHERE id = ?");
+        $stmt->bind_param('i', $requestId);
+        $stmt->execute();
+        $db->commit();
     } catch (Throwable $e) {
         $db->rollback();
         throw $e;

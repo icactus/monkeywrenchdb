@@ -1,5 +1,15 @@
 (() => {
     'use strict';
+    document.querySelectorAll('.request-delete').forEach(form => {
+        form.addEventListener('submit', event => {
+            const allowance = ['requested', 'in_progress'].includes(form.dataset.requestStatus)
+                ? ' Your request allowance will be returned.'
+                : ' Your weekly submission limit still applies.';
+            if (!window.confirm('Delete your request for “' + form.dataset.requestTitle + '” and its reply history? This can’t be undone.' + allowance)) {
+                event.preventDefault();
+            }
+        });
+    });
     document.querySelectorAll('.request-preset').forEach(select => {
         select.addEventListener('change', () => {
             if (!select.value) return;

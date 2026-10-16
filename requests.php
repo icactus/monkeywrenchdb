@@ -92,6 +92,13 @@ try {
             $id = mwRequestSubmit($db, $userId, $data);
             unset($_SESSION['music_request_draft']);
             requestRedirect('requests.php#request-' . $id, 'Your request has been submitted. You can follow its progress below.');
+        } elseif ($action === 'delete') {
+            if (!$user) {
+                http_response_code(401);
+                throw new DomainException('Sign in to delete your request.');
+            }
+            mwRequestDelete($db, $userId, (int) requestScalar($_POST, 'request_id'));
+            requestRedirect('requests.php', 'Your request has been deleted.');
         } elseif (in_array($action, ['reply', 'status'], true)) {
             if (!$isAdmin || !$adminView) {
                 http_response_code(403);
@@ -129,7 +136,7 @@ if ($db && $user && !$denied && !$unavailable) {
         $threads = mwRequestReplies($db, $userId, $adminView, array_column($requests, 'id'));
         $composeId = (int) requestScalar($_GET, 'compose');
         if ($adminView && $composeId > 0) {
-            $stmt = $db->prepare('SELECT m.message, r.*, u.email FROM music_request_replies m JOIN music_requests r ON r.id = m.request_id JOIN users u ON u.id = r.user_id WHERE m.id = ?');
+            $stmt = $db->prepare('SELECT m.message, r.*, u.email FROM music_request_replies m JOIN music_requests r ON r.id = m.request_id JOIN users u ON u.id = r.user_id WHERE m.id = ? AND r.deleted_at IS NULL');
             $stmt->bind_param('i', $composeId);
             $stmt->execute();
             $reply = $stmt->get_result()->fetch_assoc();
@@ -163,22 +170,27 @@ $presets = [
     <meta name="robots" content="noindex, nofollow">
     <title><?= $adminView ? 'Request queue' : 'Request a piece or part' ?> | Monkey Wrench Database</title>
     <link rel="stylesheet" href="assets/css/fonts.css?v=34">
-    <link rel="stylesheet" href="assets/css/requests.css?v=1">
+    <link rel="stylesheet" href="assets/css/requests.css?v=2">
     <script>try { if (localStorage.getItem('darkMode') === '1') document.documentElement.classList.add('inverted'); } catch (e) {}</script>
-    <script src="js/requests.js?v=1" defer></script>
+    <script src="js/requests.js?v=2" defer></script>
 </head>
 <body>
 <header class="request-header">
-    <a href="/" class="request-brand">MONKEY WRENCH DATABASE</a>
-    <nav aria-label="Requests navigation">
-        <a href="/">Library</a>
-        <a href="requests.php" <?= !$adminView ? 'aria-current="page"' : '' ?>>My requests</a>
-        <?php if ($isAdmin): ?><a href="requests.php?view=admin" <?= $adminView ? 'aria-current="page"' : '' ?>>Admin queue</a><?php endif; ?>
-    </nav>
+    <div class="request-header-inner">
+        <a href="/" class="request-brand">
+            <img src="assets/img/monkeywrench-monkey100x100.png" alt="" width="50" height="50">
+            <span class="request-brand-text"><span class="request-brand-title">MONKEY WRENCH DATABASE</span><span class="request-brand-tagline">sheet music synced with youtube</span></span>
+        </a>
+        <nav aria-label="Requests navigation">
+            <a href="/">Library</a>
+            <a href="requests.php" <?= !$adminView ? 'aria-current="page"' : '' ?>>My requests</a>
+            <?php if ($isAdmin): ?><a href="requests.php?view=admin" <?= $adminView ? 'aria-current="page"' : '' ?>>Admin queue</a><?php endif; ?>
+        </nav>
+    </div>
 </header>
 <main>
-    <div class="request-heading"><p class="eyebrow"><?= $adminView ? 'Admin' : 'Help grow the library' ?></p>
-        <h1><?= $adminView ? 'Request queue' : 'Request a piece or part' ?></h1>
+    <div class="request-heading"><?php if ($adminView): ?><p class="eyebrow">Admin</p><?php endif; ?>
+        <h1 id="request-page-title"><?= $adminView ? 'Request queue' : 'Request a piece or part' ?></h1>
         <p><?= $adminView ? 'Review requests, update their status, and prepare a personal reply.' : 'Missing something you’d like to practice? Let me know what to add next.' ?></p>
     </div>
     <?php if ($flash): ?><div class="notice success" role="status"><?= requestEscape($flash) ?></div><?php endif; ?>
@@ -192,13 +204,9 @@ $presets = [
         </section>
     <?php endif; ?>
     <?php if (!$adminView && !$denied): ?>
-        <section class="panel" aria-labelledby="new-request-title">
-            <h2 id="new-request-title">What’s missing?</h2>
-            <p class="hint">One request covers one piece or one individual part. For a score, enter “Full score” as the part.</p>
+        <section class="panel" aria-labelledby="request-page-title">
             <p class="hint">One request every seven days, with up to two unfinished requests at a time. Requests help me choose what to add; there’s no guaranteed completion date.</p>
-            <?php if ($user): ?>
-                <p class="account-note">Replies will go to your Google account email: <strong><?= requestEscape($user['email']) ?></strong>, and appear under My requests.</p>
-            <?php else: ?>
+            <?php if (!$user): ?>
                 <p class="account-note">Sign in with Google to submit. You can fill out the form first; your draft will be kept while you sign in.</p>
             <?php endif; ?>
             <?php if ($user && !$quota['can_submit']): ?>
@@ -248,6 +256,14 @@ $presets = [
                                 </div>
                             <?php endforeach; ?>
                         </div>
+                    <?php endif; ?>
+                    <?php if (!$adminView): ?>
+                        <form method="post" action="requests.php" class="request-delete" data-request-title="<?= requestEscape($request['piece_name'] . ' — ' . $request['part_name']) ?>" data-request-status="<?= requestEscape($request['status']) ?>">
+                            <input type="hidden" name="csrf" value="<?= requestEscape($csrf) ?>">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="request_id" value="<?= $id ?>">
+                            <button type="submit" class="delete-request-button">Delete request</button>
+                        </form>
                     <?php endif; ?>
                     <?php if ($adminView): ?>
                         <form method="post" action="<?= requestEscape($listUrl) ?>#request-<?= $id ?>" class="admin-response">

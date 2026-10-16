@@ -81,6 +81,21 @@ try {
     $db->query('CREATE TABLE users (id INT PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), role VARCHAR(20)) ENGINE=MyISAM');
     $db->query("INSERT INTO users VALUES (1, 'Admin', 'admin@example.test', 'admin'), (2, 'Requester', 'requester@example.test', 'user'), (3, 'Other user', 'other@example.test', 'user'), (4, 'Concurrent', 'concurrent@example.test', 'user'), (5, 'Web user', 'web@example.test', 'user')");
 
+    $upgradeConfig = tempnam(sys_get_temp_dir(), 'mw-request-upgrade-');
+    try {
+        chmod($upgradeConfig, 0600);
+        file_put_contents($upgradeConfig, '<?php ' . implode("\n", array_map(fn($key, $value) => 'define(' . var_export($key, true) . ', ' . var_export($value, true) . ');', ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'], [DB_HOST, DB_USER, DB_PASSWORD, $database])));
+        $db->query('ALTER TABLE music_requests DROP COLUMN deleted_at');
+        for ($run = 0; $run < 2; $run++) {
+            $pipes = [];
+            $setup = proc_open([PHP_BINARY, $root . '/scripts/setup-requests.php', '--config=' . $upgradeConfig], [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+            $output = stream_get_contents($pipes[1]); $errors = stream_get_contents($pipes[2]);
+            fclose($pipes[1]); fclose($pipes[2]);
+            check(proc_close($setup) === 0 && $errors === '' && str_contains($output, 'tables ready'), 'Existing schema upgrade succeeds and can be repeated.');
+        }
+        check($db->query("SHOW COLUMNS FROM music_requests LIKE 'deleted_at'")->num_rows === 1, 'Upgrade adds deletion support to the original schema.');
+    } finally { unlink($upgradeConfig); }
+
     $input = ['composer_name' => '  Antonín Dvořák  ', 'piece_name' => 'Symphony No. 9', 'part_name' => 'Cello'];
     $id = mwRequestSubmit($db, 2, $input);
     $saved = mwRequestList($db, 2, false);
@@ -119,6 +134,20 @@ try {
     rejects(fn() => mwRequestRespond($db, 1, 999999, 'added', 'Missing'), 'Reply to a nonexistent request fails.');
     check($before === $db->query('SELECT COUNT(*) FROM music_request_replies')->fetch_row()[0], 'Failed response leaves no orphan reply.');
 
+    rejects(fn() => mwRequestDelete($db, 3, $id), 'Another user cannot delete someone else’s request.');
+    rejects(fn() => mwRequestDelete($db, 1, $id), 'Admin status does not bypass ownership for user deletion.');
+    mwRequestDelete($db, 2, $id);
+    $deleted = $db->query("SELECT * FROM music_requests WHERE id = $id")->fetch_assoc();
+    check($deleted['deleted_at'] !== null && $deleted['composer_name'] === '' && $deleted['piece_name'] === '' && $deleted['part_name'] === '' && $deleted['youtube_url'] === null, 'Deletion erases request content.');
+    check((int) $db->query("SELECT COUNT(*) FROM music_request_replies WHERE request_id = $id")->fetch_row()[0] === 0, 'Deletion erases reply history.');
+    rejects(fn() => mwRequestRespond($db, 1, $id, 'in_progress', 'Stale response'), 'Admin cannot respond to a deleted request.');
+    mwRequestDelete($db, 2, $second);
+    check(mwRequestQuota($db, 2)['open_count'] === 0, 'Deleting an unfinished request frees a slot.');
+    rejects(fn() => mwRequestDelete($db, 2, $second), 'Deleting twice fails cleanly.');
+    mwRequestDelete($db, 2, $third);
+    check(mwRequestList($db, 2, false) === [] && mwRequestList($db, 1, true) === [], 'Deleted requests disappear from user history and admin queue.');
+    rejects(fn() => mwRequestSubmit($db, 2, $input), 'Deleting all requests cannot bypass the weekly cooldown.');
+
     $processes = [];
     for ($i = 0; $i < 3; $i++) {
         $pipes = [];
@@ -134,6 +163,13 @@ try {
         if ($out === 'created') $created++;
     }
     check($created === 1 && count(mwRequestList($db, 4, false)) === 1, 'Concurrent workers cannot bypass the weekly limit.');
+    $pendingId = (int) mwRequestList($db, 4, false)[0]['id'];
+    mwRequestDelete($db, 4, $pendingId);
+    check(mwRequestQuota($db, 4)['can_submit'], 'Deleting a pending request returns the weekly allowance immediately.');
+    $replacementId = mwRequestSubmit($db, 4, array_merge($input, ['piece_name' => 'Replacement request']));
+    mwRequestRespond($db, 1, $replacementId, 'in_progress', null);
+    mwRequestDelete($db, 4, $replacementId);
+    check(mwRequestQuota($db, 4)['can_submit'], 'Deleting an in-progress request also refunds the allowance.');
 
     $gmail = mwRequestGmailUrl('requester@example.test', $saved[0], "Hello & thanks!\nA personal reply.");
     parse_str(parse_url($gmail, PHP_URL_QUERY), $query);
@@ -212,6 +248,23 @@ try {
     $unfilled = httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reply', 'csrf' => str_repeat('a', 64), 'request_id' => $webId, 'status' => 'requested', 'message' => 'In about [timeframe].']);
     check(str_contains($unfilled['body'], 'Replace the preset'), 'Unedited preset placeholders cannot be published.');
     check(count(mwRequestReplies($db, 5, false, [$webId])[$webId]) === 1, 'Invalid reply does not add a message.');
+
+    $webReplyId = (int) mwRequestReplies($db, 5, false, [$webId])[$webId][0]['id'];
+    check(str_contains($userPage['body'], 'Delete request'), 'Owner sees a delete button.');
+    $deleteMissingCsrf = httpRequest($port, 'requests.php', $sessions['user'], ['action' => 'delete', 'request_id' => $webId]);
+    check($deleteMissingCsrf['status'] === 403 && count(mwRequestList($db, 5, false)) === 1, 'Deletion requires a valid CSRF token.');
+    $wrongOwner = httpRequest($port, 'requests.php', $sessions['other'], ['action' => 'delete', 'csrf' => str_repeat('a', 64), 'request_id' => $webId]);
+    check(str_contains($wrongOwner['body'], 'could not be found') && count(mwRequestList($db, 5, false)) === 1, 'Forged request ID cannot delete another user’s request.');
+    $delete = httpRequest($port, 'requests.php', $sessions['user'], ['action' => 'delete', 'csrf' => str_repeat('a', 64), 'request_id' => $webId]);
+    check($delete['status'] === 303 && mwRequestList($db, 5, false) === [], 'Owner can delete through the form.');
+    $afterDelete = httpRequest($port, 'requests.php', $sessions['user']);
+    check(str_contains($afterDelete['body'], 'Your request has been deleted.') && !str_contains($afterDelete['body'], 'id="request-' . $webId . '"'), 'Deleted card is replaced by confirmation.');
+    check(mwRequestQuota($db, 5)['open_count'] === 0 && mwRequestQuota($db, 5)['can_submit'], 'Deleting the unfinished request returns the weekly allowance.');
+    $replacementPost = httpRequest($port, 'requests.php', $sessions['user'], $webInput + ['action' => 'create', 'csrf' => str_repeat('a', 64)]);
+    check($replacementPost['status'] === 303 && count(mwRequestList($db, 5, false)) === 1, 'User can immediately submit a replacement through the form.');
+    mwRequestDelete($db, 5, (int) mwRequestList($db, 5, false)[0]['id']);
+    $staleDraft = httpRequest($port, 'requests.php?view=admin&compose=' . $webReplyId, $sessions['admin']);
+    check(!str_contains($staleDraft['body'], 'web%40example.test') && !str_contains($staleDraft['body'], 'Web request'), 'Deleted request is absent from queue and old Gmail draft links.');
 
     if (in_array('--browser', $argv, true)) {
         echo json_encode(['fixture' => $fixture, 'port' => $port, 'sessions' => $sessions]) . "\n";

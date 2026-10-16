@@ -6,6 +6,12 @@ required. A YouTube video link is optional. Google sign-in supplies the email;
 users cannot substitute another recipient in the form. Request drafts survive
 sign-in, and users see only their own requests and replies.
 
+Users can delete their own requests from My requests after confirming. This
+removes the request from both their history and the admin queue, and erases its
+content and reply history. Deleting an unfinished request returns the request
+allowance immediately and frees an unfinished-request slot. Deleting a finished
+request does not reset its seven-day limit.
+
 Administrators open **Request queue** from the account menu, or visit
 `requests.php?view=admin`. The default queue shows unfinished requests; use the
 filter to see completed requests or all requests. The page checks the current
@@ -37,7 +43,8 @@ On the production checkout, pass the private database configuration explicitly:
 php scripts/setup-requests.php --config=/home/monkcdmb/phpfiles/config.php
 ```
 
-The migration is idempotent and does not modify existing users or catalog data.
+The setup script is idempotent and does not modify existing users or catalog data.
+Run it again when upgrading an existing installation to add deletion support.
 `.cpanel.yml` copies the PHP page, private storage helper, and existing asset
 directories. No Gmail API credentials, SMTP setup, or additional Google scopes
 are needed. Follow the normal deployment workflow after running the migration.
