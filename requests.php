@@ -170,9 +170,9 @@ $presets = [
     <meta name="robots" content="noindex, nofollow">
     <title><?= $adminView ? 'Request queue' : 'Request a piece or part' ?> | Monkey Wrench Database</title>
     <link rel="stylesheet" href="assets/css/fonts.css?v=34">
-    <link rel="stylesheet" href="assets/css/requests.css?v=2">
+    <link rel="stylesheet" href="assets/css/requests.css?v=3">
     <script>try { if (localStorage.getItem('darkMode') === '1') document.documentElement.classList.add('inverted'); } catch (e) {}</script>
-    <script src="js/requests.js?v=2" defer></script>
+    <script src="js/requests.js?v=3" defer></script>
 </head>
 <body>
 <header class="request-header">
@@ -181,11 +181,7 @@ $presets = [
             <img src="assets/img/monkeywrench-monkey100x100.png" alt="" width="50" height="50">
             <span class="request-brand-text"><span class="request-brand-title">MONKEY WRENCH DATABASE</span><span class="request-brand-tagline">sheet music synced with youtube</span></span>
         </a>
-        <nav aria-label="Requests navigation">
-            <a href="/">Library</a>
-            <a href="requests.php" <?= !$adminView ? 'aria-current="page"' : '' ?>>My requests</a>
-            <?php if ($isAdmin): ?><a href="requests.php?view=admin" <?= $adminView ? 'aria-current="page"' : '' ?>>Admin queue</a><?php endif; ?>
-        </nav>
+        <?php $standaloneNavigation = true; require __DIR__ . '/site-navigation.php'; ?>
     </div>
 </header>
 <main>
@@ -289,5 +285,7 @@ $presets = [
         </section>
     <?php endif; ?>
 </main>
+<?php require __DIR__ . '/site-information.php'; ?>
+<script src="js/contact-email.js?v=1" defer></script>
 </body>
 </html>

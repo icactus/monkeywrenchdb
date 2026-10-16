@@ -8,6 +8,8 @@ deployment:
     - /bin/cp get_new_instrument_data.php $DEPLOYPATH
     - /bin/cp get_preload.php $DEPLOYPATH
     - /bin/cp get_recording_instruments.php $DEPLOYPATH
+    - /bin/cp site-navigation.php $DEPLOYPATH
+    - /bin/cp site-information.php $DEPLOYPATH
     - /bin/cp index.php $DEPLOYPATH
     - /bin/cp homepage.php $DEPLOYPATH
     - /bin/cp fetch_catalog.php $DEPLOYPATH

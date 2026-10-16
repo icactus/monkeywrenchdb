@@ -178,7 +178,7 @@ try {
     mkdir($fixture, 0700);
     mkdir($fixture . '/phpfiles', 0700);
     mkdir($fixture . '/sessions', 0700);
-    foreach (['requests.php', 'session_config.php', 'auth_login.php'] as $file) copy($root . '/' . $file, $fixture . '/' . $file);
+    foreach (['requests.php', 'session_config.php', 'auth_login.php', 'site-navigation.php', 'site-information.php'] as $file) copy($root . '/' . $file, $fixture . '/' . $file);
     copy($root . '/phpfiles/music_requests.php', $fixture . '/phpfiles/music_requests.php');
     file_put_contents($fixture . '/phpfiles/config.php', '<?php ' . implode("\n", array_map(fn($key, $value) => 'define(' . var_export($key, true) . ', ' . var_export($value, true) . ');', ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'], [DB_HOST, DB_USER, DB_PASSWORD, $database])));
     chmod($fixture . '/phpfiles/config.php', 0600);

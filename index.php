@@ -185,176 +185,7 @@ if ($hasInitialRecordingTarget) {
                             </a>
                         </div>
                     </div>
-                    <div class="nav-menu">
-                        <!-- Mobile Hamburger Button -->
-                        <button id="mobile-header-burger" onclick="toggleMobileHeaderMenu()" aria-label="Open menu">
-                            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" fill="none"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="4" y1="6" x2="20" y2="6"></line>
-                                <line x1="4" y1="12" x2="20" y2="12"></line>
-                                <line x1="4" y1="18" x2="20" y2="18"></line>
-                            </svg>
-                        </button>
-                        <!-- Mobile Header Menu Dropdown -->
-                        <div id="mobile-header-menu">
-                            <?php if (isset($_SESSION['user_id'])): ?>
-                                <div class="mobile-menu-greeting">
-                                    Hello, <?= htmlspecialchars(explode(' ', $_SESSION['user_name'])[0]) ?>
-                                </div>
-                                <a href="javascript:void(0)"
-                                    onclick="toggleHistoryMenu(); toggleMobileHeaderMenu();">History</a>
-                                <a href="javascript:void(0)"
-                                    onclick="toggleFavoritesMenu(); toggleMobileHeaderMenu();">Favorites</a>
-                                <a href="requests.php">My requests</a>
-                                <?php if (($_SESSION['user_role'] ?? '') === 'admin'): ?>
-                                    <a href="requests.php?view=admin">Request queue</a>
-                                <?php endif; ?>
-                                <!-- <a href="javascript:void(0)"
-                                    onclick="toggleAnnotationsManager(); toggleMobileHeaderMenu();">My
-                                    Markings</a> -->
-                            <?php else: ?>
-                                <a href="auth_login.php?provider=google" class="mobile-menu-login">
-                                    <svg viewBox="0 0 24 24" width="18" height="18" class="inline-svg-icon">
-                                        <path fill="#4285F4"
-                                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                                        <path fill="#34A853"
-                                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                                        <path fill="#FBBC05"
-                                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                                        <path fill="#EA4335"
-                                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                                    </svg>
-                                    Sign in with Google
-                                </a>
-                            <?php endif; ?>
-                            <div class="mobile-menu-divider"></div>
-                            <div class="nav-dropdown-row">
-                                <span class="mobile-controls-label">Dark Mode</span>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="invert-check-menu-mobile">
-                                    <span class="toggle-slider"><span class="toggle-slider-knob"></span></span>
-                                </label>
-                            </div>
-                            <div class="mobile-menu-divider"></div>
-                            <a href="javascript:void(0)"
-                                onclick="toggleAboutLinkMenu(); toggleMobileHeaderMenu();">About</a>
-                            <a href="javascript:void(0)"
-                                onclick="toggleHelpLinkMenu(); toggleMobileHeaderMenu();">Help</a>
-                            <?php if (isset($_SESSION['user_id'])): ?>
-                                <div class="mobile-menu-divider"></div>
-                                <a href="auth_logout.php" class="mobile-menu-logout">Logout</a>
-                            <?php endif; ?>
-                        </div>
-                        <a id="about-link" href="javascript:void(0)" onclick="toggleAboutLinkMenu(); return false;"
-                            class="nav-link">About</a>
-                        <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;"
-                            class="nav-link">Help</a>
-                        <?php if (isset($_SESSION['user_id'])): ?>
-                            <div class="nav-user-dropdown">
-                                <button class="nav-user-trigger" onclick="toggleUserDropdown(event)">
-                                    <span
-                                        class="nav-user-avatar"><?= strtoupper(substr($_SESSION['user_name'], 0, 1)) ?></span>
-                                    <span
-                                        class="nav-user-name"><?= htmlspecialchars(explode(' ', $_SESSION['user_name'])[0]) ?></span>
-                                    <svg class="nav-user-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor" stroke-width="2">
-                                        <path d="M6 9l6 6 6-6" />
-                                    </svg>
-                                </button>
-                                <div class="nav-dropdown-menu" id="user-dropdown-menu" onclick="event.stopPropagation()">
-                                    <a href="javascript:void(0)" id="history-toggle-btn"
-                                        onclick="toggleHistoryMenu(); closeUserDropdown();">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2">
-                                            <circle cx="12" cy="12" r="10" />
-                                            <polyline points="12 6 12 12 16 14" />
-                                        </svg>
-                                        History
-                                    </a>
-                                    <a href="javascript:void(0)" id="favorites-toggle-btn"
-                                        onclick="toggleFavoritesMenu(); closeUserDropdown();">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2">
-                                            <polygon
-                                                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                                        </svg>
-                                        Favorites
-                                    </a>
-                                    <a href="requests.php">My requests</a>
-                                    <!-- <a href="javascript:void(0)" onclick="toggleAnnotationsManager(); closeUserDropdown();">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2">
-                                            <path d="M12 19l7-7 3 3-7 7-3-3z" />
-                                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-                                        </svg>
-                                        My Markings
-                                    </a> -->
-                                    <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
-                                        <div class="nav-dropdown-divider"></div>
-                                        <div class="nav-dropdown-label">Admin</div>
-                                        <a href="requests.php?view=admin">Request queue</a>
-                                        <a href="/editmode/synpdf-edit-mode.php">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                stroke-width="2">
-                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                            </svg>
-                                            Edit Mode
-                                        </a>
-                                        <a href="javascript:void(0)" onclick="loadLiveEdit(); closeUserDropdown();">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                stroke-width="2">
-                                                <circle cx="12" cy="12" r="3" />
-                                                <path
-                                                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                                            </svg>
-                                            Live Edit
-                                        </a>
-                                    <?php endif; ?>
-                                    <div class="nav-dropdown-divider"></div>
-                                    <a href="auth_logout.php" class="nav-dropdown-logout">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2">
-                                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                                            <polyline points="16 17 21 12 16 7" />
-                                            <line x1="21" y1="12" x2="9" y2="12" />
-                                        </svg>
-                                        Logout
-                                    </a>
-                                </div>
-                            </div>
-                            <script>                             function toggleUserDropdown(e) {
-                                    e.stopPropagation(); const menu = document.getElementById('user-dropdown-menu'); const trigger = e.currentTarget; const isOpen = menu.classList.contains('open'); closeUserDropdown(); if (!isOpen) {
-                                        const rect = trigger.getBoundingClientRect();
-                                        menu.style.position = 'fixed';
-                                        menu.style.top = (rect.bottom + 8) + 'px';
-                                        menu.style.left = Math.max(12, rect.right - menu.offsetWidth) + 'px';
-                                        menu.classList.add('open');
-                                    }
-                                }
-                                function closeUserDropdown() {
-                                    document.getElementById('user-dropdown-menu')?.classList.remove('open');
-                                }
-                                document.addEventListener('click', closeUserDropdown);
-                            </script>
-                            <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
-                                <script>
-                                    function loadLiveEdit() {
-                                        if (document.getElementById('admin-live-edit-script')) return;
-                                        var script = document.createElement('script');
-                                        script.id = 'admin-live-edit-script';
-                                        script.src = 'admin-live-edit.js?v=' + new Date().getTime();
-                                        script.onload = function () {
-                                            alert("Admin Tools Loaded. Press 'q' for barlines, 's' for split mode, 'w' for systems, and Shift+'w' for exact system boundaries.");
-                                        };
-                                        document.body.appendChild(script);
-                                    }
-                                </script>
-                            <?php endif; ?>
-                        <?php else: ?>
-                            <a href="auth_login.php?provider=google" class="nav-link">Login</a>
-                        <?php endif; ?>
-                    </div>
+                    <?php require __DIR__ . '/site-navigation.php'; ?>
                 </div>
             </div>
 
@@ -560,70 +391,7 @@ if ($hasInitialRecordingTarget) {
         <div id="saveDiv" style="display:none;"></div>
         <div id="render" class="dlog" style="left:5%; padding:0.5em;"></div>
         <div id="noklik"></div>
-        <!-- Help/About Backdrops -->
-        <div id="help-backdrop" class="modal-backdrop"></div>
-        <div id="about-backdrop" class="modal-backdrop"></div>
-        <div id="help">
-            <div class="modal-header">
-                <h3>How to Use</h3>
-                <button class="modal-close" onclick="toggleHelpLinkMenu()" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-content">
-                <p><strong>Interactive Sheet Music</strong></p>
-                <ul>
-                    <li><b>Tap or click</b> any measure to jump to that spot in the video</li>
-                    <li>The music follows along as the video plays</li>
-                    <li>Switch between recordings or parts without losing your place</li>
-                </ul>
-                <p><strong>Keyboard Shortcuts</strong></p>
-                <table class="helptbl">
-                    <tr>
-                        <td><b>Spacebar</b></td>
-                        <td>Play / Pause</td>
-                    </tr>
-                    <tr>
-                        <td><b>↑ ↓ ← →</b> Arrow keys</td>
-                        <td>Navigate measures</td>
-                    </tr>
-                    <tr>
-                        <td><b>+ / −</b></td>
-                        <td>Speed up / Slow down</td>
-                    </tr>
-                    <tr>
-                        <td><b>PgUp / PgDn</b></td>
-                        <td>Previous / Next page</td>
-                    </tr>
-                    <tr>
-                        <td><b>Shift + Click</b> / <b>Double-tap</b></td>
-                        <td>Play last repeat of measure</td>
-                    </tr>
-                </table>
-                <p class="help-note">This project is a work in progress. Want to help? Email
-                    <b><a href="#contact-email" data-contact-email>icactusmusic AT gmail DOT com</a></b>
-                </p>
-            </div>
-        </div>
-        <div id="about">
-            <div class="modal-header">
-                <h3>About</h3>
-                <button class="modal-close" onclick="toggleAboutLinkMenu()" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-content">
-                <p><b>Monkey Wrench Database</b> is a free and open-source project built on a modified version of
-                    <a href="https://wim.vree.org/js2/index.html" target="_blank" rel="noopener noreferrer">Wim Vree's SynPdf</a>.
-                    The source code is available on <a href="https://github.com/icactus/monkeywrenchdb"
-                        target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
-                <p>This has been a solo passion project by Isaac Trapkus, bassist with the New York Philharmonic.
-                    The project began in 2021 and finally launched in 2026. I'm not a
-                    software developer by trade, so please bear with my many skill issues.</p>
-                <p>Every page of sheet music is synced by algorithmically detecting staves and barlines, with manual
-                    correction (about 1 minute per page). Recordings are synced by logging timestamps while playing
-                    through at 1–2x speed.</p>
-                <p>Without the help of volunteers, this database will not be able to scale. If you find this project
-                    valuable and want to contribute, I'd love to hear from you:
-                    <b><a href="#contact-email" data-contact-email>icactusmusic AT gmail DOT com</a></b></p>
-            </div>
-        </div>
+        <?php require __DIR__ . '/site-information.php'; ?>
     </section3>
 
     <!-- Annotation Toolbar (logged-in users only) -->
@@ -796,6 +564,10 @@ if ($hasInitialRecordingTarget) {
             } catch (e) { }
         };
         $(function () {
+            const accountPanel = new URLSearchParams(window.location.search).get('account');
+            if (accountPanel === 'history') toggleHistoryMenu();
+            else if (accountPanel === 'favorites') toggleFavoritesMenu();
+            else if (accountPanel === 'live-edit' && typeof loadLiveEdit === 'function') loadLiveEdit();
             const isDark = $('html').hasClass('inverted');
             window.setDarkMode(isDark);
             $('#invert-check-menu-mobile').off('change.darkmode').on('change.darkmode', function () {
