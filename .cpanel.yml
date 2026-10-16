@@ -28,6 +28,7 @@ deployment:
     - /bin/cp get_recording_from_url.php $DEPLOYPATH
     - /bin/cp history_api.php $DEPLOYPATH
     - /bin/cp favorites_api.php $DEPLOYPATH
+    - /bin/cp requests.php $DEPLOYPATH
     - /bin/cp admin-live-edit.js $DEPLOYPATH
     - /bin/cp update_monkeywrench_metric_arr.php $DEPLOYPATH
     - /bin/cp manifest.json $DEPLOYPATH
@@ -52,6 +53,7 @@ deployment:
     - /bin/cp phpfiles/pieces-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/submit_recording.php $DEPLOYPATH2
     - /bin/cp phpfiles/static_recordings.php $DEPLOYPATH2
+    - /bin/cp phpfiles/music_requests.php $DEPLOYPATH2
     - /bin/cp phpfiles/auth_config.example.php $DEPLOYPATH2
     - /bin/cp phpfiles/cloudflare_purge.php $DEPLOYPATH2
 

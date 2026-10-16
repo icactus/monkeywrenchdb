@@ -38,3 +38,6 @@ scripts/__pycache__/
 
 # Training data - track JSONs and feature CSVs, but not the combined file (regenerated each run)
 synpdf_182/editmode/training-folder/combined_features.csv
+
+# Request feature database migration
+!docs/migrations/2026-10-requests.sql

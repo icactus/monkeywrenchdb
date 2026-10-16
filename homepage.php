@@ -1,5 +1,5 @@
 <div id="study-home" class="study-home">
-    <div id="study-construction-notice" class="study-construction-notice" role="status">🚧 <strong>We're under heavy construction</strong> — big design changes rolling out. Thanks for bearing with us! <span style="white-space:nowrap;">(October 13, 2026)</span> <button type="button" id="study-construction-dismiss" class="study-construction-dismiss" aria-label="Dismiss announcement">×</button></div>
+    <div id="study-construction-notice" class="study-construction-notice" data-notice-id="requests-2026-10-16" role="status"><strong>New: <a href="requests.php">Request a piece or part!</a></strong> Sign in to request a piece, part, or recording in My Requests. <button type="button" id="study-construction-dismiss" class="study-construction-dismiss" aria-label="Dismiss announcement">×</button></div>
     <section class="study-search-panel" aria-label="Find sheet music">
         <form id="study-search-form" role="search">
             <div class="study-search-controls">
@@ -15,7 +15,7 @@
                 </div>
                 <div class="study-instrument-field"><label for="study-instrument">My instrument</label><select id="study-instrument"><option value="">All instruments</option></select></div>
             </div>
-            <div class="study-search-hint"><div>Try <button type="button" data-study-query="Beethoven">Beethoven</button>, <button type="button" data-study-query="concerto">concerto</button>, or <button type="button" data-study-query="La Mer">La Mer</button></div></div>
+            <div class="study-search-hint"><div>Try <button type="button" data-study-query="Beethoven">Beethoven</button>, <button type="button" data-study-query="concerto">concerto</button>, or <button type="button" data-study-query="La Mer">La Mer</button></div><div><a href="requests.php">Request a piece or part</a></div></div>
         </form>
     </section>
     <div class="study-content">

@@ -103,6 +103,7 @@ function buildContext(sourceOverride, options = {}) {
         els[id] = el;
     }
     els['study-search'].value = '';
+    els['study-construction-notice'].dataset.noticeId = 'requests-2026-10-16';
     els['study-search'].focus = () => {};
 
     const store = { ...options.storage };

@@ -30,6 +30,30 @@ test('multi-word query requires every word', () => {
     assert.equal(h.findByClass(h.els()['study-results'], 'study-empty').length, 1);
 });
 
+test('empty search offers a request with the query and instrument filled in', () => {
+    h.resetFilters();
+    h.chooseInstrument('Cello');
+    h.searchFor('Unknown work & variations');
+    const links = h.findByClass(h.els()['study-results'], 'study-request-link');
+    assert.equal(links.length, 1);
+    const url = new URL(links[0].href, 'https://example.test/');
+    assert.equal(url.pathname, '/requests.php');
+    assert.equal(url.searchParams.get('piece_name'), 'Unknown work & variations');
+    assert.equal(url.searchParams.get('part_name'), 'Cello');
+});
+
+test('missing-part request keeps the selected piece and full composer name', async () => {
+    h.resetFilters();
+    h.chooseInstrument('Violin');
+    await h.fire(h.titleButton('Symphony No. 9'), 'click');
+    const panel = h.ctx().document.getElementById('study-chooser-3');
+    const link = h.findByClass(panel, 'study-request-link')[0];
+    const url = new URL(link.href, 'https://example.test/');
+    assert.equal(url.searchParams.get('composer_name'), 'Antonín Dvořák');
+    assert.equal(url.searchParams.get('piece_name'), 'Symphony No. 9');
+    assert.equal(url.searchParams.get('part_name'), 'Violin');
+});
+
 test('instrument filter shows only pieces with a matching part', () => {
     h.resetFilters();
     h.chooseInstrument('Violin');
@@ -198,16 +222,16 @@ test('shared surnames use initials, remain stable under filtering, and retain fu
     h.searchFor('CPE Bach'); assert.deepEqual(h.titles(), ['Concerto']);
 });
 
-test('construction notice dismisses on click and stays dismissed', async () => {
-    h.buildContext();
+test('new feature announcement appears after an older notice was dismissed, then stays dismissed', async () => {
+    h.buildContext(undefined, { storage: { 'mw-home-notice-dismissed': 'true' } });
     await h.settled();
     const notice = () => h.ctx().document.getElementById('study-construction-notice');
     const dismiss = () => h.ctx().document.getElementById('study-construction-dismiss');
     assert.equal(notice().hidden, false);
     await h.fire(dismiss(), 'click');
     assert.equal(notice().hidden, true);
-    assert.equal(h.ctx().localStorage.getItem('mw-home-notice-dismissed'), 'true');
-    h.buildContext(undefined, { storage: { 'mw-home-notice-dismissed': 'true' } });
+    assert.equal(h.ctx().localStorage.getItem('mw-home-notice-dismissed-requests-2026-10-16'), 'true');
+    h.buildContext(undefined, { storage: { 'mw-home-notice-dismissed-requests-2026-10-16': 'true' } });
     await h.settled();
     assert.equal(notice().hidden, true);
 });

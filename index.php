@@ -205,6 +205,10 @@ if ($hasInitialRecordingTarget) {
                                     onclick="toggleHistoryMenu(); toggleMobileHeaderMenu();">History</a>
                                 <a href="javascript:void(0)"
                                     onclick="toggleFavoritesMenu(); toggleMobileHeaderMenu();">Favorites</a>
+                                <a href="requests.php">My requests</a>
+                                <?php if (($_SESSION['user_role'] ?? '') === 'admin'): ?>
+                                    <a href="requests.php?view=admin">Request queue</a>
+                                <?php endif; ?>
                                 <!-- <a href="javascript:void(0)"
                                     onclick="toggleAnnotationsManager(); toggleMobileHeaderMenu();">My
                                     Markings</a> -->
@@ -276,6 +280,7 @@ if ($hasInitialRecordingTarget) {
                                         </svg>
                                         Favorites
                                     </a>
+                                    <a href="requests.php">My requests</a>
                                     <!-- <a href="javascript:void(0)" onclick="toggleAnnotationsManager(); closeUserDropdown();">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                             stroke-width="2">
@@ -287,6 +292,7 @@ if ($hasInitialRecordingTarget) {
                                     <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
                                         <div class="nav-dropdown-divider"></div>
                                         <div class="nav-dropdown-label">Admin</div>
+                                        <a href="requests.php?view=admin">Request queue</a>
                                         <a href="/editmode/synpdf-edit-mode.php">
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                 stroke-width="2">
@@ -774,7 +780,7 @@ if ($hasInitialRecordingTarget) {
     <script src="js/contact-email.js?v=1" defer></script>
     <script src="stripped-synpdf.js?v=336"></script>
     <script src="stripped-synpdf-extras.js?v=289"></script>
-    <script src="js/homepage.js?v=16"></script>
+    <script src="js/homepage.js?v=18"></script>
     <script>
         // Dark Mode: mobile menu toggle + desktop floating button, persisted in localStorage
         window.setDarkMode = function (isDark) {

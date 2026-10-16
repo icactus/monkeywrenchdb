@@ -15,8 +15,9 @@
     const notice = document.getElementById('study-construction-notice');
     const dismissNotice = document.getElementById('study-construction-dismiss');
     if (notice && dismissNotice) {
-        if (read('notice-dismissed', false)) notice.hidden = true;
-        dismissNotice.addEventListener('click', () => { notice.hidden = true; write('notice-dismissed', true); });
+        const noticeKey = 'notice-dismissed-' + (notice.dataset.noticeId || 'legacy');
+        if (read(noticeKey, false)) notice.hidden = true;
+        dismissNotice.addEventListener('click', () => { notice.hidden = true; write(noticeKey, true); });
     }
     const state = { query: typeof saved.query === 'string' ? saved.query : '', instrument: read('instrument', ''), view: views.includes(saved.view) ? saved.view : 'library', expanded: null, part: null, category: typeof saved.category === 'string' ? saved.category : '' };
     let pieces = [], suggestions = [], activeSuggestion = -1, candidates = [], catalogLoaded = false;
@@ -45,6 +46,11 @@
         const box = node('div', 'study-empty', ''); box.append(node('p', '', text));
         if (retry) box.append(button('Try again', 'study-open', retry));
         container.replaceChildren(box);
+    }
+    function requestLink(label, values) {
+        const link = node('a', 'study-request-link', label);
+        link.href = 'requests.php?' + Object.entries(values).map(([key, value]) => encodeURIComponent(key) + '=' + encodeURIComponent(value || '')).join('&');
+        return link;
     }
     function partLabel(part) {
         let label = part.instrument_name;
@@ -262,6 +268,7 @@
             const materials = node('div', 'study-materials', ''); materials.setAttribute('role', 'group'); materials.setAttribute('aria-label', 'Study material');
             parts.forEach(part => { const b = button(partLabel(part), 'study-open', () => openPiece(piece, part)); b.setAttribute('aria-pressed', String(part.metric_arr_id === state.part.metric_arr_id)); materials.append(b); }); panel.append(materials);
         }
+        panel.append(requestLink('Missing a part? Request it', { composer_name: piece.composer, piece_name: piece.piece_name, part_name: state.instrument }));
         const recordings = node('div', 'study-recordings', ''); empty(recordings, 'Loading recordings…'); panel.append(recordings); return panel;
     }
     function pieceRow(piece, savedView = false) {
@@ -297,7 +304,10 @@
         if (!matches.some(p => p.piece_id === state.expanded)) state.expanded = null;
         $('clear-search').hidden = !search.value; $('reset').hidden = !search.value && !state.instrument && !state.category;
         const list = $('results'); list.replaceChildren(...matches.map(p => pieceRow(p)));
-        if (!matches.length) empty(list, 'No matching pieces. Try a shorter title, another composer, or another instrument.');
+        if (!matches.length) {
+            empty(list, 'No matching pieces. Try a shorter title, another composer, or another instrument.');
+            list.querySelector('.study-empty').append(requestLink('Request a missing piece or part', { piece_name: search.value, part_name: state.instrument }));
+        }
         updateStars();
         renderCategories();
     }

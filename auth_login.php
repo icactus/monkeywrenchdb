@@ -18,6 +18,8 @@ if (file_exists('phpfiles/auth_config.php')) {
 $provider = $_GET['provider'] ?? 'google';
 
 if ($provider === 'google') {
+    // Keep the return destination local and explicitly allowlisted.
+    $_SESSION['oauth_return_to'] = ($_GET['return_to'] ?? '') === 'requests.php' ? 'requests.php' : 'index.php';
     $authUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
     $scope = 'email profile';
 

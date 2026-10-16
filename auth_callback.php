@@ -87,6 +87,7 @@ if ($provider === 'google') {
 
     // 5. Database Update/Insert
     $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+    $mysqli->set_charset('utf8mb4');
     if ($mysqli->connect_error) {
         die("DB Connection failed: " . $mysqli->connect_error);
     }
@@ -96,6 +97,7 @@ if ($provider === 'google') {
         INSERT INTO users (oauth_provider, oauth_uid, email, name, picture_url, last_login) 
         VALUES (?, ?, ?, ?, ?, NOW())
         ON DUPLICATE KEY UPDATE 
+            email = VALUES(email),
             name = VALUES(name), 
             picture_url = VALUES(picture_url), 
             last_login = NOW()
@@ -127,14 +129,16 @@ if ($provider === 'google') {
             $user_role = $row['role'];
         }
 
+        session_regenerate_id(true);
         $_SESSION['user_id'] = $user_id;
         $_SESSION['user_role'] = $user_role;
         $_SESSION['user_name'] = $name;
         $_SESSION['user_email'] = $email;
         $_SESSION['user_picture'] = $picture;
 
-        // Redirect home
-        header('Location: index.php');
+        $returnTo = ($_SESSION['oauth_return_to'] ?? '') === 'requests.php' ? 'requests.php' : 'index.php';
+        unset($_SESSION['oauth_return_to']);
+        header('Location: ' . $returnTo);
         exit;
     } else {
         die("Database error: " . $stmt->error);
