@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>PDF passage swapper</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="pdf-region-swapper.css?v=3">
+    <script defer src="../pdf.min.js"></script>
+    <!-- Preload the worker for local file:// use as well as ordinary web hosting. -->
+    <script defer src="../pdf.worker.min.js"></script>
+    <script defer src="vendor/pdf-lib-1.17.1.min.js"></script>
+    <script defer src="pdf-region-swapper-core.js?v=3"></script>
+    <script defer src="pdf-region-swapper.js?v=3"></script>
+</head>
+<body>
+    <header class="app-header">
+        <div class="wordmark"><span class="mark" aria-hidden="true">⇅</span><div><h1>PDF passage swapper</h1><p>Cut two passages. Exchange their places.</p></div></div>
+        <label class="button secondary file-button">Open PDF<input id="pdf-file" type="file" accept="application/pdf,.pdf"></label>
+    </header>
+    <main>
+        <aside class="panel controls">
+            <div class="eyebrow">READING ORDER / PDF EDITOR</div>
+            <h2>Four lines, one swap.</h2>
+            <p class="intro">Mark the start and end of each area, across as many pages as needed. Cut between systems. Use the page-edge buttons for exact top and bottom cuts.</p>
+            <div class="areas">
+            <div class="area-card area-a">
+                <div class="area-heading"><h3><span>A</span> Area one</h3><button class="text-button" data-clear="0" disabled>Clear</button></div>
+                <button class="cut-step" data-step="0" disabled><span class="step-number">1</span><span>Start cut line<small id="cut-0">Choose on the PDF</small></span><span class="step-check" aria-hidden="true"></span></button>
+                <button class="cut-step" data-step="1" disabled><span class="step-number">2</span><span>End cut line<small id="cut-1">This page or a later page</small></span><span class="step-check" aria-hidden="true"></span></button>
+            </div>
+            <div class="area-card area-b">
+                <div class="area-heading"><h3><span>B</span> Area two</h3><button class="text-button" data-clear="1" disabled>Clear</button></div>
+                <button class="cut-step" data-step="2" disabled><span class="step-number">3</span><span>Start cut line<small id="cut-2">Choose on the PDF</small></span><span class="step-check" aria-hidden="true"></span></button>
+                <button class="cut-step" data-step="3" disabled><span class="step-number">4</span><span>End cut line<small id="cut-3">This page or a later page</small></span><span class="step-check" aria-hidden="true"></span></button>
+            </div>
+            </div>
+            <div class="action-stack">
+                <button id="swap" class="button primary" disabled>Swap &amp; preview <span aria-hidden="true">⇅</span></button>
+                <div class="action-pair"><button id="clear-cuts" class="button secondary" disabled>Clear lines</button><button id="undo" class="button secondary" disabled>Undo swap</button></div>
+                <button id="download" class="button download" disabled>Download edited PDF <span aria-hidden="true">↓</span></button>
+            </div>
+            <p id="status" class="status" role="status" aria-live="polite">Open a PDF to get started.</p>
+            <details class="fit-notes"><summary>How pages are kept tidy</summary><p>Pages keep their original dimensions. A passage that fits replaces the cut area directly. Larger passages use available space, then continue on a new page of the same size if needed. Music is never cut in half to make it fit.</p><p>If page widths differ, a wider passage is reduced to fit. You will see the result before downloading.</p><p>Your PDF stays on this computer. Save as a new edition and detect its barlines after editing.</p></details>
+        </aside>
+        <section class="workspace" aria-label="PDF preview">
+            <div class="document-bar">
+                <div class="document-info"><strong id="filename">No document open</strong><span id="document-meta">Local processing · Original page sizes</span></div>
+                <div class="view-controls"><label for="page-jump">Page</label><input id="page-jump" type="number" min="1" value="1" disabled aria-label="Go to page"><button id="go-page" class="small-button" disabled>Go</button><label class="zoom-label" for="zoom">View</label><select id="zoom" aria-label="Preview zoom"><option value="600">Small</option><option value="800" selected>Fit</option><option value="1100">Large</option></select></div>
+            </div>
+            <div id="empty-state" class="empty-state">
+                <div class="paper-icon" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><b>⇅</b></div>
+                <h2>Put the music in order.</h2><p>Open a score or drop a PDF here.<br>Swap passages without rebuilding your player data.</p>
+                <label class="button primary file-button">Choose a PDF<input id="empty-file" type="file" accept="application/pdf,.pdf"></label>
+                <small>Full-width cuts · Undo · PDF export</small>
+            </div>
+            <div id="pages" class="pages" aria-label="Score pages"></div>
+        </section>
+    </main>
+    <footer>PDF passage swapper <span>Files are processed in your browser.</span></footer>
+</body>
+</html>

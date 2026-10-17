@@ -40,6 +40,10 @@ deployment:
     - /bin/cp export_static_json.php $DEPLOYPATH
     - /bin/cp -R assets $DEPLOYPATH
     - /bin/cp -R js $DEPLOYPATH
+    - /bin/mkdir -p ${DEPLOYPATH}tools/vendor
+    - /bin/cp tools/pdf-region-swapper.html tools/pdf-region-swapper.css tools/pdf-region-swapper.js tools/pdf-region-swapper-core.js ${DEPLOYPATH}tools/
+    - /bin/cp tools/vendor/pdf-lib-1.17.1.min.js tools/vendor/pdf-lib-LICENSE.md ${DEPLOYPATH}tools/vendor/
+    - /bin/cp pdf.min.js pdf.worker.min.js $DEPLOYPATH
     - /bin/cp -R synpdf_182/models $DEPLOYPATH
     - /bin/cp synpdf_182/models/.htaccess ${DEPLOYPATH}models/.htaccess
     - /bin/mkdir -p ${DEPLOYPATH}data/metrics
