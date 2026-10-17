@@ -982,9 +982,10 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
             var measureHeight = c.h;
             var measureScrollY = (typeof c.scrollY === "number") ? c.scrollY : measureY;
 
-            if (measureX === xcurprev$$module$synpdf && measureY === ycurprev$$module$synpdf) {
+            if (this.highlightedMeasure === c && measureX === xcurprev$$module$synpdf && measureY === ycurprev$$module$synpdf) {
                 return;
             }
+            this.highlightedMeasure = c;
 
             var distanceToScrollY = measureScrollY - scrollYCurPrev$$module$synpdf;
             var distanceToScrollX = measureX - xcurprev$$module$synpdf; // Track X change
@@ -1061,103 +1062,71 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
 
             var notationEl = document.getElementById('notation-scroll');
             var viewportWidth = notationEl.clientWidth;
+            var viewportHeight = notationEl.clientHeight;
             var currentScrollLeft = notationEl.scrollLeft;
-            var marginX = 200;
-            var self = this;
+            var currentScrollTop = notationEl.scrollTop;
+            var targetScrollTop = currentScrollTop;
+            var targetScrollLeft = currentScrollLeft;
+            var marginX = Math.min(200, Math.max(0, (viewportWidth - measureWidth) / 2));
 
             // Determine if we're at a line end and scrolled right
             var isLineEndReset = currentScrollLeft > 0 && distanceToScrollX < -500; // Big leftward jump
-            var useInstantScroll = isLineEndReset;
+            var useInstantScroll = isLineEndReset || scrollFlag === 1;
 
-            // 2-up: only snap when moving from a RIGHT page to the NEXT LEFT page (or back)
-            const scroller = document.getElementById('notation-scroll');
-            const inTwoUp = !!scroller && scroller.classList.contains('two-up');
+            const inTwoUp = notationEl.classList.contains('two-up');
 
             if (!inTwoUp) {
-                if (distanceToScrollY !== 0) {
-                    const scrollFlagValueY = Math.abs(distanceToScrollY) > 500 ? 1 : 0;
-                    const targetY = measureScrollY - self.tmargin;
-                    doeRol$$module$synpdf(targetY, useInstantScroll ? 1 : scrollFlagValueY);
+                // Check visibility as well as row changes: a previous animation or
+                // manual scroll may have left this row outside the viewport.
+                if (distanceToScrollY !== 0 || measureY < currentScrollTop ||
+                    measureY + Math.min(measureHeight, viewportHeight) > currentScrollTop + viewportHeight) {
+                    targetScrollTop = measureScrollY - this.tmargin;
+                    useInstantScroll ||= Math.abs(distanceToScrollY) > 500;
                 }
             } else {
                 const curPage = c.page ?? 1;
-
-                if (twoUpInitialScrollPending) {
-                    const spreadStart = (curPage % 2 === 0) ? curPage - 1 : curPage;
-                    const anchor = document.getElementById('canvas' + spreadStart);
-                    if (anchor) doeRol$$module$synpdf(anchor.offsetTop, 1);
-                    const spreadLeft = pageLeftInNotation(spreadStart);
-                    scrollHorizontally(spreadLeft, 1);
-                    window.__twoUpPrevPage = curPage;
-                    twoUpInitialScrollPending = false;
-                    return;
-                }
-
-                // 1-based pages; in 2-up a "spread" is (1|2), (3|4), ...
-                const prevPage = window.__twoUpPrevPage ?? curPage;
-
-                const spreadOf = p => Math.floor((p - 1) / 2);
-                const sameSpread = spreadOf(prevPage) === spreadOf(curPage);
-
-                // Only vertical-snap on page TURNS (right->next left, left->previous right)
-                if (!sameSpread) {
-                    // forward turn: RIGHT (even) -> NEXT LEFT (odd = even+1): 2->3, 4->5, ...
-                    if ((prevPage % 2 === 0) && (curPage === prevPage + 1)) {
-                        const anchor = document.getElementById('canvas' + curPage);
-                        if (anchor) doeRol$$module$synpdf(anchor.offsetTop, 1);
-                    }
-                    // backward turn: LEFT (odd) -> PREVIOUS RIGHT (even = odd-1): 3->2, 5->4, ...
-                    else if ((prevPage % 2 === 1) && (curPage === prevPage - 1)) {
-                        const anchor = document.getElementById('canvas' + curPage);
-                        if (anchor) doeRol$$module$synpdf(anchor.offsetTop, 1);
-                    }
-                }
-
-                // Ensure the current spread is actually in view even if it wasn't a formal "turn"
+                // 1-based spreads are (1|2), (3|4), ... . Start from the
+                // spread anchor, then keep the selected measure visible at zoom.
                 const spreadStart = (curPage % 2 === 0) ? curPage - 1 : curPage;
                 const desiredLeft = pageLeftInNotation(spreadStart);
-                const needHorizSnap = Math.abs(scroller.scrollLeft - desiredLeft) > 8;
-
                 const anchor = document.getElementById('canvas' + spreadStart);
-                const needVertSnap = !!anchor && Math.abs(anchor.offsetTop - notationEl.scrollTop) > 8;
+                const needHorizSnap = Math.abs(currentScrollLeft - desiredLeft) > 8;
+                const needVertSnap = !!anchor && Math.abs(anchor.offsetTop - currentScrollTop) > 8;
 
                 if (twoUpInitialScrollPending || needHorizSnap || needVertSnap) {
-                    if (anchor) doeRol$$module$synpdf(anchor.offsetTop, 1);
-                    scrollHorizontally(desiredLeft, 1);
+                    if (anchor) targetScrollTop = anchor.offsetTop;
+                    targetScrollLeft = desiredLeft;
+                    useInstantScroll = true;
                     twoUpInitialScrollPending = false;
                 }
-                // Remember where we were to detect turns next time
                 window.__twoUpPrevPage = curPage;
             }
 
-            // Horizontal scrolling
-            if (measureLeft < currentScrollLeft + marginX) {
-                var targetScrollLeft = Math.max(0, measureLeft - marginX);
-                scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0));
-            } else if (measureRight > currentScrollLeft + viewportWidth - marginX) {
-                var targetScrollLeft = measureRight - viewportWidth + marginX;
-                scrollHorizontally(targetScrollLeft, useInstantScroll ? 1 : (Math.abs(currentScrollLeft - targetScrollLeft) > 500 ? 1 : 0));
+            // Keep the whole shaded box in view when it fits. For systems
+            // larger than the viewport, keep their top/left edge visible.
+            targetScrollTop = Math.max(0, Math.min(measureY,
+                Math.max(targetScrollTop, measureY + Math.min(measureHeight, viewportHeight) - viewportHeight)));
+            if (measureLeft < targetScrollLeft + marginX) {
+                targetScrollLeft = Math.max(0, measureLeft - marginX);
+            } else if (measureRight > targetScrollLeft + viewportWidth - marginX) {
+                targetScrollLeft = Math.min(measureLeft, measureRight - viewportWidth + marginX);
             }
+            useInstantScroll ||= Math.abs(currentScrollLeft - targetScrollLeft) > 500;
+
+            // One native scroll must own both axes. Separate smooth scrollTop
+            // and scrollLeft assignments cancel each other's animation.
+            scrollNotationTo$$module$synpdf(targetScrollTop, targetScrollLeft, useInstantScroll);
         }
     }
 };
 
-// Vertical scroll function
-function doeRol$$module$synpdf(a, b) {
-    a = Math.round(a);
-    if (deNot$$module$synpdf.scrollTop !== a) {
-        deNot$$module$synpdf.style["scroll-behavior"] = b ? "auto" : "smooth"; // b=1 means auto
-        deNot$$module$synpdf.scrollTop = a;
-    }
-}
-
-// Horizontal scroll function
-function scrollHorizontally(targetX, instant) {
+function scrollNotationTo$$module$synpdf(targetY, targetX, instant) {
     var notation = deNot$$module$synpdf;
+    targetY = Math.round(targetY);
     targetX = Math.round(targetX);
-    if (notation.scrollLeft !== targetX) {
-        notation.style["scroll-behavior"] = instant ? "auto" : "smooth"; // instant=1 means auto
-        notation.scrollLeft = targetX;
+    if (notation.scrollTop !== targetY || notation.scrollLeft !== targetX) {
+        notation.style["scroll-behavior"] = instant ? "auto" : "smooth";
+        notation.scrollTo({ top: targetY, left: targetX, behavior: instant ? "instant" : "smooth" });
     }
 }
 
