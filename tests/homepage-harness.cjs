@@ -5,6 +5,8 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const SOURCE = fs.readFileSync(path.join(__dirname, '../js/homepage.js'), 'utf8');
+const extras = fs.readFileSync(path.join(__dirname, '../stripped-synpdf-extras.js'), 'utf8');
+const toastSource = extras.slice(extras.indexOf('function toast(msg)'), extras.indexOf('// we already use these for restore-before-reflow:'));
 
 const FIXTURE_PIECES = [
     { piece_id: 1, piece_name: 'Symphony No. 5', composer_first: 'Ludwig van', composer_last: 'Beethoven', category_name: 'Orchestra', solo_instrument_id: 0, recording_count: 2, parts: [
@@ -61,6 +63,7 @@ function matches(el, sel) {
     if (!el || typeof el !== 'object' || !('className' in el)) return false;
     if (sel.startsWith('.')) return String(el.className).split(' ').includes(sel.slice(1));
     if (sel.startsWith('#')) return el.id === sel.slice(1);
+    if (sel === '[data-study-star]') return el.dataset.studyStar != null;
     return false;
 }
 
@@ -92,7 +95,7 @@ function buildContext(sourceOverride, options = {}) {
     launched = [];
     els = {};
     const staticIds = ['study-home', 'study-construction-notice', 'study-construction-dismiss', 'study-search', 'study-instrument', 'study-suggestions',
-        'study-message', 'study-results',
+        'study-message', 'study-results', 'notification',
         'study-clear-search', 'study-reset', 'study-search-form', 'study-categories', 'recordings-dropdown',
         'study-library-panel', 'study-history-panel', 'study-favorites-panel',
         'study-library-tab', 'study-history-tab', 'study-favorites-tab',
@@ -105,6 +108,7 @@ function buildContext(sourceOverride, options = {}) {
     els['study-search'].value = '';
     els['study-construction-notice'].dataset.noticeId = 'requests-2026-10-16';
     els['study-search'].focus = () => {};
+    els['study-home'].querySelectorAll = sel => allElements.filter(el => el.isConnected && matches(el, sel));
 
     const store = { ...options.storage };
     const catalog = { pieces: options.pieces || FIXTURE_PIECES, instruments: ['Cello', 'Piano', 'Violin'] };
@@ -120,7 +124,9 @@ function buildContext(sourceOverride, options = {}) {
             addEventListener() {},
             body: { classList: { contains: () => false } },
         },
-        matchMedia: () => ({ matches: false, addEventListener() {} }),
+        matchMedia: () => ({ matches: !!options.wide, addEventListener() {} }),
+        setTimeout: options.setTimeout || ((fn, delay) => { const timer = setTimeout(fn, delay); timer.unref(); return timer; }),
+        clearTimeout: options.clearTimeout || clearTimeout,
         localStorage: {
             getItem: k => (k in store ? store[k] : null),
             setItem: (k, v) => { store[k] = String(v); },
@@ -133,6 +139,9 @@ function buildContext(sourceOverride, options = {}) {
             if (String(url).includes('fetchrecordings_data.php')) {
                 return { ok: true, json: async () => ({ recordings: [] }) };
             }
+            if (String(url).includes('favorites_api.php?action=get') || String(url).includes('history_api.php?action=get')) {
+                return { ok: true, json: async () => [] };
+            }
             return { ok: true, json: async () => ({}) };
         },
         requestAnimationFrame: fn => setTimeout(fn, 0),
@@ -141,6 +150,7 @@ function buildContext(sourceOverride, options = {}) {
         history: { replaceState() {} },
     };
     ctx.window = ctx;
+    ctx.loggedInUserId = options.userId || null;
     ctx.window.decodeHtmlEntities = v => (v === null || v === undefined ? '' : String(v));
     ctx.window.loadPieceRecordings = async id => JSON.parse(JSON.stringify(FIXTURE_RECORDINGS[id] || []));
     ctx.window.jQuery = () => ({ data() {} });
@@ -150,6 +160,7 @@ function buildContext(sourceOverride, options = {}) {
     ctx.window.addEventListener = () => {};
     ctx.window.dispatchEvent = () => {};
     vm.createContext(ctx);
+    vm.runInContext(toastSource, ctx);
     vm.runInContext(sourceOverride || SOURCE, ctx);
 }
 

@@ -159,10 +159,78 @@ test('piece row opens part choices without separate action buttons', async () =>
     assert.equal(h.findByClass(panel, 'study-materials').length, 1);
 });
 
-test('starring while signed out asks for sign-in', async () => {
-    h.resetFilters();
-    await h.fire(h.starButtons()[0], 'click');
-    assert.match(h.els()['study-message'].textContent, /Sign in/);
+for (const wide of [true, false]) {
+    test(`signed-out favorites show a toast and preserve ${wide ? 'desktop' : 'mobile'} results`, async () => {
+        let hideToast;
+        h.buildContext(undefined, { wide, setTimeout: fn => { hideToast = fn; return 1; }, clearTimeout() {} });
+        await h.settled();
+        h.chooseInstrument('Violin');
+        h.searchFor('Symphony');
+        await h.fire(h.titleButton('Symphony No. 9'), 'click');
+        h.ctx().scrollY = 350;
+        const results = h.els()['study-results'].children.slice();
+        const chooser = h.ctx().document.getElementById('study-chooser-3');
+        const requests = [];
+        h.ctx().fetch = async url => { requests.push(url); throw new Error('Guest should not call the API'); };
+        const star = h.starButtons()[0];
+        h.ctx().document.activeElement = star;
+        await h.fire(star, 'click');
+        assert.match(h.els().notification.textContent, /Sign in.*favorites/);
+        assert.equal(h.els().notification.style.display, 'block');
+        assert.equal(h.els()['study-library-panel'].hidden, false);
+        assert.equal(h.els()['study-favorites-panel'].hidden, true);
+        assert.deepEqual(h.els()['study-results'].children, results);
+        assert.equal(h.ctx().document.getElementById('study-chooser-3'), chooser);
+        assert.equal(h.els()['study-search'].value, 'Symphony');
+        assert.equal(h.els()['study-instrument'].value, 'Violin');
+        assert.equal(h.ctx().scrollY, 350);
+        assert.equal(h.ctx().document.activeElement, star);
+        assert.equal(h.ctx().location.href, 'http://localhost/');
+        assert.deepEqual(requests, []);
+        hideToast();
+        assert.equal(h.els().notification.style.display, 'none');
+        h.buildContext();
+        await h.settled();
+    });
+}
+
+test('signed-in catalog stars save and remove a piece without selecting a recording', async () => {
+    h.buildContext(undefined, { userId: 8, wide: true });
+    await h.settled();
+    const requests = [];
+    h.ctx().fetch = async (url, options) => {
+        requests.push({ url, data: Object.fromEntries(options.body) });
+        return { ok: true, json: async () => ({ status: 'success' }) };
+    };
+    const star = h.starButtons()[0];
+    await h.fire(star, 'click');
+    assert.equal(star['aria-pressed'], 'true');
+    assert.equal(star.disabled, false);
+    assert.equal(h.findByClass(h.els()['study-favorites-list'], 'study-piece').length, 1);
+    assert.deepEqual(requests[0], { url: 'favorites_api.php?action=add', data: { piece_id: '2' } });
+    await h.fire(star, 'click');
+    assert.equal(star['aria-pressed'], 'false');
+    assert.deepEqual(requests[1], { url: 'favorites_api.php?action=delete', data: { piece_id: '2' } });
+    assert.equal(h.findByClass(h.els()['study-favorites-list'], 'study-piece').length, 0);
+    assert.equal(h.els()['study-library-panel'].hidden, false);
+    h.buildContext();
+    await h.settled();
+});
+
+test('a failed save keeps the star unsaved and allows retry', async () => {
+    h.buildContext(undefined, { userId: 8 });
+    await h.settled();
+    const star = h.starButtons()[0];
+    h.ctx().fetch = async () => ({ ok: false, json: async () => ({ error: 'Server error' }) });
+    await h.fire(star, 'click');
+    assert.equal(star['aria-pressed'], 'false');
+    assert.equal(star.disabled, false);
+    assert.match(h.els()['study-message'].textContent, /Server error/);
+    h.ctx().fetch = async () => ({ ok: true, json: async () => ({ status: 'success' }) });
+    await h.fire(star, 'click');
+    assert.equal(star['aria-pressed'], 'true');
+    h.buildContext();
+    await h.settled();
 });
 
 test('an instrument filter still lets a violinist choose the second part', async () => {

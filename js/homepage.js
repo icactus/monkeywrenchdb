@@ -146,7 +146,7 @@
     }
     function star(piece) {
         const el = button('☆', 'study-star', async () => {
-            if (!window.loggedInUserId) { message('Sign in to save favorites across your devices.'); signIn($('favorites-list'), 'Sign in to save your favorite pieces.'); if (wide.matches) showView('favorites'); return; }
+            if (!window.loggedInUserId) { toast('Sign in to save favorites.'); return; }
             if (favoritesPending.has(piece.piece_id)) return;
             favoritesPending.add(piece.piece_id); updateStars();
             try {

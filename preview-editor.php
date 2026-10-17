@@ -661,7 +661,7 @@ $is_share_link = isset($_GET['share']);
     <?php endif; ?>
 
     <!-- Notification Element -->
-    <div id="notification">
+    <div id="notification" role="status" aria-live="polite" aria-atomic="true">
         Link copied to clipboard!
     </div>
     <button id="darkmode-fab" aria-label="Toggle dark mode" title="Toggle dark mode">
@@ -683,7 +683,7 @@ $is_share_link = isset($_GET['share']);
     <script src="js/history-manager.js?v=4"></script>
     <script src="js/favorites-manager.js?v=1"></script>
     <script src="js/contact-email.js?v=1" defer></script>
-    <script src="stripped-synpdf.js?v=337"></script>
+    <script src="stripped-synpdf.js?v=338"></script>
     <script src="stripped-synpdf-extras.js?v=276"></script>
     <script>
         window.setDarkMode = function (isDark) {

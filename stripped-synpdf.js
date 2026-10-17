@@ -220,7 +220,7 @@ document.addEventListener('click', function (event) {
 // Toggle favorite for current piece
 window.toggleFavorite = function () {
     if (!window.loggedInUserId) {
-        alert('Please log in to save favorites.');
+        toast('Sign in to save favorites.');
         return;
     }
 

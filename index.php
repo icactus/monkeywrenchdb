@@ -524,7 +524,7 @@ if ($hasInitialRecordingTarget) {
     <?php endif; ?>
 
     <!-- Notification Element -->
-    <div id="notification">
+    <div id="notification" role="status" aria-live="polite" aria-atomic="true">
         Link copied to clipboard!
     </div>
     <button id="darkmode-fab" aria-label="Toggle dark mode" title="Toggle dark mode">
@@ -546,9 +546,9 @@ if ($hasInitialRecordingTarget) {
     <script src="js/history-manager.js?v=6"></script>
     <script src="js/favorites-manager.js?v=3"></script>
     <script src="js/contact-email.js?v=1" defer></script>
-    <script src="stripped-synpdf.js?v=337"></script>
+    <script src="stripped-synpdf.js?v=338"></script>
     <script src="stripped-synpdf-extras.js?v=289"></script>
-    <script src="js/homepage.js?v=18"></script>
+    <script src="js/homepage.js?v=19"></script>
     <script>
         // Dark Mode: mobile menu toggle + desktop floating button, persisted in localStorage
         window.setDarkMode = function (isDark) {

@@ -41,3 +41,4 @@ synpdf_182/editmode/training-folder/combined_features.csv
 
 # Request feature database migration
 !docs/migrations/2026-10-requests.sql
+!docs/migrations/2026-10-favorites-nullable-context.sql
