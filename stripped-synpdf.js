@@ -1705,7 +1705,7 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
     return canvas
 }
 
-function addDummySys$$module$synpdf() {
+function addDummySys$$module$synpdf(geometryOnly) {
     var a = Cs$$module$synpdf[Cs$$module$synpdf.length - 1],
         b = a.xs.x2;
     Cs$$module$synpdf.push({
@@ -1727,6 +1727,8 @@ function addDummySys$$module$synpdf() {
         h: a.h,
         page: a.page   // <-- keep the dummy on the correct page
     });
+    // Live edits reuse the existing timeline, scroll margin, and bottom spacer.
+    if (geometryOnly) return;
     a = deTijden$$module$synpdf.length;
     a < deMaten$$module$synpdf.length && deTijden$$module$synpdf.push({
         t: deTijden$$module$synpdf[a - 1].t + 2,
@@ -2280,7 +2282,44 @@ function clearCanvas(canvas) {
     canvas.classList.remove('rendered'); // Mark the canvas as not rendered
 }
 
+function refreshMetricGeometry$$module$synpdf() {
+    const cursor = msc_wz$$module$synpdf;
+    const notation = deNot$$module$synpdf;
+    if (!cursor || !notation || rendering$$module$synpdf) return;
+
+    const scrollTop = notation.scrollTop;
+    const scrollLeft = notation.scrollLeft;
+    const scrollBehavior = notation.style['scroll-behavior'];
+    const previousScrollFlag = scrollFlag;
+    const scoreTime = cursor.cursorTime;
+
+    deMaten$$module$synpdf = [];
+    Cs$$module$synpdf = [];
+    pageStfIx$$module$synpdf = [];
+    document.querySelectorAll('#notation-scroll > canvas[id^="canvas"]').forEach(function (canvas) {
+        const pageNum = Number(canvas.id.replace('canvas', ''));
+        const page = deMetriek$$module$synpdf[pageNum];
+        knip$$module$synpdf(canvas, page, Number(canvas.dataset.pageOffset), pageNum);
+        pageStfIx$$module$synpdf.push(Cs$$module$synpdf.length);
+        Cs$$module$synpdf = Cs$$module$synpdf.concat(page.cxs);
+    });
+    if (Cs$$module$synpdf.length && deMaten$$module$synpdf.length) addDummySys$$module$synpdf(true);
+
+    xcurprev$$module$synpdf = ycurprev$$module$synpdf = scrollYCurPrev$$module$synpdf = -1;
+    try {
+        scrollFlag = 1;
+        cursor.time2x(scoreTime);
+    } finally {
+        // Keep the page being edited in place, including when it is away from
+        // the playback cursor. Cancel any automatic highlight scrolling.
+        notation.scrollTo({ top: scrollTop, left: scrollLeft, behavior: 'instant' });
+        notation.style['scroll-behavior'] = scrollBehavior;
+        scrollFlag = previousScrollFlag;
+    }
+}
+
 function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
+    canvas.dataset.pageOffset = cumulativeHeight;
     var pageMetricArray = deMetriek$$module$synpdf[pageNum];
     pageNumChanged$$module$synpdf = 0;
     canvas = knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum); // Generates measure boxes (deMaten)

@@ -194,13 +194,11 @@
     }
 
     function refreshPlayer() {
-        // ReadPdfdoc triggers a full re-render based on current metric_arr
-        // We assume readPdfdoc$$module$synpdf is globally available
-        if (typeof window.readPdfdoc$$module$synpdf === 'function') {
-            // force re-read
-            window.readPdfdoc$$module$synpdf();
+        // Geometry edits do not need a new PDF viewer or playback cursor.
+        if (typeof window.refreshMetricGeometry$$module$synpdf === 'function') {
+            window.refreshMetricGeometry$$module$synpdf();
         } else {
-            console.error("readPdfdoc not found!");
+            console.error("refreshMetricGeometry not found!");
         }
     }
 

@@ -546,7 +546,7 @@ if ($hasInitialRecordingTarget) {
     <script src="js/history-manager.js?v=6"></script>
     <script src="js/favorites-manager.js?v=3"></script>
     <script src="js/contact-email.js?v=1" defer></script>
-    <script src="stripped-synpdf.js?v=338"></script>
+    <script src="stripped-synpdf.js?v=339"></script>
     <script src="stripped-synpdf-extras.js?v=289"></script>
     <script src="js/homepage.js?v=19"></script>
     <script>
