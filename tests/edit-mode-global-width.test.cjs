@@ -21,7 +21,7 @@ function setup() {
         pdfDoc$$module$synpdf: { numPages: 2 },
         deMetriek$$module$synpdf: [1000, { cxs: [{ cs: [100, 140], xs: { x1: 50, x2: 950 } }], bxs: [[50, 400, 950]] },
             { cxs: [{ cs: [200, 240], xs: { x1: 50, x2: 950 } }], bxs: [[50, 300, 950]] }],
-        rendering$$module$synpdf: 0, elmed$$module$synpdf: { currentTime: 0 },
+        rendering$$module$synpdf: 0, foregroundRenderToken$$module$synpdf: 0, elmed$$module$synpdf: { currentTime: 0 },
         // Use the real readPdfdoc and coordinate scaling. This substitutes only
         // the raster renderer and records which displayed page was requested.
         goPage$$module$synpdf: () => { renders.push(context.opt$$module$synpdf.pagenum); context.rendering$$module$synpdf = 0; },

@@ -140,6 +140,19 @@ test('score shortcuts work again after focus leaves a control', () => {
     assert.deepEqual(h.actions, ['mode', 'persist', 'save', 'play', 'navigate']);
 });
 
+test('D and Shift+D still navigate when a failed page has no controller', () => {
+    const h = setup();
+    h.context.msc_wz$$module$synpdf = null;
+    h.context.opt$$module$synpdf.advncd = 1;
+    h.context.opt$$module$synpdf.pagenum = 41;
+    h.context.setPagenum$$module$synpdf = previous => h.actions.push(['page', previous]);
+    h.key('d');
+    assert.equal(h.context.opt$$module$synpdf.pagenum, 42);
+    h.key('D', { shiftKey: true });
+    assert.equal(h.context.opt$$module$synpdf.pagenum, 41);
+    assert.deepEqual(h.actions, [['page', 41], 'persist', ['page', 42], 'persist']);
+});
+
 
 test('plus and minus zoom the view without rendering, rescanning or changing detection width', () => {
     const h = setup();

@@ -40,7 +40,7 @@ function documentHarness() {
     const checkbox = { checked: false };
     const reads = [];
     const context = vm.createContext({
-        console,
+        console, skipn$$module$synpdf: 0,
         $: () => ({
             prop: (name, value) => { if (name === 'checked') checkbox.checked = value; },
             css() {}, html() {}, text() {}
@@ -64,7 +64,7 @@ test('normal loading uses grouped discovery until single-staff mode is explicitl
     const { context } = documentHarness();
     let selected;
     context.countPixMultiBands$$module$synpdf = () => { selected = 'multi'; return {}; };
-    context.countPix$$module$synpdf = () => { selected = 'legacy'; return {}; };
+    context.countPix$$module$synpdf = () => { selected = 'legacy'; return { cxs: [{}], bxs: [[]] }; };
     context.scanPageMetrics$$module$synpdf({}, 0);
     assert.equal(selected, 'legacy');
     context.opt$$module$synpdf.onestf = 1;

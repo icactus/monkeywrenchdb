@@ -44,6 +44,7 @@ var msc_VERSION$$module$synpdf = 182,
     hasMixer$$module$synpdf = 0,
     metricPrecomputeInProgress$$module$synpdf = 0,
     metricPrecomputeToken$$module$synpdf = 0,
+    foregroundRenderToken$$module$synpdf = 0,
     dummyPlayer$$module$synpdf = new DummyPlayer$$module$synpdf,
     TOFF$$module$synpdf = .01,
     elmed$$module$synpdf, msc_wz$$module$synpdf, doReadPdf$$module$synpdf, skipn$$module$synpdf, sok$$module$synpdf = null,
@@ -126,6 +127,7 @@ function initPreload$$module$synpdf() {
 }
 
 function initGlobals$$module$synpdf() {
+    foregroundRenderToken$$module$synpdf += 1;
     offset$$module$synpdf = 0;
     gFac$$module$synpdf = .1;
     pdfDoc$$module$synpdf = {};
@@ -172,15 +174,16 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     this.cursorTime = 0;
     this.time_ix = d;
     var e = this;
-    setTimeout(function () {
-        e.setOffsetX.call(e)
-    }, 0);
     this.line = c;
     this.repcnt = this.msre = 1;
     this.tmargin = this.lastTix = this.lastSync = 0;
     this.setTmargin();
     this.sinfo = $("#sync_info");
-    this.paused = !0
+    this.paused = !0;
+    setTimeout(function () {
+        // A refresh may replace this controller before its layout callback runs.
+        if (msc_wz$$module$synpdf === e) e.setOffsetX();
+    }, 0);
 }
 Wijzer$$module$synpdf.prototype.drawRepTokens = function () {
     function a(a, b, c) {
@@ -379,6 +382,7 @@ Wijzer$$module$synpdf.prototype.goMsre = function (a, b) {
 Wijzer$$module$synpdf.prototype.goUpDown = function (a, b, c) {
     if (b && opt$$module$synpdf.advncd) c = 1 * opt$$module$synpdf.pagenum, opt$$module$synpdf.pagenum = a ? c + 1 : c - 1, setPagenum$$module$synpdf(c);
     else {
+        if (!deMaten$$module$synpdf.length) return;
         var d = {},
             e;
         if (!(c.altKey || c.ctrlKey || c.shiftKey || c.metaKey)) {
@@ -444,10 +448,11 @@ Wijzer$$module$synpdf.prototype.startSync = function () {
         a.mix < deMaten$$module$synpdf.length - 1 && playPause2$$module$synpdf(!1, a.t + TOFF$$module$synpdf + offset$$module$synpdf)
 };
 Wijzer$$module$synpdf.prototype.setTmargin = function () {
+    var c = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
+    if (!c) { this.tmargin = 0; return; }
     var a = $("#notation").offset().top,
         b = $("#rollijn").offset().top;
     b < a && (b = a + 15, $("#rollijn").css("top", b + "px"));
-    var c = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
     var viewScale = getPdfViewScale$$module$synpdf();
     b > c.y * viewScale + a && (b = a + c.y * viewScale - dottedHeight$$module$synpdf, $("#rollijn").css("top", b + "px"));
     var d = $("#notation").height();
@@ -485,7 +490,7 @@ Wijzer$$module$synpdf.prototype.annot = function (a, b) {
 Wijzer$$module$synpdf.prototype.draw_annots = function (a) {
     var b;
     $(".ant").remove();
-    var c = msc_wz$$module$synpdf.width;
+    var c = this.width;
     var d = opt$$module$synpdf.cropx;
     var e = Math.floor(annot_fontpx$$module$synpdf * c / 1E3);
     annots$$module$synpdf = annots$$module$synpdf.filter(function (a) {
@@ -817,6 +822,7 @@ function getNotationRenderWidth$$module$synpdf() {
 }
 
 function readPdfdoc$$module$synpdf() {
+    var renderToken = ++foregroundRenderToken$$module$synpdf;
     opt$$module$synpdf.pagewd = Number(opt$$module$synpdf.fixwd) || 1000;
     updatePdfWidthLabel$$module$synpdf();
     if (typeof updateBarlineThresholdControl === "function") updateBarlineThresholdControl();
@@ -831,9 +837,9 @@ function readPdfdoc$$module$synpdf() {
     rendering$$module$synpdf = 1;
     $("#render").html("rendering ...").toggle(!0);
     pdfDoc$$module$synpdf.src ? setTimeout(function () {  // tries jpeg first, then reads as pdf
-        goJpeg$$module$synpdf(0)
+        if (renderToken === foregroundRenderToken$$module$synpdf) goJpeg$$module$synpdf(0);
     },
-        100) : goPage$$module$synpdf(1, 0)
+        100) : goPage$$module$synpdf(1, 0, renderToken)
 }
 
 function hasCompleteMetricPages$$module$synpdf() {
@@ -1023,40 +1029,61 @@ function readPdf$$module$synpdf(a, b) {
     }
 }
 
-function goPage$$module$synpdf(a, b) {
-    opt$$module$synpdf.advncd && (a = 1 * opt$$module$synpdf.pagenum);  // If advanced mode is on, set the page number to the predefined value
-    pdfDoc$$module$synpdf.getPage(a).then(function (page) {
-        $("#render").html("rendering page: " + a + "/" + pdfDoc$$module$synpdf._pdfInfo.numPages);  // Update the HTML element with id='render' with the page number
-        var d = page.getViewport({ scale: (deMetriek$$module$synpdf[0] / page._pageInfo.view[2]) });
-        var e = document.createElement("canvas");  // Create a canvas element
-        var f = e.getContext("2d");
-        e.height = Math.round(d.height);  // Avoid truncating e.g. 2019.999999 to 2019 pixels.
-        e.width = Math.round(d.width);
-        page.render({  // Render the PDF page into the canvas
-            canvasContext: f,
-            viewport: d
-        }).promise.then(function () {  // After rendering, proceed to further process the page
-            e = compPage$$module$synpdf(e, a, b);
-            if (opt$$module$synpdf.advncd) {  // Continue based on global condition variables
-                rendering$$module$synpdf = 0;
-                addDummySys$$module$synpdf();
-                setTimeout(function () {
-                    precomputeAdvancedMetrics$$module$synpdf();
-                }, 0);
-            } else {
-                if (doresize$$module$synpdf) {
-                    resizePdf$$module$synpdf();
-                } else {
-                    if (a < pdfDoc$$module$synpdf.numPages) {
-                        goPage$$module$synpdf(a + 1, b + e.height);
-                    } else {
-                        rendering$$module$synpdf = 0;
-                        addDummySys$$module$synpdf();
-                    }
-                }
+async function goPage$$module$synpdf(pageNumber, pageOffset, renderToken) {
+    var sourceDoc = pdfDoc$$module$synpdf;
+    if (renderToken === undefined) renderToken = foregroundRenderToken$$module$synpdf;
+    if (opt$$module$synpdf.advncd) pageNumber = Number(opt$$module$synpdf.pagenum);
+    var handoff = false, succeeded = false;
+    function isCurrent() {
+        return sourceDoc === pdfDoc$$module$synpdf && renderToken === foregroundRenderToken$$module$synpdf;
+    }
+    try {
+        var page = await sourceDoc.getPage(pageNumber);
+        if (!isCurrent()) return;
+        $("#render").html("rendering page: " + pageNumber + "/" + sourceDoc.numPages);
+        var viewport = page.getViewport({ scale: deMetriek$$module$synpdf[0] / page._pageInfo.view[2] });
+        var canvas = document.createElement("canvas");
+        canvas.height = Math.round(viewport.height);
+        canvas.width = Math.round(viewport.width);
+        await page.render({ canvasContext: canvas.getContext("2d"), viewport: viewport }).promise;
+        if (!isCurrent()) return;
+        // D may select another page while the preceding page is still rendering.
+        if (opt$$module$synpdf.advncd && Number(opt$$module$synpdf.pagenum) !== pageNumber) {
+            doresize$$module$synpdf = 1;
+            return;
+        }
+        var queuedResize = doresize$$module$synpdf;
+        canvas = compPage$$module$synpdf(canvas, pageNumber, pageOffset);
+        // startIntf clears this flag; retain an O/resize requested during rendering.
+        doresize$$module$synpdf = doresize$$module$synpdf || queuedResize;
+        if (opt$$module$synpdf.advncd || (!doresize$$module$synpdf && pageNumber === sourceDoc.numPages)) {
+            addDummySys$$module$synpdf();
+            succeeded = true;
+        } else if (!doresize$$module$synpdf) {
+            handoff = true;
+            goPage$$module$synpdf(pageNumber + 1, pageOffset + canvas.height, renderToken);
+        }
+    } catch (error) {
+        if (isCurrent()) {
+            console.error("Could not render page " + pageNumber + ":", error);
+            var message = "Could not render page " + pageNumber + ". Press O to retry or D to move to the next page.";
+            $("#err").text(message);
+            $("#wait").text(message).css("display", "block");
+        }
+    } finally {
+        // Failed scans/composition must release the same lock as successful pages.
+        // An old document's completion must never unlock its replacement's render.
+        if (isCurrent() && !handoff) {
+            rendering$$module$synpdf = 0;
+            $("#render").toggle(false);
+            if (doresize$$module$synpdf) {
+                doresize$$module$synpdf = 0;
+                resizePdf$$module$synpdf();
+            } else if (succeeded && opt$$module$synpdf.advncd) {
+                setTimeout(precomputeAdvancedMetrics$$module$synpdf, 0);
             }
-        })
-    })
+        }
+    }
 }
 //Check for disable scrolling at end of compPage. Otherwise this messes up the doeRol scrolling line.
 let disableScrollingCheck = 0;
@@ -1067,9 +1094,6 @@ function compPage$$module$synpdf(a, b, c) {
     var d = deMetriek$$module$synpdf[b];
     if (!d || opt$$module$synpdf.advncd && !pageNumChanged$$module$synpdf) {
         d = scanPageMetrics$$module$synpdf(a, parseInt(opt$$module$synpdf.seln));
-        if (0 == d.cxs.length) return {
-            height: 0
-        };
         deMetriek$$module$synpdf[b] = d
     }
     pageNumChanged$$module$synpdf = 0;
@@ -1688,9 +1712,20 @@ function drawRes$$module$synpdf(colorIntensityArr, imgWidth, imgHeight, pixelDat
 // Loading, option changes, and CNN preparation use the same staff discovery.
 // Normal loading keeps systems grouped; single-staff discovery is explicitly enabled.
 function scanPageMetrics$$module$synpdf(image, sliceIndex) {
-    return opt$$module$synpdf.onestf
-        ? countPixMultiBands$$module$synpdf(image, sliceIndex)
-        : countPix$$module$synpdf(image, sliceIndex);
+    if (opt$$module$synpdf.onestf) return countPixMultiBands$$module$synpdf(image, sliceIndex);
+    var initialSkip = skipn$$module$synpdf;
+    var primary = countPix$$module$synpdf(image, sliceIndex);
+    if (primary.cxs.length || opt$$module$synpdf.staffScanBand) return primary;
+    // A movement's final system can occupy only the left quarter of the page.
+    // Keep the selected scan when it works; try the opposite quarter if empty.
+    var previousEerst = opt$$module$synpdf.eerst;
+    try {
+        opt$$module$synpdf.eerst = previousEerst ? 0 : 1;
+        skipn$$module$synpdf = initialSkip;
+        return countPix$$module$synpdf(image, sliceIndex);
+    } finally {
+        opt$$module$synpdf.eerst = previousEerst;
+    }
 }
 
 function createPageAnalysis$$module$synpdf(image) {
@@ -2699,25 +2734,29 @@ function keyDown$$module$synpdf(a) {
     switch (b) {
         case "ArrowLeft":
         case "Left":
-            msc_wz$$module$synpdf.goMsre(0, a);
+            msc_wz$$module$synpdf && msc_wz$$module$synpdf.goMsre(0, a);
             break;
         case "ArrowRight":
         case "Right":
-            msc_wz$$module$synpdf.goMsre(1, a);
+            msc_wz$$module$synpdf && msc_wz$$module$synpdf.goMsre(1, a);
             break;
         case "ArrowUp":
         case "Up":
-            msc_wz$$module$synpdf.goUpDown(0, 0, a);
+            msc_wz$$module$synpdf && msc_wz$$module$synpdf.goUpDown(0, 0, a);
             break;
         case "ArrowDown":
         case "Down":
-            msc_wz$$module$synpdf.goUpDown(1, 0, a);
+            msc_wz$$module$synpdf && msc_wz$$module$synpdf.goUpDown(1, 0, a);
             break;
         case "PageUp":
-            msc_wz$$module$synpdf.goUpDown(0, 1, a);
-            break;
         case "PageDown":
-            msc_wz$$module$synpdf.goUpDown(1, 1, a);
+            if (opt$$module$synpdf.advncd && !msc_wz$$module$synpdf && pdfDoc$$module$synpdf && pdfDoc$$module$synpdf.numPages) {
+                var previousPage = Number(opt$$module$synpdf.pagenum);
+                opt$$module$synpdf.pagenum = previousPage + (b === "PageDown" ? 1 : -1);
+                setPagenum$$module$synpdf(previousPage);
+            } else if (msc_wz$$module$synpdf) {
+                msc_wz$$module$synpdf.goUpDown(b === "PageDown" ? 1 : 0, 1, a);
+            }
             break;
         case "Spacebar":
         case " ":
