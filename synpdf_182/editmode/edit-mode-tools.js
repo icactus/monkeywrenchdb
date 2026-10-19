@@ -180,7 +180,7 @@ function exportCurrentMetricDataAsTd() {
     }
 
     let exportData = MetricStore.clone(allPagesData);
-    exportData[0] = 1000;
+    // Retain the coordinate width; detection can run at 2000px or another width.
     for (let i = 1; i < exportData.length; i++) {
         if (!exportData[i]) {
             exportData[i] = { cxs: [], bxs: [] };
@@ -275,9 +275,23 @@ function toggleExclusiveMode(mode) {
     }
 }
 
+// Convert viewport coordinates to the unchanged detection-pixel coordinates.
+function getNotationPoint(event) {
+    var rect = notation.getBoundingClientRect();
+    var scale = typeof getPdfViewScale$$module$synpdf === 'function' ? getPdfViewScale$$module$synpdf() : 1;
+    return {
+        x: (event.clientX - rect.left + (notation.scrollLeft || 0)) / scale,
+        y: (event.clientY - rect.top + (notation.scrollTop || 0)) / scale
+    };
+}
+
 function bindPdfEditToolbar() {
     const toolbar = document.getElementById('pdf-edit-toolbar');
     if (!toolbar) return;
+    var widthInput = document.getElementById('pdf-width-value');
+    if (widthInput) widthInput.addEventListener('change', function () {
+        setPdfDetectionWidth$$module$synpdf(widthInput.value);
+    });
     toolbar.addEventListener('click', function (event) {
         const button = event.target.closest('button');
         if (!button || button.disabled) return;
@@ -298,6 +312,10 @@ function bindPdfEditToolbar() {
                 case 'pdf-width-decrease':
                 case 'pdf-width-increase':
                     changePdfWidth$$module$synpdf(button.id === 'pdf-width-increase' ? 1 : -1);
+                    break;
+                case 'pdf-zoom-decrease':
+                case 'pdf-zoom-increase':
+                    changePdfViewZoom$$module$synpdf(button.id === 'pdf-zoom-increase' ? 1 : -1);
                     break;
                 case 'barline-threshold-decrease':
                 case 'barline-threshold-increase':
@@ -331,12 +349,12 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             cancelPendingSplitInput();
-            const rect = notation.getBoundingClientRect();
+            const point = getNotationPoint(event);
             splitDragState = {
                 startClientX: event.clientX,
                 startClientY: event.clientY,
-                startX: Math.round(event.clientX - rect.left + notation.scrollLeft),
-                startY: Math.round(event.clientY - rect.top + notation.scrollTop),
+                startX: Math.round(point.x),
+                startY: Math.round(point.y),
                 active: false
             };
             document.addEventListener('mousemove', handleActiveSplitDragMove, true);
@@ -348,12 +366,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            const rect = notation.getBoundingClientRect();
+            const point = getNotationPoint(event);
             yDragState = {
                 startClientX: event.clientX,
                 startClientY: event.clientY,
-                startX: Math.round(event.clientX - rect.left + notation.scrollLeft),
-                startY: Math.round(event.clientY - rect.top + notation.scrollTop),
+                startX: Math.round(point.x),
+                startY: Math.round(point.y),
                 active: false
             };
             document.addEventListener('mousemove', handleActiveYDragMove, true);
@@ -729,9 +747,9 @@ function removeBarlinesInSplitDrag(event) {
         return false;
     }
 
-    const rect = notation.getBoundingClientRect();
-    const endX = Math.round(event.clientX - rect.left + notation.scrollLeft);
-    const endY = Math.round(event.clientY - rect.top + notation.scrollTop);
+    const point = getNotationPoint(event);
+    const endX = Math.round(point.x);
+    const endY = Math.round(point.y);
     const minX = Math.min(splitDragState.startX, endX);
     const maxX = Math.max(splitDragState.startX, endX);
     const minY = Math.min(splitDragState.startY, endY);
@@ -861,9 +879,9 @@ function SplitgenerateCoordinates(clickCoords, clickEvent) {
         return;
     }
 
-    let rect = notation.getBoundingClientRect();
-    let x = Math.round(clickCoords[0] - rect.left + notation.scrollLeft);
-    let y = Math.round(SplitclickY - rect.top + notation.scrollTop);
+    let point = getNotationPoint({ clientX: clickCoords[0], clientY: SplitclickY });
+    let x = Math.round(point.x);
+    let y = Math.round(point.y);
     for (let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
         let cs_group = cxsBxsData[pagenum].cxs[j].cs;
         let hitBounds = getSystemHitBounds(pagenum, j, cs_group, x);
@@ -918,9 +936,9 @@ function handleSplitMark(event) {
         return;
     }
 
-    var rect = notation.getBoundingClientRect();
-    var x = event.clientX - rect.left;
-    var y = Math.round(event.clientY - rect.top + notation.scrollTop);
+    var point = getNotationPoint(event);
+    var x = point.x;
+    var y = Math.round(point.y);
 
     for (let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
         let cs_group = cxsBxsData[pagenum].cxs[j].cs;
@@ -1202,7 +1220,7 @@ function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
             ? entry[3] + ' ' + currentPage + '/' + lastPage
             : idleLabel);
     });
-    $('#run-cnn-btn, #run-v2-btn, #run-geom-btn, #export-td-btn, #pdf-edit-toolbar button, #addnewmetricform input[type=submit]').prop('disabled', isRunning);
+    $('#run-cnn-btn, #run-v2-btn, #run-geom-btn, #export-td-btn, #pdf-edit-toolbar button, #pdf-width-value, #addnewmetricform input[type=submit]').prop('disabled', isRunning);
     const currentPageButton = $('#run-cnn-btn');
     currentPageButton.text(isRunning && activeMode === 'cnn_page' ? 'Detecting barlines…' :
         currentPageButton.attr('data-idle-label') || 'Detect barlines (current page)');
@@ -1845,9 +1863,9 @@ function addRemoveBxs$$module$synpdf(event, options) {
     }
 
     // Calculate x and y coordinates of the click event relative to the 'notation' element
-    var rect = notation.getBoundingClientRect();
-    var x = event.clientX - rect.left;
-    var y = Math.round(event.clientY - rect.top + notation.scrollTop);
+    var point = getNotationPoint(event);
+    var x = point.x;
+    var y = Math.round(point.y);
 
     for (let j = 0; j < cxsBxsData[pagenum].cxs.length; j++) {
         let cs_group = cxsBxsData[pagenum].cxs[j].cs;
@@ -1937,17 +1955,17 @@ let endPoint = null;
 let exactBoundariesMode = false; // true = use exact clicked points, false = auto-adjust to staff lines
 
 function editCxsGroups$$module$synpdf(event) {
-    var rect = notation.getBoundingClientRect();
+    var point = getNotationPoint(event);
 
     if (!startPoint) {
         startPoint = {
-            x: event.clientX - rect.left,
-            y: Math.round(event.clientY - rect.top + notation.scrollTop),
+            x: point.x,
+            y: Math.round(point.y),
         };
     } else {
         endPoint = {
-            x: event.clientX - rect.left,
-            y: Math.round(event.clientY - rect.top + notation.scrollTop),
+            x: point.x,
+            y: Math.round(point.y),
             shiftKey: event.shiftKey  // Track if shift was held for snapping
         };
         console.log(startPoint.y, endPoint.y, 'shift:', endPoint.shiftKey);
@@ -4717,9 +4735,9 @@ function mergeSystemsInYSelection(event, wholePage) {
         return false;
     }
 
-    const rect = notation.getBoundingClientRect();
-    const endX = Math.round(event.clientX - rect.left + notation.scrollLeft);
-    const endY = Math.round(event.clientY - rect.top + notation.scrollTop);
+    const point = getNotationPoint(event);
+    const endX = Math.round(point.x);
+    const endY = Math.round(point.y);
     const startX = wholePage ? endX : yDragState.startX;
     const startY = wholePage ? endY : yDragState.startY;
     const minX = Math.min(startX, endX);
@@ -4800,9 +4818,9 @@ function handleYCxs(event) {
         return true;
     }
 
-    var rect = notation.getBoundingClientRect();
-    var x = Math.round(event.clientX - rect.left + notation.scrollLeft);
-    var y = Math.round(event.clientY - rect.top + notation.scrollTop);
+    var point = getNotationPoint(event);
+    var x = Math.round(point.x);
+    var y = Math.round(point.y);
     var systemIndex = findNearestSystemIndexForPoint(pageData[pagenum], pagenum, x, y);
     var system = systemIndex >= 0 ? pageData[pagenum].cxs[systemIndex] : null;
     var existingBarlines = systemIndex >= 0 && pageData[pagenum].bxs ? pageData[pagenum].bxs[systemIndex] : null;
@@ -4888,9 +4906,9 @@ function handleSCxs(event) {
         return true;
     }
 
-    var rect = notation.getBoundingClientRect();
-    var x = Math.round(event.clientX - rect.left + notation.scrollLeft);
-    var y = Math.round(event.clientY - rect.top + notation.scrollTop);
+    var point = getNotationPoint(event);
+    var x = Math.round(point.x);
+    var y = Math.round(point.y);
     var systemIndex = findNearestSystemIndexForPoint(pageData[pagenum], pagenum, x, y);
     if (systemIndex < 0) {
         return true;

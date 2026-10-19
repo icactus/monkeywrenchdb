@@ -11,11 +11,11 @@ const tools = read('edit-mode-tools.js');
 function setup() {
     const listeners = {}, actions = [];
     const body = { tagName: 'BODY' };
-    const widthOutput = {}, widthButton = { disabled: false };
+    const widthOutput = {}, zoomOutput = {}, widthButton = { disabled: false };
     const context = vm.createContext({
         document: {
             activeElement: body,
-            getElementById: id => id === 'pdf-width-value' ? widthOutput : id === 'pdf-width-increase' ? widthButton : null,
+            getElementById: id => id === 'pdf-zoom-value' ? zoomOutput : id === 'pdf-width-value' ? widthOutput : id === 'pdf-width-increase' ? widthButton : null,
             querySelector: () => ({ checked: !!context.opt$$module$synpdf.synbox }),
             addEventListener: (type, handler) => { listeners[type] = handler; }
         },
@@ -66,7 +66,7 @@ function setup() {
         listeners[type](event);
         return event;
     }
-    return { context, actions, body, key, widthOutput, widthButton };
+    return { context, actions, body, key, widthOutput, zoomOutput, widthButton };
 }
 
 test('Shift+M opens the panel and its fields keep typing, navigation and deletion', () => {
@@ -141,32 +141,30 @@ test('score shortcuts work again after focus leaves a control', () => {
 });
 
 
-test('plus and minus resize the PDF with or without Shift and never change playback speed', () => {
+test('plus and minus zoom the view without rendering, rescanning or changing detection width', () => {
     const h = setup();
-    for (const [key, shiftKey, width] of [['=', false, 1100], ['+', true, 1200], ['-', false, 1100], ['_', true, 1000]]) {
-        h.actions.length = 0;
+    for (const [key, shiftKey, zoom] of [['=', false, .6], ['+', true, .7], ['-', false, .6], ['_', true, .5]]) {
         assert.equal(h.key(key, { shiftKey }).prevented, true);
-        assert.equal(h.context.opt$$module$synpdf.fixwd, width);
-        assert.equal(h.context.pageNumChanged$$module$synpdf, 1, 'preserve reviewed page instead of rescanning');
-        assert.equal(h.widthOutput.textContent, width + ' px');
-        assert.deepEqual(h.actions, [['width', width], 'resize']);
+        assert.equal(h.context.opt$$module$synpdf.viewZoom, zoom);
+        assert.equal(h.context.opt$$module$synpdf.fixwd, 1000);
+        assert.equal(h.zoomOutput.textContent, Math.round(zoom * 100) + '%');
+        assert.deepEqual(h.actions, []);
     }
-    assert.equal(h.context.opt$$module$synpdf.manualPageWidth, true);
 });
 
-test('width controls respect bounds and refuse changes during rendering or batch detection', () => {
+test('detection width controls respect bounds and refuse changes during rendering or batch detection', () => {
     const h = setup();
-    for (const [width, key] of [[500, '-'], [3000, '+']]) {
+    for (const [width, direction] of [[500, -1], [3000, 1]]) {
         h.context.opt$$module$synpdf.fixwd = width;
-        h.key(key);
+        assert.equal(h.context.changePdfWidth$$module$synpdf(direction), false);
         assert.equal(h.context.opt$$module$synpdf.fixwd, width);
     }
     h.context.opt$$module$synpdf.fixwd = 1000;
     h.context.rendering$$module$synpdf = 1;
-    h.key('+');
+    assert.equal(h.context.changePdfWidth$$module$synpdf(1), false);
     h.context.rendering$$module$synpdf = 0;
     h.widthButton.disabled = true;
-    h.key('-');
+    assert.equal(h.context.changePdfWidth$$module$synpdf(-1), false);
     assert.equal(h.context.opt$$module$synpdf.fixwd, 1000);
     assert.deepEqual(h.actions, []);
 });

@@ -185,6 +185,19 @@ var SynpdfCorrectionTools = (function () {
         }
     }
 
+    function getNotationPixelSize(notation) {
+        var canvases = notation.querySelectorAll ? notation.querySelectorAll('canvas') : [];
+        var width = 0, height = 0;
+        for (var i = 0; i < canvases.length; i++) {
+            width = Math.max(width, canvases[i].width);
+            height += canvases[i].height;
+        }
+        // Overlay dimensions use detection pixels, just like their children.
+        // Using zoomed scroll extents here would scale twice and can grow the
+        // scroll area on every overlay redraw when zoomed in.
+        return { width: width || notation.scrollWidth, height: height || notation.scrollHeight };
+    }
+
     function ensureOverlay(id, zIndex) {
         var notation = getNotation();
         if (!notation) return null;
@@ -358,8 +371,9 @@ var SynpdfCorrectionTools = (function () {
         if (!notation || !overlay) return;
 
         overlay.innerHTML = '';
-        overlay.style.height = notation.scrollHeight + 'px';
-        overlay.style.width = notation.scrollWidth + 'px';
+        var size = getNotationPixelSize(notation);
+        overlay.style.height = size.height + 'px';
+        overlay.style.width = size.width + 'px';
         overlay.style.display = 'none';
     }
 
@@ -369,8 +383,9 @@ var SynpdfCorrectionTools = (function () {
         if (!notation || !overlay) return;
 
         overlay.innerHTML = '';
-        overlay.style.height = notation.scrollHeight + 'px';
-        overlay.style.width = notation.scrollWidth + 'px';
+        var size = getNotationPixelSize(notation);
+        overlay.style.height = size.height + 'px';
+        overlay.style.width = size.width + 'px';
 
         var baseline = getCurrentPageBaseline();
         if (!baseline || !baseline.systems) {
@@ -422,8 +437,9 @@ var SynpdfCorrectionTools = (function () {
         }
 
         overlay.style.display = 'block';
-        overlay.style.height = notation.scrollHeight + 'px';
-        overlay.style.width = notation.scrollWidth + 'px';
+        var size = getNotationPixelSize(notation);
+        overlay.style.height = size.height + 'px';
+        overlay.style.width = size.width + 'px';
 
         var baseline = getCurrentPageBaseline();
         if (baseline && baseline.systems) {
@@ -1066,7 +1082,7 @@ var SynpdfCorrectionTools = (function () {
             xJson: Math.round(eventData.xJson),
             yJson: Math.round(eventData.yJson),
             fixwd: getCurrentFixwdValue(),
-            canvasWidth: notation ? notation.scrollWidth : null,
+            canvasWidth: notation ? getNotationPixelSize(notation).width : null,
             systemXs: systemBaseline && systemBaseline.xs ? systemBaseline.xs : null,
             systemCs: systemBaseline ? cloneSimpleArray(systemBaseline.cs) : null,
             systemCsl: systemBaseline ? cloneSimpleArray(systemBaseline.csl) : null,

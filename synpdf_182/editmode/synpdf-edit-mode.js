@@ -57,7 +57,7 @@ var msc_VERSION$$module$synpdf = 182,
         spdctl: 1,
         cropx: 0,
         drmpl: .4,
-        pagewd: 1E3,
+        pagewd: 1000,
         synbox: 0,
         wpdf: 0,
         lncsr: 0,
@@ -82,7 +82,8 @@ var msc_VERSION$$module$synpdf = 182,
         advncd: 1,
         playbtn: 0,
         mmin: "",
-        fixwd: 1E3,
+        fixwd: 1000,
+        viewZoom: 0.5,
         lastSynced: -2,
         eerst: 0,
         sysprf: 0,
@@ -101,7 +102,7 @@ var msc_VERSION$$module$synpdf = 182,
         voorna: 1,
         mtdrmpl: 1,
         dx: 1
-        // PDF width is a global view setting, never a per-page scan parameter.
+        // Detection width and view zoom are global, never per-page scan parameters.
     };
 window.onYouTubeIframeAPIReady = yubApiReady$$module$synpdf;
 
@@ -190,7 +191,7 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function () {
         b = c[a] || 1;
         c[a] = b + 1;
         a = deMaten$$module$synpdf[a];
-        d = a.x + d * a.w + $("canvas").offset().left;
+        d = a.x + d * a.w;
         e = $('<div class="reptkn">' + e + n + "</div>");
         e.css({
             top: a.y - 25 * b,
@@ -215,16 +216,9 @@ Wijzer$$module$synpdf.prototype.setRepeat = function (a) {
     this.drawRepTokens()
 };
 Wijzer$$module$synpdf.prototype.setOffsetX = function () {
-    var a = this.xoffset || 0;
     this.xoffset = this.$cvs.offset().left;
     0 <= this.cursorTime && this.time2x(this.cursorTime);
-    if (1 < lpRec$$module$synpdf.loopBtn) {
-        a -= this.xoffset;
-        var b = this.atag.offset().left - a;
-        this.atag.css("left", b);
-        b = this.btag.offset().left - a;
-        this.btag.css("left", b)
-    }
+    if (1 < lpRec$$module$synpdf.loopBtn) this.drawTags();
     this.draw_annots(opt$$module$synpdf.annot);
     this.drawRepTokens()
 };
@@ -454,10 +448,11 @@ Wijzer$$module$synpdf.prototype.setTmargin = function () {
         b = $("#rollijn").offset().top;
     b < a && (b = a + 15, $("#rollijn").css("top", b + "px"));
     var c = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
-    b > c.y + a && (b = a + c.y - dottedHeight$$module$synpdf, $("#rollijn").css("top", b + "px"));
+    var viewScale = getPdfViewScale$$module$synpdf();
+    b > c.y * viewScale + a && (b = a + c.y * viewScale - dottedHeight$$module$synpdf, $("#rollijn").css("top", b + "px"));
     var d = $("#notation").height();
     b + 2 * dottedHeight$$module$synpdf > a + d && (b = a + d - 2 * dottedHeight$$module$synpdf, $("#rollijn").css("top", b + "px"));
-    this.tmargin = dottedHeight$$module$synpdf + b - a;
+    this.tmargin = (dottedHeight$$module$synpdf + b - a) / viewScale;
     doeRol$$module$synpdf(c.y - this.tmargin, 1)
 };
 
@@ -600,10 +595,10 @@ function doeRol$$module$synpdf(a, b) {
     if (0 > a) {
         a = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
         deNot$$module$synpdf.scrollTop = 0;
-        $("#rollijn").css("top", a.y + $("#notation").offset().top - dottedHeight$$module$synpdf - 1);
+        $("#rollijn").css("top", a.y * getPdfViewScale$$module$synpdf() + $("#notation").offset().top - dottedHeight$$module$synpdf - 1);
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin();
     } else {
-        a = Math.round(a);
+        a = Math.round(a * getPdfViewScale$$module$synpdf());
         if (deNot$$module$synpdf.scrollTop != a) {
             if (hasSmooth$$module$synpdf) {
                 deNot$$module$synpdf.style["scroll-behavior"] = b ? "auto" : "smooth";
@@ -822,10 +817,11 @@ function getNotationRenderWidth$$module$synpdf() {
 }
 
 function readPdfdoc$$module$synpdf() {
-    opt$$module$synpdf.pagewd = (opt$$module$synpdf.advncd || opt$$module$synpdf.manualPageWidth) ? opt$$module$synpdf.fixwd : getNotationRenderWidth$$module$synpdf();
+    opt$$module$synpdf.pagewd = Number(opt$$module$synpdf.fixwd) || 1000;
     updatePdfWidthLabel$$module$synpdf();
     if (typeof updateBarlineThresholdControl === "function") updateBarlineThresholdControl();
     schaalMetriek$$module$synpdf();
+    applyPdfViewZoom$$module$synpdf();
     Cs$$module$synpdf = [];
     pageStfIx$$module$synpdf = [];
     deMaten$$module$synpdf = [];
@@ -865,8 +861,8 @@ async function renderMetricPage$$module$synpdf(page, canvas, width) {
         } catch (_error) { /* Keep the normal display path if inspection fails. */ }
     }
     var viewport = page.getViewport({ scale: width / page._pageInfo.view[2] });
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
+    canvas.height = Math.round(viewport.height);
+    canvas.width = Math.round(viewport.width);
     await page.render({
         canvasContext: canvas.getContext("2d", { willReadFrequently: true }),
         viewport: viewport,
@@ -1034,8 +1030,8 @@ function goPage$$module$synpdf(a, b) {
         var d = page.getViewport({ scale: (deMetriek$$module$synpdf[0] / page._pageInfo.view[2]) });
         var e = document.createElement("canvas");  // Create a canvas element
         var f = e.getContext("2d");
-        e.height = d.height;  // Set the dimensions of the canvas to match the page size
-        e.width = d.width;
+        e.height = Math.round(d.height);  // Avoid truncating e.g. 2019.999999 to 2019 pixels.
+        e.width = Math.round(d.width);
         page.render({  // Render the PDF page into the canvas
             canvasContext: f,
             viewport: d
@@ -1082,6 +1078,7 @@ function compPage$$module$synpdf(a, b, c) {
     Cs$$module$synpdf = Cs$$module$synpdf.concat(d.cxs);
     msc_wz$$module$synpdf || startIntf$$module$synpdf(a);
     $("#notation").append(a);
+    applyPdfViewZoom$$module$synpdf();
     $(a).on("mousedown touchstart", kliklang$$module$synpdf);
     deMaten$$module$synpdf.length >= demix$$module$synpdf && msc_wz$$module$synpdf.cursorTime && msc_wz$$module$synpdf.time2x(msc_wz$$module$synpdf.cursorTime);
     maatStrepen$$module$synpdf();
@@ -1121,32 +1118,13 @@ function getNotationRelativeCoords(evt) {
         ? (evt.originalEvent ? evt.originalEvent.changedTouches[0] : evt.changedTouches[0])
         : evt;
 
-    // Viewport coordinates
     const clientX = touch.clientX;
     const clientY = touch.clientY;
-
-    // Window scroll (page) offsets
-    const pageX = (window.pageXOffset !== undefined)
-        ? window.pageXOffset
-        : (document.documentElement.scrollLeft || 0);
-    const pageY = (window.pageYOffset !== undefined)
-        ? window.pageYOffset
-        : (document.documentElement.scrollTop || 0);
-
-    // #notation element metrics
-    const $notation = $("#notation");
-    const notationOffset = $notation.offset(); // document-based
-    const notationScrollTop = $notation.scrollTop() || 0; // internal scroll in the container
-
-    // Wijzer stores the canvas' document-left in xoffset
-    const xoffsetCanvasDocLeft = (msc_wz$$module$synpdf && msc_wz$$module$synpdf.xoffset) || (notationOffset ? notationOffset.left : 0);
-
-    // Convert to document-based click position, then to #notation content coords
-    const xDoc = clientX + pageX; // document X
-    const yDoc = clientY + pageY; // document Y
-
-    const xInNotation = xDoc - xoffsetCanvasDocLeft; // same logic as before, but pageX-aware
-    const yInNotation = yDoc - (notationOffset ? notationOffset.top : 0) + notationScrollTop;
+    const notation = document.getElementById('notation');
+    const rect = notation.getBoundingClientRect();
+    const viewScale = getPdfViewScale$$module$synpdf();
+    const xInNotation = (clientX - rect.left + notation.scrollLeft) / viewScale;
+    const yInNotation = (clientY - rect.top + notation.scrollTop) / viewScale;
 
     return { xInNotation, yInNotation, clientX, clientY };
 }
@@ -1228,8 +1206,9 @@ function annot_move$$module$synpdf(evt) {
             var newTopDoc = mDocY - grabDY; // document-based top of element
 
             // Convert to notation content coordinates for saving
-            var xInNotation = newLeftDoc - ((msc_wz$$module$synpdf && msc_wz$$module$synpdf.xoffset) || (notationOffset ? notationOffset.left : 0));
-            var yInNotation = newTopDoc - (notationOffset ? notationOffset.top : 0) + notationScrollTop;
+            var viewScale = getPdfViewScale$$module$synpdf();
+            var xInNotation = (newLeftDoc - (notationOffset ? notationOffset.left : 0) + ($notation.scrollLeft() || 0)) / viewScale;
+            var yInNotation = (newTopDoc - (notationOffset ? notationOffset.top : 0) + notationScrollTop) / viewScale;
 
             // Move element visually (absolute positioned inside #notation)
             $el.css({ top: yInNotation + "px", left: xInNotation + "px" });
@@ -2046,10 +2025,9 @@ function countVsys$$module$synpdf(a, b, c, analysis) {
         e = h[0];
         for (d = k = 0; d < h.length; d++) l = h[d], e = Math.abs(l - e), 10 < e && e > k && (k = e), e = l;
 
-        // Ensure p stays synchronized with gaps!
-        // BUG FIX POTENTIAL: Original code skipped pushing if k=0, which desyncs p[f] from gap f.
-        // For now, let's just log it.
-        0 < k && p.push(k);
+        // Every staff pair needs an entry, including gaps without a connector.
+        // Omitting zero shifts every subsequent grouping decision to another gap.
+        p.push(k);
     }
     f = p.slice();
     f.sort(function (a, b) {
@@ -2080,6 +2058,22 @@ function countVsys$$module$synpdf(a, b, c, analysis) {
 }
 
 function findBarLines$$module$synpdf(a, b, c, analysis) {
+    // Score exact columns: the tolerant candidate profile also sees ink to its
+    // right and therefore cannot supply the printed stroke's center.
+    function centerOnInk(candidate, scores, spacing) {
+        var radius = Math.max(2, Math.round(spacing * 0.5));
+        var left = Math.max(0, candidate - radius);
+        var right = Math.min(scores.length - 1, candidate + radius);
+        var best = candidate, peak = 0;
+        for (var column = left; column <= right; column++) {
+            if (scores[column] > peak) { peak = scores[column]; best = column; }
+        }
+        if (peak <= 0) return candidate;
+        var first = best, last = best;
+        while (first > left && scores[first - 1] >= peak * 0.95) first--;
+        while (last < right && scores[last + 1] >= peak * 0.95) last++;
+        return Math.round((first + last) / 2);
+    }
     var rgbSums = analysis && analysis.rgbSums;
     var d, e, f, g, p = opt$$module$synpdf.mtdrmpl,
         m = opt$$module$synpdf.voorna,
@@ -2101,8 +2095,10 @@ function findBarLines$$module$synpdf(a, b, c, analysis) {
         var D = (w + l) * b;
         t = [];
         var y = [];
+        var exactBlack = [];
         for (f = 0; f < b; f += 4) {
             var B = e = 0;
+            var strictBlack = 0;
             var x, E;
             if (rgbSums) {
                 for (g = (C + f) / 4; g < (z + f) / 4; g += b / 4) e += rgbSums[g];
@@ -2110,6 +2106,7 @@ function findBarLines$$module$synpdf(a, b, c, analysis) {
                     x = rgbSums[g];
                     E = rgbSums[g + 1];
                     B += Math.min(x, E) < k ? 1 : 0;
+                    strictBlack += x < k ? 1 : 0;
                     e += x;
                 }
                 for (g = (A + f) / 4; g < (D + f) / 4; g += b / 4) e += rgbSums[g];
@@ -2119,12 +2116,14 @@ function findBarLines$$module$synpdf(a, b, c, analysis) {
                     x = c[g] + c[g + 1] + c[g + 2];
                     E = c[g + 4] + c[g + 5] + c[g + 6];
                     B += Math.min(x, E) < k ? 1 : 0;
+                    strictBlack += x < k ? 1 : 0;
                     e += x;
                 }
                 for (g = A + f; g < D + f; g += b) e += c[g] + c[g + 1] + c[g + 2];
             }
             t.push(e / (3 * (w - v + 2 * l)));
-            y.push(B)
+            y.push(B);
+            exactBlack.push(strictBlack)
         }
         f = y.slice(q, u);
         f.sort(function (a, b) {
@@ -2140,7 +2139,13 @@ function findBarLines$$module$synpdf(a, b, c, analysis) {
         // Initialize barlines array with start of system
         e = [r.x1];
         u = e[0];
-        for (f = 5; f < t.length - 5; f++) q = y[f], q > k * p && t[f - n] > v * m && t[f + n] > w * m && f - u > 3 * spatium$$module$synpdf && (e.push(f), u = f);
+        for (f = 5; f < t.length - 5; f++) {
+            q = y[f];
+            if (q > k * p && t[f - n] > v * m && t[f + n] > w * m && f - u > 3 * spatium$$module$synpdf) {
+                var centered = centerOnInk(f, exactBlack, spatium$$module$synpdf);
+                if (centered - u > 3 * spatium$$module$synpdf) { e.push(centered); u = centered; }
+            }
+        }
         r.x2 - u > 3 * spatium$$module$synpdf && e.push(r.x2);
         h.push(e)
     }
@@ -2203,14 +2208,12 @@ function maatStrepen$$module$synpdf() {
 function drawStaffLines$$module$synpdf() {
     $(".staff-debug-line").remove();
     if (opt$$module$synpdf.advncd) {
-        // Get the actual displayed canvas to calculate scale
+        // Keep the overlay geometry in the same pixels as the canvas.
         var canvas = $("canvas")[0];
         if (!canvas) return;
 
-        // Calculate scale factor: displayed height / canvas data height
-        var displayedHeight = canvas.offsetHeight || canvas.clientHeight;
-        var canvasHeight = canvas.height;
-        var scaleFactor = displayedHeight / canvasHeight;
+        // Staff overlays and the canvas share the same view zoom.
+        var scaleFactor = 1;
 
         // Draw detected staff lines in red
         Cs$$module$synpdf.forEach(function (staff) {
@@ -2606,14 +2609,68 @@ function isEditorKeyboardInput(event) {
 
 function updatePdfWidthLabel$$module$synpdf() {
     var output = document.getElementById('pdf-width-value');
-    if (output) output.textContent = Math.round(opt$$module$synpdf.fixwd) + ' px';
+    if (output) {
+        output.value = Math.round(opt$$module$synpdf.fixwd);
+        output.textContent = Math.round(opt$$module$synpdf.fixwd) + ' px';
+    }
 }
 
-function changePdfWidth$$module$synpdf(direction) {
+function getPdfViewScale$$module$synpdf() {
+    var width = typeof deMetriek$$module$synpdf !== 'undefined' && deMetriek$$module$synpdf
+        ? Number(deMetriek$$module$synpdf[0]) : Number(opt$$module$synpdf.fixwd);
+    var zoom = Number(opt$$module$synpdf.viewZoom);
+    if (!Number.isFinite(zoom) || zoom <= 0) zoom = 0.5;
+    // Zoom is relative to the native 2000px page, independent of analysis width.
+    return zoom * 2000 / (width > 0 ? width : 1000);
+}
+
+function applyPdfViewZoom$$module$synpdf() {
+    var zoom = Number(opt$$module$synpdf.viewZoom) || 0.5;
+    var output = document.getElementById('pdf-zoom-value');
+    if (output) output.textContent = Math.round(zoom * 100) + '%';
+    var notation = document.getElementById('notation');
+    if (!notation) return;
+    if (!document.getElementById('pdf-view-zoom-style')) {
+        var style = document.createElement('style');
+        style.id = 'pdf-view-zoom-style';
+        // Keep the viewport and its scrollbars at normal size. The canvas and
+        // all current/future overlays share the same layout-aware zoom.
+        style.textContent = '#notation > :not(#rollijn) { zoom: var(--pdf-view-scale, 1); }';
+        document.head.appendChild(style);
+    }
+    var previousZoom = Number(notation.dataset.pdfViewZoom) || zoom;
+    var scale = getPdfViewScale$$module$synpdf();
+    var previousScale = Number(notation.dataset.pdfViewScale) || scale;
+    var scrollLeft = notation.scrollLeft, scrollTop = notation.scrollTop;
+    notation.style.setProperty('--pdf-view-scale', scale);
+    notation.dataset.pdfViewZoom = zoom;
+    notation.dataset.pdfViewScale = scale;
+    notation.scrollLeft = scrollLeft * zoom / previousZoom;
+    notation.scrollTop = scrollTop * zoom / previousZoom;
+    if (typeof msc_wz$$module$synpdf !== 'undefined' && msc_wz$$module$synpdf && Number.isFinite(msc_wz$$module$synpdf.tmargin)) {
+        msc_wz$$module$synpdf.tmargin *= previousScale / scale;
+    }
+}
+
+function changePdfViewZoom$$module$synpdf(direction) {
+    var zoom = Number(opt$$module$synpdf.viewZoom) || 0.5;
+    var nextZoom = Math.max(0.2, Math.min(2, Math.round((zoom + direction * 0.1) * 100) / 100));
+    if (nextZoom === zoom) return false;
+    opt$$module$synpdf.viewZoom = nextZoom;
+    applyPdfViewZoom$$module$synpdf();
+    return true;
+}
+
+function setPdfDetectionWidth$$module$synpdf(value) {
     var increaseButton = document.getElementById('pdf-width-increase');
     if (rendering$$module$synpdf || (increaseButton && increaseButton.disabled)) return false;
     var width = Number(opt$$module$synpdf.fixwd) || 1000;
-    var nextWidth = Math.max(500, Math.min(3000, width + direction * 100));
+    var nextWidth = Number(value);
+    if (!Number.isFinite(nextWidth) || nextWidth < 500 || nextWidth > 3000) {
+        updatePdfWidthLabel$$module$synpdf();
+        return false;
+    }
+    nextWidth = Math.round(nextWidth);
     if (nextWidth === width) return false;
     opt$$module$synpdf.fixwd = nextWidth;
     opt$$module$synpdf.manualPageWidth = true;
@@ -2626,6 +2683,10 @@ function changePdfWidth$$module$synpdf(direction) {
         resizePdfSyn$$module$synpdf();
     }
     return true;
+}
+
+function changePdfWidth$$module$synpdf(direction) {
+    return setPdfDetectionWidth$$module$synpdf((Number(opt$$module$synpdf.fixwd) || 1000) + direction * 20);
 }
 
 function keyDown$$module$synpdf(a) {
@@ -2681,12 +2742,12 @@ function keyDown$$module$synpdf(a) {
         case "+":
         case "=":
             a.preventDefault && a.preventDefault();
-            changePdfWidth$$module$synpdf(1);
+            changePdfViewZoom$$module$synpdf(1);
             break;
         case "-":
         case "_":
             a.preventDefault && a.preventDefault();
-            changePdfWidth$$module$synpdf(-1);
+            changePdfViewZoom$$module$synpdf(-1);
             break;
         case "Escape":
             $("#menu, #saveDlg").toggle(!1);
@@ -3367,7 +3428,7 @@ function addtips$$module$synpdf() {
         "show/hide the file browse buttons at the top left corner of the page");
     $("#l2").attr("title", "show/hide the light red line that moves within the currently playing staff");
     $("#l3").attr("title", "show/hide the speed setting");
-    $("#l6").attr("title", "Fix horizontal width of the score to 1000 pixels.\nAll advanced parameters are preset to values that work best with this width.\nIf you uncheck this item you will probably have to change some parameters\n(like dx and some thresholds)");
+    $("#l6").attr("title", "Detection image width in pixels. View zoom changes the visible size independently.");
     $("#l8").attr("title",
         "when the average blackness of a horizontal line is above this number\nit is treated as a staff line");
     $("#l9").attr("title", "only the first quarter of the document is scanned for staff lines (normally it is the last quarter)");

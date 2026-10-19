@@ -12,7 +12,7 @@ function definition(name) {
 function setup() {
     const renders = [], widthLabel = {}, fields = new Map();
     const context = vm.createContext({
-        document: { getElementById: id => id === 'pdf-width-value' ? widthLabel : fields.get(id) },
+        document: { getElementById: id => id === 'pdf-width-value' ? widthLabel : id === 'notation' ? null : fields.get(id) },
         opt$$module$synpdf: { fixwd: 1000, pagewd: 1000, pagenum: 1, advncd: 1, drmpl: .4, dx: 5 },
         adv_parms$$module$synpdf: {
             1: { fixwd: 1000, drmpl: .4, dx: 5 },
@@ -41,7 +41,7 @@ function setup() {
     vm.runInContext('var ' + source.slice(namesStart, source.indexOf('window.onYouTubeIframeAPIReady', namesStart)).trim(), context);
     for (const name of Object.keys(context.adv_names$$module$synpdf)) fields.set(name, { type: 'number' });
     for (const name of ['schakelParms$$module$synpdf', 'setPagenum$$module$synpdf', 'updatePdfWidthLabel$$module$synpdf',
-        'changePdfWidth$$module$synpdf', 'readPdfdoc$$module$synpdf', 'schaalMetriek$$module$synpdf', 'checkMenu$$module$synpdf']) {
+        'getPdfViewScale$$module$synpdf', 'applyPdfViewZoom$$module$synpdf', 'setPdfDetectionWidth$$module$synpdf', 'changePdfWidth$$module$synpdf', 'readPdfdoc$$module$synpdf', 'schaalMetriek$$module$synpdf', 'checkMenu$$module$synpdf']) {
         vm.runInContext(definition(name), context);
     }
     return { context, renders, widthLabel };
@@ -51,23 +51,23 @@ test('width persists globally through navigation and ignores legacy per-page wid
     const { context: c, renders, widthLabel } = setup();
     c.changePdfWidth$$module$synpdf(1);
     assert.deepEqual(renders, [1], 'width redraws only the displayed page');
-    assert.equal(c.opt$$module$synpdf.fixwd, 1100);
+    assert.equal(c.opt$$module$synpdf.fixwd, 1020);
     assert.equal(c.pageNumChanged$$module$synpdf, 1, 'reuse reviewed metrics');
     c.opt$$module$synpdf.pagenum = 2;
     c.setPagenum$$module$synpdf(1);
-    assert.equal(c.opt$$module$synpdf.fixwd, 1100);
+    assert.equal(c.opt$$module$synpdf.fixwd, 1020);
     assert.equal(c.opt$$module$synpdf.drmpl, .2, 'actual scan thresholds remain per-page');
-    assert.equal(widthLabel.textContent, '1100 px');
+    assert.equal(widthLabel.textContent, '1020 px');
     assert.equal(Object.hasOwn(c.adv_parms$$module$synpdf[1], 'fixwd'), false);
     c.opt$$module$synpdf.pagenum = 1;
     c.setPagenum$$module$synpdf(2);
-    assert.equal(c.opt$$module$synpdf.fixwd, 1100);
+    assert.equal(c.opt$$module$synpdf.fixwd, 1020);
     assert.equal(c.opt$$module$synpdf.drmpl, .4);
     assert.deepEqual(renders, [1, 2, 1], 'navigation renders only its destination');
-    assert.deepEqual(plain(c.deMetriek$$module$synpdf[2].bxs), [[55.00000000000001, 330, 1045]], 'existing detections are scaled rather than recomputed');
+    assert.deepEqual(plain(c.deMetriek$$module$synpdf[2].bxs), [[51, 306, 969]], 'existing detections are scaled rather than recomputed');
 });
 
-test('typing a view width in the menu preserves reviewed metrics and uses the same global setting', () => {
+test('typing a detection width in the menu preserves reviewed metrics and uses the same global setting', () => {
     const { context: c, renders, widthLabel } = setup();
     c.checkMenu$$module$synpdf.call({ id: 'fixwd', type: 'number', value: '1200', reportValidity: () => true });
     assert.equal(c.opt$$module$synpdf.fixwd, 1200);

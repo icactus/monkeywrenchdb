@@ -1028,6 +1028,22 @@ var BarlineDetectV2 = (function () {
     }
 
     function findBarLinesV1Single(system, stride, pixelData, imageWidth, opts) {
+        // Score exact columns: the tolerant candidate profile also sees ink to its
+        // right and therefore cannot supply the printed stroke's center.
+        function centerOnInk(candidate, scores, spacing) {
+            var radius = Math.max(2, Math.round(spacing * 0.5));
+            var left = Math.max(0, candidate - radius);
+            var right = Math.min(scores.length - 1, candidate + radius);
+            var best = candidate, peak = 0;
+            for (var column = left; column <= right; column++) {
+                if (scores[column] > peak) { peak = scores[column]; best = column; }
+            }
+            if (peak <= 0) return candidate;
+            var first = best, last = best;
+            while (first > left && scores[first - 1] >= peak * 0.95) first--;
+            while (last < right && scores[last + 1] >= peak * 0.95) last++;
+            return Math.round((first + last) / 2);
+        }
         opts = opts || {};
         var p = opts.mtdrmpl !== undefined ? opts.mtdrmpl : 0.5;
         var m = opts.voorna !== undefined ? opts.voorna : 0.2;
@@ -1074,9 +1090,11 @@ var BarlineDetectV2 = (function () {
 
         var t = [];
         var y = [];
+        var exactBlack = [];
         for (var f = 0; f < numCols; f++) {
             var brightnessSum = 0;
             var blackCount = 0;
+            var strictBlack = 0;
             var brightRows = 0;
 
             for (var row = Math.max(0, topY - localExt); row < Math.min(maxImgRow, topY) + 1; row++) {
@@ -1094,6 +1112,7 @@ var BarlineDetectV2 = (function () {
                     e = pixelData[centerIdx + 4] + pixelData[centerIdx + 5] + pixelData[centerIdx + 6];
                 }
                 if (Math.min(x, e) < k) blackCount++;
+                if (x < k) strictBlack++;
                 brightnessSum += x;
                 brightRows++;
             }
@@ -1106,6 +1125,7 @@ var BarlineDetectV2 = (function () {
 
             t.push(brightRows > 0 ? brightnessSum / (3 * brightRows) : 0);
             y.push(blackCount);
+            exactBlack.push(strictBlack);
         }
 
         var ySlice = y.slice(q, u).sort(function (a, b) { return b - a; });
@@ -1128,8 +1148,8 @@ var BarlineDetectV2 = (function () {
                 cand - dx >= 0 && t[cand - dx] > leftBase * m &&
                 cand + dx < numCols && t[cand + dx] > rightBase * m &&
                 cand - lastBar > 3 * spatium) {
-                result.push(cand);
-                lastBar = cand;
+                var centered = centerOnInk(cand, exactBlack, spatium);
+                if (centered - lastBar > 3 * spatium) { result.push(centered); lastBar = centered; }
             }
         }
         if (xs.x2 - lastBar > 3 * spatium) result.push(xs.x2);

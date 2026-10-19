@@ -39,7 +39,7 @@ $onnxWasmThreads = 1;
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=15"></script>
+    <script src="correction-log-tools.js?v=19"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
@@ -58,7 +58,7 @@ $onnxWasmThreads = 1;
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
-    <script src="synpdf-edit-mode.js?v=95"></script>
+    <script src="synpdf-edit-mode.js?v=97"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>

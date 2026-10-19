@@ -33,7 +33,7 @@ function harness(systems, bars, startY, endY) {
         suppressNextYClick: false,
         YisActive: true
     });
-    for (const name of ['getSystemEnvelopeLines', 'getSystemTopBottomAtX', 'getSystemVerticalEnvelope',
+    for (const name of ['getNotationPoint', 'getSystemEnvelopeLines', 'getSystemTopBottomAtX', 'getSystemVerticalEnvelope',
         'getSystemSortTop', 'buildYMergeFromSelection', 'mergeSystemsInYSelection', 'mergeSystemsInYDrag', 'handleActiveYDragEnd', 'handleYCxs']) {
         vm.runInContext(definition(name), context);
     }

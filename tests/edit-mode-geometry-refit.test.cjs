@@ -9,7 +9,7 @@ const detector = require(path.join(folder, 'barline-detect-v2.js'));
 const clone = value => JSON.parse(JSON.stringify(value));
 function setup() {
     const context = vm.createContext({});
-    for (const name of ['cloneSystemForGeometrySeed', 'getSystemBoundaryXs', 'applyExistingBoundaryXs',
+    for (const name of ['getNotationPoint', 'cloneSystemForGeometrySeed', 'getSystemBoundaryXs', 'applyExistingBoundaryXs',
         'applyRenderGeometryToSystem', 'shiftSystemSeedToTopLine', 'getSystemEnvelopeLines',
         'getSystemTopBottomAtX', 'findNearestSystemIndexForPoint', 'handleSCxs']) {
         const start = source.indexOf('function ' + name + '(');

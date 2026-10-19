@@ -54,7 +54,7 @@
     $onnxWasmThreads = $isLocalHost ? 1 : 4;
     ?>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=17"></script>
+    <script src="correction-log-tools.js?v=19"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
@@ -73,7 +73,7 @@
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
-    <script src="synpdf-edit-mode.js?v=95"></script>
+    <script src="synpdf-edit-mode.js?v=97"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="part-count-check.js?v=1" defer></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
@@ -839,7 +839,8 @@
         .toolbar-divider { height: 24px; border-left: 1px solid #ccc; margin: 0 3px; }
         #barline-threshold-value { min-width: 32px; text-align: center; font-size: 13px; }
         #barline-threshold-label { font-size: 13px; }
-        #pdf-width-value { min-width: 64px; text-align: center; font-size: 13px; }
+        #pdf-width-value { width: 76px; text-align: center; font-size: 13px; }
+        #pdf-zoom-value { min-width: 42px; text-align: center; font-size: 13px; }
 
         #match-info {
             font-size: 12px;
@@ -922,7 +923,7 @@
                         max="30"></input></label>
                 <label class="mexp" id="lu"><span>page number:</span> <input type="number" step="1" min="1"
                         id="pagenum"></input></label>
-                <label class="mexp" id="l6"><span>page width:</span> <input type="number" step="10" min="500" max="3000"
+                <label class="mexp" id="l6"><span>detection width:</span> <input type="number" step="10" min="500" max="3000"
                         id="fixwd"></label>
                 <label class="mexp" id="lj"><span>no menu:</span> <input id="no_menu" type="checkbox"></label>
                 <label class="mexp" id="implbl"><span>import:</span> <input id="impbox" type="checkbox"></label>
@@ -1178,9 +1179,16 @@
                 <button type="button" data-edit-mode="y" aria-pressed="false" title="Y: drag to merge systems using the starting system’s barlines; Ctrl-click a system to merge the whole page" data-tooltip="Y: drag to merge · Ctrl-click: merge whole page">Refit / merge</button>
                 <button type="button" data-edit-mode="s" aria-pressed="false" title="Split a multimeasure rest (S)" data-tooltip="Split rest · S, or Shift-click in barline mode">Split rest</button>
                 <span class="toolbar-divider" aria-hidden="true"></span>
-                <button type="button" id="pdf-width-decrease" aria-label="Decrease PDF width" title="Decrease global PDF width (− or _)" data-tooltip="Narrower · − / _ · Applies across pages">−</button>
-                <output id="pdf-width-value" aria-label="PDF width">1000 px</output>
-                <button type="button" id="pdf-width-increase" aria-label="Increase PDF width" title="Increase global PDF width (+ or =)" data-tooltip="Wider · + / = · Applies across pages">+</button>
+                <label for="pdf-width-value">Detection width</label>
+                <button type="button" id="pdf-width-decrease" aria-label="Decrease detection width" data-tooltip="Decrease detection width by 20 px">−</button>
+                <input type="number" id="pdf-width-value" aria-label="Detection width in pixels" min="500" max="3000" step="20" value="1000">
+                <span>px</span>
+                <button type="button" id="pdf-width-increase" aria-label="Increase detection width" data-tooltip="Increase detection width by 20 px">+</button>
+                <span class="toolbar-divider" aria-hidden="true"></span>
+                <span>Zoom</span>
+                <button type="button" id="pdf-zoom-decrease" aria-label="Zoom out" data-tooltip="Zoom out · − / _">−</button>
+                <output id="pdf-zoom-value" aria-label="View zoom">50%</output>
+                <button type="button" id="pdf-zoom-increase" aria-label="Zoom in" data-tooltip="Zoom in · + / =">+</button>
                 <span class="toolbar-divider" aria-hidden="true"></span>
                 <span id="barline-threshold-label">Barline threshold</span>
                 <button type="button" id="barline-threshold-decrease" aria-label="Decrease barline threshold" title="Decrease image-based barline threshold (.) — include weaker lines" data-tooltip="More barlines · . · Replaces this page’s barlines">−</button>
@@ -1239,7 +1247,7 @@
             </tr>
             <tr>
                 <td><b>+</b>/<b>-</b></td>
-                <td>increase / decrease PDF width (also = and _)</td>
+                <td>zoom in / out (also = and _); detection width is separate</td>
                 <td><b>m</b></td>
                 <td>toggle menu</td>
             </tr>
