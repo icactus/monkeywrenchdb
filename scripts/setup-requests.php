@@ -19,4 +19,9 @@ do {
 if ($db->query("SHOW COLUMNS FROM music_requests LIKE 'deleted_at'")->num_rows === 0) {
     $db->query('ALTER TABLE music_requests ADD COLUMN deleted_at DATETIME NULL');
 }
+foreach (['update_version', 'seen_version'] as $column) {
+    if ($db->query("SHOW COLUMNS FROM music_requests LIKE '$column'")->num_rows === 0) {
+        $db->query("ALTER TABLE music_requests ADD COLUMN $column INT UNSIGNED NOT NULL DEFAULT 0");
+    }
+}
 echo "Music request tables ready.\n";

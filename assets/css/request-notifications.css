@@ -1,0 +1,27 @@
+/* Shared by the homepage/player and My Requests. */
+.nav-menu .request-notification-link[hidden], .request-menu-count[hidden] { display: none; }
+.nav-menu .request-notification-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 7px;
+    margin-right: 8px;
+    color: #244c56;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    text-decoration: none;
+}
+.request-notification-link:focus-visible { outline: 3px solid #376a73; outline-offset: 3px; }
+.request-notification-count, .request-menu-count {
+    background: #a63220;
+    color: white;
+    border-radius: 12px;
+    padding: 2px 6px;
+    font: 700 12px/1.3 Arial, sans-serif;
+}
+.request-notification-count { position: absolute; top: -7px; right: -8px; }
+.request-menu-count { margin-left: 6px; }
+html.inverted .nav-menu .request-notification-link { color: #e3eeee; }

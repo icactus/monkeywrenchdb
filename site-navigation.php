@@ -25,7 +25,7 @@ $navigationIsAdmin = $standaloneNavigation ? $isAdmin : (($_SESSION['user_role']
                 <?= $standaloneNavigation ? '' : 'onclick="toggleHistoryMenu(); toggleMobileHeaderMenu();"' ?>>History</a>
             <a href="<?= $standaloneNavigation ? '/?account=favorites' : 'javascript:void(0)' ?>"
                 <?= $standaloneNavigation ? '' : 'onclick="toggleFavoritesMenu(); toggleMobileHeaderMenu();"' ?>>Favorites</a>
-            <a href="requests.php"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> My Requests</a>
+            <a href="requests.php"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> My Requests <span class="request-menu-count" hidden></span></a>
             <?php if ($navigationIsAdmin): ?>
                 <a href="requests.php?view=admin"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> Request queue</a>
             <?php endif; ?>
@@ -70,6 +70,11 @@ $navigationIsAdmin = $standaloneNavigation ? $isAdmin : (($_SESSION['user_role']
     <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;"
         class="nav-link">Help</a>
     <?php if ($navigationSignedIn): ?>
+        <a class="request-notification-link" href="/requests.php?status=updates#request-list-title" aria-label="Unread request updates" hidden>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+            <span class="request-notification-count" aria-hidden="true"></span>
+        </a>
+        <script src="/js/request-notifications.js?v=1" defer></script>
         <div class="nav-user-dropdown">
             <button class="nav-user-trigger" aria-label="Account menu" onclick="toggleUserDropdown(event)">
                 <span
@@ -100,7 +105,7 @@ $navigationIsAdmin = $standaloneNavigation ? $isAdmin : (($_SESSION['user_role']
                     </svg>
                     Favorites
                 </a>
-                <a href="requests.php"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> My Requests</a>
+                <a href="requests.php"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> My Requests <span class="request-menu-count" hidden></span></a>
                 <!-- <a href="javascript:void(0)" onclick="toggleAnnotationsManager(); closeUserDropdown();">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2">

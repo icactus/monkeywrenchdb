@@ -413,3 +413,6 @@ html.inverted .modal-header,html.inverted .help-note,html.inverted .mobile-menu-
 html.inverted .modal-close{background:var(--soft);color:var(--ink)}
 @media(max-width:767px){.request-header .nav-menu>.nav-link,.request-header .nav-user-dropdown{display:none}#mobile-header-burger{display:flex}.request-header-inner{align-items:flex-start}.request-header .nav-menu{margin:0}}
 @media(max-width:380px){.request-brand{gap:12px}.request-brand img{width:32px;height:32px}.request-brand-title{font-size:20px}.request-brand-tagline{font-size:14px}}
+.request-card.request-unread{border:2px solid #376a73;scroll-margin-top:24px}
+.request-update-note{padding:12px 15px;border-radius:7px;background:var(--soft);color:var(--ink)}
+#request-list-title{scroll-margin-top:24px}

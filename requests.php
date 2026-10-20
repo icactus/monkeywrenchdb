@@ -51,10 +51,9 @@ foreach (['composer_name', 'piece_name', 'part_name', 'youtube_url'] as $field) 
     $values[$field] = requestScalar($draft, $field, requestScalar($_GET, $field));
 }
 $filter = requestScalar($_GET, 'status', $adminView ? 'open' : 'all');
-if (!in_array($filter, ['open', 'all'], true) && !isset(MW_REQUEST_STATUSES[$filter])) $filter = 'all';
+if (!in_array($filter, ['open', 'all', 'updates'], true) && !isset(MW_REQUEST_STATUSES[$filter])) $filter = 'all';
 $page = max(1, min(100000, (int) requestScalar($_GET, 'page', '1')));
 $listUrl = 'requests.php?' . http_build_query(['view' => $adminView ? 'admin' : 'mine', 'status' => $filter, 'page' => $page]);
-$compose = null;
 $replyDraft = '';
 $postedRequestId = 0;
 
@@ -110,9 +109,9 @@ try {
                 throw new InvalidArgumentException('Replace the preset’s bracketed placeholder before saving your reply.');
             }
             $replyId = mwRequestRespond($db, $userId, $postedRequestId, requestScalar($_POST, 'status'), $action === 'reply' ? $replyDraft : null);
-            $url = $listUrl . ($replyId ? '&compose=' . $replyId : '') . '#request-' . $postedRequestId;
+            $url = $listUrl . '#request-' . $postedRequestId;
             requestRedirect($url, $replyId
-                ? 'Reply saved to the request. Open the Gmail draft below and send it in Gmail to email the requester.'
+                ? 'Reply saved. The requester will see a notification when they next visit.'
                 : 'Request status updated.');
         } else {
             throw new InvalidArgumentException('Unknown request action.');
@@ -134,16 +133,6 @@ if ($db && $user && !$denied && !$unavailable) {
         $hasNext = count($requests) > 25;
         $requests = array_slice($requests, 0, 25);
         $threads = mwRequestReplies($db, $userId, $adminView, array_column($requests, 'id'));
-        $composeId = (int) requestScalar($_GET, 'compose');
-        if ($adminView && $composeId > 0) {
-            $stmt = $db->prepare('SELECT m.message, r.*, u.email FROM music_request_replies m JOIN music_requests r ON r.id = m.request_id JOIN users u ON u.id = r.user_id WHERE m.id = ? AND r.deleted_at IS NULL');
-            $stmt->bind_param('i', $composeId);
-            $stmt->execute();
-            $reply = $stmt->get_result()->fetch_assoc();
-            if ($reply && filter_var($reply['email'], FILTER_VALIDATE_EMAIL)) {
-                $compose = ['url' => mwRequestGmailUrl($reply['email'], $reply, $reply['message']), 'email' => $reply['email']];
-            }
-        }
     } catch (Throwable $e) {
         error_log('Music requests list: ' . $e->getMessage());
         http_response_code(503);
@@ -157,7 +146,7 @@ $presets = [
     'Time estimate' => ['requested', 'Thanks for your request! I expect to get to this in about [timeframe]. This is an estimate, and I’ll let you know if it changes.'],
     'In progress' => ['in_progress', 'I’ve started working on your request. I’ll let you know when it’s available on Monkey Wrench Database.'],
     'Copyright limitation' => ['unable_to_add', 'Thanks for your request. Unfortunately, I’m unable to add this material because of copyright restrictions. If you know of a public domain or appropriately licensed edition, please email me a link and I can take another look.'],
-    'Need more information' => ['requested', 'Thanks for your request! Could you reply to this email with a little more detail about the piece or the exact part you’re looking for?'],
+    'Need more information' => ['requested', 'Thanks for your request! Please use the contact link to send a little more detail about the piece or the exact part you’re looking for, including your request number.'],
     'Added' => ['added', 'Your requested piece or part is now available on Monkey Wrench Database: [link]\n\nThanks for helping me decide what to add!'],
     'Unable to add' => ['unable_to_add', 'Thanks for your request. Unfortunately, I’m unable to add this at the moment.'],
 ];
@@ -170,9 +159,10 @@ $presets = [
     <meta name="robots" content="noindex, nofollow">
     <title><?= $adminView ? 'Request queue' : 'Request a piece or part' ?> | Monkey Wrench Database</title>
     <link rel="stylesheet" href="assets/css/fonts.css?v=34">
-    <link rel="stylesheet" href="assets/css/requests.css?v=3">
+    <link rel="stylesheet" href="assets/css/requests.css?v=4">
+    <link rel="stylesheet" href="assets/css/request-notifications.css?v=1">
     <script>try { if (localStorage.getItem('darkMode') === '1') document.documentElement.classList.add('inverted'); } catch (e) {}</script>
-    <script src="js/requests.js?v=3" defer></script>
+    <script src="js/requests.js?v=4" defer></script>
 </head>
 <body>
 <header class="request-header">
@@ -184,21 +174,13 @@ $presets = [
         <?php $standaloneNavigation = true; require __DIR__ . '/site-navigation.php'; ?>
     </div>
 </header>
-<main>
+<main data-request-csrf="<?= requestEscape($csrf) ?>">
     <div class="request-heading"><?php if ($adminView): ?><p class="eyebrow">Admin</p><?php endif; ?>
         <h1 id="request-page-title"><?= $adminView ? 'Request queue' : 'Request a piece or part' ?></h1>
         <p><?= $adminView ? 'Review requests, update their status, and prepare a personal reply.' : 'Missing something you’d like to practice? Let me know what to add next.' ?></p>
     </div>
     <?php if ($flash): ?><div class="notice success" role="status"><?= requestEscape($flash) ?></div><?php endif; ?>
     <?php if ($error): ?><div class="notice error" role="alert"><?= requestEscape($error) ?></div><?php endif; ?>
-    <?php if ($compose): ?>
-        <section class="notice compose" aria-label="Email your saved reply">
-            <strong>Your email is ready to draft</strong>
-            <p>To: <?= requestEscape($compose['email']) ?>. Gmail lets you edit it again before sending.</p>
-            <a class="primary button" href="<?= requestEscape($compose['url']) ?>" target="_blank" rel="noopener noreferrer">Open Gmail draft ↗</a>
-            <p class="hint">The reply is saved on the site. This button opens a draft; send the email in Gmail.</p>
-        </section>
-    <?php endif; ?>
     <?php if (!$adminView && !$denied): ?>
         <section class="panel" aria-labelledby="request-page-title">
             <p class="hint">One request every seven days, with up to two unfinished requests at a time. Requests help me choose what to add; there’s no guaranteed completion date.</p>
@@ -223,19 +205,21 @@ $presets = [
     <?php endif; ?>
     <?php if ($user && !$denied && !$unavailable): ?>
         <section aria-labelledby="request-list-title">
-            <div class="list-heading"><h2 id="request-list-title"><?= $adminView ? 'All requests' : 'My requests' ?></h2>
+            <div class="list-heading"><h2 id="request-list-title"><?= $adminView ? 'All requests' : ($filter === 'updates' ? 'Unread request updates' : 'My requests') ?></h2>
                 <form method="get" class="filter-form"><input type="hidden" name="view" value="<?= $adminView ? 'admin' : 'mine' ?>">
                     <label for="request-filter">Show</label>
                     <select name="status" id="request-filter">
-                        <?php foreach (['all' => 'All requests', 'open' => 'Unfinished'] + MW_REQUEST_STATUSES as $key => $label): ?>
+                        <?php foreach (['all' => 'All requests', 'updates' => 'Unread updates', 'open' => 'Unfinished'] + MW_REQUEST_STATUSES as $key => $label): ?>
                             <option value="<?= requestEscape($key) ?>" <?= $key === $filter ? 'selected' : '' ?>><?= requestEscape($label) ?></option>
                         <?php endforeach; ?>
                     </select><button type="submit">Filter</button>
                 </form>
             </div>
-            <?php if (!$requests): ?><p class="empty">No requests here yet.</p><?php endif; ?>
+            <?php if (!$requests): ?><p class="empty"><?= $filter === 'updates' ? 'You’re caught up. No unread request updates.' : 'No requests here yet.' ?></p><?php endif; ?>
             <?php foreach ($requests as $request): $id = (int) $request['id']; ?>
-                <article class="panel request-card" id="request-<?= $id ?>">
+                <?php $unread = !$adminView && (int) $request['update_version'] > (int) $request['seen_version']; ?>
+                <article class="panel request-card<?= $unread ? ' request-unread' : '' ?>" id="request-<?= $id ?>"<?= $unread ? ' data-unread-version="' . (int) $request['update_version'] . '"' : '' ?>>
+                    <?php if ($unread): ?><p class="request-update-note" role="status"><strong>New update</strong> · <?= requestEscape(requestDate($request['updated_at'])) ?> — <?= requestEscape(MW_REQUEST_STATUSES[$request['status']]) ?><?= !empty($threads[$id]) ? '. See the reply below.' : '.' ?></p><?php endif; ?>
                     <div class="card-heading"><div><p class="eyebrow">Request #<?= $id ?> · <?= requestEscape(requestDate($request['created_at'])) ?></p>
                         <h3><?= requestEscape($request['piece_name']) ?></h3><p><?= requestEscape($request['composer_name']) ?> · <strong><?= requestEscape($request['part_name']) ?></strong></p>
                     </div><span class="badge status-<?= requestEscape($request['status']) ?>"><?= requestEscape(MW_REQUEST_STATUSES[$request['status']]) ?></span></div>
@@ -246,9 +230,6 @@ $presets = [
                             <?php foreach ($threads[$id] as $reply): ?>
                                 <div class="reply"><p class="hint">Reply from Monkey Wrench Database · <?= requestEscape(requestDate($reply['created_at'])) ?></p>
                                     <p class="reply-message"><?= requestEscape($reply['message']) ?></p>
-                                    <?php if ($adminView && filter_var($request['user_email'], FILTER_VALIDATE_EMAIL)): ?>
-                                        <a class="email-link" href="<?= requestEscape(mwRequestGmailUrl($request['user_email'], $request, $reply['message'])) ?>" target="_blank" rel="noopener noreferrer">Open Gmail draft ↗</a>
-                                    <?php endif; ?>
                                 </div>
                             <?php endforeach; ?>
                         </div>
@@ -271,16 +252,16 @@ $presets = [
                                 <?php foreach ($presets as $label => [$status, $message]): ?><option data-status="<?= requestEscape($status) ?>" value="<?= requestEscape(str_replace('\\n', "\n", $message)) ?>"><?= requestEscape($label) ?></option><?php endforeach; ?>
                             </select></label>
                             <label>Your reply<textarea name="message" rows="5" maxlength="5000" placeholder="Write a message to the requester…" required><?= $postedRequestId === $id ? requestEscape($replyDraft) : '' ?></textarea></label>
-                            <p class="hint">Presets are editable. Saving publishes your reply under My requests. Then open Gmail to send it by email.</p>
-                            <button class="primary" name="action" value="reply" type="submit">Save reply &amp; prepare email</button>
+                            <p class="hint">Presets are editable. Saving publishes your reply under My requests and notifies the requester on their next visit.</p>
+                            <button class="primary" name="action" value="reply" type="submit">Save reply &amp; notify</button>
                         </form>
                     <?php endif; ?>
                 </article>
             <?php endforeach; ?>
             <?php if ($page > 1 || !empty($hasNext)): ?><nav class="pagination" aria-label="Request pages">
-                <?php if ($page > 1): ?><a href="requests.php?<?= requestEscape(http_build_query(['view' => $adminView ? 'admin' : 'mine', 'status' => $filter, 'page' => $page - 1])) ?>">← Newer</a><?php endif; ?>
+                <?php if ($page > 1): ?><a href="requests.php?<?= requestEscape(http_build_query(['view' => $adminView ? 'admin' : 'mine', 'status' => $filter, 'page' => $page - 1])) ?>#request-list-title">← Newer</a><?php endif; ?>
                 <span>Page <?= $page ?></span>
-                <?php if (!empty($hasNext)): ?><a href="requests.php?<?= requestEscape(http_build_query(['view' => $adminView ? 'admin' : 'mine', 'status' => $filter, 'page' => $page + 1])) ?>">Older →</a><?php endif; ?>
+                <?php if (!empty($hasNext)): ?><a href="requests.php?<?= requestEscape(http_build_query(['view' => $adminView ? 'admin' : 'mine', 'status' => $filter, 'page' => $page + 1])) ?>#request-list-title">Older →</a><?php endif; ?>
             </nav><?php endif; ?>
         </section>
     <?php endif; ?>

@@ -77,3 +77,36 @@
         });
     });
 })();
+
+// Acknowledge only updates that actually enter the viewport. Opening another
+// page or a filtered list must not clear updates the requester has not seen.
+(() => {
+    const cards = document.querySelectorAll('[data-unread-version]');
+    const csrf = document.querySelector('main[data-request-csrf]')?.dataset.requestCsrf;
+    if (!cards.length || !csrf || !('IntersectionObserver' in window)) return;
+    const pending = new Set();
+    async function acknowledge(card) {
+        if (pending.has(card) || document.hidden || !card.dataset.unreadVersion) return;
+        pending.add(card);
+        try {
+            const body = new URLSearchParams({ csrf, request_id: card.id.replace('request-', ''), version: card.dataset.unreadVersion });
+            const response = await fetch('/request-notifications.php', { method: 'POST', credentials: 'same-origin', body });
+            if (!response.ok) return;
+            delete card.dataset.unreadVersion;
+            observer.unobserve(card.querySelector('.request-update-note'));
+            window.dispatchEvent(new Event('requests:seen'));
+        } catch {} finally { pending.delete(card); }
+    }
+    const visible = new Set();
+    const observer = new IntersectionObserver(entries => {
+        for (const entry of entries) {
+            const card = entry.target.closest('[data-unread-version]');
+            if (!card) continue;
+            if (entry.isIntersecting) { visible.add(card); acknowledge(card); }
+            else visible.delete(card);
+        }
+    });
+    cards.forEach(card => observer.observe(card.querySelector('.request-update-note')));
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) visible.forEach(acknowledge); });
+    window.addEventListener('online', () => visible.forEach(acknowledge));
+})();

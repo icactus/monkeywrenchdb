@@ -134,11 +134,12 @@ function mwRequestList(mysqli $db, int $userId, bool $admin, string $filter = ''
     $where = $admin ? '1 = 1' : 'r.user_id = ' . (int) $userId;
     $where .= ' AND r.deleted_at IS NULL';
     if ($filter === 'open') $where .= " AND r.status IN ('requested', 'in_progress')";
+    elseif ($filter === 'updates') $where .= ' AND r.update_version > r.seen_version';
     elseif (isset(MW_REQUEST_STATUSES[$filter])) $where .= " AND r.status = '" . $db->real_escape_string($filter) . "'";
     $offset = (max(1, $page) - 1) * 25;
     $columns = $admin ? ', u.name AS user_name, u.email AS user_email' : '';
     $join = $admin ? ' LEFT JOIN users u ON u.id = r.user_id' : '';
-    return $db->query("SELECT r.* $columns FROM music_requests r $join WHERE $where ORDER BY r.created_at DESC, r.id DESC LIMIT 26 OFFSET $offset")->fetch_all(MYSQLI_ASSOC);
+    return $db->query("SELECT r.* $columns FROM music_requests r $join WHERE $where ORDER BY " . ($filter === 'updates' ? 'r.updated_at' : 'r.created_at') . " DESC, r.id DESC LIMIT 26 OFFSET $offset")->fetch_all(MYSQLI_ASSOC);
 }
 
 function mwRequestReplies(mysqli $db, int $userId, bool $admin, array $requestIds): array
@@ -160,12 +161,14 @@ function mwRequestRespond(mysqli $db, int $adminId, int $requestId, string $stat
     if ($message !== null) $message = mwRequestText($message, 'reply', 5000);
     $db->begin_transaction();
     try {
-        $stmt = $db->prepare('SELECT id FROM music_requests WHERE id = ? AND deleted_at IS NULL FOR UPDATE');
+        $stmt = $db->prepare('SELECT id, status FROM music_requests WHERE id = ? AND deleted_at IS NULL FOR UPDATE');
         $stmt->bind_param('i', $requestId);
         $stmt->execute();
-        if (!$stmt->get_result()->fetch_assoc()) throw new InvalidArgumentException('This request could not be found.');
-        $stmt = $db->prepare('UPDATE music_requests SET status = ?, updated_at = UTC_TIMESTAMP() WHERE id = ?');
-        $stmt->bind_param('si', $status, $requestId);
+        $previous = $stmt->get_result()->fetch_assoc();
+        if (!$previous) throw new InvalidArgumentException('This request could not be found.');
+        $changed = (int) ($previous['status'] !== $status || $message !== null);
+        $stmt = $db->prepare('UPDATE music_requests SET status = ?, update_version = update_version + ?, updated_at = IF(?, UTC_TIMESTAMP(), updated_at) WHERE id = ?');
+        $stmt->bind_param('siii', $status, $changed, $changed, $requestId);
         $stmt->execute();
         $replyId = null;
         if ($message !== null) {
@@ -206,13 +209,20 @@ function mwRequestDelete(mysqli $db, int $userId, int $requestId): void
     }
 }
 
-function mwRequestGmailUrl(string $email, array $request, string $message): string
+function mwRequestUnreadCount(mysqli $db, int $userId): int
 {
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new InvalidArgumentException('This account has no valid email address.');
-    return 'https://mail.google.com/mail/?' . http_build_query([
-        'authuser' => 'icactusmusic@gmail.com',
-        'view' => 'cm', 'fs' => '1', 'to' => $email,
-        'su' => 'Your Monkey Wrench Database request',
-        'body' => $message . "\n\nRequest: " . $request['composer_name'] . ' — ' . $request['piece_name'] . ' — ' . $request['part_name'],
-    ], '', '&', PHP_QUERY_RFC3986);
+    $stmt = $db->prepare('SELECT COUNT(*) FROM music_requests WHERE user_id = ? AND deleted_at IS NULL AND update_version > seen_version');
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    return (int) $stmt->get_result()->fetch_row()[0];
+}
+
+function mwRequestMarkSeen(mysqli $db, int $userId, int $requestId, int $version): void
+{
+    if ($version < 1) throw new InvalidArgumentException('Invalid request update.');
+    // A stale page can acknowledge only the version it displayed. A newer reply
+    // arriving while the page is open must remain unread, including within one second.
+    $stmt = $db->prepare('UPDATE music_requests SET seen_version = GREATEST(seen_version, ?), updated_at = updated_at WHERE id = ? AND user_id = ? AND deleted_at IS NULL AND update_version >= ?');
+    $stmt->bind_param('iiii', $version, $requestId, $userId, $version);
+    $stmt->execute();
 }

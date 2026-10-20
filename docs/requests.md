@@ -2,8 +2,7 @@
 
 `requests.php` lets signed-in users request one piece or individual part every
 seven days, with at most two unfinished requests. Composer, piece, and part are
-required. A YouTube video link is optional. Google sign-in supplies the email;
-users cannot substitute another recipient in the form. Request drafts survive
+required. A YouTube video link is optional. Google sign-in identifies the requester. Request drafts survive
 sign-in, and users see only their own requests and replies.
 
 Users can delete their own requests from My requests after confirming. This
@@ -18,17 +17,19 @@ filter to see completed requests or all requests. The page checks the current
 database role, rather than relying on the role cached at login.
 
 Choose a reply preset, edit the text, and choose the status. **Save reply &
-prepare email** saves the message to the requester's history. **Open Gmail draft**
-then opens Gmail using `icactusmusic@gmail.com`, addressed to the user's Google
-account email, with the subject and saved reply.
-Review and send in Gmail. Opening a draft does not send mail, and the site does
-not track Gmail delivery. A saved reply can be opened again from the thread.
-Edits made in Gmail do not change the message already saved on the site.
+notify** saves the message to the requester's history and creates an unread update.
+**Save status only** also creates an update when the status actually changes.
+Saving the same status without a reply does not create a notification. Added and
+unable to add count as finished. No emails or Gmail drafts are created.
 
-Presets include acknowledgment, estimated timing, in progress, copyright,
-more information, added, and unable to add. Replace `[timeframe]` and `[link]`
-before saving. **Save status only** changes status without posting a reply or
-preparing email. Added and unable to add count as finished.
+When signed in, users see a bell with the number of requests with unread updates
+next to their account menu, plus a count beside **My Requests**. Clicking the bell
+opens **Unread updates** and scrolls to the list. Each updated request shows a
+**New update** notice with its latest status and date, followed by any replies.
+Only notices that enter the viewport are acknowledged; filtered-out requests,
+other pages, and updates arriving after the displayed version remain unread.
+Acknowledgment is stored per request in the database, so it persists across
+logouts, devices, and browsers. Deleted requests do not generate notifications.
 
 ## Setup and release
 
@@ -45,10 +46,9 @@ php scripts/setup-requests.php --config=/home/monkcdmb/phpfiles/config.php
 ```
 
 The setup script is idempotent and does not modify existing users or catalog data.
-Run it again when upgrading an existing installation to add deletion support.
+Run it again when upgrading an existing installation to add deletion support and the update/seen version columns.
 `.cpanel.yml` copies the PHP page, private storage helper, and existing asset
-directories. No Gmail API credentials, SMTP setup, or additional Google scopes
-are needed. Follow the normal deployment workflow after running the migration.
+directories. No email configuration or additional Google scopes are needed. Follow the normal deployment workflow after running the migration.
 
 ## Verification
 
@@ -62,5 +62,5 @@ test database. It cleans up that database and its temporary web root, and does
 not write to real users or requests. It covers required fields, YouTube URL
 validation, Unicode, cooldown and unfinished limits, concurrent submissions,
 access control, CSRF, escaping, draft preservation, status changes, reply
-history, and Gmail draft encoding. Use `--browser` to hold the temporary fixture
+history, unread updates, acknowledgment ownership, and stale-page races. Use `--browser` to hold the temporary fixture
 open for a browser check, then press Enter to clean up.

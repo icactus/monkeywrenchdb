@@ -85,7 +85,7 @@ try {
     try {
         chmod($upgradeConfig, 0600);
         file_put_contents($upgradeConfig, '<?php ' . implode("\n", array_map(fn($key, $value) => 'define(' . var_export($key, true) . ', ' . var_export($value, true) . ');', ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'], [DB_HOST, DB_USER, DB_PASSWORD, $database])));
-        $db->query('ALTER TABLE music_requests DROP COLUMN deleted_at');
+        $db->query('ALTER TABLE music_requests DROP COLUMN deleted_at, DROP COLUMN update_version, DROP COLUMN seen_version');
         for ($run = 0; $run < 2; $run++) {
             $pipes = [];
             $setup = proc_open([PHP_BINARY, $root . '/scripts/setup-requests.php', '--config=' . $upgradeConfig], [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
@@ -127,8 +127,10 @@ try {
     check(count(mwRequestReplies($db, 2, false, [$id])[$id]) === 1, 'Requester sees their reply.');
     check(mwRequestReplies($db, 3, false, [$id]) === [], 'Another user cannot read reply history.');
     check(mwRequestQuota($db, 2)['can_submit'], 'Closing an older request frees an unfinished slot.');
+    check(mwRequestUnreadCount($db, 2) === 1, 'Unread status is stored for the requester, not the admin.');
     $third = mwRequestSubmit($db, 2, array_merge($input, ['part_name' => 'Bassoon']));
     mwRequestRespond($db, 1, $third, 'added', null);
+    check(mwRequestUnreadCount($db, 2) === 2, 'Status-only completion also creates an update.');
     rejects(fn() => mwRequestSubmit($db, 2, $input), 'Completing a new request does not bypass its weekly cooldown.');
     $before = $db->query('SELECT COUNT(*) FROM music_request_replies')->fetch_row()[0];
     rejects(fn() => mwRequestRespond($db, 1, 999999, 'added', 'Missing'), 'Reply to a nonexistent request fails.');
@@ -145,6 +147,7 @@ try {
     check(mwRequestQuota($db, 2)['open_count'] === 0, 'Deleting an unfinished request frees a slot.');
     rejects(fn() => mwRequestDelete($db, 2, $second), 'Deleting twice fails cleanly.');
     mwRequestDelete($db, 2, $third);
+    check(mwRequestUnreadCount($db, 2) === 0, 'Deleting requests removes their unread indicators.');
     check(mwRequestList($db, 2, false) === [] && mwRequestList($db, 1, true) === [], 'Deleted requests disappear from user history and admin queue.');
     rejects(fn() => mwRequestSubmit($db, 2, $input), 'Deleting all requests cannot bypass the weekly cooldown.');
 
@@ -171,15 +174,10 @@ try {
     mwRequestDelete($db, 4, $replacementId);
     check(mwRequestQuota($db, 4)['can_submit'], 'Deleting an in-progress request also refunds the allowance.');
 
-    $gmail = mwRequestGmailUrl('requester@example.test', $saved[0], "Hello & thanks!\nA personal reply.");
-    parse_str(parse_url($gmail, PHP_URL_QUERY), $query);
-    check($query['authuser'] === 'icactusmusic@gmail.com', 'Gmail draft selects the icactusmusic sender account.');
-    check($query['to'] === 'requester@example.test' && str_contains($query['body'], "Hello & thanks!\nA personal reply."), 'Gmail draft keeps recipient and message encoding.');
-
     mkdir($fixture, 0700);
     mkdir($fixture . '/phpfiles', 0700);
     mkdir($fixture . '/sessions', 0700);
-    foreach (['requests.php', 'session_config.php', 'auth_login.php', 'site-navigation.php', 'site-information.php'] as $file) copy($root . '/' . $file, $fixture . '/' . $file);
+    foreach (['requests.php', 'session_config.php', 'auth_login.php', 'site-navigation.php', 'site-information.php', 'request-notifications.php', 'index.php', 'homepage.php'] as $file) copy($root . '/' . $file, $fixture . '/' . $file);
     copy($root . '/phpfiles/music_requests.php', $fixture . '/phpfiles/music_requests.php');
     file_put_contents($fixture . '/phpfiles/config.php', '<?php ' . implode("\n", array_map(fn($key, $value) => 'define(' . var_export($key, true) . ', ' . var_export($value, true) . ');', ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'], [DB_HOST, DB_USER, DB_PASSWORD, $database])));
     chmod($fixture . '/phpfiles/config.php', 0600);
@@ -237,15 +235,37 @@ try {
     $adminPage = httpRequest($port, 'requests.php?view=admin', $sessions['admin']);
     check($adminPage['status'] === 200 && str_contains($adminPage['body'], 'web@example.test'), 'Admin sees requester email and queue.');
     $replyPost = httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reply', 'csrf' => str_repeat('a', 64), 'request_id' => $webId, 'status' => 'in_progress', 'message' => 'I expect to finish this next week.']);
-    check($replyPost['status'] === 303 && str_contains($replyPost['headers'], 'compose='), 'Admin reply produces a Gmail draft handoff.');
+    check($replyPost['status'] === 303 && !str_contains($replyPost['headers'], 'compose='), 'Admin reply saves without preparing email.');
     preg_match('/Location: ([^\r\n]+)/', $replyPost['headers'], $location);
     $replyPage = httpRequest($port, $location[1], $sessions['admin']);
-    check(str_contains($replyPage['body'], 'Open Gmail draft') && str_contains($replyPage['body'], 'web%40example.test'), 'Prepared draft targets the account email.');
-    check(str_contains($replyPage['body'], 'send the email in Gmail'), 'Page does not claim email has been sent.');
+    check(str_contains($replyPage['body'], 'requester will see a notification') && !str_contains($replyPage['body'], 'mail.google.com'), 'Saved reply confirms an on-site notification without email.');
+    $notifications = httpRequest($port, 'request-notifications.php', $sessions['user']);
+    check($notifications['status'] === 200 && json_decode($notifications['body'], true)['count'] === 1, 'Reply creates one unread request indicator.');
+    check(str_contains($notifications['headers'], 'no-store'), 'Notification count is private and uncached.');
+    check(json_decode(httpRequest($port, 'request-notifications.php', $sessions['other'])['body'], true)['count'] === 0, 'Other accounts cannot see notifications.');
+    check(httpRequest($port, 'request-notifications.php', $sessions['guest'])['status'] === 401, 'Signed-out callers cannot view notifications.');
+    $updatesPage = httpRequest($port, 'requests.php?status=updates', $sessions['user']);
+    check(str_contains($updatesPage['body'], 'New update') && str_contains($updatesPage['body'], 'data-unread-version="1"'), 'Notification link reveals updated request and status.');
+    check(mwRequestUnreadCount($db, 5) === 1, 'Rendering a page does not mark invisible notices as read.');
+    $seenData = ['csrf' => str_repeat('a', 64), 'request_id' => $webId, 'version' => 1];
+    check(httpRequest($port, 'request-notifications.php', $sessions['user'], ['request_id' => $webId, 'version' => 1])['status'] === 403 && mwRequestUnreadCount($db, 5) === 1, 'Acknowledgment requires CSRF.');
+    httpRequest($port, 'request-notifications.php', $sessions['other'], $seenData);
+    check(mwRequestUnreadCount($db, 5) === 1, 'Another user cannot acknowledge an update.');
+    // A second reply can arrive in the same second while the first is on screen.
+    mwRequestRespond($db, 1, $webId, 'added', null);
+    httpRequest($port, 'request-notifications.php', $sessions['user'], $seenData);
+    check(mwRequestUnreadCount($db, 5) === 1, 'Acknowledging a stale page leaves the newer status unread.');
+    httpRequest($port, 'request-notifications.php', $sessions['user'], array_replace($seenData, ['version' => 99]));
+    check(mwRequestUnreadCount($db, 5) === 1, 'Forged future versions cannot clear updates.');
+    $seen = httpRequest($port, 'request-notifications.php', $sessions['user'], array_replace($seenData, ['version' => 2]));
+    check(json_decode($seen['body'], true)['count'] === 0, 'Viewing the latest version clears the indicator.');
+    mwRequestRespond($db, 1, $webId, 'added', null);
+    check(mwRequestUnreadCount($db, 5) === 0, 'Saving an unchanged status does not create another notification.');
+    mwRequestRespond($db, 1, $webId, 'in_progress', null);
     $userPage = httpRequest($port, 'requests.php', $sessions['user']);
     check(str_contains($userPage['body'], 'I expect to finish this next week.') && str_contains($userPage['body'], 'In progress'), 'Requester sees admin status and reply history.');
     $userWithCompose = httpRequest($port, 'requests.php?compose=' . $replyId, $sessions['user']);
-    check(!str_contains($userWithCompose['body'], 'requester@example.test') && !str_contains($userWithCompose['body'], 'mail.google.com'), 'Non-admin compose ID cannot expose another user’s email or draft.');
+    check(!str_contains($userWithCompose['body'], 'requester@example.test') && !str_contains($userWithCompose['body'], 'mail.google.com'), 'Legacy compose parameters cannot expose requester email.');
     $unfilled = httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reply', 'csrf' => str_repeat('a', 64), 'request_id' => $webId, 'status' => 'requested', 'message' => 'In about [timeframe].']);
     check(str_contains($unfilled['body'], 'Replace the preset'), 'Unedited preset placeholders cannot be published.');
     check(count(mwRequestReplies($db, 5, false, [$webId])[$webId]) === 1, 'Invalid reply does not add a message.');
@@ -265,10 +285,12 @@ try {
     check($replacementPost['status'] === 303 && count(mwRequestList($db, 5, false)) === 1, 'User can immediately submit a replacement through the form.');
     mwRequestDelete($db, 5, (int) mwRequestList($db, 5, false)[0]['id']);
     $staleDraft = httpRequest($port, 'requests.php?view=admin&compose=' . $webReplyId, $sessions['admin']);
-    check(!str_contains($staleDraft['body'], 'web%40example.test') && !str_contains($staleDraft['body'], 'Web request'), 'Deleted request is absent from queue and old Gmail draft links.');
+    check(!str_contains($staleDraft['body'], 'web%40example.test') && !str_contains($staleDraft['body'], 'Web request'), 'Deleted request is absent from the queue and stale links.');
 
     if (in_array('--browser', $argv, true)) {
-        echo json_encode(['fixture' => $fixture, 'port' => $port, 'sessions' => $sessions]) . "\n";
+        $browserId = mwRequestSubmit($db, 5, ['composer_name' => 'Mahler', 'piece_name' => 'Symphony No. 2', 'part_name' => 'Cello']);
+        mwRequestRespond($db, 1, $browserId, 'added', 'Your requested cello part is now available.');
+        echo json_encode(['fixture' => $fixture, 'port' => $port, 'sessions' => $sessions, 'request_id' => $browserId]) . "\n";
         echo "Browser fixture ready. Press Enter to clean up.\n";
         fgets(STDIN);
     }
