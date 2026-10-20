@@ -77,6 +77,7 @@ test('refresh rebuilds actual player boxes without placeholder timings or new ca
  const canvases=[{dataset:{pdfPage:'1',pageOffset:'0'}},{dataset:{pdfPage:'2',pageOffset:'1000'}}];
  const timings=[{t:0,mix:0},{t:2,mix:1}],player={setTmargin(){},drawRepTokens(){}};
  const context=vm.createContext({deMetriek$$module$synpdf:clone(original),deMaten$$module$synpdf:[],deTijden$$module$synpdf:timings,Cs$$module$synpdf:[],pageStfIx$$module$synpdf:[],msc_wz$$module$synpdf:player,
+ opt$$module$synpdf:{synbox:1},startSyncOnLoad$$module$synpdf:false,
  document:{querySelectorAll:()=>canvases},$(){return{toggle(){}}},maatStrepen$$module$synpdf(){}});
  for(const name of ['knip$$module$synpdf','addDummySys$$module$synpdf','refreshMetricGeometry$$module$synpdf']) vm.runInContext(definition(name),context);
  context.refreshMetricGeometry$$module$synpdf();
@@ -86,7 +87,7 @@ test('refresh rebuilds actual player boxes without placeholder timings or new ca
  assert.deepEqual(clone(context.pageStfIx$$module$synpdf),[0,3]);
 });
 test('sloped endpoints reach the sync boxes and continuations with page offsets',()=>{
- const c=vm.createContext({deMaten$$module$synpdf:[],deTijden$$module$synpdf:[]});
+ const c=vm.createContext({deMaten$$module$synpdf:[],deTijden$$module$synpdf:[],opt$$module$synpdf:{synbox:1}});
  vm.runInContext(definition('knip$$module$synpdf'),c);
  const system={cs:[102,142],csl:[100,110,120,130,140],csr:[104,114,124,134,144],xs:{x1:50,x2:950}};
  c.knip$$module$synpdf({}, {cxs:[system],bxs:[[50,-500,950]]},1000);

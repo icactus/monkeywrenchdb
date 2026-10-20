@@ -433,6 +433,11 @@ async function bootFromDB(pieceId, partId) {
     window.adv_settings$$module$synpdf = data.adv_settings || {};
     window.times_arr$$module$synpdf = undefined;          // new sync
     window.offset_js$$module$synpdf = 0;
+    // A database Load begins a fresh session; arm it after the PDF is rendered.
+    window.opt$$module$synpdf.synbox = 1;
+    window.opt$$module$synpdf.lastSynced = -1;
+    window.opt$$module$synpdf.btime = 0;
+    window.startSyncOnLoad$$module$synpdf = true;
 
     // Keep existing downstream code happy (add recording form expects this):
     window.scoreFnm$$module$synpdf = data.pdf_file;
@@ -639,13 +644,24 @@ document.querySelectorAll('input[type="text"], textarea').forEach(function(input
 });
 
 
-// Keep function to prevent mousewheel zoom
-function stopWheelZoom(event) {
-    if (event.ctrlKey == true) {
+// Route wheel input to the score even after its canvases are rebuilt on resize.
+// At the score's edges, let the browser continue scrolling the outer page.
+function scrollSyncScore(event) {
+    if (event.ctrlKey) {
         event.preventDefault();
+        return;
     }
+    const score = event.currentTarget;
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? score.clientHeight : 1;
+    let dx = (event.deltaX || 0) * unit, dy = (event.deltaY || 0) * unit;
+    if (event.shiftKey && !dx) { dx = dy; dy = 0; }
+    const top = Math.max(0, Math.min(score.scrollHeight - score.clientHeight, score.scrollTop + dy));
+    const left = Math.max(0, Math.min(score.scrollWidth - score.clientWidth, score.scrollLeft + dx));
+    if (top === score.scrollTop && left === score.scrollLeft) return;
+    event.preventDefault();
+    score.scrollTo({ top, left, behavior: 'instant' });
 }
-document.getElementById('notation').addEventListener('mousewheel', stopWheelZoom);
+document.getElementById('notation').addEventListener('wheel', scrollSyncScore, { passive: false });
 
 // Keep line to hide database tools on page load (if you want it hidden by default)
 //$('#database-menus').hide()

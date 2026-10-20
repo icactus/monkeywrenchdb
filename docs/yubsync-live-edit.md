@@ -2,6 +2,10 @@
 
 YubSync supports focused score corrections while preserving the current synchronization session.
 
+**Load** prepares a fresh, paused sync at the beginning of the score and recording. Load the YouTube recording, press Play, and use B to record barlines; the Start Sync checkbox is already enabled. Preview timestamps are generated only outside sync mode. Loading another score clears the previous session, while resizing an active sync keeps its recorded timings.
+
+On short windows, the page can scroll past the controls to reach the score. The score keeps its own scrolling area for inspecting full-score systems and later pages.
+
 Load a saved part in YubSync and wait for the PDF to finish rendering. The toolbar above the score provides four correction tools, also available from the keyboard:
 
 | Tool | Action |
@@ -29,6 +33,7 @@ A failed save retains the draft and paused sync for retry. The endpoint reports 
 
 ## Validation
 
+- October 2026 startup/scrolling regression checks: 34 targeted tests cover Load, stale preview positions, the first B presses, resize, wheel input and page scroll chaining, alongside live-edit preservation and save recovery. A local Chrome fixture using the actual template, scripts and a two-page PDF verified Load → Play → B, reloading after recorded timings, and score/page scrolling at 1440×1000, 1024×600 and 800×400. Database reads and YouTube media methods were mocked; no production data was written and no browser errors occurred.
 - 96 targeted tests pass: existing editor and live-edit save tests plus YubSync tests for merges, signed continuations, recorded-prefix preservation, generated timings, repeated measures, pending score loads, sparse/sloping geometry, and measure-box rebuilding without placeholder timing leakage.
 - A local Chrome fixture used the actual YubSync template/scripts and `108-1.pdf`, with mocked database reads, writes and YouTube media methods. Native keyboard/pointer events exercised Q/W/S/Y, upward merges, Ctrl-click page merging, Undo/Cancel, form/modifier guards, save failure, partial database-save recovery, and successful save/resume. Player and canvas identities, timestamps, offset, media time and scroll position were preserved. Backspace removed the last timing, B recorded another, and an invalid edit to a recorded boundary was blocked before POST. No browser errors occurred. Artifacts are in `artifacts/yubsync-live-edit/`.
 - PHP/JavaScript syntax checks pass. Validation made no production database writes. Mahler 6 was not loaded or tested.

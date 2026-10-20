@@ -737,16 +737,20 @@ Wijzer$$module$synpdf.prototype.startSync = function () {
         });
         xcurprev$$module$synpdf = -1;
         deTijden$$module$synpdf = [];
-        for (var a = 0; a < detix$$module$synpdf; ++a) deTijden$$module$synpdf.push({
-            t: 0,
-            mix: a
-        });
-        --detix$$module$synpdf;
-        --demix$$module$synpdf;
+        // An unrecorded score always starts before its first barline, even if
+        // preview playback or a previous score moved the cursor elsewhere.
+        detix$$module$synpdf = demix$$module$synpdf = -1;
+        this.cursorTime = 0;
+        ycurprev$$module$synpdf = -1;
         offset$$module$synpdf = 0;
-        playPause2$$module$synpdf(!1, 0)
-    } else a = deTijden$$module$synpdf[lastSynced$$module$synpdf],
-        a.mix < deMaten$$module$synpdf.length - 1 && playPause2$$module$synpdf(!1, a.t + TOFF$$module$synpdf + offset$$module$synpdf)
+        playPause2$$module$synpdf(!1, 0);
+        doeRol$$module$synpdf(Math.max(0, deMaten$$module$synpdf[0].y - this.tmargin), 1);
+    } else {
+        var a = deTijden$$module$synpdf[lastSynced$$module$synpdf];
+        detix$$module$synpdf = lastSynced$$module$synpdf;
+        demix$$module$synpdf = a.mix;
+        a.mix < deMaten$$module$synpdf.length - 1 && playPause2$$module$synpdf(!1, a.t + TOFF$$module$synpdf + offset$$module$synpdf);
+    }
 };
 Wijzer$$module$synpdf.prototype.setTmargin = function () {
     if (window.YubSyncLiveEdit?.active) return;
@@ -1021,7 +1025,7 @@ function knip$$module$synpdf(a, b, c) {
             })
         }
     }
-    for (e = deTijden$$module$synpdf.length; e < deMaten$$module$synpdf.length; ++e) deTijden$$module$synpdf.push({
+    for (e = deTijden$$module$synpdf.length; !opt$$module$synpdf.synbox && e < deMaten$$module$synpdf.length; ++e) deTijden$$module$synpdf.push({
         t: 0 < e ? deTijden$$module$synpdf[e - 1].t +
             2 : 0,
         mix: e
@@ -1052,14 +1056,26 @@ function addDummySys$$module$synpdf() {
         h: a.h
     });
     a = deTijden$$module$synpdf.length;
-    a < deMaten$$module$synpdf.length && deTijden$$module$synpdf.push({
+    !opt$$module$synpdf.synbox && a < deMaten$$module$synpdf.length && deTijden$$module$synpdf.push({
         t: deTijden$$module$synpdf[a - 1].t + 2,
         mix: a
     });
     // $("#notation").append('<div id="leeg" style="height:' + bottomSpace$$module$synpdf +
     //     'px">&nbsp;</div>');
-    msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin()
+    msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin();
+    if (startSyncOnLoad$$module$synpdf && !rendering$$module$synpdf && msc_wz$$module$synpdf) {
+        startSyncOnLoad$$module$synpdf = false;
+        pauseer$$module$synpdf();
+        msc_wz$$module$synpdf.paused = true;
+        // Render completion is the first point where all score boxes exist.
+        lastSynced$$module$synpdf = -1;
+        opt$$module$synpdf.synbox = 1;
+        $("#synbox").prop("checked", true);
+        syncChk$$module$synpdf();
+    }
 }
+
+var startSyncOnLoad$$module$synpdf = false;
 
 function ensureNotationLoader() {
     const notation = document.getElementById('notation');
@@ -1098,7 +1114,7 @@ function readPdfdoc$$module$synpdf() {
     Cs$$module$synpdf = [];
     pageStfIx$$module$synpdf = [];
     deMaten$$module$synpdf = [];
-    demix$$module$synpdf = 0;
+    if (!opt$$module$synpdf.synbox || startSyncOnLoad$$module$synpdf) demix$$module$synpdf = 0;
     msc_wz$$module$synpdf = null;
     skipn$$module$synpdf = parseInt(opt$$module$synpdf.skipn);
     rendering$$module$synpdf = 1;
@@ -2731,7 +2747,7 @@ function hideSpeedChk$$module$synpdf() {
 
 function syncChk$$module$synpdf() {
     // Check if the synchronization module is available
-    if (msc_wz$$module$synpdf) {
+    if (msc_wz$$module$synpdf && !startSyncOnLoad$$module$synpdf) {
         // Toggle visibility of elements based on the sync box state
         $("#sync_out, .reptkn").toggle(!!opt$$module$synpdf.synbox);
         // Commenting out toggle of advanced mode
@@ -2749,8 +2765,8 @@ function syncChk$$module$synpdf() {
             // If sync is enabled:
             // 1. Show synchronization information
             // 2. Start the synchronization process
-            msc_wz$$module$synpdf.showSyncInfo();
             msc_wz$$module$synpdf.startSync();
+            msc_wz$$module$synpdf.showSyncInfo();
         } else {
             //If sync is disabled...
             //Don't push more filler timestamps if we haven't synced anything and there are already timestamps.

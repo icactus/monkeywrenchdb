@@ -27,9 +27,9 @@
     ?>
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
-    <script src="synpdf-full-yubsync2.js?v=53"></script>
+    <script src="synpdf-full-yubsync2.js?v=54"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
-    <link rel="stylesheet" href="yubsync-live-edit.css?v=1" />
+    <link rel="stylesheet" href="yubsync-live-edit.css?v=2" />
     <style>
         html {
             width: 100%;
@@ -1015,7 +1015,7 @@ Also works with dropbox. You can load a preload file with the score file button.
         </ul>
         Starting Sync:
         <ul>
-            <li>After loading a youtube video in step 2, click "start sync" (right side) and then click the youtube
+            <li>Load the score to prepare a new sync. After loading a youtube video in step 2, click the youtube
                 player to begin.</li>
             <li>Press 'b' a second or so before the first beat to begin syncing and then press 'b' again for each
                 barline. At the final measure, wait several seconds longer than the actual length (if the video allows)
@@ -1025,7 +1025,7 @@ Also works with dropbox. You can load a preload file with the score file button.
             <br />
             <button id="closehelp">Close</button>
     </div>
-    <script src="yubsync-tools.js?v=82"></script>
+    <script src="yubsync-tools.js?v=83"></script>
     <script src="yubsync-live-edit.js?v=1"></script>
 </body>
 
