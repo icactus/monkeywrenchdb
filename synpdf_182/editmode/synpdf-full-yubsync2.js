@@ -2255,22 +2255,22 @@ function saveTiming$$module$synpdf() {
         return a
     }
     var b = 'pdf_file = "' + pdfFnm$$module$synpdf + '";\n';
-    if (pdfDoc$$module$synpdf && pdfDoc$$module$synpdf.pdfInfo && !pdfData$$module$synpdf) pdfDoc$$module$synpdf.getData().then(function (a) {
+    var localBackup = $(this).attr("id") === 'download-sync';
+    var includePdf = opt$$module$synpdf.wpdf && !localBackup;
+    if (includePdf && pdfDoc$$module$synpdf && !pdfData$$module$synpdf) pdfDoc$$module$synpdf.getData().then((a) => {
         pdfData$$module$synpdf = a;
-        saveTiming$$module$synpdf()
+        saveTiming$$module$synpdf.call(this)
     });
     else {
-        var c = opt$$module$synpdf.wpdf && pdfData$$module$synpdf ? "pdf_data = " + bin2txt$$module$synpdf(pdfData$$module$synpdf) +
+        var c = includePdf && pdfData$$module$synpdf ? "pdf_data = " + bin2txt$$module$synpdf(pdfData$$module$synpdf) +
             ";\n" : "";
-        c = opt$$module$synpdf.wpdf && jpgData$$module$synpdf ? "jpg_data = " + bin2txt$$module$synpdf(jpgData$$module$synpdf) + ";\n" : c;
+        c = includePdf && jpgData$$module$synpdf ? "jpg_data = " + bin2txt$$module$synpdf(jpgData$$module$synpdf) + ";\n" : c;
         var d = 'media_file = "' + (yubchk$$module$synpdf ? "" : mediaFnm$$module$synpdf) + '";\n';
         var e = "msc_tracks = " + (msc_tracks$$module$synpdf ? JSON.stringify(msc_tracks$$module$synpdf) : '""') + ";\n";
         var f = "undefined" != typeof msc_credits$$module$synpdf ? "msc_credits = " + JSON.stringify(msc_credits$$module$synpdf) + ";\n" : "";
         var g = "offset_js = " + offset$$module$synpdf.toFixed(2) + ";\n";
-        opt$$module$synpdf.synbox =
-            0;
-        opt$$module$synpdf.lastSynced = lastSynced$$module$synpdf;
-        var p = a("opt = " + JSON.stringify(opt$$module$synpdf) + ";\n");
+        var exportOptions = Object.assign({}, opt$$module$synpdf, { synbox: 0, lastSynced: lastSynced$$module$synpdf });
+        var p = a("opt = " + JSON.stringify(exportOptions) + ";\n");
         var m = annots$$module$synpdf.length ? "annots = " + JSON.stringify(annots$$module$synpdf) + ";\n" : "";
         var n = lpRec$$module$synpdf.loopBtn ? "lpRec = " + JSON.stringify(lpRec$$module$synpdf) + ";\n" : "";
         var l = a("times_arr = " + JSON.stringify(deTijden$$module$synpdf) + ";\n");
@@ -2279,8 +2279,8 @@ function saveTiming$$module$synpdf() {
             ";\n");
         l = '//########################################\n//# This page contains score data, timing data and the media file path. Save it as a javascipt file in\n//# the same folder as synpdf.html. Synpdf preloads score and media when it is opened with the\n//# file name as parameter in the url, for example: http://your.domain.org/synpdf.html?file_name.js\n//# Also works locally with file:///path/to/synpdf.html?file_name.js\n//# **** You may have to correct the path to the media file below! (media_file="...";) ****\n//########################################\n//#\n' +
             (b + d + e + f + g + p + m + n + l + k + h + c + "\n");
-        var r = "data:text/plain;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(l)));
-        $("#drpuse").prop("checked") ? ($("#err").text(""), Dropbox.save(r, scoreFnm$$module$synpdf + ".js", {
+        var r = !localBackup && $("#drpuse").prop("checked") ? "data:text/plain;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(l))) : "";
+        !localBackup && $("#drpuse").prop("checked") ? ($("#err").text(""), Dropbox.save(r, scoreFnm$$module$synpdf + ".js", {
             success: function () {
                 $("#err").text('"' + scoreFnm$$module$synpdf + '.js" saved to your Dropbox.\n')
             },
@@ -2290,9 +2290,20 @@ function saveTiming$$module$synpdf() {
                 $("#err").text("Error: " + a + "\n");
                 $("#err").append("fnm: " + scoreFnm$$module$synpdf + ", len: " + r.length + "\n")
             }
-        })) : "save" == $(this).attr("id") ?
-            (l = document.createElement("a"), l.href = r, l.download = scoreFnm$$module$synpdf + ".js", l.text = "Save synchronization data", $("#saveDiv").append(l), l.click()) : ($("#saveDlg pre").html(l), $("#saveDlg").css("display", "block"))
+        })) : ["save", "download-sync"].includes($(this).attr("id")) ?
+            downloadSyncFile$$module$synpdf(l) : ($("#saveDlg pre").text(l), $("#saveDlg").css("display", "block"))
     }
+}
+
+function downloadSyncFile$$module$synpdf(text) {
+    var url = URL.createObjectURL(new Blob([text], { type: 'text/javascript;charset=utf-8' }));
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = (scoreFnm$$module$synpdf || 'yubsync').replace(/\.pdf$/i, '') + '.js';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
 }
 
 function resetTiming$$module$synpdf() {

@@ -532,59 +532,76 @@ document.addEventListener('DOMContentLoaded', function() {
     // document.getElementById('prev-timing-btn').addEventListener('click', prevTiming);
     // document.getElementById('refresh-btn').addEventListener('click', refreshMatches);
 
-    // Keep event listener for adding new recording form
-    var form = document.getElementById('addnewrecordingform');
-    form.addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent the default form submission
-
-        // Update form data with dynamically modified values
-        var updatedJsonData = JSON.stringify(deTijden$$module$synpdf);
-        document.getElementById('times_arr_data').value = updatedJsonData;
-
-        var youtubeId = opt$$module$synpdf.yubvid;
-        if (!youtubeId || youtubeId.trim() === '') {
-            alert("YouTube ID is missing");
-            return;
-        }
-        document.getElementById('youtube_id').value = youtubeId;
-
-        var offsetJs = (offset$$module$synpdf);
-        document.getElementById('offset_js').value = offsetJs;
-
-        var scoreFnm = scoreFnm$$module$synpdf;
-        if (!scoreFnm || !scoreFnm.includes('-')) {
-            alert("No file selected or filename is incorrectly formatted.");
-            return;
-        }
-        var pieceId = scoreFnm.split('-')[0];
-        document.getElementById('piece_id').value = pieceId;
-
-        // Prepare FormData object for AJAX request
-        const formData = new FormData(form);
-        formData.append('action', 'add_recording');
-
-        // Perform the AJAX request
-        fetch('./dispatcher.php', {
-            method: "POST",
-            body: formData
-        })
-            .then(response => response.text())  // Assuming the server responds with plain text
-            .then(data => {
-                console.log(data);  // Log server response to the console
-                if (data.startsWith('Error')) {
-                    alert("Form submission failed: " + data);  // Show error if starts with 'Error'
-                } else if (data === "success") {
-                    window.dispatchEvent(new CustomEvent('yubsync:submitted'));
-                    alert("Form submitted successfully");
-                    // Optionally reset the form or redirect the user
-                    // form.reset();
-                    // window.location.href = 'some-confirmation-page.html';
+    // Save score corrections before posting the timings that refer to them.
+    const form = document.getElementById('addnewrecordingform');
+    const submitButton = form.querySelector('[type="submit"]');
+    const submitStatus = document.getElementById('yubsync-submit-status');
+    let submitting = false;
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        if (submitting) return;
+        submitting = true;
+        submitButton.disabled = true;
+        submitButton.value = 'Submitting…';
+        form.setAttribute('aria-busy', 'true');
+        submitStatus.textContent = 'Preparing recording…';
+        console.info('[YubSync] Recording submission started.');
+        window.YubSyncProgress?.save();
+        try {
+            const youtubeId = opt$$module$synpdf.yubvid;
+            if (!youtubeId || !/^[A-Za-z0-9_-]{11}$/.test(youtubeId)) {
+                throw new Error('Load a YouTube video before submitting.');
+            }
+            const pieceId = window.yubsyncMetricContext?.pieceId;
+            if (!pieceId || !/^\d+$/.test(pieceId)) throw new Error('Load a score before submitting.');
+            if (lastSynced$$module$synpdf < 0 || !deTijden$$module$synpdf.length) {
+                throw new Error('Record measure timings before submitting.');
+            }
+            if (window.YubSyncLiveEdit?.active) {
+                submitStatus.textContent = 'Saving score corrections…';
+                if (!await window.YubSyncLiveEdit.prepareSubmission()) {
+                    throw new Error('Score corrections could not be saved. Check your connection and try Submit again.');
                 }
-            })
-            .catch(error => {
-                console.error("Error during form submission: ", error);
-                alert("An error occurred: " + error.message);
-            });
+            }
+            document.getElementById('times_arr_data').value = JSON.stringify(deTijden$$module$synpdf);
+            document.getElementById('youtube_id').value = youtubeId;
+            document.getElementById('offset_js').value = offset$$module$synpdf;
+            document.getElementById('piece_id').value = pieceId;
+            const formData = new FormData(form);
+            formData.append('action', 'add_recording');
+            submitStatus.textContent = 'Submitting recording…';
+            const response = await fetch('./dispatcher.php', { method: 'POST', body: formData });
+            const result = (await response.text()).trim();
+            if (!response.ok || result !== 'success') {
+                console.error('[YubSync] Submission response:', response.status, result);
+                throw new Error(response.redirected || /<(!doctype|html)/i.test(result)
+                    ? 'Your login may have expired. Download your sync data before signing in again.'
+                    : `Server did not confirm the recording was saved (${response.status}): ${result.slice(0, 300) || response.statusText}`);
+            }
+            console.info('[YubSync] Recording submitted successfully.');
+            window.dispatchEvent(new CustomEvent('yubsync:submitted'));
+            submitStatus.textContent = 'Recording submitted successfully.';
+            alert('Form submitted successfully');
+        } catch (error) {
+            console.error('[YubSync] Recording submission failed:', error);
+            submitStatus.textContent = `Submission failed: ${error.message} Your sync is preserved. You can download a copy below.`;
+            window.YubSyncProgress?.save();
+        } finally {
+            submitting = false;
+            submitButton.disabled = false;
+            submitButton.value = 'Submit';
+            form.setAttribute('aria-busy', 'false');
+        }
+    });
+
+    document.getElementById('download-sync').addEventListener('click', function() {
+        try {
+            saveTiming$$module$synpdf.call(this);
+            submitStatus.textContent = 'Sync data download started. Keep this file as a backup.';
+        } catch (error) {
+            console.error('[YubSync] Sync download failed:', error);
+            submitStatus.textContent = `Download failed: ${error.message} Your sync is preserved.`;
+        }
     });
 
     // Keep event listeners for loading piece

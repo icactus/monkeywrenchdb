@@ -112,7 +112,7 @@
     const undoButton = document.getElementById('yubsync-edit-undo');
     const get = name => window[name + '$$module$synpdf'];
     const set = (name, value) => { window[name + '$$module$synpdf'] = value; };
-    let session = null, mode = '', first = null, gesture = null, busy = false;
+    let session = null, mode = '', first = null, gesture = null, busy = false, savePromise = null;
     let draft, lineage, history = [];
     const hints = {
         q: 'Q: click a barline to remove it, or click inside a system to add one.',
@@ -189,8 +189,13 @@
         session = null; mode = ''; first = gesture = null; history = [];
         paint(); update(); document.activeElement?.blur();
     }
-    async function save() {
-        if (!session || busy) return;
+    function save() {
+        if (savePromise) return savePromise;
+        if (!session) return Promise.resolve(true);
+        savePromise = persist().finally(() => { savePromise = null; });
+        return savePromise;
+    }
+    async function persist() {
         busy = true; update(); message('Saving score corrections…');
         try {
             if (history.length && (!session.saved || session.storagePending)) {
@@ -205,9 +210,12 @@
                 if (!response.ok || !result.success) throw new Error(result.message || `Save failed (${response.status}).`);
             }
             finish(); message('Saved. Continue syncing.');
+            return true;
         } catch (error) {
+            console.error('[YubSync] Score correction save failed:', error);
             message(session.saved ? `Score saved to the database. ${error.message} Your sync is preserved; use Retry save to finish.` :
                 `Save could not be confirmed: ${error.message} Your edits and sync are preserved. Retry to finish saving.`);
+            return false;
         } finally { busy = false; update(); }
     }
     function context(event, canvas) {
@@ -371,7 +379,11 @@
             restore(mapped, metrics); finish(); message('Corrections cancelled. Continue syncing.');
         } catch (error) { message(error.message); }
     });
-    document.addEventListener('submit', event => { if (session && !toolbar.contains(event.target)) block(event); }, true);
+    document.addEventListener('submit', event => {
+        if (session && event.target.id !== 'addnewrecordingform' && !toolbar.contains(event.target)) {
+            block(event); message('Save or cancel score corrections before loading another score.');
+        }
+    }, true);
     window.addEventListener('beforeunload', event => {
         if (session && (history.length || busy) && !window.YubSyncProgress?.save()) {
             event.preventDefault(); event.returnValue = '';
@@ -379,6 +391,7 @@
     });
     window.YubSyncLiveEdit = {
         get active() { return !!session; }, get busy() { return busy; },
+        prepareSubmission: save,
         exportProgress() { return history.length ? { baseline: session.metrics, lineage } : null; },
         restoreProgress(state, metrics, editor) {
             if (busy) throw new Error('Wait for the current save to finish.');
