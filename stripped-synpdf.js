@@ -18,8 +18,9 @@ function initializePDFjs() {
     if (!pdfjsReady$$module$synpdf) {
         pdfjsReady$$module$synpdf = import('./assets/vendor/pdfjs/4.9.155/pdf.min.mjs')
             .then(function (pdfjsLib) {
+                // Piece landing pages live under /piece/; the worker lives at the site root.
                 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-                    './assets/vendor/pdfjs/4.9.155/pdf.worker.min.mjs', window.location.href
+                    '/assets/vendor/pdfjs/4.9.155/pdf.worker.min.mjs', window.location.href
                 ).href;
                 window.pdfjsLib = pdfjsLib;
                 return pdfjsLib;

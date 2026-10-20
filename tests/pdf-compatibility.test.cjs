@@ -7,6 +7,30 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../stripped-synpdf.js'), 'utf8');
 const reader = source.slice(source.indexOf('function readPdfdoc$$module$synpdf'), source.indexOf('let renderedPages = 1;'));
 
+for (const entry of ['/', '/preview-editor.php', '/piece/mahler-symphony-no-2-resurrection', '/piece/mahler-symphony-no-2-resurrection/']) {
+    test(`PDF.js worker loads from the asset directory when entering at ${entry}`, async () => {
+        const library = { GlobalWorkerOptions: {} };
+        const scriptUrl = 'https://www.monkeywrenchdb.org/stripped-synpdf.js?v=340';
+        let importedUrl;
+        const context = vm.createContext({
+            URL, console,
+            window: { location: { href: `https://www.monkeywrenchdb.org${entry}` } },
+            importPDFjs(specifier) {
+                importedUrl = new URL(specifier, scriptUrl);
+                return Promise.resolve(library);
+            }
+        });
+        // Stub the dynamic import while exercising the production initializer.
+        const initializer = source.slice(source.indexOf('let pdfjsReady$$module$synpdf'), source.indexOf('// History Logic'));
+        vm.runInContext(initializer.replace('import(', 'importPDFjs('), context);
+        await context.initializePDFjs();
+        assert.equal(library.GlobalWorkerOptions.workerSrc,
+            new URL('pdf.worker.min.mjs', importedUrl).href);
+        assert.ok(fs.existsSync(path.join(__dirname, '..', new URL(library.GlobalWorkerOptions.workerSrc).pathname)));
+        assert.equal(context.window.pdfjsLib, library);
+    });
+}
+
 function setup(initializePDFjs) {
     const requests = [], errors = [];
     const library = { getDocument(options) {
