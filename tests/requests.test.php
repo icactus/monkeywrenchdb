@@ -173,6 +173,7 @@ try {
 
     $gmail = mwRequestGmailUrl('requester@example.test', $saved[0], "Hello & thanks!\nA personal reply.");
     parse_str(parse_url($gmail, PHP_URL_QUERY), $query);
+    check($query['authuser'] === 'icactusmusic@gmail.com', 'Gmail draft selects the icactusmusic sender account.');
     check($query['to'] === 'requester@example.test' && str_contains($query['body'], "Hello & thanks!\nA personal reply."), 'Gmail draft keeps recipient and message encoding.');
 
     mkdir($fixture, 0700);

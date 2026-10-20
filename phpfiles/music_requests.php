@@ -210,6 +210,7 @@ function mwRequestGmailUrl(string $email, array $request, string $message): stri
 {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new InvalidArgumentException('This account has no valid email address.');
     return 'https://mail.google.com/mail/?' . http_build_query([
+        'authuser' => 'icactusmusic@gmail.com',
         'view' => 'cm', 'fs' => '1', 'to' => $email,
         'su' => 'Your Monkey Wrench Database request #' . (int) $request['id'],
         'body' => $message . "\n\nRequest: " . $request['composer_name'] . ' — ' . $request['piece_name'] . ' — ' . $request['part_name'],

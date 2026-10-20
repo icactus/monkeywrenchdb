@@ -19,7 +19,8 @@ database role, rather than relying on the role cached at login.
 
 Choose a reply preset, edit the text, and choose the status. **Save reply &
 prepare email** saves the message to the requester's history. **Open Gmail draft**
-then opens Gmail with the user's Google account email, subject, and saved reply.
+then opens Gmail using `icactusmusic@gmail.com`, addressed to the user's Google
+account email, with the subject and saved reply.
 Review and send in Gmail. Opening a draft does not send mail, and the site does
 not track Gmail delivery. A saved reply can be opened again from the thread.
 Edits made in Gmail do not change the message already saved on the site.
