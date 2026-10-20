@@ -212,7 +212,7 @@ function mwRequestGmailUrl(string $email, array $request, string $message): stri
     return 'https://mail.google.com/mail/?' . http_build_query([
         'authuser' => 'icactusmusic@gmail.com',
         'view' => 'cm', 'fs' => '1', 'to' => $email,
-        'su' => 'Your Monkey Wrench Database request #' . (int) $request['id'],
+        'su' => 'Your Monkey Wrench Database request',
         'body' => $message . "\n\nRequest: " . $request['composer_name'] . ' — ' . $request['piece_name'] . ' — ' . $request['part_name'],
     ], '', '&', PHP_QUERY_RFC3986);
 }
