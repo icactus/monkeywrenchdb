@@ -160,7 +160,7 @@ $presets = [
     <title><?= $adminView ? 'Request queue' : 'Request a piece or part' ?> | Monkey Wrench Database</title>
     <link rel="stylesheet" href="assets/css/fonts.css?v=34">
     <link rel="stylesheet" href="assets/css/requests.css?v=4">
-    <link rel="stylesheet" href="assets/css/request-notifications.css?v=1">
+    <link rel="stylesheet" href="assets/css/request-notifications.css?v=2">
     <script>try { if (localStorage.getItem('darkMode') === '1') document.documentElement.classList.add('inverted'); } catch (e) {}</script>
     <script src="js/requests.js?v=4" defer></script>
 </head>
