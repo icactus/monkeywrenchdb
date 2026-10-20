@@ -27,9 +27,9 @@
     ?>
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
-    <script src="synpdf-full-yubsync2.js?v=54"></script>
+    <script src="synpdf-full-yubsync2.js?v=55"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
-    <link rel="stylesheet" href="yubsync-live-edit.css?v=2" />
+    <link rel="stylesheet" href="yubsync-live-edit.css?v=3" />
     <style>
         html {
             width: 100%;
@@ -716,19 +716,26 @@
     </style>
 </head>
 
-<body>
+<body class="yubsync-editor">
     <div id="logo-div">
         <a href="/">
             <img id="monkey-logo" src="../monkeydark.png"></img>
         </a>
     </div>
     <?php include "../../phpfiles/get_pieces_and_composers.php"; ?>
-    <section1>
+    <section1 id="yubsync-sidebar" aria-label="Sync setup and controls">
+        <div id="player-wrapper">
+            <div id="vidyub"> </div>
+            <form id="spdlbl">speed:
+                <input id="speed" type="number" min="0.1" step="0.05" max="2.0"
+                    title="0.1 <= float <= 2.0">
+            </form>
+        </div>
         <div id="sync">
             <div id="mbar">
             </div>
             <form id="menu">
-                <label id="snclbl"><span>start sync:</span> <input id="synbox" type="checkbox" /></label>
+                <label id="snclbl" hidden><input id="synbox" type="checkbox" tabindex="-1" aria-hidden="true" /></label>
                 <label id="lm"><span>advanced:</span> <input id="advncd" type="checkbox" /></label>
                 <label class="mnrm" id="lp"><span>full screen:</span> <input id="fscr" type="checkbox" /></label>
                 <label class="mnrm" id="lv"><span>save preload:</span><button id="show"
@@ -765,16 +772,27 @@
                         id="fixwd"></label>
                 <label class="mexp" id="lj"><span>no menu:</span> <input id="no_menu" type="checkbox"></label>
                 <label class="mexp" id="lc"><span>pdf data:</span> <input id="wpdf" type="checkbox"></label>
-                <label class="mnrm" id="helpm">help</label>
+                <button type="button" id="helpm">Help</button>
             </form>
             <div id="sync_out">
                 <div id="sync_info"></div>
-                <label><span><button id="reset">Backspace</button></span> one measure</label>
+                <label hidden><span><button id="reset">Backspace</button></span> one measure</label>
             </div>
         </div>
         <input id="knop" type="button" value="play" style="display: none;">
         <div id="database-menus-wrapper">
             <div id="database-menus">
+                <div id="yubsync-edit-toolbar" role="toolbar" aria-label="Score corrections">
+                    <span>Score corrections</span>
+                    <button type="button" data-yub-edit="q" title="Add or remove a barline (Q)" aria-pressed="false">Barlines <kbd>Q</kbd></button>
+                    <button type="button" data-yub-edit="w" title="Draw a staff: click two opposite corners (W)" aria-pressed="false">Draw staff <kbd>W</kbd></button>
+                    <button type="button" data-yub-edit="s" title="Split a multimeasure rest (S)" aria-pressed="false">Split rest <kbd>S</kbd></button>
+                    <button type="button" data-yub-edit="y" title="Refit a staff, drag to merge systems, or Ctrl-click to merge the page (Y)" aria-pressed="false">Refit / merge <kbd>Y</kbd></button>
+                    <button type="button" id="yubsync-edit-undo" disabled>Undo edit</button>
+                    <button type="button" id="yubsync-edit-save" disabled>Save &amp; resume sync</button>
+                    <button type="button" id="yubsync-edit-cancel" disabled>Cancel edits</button>
+                    <span id="yubsync-edit-status" role="status" aria-live="polite">Q / W / S / Y pause syncing to correct the score.</span>
+                </div>
                 <div class="step-wrapper">
                     <form class="inputform" id="loadScore" method="POST">
                         <div>
@@ -858,13 +876,6 @@
                         <div>
                             <p>Sync sheet music to audio (Press 'h' for full help info).</p>
                         </div>
-                        <div id="player-wrapper">
-                            <div id="vidyub"> </div>
-                            <form id="spdlbl">speed:
-                                <input id="speed" type="number" min="0.1" step="0.05" max="2.0"
-                                    title="0.1 <= float <= 2.0">
-                            </form>
-                        </div>
                     </div>
                 </div>
                 <div class="step-wrapper">
@@ -900,19 +911,8 @@
             </div>
         </div>
     </section1>
-    <section2>
+    <section2 id="yubsync-workspace">
       <div id="yubsync-score">
-        <div id="yubsync-edit-toolbar" role="toolbar" aria-label="Score corrections">
-            <span>Score corrections</span>
-            <button type="button" data-yub-edit="q" title="Add or remove a barline (Q)" aria-pressed="false">Barlines <kbd>Q</kbd></button>
-            <button type="button" data-yub-edit="w" title="Draw a staff: click two opposite corners (W)" aria-pressed="false">Draw staff <kbd>W</kbd></button>
-            <button type="button" data-yub-edit="s" title="Split a multimeasure rest (S)" aria-pressed="false">Split rest <kbd>S</kbd></button>
-            <button type="button" data-yub-edit="y" title="Refit a staff, drag to merge systems, or Ctrl-click to merge the page (Y)" aria-pressed="false">Refit / merge <kbd>Y</kbd></button>
-            <button type="button" id="yubsync-edit-undo" disabled>Undo edit</button>
-            <button type="button" id="yubsync-edit-save" disabled>Save &amp; resume sync</button>
-            <button type="button" id="yubsync-edit-cancel" disabled>Cancel edits</button>
-            <span id="yubsync-edit-status" role="status" aria-live="polite">Q / W / S / Y pause syncing to correct the score.</span>
-        </div>
         <div id="notation"> </div>
       </div>
         <sidecontent>

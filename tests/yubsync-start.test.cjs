@@ -16,7 +16,9 @@ function setup({ sync = true, pending = false } = {}) {
     const calls = [];
     const jq = { css() { return this; }, html() { return this; }, toggle() { return this; }, prop(key, value) { calls.push([key, value]); return this; } };
     const c = vm.createContext({
-        window: {}, $: () => jq,
+        window: {}, $: selector => Object.assign(Object.create(jq), {
+            toggle(value) { calls.push(['toggle', selector, value]); return this; }
+        }),
         Wijzer$$module$synpdf: function () {},
         opt$$module$synpdf: { synbox: +sync, lastSynced: -1 },
         startSyncOnLoad$$module$synpdf: pending, rendering$$module$synpdf: 0,
@@ -111,6 +113,44 @@ test('the first two B presses record measures zero and one with their actual tim
     c.msc_wz$$module$synpdf.keySync('b');
     assert.deepEqual(clone(c.deTijden$$module$synpdf), [{ t: 0, mix: 0 }, { t: 2, mix: 1 }]);
     assert.equal(c.lastSynced$$module$synpdf, 1);
+});
+
+test('a new sync starts and finishes without changing a checkbox, leaving its information visible', () => {
+    const { c, calls } = setup({ pending: true });
+    renderPage(c); renderPage(c, 1400); c.addDummySys$$module$synpdf();
+    c.msc_wz$$module$synpdf.paused = false;
+    for (let measure = 0; measure < c.deMaten$$module$synpdf.length; measure++) {
+        c.elmed$$module$synpdf.currentTime = 5 + measure * 2;
+        c.msc_wz$$module$synpdf.keySync('b');
+    }
+    assert.equal(c.opt$$module$synpdf.synbox, 0, 'the final marker automatically switches to review');
+    assert.equal(c.lastSynced$$module$synpdf, c.deMaten$$module$synpdf.length - 1);
+    assert.equal(c.deTijden$$module$synpdf.length, c.deMaten$$module$synpdf.length);
+    assert.deepEqual(calls.filter(call => call[0] === 'toggle' && call[1] === '#sync_out').at(-1),
+        ['toggle', '#sync_out', true]);
+    assert(calls.some(call => call[0] === 'checked' && call[1] === false));
+});
+
+test('sync information shows the current measure, duration and overall offset, including before the first barline', () => {
+    const { c } = setup();
+    const start = core.indexOf('Wijzer$$module$synpdf.prototype.showSyncInfo =');
+    vm.runInContext(core.slice(start, core.indexOf('\n};', start) + 3), c);
+    delete c.msc_wz$$module$synpdf.showSyncInfo;
+    let information = '';
+    c.msc_wz$$module$synpdf.sinfo = {
+        html(value) { information = value; },
+        append(value) { information += value; }
+    };
+    c.detix$$module$synpdf = -1;
+    c.msc_wz$$module$synpdf.showSyncInfo();
+    assert.match(information, /measure: Ready/);
+    c.deTijden$$module$synpdf = [{ t: 0, mix: 0 }, { t: 2.5, mix: 1 }];
+    c.detix$$module$synpdf = 0;
+    c.offset$$module$synpdf = 4.8;
+    c.msc_wz$$module$synpdf.showSyncInfo();
+    assert.match(information, /measure: 1/);
+    assert.match(information, /duration: 2\.500 sec/);
+    assert.match(information, /overall&nbsp;offset: 4\.800 sec/);
 });
 
 test('rendering an active sync preserves recorded timings without adding future ones', () => {

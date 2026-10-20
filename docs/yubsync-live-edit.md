@@ -2,11 +2,11 @@
 
 YubSync supports focused score corrections while preserving the current synchronization session.
 
-**Load** prepares a fresh, paused sync at the beginning of the score and recording. Load the YouTube recording, press Play, and use B to record barlines; the Start Sync checkbox is already enabled. Preview timestamps are generated only outside sync mode. Loading another score clears the previous session, while resizing an active sync keeps its recorded timings.
+**Load** prepares a fresh, paused sync at the beginning of the score and recording. Load the YouTube recording, press Play, and use B to record barlines. Sync mode starts automatically after the PDF renders and ends at the final marker; there is no manual Start Sync checkbox. Preview timestamps are generated only outside sync mode. Loading another score clears the previous session, while resizing an active sync keeps its recorded timings.
 
-On short windows, the page can scroll past the controls to reach the score. The score keeps its own scrolling area for inspecting full-score systems and later pages.
+On desktop, the PDF fills the left pane. Score selection, recording setup, submission, and correction tools live in the right sidebar. The setup area scrolls independently beneath the video, Help button, and current measure/duration/offset information. The score keeps its own scrolling area for inspecting full-score systems and later pages.
 
-Load a saved part in YubSync and wait for the PDF to finish rendering. The toolbar above the score provides four correction tools, also available from the keyboard:
+Load a saved part in YubSync and wait for the PDF to finish rendering. The sidebar toolbar provides four correction tools, also available from the keyboard:
 
 | Tool | Action |
 | --- | --- |
@@ -19,7 +19,7 @@ Entering a tool pauses playback and holds the current sync session. Pressing its
 
 Save updates the exact loaded database metric row through the existing administrator live-edit endpoint. It rebuilds measure boxes using the existing PDF canvases and player, preserving recorded timestamps, offset, repeat references, media position and scroll position. Playback stays paused; Space resumes it. Backspace and B work normally again. No PDF download or rerender is needed after saving.
 
-The toolbar remains above the scrolling score. Undo snapshots retain only the changed page. Y merges preserve complete full-score envelopes, and a single-staff refit cannot collapse a large score system. Saved sparse geometry and sloping endpoints are supported.
+The toolbar shares the scrollable setup sidebar. Undo snapshots retain only the changed page. Y merges preserve complete full-score envelopes, and a single-staff refit cannot collapse a large score system. Saved sparse geometry and sloping endpoints are supported.
 
 ## Recorded and unsynced measures
 

@@ -554,7 +554,7 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
                 b.height = c.h + "px";
                 c.y != ycurprev$$module$synpdf && doeRol$$module$synpdf(c.y - this.tmargin, 0);
                 ycurprev$$module$synpdf = c.y;
-                opt$$module$synpdf.synbox && this.showSyncInfo();
+                this.showSyncInfo();
                 break
             }
         }
@@ -708,8 +708,11 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (a, b, c) {
     }
 };
 Wijzer$$module$synpdf.prototype.showSyncInfo = function () {
-    this.sinfo.html("duration&nbsp;measure: " + (detix$$module$synpdf < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[detix$$module$synpdf + 1].t - deTijden$$module$synpdf[detix$$module$synpdf].t : 0).toFixed(3) + " sec.<br>");
-    this.sinfo.append("media&nbsp;offset: " + offset$$module$synpdf.toFixed(3) + " sec.")
+    const point = deTijden$$module$synpdf[detix$$module$synpdf];
+    const next = deTijden$$module$synpdf[detix$$module$synpdf + 1];
+    const duration = point && next ? next.t - point.t : 0;
+    this.sinfo.html("measure: " + (point ? point.mix + 1 : 'Ready') + "<br>duration: " + duration.toFixed(3) + " sec.<br>");
+    this.sinfo.append("overall&nbsp;offset: " + offset$$module$synpdf.toFixed(3) + " sec.")
 };
 Wijzer$$module$synpdf.prototype.changeTimesKeyb = function (a) {
     if (!(detix$$module$synpdf >= deTijden$$module$synpdf.length - 1)) {
@@ -2748,8 +2751,9 @@ function hideSpeedChk$$module$synpdf() {
 function syncChk$$module$synpdf() {
     // Check if the synchronization module is available
     if (msc_wz$$module$synpdf && !startSyncOnLoad$$module$synpdf) {
-        // Toggle visibility of elements based on the sync box state
-        $("#sync_out, .reptkn").toggle(!!opt$$module$synpdf.synbox);
+        // Keep the measure and offset visible during both recording and review.
+        $("#sync_out").toggle(true);
+        $(".reptkn").toggle(!!opt$$module$synpdf.synbox);
         // Commenting out toggle of advanced mode
         // $("#lm").toggle(!opt$$module$synpdf.synbox);
 
