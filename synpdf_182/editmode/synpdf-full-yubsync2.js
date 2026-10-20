@@ -641,7 +641,7 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
     }
 };
 Wijzer$$module$synpdf.prototype.keySync = function (keyType) {
-    if (window.YubSyncLiveEdit?.active) return;
+    if (window.YubSyncLiveEdit?.busy) return;
     if (opt$$module$synpdf.synbox) {
         this.paused && keyDown$$module$synpdf({
             key: " "
@@ -1284,7 +1284,7 @@ function goJpeg$$module$synpdf(a) {   //allows loading of jpeg sheet music
 }
 
 function tick$$module$synpdf(a) {
-    if (window.YubSyncLiveEdit?.active) return;
+    if (window.YubSyncLiveEdit?.busy) return;
     if (elmed$$module$synpdf && msc_wz$$module$synpdf && (!yubchk$$module$synpdf || elmed$$module$synpdf == ybplayer$$module$synpdf)) {
         var b = (yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime) - offset$$module$synpdf;
         var c = b;
@@ -1858,7 +1858,11 @@ function readMediaYub$$module$synpdf() {
     } else {
         //No database menus here
         //$('#database-menus').hide();
-        $("#yubid")[0].checkValidity() ? (opt$$module$synpdf.yubvid = $("#yubid").val(), setPlayer$$module$synpdf("", "")) : alert("The youtube video id should be 11 characters long,\neach from 'A' to 'Z', 'a' to 'z', '0' to '9', '-' or '_'")
+        if ($("#yubid")[0].checkValidity()) {
+            window.dispatchEvent(new CustomEvent('yubsync:before-video-load'));
+            opt$$module$synpdf.yubvid = $("#yubid").val();
+            setPlayer$$module$synpdf("", "");
+        } else alert("The youtube video id should be 11 characters long,\neach from 'A' to 'Z', 'a' to 'z', '0' to '9', '-' or '_'");
     }
 }
 
@@ -1958,7 +1962,9 @@ function setPlayer$$module$synpdf(a, b) {
         elmed$$module$synpdf.cueVideoById({
             videoId: opt$$module$synpdf.yubvid,
             startSeconds: c
-        })
+        });
+        window.yubsyncLoadedVideoId = opt$$module$synpdf.yubvid;
+        window.dispatchEvent(new CustomEvent('yubsync:video-ready'));
     })
 }
 
@@ -2065,7 +2071,7 @@ function do_count_in$$module$synpdf(a, b) {
 }
 
 function playPause$$module$synpdf(a, b) {
-    if (window.YubSyncLiveEdit?.active) return;
+    if (window.YubSyncLiveEdit?.busy) return;
     if (elmed$$module$synpdf) {
         var c = a.split(":"),
             d = "true" == c[0],
@@ -2117,7 +2123,7 @@ function pauseer$$module$synpdf() {
 let initialScrollTop = window.scrollY; // Store the initial scroll position
 
 function keyDown$$module$synpdf(a) {
-    if (window.YubSyncLiveEdit?.active) return;
+    if (window.YubSyncLiveEdit?.busy) return;
     if (a.target?.closest?.('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
     var b = a.key,
         c = 1;

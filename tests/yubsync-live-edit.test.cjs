@@ -41,6 +41,20 @@ test('future corrections preserve real times, offset, playback position and curs
  const draft=clone(original);draft[2].bxs[0].splice(1,0,200);
  const saved=state();assert.deepEqual(remapSession(original,draft,owners(),saved),saved);
 });
+test('continued syncing uses the new boundary and cannot undo a boundary it has recorded',()=>{
+ const corrected=clone(original);corrected[1].bxs[0].splice(2,0,700);
+ const live=state({times:[{t:0,mix:0},{t:2,mix:1},{t:4,mix:2}],lastSynced:2,detix:2,demix:2});
+ assert.deepEqual(remapSession(corrected,clone(corrected),owners(),live,owners()),live);
+ assert.throws(()=>remapSession(corrected,original,owners(),live,owners()),/removes a barline/);
+});
+test('successive changes and undo retain merged-system ancestry',()=>{
+ const corrected=clone(original),lineage=owners();
+ merge(corrected[1],lineage[1],1,[0,1]);
+ const next=clone(corrected);next[2].bxs[0].splice(1,0,300);
+ const live=state({times:[{t:0,mix:0}],lastSynced:0,detix:0,demix:0});
+ assert.deepEqual(remapSession(corrected,next,lineage,live,lineage),live);
+ assert.deepEqual(remapSession(next,corrected,lineage,live,lineage),live);
+});
 test('generated future timings do not block a correction or survive as recorded data',()=>{
  const draft=clone(original);draft[2].bxs[0].splice(1,0,200);
  const saved=state({times:[{t:0,mix:0},{t:2,mix:1},...Array.from({length:7},(_,i)=>({t:4+i*2,mix:i+2}))]});

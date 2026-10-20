@@ -27,9 +27,9 @@
     ?>
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
-    <script src="synpdf-full-yubsync2.js?v=55"></script>
+    <script src="synpdf-full-yubsync2.js?v=56"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
-    <link rel="stylesheet" href="yubsync-live-edit.css?v=3" />
+    <link rel="stylesheet" href="yubsync-live-edit.css?v=4" />
     <style>
         html {
             width: 100%;
@@ -776,6 +776,7 @@
             </form>
             <div id="sync_out">
                 <div id="sync_info"></div>
+                <div id="yubsync-progress-status" role="status" aria-live="polite"></div>
                 <label hidden><span><button id="reset">Backspace</button></span> one measure</label>
             </div>
         </div>
@@ -789,9 +790,9 @@
                     <button type="button" data-yub-edit="s" title="Split a multimeasure rest (S)" aria-pressed="false">Split rest <kbd>S</kbd></button>
                     <button type="button" data-yub-edit="y" title="Refit a staff, drag to merge systems, or Ctrl-click to merge the page (Y)" aria-pressed="false">Refit / merge <kbd>Y</kbd></button>
                     <button type="button" id="yubsync-edit-undo" disabled>Undo edit</button>
-                    <button type="button" id="yubsync-edit-save" disabled>Save &amp; resume sync</button>
+                    <button type="button" id="yubsync-edit-save" disabled>Save changes</button>
                     <button type="button" id="yubsync-edit-cancel" disabled>Cancel edits</button>
-                    <span id="yubsync-edit-status" role="status" aria-live="polite">Q / W / S / Y pause syncing to correct the score.</span>
+                    <span id="yubsync-edit-status" role="status" aria-live="polite">Q / W / S / Y edit the score. Clicks update measures immediately.</span>
                 </div>
                 <div class="step-wrapper">
                     <form class="inputform" id="loadScore" method="POST">
@@ -1025,8 +1026,9 @@ Also works with dropbox. You can load a preload file with the score file button.
             <br />
             <button id="closehelp">Close</button>
     </div>
-    <script src="yubsync-tools.js?v=83"></script>
-    <script src="yubsync-live-edit.js?v=1"></script>
+    <script src="yubsync-tools.js?v=84"></script>
+    <script src="yubsync-live-edit.js?v=2"></script>
+    <script src="yubsync-progress.js?v=1"></script>
 </body>
 
 </html>

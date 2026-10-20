@@ -411,6 +411,7 @@ function populateSyncPartDropdown(parts, pieceId) {
 
 async function bootFromDB(pieceId, partId) {
     if (window.YubSyncLiveEdit?.active) throw new Error('Save or cancel score corrections before loading another score.');
+    window.dispatchEvent?.(new CustomEvent('yubsync:before-score-load'));
     const url = `./get_metric_arr.php?piece_id=${encodeURIComponent(pieceId)}&part=${encodeURIComponent(partId)}`;
     const r = await fetch(url, { cache: 'no-store' });
     if (!r.ok) {
@@ -573,6 +574,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.startsWith('Error')) {
                     alert("Form submission failed: " + data);  // Show error if starts with 'Error'
                 } else if (data === "success") {
+                    window.dispatchEvent(new CustomEvent('yubsync:submitted'));
                     alert("Form submitted successfully");
                     // Optionally reset the form or redirect the user
                     // form.reset();

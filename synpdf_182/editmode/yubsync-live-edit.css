@@ -19,9 +19,8 @@ body > section2 { flex: 1; min-height: 60vh; height: auto; }
 #yubsync-edit-toolbar kbd { font: inherit; font-size: .85em; border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; }
 #yubsync-edit-toolbar.is-editing { border-color: #194f9a; }
 #yubsync-edit-status { flex-basis: 100%; font-size: 13px; }
-.yubsync-edit-overlay { position: absolute; pointer-events: none; z-index: 3; }
 #notation.yubsync-correcting { cursor: crosshair; touch-action: none; }
-#notation.yubsync-correcting .demaat { visibility: hidden; }
+#yubsync-progress-status { margin-top: 4px; font: 11px/1.4 sans-serif; }
 
 /* Desktop: reserve the full left column for the score. Setup scrolls on the
    right, independently of the video and the score. */

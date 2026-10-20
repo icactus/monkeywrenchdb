@@ -54,8 +54,8 @@
         if (result.length) result.push({ end: true });
         return result;
     }
-    function remapSession(metrics, draft, lineage, state) {
-        const before = measures(metrics), after = measures(draft, lineage);
+    function remapSession(metrics, draft, lineage, state, beforeLineage) {
+        const before = measures(metrics, beforeLineage), after = measures(draft, lineage);
         const byOwner = new Map();
         after.forEach((next, index) => {
             if (next.end) return;
@@ -65,8 +65,12 @@
                 byOwner.get(key).push({ x: next.x, index });
             });
         });
-        const mapping = before.map(old => old.end ? after.length - 1 :
-            (byOwner.get(`${old.page}/${old.owners[0]}`) || []).find(next => Math.abs(old.x - next.x) < 0.75)?.index ?? -1);
+        const mapping = before.map(old => {
+            if (old.end) return after.length - 1;
+            const matches = new Set(old.owners.flatMap(owner => byOwner.get(`${old.page}/${owner}`) || [])
+                .filter(next => Math.abs(old.x - next.x) < 0.75).map(next => next.index));
+            return matches.size === 1 ? [...matches][0] : -1;
+        });
         function required(index) {
             if (index === -1) return -1;
             if (!Number.isInteger(index) || mapping[index] === undefined || mapping[index] < 0)
@@ -109,7 +113,7 @@
     const get = name => window[name + '$$module$synpdf'];
     const set = (name, value) => { window[name + '$$module$synpdf'] = value; };
     let session = null, mode = '', first = null, gesture = null, busy = false;
-    let draft, lineage, history = [], locked = [];
+    let draft, lineage, history = [];
     const hints = {
         q: 'Q: click a barline to remove it, or click inside a system to add one.',
         w: 'W: click the top-left and bottom-right corners of a staff. Lines fit automatically.',
@@ -124,12 +128,11 @@
             button.setAttribute('aria-pressed', String(!!session && mode === button.dataset.yubEdit));
             button.disabled = busy || !!session?.saved;
         });
-        saveButton.disabled = !session || busy;
+        saveButton.disabled = !session || busy || (!history.length && !session.saved);
         cancelButton.disabled = !session || busy || !!session.saved;
-        undoButton.disabled = !session || busy || !!session.saved || !history.length;
-        saveButton.textContent = busy ? 'Saving…' : session?.saved ?
-            (session.storagePending ? 'Retry save & resume' : 'Resume sync') : 'Save & resume sync';
-        notation.classList.toggle('yubsync-correcting', !!session);
+        undoButton.disabled = !session || busy || !!session.saved || !history.length || !!history.at(-1).restored;
+        saveButton.textContent = busy ? 'Saving…' : session?.storagePending ? 'Retry save' : 'Save changes';
+        notation.classList.toggle('yubsync-correcting', !!mode);
     }
     function captureState() {
         const player = get('elmed');
@@ -152,22 +155,15 @@
                 message('Load a database score and wait for it to finish rendering before correcting it.'); return;
             }
             if (get('opt').advncd) { message('Score corrections require the normal scrolling score view.'); return; }
-            const state = captureState();
-            session = { context: { ...context }, metrics: copy(get('deMetriek')), state };
-            // Freeze all non-editor controls until this transaction finishes.
-            locked = Array.from(document.querySelectorAll('button, input, select, textarea')).filter(el => !toolbar.contains(el)).map(el => [el, el.disabled]);
-            locked.forEach(([el]) => { el.disabled = true; });
-            get('pauseer')();
-            get('msc_wz').paused = true;
-            cancelAnimationFrame(get('msc_wz').__stm_raf || 0);
-            window.jQuery(notation).stop(true);
-            draft = copy(session.metrics);
+            draft = copy(get('deMetriek'));
             lineage = draft.map((page, p) => p ? page.cxs.map((_, s) => [origin(p, s)]) : null);
+            session = { context: { ...context }, metrics: copy(draft), lineage: copy(lineage) };
             history = [];
         }
         mode = mode === nextMode ? '' : nextMode;
         first = gesture = null;
-        message(mode ? hints[mode] : 'Corrections paused. Choose a tool, save, or cancel.');
+        if (!mode && !history.length) { finish(); message('Continue syncing.'); return; }
+        message(mode ? hints[mode] : 'Changes are active. Continue syncing; Save changes writes them to the database.');
         paint(); update();
     }
     function restore(state, metrics) {
@@ -179,30 +175,22 @@
         get('opt').synbox = state.sync;
         document.getElementById('synbox').checked = !!state.sync;
         get('refreshMetricGeometry')();
-        get('msc_wz').paused = true;
         get('msc_wz').cursorTime = state.cursor;
         // Paint directly: time2x can scroll, select another repeat at an equal
         // timestamp, or signal the end of playback while we are restoring.
         const box = get('deMaten')[state.demix];
         get('msc_wz').maatloper.css(box ? { left: box.x, top: box.y, width: box.w, height: box.h } : { width: 0 });
         get('msc_wz').showSyncInfo();
-        const player = get('elmed');
-        if (get('yubchk')) { player.pauseVideo(); player.seekTo(state.mediaTime, true); }
-        else { player.pause(); player.currentTime = state.mediaTime; }
         cancelAnimationFrame(get('msc_wz').__stm_raf || 0);
         notation.scrollTop = state.scrollTop; notation.scrollLeft = state.scrollLeft;
         window.scrollTo(state.windowX, state.windowY);
     }
     function finish() {
         session = null; mode = ''; first = gesture = null; history = [];
-        locked.forEach(([el, disabled]) => { el.disabled = disabled; }); locked = [];
         paint(); update(); document.activeElement?.blur();
     }
     async function save() {
         if (!session || busy) return;
-        let mapped;
-        try { mapped = remapSession(session.metrics, draft, lineage, session.state); }
-        catch (error) { message(error.message); return; }
         busy = true; update(); message('Saving score corrections…');
         try {
             if (history.length && (!session.saved || session.storagePending)) {
@@ -216,10 +204,9 @@
                 session.storagePending = session.saved && (!response.ok || !result.success);
                 if (!response.ok || !result.success) throw new Error(result.message || `Save failed (${response.status}).`);
             }
-            restore(mapped, draft);
-            finish(); message('Saved. Sync position and timings restored. Press Space to play.');
+            finish(); message('Saved. Continue syncing.');
         } catch (error) {
-            message(session.saved ? `Score saved to the database. ${error.message} Your sync is preserved; use ${session.storagePending ? 'Retry save & resume' : 'Resume sync'} to finish.` :
+            message(session.saved ? `Score saved to the database. ${error.message} Your sync is preserved; use Retry save to finish.` :
                 `Save could not be confirmed: ${error.message} Your edits and sync are preserved. Retry to finish saving.`);
         } finally { busy = false; update(); }
     }
@@ -252,12 +239,17 @@
         if (busy || session?.saved) return;
         // Undo retains only the changed page, even for a long full score.
         const backup = { page: pageNumber, data: copy(draft[pageNumber]), lineage: copy(lineage[pageNumber]) };
+        const before = draft.slice(), beforeLineage = lineage.slice(), state = captureState();
+        before[pageNumber] = backup.data; beforeLineage[pageNumber] = backup.lineage;
         try {
             if (!action()) return;
+            const mapped = remapSession(before, draft, lineage, state, beforeLineage);
+            restore(mapped, draft);
             history.push(backup); first = null; paint(pageNumber); update();
-            message(`${hints[mode]} Unsaved corrections: ${history.length}.`);
+            message(`Measure geometry updated. ${hints[mode]} Unsaved corrections: ${history.length}.`);
         } catch (error) {
             draft[pageNumber] = backup.data; lineage[pageNumber] = backup.lineage;
+            restore(state, draft);
             message(error.message); paint(pageNumber);
         }
     }
@@ -314,40 +306,9 @@
             });
         }
     }
-    function paint(pageNumber) {
-        notation.querySelectorAll('.yubsync-edit-overlay').forEach(el => {
-            if (pageNumber === undefined || Number(el.dataset.pdfPage) === pageNumber) el.remove();
-        });
-        if (!session) return;
-        const ns = 'http://www.w3.org/2000/svg';
-        notation.querySelectorAll('canvas[data-pdf-page]').forEach(canvas => {
-            if (pageNumber !== undefined && Number(canvas.dataset.pdfPage) !== pageNumber) return;
-            const svg = document.createElementNS(ns, 'svg');
-            svg.classList.add('yubsync-edit-overlay');
-            svg.dataset.pdfPage = canvas.dataset.pdfPage;
-            svg.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
-            Object.assign(svg.style, { top: `${canvas.offsetTop}px`, left: `${canvas.offsetLeft}px`, width: `${canvas.clientWidth}px`, height: `${canvas.clientHeight}px` });
-            const page = draft[Number(canvas.dataset.pdfPage)];
-            page.cxs.forEach((system, i) => {
-                const l = bounds(system, system.xs.x1), r = bounds(system, system.xs.x2);
-                const polygon = document.createElementNS(ns, 'polygon');
-                polygon.setAttribute('points', `${system.xs.x1},${l.top} ${system.xs.x2},${r.top} ${system.xs.x2},${r.bottom} ${system.xs.x1},${l.bottom}`);
-                polygon.setAttribute('fill', i % 2 ? '#64d979' : '#71abef'); polygon.setAttribute('fill-opacity', '0.22');
-                svg.appendChild(polygon);
-                page.bxs[i].forEach(bar => {
-                    const x = Math.abs(bar), b = bounds(system, x);
-                    const line = document.createElementNS(ns, 'line');
-                    Object.entries({ x1: x, x2: x, y1: b.top, y2: b.bottom, stroke: bar < 0 ? '#a020f0' : '#d53b2f', 'stroke-width': 1.5 }).forEach(([key, value]) => line.setAttribute(key, value));
-                    svg.appendChild(line);
-                });
-            });
-            if (first?.page === Number(canvas.dataset.pdfPage)) {
-                const dot = document.createElementNS(ns, 'circle');
-                Object.entries({ cx: first.x, cy: first.y, r: 5, fill: '#d53b2f' }).forEach(([k, v]) => dot.setAttribute(k, v));
-                svg.appendChild(dot);
-            }
-            notation.appendChild(svg);
-        });
+    function paint() {
+        // Match live edit: the PDF and its current-measure cursor are enough.
+        notation.querySelectorAll('.yubsync-edit-overlay').forEach(el => el.remove());
     }
     function block(event) { event.preventDefault(); event.stopImmediatePropagation(); }
     function field(target) { return target?.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, select, [contenteditable]:not([contenteditable="false"])'); }
@@ -355,14 +316,15 @@
         if (field(event.target) || event.isComposing || event.keyCode === 229 || event.ctrlKey || event.metaKey || event.altKey) return;
         const key = event.key.toLowerCase();
         if ('qwsy'.includes(key) && key.length === 1) { block(event); if (!event.repeat) begin(key); return; }
-        if (session) {
-            if (event.key === 'Tab' || (toolbar.contains(event.target) && ['Enter', ' '].includes(event.key))) return;
-            block(event);
-            if (event.key === 'Escape' && !busy) { mode = ''; first = gesture = null; paint(); update(); message('Choose a tool, save, or cancel corrections.'); }
+        if (busy) { block(event); return; }
+        if (session && event.key === 'Escape') {
+            block(event); mode = ''; first = gesture = null;
+            if (!history.length) finish();
+            paint(); update(); message('Continue syncing. Save changes when ready.');
         }
     }, true);
     notation.addEventListener('pointerdown', event => {
-        if (!session) return;
+        if (!session || !mode) return;
         block(event);
         if (!mode || busy || session.saved || (event.button !== undefined && event.button !== 0)) return;
         const ctx = context(event); if (!ctx) return;
@@ -372,7 +334,7 @@
         } else act(ctx, event);
     }, true);
     notation.addEventListener('pointerup', event => {
-        if (!session) return;
+        if (!session || !mode) return;
         block(event);
         if (!gesture || gesture.pointerId !== event.pointerId || busy) return;
         const start = gesture; gesture = null;
@@ -387,21 +349,48 @@
     notation.addEventListener('pointercancel', () => { gesture = null; });
     // Legacy player handlers use mouse/touch events, including synthetic compatibility events.
     ['mousedown', 'mouseup', 'click', 'dblclick', 'touchstart', 'touchend', 'contextmenu'].forEach(type => notation.addEventListener(type, event => {
-        if (session) block(event);
+        if (session && (mode || busy)) block(event);
     }, { capture: true, passive: false }));
     toolbar.querySelectorAll('[data-yub-edit]').forEach(button => button.addEventListener('click', () => { begin(button.dataset.yubEdit); button.blur(); }));
     saveButton.addEventListener('click', save);
     undoButton.addEventListener('click', () => {
-        if (busy || session?.saved || !history.length) return;
-        const prior = history.pop(); draft[prior.page] = prior.data; lineage[prior.page] = prior.lineage;
-        first = gesture = null; paint(); update(); message('Last correction undone.');
+        if (busy || session?.saved || !history.length || history.at(-1).restored) return;
+        const prior = history.at(-1), target = draft.slice(), owners = lineage.slice();
+        target[prior.page] = copy(prior.data); owners[prior.page] = copy(prior.lineage);
+        try {
+            const mapped = remapSession(draft, target, owners, captureState(), lineage);
+            restore(mapped, target); draft = target; lineage = owners; history.pop();
+            first = gesture = null; paint(); update(); message('Last correction undone.');
+        } catch (error) { message(error.message); }
     });
     cancelButton.addEventListener('click', () => {
         if (!session || busy || session.saved) return;
-        restore(session.state, copy(session.metrics)); finish(); message('Corrections cancelled. Sync position restored. Press Space to play.');
+        try {
+            const metrics = copy(session.metrics);
+            const mapped = remapSession(draft, metrics, session.lineage, captureState(), lineage);
+            restore(mapped, metrics); finish(); message('Corrections cancelled. Continue syncing.');
+        } catch (error) { message(error.message); }
     });
     document.addEventListener('submit', event => { if (session && !toolbar.contains(event.target)) block(event); }, true);
-    window.addEventListener('beforeunload', event => { if (session && (history.length || busy)) { event.preventDefault(); event.returnValue = ''; } });
-    window.YubSyncLiveEdit = { get active() { return !!session; } };
+    window.addEventListener('beforeunload', event => {
+        if (session && (history.length || busy) && !window.YubSyncProgress?.save()) {
+            event.preventDefault(); event.returnValue = '';
+        }
+    });
+    window.YubSyncLiveEdit = {
+        get active() { return !!session; }, get busy() { return busy; },
+        exportProgress() { return history.length ? { baseline: session.metrics, lineage } : null; },
+        restoreProgress(state, metrics, editor) {
+            if (busy) throw new Error('Wait for the current save to finish.');
+            restore(state, metrics); finish();
+            if (editor) {
+                draft = metrics; lineage = copy(editor.lineage);
+                session = { context: { ...window.yubsyncMetricContext }, metrics: copy(editor.baseline),
+                    lineage: editor.baseline.map((page, p) => p ? page.cxs.map((_, s) => [origin(p, s)]) : null) };
+                history = [{ restored: true }];
+                update(); message('Saved progress restored, including local score corrections. Save changes to update the database.');
+            }
+        }
+    };
     update();
 })();
