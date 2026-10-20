@@ -2437,8 +2437,10 @@ function kliklang$$module$synpdf(startEvent) {
                 var endPoint = touchDev$$module$synpdf ? endEvent.originalEvent.changedTouches[0] : endEvent;
                 var longPress = 500 < (new Date).getTime() - touch_tb$$module$synpdf;
                 const $sc = $("#notation-scroll");
-                const notationX = endPoint.clientX - $sc.offset().left + $sc.scrollLeft(); // notation-space X
-                const notationY = endPoint.clientY - $sc.offset().top + $sc.scrollTop();   // notation-space Y
+                // client coordinates and the viewport rect stay aligned when the page scrolls.
+                const rect = $sc[0].getBoundingClientRect();
+                const notationX = endPoint.clientX - rect.left + $sc.scrollLeft(); // notation-space X
+                const notationY = endPoint.clientY - rect.top + $sc.scrollTop();   // notation-space Y
 
                 // Double-tap detection for mobile
                 var now = Date.now();

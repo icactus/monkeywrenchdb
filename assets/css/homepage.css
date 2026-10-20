@@ -7,6 +7,56 @@ body:not(.recording-loaded):not(.initial-recording-target) section2{display:bloc
 body:not(.recording-loaded):not(.initial-recording-target) #notation{display:block;width:100%;height:auto;max-width:none;overflow:visible;flex:none;margin:0;padding:0;border:0;background:transparent;box-shadow:none}
 body:not(.recording-loaded):not(.initial-recording-target) #notation-scroll{display:block;height:auto;max-height:none;overflow:visible;padding:0;margin:0;background:transparent}
 body.initial-recording-target #study-home,body.recording-loaded #study-home{display:none}
+/* Let the header scroll away while the desktop score grows to the viewport. */
+@media screen and (min-width: 768px) and (min-height: 501px) {
+    body.recording-loaded {
+        height: auto;
+        min-height: 100%;
+        overflow-x: clip;
+        overflow-y: visible;
+        --score-sidebar-width: 350px;
+    }
+    body.recording-loaded section1 {
+        flex: none;
+    }
+    body.recording-loaded section2 {
+        flex: none;
+        width: auto;
+        height: 100vh;
+        height: 100dvh;
+        overflow: visible;
+    }
+    body.recording-loaded #notation:not(:fullscreen) {
+        align-self: flex-start;
+        position: sticky;
+        top: 5px;
+        min-height: 0;
+        height: var(--score-viewport-height, calc(100vh - 120px));
+        overflow: hidden;
+    }
+    body.recording-loaded #notation-scroll {
+        min-height: 0;
+    }
+    body.recording-loaded #vid,
+    body.recording-loaded #vidyub {
+        position: fixed;
+    }
+    body.recording-loaded sidecontentbar {
+        position: sticky;
+        top: 200px;
+        align-self: flex-start;
+        box-sizing: border-box;
+        width: var(--score-sidebar-width);
+        height: calc(100vh - 200px);
+        height: calc(100dvh - 200px);
+        overflow-y: auto;
+    }
+}
+@media screen and (min-width: 768px) and (max-width: 1024px) and (min-height: 501px) {
+    body.recording-loaded {
+        --score-sidebar-width: 260px;
+    }
+}
 .study-home{--ink:#233e45;--muted:#62757a;--teal:#376a73;--line:#dde5e5;max-width:880px;margin:auto;padding:0 28px 30px;color:var(--ink);font:15px/1.5 'IBM Plex Sans',system-ui,sans-serif;text-align:left;user-select:text;box-sizing:border-box}
 .study-home *{box-sizing:border-box}.study-home [hidden]{display:none!important}.study-home button,.study-home input,.study-home select{font:inherit;color:inherit;touch-action:manipulation}.study-home button{cursor:pointer}.study-home button:focus-visible,.study-home a:focus-visible,.study-home input:focus-visible,.study-home select:focus-visible{outline:3px solid #aa7510;outline-offset:3px}.study-home h1,.study-home h2,.study-home h3,.study-home h4,.study-home p{margin:0}.study-home a{color:var(--teal)}
 .study-search-panel{background:white;border:1px solid var(--line);border-radius:14px;padding:38px 42px 29px;box-shadow:0 5px 18px #26494f08}.study-home h1{font-size:clamp(29px,3.6vw,43px);font-weight:550;letter-spacing:-1.6px;line-height:1.15;margin:8px 0 12px}.study-intro{color:var(--muted);font-size:14px}.study-search-controls{display:grid;grid-template-columns:minmax(0,1fr) 215px;gap:14px;margin-top:0}.study-home label{display:block;font-size:11px;font-weight:650;margin-bottom:8px}.study-search-wrap{position:relative}.study-input-box{height:55px;border:1px solid #91aaae;border-radius:8px;display:flex;align-items:center;gap:12px;padding:0 15px;background:#fff}.study-input-box>span{font:27px system-ui;color:var(--teal)}.study-input-box:focus-within{border-color:var(--teal);box-shadow:0 0 0 3px #5ba2a820}.study-input-box input{border:0;background:none;outline:none;min-width:0;width:100%;font-size:15px;padding:0}.study-input-box input::-webkit-search-cancel-button{display:none}.study-input-box button{border:0;background:none;font-size:22px;padding:0 3px}.study-home kbd{font:11px system-ui;color:#7b8a8d;border:1px solid var(--line);padding:1px 6px;border-radius:4px}.study-home select{width:100%;height:55px;border:1px solid #c4d1d3;border-radius:8px;background:#f9fbfb;padding:0 13px}.study-search-hint{display:flex;gap:20px;justify-content:space-between;margin-top:13px;font-size:11px;color:var(--muted)}.study-search-hint button{border:0;background:none;padding:0 3px;text-decoration:underline;text-underline-offset:3px;color:var(--teal);font-size:11px}

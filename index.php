@@ -107,7 +107,7 @@ if ($hasInitialRecordingTarget) {
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=34" />
     <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=288" />
-    <link rel="stylesheet" href="assets/css/homepage.css?v=13" />
+    <link rel="stylesheet" href="assets/css/homepage.css?v=14" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -546,8 +546,9 @@ if ($hasInitialRecordingTarget) {
     <script src="js/history-manager.js?v=6"></script>
     <script src="js/favorites-manager.js?v=3"></script>
     <script src="js/contact-email.js?v=1" defer></script>
-    <script src="stripped-synpdf.js?v=340"></script>
+    <script src="stripped-synpdf.js?v=341"></script>
     <script src="stripped-synpdf-extras.js?v=289"></script>
+    <script src="js/player-page-scroll.js?v=1"></script>
     <script src="js/homepage.js?v=19"></script>
     <script>
         // Dark Mode: mobile menu toggle + desktop floating button, persisted in localStorage
