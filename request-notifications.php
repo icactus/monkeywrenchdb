@@ -19,14 +19,23 @@ try {
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     $db = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
     $db->set_charset('utf8mb4');
-    if (!mwRequestUser($db, $userId)) { http_response_code(401); echo json_encode(['error' => 'Sign in again.']); exit; }
+    $user = mwRequestUser($db, $userId);
+    if (!$user) { http_response_code(401); echo json_encode(['error' => 'Sign in again.']); exit; }
     if ($method === 'POST') {
         $id = filter_input(INPUT_POST, 'request_id', FILTER_VALIDATE_INT);
         $version = filter_input(INPUT_POST, 'version', FILTER_VALIDATE_INT);
         if (!$id || !$version || $id < 1 || $version < 1) throw new InvalidArgumentException('Invalid request update.');
-        mwRequestMarkSeen($db, $userId, $id, $version);
+        $kind = $_POST['kind'] ?? 'update';
+        if ($kind === 'new_request') {
+            if ($user['role'] !== 'admin') { http_response_code(403); echo json_encode(['error' => 'Administrator access is required.']); exit; }
+            mwRequestAdminMarkSeen($db, $userId, $id);
+        } elseif ($kind === 'update') {
+            mwRequestMarkSeen($db, $userId, $id, $version);
+        } else throw new InvalidArgumentException('Invalid notification type.');
     }
-    echo json_encode(['count' => mwRequestUnreadCount($db, $userId)]);
+    $updates = mwRequestUnreadCount($db, $userId);
+    $newRequests = $user['role'] === 'admin' ? mwRequestAdminNewCount($db, $userId) : 0;
+    echo json_encode(['count' => $updates + $newRequests, 'update_count' => $updates, 'new_request_count' => $newRequests]);
 } catch (InvalidArgumentException $e) {
     http_response_code(400); echo json_encode(['error' => $e->getMessage()]);
 } catch (Throwable $e) {

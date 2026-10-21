@@ -133,11 +133,14 @@ function mwRequestList(mysqli $db, int $userId, bool $admin, string $filter = ''
     if ($admin) mwRequestRequireAdmin($db, $userId);
     $where = $admin ? '1 = 1' : 'r.user_id = ' . (int) $userId;
     $where .= ' AND r.deleted_at IS NULL';
-    if ($filter === 'open') $where .= " AND r.status IN ('requested', 'in_progress')";
+    if ($filter === 'new' && !$admin) throw new DomainException('Administrator access is required.');
+    $newRequest = mwRequestAdminNewCondition($userId);
+    if ($filter === 'new') $where .= ' AND ' . $newRequest;
+    elseif ($filter === 'open') $where .= " AND r.status IN ('requested', 'in_progress')";
     elseif ($filter === 'updates') $where .= ' AND r.update_version > r.seen_version';
     elseif (isset(MW_REQUEST_STATUSES[$filter])) $where .= " AND r.status = '" . $db->real_escape_string($filter) . "'";
     $offset = (max(1, $page) - 1) * 25;
-    $columns = $admin ? ', u.name AS user_name, u.email AS user_email' : '';
+    $columns = $admin ? ', u.name AS user_name, u.email AS user_email, (' . $newRequest . ') AS is_new_request' : '';
     $join = $admin ? ' LEFT JOIN users u ON u.id = r.user_id' : '';
     return $db->query("SELECT r.* $columns FROM music_requests r $join WHERE $where ORDER BY " . ($filter === 'updates' ? 'r.updated_at' : 'r.created_at') . " DESC, r.id DESC LIMIT 26 OFFSET $offset")->fetch_all(MYSQLI_ASSOC);
 }
@@ -224,5 +227,24 @@ function mwRequestMarkSeen(mysqli $db, int $userId, int $requestId, int $version
     // arriving while the page is open must remain unread, including within one second.
     $stmt = $db->prepare('UPDATE music_requests SET seen_version = GREATEST(seen_version, ?), updated_at = updated_at WHERE id = ? AND user_id = ? AND deleted_at IS NULL AND update_version >= ?');
     $stmt->bind_param('iiii', $version, $requestId, $userId, $version);
+    $stmt->execute();
+}
+
+function mwRequestAdminNewCondition(int $adminId): string
+{
+    return "r.user_id <> $adminId AND r.status = 'requested' AND NOT EXISTS (SELECT 1 FROM music_request_admin_views v WHERE v.request_id = r.id AND v.admin_user_id = $adminId)";
+}
+
+function mwRequestAdminNewCount(mysqli $db, int $adminId): int
+{
+    mwRequestRequireAdmin($db, $adminId);
+    return (int) $db->query('SELECT COUNT(*) FROM music_requests r WHERE r.deleted_at IS NULL AND ' . mwRequestAdminNewCondition($adminId))->fetch_row()[0];
+}
+
+function mwRequestAdminMarkSeen(mysqli $db, int $adminId, int $requestId): void
+{
+    mwRequestRequireAdmin($db, $adminId);
+    $stmt = $db->prepare("INSERT IGNORE INTO music_request_admin_views (admin_user_id, request_id) SELECT ?, id FROM music_requests WHERE id = ? AND user_id <> ? AND deleted_at IS NULL AND status = 'requested'");
+    $stmt->bind_param('iii', $adminId, $requestId, $adminId);
     $stmt->execute();
 }

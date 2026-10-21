@@ -79,12 +79,13 @@ try {
     $db->multi_query(file_get_contents($root . '/docs/migrations/2026-10-requests.sql'));
     do { if ($result = $db->store_result()) $result->free(); } while ($db->more_results() && $db->next_result());
     $db->query('CREATE TABLE users (id INT PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), role VARCHAR(20)) ENGINE=MyISAM');
-    $db->query("INSERT INTO users VALUES (1, 'Admin', 'admin@example.test', 'admin'), (2, 'Requester', 'requester@example.test', 'user'), (3, 'Other user', 'other@example.test', 'user'), (4, 'Concurrent', 'concurrent@example.test', 'user'), (5, 'Web user', 'web@example.test', 'user')");
+    $db->query("INSERT INTO users VALUES (1, 'Admin', 'admin@example.test', 'admin'), (2, 'Requester', 'requester@example.test', 'user'), (3, 'Other user', 'other@example.test', 'user'), (4, 'Concurrent', 'concurrent@example.test', 'user'), (5, 'Web user', 'web@example.test', 'user'), (6, 'Second admin', 'admin2@example.test', 'admin')");
 
     $upgradeConfig = tempnam(sys_get_temp_dir(), 'mw-request-upgrade-');
     try {
         chmod($upgradeConfig, 0600);
         file_put_contents($upgradeConfig, '<?php ' . implode("\n", array_map(fn($key, $value) => 'define(' . var_export($key, true) . ', ' . var_export($value, true) . ');', ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'], [DB_HOST, DB_USER, DB_PASSWORD, $database])));
+        $db->query('DROP TABLE music_request_admin_views');
         $db->query('ALTER TABLE music_requests DROP COLUMN deleted_at, DROP COLUMN update_version, DROP COLUMN seen_version');
         for ($run = 0; $run < 2; $run++) {
             $pipes = [];
@@ -98,6 +99,18 @@ try {
 
     $input = ['composer_name' => '  Antonín Dvořák  ', 'piece_name' => 'Symphony No. 9', 'part_name' => 'Cello'];
     $id = mwRequestSubmit($db, 2, $input);
+    check(mwRequestAdminNewCount($db, 1) === 1, 'A new submission creates an admin notification.');
+    check(count(mwRequestList($db, 1, true, 'new')) === 1, 'Admin new-request filter finds the submission.');
+    rejects(fn() => mwRequestAdminNewCount($db, 2), 'Regular users cannot count admin notifications.');
+    rejects(fn() => mwRequestAdminMarkSeen($db, 2, $id), 'Regular users cannot acknowledge admin notifications.');
+    rejects(fn() => mwRequestList($db, 2, false, 'new'), 'Regular users cannot filter other users’ submissions.');
+    mwRequestAdminMarkSeen($db, 1, $id);
+    mwRequestAdminMarkSeen($db, 1, $id);
+    check(mwRequestAdminNewCount($db, 1) === 0, 'Viewing a request clears it once, without changing its status.');
+    check(mwRequestAdminNewCount($db, 6) === 1, 'Each administrator keeps their own unread submissions.');
+    $ownId = mwRequestSubmit($db, 1, ['composer_name' => 'Bach', 'piece_name' => 'Admin request', 'part_name' => 'Violin']);
+    check(mwRequestAdminNewCount($db, 1) === 0, 'An admin does not receive a new-request alert for their own submission.');
+    mwRequestDelete($db, 1, $ownId);
     $saved = mwRequestList($db, 2, false);
     check(count($saved) === 1 && $saved[0]['composer_name'] === 'Antonín Dvořák', 'Unicode composer and trimmed required fields survive.');
     check(!array_key_exists('user_email', $saved[0]), 'User listing does not include requester email columns.');
@@ -234,6 +247,17 @@ try {
     check($repeat['status'] === 200 && count(mwRequestList($db, 5, false)) === 1, 'HTTP repeat submission is blocked without duplicate data.');
     $adminPage = httpRequest($port, 'requests.php?view=admin', $sessions['admin']);
     check($adminPage['status'] === 200 && str_contains($adminPage['body'], 'web@example.test'), 'Admin sees requester email and queue.');
+    $adminNotifications = json_decode(httpRequest($port, 'request-notifications.php', $sessions['admin'])['body'], true);
+    check($adminNotifications['new_request_count'] === 1 && $adminNotifications['count'] === 1 && $adminNotifications['update_count'] === 0, 'Admin bell counts incoming requests separately from personal updates.');
+    $newPage = httpRequest($port, 'requests.php?view=admin&status=new', $sessions['admin']);
+    check(str_contains($newPage['body'], 'data-notification-kind="new_request"') && str_contains($newPage['body'], '<strong>New request</strong>'), 'Clicking admin notification reveals the new request notice.');
+    check(mwRequestAdminNewCount($db, 1) === 1, 'Rendering the queue alone does not acknowledge an unseen card.');
+    $adminSeen = ['csrf' => str_repeat('a', 64), 'request_id' => $webId, 'version' => 1, 'kind' => 'new_request'];
+    check(httpRequest($port, 'request-notifications.php', $sessions['user'], $adminSeen)['status'] === 403, 'A stale forged admin session cannot clear queue notifications.');
+    check(httpRequest($port, 'request-notifications.php', $sessions['admin'], array_diff_key($adminSeen, ['csrf' => true]))['status'] === 403, 'Admin queue acknowledgment requires CSRF.');
+    $adminAcknowledged = json_decode(httpRequest($port, 'request-notifications.php', $sessions['admin'], $adminSeen)['body'], true);
+    check($adminAcknowledged['new_request_count'] === 0 && mwRequestUnreadCount($db, 5) === 0, 'Viewing an incoming request clears only the admin receipt.');
+    check(mwRequestAdminNewCount($db, 6) === 1, 'One admin viewing a request does not clear another admin’s bell.');
     $replyPost = httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reply', 'csrf' => str_repeat('a', 64), 'request_id' => $webId, 'status' => 'in_progress', 'message' => 'I expect to finish this next week.']);
     check($replyPost['status'] === 303 && !str_contains($replyPost['headers'], 'compose='), 'Admin reply saves without preparing email.');
     preg_match('/Location: ([^\r\n]+)/', $replyPost['headers'], $location);
@@ -290,7 +314,8 @@ try {
     if (in_array('--browser', $argv, true)) {
         $browserId = mwRequestSubmit($db, 5, ['composer_name' => 'Mahler', 'piece_name' => 'Symphony No. 2', 'part_name' => 'Cello']);
         mwRequestRespond($db, 1, $browserId, 'added', 'Your requested cello part is now available.');
-        echo json_encode(['fixture' => $fixture, 'port' => $port, 'sessions' => $sessions, 'request_id' => $browserId]) . "\n";
+        $browserNewId = mwRequestSubmit($db, 3, ['composer_name' => 'Mahler', 'piece_name' => 'New incoming request', 'part_name' => 'Flute']);
+        echo json_encode(['fixture' => $fixture, 'port' => $port, 'sessions' => $sessions, 'request_id' => $browserId, 'new_request_id' => $browserNewId]) . "\n";
         echo "Browser fixture ready. Press Enter to clean up.\n";
         fgets(STDIN);
     }

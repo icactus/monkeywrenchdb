@@ -28,3 +28,13 @@ CREATE TABLE IF NOT EXISTS music_request_replies (
     KEY request_thread (request_id, id),
     CONSTRAINT music_request_replies_request FOREIGN KEY (request_id) REFERENCES music_requests (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Each administrator acknowledges incoming requests independently.
+CREATE TABLE IF NOT EXISTS music_request_admin_views (
+    admin_user_id INT NOT NULL,
+    request_id INT NOT NULL,
+    seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (admin_user_id, request_id),
+    KEY request_views (request_id),
+    CONSTRAINT music_request_admin_views_request FOREIGN KEY (request_id) REFERENCES music_requests (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

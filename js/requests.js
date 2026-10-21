@@ -89,7 +89,7 @@
         if (pending.has(card) || document.hidden || !card.dataset.unreadVersion) return;
         pending.add(card);
         try {
-            const body = new URLSearchParams({ csrf, request_id: card.id.replace('request-', ''), version: card.dataset.unreadVersion });
+            const body = new URLSearchParams({ csrf, request_id: card.id.replace('request-', ''), version: card.dataset.unreadVersion, kind: card.dataset.notificationKind || 'update' });
             const response = await fetch('/request-notifications.php', { method: 'POST', credentials: 'same-origin', body });
             if (!response.ok) return;
             delete card.dataset.unreadVersion;

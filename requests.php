@@ -51,7 +51,8 @@ foreach (['composer_name', 'piece_name', 'part_name', 'youtube_url'] as $field) 
     $values[$field] = requestScalar($draft, $field, requestScalar($_GET, $field));
 }
 $filter = requestScalar($_GET, 'status', $adminView ? 'open' : 'all');
-if (!in_array($filter, ['open', 'all', 'updates'], true) && !isset(MW_REQUEST_STATUSES[$filter])) $filter = 'all';
+if (!in_array($filter, ['open', 'all', 'updates', 'new'], true) && !isset(MW_REQUEST_STATUSES[$filter])) $filter = 'all';
+if ($filter === 'new' && !$adminView) $filter = 'all';
 $page = max(1, min(100000, (int) requestScalar($_GET, 'page', '1')));
 $listUrl = 'requests.php?' . http_build_query(['view' => $adminView ? 'admin' : 'mine', 'status' => $filter, 'page' => $page]);
 $replyDraft = '';
@@ -162,7 +163,7 @@ $presets = [
     <link rel="stylesheet" href="assets/css/requests.css?v=4">
     <link rel="stylesheet" href="assets/css/request-notifications.css?v=2">
     <script>try { if (localStorage.getItem('darkMode') === '1') document.documentElement.classList.add('inverted'); } catch (e) {}</script>
-    <script src="js/requests.js?v=4" defer></script>
+    <script src="js/requests.js?v=5" defer></script>
 </head>
 <body>
 <header class="request-header">
@@ -205,20 +206,21 @@ $presets = [
     <?php endif; ?>
     <?php if ($user && !$denied && !$unavailable): ?>
         <section aria-labelledby="request-list-title">
-            <div class="list-heading"><h2 id="request-list-title"><?= $adminView ? 'All requests' : ($filter === 'updates' ? 'Unread request updates' : 'My requests') ?></h2>
+            <div class="list-heading"><h2 id="request-list-title"><?= $adminView ? ($filter === 'new' ? 'New requests' : 'All requests') : ($filter === 'updates' ? 'Unread request updates' : 'My requests') ?></h2>
                 <form method="get" class="filter-form"><input type="hidden" name="view" value="<?= $adminView ? 'admin' : 'mine' ?>">
                     <label for="request-filter">Show</label>
                     <select name="status" id="request-filter">
-                        <?php foreach (['all' => 'All requests', 'updates' => 'Unread updates', 'open' => 'Unfinished'] + MW_REQUEST_STATUSES as $key => $label): ?>
+                        <?php foreach (['all' => 'All requests', 'open' => 'Unfinished'] + ($adminView ? ['new' => 'New requests'] : ['updates' => 'Unread updates']) + MW_REQUEST_STATUSES as $key => $label): ?>
                             <option value="<?= requestEscape($key) ?>" <?= $key === $filter ? 'selected' : '' ?>><?= requestEscape($label) ?></option>
                         <?php endforeach; ?>
                     </select><button type="submit">Filter</button>
                 </form>
             </div>
-            <?php if (!$requests): ?><p class="empty"><?= $filter === 'updates' ? 'You’re caught up. No unread request updates.' : 'No requests here yet.' ?></p><?php endif; ?>
+            <?php if (!$requests): ?><p class="empty"><?= $filter === 'new' ? 'You’re caught up. No new requests.' : ($filter === 'updates' ? 'You’re caught up. No unread request updates.' : 'No requests here yet.') ?></p><?php endif; ?>
             <?php foreach ($requests as $request): $id = (int) $request['id']; ?>
-                <?php $unread = !$adminView && (int) $request['update_version'] > (int) $request['seen_version']; ?>
-                <article class="panel request-card<?= $unread ? ' request-unread' : '' ?>" id="request-<?= $id ?>"<?= $unread ? ' data-unread-version="' . (int) $request['update_version'] . '"' : '' ?>>
+                <?php $newRequest = $adminView && !empty($request['is_new_request']); $unread = !$adminView && (int) $request['update_version'] > (int) $request['seen_version']; ?>
+                <article class="panel request-card<?= ($unread || $newRequest) ? ' request-unread' : '' ?>" id="request-<?= $id ?>"<?= $unread ? ' data-unread-version="' . (int) $request['update_version'] . '"' : ($newRequest ? ' data-unread-version="1" data-notification-kind="new_request"' : '') ?>>
+                    <?php if ($newRequest): ?><p class="request-update-note" role="status"><strong>New request</strong> · <?= requestEscape(requestDate($request['created_at'])) ?></p><?php endif; ?>
                     <?php if ($unread): ?><p class="request-update-note" role="status"><strong>New update</strong> · <?= requestEscape(requestDate($request['updated_at'])) ?> — <?= requestEscape(MW_REQUEST_STATUSES[$request['status']]) ?><?= !empty($threads[$id]) ? '. See the reply below.' : '.' ?></p><?php endif; ?>
                     <div class="card-heading"><div><p class="eyebrow">Request #<?= $id ?> · <?= requestEscape(requestDate($request['created_at'])) ?></p>
                         <h3><?= requestEscape($request['piece_name']) ?></h3><p><?= requestEscape($request['composer_name']) ?> · <strong><?= requestEscape($request['part_name']) ?></strong></p>

@@ -31,9 +31,18 @@ other pages, and updates arriving after the displayed version remain unread.
 Acknowledgment is stored per request in the database, so it persists across
 logouts, devices, and browsers. Deleted requests do not generate notifications.
 
+Administrators also see new incoming requests in the same bell. The bell opens
+**New requests** in the admin queue when there are unviewed submissions; a separate
+count appears beside **Request queue**. Viewing a new-request notice clears it for
+that administrator only, across sessions and devices. Filtered-out requests stay
+unread. Requests submitted by the administrator, deleted requests, and requests
+already in progress or finished are excluded. Personal request updates continue
+to use **My Requests** and are available from the bell after incoming requests
+have been viewed. These are site indicators only; no push permission is requested.
+
 ## Setup and release
 
-Before publishing the page, create the two InnoDB tables:
+Before publishing the page, create the request and notification InnoDB tables:
 
 ```sh
 php scripts/setup-requests.php
@@ -46,7 +55,7 @@ php scripts/setup-requests.php --config=/home/monkcdmb/phpfiles/config.php
 ```
 
 The setup script is idempotent and does not modify existing users or catalog data.
-Run it again when upgrading an existing installation to add deletion support and the update/seen version columns.
+Run it again when upgrading an existing installation to add deletion support, update/seen version columns, and administrator view receipts.
 `.cpanel.yml` copies the PHP page, private storage helper, and existing asset
 directories. No email configuration or additional Google scopes are needed. Follow the normal deployment workflow after running the migration.
 
