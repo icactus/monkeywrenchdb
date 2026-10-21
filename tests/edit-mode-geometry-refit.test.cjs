@@ -113,3 +113,82 @@ test('$ mode includes horizontal scrolling when anchoring its click and retains 
     assert.deepEqual(writes[0][1].cxs[0].csl, lines);
     assert.deepEqual(writes[0][1].bxs[0], bars);
 });
+
+function detectionSetup() {
+    const c = setup(), events = [], writes = [], baselines = [], refreshes = [];
+    let page = 1;
+    Object.assign(c, {
+        batchDetectionInProgress: false, divisiSplitInProgress: false,
+        deMetriek$$module$synpdf: [800, {}, {}, {}],
+        BarlinePatchCNN: {}, BarlinePatchCnnModelData: {},
+        BarlineDetectV2: {
+            async findBarLinesV2() {
+                events.push('detect:' + page);
+                return [300, 500];
+            },
+            buildRenderGeometry(system) {
+                // Every staff must finish detection before the page is refitted.
+                assert.equal(events.filter(e => e === 'detect:' + page).length, 2);
+                events.push('fit:' + page);
+                return {
+                    left: { lines: system.cs.map(y => y + 10) },
+                    right: { lines: system.cs.map(y => y + 14) }
+                };
+            }
+        },
+        getCurrentPageImageData: () => ({ pixelData: [255], stride: 3200, width: 800 }),
+        document: { getElementById: () => ({ value: String(page) }) },
+        rebuildCurrentPageMetricData: () => ({
+            cxs: [0, 100].map(offset => ({ cs: lines.map(y => y + offset), xs: { x1: 0, x2: 800 } })),
+            bxs: [[-50, 750], [50, -750]]
+        }),
+        buildDivisiDetectionJobs: (systems, bxs) => systems.map((system, i) => ({ system, bxs: bxs[i] })),
+        updateBarlineDetectionProgress: async () => {},
+        startBarlineDetectionProgress() {}, finishBarlineDetectionProgress() {},
+        barlineDetectionProgress: { completedPages: 0 },
+        setBatchButtonState() {}, setSingleStaffMode() {},
+        getDisplayedPageNumber: () => page,
+        goToRenderedPage: async next => { page = next; },
+        SynpdfCorrectionTools: { snapshotV2BaselineForPage: (_page, data) => {
+            events.push('baseline:' + page);
+            baselines.push(clone(data));
+        } },
+        persistMetricData: () => {
+            events.push('save:' + page);
+            writes.push(clone(c.deMetriek$$module$synpdf[page]));
+            return true;
+        },
+        requestRefresh: () => refreshes.push(page),
+        performance: { now: () => 0 },
+        console: { log() {}, error() {} }, alert: message => assert.fail(message)
+    });
+    for (const name of ['normalizeDetectedSystemBarlines', 'systemSupportsRenderGeometryFit', 'fitPageSystemsWithStandardGeometry']) {
+        const start = source.indexOf('function ' + name + '(');
+        vm.runInContext(source.slice(start, source.indexOf('\n}', start) + 2), c);
+    }
+    vm.runInContext(source.slice(source.indexOf('    async function runPageBarlineDetection('),
+        source.indexOf('    function runCurrentPagePianoNormalize(')), c);
+    return { c, events, writes, baselines, refreshes };
+}
+
+for (const allPages of [false, true]) {
+    test((allPages ? 'all-pages' : 'current-page') + ' detection refits each completed page before its baseline, save and refresh', async () => {
+        const h = detectionSetup();
+        if (allPages) await h.c.runAllPagesBarlineDetection('cnn_only');
+        else await h.c.runCurrentPageBarlineDetection();
+        const pages = allPages ? [1, 2, 3] : [1];
+        assert.deepEqual(h.events, pages.flatMap(page => [
+            'detect:', 'detect:', 'fit:', 'fit:', 'baseline:', 'save:'
+        ].map(event => event + page)));
+        assert.equal(h.writes.length, pages.length);
+        for (const saved of h.writes) {
+            assert.deepEqual(saved.cxs.map(s => s.cs), [0, 100].map(offset => lines.map(y => y + offset + 12)));
+            assert.deepEqual(saved.cxs[0].csl, lines.map(y => y + 10));
+            assert.deepEqual(saved.cxs[0].csr, lines.map(y => y + 14));
+            assert.deepEqual(saved.cxs.map(s => s.xs), [xs, xs]);
+            assert.deepEqual(saved.bxs, [[-50, 300, 500, 750], [50, 300, 500, -750]]);
+        }
+        assert.deepEqual(h.baselines, h.writes);
+        assert.deepEqual(h.refreshes, [pages.at(-1)]);
+    });
+}

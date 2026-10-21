@@ -5494,6 +5494,10 @@ $(document).ready(function () {
             pageData.bxs = v2Barlines.map(function (detectedBarlines, index) {
                 return normalizeDetectedSystemBarlines(pageData.cxs[index], detectedBarlines, pageData.bxs[index]);
             });
+            if (runMode === 'cnn_only') {
+                // Refit after detection, just like the staff geometry button.
+                pageData = fitPageSystemsWithStandardGeometry(pageData, pageImageData);
+            }
             deMetriek$$module$synpdf[pagenum] = pageData;
             SynpdfCorrectionTools.snapshotV2BaselineForPage(
                 pagenum,
