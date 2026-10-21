@@ -57,6 +57,7 @@ deployment:
     - /bin/cp phpfiles/composers-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/get_pieces_and_composers.php $DEPLOYPATH2
     - /bin/cp phpfiles/metric-arr-post.php $DEPLOYPATH2
+    - /bin/cp phpfiles/metric-arr-functions.php phpfiles/part_pdf_queue.php $DEPLOYPATH2
     - /bin/cp phpfiles/pieces-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/submit_recording.php $DEPLOYPATH2
     - /bin/cp phpfiles/static_recordings.php $DEPLOYPATH2
@@ -65,7 +66,10 @@ deployment:
     - /bin/cp phpfiles/cloudflare_purge.php $DEPLOYPATH2
 
     - export DEPLOYPATH3=/home/monkcdmb/public_html/editmode/
-    - /bin/cp synpdf_182/editmode/synpdf-edit-mode.php $DEPLOYPATH3 
+    - /bin/cp synpdf_182/editmode/synpdf-edit-mode.php $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/part-pdf-queue.php synpdf_182/editmode/part-pdf-queue.js synpdf_182/editmode/part-pdf-queue.css $DEPLOYPATH3
+    - /bin/mkdir -p /home/monkcdmb/pdf-queue-tools
+    - /bin/cp scripts/compress-pdf-low-memory.py scripts/process-pdf-queue.py /home/monkcdmb/pdf-queue-tools/
     - /bin/cp synpdf_182/editmode/CNN-editor-mode.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/ml-label-editor.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/edit-mode-tools.js $DEPLOYPATH3

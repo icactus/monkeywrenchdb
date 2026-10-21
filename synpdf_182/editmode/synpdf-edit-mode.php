@@ -8,6 +8,8 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
+    <link rel="stylesheet" href="part-pdf-queue.css?v=1">
+    <script src="part-pdf-queue.js?v=1" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
     if (file_exists('session_config.php')) {
@@ -938,6 +940,23 @@
         <input id="knop" type="button" value="play">
 
         <div id="database-menus-wrapper">
+            <section id="part-pdf-queue" aria-labelledby="pdf-queue-title">
+                <h2 id="pdf-queue-title">Parts waiting for barline work</h2>
+                <div id="pdf-queue-upload-controls" hidden>
+                    <p>Upload HD PDFs in a batch. A filename such as 71-39.pdf assigns the piece and part automatically.</p>
+                    <input id="pdf-queue-files" type="file" accept="application/pdf,.pdf" multiple aria-label="HD PDFs to prepare">
+                    <button id="pdf-queue-upload" type="button">Upload HD PDFs</button>
+                    <p>The server compresses one PDF at a time. You can close this page after uploads finish.</p>
+                </div>
+                <p id="pdf-queue-status" role="status" aria-live="polite">Loading PDF queue…</p>
+                <ul id="pdf-queue-items"></ul>
+                <div id="pdf-queue-active" hidden>
+                    <strong id="pdf-queue-active-name"></strong>
+                    <p id="pdf-queue-draft-status" role="status" aria-live="polite"></p>
+                    <label><input id="pdf-queue-reviewed" type="checkbox">Barline review complete — I checked every page.</label>
+                    <p>Use Part Details → Save Part to add both PDFs and the reviewed barlines to the library.</p>
+                </div>
+            </section>
             <section id="part-workflow" aria-labelledby="part-workflow-title">
                 <h2 id="part-workflow-title">Prepare an instrument part</h2>
                 <p>For parts written on single staves. Handle divisi manually during review.</p>

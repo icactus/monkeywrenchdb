@@ -1,0 +1,12 @@
+#part-pdf-queue{border:1px solid #8babb0;border-radius:8px;padding:14px;margin-bottom:18px;background:#f5faf9;color:#243b40}
+#part-pdf-queue h2{font-size:18px;margin:0 0 8px}#part-pdf-queue p{margin:8px 0;font-size:13px}
+#part-pdf-queue [hidden]{display:none!important}#part-pdf-queue input[type=file]{max-width:100%;font-size:13px}
+#pdf-queue-items{display:grid;gap:8px;padding:0;list-style:none;max-height:340px;overflow:auto}
+#pdf-queue-items li{padding:10px;background:white;border:1px solid #cedddd;border-radius:6px}
+#pdf-queue-items .pdf-queue-name{font-size:14px;font-weight:bold;overflow-wrap:anywhere}
+#pdf-queue-items .pdf-queue-detail{font-size:12px;margin:4px 0;overflow-wrap:anywhere}
+#part-pdf-queue button,#pdf-queue-assignment button{font-size:13px;padding:6px 10px;margin:3px;border:1px solid #62868e;border-radius:5px;cursor:pointer}
+#pdf-queue-active{border-top:1px solid #cedddd;padding-top:10px}#pdf-queue-active label{display:flex;gap:8px;align-items:flex-start;font-size:13px}
+#pdf-queue-assignment{max-width:700px;width:90%;border:1px solid #62868e;border-radius:10px;padding:20px}
+#pdf-queue-assignment::backdrop{background:#0006}#pdf-queue-assignment .pdf-assignment-row{border-top:1px solid #cedddd;padding:12px 0}
+#pdf-queue-assignment select{display:block;width:100%;margin:6px 0;padding:8px;font-size:14px}

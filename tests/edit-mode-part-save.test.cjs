@@ -4,9 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
-const php = fs.readFileSync(path.join(__dirname, '../phpfiles/metric-arr-post.php'), 'utf8');
+const php = fs.readFileSync(path.join(__dirname, '../phpfiles/metric-arr-functions.php'), 'utf8');
 // Exercise the real save conversion without connecting to or writing a database.
-const conversion = php.slice(php.indexOf('function processMetricData('), php.indexOf('// --- Main ---'));
+const conversion = php.slice(php.indexOf('function processMetricData('), php.length);
 function convert(data) {
     return JSON.parse(execFileSync('php', ['-r', conversion + '\necho processMetricData(stream_get_contents(STDIN));'], {
         input: JSON.stringify(data), encoding: 'utf8'
