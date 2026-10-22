@@ -607,21 +607,6 @@
             font-weight: 600;
         }
 
-        #database-menu-toggle {
-            background: #4a90d9;
-            color: white;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: background 0.2s;
-        }
-
-        #database-menu-toggle:hover {
-            background: #3a7bc8;
-        }
-
         #database-menus {
             display: flex;
             flex-direction: column;
@@ -977,10 +962,39 @@
             </div>
             <div id="database-menu-top">
                 <h3>Part Details</h3>
-                <button id="database-menu-toggle"
-                    onclick="$('#database-menus').toggle(); return false;">Show/Hide</button>
             </div>
             <div id="database-menus">
+                <!-- add metric_arr -->
+                <form class="inputform" id="addnewmetricform" method="POST" enctype="multipart/form-data">
+                    <div style="display:flex;">
+                        <div>
+                            <label for="piece_id">Piece</label>
+                            <select class="dropdown-menu" name="piece_id">
+                                <option value="">Select piece...</option>
+                                <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
+                                    <option value="<?php echo htmlspecialchars((string) $pieceId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $pieceName, ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <select name="instrument_id">
+                            <option value="">Select an instrument...</option>
+                            <?php foreach ($instrumentsArray as $instrumentId => $instrumentName): ?>
+                                <option value="<?php echo htmlspecialchars((string) $instrumentId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $instrumentName, ENT_QUOTES, 'UTF-8'); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div>
+                            <label for="edition_label">Edition/Manuscript (optional):</label>
+                            <input type="text" id="edition_label" name="edition_label"
+                                placeholder="e.g., Anna Magdalena Bach" />
+                        </div>
+                        <input type="hidden" name="measures_version" value="1" />
+                        <div id="part-hd-upload">
+                            <label for="fknp2_hd">HD pdf</label>
+                            <input type="file" id="fknp2_hd" name="file_hd" accept=".pdf" />
+                        </div>
+                        <input type="submit" name="save" value="Save Part" />
+                    </div>
+                </form>
                 <details id="catalog-tools">
                     <summary>Create a composer or piece (admin)</summary>
                 <!-- inputs for adding piece data -->
@@ -1043,37 +1057,6 @@
                     </div>
                 </form>
                 </details>
-                <!-- add metric_arr -->
-                <form class="inputform" id="addnewmetricform" method="POST" enctype="multipart/form-data">
-                    <div style="display:flex;">
-                        <div>
-                            <label for="piece_id">Piece</label>
-                            <select class="dropdown-menu" name="piece_id">
-                                <option value="">Select piece...</option>
-                                <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
-                                    <option value="<?php echo htmlspecialchars((string) $pieceId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $pieceName, ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <select name="instrument_id">
-                            <option value="">Select an instrument...</option>
-                            <?php foreach ($instrumentsArray as $instrumentId => $instrumentName): ?>
-                                <option value="<?php echo htmlspecialchars((string) $instrumentId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $instrumentName, ENT_QUOTES, 'UTF-8'); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <div>
-                            <label for="edition_label">Edition/Manuscript (optional):</label>
-                            <input type="text" id="edition_label" name="edition_label"
-                                placeholder="e.g., Anna Magdalena Bach" />
-                        </div>
-                        <input type="hidden" name="measures_version" value="1" />
-                        <div id="part-hd-upload">
-                            <label for="fknp2_hd">HD pdf</label>
-                            <input type="file" id="fknp2_hd" name="file_hd" accept=".pdf" />
-                        </div>
-                        <input type="submit" name="save" value="Save Part" />
-                    </div>
-                </form>
                 <!-- Advanced Tools (collapsed) -->
                 <details id="advanced-tools">
                     <summary>Expert tools, other layouts and diagnostics</summary>
