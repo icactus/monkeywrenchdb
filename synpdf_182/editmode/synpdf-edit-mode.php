@@ -635,6 +635,7 @@
             border-radius: 6px;
             padding: 14px;
             margin: 0;
+            min-width: 0;
         }
 
         .inputform>div {
@@ -642,6 +643,20 @@
             flex-wrap: wrap;
             gap: 12px;
             align-items: flex-end;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .inputform>div>div {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        /* Long dropdown options must fit inside the fixed sidebar. */
+        .inputform input,
+        .inputform select {
+            box-sizing: border-box;
+            max-width: 100%;
         }
 
         .inputform label {
