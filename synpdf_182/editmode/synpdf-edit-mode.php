@@ -578,10 +578,10 @@
         #database-menus-wrapper {
             position: fixed;
             right: 0;
-            top: 50px;
-            /* Below menu button */
+            top: 0;
             width: 320px;
-            height: calc(100vh - 50px);
+            height: 100vh;
+            box-sizing: border-box;
             background: #f8f9fa;
             border-left: 1px solid #e0e0e0;
             padding: 12px;
@@ -775,31 +775,10 @@
             background: #555;
         }
 
-        #part-workflow {
-            margin-bottom: 20px;
-            font-size: 13px;
-            line-height: 1.45;
-        }
-
-        #part-workflow h2 { margin: 0 0 8px; font-size: 18px; }
-        #part-workflow ol { margin: 12px 0; padding-left: 22px; }
-        #part-workflow li { margin-bottom: 16px; }
-        #part-workflow p { margin: 6px 0; }
-        #part-workflow button {
-            display: block;
-            width: 100%;
-            margin-top: 7px;
-            padding: 9px;
-            border: 1px solid #aaa;
-            border-radius: 4px;
-            background: #fff;
-            color: #222;
-            text-align: left;
-            cursor: pointer;
-        }
-        #part-workflow button:disabled { opacity: .55; cursor: wait; }
-        #part-workflow .primary-action { background: #dbeafe; font-weight: bold; }
-        #part-workflow .workflow-note { color: #555; }
+        /* Shared code still reads these controls; this page has no media header or menu. */
+        #buttons, #sync, #spdlbl, #fknp { display: none !important; }
+        #part-count-check[data-state="idle"] { display: none; }
+        #editor-sidebar-tools button { padding: 7px 12px; border: 1px solid #aaa; border-radius: 5px; background: white; cursor: pointer; }
         #barline-detection-progress { margin: 10px 0; }
         #barline-detection-progress progress { display: block; width: 100%; height: 18px; margin-top: 5px; }
         #part-count-check { border-left: 3px solid #94a3b8; padding: 6px 10px; margin-top: 10px; }
@@ -871,14 +850,10 @@
     <!--testing grid wrapper <div class="youtubebox">  -->
     <!--div wrapper 1-->
     <section1>
-        <div style="display:flex; justify-content:flex-start; padding:8px 12px;">
-            <button id="editor-help-button" type="button" aria-haspopup="dialog">Help</button>
-        </div>
         <div id="buttons">
             <div id="medbts">
                 <label><span id="pdflbl">pdf file: </span>
-                    <div id="pdffile"><input type="file" id="fknp" name="file" accept=".pdf,.js,.jpg" tabindex="1" />
-                    </div>
+                    <div id="pdffile"></div>
                 </label>
                 <label id="medlbl">media file: <div id="mediafile"><input type="file" id="mknp"
                             accept="audio/*, video/*" tabindex="2" /></div></label>
@@ -898,16 +873,14 @@
             <div id="crediv">
                 <div id="credits"></div>
                 <div id="credits2"></div>
-                <p>Editing mode: <span id="indicator" class="inactive-indicator">OFF</span>.
-                    Press Q to edit barlines, W to draw a missing staff, or Y to refit or merge staves.
-                    Press the same key again to leave that mode.</p>
+
             </div>
         </div>
         <div id="sync">
             <div id="mbar">Menu</div>
             <form id="menu">
                 <label id="snclbl"><span>enable sync:</span> <input id="synbox" type="checkbox" /></label>
-                <label id="lm"><span>advanced:</span> <input id="advncd" type="checkbox" /></label>
+                <label id="lm"><span>advanced:</span> <input id="advncd" type="checkbox" checked disabled /></label>
                 <label class="mnrm" id="lp"><span>full screen:</span> <input id="fscr" type="checkbox" /></label>
                 <label class="mnrm" id="l1"><span>file buttons:</span> <input id="btns" type="checkbox" /></label>
                 <label class="mnrm" id="lv"><span>save preload:</span><button id="show"
@@ -955,6 +928,11 @@
         <input id="knop" type="button" value="play">
 
         <div id="database-menus-wrapper">
+            <div id="editor-sidebar-tools" style="display:flex; gap:8px; margin-bottom:12px;">
+                <button id="sidebar-open-pdf" type="button" onclick="document.getElementById('fknp').click()">Open PDF</button>
+                <button id="editor-help-button" type="button" aria-haspopup="dialog">Help</button>
+                <input type="file" id="fknp" name="file" accept=".pdf,.js,.jpg" hidden />
+            </div>
             <section id="part-pdf-queue" aria-labelledby="pdf-queue-title">
                 <h2 id="pdf-queue-title">Parts waiting for barline work</h2>
                 <div id="pdf-queue-upload-controls" hidden>
@@ -972,29 +950,16 @@
                     <p>Use Part Details → Save Part to add both PDFs and the reviewed barlines to the library.</p>
                 </div>
             </section>
-            <section id="part-workflow" aria-labelledby="part-workflow-title">
-                <h2 id="part-workflow-title">Prepare an instrument part</h2>
-                <p>For parts written on single staves. Handle divisi manually during review.</p>
-                <ol>
-                    <li><strong>Load the PDF</strong>
-                        <p>Open a PDF here or choose a queued part above. Instrument parts prepare their barlines automatically.
-                            Piano parts and scores open without automatic detection. Saved barlines and queue drafts are preserved.</p>
-                        <p id="auto-barline-status" role="status" aria-live="polite" hidden></p>
-                        <div id="part-count-check" data-state="idle">
-                            <p id="part-count-status" role="status" aria-live="polite">Measure counts are checked automatically as you edit.</p>
-                        </div>
-                        <div id="barline-detection-progress" hidden aria-busy="false">
-                            <span id="barline-detection-status" role="status" aria-live="polite"></span>
-                            <progress id="barline-detection-meter" max="100" value="0" aria-label="Barline detection progress"></progress>
-                        </div>
-                    </li>
-                    <li><strong>Add the reviewed part</strong>
-                        <p>Open Part Details, choose the piece and instrument, and check the edition.
-                            Use Save Part to save the reviewed staves and barlines with the PDF.</p>
-                        <p class="workflow-note">Edits stay in this browser until you save the part.</p>
-                    </li>
-                </ol>
-            </section>
+            <div id="editor-status">
+                <p id="auto-barline-status" role="status" aria-live="polite" hidden></p>
+                <div id="part-count-check" data-state="idle">
+                    <p id="part-count-status" role="status" aria-live="polite"></p>
+                </div>
+                <div id="barline-detection-progress" hidden aria-busy="false">
+                    <span id="barline-detection-status" role="status" aria-live="polite"></span>
+                    <progress id="barline-detection-meter" max="100" value="0" aria-label="Barline detection progress"></progress>
+                </div>
+            </div>
             <div id="database-menu-top">
                 <h3>Part Details</h3>
                 <button id="database-menu-toggle"
@@ -1160,7 +1125,6 @@
     <section2>
         <div id="pdf-workspace">
             <div id="pdf-edit-toolbar" role="group" aria-label="PDF part editing tools">
-                <button type="button" id="toolbar-open-pdf" title="Open a PDF" data-tooltip="Open a PDF">Open PDF</button>
                 <button type="button" id="toolbar-prev-page" title="Previous page (Shift+D)" data-tooltip="Previous page · Shift+D">← Page</button>
                 <button type="button" id="toolbar-next-page" title="Next page (D)" data-tooltip="Next page · D">Page →</button>
                 <span class="toolbar-divider" aria-hidden="true"></span>
