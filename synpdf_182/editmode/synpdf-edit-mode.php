@@ -57,7 +57,7 @@
     $onnxWasmThreads = $isLocalHost ? 1 : 4;
     ?>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=20"></script>
+    <script src="correction-log-tools.js?v=21"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
@@ -941,7 +941,7 @@
                     <button id="pdf-queue-upload" type="button">Upload HD PDFs</button>
                     <p>The server compresses one PDF at a time. You can close this page after uploads finish.</p>
                 </div>
-                <p id="pdf-queue-status" role="status" aria-live="polite">Loading PDF queue…</p>
+                <p id="pdf-queue-status" role="status" aria-live="polite"></p>
                 <ul id="pdf-queue-items"></ul>
                 <div id="pdf-queue-active" hidden>
                     <strong id="pdf-queue-active-name"></strong>
@@ -1092,8 +1092,8 @@
                             <button id="run-fullscore-all-btn" type="button"
                                 data-idle-label="Regroup full score + heuristic barlines (all pages)">Regroup full score + heuristic barlines (all pages)</button>
                         </div>
-                        <p>Model training: E logs CNN examples. Correction files contain training feedback;
-                            they are separate from saving a part.</p>
+                        <p>Model training: Q and E barline edits are cached automatically. Split-measure actions are excluded.
+                            Saving a part stores its geometry separately.</p>
                         <button id="export-td-btn" type="button">Export training data JSON (expert)</button>
                         <div style="margin-top: 8px; min-width: 260px;">
                             <label style="display:flex;align-items:center;gap:6px;">
@@ -1186,7 +1186,7 @@
             <p>Instrument parts prepare their barlines automatically. Piano parts and scores open without automatic detection.
                 Saved parts and queue drafts keep their existing barlines.</p>
             <table class="helptbl">
-                <tr><th scope="row">Q</th><td>Toggle barline editing. Click to add or remove a barline.</td></tr>
+                <tr><th scope="row">Q</th><td>Toggle barline editing. Click to add or remove a barline; corrections are cached automatically.</td></tr>
                 <tr><th scope="row">Shift-click in Q mode / S</th><td>Split a multimeasure rest.</td></tr>
                 <tr><th scope="row">W</th><td>Draw a missing staff by clicking its top-left and bottom-right corners.</td></tr>
                 <tr><th scope="row">Y</th><td>Refit staff geometry. Drag across staves or systems to merge them using the starting system’s barlines. Ctrl-click a system to merge the whole page.</td></tr>
@@ -1194,7 +1194,7 @@
                 <tr><th scope="row">+ / −</th><td>Zoom the view without changing detection width.</td></tr>
                 <tr><th scope="row">. / /</th><td>Include weaker barlines / keep stronger barlines on the current page.</td></tr>
                 <tr><th scope="row">O</th><td>Refresh the current page.</td></tr>
-                <tr><th scope="row">E</th><td>Log CNN training examples.</td></tr>
+                <tr><th scope="row">E</th><td>Alternative barline correction mode; corrections are cached automatically.</td></tr>
                 <tr><th scope="row">H / Escape</th><td>Open / close this help window.</td></tr>
             </table>
             <p>Press the active editing key again to leave that mode. Check staff boundaries, divisi, barlines and multimeasure rests before saving.</p>

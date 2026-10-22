@@ -39,7 +39,7 @@ $onnxWasmThreads = 1;
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=20"></script>
+    <script src="correction-log-tools.js?v=21"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
@@ -872,7 +872,7 @@ $onnxWasmThreads = 1;
                 <div id="credits"></div>
                 <div id="credits2"></div>
                 <p><!-- page coordinate editing section info -->Coordinate logging: <span id="indicator"
-                        class="inactive-indicator">OFF</span> Q toggles on/off for adding or removing barlines, E logs CNN examples
+                        class="inactive-indicator">OFF</span> Q toggles barline editing; Q and E corrections are cached automatically
                     (shift-click to split multimeasure rests),<br> W draws a new staff (click top-left then
                     bottom-right; shift-click for auto-snap to lines), Y refits or merges staves</p>
             </div>

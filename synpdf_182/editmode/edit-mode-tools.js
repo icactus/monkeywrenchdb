@@ -386,7 +386,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (handleYCxs(event)) return;
             if (handleSCxs(event)) return;
             else if (!QisActive && !NisActive) return;
-            if (addRemoveBxs$$module$synpdf(event, { logForCnn: NisActive })) return;
+            if (addRemoveBxs$$module$synpdf(event, { logForCnn: QisActive || NisActive })) return;
         });
 
         notation.addEventListener('mousemove', function (e) {

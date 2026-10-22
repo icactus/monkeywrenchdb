@@ -1094,6 +1094,8 @@ var SynpdfCorrectionTools = (function () {
         var systemBaseline = baseline && baseline.systems ? baseline.systems[baselineSystemIndex] : null;
         var notation = getNotation();
 
+        // Retain crop geometry for actual edits made after restoring a saved part or draft.
+        var loggedSystem = systemBaseline || currentSystem;
         correctionLog.push({
             id: Date.now() + '-' + Math.random().toString(16).slice(2, 8),
             timestamp: new Date().toISOString(),
@@ -1108,10 +1110,10 @@ var SynpdfCorrectionTools = (function () {
             yJson: Math.round(eventData.yJson),
             fixwd: getCurrentFixwdValue(),
             canvasWidth: notation ? getNotationPixelSize(notation).width : null,
-            systemXs: systemBaseline && systemBaseline.xs ? systemBaseline.xs : null,
-            systemCs: systemBaseline ? cloneSimpleArray(systemBaseline.cs) : null,
-            systemCsl: systemBaseline ? cloneSimpleArray(systemBaseline.csl) : null,
-            systemCsr: systemBaseline ? cloneSimpleArray(systemBaseline.csr) : null,
+            systemXs: loggedSystem && loggedSystem.xs ? loggedSystem.xs : null,
+            systemCs: loggedSystem ? cloneSimpleArray(loggedSystem.cs) : null,
+            systemCsl: loggedSystem ? cloneSimpleArray(loggedSystem.csl) : null,
+            systemCsr: loggedSystem ? cloneSimpleArray(loggedSystem.csr) : null,
             baselineAvailable: !!baseline,
             nearestCandidate: nearestInfo ? nearestInfo.nearestCandidate : null,
             hadNearbyCandidate: nearestInfo ? nearestInfo.hadNearbyCandidate : false,
