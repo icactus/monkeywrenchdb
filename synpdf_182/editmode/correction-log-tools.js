@@ -86,6 +86,26 @@ var SynpdfCorrectionTools = (function () {
         }, 0);
     }
 
+    function downloadCachedCorrections() {
+        try {
+            var raw = localStorage.getItem(MetricStore.CORRECTION_LOG_KEY);
+            var entries = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(entries)) throw new Error('The cached correction log has an unexpected format.');
+            if (!entries.length) {
+                alert('No cached corrections were found in this browser.');
+                return;
+            }
+            var payload = {
+                sourcePdf: 'all-cached',
+                exported_at: new Date().toISOString(),
+                corrections: entries
+            };
+            downloadCorrectionsPayload(JSON.stringify(payload, null, 2), 'synpdf-all-cached-corrections.json');
+        } catch (error) {
+            alert('Could not export cached corrections: ' + error.message + ' The stored data has not been changed.');
+        }
+    }
+
     function getCurrentPdfCorrections() {
         var pdfName = getCurrentPdfName();
         return correctionLog.filter(function (entry) {
@@ -641,11 +661,16 @@ var SynpdfCorrectionTools = (function () {
     function bindCorrectionLogControls() {
         var copyBtn = document.getElementById('copy-correction-log');
         var saveBtn = document.getElementById('save-correction-log');
+        var recoverBtn = document.getElementById('download-cached-corrections');
         var undoBtn = document.getElementById('undo-correction-log');
         var clearBtn = document.getElementById('clear-correction-log');
         var showCandidates = document.getElementById('show-v2-candidates');
         var pageInput = document.getElementById('pagenum');
         var pdfInput = document.getElementById('fknp');
+
+        if (recoverBtn) {
+            recoverBtn.addEventListener('click', downloadCachedCorrections);
+        }
 
         if (copyBtn) {
             copyBtn.addEventListener('click', function () {
@@ -1242,6 +1267,7 @@ var SynpdfCorrectionTools = (function () {
         recordBarlineCorrection: recordBarlineCorrection,
         autoDiffPageAgainstGroundTruth: autoDiffPageAgainstGroundTruth,
         clearCurrentPdfCorrections: clearCurrentPdfCorrections,
+        downloadCachedCorrections: downloadCachedCorrections,
         getCurrentPdfCnnTrainingExamples: getCurrentPdfCnnTrainingExamples,
         getCurrentPdfName: getCurrentPdfName,
         getCurrentFixwdValue: getCurrentFixwdValue,

@@ -39,7 +39,7 @@ $onnxWasmThreads = 1;
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=19"></script>
+    <script src="correction-log-tools.js?v=20"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,

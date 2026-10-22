@@ -56,7 +56,7 @@
     $onnxWasmThreads = $isLocalHost ? 1 : 4;
     ?>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=19"></script>
+    <script src="correction-log-tools.js?v=20"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
@@ -1170,6 +1170,7 @@
                         <div style="margin-top: 8px; min-width: 100%;">
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
                                 <button id="copy-correction-log" type="button">Copy corrections</button>
+                                <button id="download-cached-corrections" type="button">Download all cached corrections</button>
                                 <button id="save-correction-log" type="button">Save training corrections</button>
                                 <button id="undo-correction-log" type="button">Remove last training log entry</button>
                                 <button id="clear-correction-log" type="button">Clear current PDF corrections</button>

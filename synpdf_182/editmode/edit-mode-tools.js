@@ -139,9 +139,6 @@ async function bootEditModeFromDb(pieceId, partId) {
     window.times_arr$$module$synpdf = undefined;
     window.offset_js$$module$synpdf = 0;
     window.scoreFnm$$module$synpdf = data.pdf_file.replace(/\.[^.]+$/, '');
-    if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.clearCurrentPdfCorrections) {
-        SynpdfCorrectionTools.clearCurrentPdfCorrections();
-    }
     window.mlLoadedMetricContext = { pieceId: String(pieceId), partId: String(partId) };
 
     MetricStore.setGroundTruthMetricData(data.metric_arr, {
@@ -5134,9 +5131,6 @@ function fetchAndLoadJsFile(pieceId) {
 
             // Pass the File object to your existing processing function
             readLocalFile$$module$synpdf(file);
-            if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.clearCurrentPdfCorrections) {
-                SynpdfCorrectionTools.clearCurrentPdfCorrections();
-            }
         })
         .catch(error => {
             console.error('Error fetching or processing .js file:', error);
