@@ -26,6 +26,20 @@
     indicator.style.cssText = "position: fixed; top: 10px; right: 20px; z-index: 10000; padding: 5px 10px; background: rgba(0,0,0,0.7); color: #0f0; font-family: monospace; border-radius: 4px; display: none; pointer-events: none;";
     document.body.appendChild(indicator);
 
+    const controlsHelp = document.createElement("section");
+    controlsHelp.id = "live-edit-controls-help";
+    controlsHelp.style.cssText = "margin-top: 16px; padding-top: 12px; border-top: 1px solid currentColor; font-size: 13px; line-height: 1.5; cursor: default;";
+    controlsHelp.innerHTML = '<strong>Live edit controls</strong>' +
+        '<ul style="margin: 8px 0; padding-left: 18px;">' +
+        '<li><b>Q</b>: click to add or remove barlines.</li>' +
+        '<li><b>S</b>: click between barlines to split a measure.</li>' +
+        '<li><b>W</b>: click two corners to draw a system.</li>' +
+        '<li><b>Shift + W</b>: draw exact system boundaries.</li>' +
+        '<li><b>Shift-click</b>: split a measure in barline mode.</li>' +
+        '<li><b>Alt-click</b>: mark a wrapped measure in barline mode.</li></ul>' +
+        '<p style="margin: 0;">Press the current mode key again to stop editing. Use Save Changes to save your edits.</p>';
+    document.getElementById("sidecontent")?.appendChild(controlsHelp);
+
     // Save Logic
     saveBtn.addEventListener("click", function () {
         if (!confirm("Are you sure you want to save these changes to the live database?")) return;
@@ -84,6 +98,7 @@
         }
 
         console.log("Live Edit Mode:", liveEditActive ? liveEditMode.toUpperCase() : "OFF");
+        controlsHelp.hidden = !liveEditActive;
 
         if (liveEditActive) {
             indicator.style.display = "block";

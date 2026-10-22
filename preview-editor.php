@@ -226,13 +226,14 @@ $is_share_link = isset($_GET['share']);
                             <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
                                 <script>
                                     function loadLiveEdit() {
-                                        if (document.getElementById('admin-live-edit-script')) return;
+                                        if (document.getElementById('admin-live-edit-script')) {
+                                            const help = document.getElementById('live-edit-controls-help');
+                                            if (help) help.hidden = false;
+                                            return;
+                                        }
                                         var script = document.createElement('script');
                                         script.id = 'admin-live-edit-script';
-                                        script.src = 'admin-live-edit.js?v=' + new Date().getTime();
-                                        script.onload = function () {
-                                            alert("Admin Tools Loaded. Press 'q' for barlines, 's' for split mode, 'w' for systems, and Shift+'w' for exact system boundaries.");
-                                        };
+                                        script.src = 'admin-live-edit.js?v=2-' + new Date().getTime();
                                         document.body.appendChild(script);
                                     }
                                 </script>
