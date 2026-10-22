@@ -40,7 +40,7 @@
     const panel = document.getElementById('part-count-check');
     const status = document.getElementById('part-count-status');
     const recheck = document.getElementById('part-count-recheck');
-    if (!panel || !status || !recheck) return;
+    if (!panel || !status) return;
     let reference = null, timer = null;
     function show(state, text) {
         panel.dataset.state = state;
@@ -65,7 +65,10 @@
                     request.data = { count, label: part.label, filename: data.pdf_file };
                 }
             }
-        } catch (error) { request.error = error.message; }
+        } catch (error) {
+            request.error = error.message;
+            setTimeout(() => { if (reference === request) { reference = null; refresh(); } }, 10000);
+        }
         finally {
             request.pending = false;
             // An older response must never replace a newly loaded piece's reference.
@@ -75,21 +78,21 @@
     function refresh() {
         const identity = identityFromFilename(window.scoreFnm$$module$synpdf || window.pdfFnm$$module$synpdf);
         if (!identity) {
-            reference = null; recheck.disabled = true;
+            reference = null; if (recheck) recheck.disabled = true;
             show('idle', 'Load a PDF named piece-part.pdf (for example 108-1.pdf) to compare its detix count.');
             return;
         }
         if (!reference || reference.pieceId !== identity.pieceId) fetchReference(identity);
-        recheck.disabled = !!reference.pending;
+        if (recheck) recheck.disabled = !!reference.pending;
         if (reference.pending) {
             show('loading', `Looking up a saved part for piece ${identity.pieceId}…`); return;
         }
-        if (reference.error) { show('error', `${reference.error} Use Recheck saved part to retry.`); return; }
+        if (reference.error) { show('error', `${reference.error} Retrying automatically…`); return; }
         if (reference.missing) { show('unavailable', `No saved part found for piece ${identity.pieceId} yet.`); return; }
         const metrics = window.deMetriek$$module$synpdf;
         const pages = window.pdfDoc$$module$synpdf?.numPages;
         if (!pages || window.rendering$$module$synpdf || window.metricPrecomputeInProgress$$module$synpdf ||
-            window.barlineDetectionProgress || !metrics || metrics.length !== pages + 1 ||
+            window.barlineDetectionProgress || window.SynpdfAutoBarlines?.running || !metrics || metrics.length !== pages + 1 ||
             countDetixValues(metrics) === null) {
             show('loading', 'Waiting for the current part’s page metrics to finish…'); return;
         }
@@ -102,7 +105,7 @@
             : `Counts match: ${count} detix values. Reference: ${ref}.`);
     }
     function schedule() { clearTimeout(timer); timer = setTimeout(refresh, 120); }
-    recheck.addEventListener('click', () => { reference = null; refresh(); });
+    recheck?.addEventListener('click', () => { reference = null; refresh(); });
     document.getElementById('fknp')?.addEventListener('change', schedule);
     // Redraws follow geometry edits. The wait/render indicators also cover hidden
     // page precomputation, which completes without redrawing the visible canvas.

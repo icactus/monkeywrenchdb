@@ -138,7 +138,7 @@
         setQueuedSaveState(false);
     }
     function snapshot() {
-        if (!matches() || loading || window.rendering$$module$synpdf) return null;
+        if (!matches() || loading || window.rendering$$module$synpdf || window.SynpdfAutoBarlines?.running) return null;
         const metrics = window.MetricStore?.getMetricData();
         if (!metrics || metrics.length < 2 || metrics.length > active.pages + 1) return null;
         return { metrics: JSON.stringify(metrics), piece_id: pieceSelect.value, instrument_id: partSelect.value,
@@ -178,7 +178,7 @@
             window.msc_check_preload$$module$synpdf();
             activePanel.hidden = false; setQueuedSaveState(true);
             document.getElementById('pdf-queue-active-name').textContent = active.name;
-            draftStatus.textContent = result.draft ? 'Saved queue edits restored.' : 'Detect and review the barlines. Edits will save automatically.';
+            draftStatus.textContent = result.draft ? 'Saved queue edits restored.' : 'Review the prepared barlines. Edits will save automatically.';
             notify('Queued PDF loaded. Review every page, then use Save Part.');
         } finally { loading = false; }
     }

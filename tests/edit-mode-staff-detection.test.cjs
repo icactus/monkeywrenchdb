@@ -228,3 +228,15 @@ test('current-page failure clears busy state and allows retry', async () => {
     assert.equal(h.elements.get('barline-detection-meter').value, 100);
     assert.match(h.elements.get('barline-detection-status').textContent, /complete · 1 page$/);
 });
+
+test('automatic detection stops after the PDF changes, without advancing or showing an old error', async () => {
+    const h = batchHarness();
+    let current = true;
+    h.context.runPageBarlineDetection = async () => { current = false; return true; };
+    const result = await h.context.runAllPagesBarlineDetection('cnn_only', { automatic: true, isCurrent: () => current });
+    assert.equal(result, false);
+    assert.deepEqual(h.visited, [1]);
+    assert.deepEqual(h.alerts, []);
+    assert.equal(h.context.batchDetectionInProgress, false);
+    assert.equal(h.context.barlineDetectionProgress, null);
+});

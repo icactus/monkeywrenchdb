@@ -996,6 +996,7 @@ function readPdf$$module$synpdf(a, b) {
     initGlobals$$module$synpdf();
     opt$$module$synpdf.pagenum = 1;
     $("#pagenum").val(1);
+    if (typeof window !== "undefined" && window.SynpdfAutoBarlines) window.SynpdfAutoBarlines.opened();
 
     var c = a,
         d;

@@ -166,10 +166,10 @@ function exportCurrentMetricDataAsTd() {
 
     const pieceId = loadedContext && loadedContext.pieceId
         ? loadedContext.pieceId
-        : (document.getElementById('piece_id1') ? document.getElementById('piece_id1').value : '');
+        : (document.querySelector('#addnewmetricform [name=piece_id]')?.value || (document.getElementById('piece_id1') ? document.getElementById('piece_id1').value : ''));
     const partId = loadedContext && loadedContext.partId
         ? loadedContext.partId
-        : (document.getElementById('sync-part') ? document.getElementById('sync-part').value : '');
+        : (document.querySelector('#addnewmetricform [name=instrument_id]')?.value || (document.getElementById('sync-part') ? document.getElementById('sync-part').value : ''));
 
     if (!pieceId || !partId) {
         alert('Please load a piece and part first.');
@@ -1367,6 +1367,10 @@ function waitForRenderedPage(targetPage, options) {
     return new Promise(function (resolve, reject) {
         var startedAt = performance.now();
         function poll() {
+            if (options.isCurrent && !options.isCurrent()) {
+                reject(new Error("The loaded PDF changed."));
+                return;
+            }
             var pageVal = getDisplayedPageNumber();
             var canvas = getCurrentPageCanvas();
             var imageData = isCanvasReadyForAnalysis(canvas)
@@ -1425,13 +1429,15 @@ function waitForRenderedPage(targetPage, options) {
 async function goToRenderedPage(targetPage, options) {
     options = options || {};
     await waitForRenderIdle();
+    if (options.isCurrent && !options.isCurrent()) return;
     var previousPage = getDisplayedPageNumber();
     opt$$module$synpdf.pagenum = targetPage;
     if (typeof setPagenum$$module$synpdf === 'function') {
         setPagenum$$module$synpdf(previousPage);
     }
     await waitForRenderedPage(targetPage, {
-        requireNewCanvas: !!options.forceRerender
+        requireNewCanvas: !!options.forceRerender,
+        isCurrent: options.isCurrent
     });
 }
 
@@ -5411,9 +5417,11 @@ $(document).ready(function () {
         let pageData = deMetriek$$module$synpdf[pagenum];
         if (runMode === 'cnn_only') {
             await updateBarlineDetectionProgress(pagenum, 0, 0);
+            if (options.isCurrent && !options.isCurrent()) return false;
             pageData = rebuildCurrentPageMetricData(pagenum, true, undefined, true) || pageData;
         }
         if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
+            if (options.allowEmptyPages && pageData && Array.isArray(pageData.cxs)) return true;
             alert("No staff systems found on this page to detect barlines for.");
             return false;
         }
@@ -5463,9 +5471,11 @@ $(document).ready(function () {
             if (runMode === 'cnn_only') {
                 await updateBarlineDetectionProgress(pagenum, index, systemsForDetection.length);
             }
+            if (options.isCurrent && !options.isCurrent()) return false;
             const system = systemsForDetection[index];
             const perSystemOpts = Object.assign({}, detectionOpts, { diagnostics: [], perfStats: {} });
             const detected = await Promise.resolve(BarlineDetectV2.findBarLinesV2(system, stride, pixelData, width, perSystemOpts));
+            if (options.isCurrent && !options.isCurrent()) return false;
             systemDiagnostics[index] = perSystemOpts.diagnostics.slice();
             systemPerf[index] = perSystemOpts.perfStats;
             systemRenderGeometry[index] = runMode !== 'cnn_only' && systemSupportsRenderGeometryFit(system)
@@ -5476,6 +5486,7 @@ $(document).ready(function () {
         if (runMode === 'cnn_only') {
             await updateBarlineDetectionProgress(pagenum, systemsForDetection.length, systemsForDetection.length);
         }
+        if (options.isCurrent && !options.isCurrent()) return false;
 
         if (v2Barlines && v2Barlines.length === pageData.cxs.length) {
             if (runMode !== 'cnn_only') {
@@ -5575,7 +5586,9 @@ $(document).ready(function () {
         }
     }
 
-    async function runAllPagesBarlineDetection(runMode) {
+    async function runAllPagesBarlineDetection(runMode, options) {
+        options = options || {};
+        var isCurrent = options.isCurrent || function () { return true; };
         if (batchDetectionInProgress) return;
         if (runMode !== 'cnn_only') return;
         if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
@@ -5589,31 +5602,41 @@ $(document).ready(function () {
         var error = null;
         try {
             for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
+                if (!isCurrent()) return false;
                 setBatchButtonState(true, pageNum, lastPage, 'cnn');
                 await updateBarlineDetectionProgress(pageNum, 0, 0);
                 if (getDisplayedPageNumber() !== pageNum) {
-                    await goToRenderedPage(pageNum, { forceRerender: true });
+                    await goToRenderedPage(pageNum, { forceRerender: true, isCurrent: isCurrent });
                 }
+                if (!isCurrent()) return false;
                 // Navigation restores per-page options, including onestf. Apply
                 // single-staff mode on each page and rebuild immediately before
                 // inference, exactly as the current-page CNN button does.
                 setSingleStaffMode(true);
-                var ok = await runPageBarlineDetection(runMode, { suppressRefresh: true });
+                var pageOptions = { suppressRefresh: true };
+                if (options.automatic) Object.assign(pageOptions, { allowEmptyPages: true, isCurrent: isCurrent });
+                var ok = await runPageBarlineDetection(runMode, pageOptions);
+                if (!isCurrent()) return false;
                 if (!ok) {
                     throw new Error('Detection failed on page ' + pageNum);
                 }
                 barlineDetectionProgress.completedPages++;
             }
-            await goToRenderedPage(1, { forceRerender: true });
+            await goToRenderedPage(1, { forceRerender: true, isCurrent: isCurrent });
+            if (!isCurrent()) return false;
             console.log('CNN-only dev detection completed for all pages.');
+            return true;
         } catch (err) {
             error = err.message;
+            if (!isCurrent()) return false;
             console.error('All-pages CNN detection aborted:', err);
-            alert('All-pages CNN detection stopped: ' + err.message);
+            if (!options.automatic) alert('All-pages CNN detection stopped: ' + err.message);
+            return false;
         } finally {
             batchDetectionInProgress = false;
             setBatchButtonState(false);
-            finishBarlineDetectionProgress(error);
+            if (isCurrent()) finishBarlineDetectionProgress(error);
+            else barlineDetectionProgress = null;
         }
     }
 
@@ -5912,6 +5935,11 @@ $(document).ready(function () {
             setBatchButtonState(false);
         }
     }
+
+    window.SynpdfBarlineDetection = {
+        runAllPages: runAllPagesBarlineDetection,
+        get busy() { return batchDetectionInProgress; }
+    };
 
     $('#run-v2-btn').on('click', async function () {
         await runPageBarlineDetection('rf');

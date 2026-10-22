@@ -52,21 +52,22 @@ test('any existing part can be used, with its latest row and no list mutation', 
     assert.equal(chooseReference([],1),null);
 });
 
-function harness(fetcher) {
+function harness(fetcher, withoutRecheck = false) {
     const nodes = Object.fromEntries(['part-count-check','part-count-status','part-count-recheck','notation','wait','render','fknp','barline-detection-progress']
         .map(id => [id,{ dataset:{}, textContent:'', listeners:{}, addEventListener(type,fn){this.listeners[type]=fn;} }]));
-    const timers = new Map(); let timerId=0, observer;
+    if (withoutRecheck) delete nodes['part-count-recheck'];
+    const timers = new Map(), retries = []; let timerId=0, observer;
     const c = vm.createContext({
         document:{getElementById:id=>nodes[id]},
         MutationObserver:class { constructor(fn){observer=fn;} observe(){} },
-        setTimeout:fn=>{ timers.set(++timerId,fn); return timerId; }, clearTimeout:id=>timers.delete(id),
+        setTimeout:(fn,delay)=>{ if (delay >= 10000) retries.push(fn); else timers.set(++timerId,fn); return timerId; }, clearTimeout:id=>timers.delete(id),
         fetch:fetcher,
         scoreFnm$$module$synpdf:'108-3', pdfDoc$$module$synpdf:{numPages:2}, deMetriek$$module$synpdf:structuredClone(metrics),
         rendering$$module$synpdf:0, metricPrecomputeInProgress$$module$synpdf:0
     });
     c.window=c;
     vm.runInContext(fs.readFileSync(file,'utf8'),c);
-    return {c,nodes,notify:()=>observer(),async settle(){
+    return {c,nodes,notify:()=>observer(),retry:()=>retries.shift()?.(),async settle(){
         for(let i=0;i<40;i++) {
             for(const [id,fn] of [...timers]){timers.delete(id);fn();}
             await Promise.resolve();
@@ -100,11 +101,11 @@ test('rendering and incomplete scans cannot show matching counts', async () => {
     assert.equal(h.nodes['part-count-check'].dataset.state,'loading');
 });
 
-test('network errors can be retried and missing parts are reported separately', async () => {
+test('network errors retry automatically without a recheck button; missing parts are reported separately', async () => {
     let fail=true;
-    const h=harness(async url=>{if(fail) throw Error('Offline');return jsonResponse(url.includes('get_parts')?partList:{metric_arr:metrics,pdf_file:'108-1.pdf'});});
+    const h=harness(async url=>{if(fail) throw Error('Offline');return jsonResponse(url.includes('get_parts')?partList:{metric_arr:metrics,pdf_file:'108-1.pdf'});},true);
     await h.settle(); assert.equal(h.nodes['part-count-check'].dataset.state,'error');
-    fail=false;h.nodes['part-count-recheck'].listeners.click();await h.settle();
+    fail=false;h.retry();await h.settle();
     assert.equal(h.nodes['part-count-check'].dataset.state,'match');
     const empty=harness(async()=>({ok:false,status:404}));await empty.settle();
     assert.equal(empty.nodes['part-count-check'].dataset.state,'unavailable');

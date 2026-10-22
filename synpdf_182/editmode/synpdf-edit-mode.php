@@ -9,7 +9,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="stylesheet" href="part-pdf-queue.css?v=1">
-    <script src="part-pdf-queue.js?v=3" defer></script>
+    <script src="part-pdf-queue.js?v=4" defer></script>
+    <script src="auto-barline-detection.js?v=1" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
     if (file_exists('session_config.php')) {
@@ -75,9 +76,9 @@
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
-    <script src="synpdf-edit-mode.js?v=99"></script>
+    <script src="synpdf-edit-mode.js?v=100"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
-    <script src="part-count-check.js?v=1" defer></script>
+    <script src="part-count-check.js?v=2" defer></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
     <?php if ($pianoBarlineCnnBrowserJsVer > 0) { ?>
@@ -348,6 +349,17 @@
             margin-left: 1em;
         }
 
+        #editor-help-dialog {
+            width: min(620px, 90vw); max-height: 85vh; padding: 0;
+            border: none; border-radius: 12px; color: #222; background: white;
+            box-shadow: 0 8px 32px rgba(0,0,0,.2);
+        }
+        #editor-help-dialog::backdrop { background: rgba(0,0,0,.5); }
+        .editor-help-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #eee; }
+        .editor-help-header h2 { margin:0; font-size:18px; }
+        #editor-help-close { border:0; background:transparent; font-size:24px; cursor:pointer; }
+        .editor-help-content { padding:16px 20px; line-height:1.5; }
+        #editor-help-dialog th { text-align:left; white-space:normal; padding:8px; width:140px; }
         #help {
             display: none;
             width: 90%;
@@ -859,6 +871,9 @@
     <!--testing grid wrapper <div class="youtubebox">  -->
     <!--div wrapper 1-->
     <section1>
+        <div style="display:flex; justify-content:flex-start; padding:8px 12px;">
+            <button id="editor-help-button" type="button" aria-haspopup="dialog">Help</button>
+        </div>
         <div id="buttons">
             <div id="medbts">
                 <label><span id="pdflbl">pdf file: </span>
@@ -962,32 +977,15 @@
                 <p>For parts written on single staves. Handle divisi manually during review.</p>
                 <ol>
                     <li><strong>Load the PDF</strong>
-                        <p>Use the PDF file picker above, or load an existing part in Part Details.
-                            Wait for page metrics to finish. Loading uses normal system grouping.</p>
-                    </li>
-                    <li><strong>Detect barlines</strong>
-                        <p>Try the current page first, then process the whole part.</p>
-                        <button id="run-cnn-btn" type="button" data-idle-label="Detect barlines (current page)">Detect barlines (current page)</button>
-                        <button id="run-cnn-all-btn" class="primary-action" type="button"
-                            data-idle-label="Detect barlines">Detect barlines</button>
+                        <p>Open a PDF here or choose a queued part above. Instrument parts prepare their barlines automatically.
+                            Piano parts and scores open without automatic detection. Saved barlines and queue drafts are preserved.</p>
+                        <p id="auto-barline-status" role="status" aria-live="polite" hidden></p>
+                        <div id="part-count-check" data-state="idle">
+                            <p id="part-count-status" role="status" aria-live="polite">Measure counts are checked automatically as you edit.</p>
+                        </div>
                         <div id="barline-detection-progress" hidden aria-busy="false">
                             <span id="barline-detection-status" role="status" aria-live="polite"></span>
                             <progress id="barline-detection-meter" max="100" value="0" aria-label="Barline detection progress"></progress>
-                        </div>
-                        <p class="workflow-note">Detection rebuilds staves and replaces barlines.
-                            Run it before manual corrections; rerunning can overwrite your work.</p>
-                    </li>
-                    <li><strong>Review every page</strong>
-                        <p>Check missing staves, divisi, system boundaries, barlines and multimeasure rests.</p>
-                        <p>Q: add/remove barlines. Shift-click in Q mode: split a multimeasure rest.
-                            W: draw a missing staff. Y: refit a staff, or drag across staves/systems to merge.
-                            The system where the drag starts supplies the barlines.
-                            Ctrl-click a system to merge the whole page using its barlines.</p>
-                        <div id="part-count-check" data-state="idle">
-                            <p><strong>Compare with an existing part</strong></p>
-                            <p id="part-count-status" role="status" aria-live="polite">Load a PDF to compare its detix count with a saved part for the same piece.</p>
-                            <p class="workflow-note">Includes the final endpoint. A wrapped measure counts once.</p>
-                            <button id="part-count-recheck" type="button">Recheck saved part</button>
                         </div>
                     </li>
                     <li><strong>Add the reviewed part</strong>
@@ -1065,28 +1063,6 @@
                     </div>
                 </form>
                 </details>
-                <form class="inputform" id="loadGroundTruthScore" method="POST" onsubmit="return false;">
-                    <div style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
-                        <div>
-                            <label for="piece_id1">Load Piece</label>
-                            <select class="dropdown-menu" id="piece_id1">
-                                <option value="">Select piece...</option>
-                                <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
-                                    <option value="<?php echo htmlspecialchars((string) $pieceId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $pieceName, ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="sync-part">Part</label>
-                            <select id="sync-part" disabled>
-                                <option value="">— choose a piece first —</option>
-                            </select>
-                        </div>
-                        <div>
-                            <button type="button" id="loadBtn">Load existing part</button>
-                        </div>
-                    </div>
-                </form>
                 <!-- add metric_arr -->
                 <form class="inputform" id="addnewmetricform" method="POST" enctype="multipart/form-data">
                     <div style="display:flex;">
@@ -1237,84 +1213,31 @@
     <div id="saveDiv" style="display:none;"></div>
     <div id="render" class="dlog" style="left:5%; padding:0.5em;"></div>
     <div id="noklik"></div>
-    <div id="help">
-        The menu is explained in the <a href="readme.html#menu" target="_blank">usage instructions</a><br>
-        <span>You can use the following keys:</span>
-        <table class="helptbl">
-            <tr>
-                <td><b>spacebar</b> or tap<br>in left margin</td>
-                <td>pause / continue</td>
-                <td><b>f</b></td>
-                <td>toggle file buttons</td>
-            </tr>
-            <tr>
-                <td><b>right arrow</b></td>
-                <td>go to next measure</td>
-                <td><b>l</b></td>
-                <td>toggle line cursor</td>
-            </tr>
-            <tr>
-                <td><b>left arrow</b></td>
-                <td>go to previous measure</td>
-                <td><b>h</b></td>
-                <td>toggle help</td>
-            </tr>
-            <tr>
-                <td><b>+</b>/<b>-</b></td>
-                <td>zoom in / out (also = and _); detection width is separate</td>
-                <td><b>m</b></td>
-                <td>toggle menu</td>
-            </tr>
-        </table>
-
-        In addition, when synchronization is enabled:
-        <table class="helptbl">
-            <tr>
-                <td><b>b</b> or tap in score</td>
-                <td>record <a href="readme.html#sync" target="_blank">sync point</a>,
-                    move to the next measure.</td>
-                <td><b>g</b></td>
-                <td>remove a pair of <a href="readme.html#repeats" target="_blank">repeat marks</a>.</td>
-            </tr>
-            <tr>
-                <td><b>backspace</b> or clear button</td>
-                <td>backup one measure: erase current sync point (and all following, if any)</td>
-                <td><b>long</b> click or <b>shift</b> click in measure</td>
-                <td>add a <a href="readme.html#repeats" target="_blank">repeat mark</a> to the measure</td>
-            </tr>
-            <tr>
-                <td><b>,</b></td>
-                <td>shorten the duration of the current measure</td>
-                <td><b>ctrl-,</b></td>
-                <td>shorten the initial offset (play back time in the media file where
-                    the first measure starts).</td>
-            </tr>
-            <tr>
-                <td><b>.</b></td>
-                <td>lengthen the duration of the current measure.</td>
-                <td><b>ctrl-.</b></td>
-                <td>lengthen the initial offset.</td>
-            </tr>
-            <tr>
-                <td><b>w</b> or<br />save&nbsp;button</td>
-                <td colspan="3">save timings, pdf data and other settings to a file (see
-                    <a href="readme.html#preload" target="_blank">preload file</a>).
-                    Also works with dropbox. You can load a preload file with the score file button.
-                </td>
-            </tr>
-        </table>
-        synchronizing:<ul>
-            <li>At the start of every new (unsynchronized) measure the program waits for a click/tap in the score
-                (or key press &apos;B&apos;)</li>
-            <li>By clicking in the score (or typing key &apos;B&apos;) you synchronize the *first* beat of that measure
-                to the audio.</li>
-            <li>The duration of the current measure and the initial offset are shown in the top right corner of the
-                display.
-                You can precisely adjust these numbers with the keyboard sync commands (preferably when media is
-                paused).</li>
-        </ul>
-        <button id="closehelp">Close</button>
-    </div>
+    <dialog id="editor-help-dialog" aria-labelledby="editor-help-title">
+        <div class="editor-help-header">
+            <h2 id="editor-help-title">Edit Mode Help</h2>
+            <button id="editor-help-close" type="button" aria-label="Close help">&times;</button>
+        </div>
+        <div class="editor-help-content">
+            <p>Instrument parts prepare their barlines automatically. Piano parts and scores open without automatic detection.
+                Saved parts and queue drafts keep their existing barlines.</p>
+            <table class="helptbl">
+                <tr><th scope="row">Q</th><td>Toggle barline editing. Click to add or remove a barline.</td></tr>
+                <tr><th scope="row">Shift-click in Q mode / S</th><td>Split a multimeasure rest.</td></tr>
+                <tr><th scope="row">W</th><td>Draw a missing staff by clicking its top-left and bottom-right corners.</td></tr>
+                <tr><th scope="row">Y</th><td>Refit staff geometry. Drag across staves or systems to merge them using the starting system’s barlines. Ctrl-click a system to merge the whole page.</td></tr>
+                <tr><th scope="row">D / Shift+D</th><td>Next / previous page. Page Down / Page Up also work.</td></tr>
+                <tr><th scope="row">+ / −</th><td>Zoom the view without changing detection width.</td></tr>
+                <tr><th scope="row">. / /</th><td>Include weaker barlines / keep stronger barlines on the current page.</td></tr>
+                <tr><th scope="row">O</th><td>Refresh the current page.</td></tr>
+                <tr><th scope="row">E</th><td>Log CNN training examples.</td></tr>
+                <tr><th scope="row">H / Escape</th><td>Open / close this help window.</td></tr>
+            </table>
+            <p>Press the active editing key again to leave that mode. Check staff boundaries, divisi, barlines and multimeasure rests before saving.</p>
+            <p>Measure counts update automatically as you edit. They include the final endpoint; a wrapped measure counts once.</p>
+            <p>Queued edits autosave. Use Part Details → Save Part to publish the PDFs and corrected barlines.</p>
+        </div>
+    </dialog>
     <!--</div> -->
     <!-- </div> -->
 

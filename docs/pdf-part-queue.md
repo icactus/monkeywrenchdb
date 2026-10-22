@@ -28,7 +28,14 @@ script remains unchanged for desktop use. The new converter shares its output
 settings while using MuPDF rendering and a single page at a time.
 
 Choose **Edit barlines** on a ready part. Piece, part and edition populate Part
-Details. Run detection and review each page as usual. Edits autosave to the queue
+Details. Fresh single-staff instrument parts run barline detection automatically
+and return to page 1. Piano parts and scores are excluded, using the part ID and
+catalog instrument label (including full, opera, choral and chamber scores).
+Individual string/wind parts of works containing piano still prepare automatically.
+Restored drafts keep their existing edits and do not run detection again. Blank
+pages are retained and skipped during detection. The top Help button explains
+editing keys in a modal; measure-count comparisons update automatically without
+a recheck button. Edits autosave to the queue
 every five seconds, including when only some pages have been visited. Reopening
 the queued PDF restores that work. Stale tabs cannot overwrite a newer saved
 queue draft. Page-close saving uses a beacon when supported; for very large
