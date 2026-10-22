@@ -1139,12 +1139,6 @@
                             <span id="match-info"></span>
                         </div>
                         <div>
-                            <p><strong>Geometry repair and older detector</strong></p>
-                            <button id="run-geom-btn" type="button">Refit staff geometry (current page)</button>
-                            <button id="run-v2-btn" type="button">Older random forest detector (current page)</button>
-                            <p>The single-staff CNN already rebuilds its own staves; a separate geometry pass is not required.</p>
-                        </div>
-                        <div>
                             <p><strong>Piano and full scores — specialist workflows</strong></p>
                             <p>These are outside the volunteer instrument-part workflow. Piano CNN requires
                                 correctly paired staves. Geometry preparation also replaces barlines using heuristics.</p>
