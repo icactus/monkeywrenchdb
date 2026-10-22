@@ -177,7 +177,7 @@ function batchHarness(failPage) {
 test('all-pages CNN uses fresh current-page preparation once per page, despite restored options', async () => {
     const h = batchHarness();
     await h.context.runAllPagesBarlineDetection('cnn_only');
-    assert.deepEqual(h.visited, [1, 2, 3]);
+    assert.deepEqual(h.visited, [1, 2, 3, 1]);
     assert.deepEqual(h.detections, [1, 2, 3].map(page => ({
         page, mode: 'cnn_only', options: { suppressRefresh: true }, single: 1
     })));

@@ -16,6 +16,7 @@ var suppressNextSplitClick = false;
 var ySelectionBox = null;
 var yDragState = null;
 var suppressNextYClick = false;
+var divisiSplitInProgress = false;
 
 let indicatorElement;
 let notation;
@@ -362,7 +363,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }, true);
 
         notation.addEventListener('mousedown', function handleYMouseDown(event) {
-            if (!YisActive || event.button !== 0 || event.ctrlKey) {
+            if (!YisActive || divisiSplitInProgress || event.button !== 0 || event.ctrlKey) {
                 return;
             }
 
@@ -379,6 +380,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }, true);
 
         notation.addEventListener('click', function handleClick(event) {
+            if (divisiSplitInProgress) return;
             // Alt+Click: Mark/unmark barline as split continuation
             if (event.altKey && QisActive) {
                 handleSplitMark(event);
@@ -4672,6 +4674,187 @@ function normalizePageToFullScoreSystems(pageData, pageImageData, debugInfo) {
     return true;
 }
 
+// Discover simultaneous staves from pixels before asking the single-staff CNN.
+function findDivisiBridges(upper, lower, image) {
+    if (!upper || !lower || !upper.xs || !lower.xs ||
+        !Array.isArray(upper.cs) || !Array.isArray(lower.cs) || upper.cs.length !== 5 || lower.cs.length !== 5) return [];
+    // Use the measured spacing here; the general estimator clamps tiny cue staves.
+    var spA = (upper.cs[4] - upper.cs[0]) / 4, spB = (lower.cs[4] - lower.cs[0]) / 4;
+    var sp = Math.max(spA, spB);
+    if (!(sp > 0) || Math.min(spA, spB) / sp < 0.8) return [];
+    var widthA = upper.xs.x2 - upper.xs.x1, widthB = lower.xs.x2 - lower.xs.x1;
+    if (Math.min(widthA, widthB) / Math.max(widthA, widthB) < 0.85 ||
+        Math.abs(upper.xs.x1 - lower.xs.x1) > 4 * sp || Math.abs(upper.xs.x2 - lower.xs.x2) > 4 * sp) return [];
+    var mid = (Math.max(upper.xs.x1, lower.xs.x1) + Math.min(upper.xs.x2, lower.xs.x2)) / 2;
+    var a = getSystemTopBottomAtX(upper, mid), b = getSystemTopBottomAtX(lower, mid);
+    var gap = (b.top - a.bottom) / sp;
+    if (gap < 1 || gap > 12 || (a.bottom - a.top) / sp > 5.5 || (b.bottom - b.top) / sp > 5.5) return [];
+    var height = Math.floor(image.pixelData.length / image.stride);
+    var step = Math.max(3, Math.round(sp * 0.6));
+    function dark(x, y) {
+        if (x < 0 || x >= image.width || y < 0 || y >= height) return 0;
+        var offset = y * image.stride + x * 4;
+        return image.pixelData[offset] + image.pixelData[offset + 1] + image.pixelData[offset + 2] < 450 ? 1 : 0;
+    }
+    var bridges = [];
+    // Ignore brackets/clefs and structural endpoints: require multiple interior bridges.
+    for (var x = Math.ceil(Math.max(upper.xs.x1, lower.xs.x1) + 3 * sp);
+        x < Math.min(upper.xs.x2, lower.xs.x2, image.width - step) - 3 * sp; x++) {
+        var top = getSystemTopBottomAtX(upper, x), bottom = getSystemTopBottomAtX(lower, x);
+        var y1 = Math.max(0, Math.round(top.top)), y2 = Math.min(height - 1, Math.round(bottom.bottom));
+        var gapTop = Math.round(top.bottom) + 1, gapBottom = Math.round(bottom.top) - 1;
+        var covered = 0, gapCovered = 0, sides = 0;
+        for (var y = y1; y <= y2; y++) {
+            var ink = Math.max(dark(x - 1, y), dark(x, y), dark(x + 1, y));
+            covered += ink;
+            if (y >= gapTop && y <= gapBottom) gapCovered += ink;
+            sides += (dark(x - step, y) + dark(x + step, y)) / 2;
+        }
+        var span = y2 - y1 + 1;
+        if (span > 0 && covered / span >= 0.85 && gapCovered / Math.max(1, gapBottom - gapTop + 1) >= 0.9 &&
+            (covered - sides) / span >= 0.35) {
+            if (!bridges.length || x - bridges[bridges.length - 1] > 3 * sp) bridges.push(x);
+        }
+    }
+    return bridges.length >= 2 ? bridges : [];
+}
+
+function divisiGroupingSuppressed(system, overrides, width) {
+    var bounds = getSystemTopBottomAtX(system, (system.xs.x1 + system.xs.x2) / 2);
+    var center = (bounds.top + bounds.bottom) / 2;
+    return (overrides || []).some(function (region) {
+        var scale = width / region.width;
+        return Number.isFinite(scale) && scale > 0 && center >= region.top * scale && center <= region.bottom * scale &&
+            Math.min(system.xs.x2, region.right * scale) > Math.max(system.xs.x1, region.left * scale);
+    });
+}
+
+function detectDivisiBarlines(system, staves, image) {
+    // The legacy detector's white threshold must be measured over this new group.
+    var previousWhite = witArr$$module$synpdf, previousSpatium = spatium$$module$synpdf;
+    var top = Math.round(system.cs[0]), bottom = Math.round(system.cs[system.cs.length - 1]);
+    var height = Math.floor(image.pixelData.length / image.stride);
+    if (top < 0 || bottom >= height || bottom <= top) return [];
+    try {
+        var white = 0;
+        for (var x = 0; x < image.width; x++) {
+            var sum = 0;
+            for (var y = top; y < bottom; y++) {
+                var offset = y * image.stride + x * 4;
+                sum += image.pixelData[offset] + image.pixelData[offset + 1] + image.pixelData[offset + 2];
+            }
+            white = Math.max(white, sum / (3 * (bottom - top)));
+        }
+        witArr$$module$synpdf = [white * opt$$module$synpdf.zwgrens];
+        spatium$$module$synpdf = Math.max.apply(null, staves.map(getSystemEstimatedSpatium));
+        // The original scanner samples two staff spaces beyond the group.
+        if (top < 2 * spatium$$module$synpdf || bottom + 2 * spatium$$module$synpdf >= height) return [];
+        return (findBarLines$$module$synpdf([system], image.stride, image.pixelData)[0] || []).filter(function (x) {
+            return x >= system.xs.x1 && x <= system.xs.x2;
+        });
+    } finally {
+        witArr$$module$synpdf = previousWhite;
+        spatium$$module$synpdf = previousSpatium;
+    }
+}
+
+function buildDivisiDetectionJobs(systems, barlines, image, overrides) {
+    var items = systems.map(function (system, index) { return { system: system, bxs: barlines[index] }; })
+        .sort(function (a, b) { return getSystemSortTop(a.system) - getSystemSortTop(b.system); });
+    var jobs = [];
+    for (var i = 0; i < items.length;) {
+        var group = [items[i]], bridges = [];
+        var j = i;
+        while (j + 1 < items.length && !divisiGroupingSuppressed(items[j].system, overrides, image.width) &&
+            !divisiGroupingSuppressed(items[j + 1].system, overrides, image.width)) {
+            var pairBridges = findDivisiBridges(items[j].system, items[j + 1].system, image);
+            if (!pairBridges.length) break;
+            bridges = bridges.concat(pairBridges);
+            group.push(items[++j]);
+        }
+        // A larger connected score needs the full-score workflow, not partial divisi groups.
+        if (group.length >= 2 && group.length <= 3) {
+            var merged = buildMergedSystemFromSelection(group);
+            var staves = group.map(function (item) { return cloneSystemForGeometrySeed(item.system); });
+            var detected = merged ? detectDivisiBarlines(merged.system, staves, image) : [];
+            var tolerance = Math.max.apply(null, staves.map(getSystemEstimatedSpatium));
+            var matched = bridges.filter(function (x) { return detected.some(function (bar) { return Math.abs(bar - x) <= tolerance; }); });
+            if (detected.length >= 4 && matched.length >= 2 && detected.every(Number.isFinite)) {
+                merged.system.autoDivisi = { width: image.width, staves: staves, bridgeXs: bridges };
+                jobs.push({ system: merged.system, bxs: [merged.system.xs.x1, merged.system.xs.x2], legacyBarlines: detected });
+            } else jobs.push.apply(jobs, group);
+        } else jobs.push.apply(jobs, group);
+        i = j + 1;
+    }
+    return jobs;
+}
+
+function getDivisiSingleStaves(system, width) {
+    var metadata = system && system.autoDivisi;
+    if (!metadata || !Array.isArray(metadata.staves) || metadata.staves.length < 2 || !(metadata.width > 0)) return [];
+    var scale = width / metadata.width;
+    return metadata.staves.map(function (source) {
+        var staff = cloneSystemForGeometrySeed(source);
+        delete staff.autoDivisi;
+        ['cs', 'csl', 'csr'].forEach(function (key) {
+            if (Array.isArray(staff[key])) staff[key] = staff[key].map(function (y) { return y * scale; });
+        });
+        staff.xs = { x1: staff.xs.x1 * scale, x2: staff.xs.x2 * scale };
+        return staff;
+    });
+}
+
+async function splitAutoDivisiSystem(pageNumber, systemIndex, image) {
+    var detectButton = document.getElementById('run-cnn-btn');
+    if (divisiSplitInProgress || (detectButton && detectButton.disabled) ||
+        (typeof rendering$$module$synpdf !== 'undefined' && rendering$$module$synpdf)) return false;
+    var data = MetricStore.getMetricData(), page = data && data[pageNumber];
+    var system = page && page.cxs[systemIndex];
+    var staves = getDivisiSingleStaves(system, image.width);
+    if (!staves.length) return false;
+    var originalPage = JSON.stringify(page), canvas = getCurrentPageCanvas();
+    divisiSplitInProgress = true;
+    startBarlineDetectionProgress(1);
+    setBatchButtonState(true, pageNumber, pageNumber, 'cnn_page');
+    var error = null;
+    try {
+        var bars = [], diagnostics = [];
+        for (var index = 0; index < staves.length; index++) {
+            await updateBarlineDetectionProgress(pageNumber, index, staves.length);
+            var opts = { classifierMode: 'cnn_only', allowV1Fallback: false, cnnThreshold: 0.62, diagnostics: [], perfStats: {} };
+            var detected = await BarlineDetectV2.findBarLinesV2(staves[index], image.stride, image.pixelData, image.width, opts);
+            if (!Array.isArray(detected) || detected.length < 2 || !detected.every(Number.isFinite)) throw new Error('Could not detect barlines for each single staff.');
+            bars.push(normalizeDetectedSystemBarlines(staves[index], detected, []));
+            diagnostics.push(opts.diagnostics);
+        }
+        var current = MetricStore.getMetricData();
+        if (getDisplayedPageNumber() !== pageNumber || getCurrentPageCanvas() !== canvas ||
+            !current || JSON.stringify(current[pageNumber]) !== originalPage) throw new Error('The page changed while detecting staves. Please try again.');
+        page.cxs.splice.apply(page.cxs, [systemIndex, 1].concat(staves));
+        page.bxs.splice.apply(page.bxs, [systemIndex, 1].concat(bars));
+        var bounds = getSystemVerticalEnvelope(system, [system.xs.x1, system.xs.x2]);
+        page.divisiSingles = (page.divisiSingles || []).concat([{
+            width: image.width, top: bounds.top, bottom: bounds.bottom, left: system.xs.x1, right: system.xs.x2
+        }]);
+        // All inference succeeded: publish this page once, preserving all other pages.
+        current[pageNumber] = page;
+        if (!MetricStore.setMetricData(current, { clone: false })) throw new Error('Could not save the single-staff correction.');
+        SynpdfCorrectionTools.replaceSystemBaselinesForPage(pageNumber, page, systemIndex, diagnostics);
+        requestRefresh({ preferLiveData: true });
+        await updateBarlineDetectionProgress(pageNumber, staves.length, staves.length);
+        return true;
+    } catch (err) {
+        error = err.message;
+        console.error('Divisi split failed:', err);
+        alert(error);
+        return false;
+    } finally {
+        divisiSplitInProgress = false;
+        setBatchButtonState(false);
+        finishBarlineDetectionProgress(error);
+    }
+}
+
 function buildYMergeFromSelection(selected, startX, startY) {
     if (!Array.isArray(selected) || selected.length < 2) return null;
 
@@ -4799,6 +4982,7 @@ function handleYCxs(event) {
         suppressNextYClick = false;
         return true;
     }
+    if (typeof divisiSplitInProgress !== 'undefined' && divisiSplitInProgress) return true;
 
     if (event.ctrlKey) {
         event.preventDefault();
@@ -4824,6 +5008,13 @@ function handleYCxs(event) {
     var systemIndex = findNearestSystemIndexForPoint(pageData[pagenum], pagenum, x, y);
     var system = systemIndex >= 0 ? pageData[pagenum].cxs[systemIndex] : null;
     var existingBarlines = systemIndex >= 0 && pageData[pagenum].bxs ? pageData[pagenum].bxs[systemIndex] : null;
+    if (system && system.autoDivisi && x >= system.xs.x1 && x <= system.xs.x2) {
+        var groupBounds = getSystemTopBottomAtX(system, x);
+        if (y >= groupBounds.top && y <= groupBounds.bottom) {
+            splitAutoDivisiSystem(pagenum, systemIndex, pageImageData);
+            return true;
+        }
+    }
     if (!system) {
         system = {
             cs: [y - 16, y + 16],
@@ -5416,8 +5607,10 @@ $(document).ready(function () {
 
         let pageData = deMetriek$$module$synpdf[pagenum];
         if (runMode === 'cnn_only') {
+            const divisiSingles = pageData && pageData.divisiSingles;
             await updateBarlineDetectionProgress(pagenum, 0, 0);
             pageData = rebuildCurrentPageMetricData(pagenum, true, undefined, true) || pageData;
+            if (divisiSingles) pageData.divisiSingles = JSON.parse(JSON.stringify(divisiSingles));
         }
         if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
             alert("No staff systems found on this page to detect barlines for.");
@@ -5437,10 +5630,14 @@ $(document).ready(function () {
         const pagePerfStart = performance.now();
         console.log("Running " + (runMode === 'cnn_only' ? 'CNN-only dev detection' : 'V2 ML Detection') + " on page " + pagenum + " for " + pageData.cxs.length + " systems...");
 
-        const systemsForDetection = JSON.parse(JSON.stringify(pageData.cxs));
+        let systemsForDetection = JSON.parse(JSON.stringify(pageData.cxs));
         systemsForDetection.forEach(function (system, index) {
             applyExistingBoundaryXs(system, pageData.bxs && pageData.bxs[index]);
         });
+        const detectionJobs = runMode === 'cnn_only'
+            ? buildDivisiDetectionJobs(systemsForDetection, pageData.bxs, pageImageData, pageData.divisiSingles)
+            : systemsForDetection.map(function (system, index) { return { system: system, bxs: pageData.bxs[index] }; });
+        systemsForDetection = detectionJobs.map(function (job) { return job.system; });
         let prefitMs = 0;
         if (runMode !== 'cnn_only') {
             const prefitStart = performance.now();
@@ -5461,6 +5658,9 @@ $(document).ready(function () {
             allowV1Fallback: false,
             classifierMode: runMode === 'cnn_only' ? 'cnn_only' : 'rf'
         };
+        if (runMode === 'cnn_only') {
+            detectionOpts.cnnThreshold = 0.62;
+        }
         const systemDiagnostics = [];
         const systemRenderGeometry = [];
         const systemPerf = [];
@@ -5471,7 +5671,8 @@ $(document).ready(function () {
             }
             const system = systemsForDetection[index];
             const perSystemOpts = Object.assign({}, detectionOpts, { diagnostics: [], perfStats: {} });
-            const detected = await Promise.resolve(BarlineDetectV2.findBarLinesV2(system, stride, pixelData, width, perSystemOpts));
+            const detected = detectionJobs[index].legacyBarlines ||
+                await Promise.resolve(BarlineDetectV2.findBarLinesV2(system, stride, pixelData, width, perSystemOpts));
             systemDiagnostics[index] = perSystemOpts.diagnostics.slice();
             systemPerf[index] = perSystemOpts.perfStats;
             systemRenderGeometry[index] = runMode !== 'cnn_only' && systemSupportsRenderGeometryFit(system)
@@ -5483,8 +5684,10 @@ $(document).ready(function () {
             await updateBarlineDetectionProgress(pagenum, systemsForDetection.length, systemsForDetection.length);
         }
 
-        if (v2Barlines && v2Barlines.length === pageData.cxs.length) {
-            if (runMode !== 'cnn_only') {
+        if (v2Barlines && v2Barlines.length === systemsForDetection.length) {
+            if (runMode === 'cnn_only') {
+                pageData.cxs = systemsForDetection;
+            } else {
                 pageData.cxs = systemsForDetection.map(function (system, index) {
                     return applyRenderGeometryToSystem(system, systemRenderGeometry[index], {
                         fixedXs: getSystemBoundaryXs(system, pageData.bxs && pageData.bxs[index])
@@ -5492,7 +5695,7 @@ $(document).ready(function () {
                 });
             }
             pageData.bxs = v2Barlines.map(function (detectedBarlines, index) {
-                return normalizeDetectedSystemBarlines(pageData.cxs[index], detectedBarlines, pageData.bxs[index]);
+                return normalizeDetectedSystemBarlines(pageData.cxs[index], detectedBarlines, detectionJobs[index].bxs);
             });
             if (runMode === 'cnn_only') {
                 // Refit after detection, just like the staff geometry button.
@@ -5564,7 +5767,7 @@ $(document).ready(function () {
     }
 
     async function runCurrentPageBarlineDetection() {
-        if (batchDetectionInProgress) return;
+        if (batchDetectionInProgress || divisiSplitInProgress) return;
         batchDetectionInProgress = true;
         startBarlineDetectionProgress(1);
         setBatchButtonState(true, getDisplayedPageNumber(), getDisplayedPageNumber(), 'cnn_page');
@@ -5582,7 +5785,7 @@ $(document).ready(function () {
     }
 
     async function runAllPagesBarlineDetection(runMode) {
-        if (batchDetectionInProgress) return;
+        if (batchDetectionInProgress || divisiSplitInProgress) return;
         if (runMode !== 'cnn_only') return;
         if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
             alert('No metric data loaded.');
@@ -5610,7 +5813,7 @@ $(document).ready(function () {
                 }
                 barlineDetectionProgress.completedPages++;
             }
-            requestRefresh({ preferLiveData: true });
+            await goToRenderedPage(1, { forceRerender: true });
             console.log('CNN-only dev detection completed for all pages.');
         } catch (err) {
             error = err.message;
@@ -5711,7 +5914,7 @@ $(document).ready(function () {
     }
 
     async function runAllPagesPianoNormalize() {
-        if (batchDetectionInProgress) return;
+        if (batchDetectionInProgress || divisiSplitInProgress) return;
         if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
             alert('No metric data loaded.');
             return;
@@ -5829,7 +6032,7 @@ $(document).ready(function () {
     }
 
     async function runAllPagesPianoCnnDetection() {
-        if (batchDetectionInProgress) return;
+        if (batchDetectionInProgress || divisiSplitInProgress) return;
         if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
             alert('No metric data loaded.');
             return;
@@ -5858,7 +6061,7 @@ $(document).ready(function () {
     }
 
     async function runAllPagesPianoGeometry() {
-        if (batchDetectionInProgress) return;
+        if (batchDetectionInProgress || divisiSplitInProgress) return;
         if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
             alert('No metric data loaded.');
             return;
@@ -5887,7 +6090,7 @@ $(document).ready(function () {
     }
 
     async function runAllPagesFullScoreNormalize() {
-        if (batchDetectionInProgress) return;
+        if (batchDetectionInProgress || divisiSplitInProgress) return;
         if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
             alert('No metric data loaded.');
             return;
