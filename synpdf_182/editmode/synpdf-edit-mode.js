@@ -994,6 +994,8 @@ async function precomputeAdvancedMetrics$$module$synpdf() {
 
 function readPdf$$module$synpdf(a, b) {
     initGlobals$$module$synpdf();
+    opt$$module$synpdf.pagenum = 1;
+    $("#pagenum").val(1);
 
     var c = a,
         d;

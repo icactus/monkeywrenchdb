@@ -18,6 +18,29 @@ const deferred = () => {
     return { promise, resolve };
 };
 
+test('opening a PDF from a URL or local file starts at page one after another document', async () => {
+    for (const type of ['url', 'pdfbin']) {
+        let displayedPage = 41;
+        const rendered = [];
+        const chain = { val: value => { displayedPage = value; }, attr() {} };
+        const c = vm.createContext({
+            opt$$module$synpdf: { advncd: 1, pagenum: 41 },
+            initGlobals$$module$synpdf() {}, $: () => chain,
+            pdfjsLib: { getDocument: () => ({ promise: Promise.resolve({ numPages: 99 }) }) },
+            readPdfdoc$$module$synpdf: () => rendered.push(c.opt$$module$synpdf.pagenum)
+        });
+        vm.runInContext(definition('readPdf$$module$synpdf'), c);
+        for (const previousPage of [41, 7]) {
+            c.opt$$module$synpdf.pagenum = displayedPage = previousPage;
+            c.readPdf$$module$synpdf(type === 'url' ? '/pdfs/71-39.pdf' : new ArrayBuffer(8), type);
+            await Promise.resolve();
+            assert.equal(c.opt$$module$synpdf.pagenum, 1);
+            assert.equal(displayedPage, 1);
+        }
+        assert.deepEqual(rendered, [1, 1]);
+    }
+});
+
 function renderHarness(failure) {
     const events = [], timers = [];
     const chain = {};
