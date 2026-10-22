@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="stylesheet" href="part-pdf-queue.css?v=1">
-    <script src="part-pdf-queue.js?v=1" defer></script>
+    <script src="part-pdf-queue.js?v=2" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
     if (file_exists('session_config.php')) {
@@ -992,7 +992,7 @@
                     </li>
                     <li><strong>Add the reviewed part</strong>
                         <p>Open Part Details, choose the piece and instrument, and check the edition.
-                            Use Save Part to upload the PDF and its reviewed staves and barlines.</p>
+                            Use Save Part to save the reviewed staves and barlines with the PDF.</p>
                         <p class="workflow-note">Edits stay in this browser until you save the part.</p>
                     </li>
                 </ol>
@@ -1111,10 +1111,11 @@
                                 placeholder="e.g., Anna Magdalena Bach" />
                         </div>
                         <input type="hidden" name="measures_version" value="1" />
-                        <div>
+                        <div id="part-hd-upload">
                             <label for="fknp2_hd">HD pdf</label>
                             <input type="file" id="fknp2_hd" name="file_hd" accept=".pdf" />
                         </div>
+                        <p id="part-queued-pdf-note" hidden>Both PDFs are already uploaded. Save Part uses the stored HD original and compressed PDF.</p>
                         <input type="submit" name="save" value="Save Part" />
                     </div>
                 </form>

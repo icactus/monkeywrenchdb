@@ -129,9 +129,14 @@
         } catch (error) { notify(error.message); }
     }
     function matches() { return active && window.pdfFnm$$module$synpdf === activeUrl; }
+    function setQueuedSaveState(queued) {
+        document.getElementById('fknp2_hd').disabled = queued;
+        document.getElementById('part-hd-upload').hidden = queued;
+        document.getElementById('part-queued-pdf-note').hidden = !queued;
+    }
     function clearActive() {
         active = null; activeUrl = ''; lastDraft = ''; activePanel.hidden = true; reviewed.checked = false;
-        document.getElementById('fknp2_hd').disabled = false;
+        setQueuedSaveState(false);
     }
     function snapshot() {
         if (!matches() || loading || window.rendering$$module$synpdf) return null;
@@ -172,7 +177,7 @@
             window.times_arr$$module$synpdf = undefined; window.adv_settings$$module$synpdf = {};
             window.opt$$module$synpdf.onestf = 0; window.annots$$module$synpdf = [];
             window.msc_check_preload$$module$synpdf();
-            activePanel.hidden = false; document.getElementById('fknp2_hd').disabled = true;
+            activePanel.hidden = false; setQueuedSaveState(true);
             document.getElementById('pdf-queue-active-name').textContent = active.name;
             draftStatus.textContent = result.draft ? 'Saved queue edits restored.' : 'Detect and review the barlines. Edits will save automatically.';
             notify('Queued PDF loaded. Review every page, then use Save Part.');
