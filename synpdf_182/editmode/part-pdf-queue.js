@@ -132,7 +132,6 @@
     function setQueuedSaveState(queued) {
         document.getElementById('fknp2_hd').disabled = queued;
         document.getElementById('part-hd-upload').hidden = queued;
-        document.getElementById('part-queued-pdf-note').hidden = !queued;
     }
     function clearActive() {
         active = null; activeUrl = ''; lastDraft = ''; activePanel.hidden = true; reviewed.checked = false;

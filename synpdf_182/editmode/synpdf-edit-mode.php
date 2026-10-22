@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="stylesheet" href="part-pdf-queue.css?v=1">
-    <script src="part-pdf-queue.js?v=2" defer></script>
+    <script src="part-pdf-queue.js?v=3" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
     if (file_exists('session_config.php')) {
@@ -1115,7 +1115,6 @@
                             <label for="fknp2_hd">HD pdf</label>
                             <input type="file" id="fknp2_hd" name="file_hd" accept=".pdf" />
                         </div>
-                        <p id="part-queued-pdf-note" hidden>Both PDFs are already uploaded. Save Part uses the stored HD original and compressed PDF.</p>
                         <input type="submit" name="save" value="Save Part" />
                     </div>
                 </form>
