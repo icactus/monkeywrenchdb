@@ -28,12 +28,13 @@ try {
         $kind = $_POST['kind'] ?? 'update';
         if ($kind === 'new_request') {
             if ($user['role'] !== 'admin') { http_response_code(403); echo json_encode(['error' => 'Administrator access is required.']); exit; }
-            mwRequestAdminMarkSeen($db, $userId, $id);
+            mwRequestAdminMarkSeen($db, $userId, $id, $version);
         } elseif ($kind === 'update') {
             mwRequestMarkSeen($db, $userId, $id, $version);
         } else throw new InvalidArgumentException('Invalid notification type.');
     }
     $updates = mwRequestUnreadCount($db, $userId);
+    // Keep the existing API key; incoming queue updates now include requester replies.
     $newRequests = $user['role'] === 'admin' ? mwRequestAdminNewCount($db, $userId) : 0;
     echo json_encode(['count' => $updates + $newRequests, 'update_count' => $updates, 'new_request_count' => $newRequests]);
 } catch (InvalidArgumentException $e) {

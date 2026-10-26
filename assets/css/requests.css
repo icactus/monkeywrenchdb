@@ -416,3 +416,4 @@ html.inverted .modal-close{background:var(--soft);color:var(--ink)}
 .request-card.request-unread{border:2px solid #376a73;scroll-margin-top:24px}
 .request-update-note{padding:12px 15px;border-radius:7px;background:var(--soft);color:var(--ink)}
 #request-list-title{scroll-margin-top:24px}
+.requester-response{border-top:1px solid var(--line);padding-top:20px;margin-top:20px}

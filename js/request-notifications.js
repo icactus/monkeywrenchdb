@@ -6,7 +6,7 @@
     const display = (count, updates = count, incoming = 0) => {
         indicator.hidden = count < 1;
         const updateLabel = `${updates} unread request ${updates === 1 ? 'update' : 'updates'}`;
-        const newLabel = `${incoming} new ${incoming === 1 ? 'request' : 'requests'}`;
+        const newLabel = `${incoming} unread request queue ${incoming === 1 ? 'update' : 'updates'}`;
         const label = incoming ? (updates ? `${newLabel} and ${updateLabel}` : newLabel) : updateLabel;
         indicator.href = incoming ? '/requests.php?view=admin&status=new#request-list-title' : '/requests.php?status=updates#request-list-title';
         indicator.setAttribute('aria-label', label);

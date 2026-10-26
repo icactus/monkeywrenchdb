@@ -21,8 +21,8 @@ function setup(fetch) {
 }
 for (const [name, data, href, label, personal, queue] of [
     ['requester update', { count: 2, update_count: 2, new_request_count: 0 }, '/requests.php?status=updates#request-list-title', '2 unread request updates', '2', '0'],
-    ['new admin submission', { count: 1, update_count: 0, new_request_count: 1 }, '/requests.php?view=admin&status=new#request-list-title', '1 new request', '0', '1'],
-    ['both types for an admin', { count: 4, update_count: 1, new_request_count: 3 }, '/requests.php?view=admin&status=new#request-list-title', '3 new requests and 1 unread request update', '1', '3']
+    ['new admin submission or requester reply', { count: 1, update_count: 0, new_request_count: 1 }, '/requests.php?view=admin&status=new#request-list-title', '1 unread request queue update', '0', '1'],
+    ['both types for an admin', { count: 4, update_count: 1, new_request_count: 3 }, '/requests.php?view=admin&status=new#request-list-title', '3 unread request queue updates and 1 unread request update', '1', '3']
 ]) test(`${name} shows the correct count, destination, and account menu badges`, async () => {
     const state = setup(async () => ({ ok: true, status: 200, json: async () => data }));
     await flush();

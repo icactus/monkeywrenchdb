@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS music_requests (
     deleted_at DATETIME NULL,
     update_version INT UNSIGNED NOT NULL DEFAULT 0,
     seen_version INT UNSIGNED NOT NULL DEFAULT 0,
+    admin_update_version INT UNSIGNED NOT NULL DEFAULT 1,
     PRIMARY KEY (id),
     KEY user_created (user_id, created_at),
     KEY queue_status (status, created_at)
@@ -21,7 +22,8 @@ CREATE TABLE IF NOT EXISTS music_requests (
 CREATE TABLE IF NOT EXISTS music_request_replies (
     id INT NOT NULL AUTO_INCREMENT,
     request_id INT NOT NULL,
-    admin_user_id INT NOT NULL,
+    admin_user_id INT NULL,
+    requester_user_id INT NULL,
     message TEXT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
@@ -34,6 +36,7 @@ CREATE TABLE IF NOT EXISTS music_request_admin_views (
     admin_user_id INT NOT NULL,
     request_id INT NOT NULL,
     seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    seen_version INT UNSIGNED NOT NULL DEFAULT 1,
     PRIMARY KEY (admin_user_id, request_id),
     KEY request_views (request_id),
     CONSTRAINT music_request_admin_views_request FOREIGN KEY (request_id) REFERENCES music_requests (id)

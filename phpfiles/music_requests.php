@@ -77,6 +77,9 @@ function mwRequestRequireAdmin(mysqli $db, int $userId): void
 
 function mwRequestQuota(mysqli $db, int $userId): array
 {
+    $user = mwRequestUser($db, $userId);
+    $unlimited = $user && $user['role'] === 'admin'
+        && (int) $user['id'] === (defined('MW_SUPER_ADMIN_USER_ID') ? MW_SUPER_ADMIN_USER_ID : 1);
     $stmt = $db->prepare("SELECT
         COALESCE(SUM(deleted_at IS NULL AND status IN ('requested', 'in_progress')), 0) AS open_count,
         GREATEST(0, COALESCE(TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), DATE_ADD(
@@ -88,8 +91,9 @@ function mwRequestQuota(mysqli $db, int $userId): array
     $row = $stmt->get_result()->fetch_assoc();
     return [
         'open_count' => (int) $row['open_count'],
-        'wait_seconds' => (int) $row['wait_seconds'],
-        'can_submit' => (int) $row['open_count'] < MW_REQUEST_OPEN_LIMIT && (int) $row['wait_seconds'] === 0,
+        'wait_seconds' => $unlimited ? 0 : (int) $row['wait_seconds'],
+        'can_submit' => $unlimited || ((int) $row['open_count'] < MW_REQUEST_OPEN_LIMIT && (int) $row['wait_seconds'] === 0),
+        'unlimited' => $unlimited,
     ];
 }
 
@@ -111,20 +115,54 @@ function mwRequestSubmit(mysqli $db, int $userId, array $input): int
     }
     try {
         $quota = mwRequestQuota($db, $userId);
-        if ($quota['open_count'] >= MW_REQUEST_OPEN_LIMIT) {
+        if (!$quota['unlimited'] && $quota['open_count'] >= MW_REQUEST_OPEN_LIMIT) {
             throw new DomainException('You already have two unfinished requests. Please wait for one to be completed.');
         }
-        if ($quota['wait_seconds'] > 0) {
+        if (!$quota['unlimited'] && $quota['wait_seconds'] > 0) {
             throw new DomainException('You can submit one request every seven days. Please wait until your next request is available.');
         }
         $stmt = $db->prepare('INSERT INTO music_requests (user_id, composer_name, piece_name, part_name, youtube_url, created_at, updated_at) VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())');
         $stmt->bind_param('issss', $userId, $data['composer_name'], $data['piece_name'], $data['part_name'], $data['youtube_url']);
         $stmt->execute();
-        return (int) $db->insert_id;
+        $requestId = (int) $db->insert_id;
     } finally {
         $stmt = $db->prepare('SELECT RELEASE_LOCK(?)');
         $stmt->bind_param('s', $lock);
         $stmt->execute();
+    }
+    // Notify only after saving and releasing the submission lock. Email failure
+    // must not turn a saved request into an error that invites resubmission.
+    mwRequestNotifyAdmin($requestId, $data, $user);
+    return $requestId;
+}
+
+function mwRequestNotifyAdmin(int $requestId, array $data, array $user, ?string $message = null): void
+{
+    $subject = $message === null ? 'New request' : 'Requester reply to request';
+    $kind = $message === null ? 'new-request' : 'requester-reply';
+    $body = ($message === null ? 'A new request has been added to MonkeyWrenchDB.' : 'A requester has replied on MonkeyWrenchDB.')
+        . "\n\nRequest: #$requestId\n"
+        . 'Requester: ' . $user['name'] . ' <' . $user['email'] . ">\n\n"
+        . 'Composer: ' . $data['composer_name'] . "\n"
+        . 'Piece: ' . $data['piece_name'] . "\n"
+        . 'Part: ' . $data['part_name'] . "\n";
+    if ($data['youtube_url'] !== null) $body .= 'Recording: ' . $data['youtube_url'] . "\n";
+    if ($message !== null) $body .= "\nReply:\n" . $message . "\n";
+    $body .= "\nView the request queue (administrator sign-in required):\n"
+        . 'https://monkeywrenchdb.org/requests.php?view=admin&status=all#request-' . $requestId . "\n";
+    try {
+        $sent = mail(
+            'icactusmusic@gmail.com',
+            'MonkeyWrenchDB: ' . $subject . ' #' . $requestId,
+            chunk_split(base64_encode($body)),
+            "From: MonkeyWrenchDB <requests@monkeywrenchdb.org>\r\n"
+                . "MIME-Version: 1.0\r\n"
+                . "Content-Type: text/plain; charset=UTF-8\r\n"
+                . 'Content-Transfer-Encoding: base64'
+        );
+        if (!$sent) error_log('Music requests: ' . $kind . ' email failed for request #' . $requestId);
+    } catch (Throwable $e) {
+        error_log('Music requests: ' . $kind . ' email failed for request #' . $requestId . ': ' . $e->getMessage());
     }
 }
 
@@ -142,7 +180,7 @@ function mwRequestList(mysqli $db, int $userId, bool $admin, string $filter = ''
     $offset = (max(1, $page) - 1) * 25;
     $columns = $admin ? ', u.name AS user_name, u.email AS user_email, (' . $newRequest . ') AS is_new_request' : '';
     $join = $admin ? ' LEFT JOIN users u ON u.id = r.user_id' : '';
-    return $db->query("SELECT r.* $columns FROM music_requests r $join WHERE $where ORDER BY " . ($filter === 'updates' ? 'r.updated_at' : 'r.created_at') . " DESC, r.id DESC LIMIT 26 OFFSET $offset")->fetch_all(MYSQLI_ASSOC);
+    return $db->query("SELECT r.* $columns FROM music_requests r $join WHERE $where ORDER BY " . (in_array($filter, ['updates', 'new'], true) ? 'r.updated_at' : 'r.created_at') . " DESC, r.id DESC LIMIT 26 OFFSET $offset")->fetch_all(MYSQLI_ASSOC);
 }
 
 function mwRequestReplies(mysqli $db, int $userId, bool $admin, array $requestIds): array
@@ -186,6 +224,35 @@ function mwRequestRespond(mysqli $db, int $adminId, int $requestId, string $stat
         $db->rollback();
         throw $e;
     }
+}
+
+function mwRequestReply(mysqli $db, int $userId, int $requestId, string $message): int
+{
+    $message = mwRequestText($message, 'reply', 5000);
+    $user = mwRequestUser($db, $userId);
+    if (!$user) throw new DomainException('Sign in to reply to your request.');
+    $db->begin_transaction();
+    try {
+        // Ownership and deletion share the same row lock as admin replies.
+        $stmt = $db->prepare('SELECT * FROM music_requests WHERE id = ? AND user_id = ? AND deleted_at IS NULL FOR UPDATE');
+        $stmt->bind_param('ii', $requestId, $userId);
+        $stmt->execute();
+        $request = $stmt->get_result()->fetch_assoc();
+        if (!$request) throw new DomainException('This request could not be found.');
+        $stmt = $db->prepare('INSERT INTO music_request_replies (request_id, requester_user_id, message, created_at) VALUES (?, ?, ?, UTC_TIMESTAMP())');
+        $stmt->bind_param('iis', $requestId, $userId, $message);
+        $stmt->execute();
+        $replyId = (int) $db->insert_id;
+        $stmt = $db->prepare('UPDATE music_requests SET admin_update_version = admin_update_version + 1, updated_at = UTC_TIMESTAMP() WHERE id = ?');
+        $stmt->bind_param('i', $requestId);
+        $stmt->execute();
+        $db->commit();
+    } catch (Throwable $e) {
+        $db->rollback();
+        throw $e;
+    }
+    mwRequestNotifyAdmin($requestId, $request, $user, $message);
+    return $replyId;
 }
 
 function mwRequestDelete(mysqli $db, int $userId, int $requestId): void
@@ -232,7 +299,7 @@ function mwRequestMarkSeen(mysqli $db, int $userId, int $requestId, int $version
 
 function mwRequestAdminNewCondition(int $adminId): string
 {
-    return "r.user_id <> $adminId AND r.status = 'requested' AND NOT EXISTS (SELECT 1 FROM music_request_admin_views v WHERE v.request_id = r.id AND v.admin_user_id = $adminId)";
+    return "r.user_id <> $adminId AND (r.status = 'requested' OR r.admin_update_version > 1) AND NOT EXISTS (SELECT 1 FROM music_request_admin_views v WHERE v.request_id = r.id AND v.admin_user_id = $adminId AND v.seen_version >= r.admin_update_version)";
 }
 
 function mwRequestAdminNewCount(mysqli $db, int $adminId): int
@@ -241,10 +308,12 @@ function mwRequestAdminNewCount(mysqli $db, int $adminId): int
     return (int) $db->query('SELECT COUNT(*) FROM music_requests r WHERE r.deleted_at IS NULL AND ' . mwRequestAdminNewCondition($adminId))->fetch_row()[0];
 }
 
-function mwRequestAdminMarkSeen(mysqli $db, int $adminId, int $requestId): void
+function mwRequestAdminMarkSeen(mysqli $db, int $adminId, int $requestId, int $version = 1): void
 {
     mwRequestRequireAdmin($db, $adminId);
-    $stmt = $db->prepare("INSERT IGNORE INTO music_request_admin_views (admin_user_id, request_id) SELECT ?, id FROM music_requests WHERE id = ? AND user_id <> ? AND deleted_at IS NULL AND status = 'requested'");
-    $stmt->bind_param('iii', $adminId, $requestId, $adminId);
+    if ($version < 1) throw new InvalidArgumentException('Invalid request update.');
+    // Acknowledge only the displayed version, preserving replies arriving later.
+    $stmt = $db->prepare("INSERT INTO music_request_admin_views (admin_user_id, request_id, seen_version) SELECT ?, id, ? FROM music_requests WHERE id = ? AND user_id <> ? AND deleted_at IS NULL AND admin_update_version >= ? AND (status = 'requested' OR admin_update_version > 1) ON DUPLICATE KEY UPDATE seen_version = GREATEST(music_request_admin_views.seen_version, VALUES(seen_version)), seen_at = UTC_TIMESTAMP()");
+    $stmt->bind_param('iiiii', $adminId, $version, $requestId, $adminId, $version);
     $stmt->execute();
 }

@@ -24,4 +24,16 @@ foreach (['update_version', 'seen_version'] as $column) {
         $db->query("ALTER TABLE music_requests ADD COLUMN $column INT UNSIGNED NOT NULL DEFAULT 0");
     }
 }
+if ($db->query("SHOW COLUMNS FROM music_requests LIKE 'admin_update_version'")->num_rows === 0) {
+    $db->query('ALTER TABLE music_requests ADD COLUMN admin_update_version INT UNSIGNED NOT NULL DEFAULT 1');
+}
+if ($db->query("SHOW COLUMNS FROM music_request_replies LIKE 'requester_user_id'")->num_rows === 0) {
+    $db->query('ALTER TABLE music_request_replies ADD COLUMN requester_user_id INT NULL');
+}
+if ($db->query("SHOW COLUMNS FROM music_request_replies LIKE 'admin_user_id'")->fetch_assoc()['Null'] === 'NO') {
+    $db->query('ALTER TABLE music_request_replies MODIFY COLUMN admin_user_id INT NULL');
+}
+if ($db->query("SHOW COLUMNS FROM music_request_admin_views LIKE 'seen_version'")->num_rows === 0) {
+    $db->query('ALTER TABLE music_request_admin_views ADD COLUMN seen_version INT UNSIGNED NOT NULL DEFAULT 1');
+}
 echo "Music request tables ready.\n";

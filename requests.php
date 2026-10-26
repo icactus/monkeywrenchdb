@@ -92,6 +92,15 @@ try {
             $id = mwRequestSubmit($db, $userId, $data);
             unset($_SESSION['music_request_draft']);
             requestRedirect('requests.php#request-' . $id, 'Your request has been submitted. You can follow its progress below.');
+        } elseif ($action === 'requester_reply') {
+            if (!$user) {
+                http_response_code(401);
+                throw new DomainException('Sign in to reply to your request.');
+            }
+            $postedRequestId = (int) requestScalar($_POST, 'request_id');
+            $replyDraft = requestScalar($_POST, 'message');
+            mwRequestReply($db, $userId, $postedRequestId, $replyDraft);
+            requestRedirect($listUrl . '#request-' . $postedRequestId, 'Your reply has been sent. You can continue the conversation here.');
         } elseif ($action === 'delete') {
             if (!$user) {
                 http_response_code(401);
@@ -146,8 +155,8 @@ $presets = [
     'Acknowledgment' => ['requested', 'Thanks for your request! I’ve received it and will take a look. I’ll post an update here when I have more information.'],
     'Time estimate' => ['requested', 'Thanks for your request! I expect to get to this in about [timeframe]. This is an estimate, and I’ll let you know if it changes.'],
     'In progress' => ['in_progress', 'I’ve started working on your request. I’ll let you know when it’s available on Monkey Wrench Database.'],
-    'Copyright limitation' => ['unable_to_add', 'Thanks for your request. Unfortunately, I’m unable to add this material because of copyright restrictions. If you know of a public domain or appropriately licensed edition, please email me a link and I can take another look.'],
-    'Need more information' => ['requested', 'Thanks for your request! Please use the contact link to send a little more detail about the piece or the exact part you’re looking for, including your request number.'],
+    'Copyright limitation' => ['unable_to_add', 'Thanks for your request. Unfortunately, I’m unable to add this material because of copyright restrictions. If you know of a public domain or appropriately licensed edition, please reply below with a link and I can take another look.'],
+    'Need more information' => ['requested', 'Thanks for your request! Please reply below with a little more detail about the piece or the exact part you’re looking for.'],
     'Added' => ['added', 'Your requested piece or part is now available on Monkey Wrench Database: [link]\n\nThanks for helping me decide what to add!'],
     'Unable to add' => ['unable_to_add', 'Thanks for your request. Unfortunately, I’m unable to add this at the moment.'],
 ];
@@ -160,7 +169,7 @@ $presets = [
     <meta name="robots" content="noindex, nofollow">
     <title><?= $adminView ? 'Request queue' : 'Request a piece or part' ?> | Monkey Wrench Database</title>
     <link rel="stylesheet" href="assets/css/fonts.css?v=34">
-    <link rel="stylesheet" href="assets/css/requests.css?v=4">
+    <link rel="stylesheet" href="assets/css/requests.css?v=5">
     <link rel="stylesheet" href="assets/css/request-notifications.css?v=2">
     <script>try { if (localStorage.getItem('darkMode') === '1') document.documentElement.classList.add('inverted'); } catch (e) {}</script>
     <script src="js/requests.js?v=5" defer></script>
@@ -184,7 +193,7 @@ $presets = [
     <?php if ($error): ?><div class="notice error" role="alert"><?= requestEscape($error) ?></div><?php endif; ?>
     <?php if (!$adminView && !$denied): ?>
         <section class="panel" aria-labelledby="request-page-title">
-            <p class="hint">One request every seven days, with up to two unfinished requests at a time. Requests help me choose what to add; there’s no guaranteed completion date.</p>
+            <p class="hint"><?= !empty($quota['unlimited']) ? 'Your super user account has unlimited requests for testing.' : 'One request every seven days, with up to two unfinished requests at a time.' ?> Requests help me choose what to add; there’s no guaranteed completion date.</p>
             <?php if (!$user): ?>
                 <p class="account-note">Sign in with Google to submit. You can fill out the form first; your draft will be kept while you sign in.</p>
             <?php endif; ?>
@@ -206,21 +215,21 @@ $presets = [
     <?php endif; ?>
     <?php if ($user && !$denied && !$unavailable): ?>
         <section aria-labelledby="request-list-title">
-            <div class="list-heading"><h2 id="request-list-title"><?= $adminView ? ($filter === 'new' ? 'New requests' : 'All requests') : ($filter === 'updates' ? 'Unread request updates' : 'My requests') ?></h2>
+            <div class="list-heading"><h2 id="request-list-title"><?= $adminView ? ($filter === 'new' ? 'New requests & replies' : 'All requests') : ($filter === 'updates' ? 'Unread request updates' : 'My requests') ?></h2>
                 <form method="get" class="filter-form"><input type="hidden" name="view" value="<?= $adminView ? 'admin' : 'mine' ?>">
                     <label for="request-filter">Show</label>
                     <select name="status" id="request-filter">
-                        <?php foreach (['all' => 'All requests', 'open' => 'Unfinished'] + ($adminView ? ['new' => 'New requests'] : ['updates' => 'Unread updates']) + MW_REQUEST_STATUSES as $key => $label): ?>
+                        <?php foreach (['all' => 'All requests', 'open' => 'Unfinished'] + ($adminView ? ['new' => 'New requests & replies'] : ['updates' => 'Unread updates']) + MW_REQUEST_STATUSES as $key => $label): ?>
                             <option value="<?= requestEscape($key) ?>" <?= $key === $filter ? 'selected' : '' ?>><?= requestEscape($label) ?></option>
                         <?php endforeach; ?>
                     </select><button type="submit">Filter</button>
                 </form>
             </div>
-            <?php if (!$requests): ?><p class="empty"><?= $filter === 'new' ? 'You’re caught up. No new requests.' : ($filter === 'updates' ? 'You’re caught up. No unread request updates.' : 'No requests here yet.') ?></p><?php endif; ?>
+            <?php if (!$requests): ?><p class="empty"><?= $filter === 'new' ? 'You’re caught up. No new requests or replies.' : ($filter === 'updates' ? 'You’re caught up. No unread request updates.' : 'No requests here yet.') ?></p><?php endif; ?>
             <?php foreach ($requests as $request): $id = (int) $request['id']; ?>
                 <?php $newRequest = $adminView && !empty($request['is_new_request']); $unread = !$adminView && (int) $request['update_version'] > (int) $request['seen_version']; ?>
-                <article class="panel request-card<?= ($unread || $newRequest) ? ' request-unread' : '' ?>" id="request-<?= $id ?>"<?= $unread ? ' data-unread-version="' . (int) $request['update_version'] . '"' : ($newRequest ? ' data-unread-version="1" data-notification-kind="new_request"' : '') ?>>
-                    <?php if ($newRequest): ?><p class="request-update-note" role="status"><strong>New request</strong> · <?= requestEscape(requestDate($request['created_at'])) ?></p><?php endif; ?>
+                <article class="panel request-card<?= ($unread || $newRequest) ? ' request-unread' : '' ?>" id="request-<?= $id ?>"<?= $unread ? ' data-unread-version="' . (int) $request['update_version'] . '"' : ($newRequest ? ' data-unread-version="' . (int) $request['admin_update_version'] . '" data-notification-kind="new_request"' : '') ?>>
+                    <?php if ($newRequest): ?><p class="request-update-note" role="status"><strong><?= (int) $request['admin_update_version'] > 1 ? 'New reply from requester' : 'New request' ?></strong> · <?= requestEscape(requestDate($request['updated_at'])) ?></p><?php endif; ?>
                     <?php if ($unread): ?><p class="request-update-note" role="status"><strong>New update</strong> · <?= requestEscape(requestDate($request['updated_at'])) ?> — <?= requestEscape(MW_REQUEST_STATUSES[$request['status']]) ?><?= !empty($threads[$id]) ? '. See the reply below.' : '.' ?></p><?php endif; ?>
                     <div class="card-heading"><div><p class="eyebrow">Request #<?= $id ?> · <?= requestEscape(requestDate($request['created_at'])) ?></p>
                         <h3><?= requestEscape($request['piece_name']) ?></h3><p><?= requestEscape($request['composer_name']) ?> · <strong><?= requestEscape($request['part_name']) ?></strong></p>
@@ -230,13 +239,21 @@ $presets = [
                     <?php if (!empty($threads[$id])): ?>
                         <div class="reply-thread" aria-label="Replies">
                             <?php foreach ($threads[$id] as $reply): ?>
-                                <div class="reply"><p class="hint">Reply from Monkey Wrench Database · <?= requestEscape(requestDate($reply['created_at'])) ?></p>
+                                <div class="reply"><p class="hint"><?= $reply['requester_user_id'] !== null ? ($adminView ? 'Reply from requester' : 'Your reply') : 'Reply from Monkey Wrench Database' ?> · <?= requestEscape(requestDate($reply['created_at'])) ?></p>
                                     <p class="reply-message"><?= requestEscape($reply['message']) ?></p>
                                 </div>
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
                     <?php if (!$adminView): ?>
+                        <form method="post" action="<?= requestEscape($listUrl) ?>#request-<?= $id ?>" class="requester-response">
+                            <input type="hidden" name="csrf" value="<?= requestEscape($csrf) ?>">
+                            <input type="hidden" name="action" value="requester_reply">
+                            <input type="hidden" name="request_id" value="<?= $id ?>">
+                            <label>Reply to Monkey Wrench Database<textarea name="message" rows="3" maxlength="5000" placeholder="Answer a question or add more details…" required><?= $postedRequestId === $id ? requestEscape($replyDraft) : '' ?></textarea></label>
+                            <p class="hint">Your reply stays in this conversation and notifies Monkey Wrench Database.</p>
+                            <button class="primary" type="submit">Send reply</button>
+                        </form>
                         <form method="post" action="requests.php" class="request-delete" data-request-title="<?= requestEscape($request['piece_name'] . ' — ' . $request['part_name']) ?>" data-request-status="<?= requestEscape($request['status']) ?>">
                             <input type="hidden" name="csrf" value="<?= requestEscape($csrf) ?>">
                             <input type="hidden" name="action" value="delete">
