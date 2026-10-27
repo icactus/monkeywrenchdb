@@ -6,19 +6,23 @@ const vm = require('node:vm');
 const { File } = require('node:buffer');
 const source = fs.readFileSync(path.join(__dirname, '../synpdf_182/editmode/part-pdf-queue.js'), 'utf8');
 
-function harness({ failUpload, failSubmit, loseChunkResponse, loseSubmitResponse, blockUpload } = {}) {
-    const calls = [], updates = [], items = new Map();
+function harness({ failUpload, failSubmit, loseChunkResponse, loseSubmitResponse, blockUpload, duplicate, overwrite = false } = {}) {
+    const calls = [], updates = [], items = new Map(), prompts = [];
     const c = vm.createContext({
         FormData, AbortController, DOMException, crypto: require('node:crypto').webcrypto,
         busy: false, uploadWork: 0, notify: message => assert.fail(message),
+        confirm: message => { prompts.push(message); return overwrite; },
         uploadProgress: job => {
             const file = job.file;
             updates.push([file.name, 0, 'Waiting']);
             return (bytes, text) => updates.push([file.name, bytes, text]);
         },
         api: async (action, data, id, request) => {
-            calls.push({ action, id, name: data?.name });
+            calls.push({ action, id, name: data?.name, overwrite: data?.overwrite_token });
             if (action === 'create') {
+                if (data.name === duplicate && !data.overwrite_token) {
+                    const error = new Error('Already uploaded'); error.duplicate = { token: 'confirmed-duplicate' }; throw error;
+                }
                 const item = items.get(data.name) || { id: data.name, name: data.name, original_bytes: data.size, received: 0, status: 'uploading' };
                 items.set(item.id, item);
                 return { item };
@@ -53,7 +57,7 @@ function harness({ failUpload, failSubmit, loseChunkResponse, loseSubmitResponse
         { file: new File([new Uint8Array(1536 * 1024)], '71-3.pdf'), details: { piece_id: 71, instrument_id: 3 } },
         { file: new File([new Uint8Array(256 * 1024)], '72-3.pdf'), details: { piece_id: 72, instrument_id: 3 } }
     ];
-    return { c, calls, updates, items, jobs };
+    return { c, calls, updates, items, jobs, prompts };
 }
 
 test('all PDFs finish uploading before any are submitted for server processing', async () => {
@@ -126,4 +130,23 @@ test('a failed submission keeps its uploaded bytes and never displays Submitted 
     assert.equal(h.items.get('71-3.pdf').received, h.jobs[0].file.size);
     assert.equal(h.updates.some(([name, , text]) => name === '71-3.pdf' && text === 'Submitted'), false);
     assert(h.updates.some(([name, , text]) => name === '71-3.pdf' && text === 'Not submitted: Try submitting again'));
+});
+
+test('declining Overwrite leaves the existing upload untouched and continues other files', async () => {
+    const h = harness({ duplicate: '71-3.pdf' });
+    assert.equal(await h.c.uploadBatch(h.jobs), 1);
+    assert.equal(h.prompts.length, 1);
+    assert.match(h.prompts[0], /71-3.pdf is already uploaded\. Overwrite/);
+    assert.equal(h.jobs[0].state, 'cancelled');
+    assert.equal(h.items.has('71-3.pdf'), false);
+    assert.equal(h.calls.some(c => c.action === 'chunk' && c.id === '71-3.pdf'), false);
+    assert(h.updates.some(([name, , text]) => name === '71-3.pdf' && text === 'Already uploaded'));
+});
+
+test('confirming Overwrite sends the duplicate approval once before transferring replacement bytes', async () => {
+    const h = harness({ duplicate: '71-3.pdf', overwrite: true });
+    assert.equal(await h.c.uploadBatch(h.jobs), 2);
+    assert.equal(h.prompts.length, 1);
+    assert.equal(h.calls.filter(c => c.action === 'create' && c.overwrite === 'confirmed-duplicate').length, 1);
+    assert.equal(h.jobs[0].state, 'submitted');
 });

@@ -96,3 +96,24 @@ test('creation retries keep the same upload token so lost responses do not creat
     assert.equal(h.calls.length, 2);
     assert(h.calls.every(call => call.options.body.get('upload_token') === token));
 });
+
+test('duplicate details reach the confirmation flow without automatically approving overwrite', async () => {
+    const h = harness(() => response(409, { error: '71-3.pdf is already uploaded.', duplicate: { token: 'approval', name: '71-3.pdf' } }));
+    await assert.rejects(h.c.api('create', { name: '71-3.pdf', upload_token: 'a'.repeat(32) }), error => {
+        assert.equal(error.status, 409);
+        assert.equal(error.duplicate.token, 'approval');
+        return true;
+    });
+    assert.equal(h.calls.length, 1);
+});
+
+test('list and discard retry a temporary 525 without losing the pending operation', async () => {
+    for (const action of ['list', 'discard']) {
+        const h = harness((_url, _options, attempt) => attempt === 1 ? response(525, 'html') : response(200, { ok: true }));
+        assert.equal((await h.c.api(action, action === 'discard' ? {} : null, 'item')).ok, true);
+        assert.equal(h.calls.length, 2);
+    }
+    const h = harness(() => response(525, 'html'));
+    await assert.rejects(h.c.api('list'), /Secure connection to the hosting server failed \(HTTP 525\)/);
+    assert.equal(h.calls.length, 3);
+});

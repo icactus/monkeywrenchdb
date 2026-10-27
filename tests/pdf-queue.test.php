@@ -30,6 +30,13 @@ function qhttp($port, $action, $session, $id='', $data=null, $csrf=true) {
     $raw=curl_exec($ch);if($raw===false)throw new RuntimeException(curl_error($ch));$code=curl_getinfo($ch,CURLINFO_RESPONSE_CODE);curl_close($ch);
     $result=json_decode($raw,true);if(!is_array($result))throw new RuntimeException('Invalid queue response: '.substr($raw,0,1000));return [$code,$result];
 }
+function qterminal($port, $session, $id, $replaced=false) {
+    for($i=0;$i<100;$i++) {
+        usleep(150000); $item=qhttp($port,'get',$session,$id)[1]['item'];
+        if($item['status']==='error'||($item['status']==='ready'&&(!$replaced||!empty($item['replaces_applied']))))return $item;
+    }
+    throw new RuntimeException('Queue conversion did not finish.');
+}
 $root=dirname(__DIR__);$database='mw_queue_test_'.bin2hex(random_bytes(5));$fixture=sys_get_temp_dir().'/'.$database;$server=null;
 $connection=new mysqli(DB_HOST,DB_USER,DB_PASSWORD,DB_NAME);
 try {
@@ -98,6 +105,51 @@ try {
     qcheck(hash_file('sha256',$source)===hash_file('sha256',$fixture.'/public/hd-pdfs/71-39.pdf'),'Published HD source is exact.');
     qcheck(json_decode(file_get_contents($fixture.'/public/data/metrics/'.$published['item']['metric_arr_id'].'.json'),true)===$metrics,'Static metrics are normalized and published.');
     qcheck(qhttp($port,'publish',$sessions['admin'],$id,$save)[0]===200&&(int)$db->query('SELECT COUNT(*) FROM metric_arr')->fetch_row()[0]===1,'Publication retry is idempotent.');
+    // Duplicate uploads require explicit confirmation and retain the old work
+    // until a replacement has uploaded and converted successfully.
+    $originalInput=['name'=>'72-3.pdf','size'=>filesize($source),'piece_id'=>72,'instrument_id'=>3,'upload_token'=>bin2hex(random_bytes(16))];
+    $original=qhttp($port,'create',$sessions['owner'],'',$originalInput)[1]['item'];$oldId=$original['id'];
+    qhttp($port,'chunk',$sessions['owner'],$oldId,['offset'=>0,'chunk'=>new CURLFile($source)]);
+    qhttp($port,'finish',$sessions['owner'],$oldId,[]);
+    qcheck(qterminal($port,$sessions['owner'],$oldId)['status']==='ready','Original queued PDF is prepared.');
+    $oldSave=array_replace($save,['piece_id'=>72,'instrument_id'=>3,'revision'=>0]);
+    qcheck(qhttp($port,'draft',$sessions['admin'],$oldId,$oldSave)[0]===200,'Original queued barline edits can be saved.');
+    $oldMetadata=hash_file('sha256',$fixture.'/queue/'.$oldId.'/item.json');
+    $duplicateInput=array_replace($originalInput,['upload_token'=>bin2hex(random_bytes(16))]);
+    [$code,$duplicate]=qhttp($port,'create',$sessions['owner'],'',$duplicateInput);
+    qcheck($code===409&&$duplicate['duplicate']['count']===1,'A duplicate returns Already uploaded with an explicit overwrite choice.');
+    qcheck(hash_file('sha256',$fixture.'/queue/'.$oldId.'/item.json')===$oldMetadata&&!is_dir($fixture.'/queue/'.$duplicateInput['upload_token']),'Declining the overwrite creates nothing and leaves the original untouched.');
+    $oldSave['revision']=1;
+    qhttp($port,'draft',$sessions['admin'],$oldId,$oldSave);
+    [$code,$changed]=qhttp($port,'create',$sessions['owner'],'',$duplicateInput+['overwrite_token'=>$duplicate['duplicate']['token']]);
+    qcheck($code===409,'New edits made after the prompt require a fresh overwrite confirmation.');
+    $draftHash=hash_file('sha256',$fixture.'/queue/'.$oldId.'/draft.json');
+    $bad=$fixture.'/bad.pdf';file_put_contents($bad,'%PDF-broken');
+    $badInput=array_replace($duplicateInput,['size'=>filesize($bad),'overwrite_token'=>$changed['duplicate']['token']]);
+    [$code,$replacement]=qhttp($port,'create',$sessions['owner'],'',$badInput);$badId=$replacement['item']['id'];
+    qcheck($code===200&&$replacement['item']['replaces']===[$oldId],'Confirmed overwrite stages a replacement for the original upload.');
+    qcheck(qhttp($port,'create',$sessions['owner'],'',$badInput)[1]['item']['id']===$badId,'A lost overwrite response can be retried without duplicating or deleting work.');
+    qcheck(qhttp($port,'get',$sessions['owner'],$oldId)[1]['item']['status']==='ready','The original remains usable while replacement upload is incomplete.');
+    qhttp($port,'chunk',$sessions['owner'],$badId,['offset'=>0,'chunk'=>new CURLFile($bad)]);
+    qhttp($port,'finish',$sessions['owner'],$badId,[]);
+    qcheck(qterminal($port,$sessions['owner'],$badId)['status']==='error','A corrupt replacement fails processing.');
+    qcheck(qhttp($port,'get',$sessions['owner'],$oldId)[1]['item']['status']==='ready'&&hash_file('sha256',$fixture.'/queue/'.$oldId.'/draft.json')===$draftHash,'Failed replacement preserves the original PDF and barline edits.');
+    $goodInput=array_replace($originalInput,['name'=>'72-3.PDF','upload_token'=>bin2hex(random_bytes(16))]);
+    [$code,$duplicates]=qhttp($port,'create',$sessions['owner'],'',$goodInput);
+    qcheck($code===409&&$duplicates['duplicate']['count']===2,'Duplicate filenames ignore case and include older failed copies.');
+    [$code,$good]=qhttp($port,'create',$sessions['owner'],'',$goodInput+['overwrite_token'=>$duplicates['duplicate']['token']]);$goodId=$good['item']['id'];
+    qhttp($port,'chunk',$sessions['owner'],$goodId,['offset'=>0,'chunk'=>new CURLFile($source)]);
+    qhttp($port,'finish',$sessions['owner'],$goodId,[]);
+    qcheck(qterminal($port,$sessions['owner'],$goodId,true)['status']==='ready','A successful replacement becomes the ready upload.');
+    qcheck(qhttp($port,'get',$sessions['owner'],$oldId)[1]['item']['status']==='superseded'&&qhttp($port,'get',$sessions['owner'],$badId)[1]['item']['status']==='superseded','Only successful processing retires all confirmed duplicate queue entries.');
+    qcheck(hash_file('sha256',$fixture.'/queue/'.$oldId.'/draft.json')===$draftHash&&hash_file('sha256',$fixture.'/queue/'.$oldId.'/hd.pdf')===hash_file('sha256',$source),'Previous PDFs and barline edits remain in the private backup.');
+    $visible=array_filter(qhttp($port,'list',$sessions['owner'])[1]['items'],fn($i)=>strcasecmp($i['name'],'72-3.pdf')===0);
+    qcheck(count($visible)===1&&array_values($visible)[0]['id']===$goodId,'The waiting list shows a single replacement instead of duplicate rows.');
+    qcheck(qhttp($port,'draft',$sessions['admin'],$oldId,array_replace($oldSave,['revision'=>2]))[0]===400,'A stale tab cannot save edits over an overwritten queue entry.');
+    $changedMetrics=$metrics;$changedMetrics[1]['bxs'][0]=[50,300,500,700,950];
+    $libraryOverwrite=array_replace($save,['revision'=>0,'metrics'=>json_encode($changedMetrics),'overwrite_token'=>$duplicates['duplicate']['token']]);
+    qcheck(qhttp($port,'publish',$sessions['admin'],$goodId,$libraryOverwrite)[0]===403,'Queue overwrite approval never authorizes replacing a published library part.');
+    qcheck((int)$db->query('SELECT COUNT(*) FROM metric_arr')->fetch_row()[0]===1&&hash_file('sha256',$fixture.'/public/hd-pdfs/71-39.pdf')===hash_file('sha256',$source),'The published library part remains intact.');
     if(in_array('--browser',$argv,true)){echo json_encode(['fixture'=>$fixture,'port'=>$port,'sessions'=>$sessions])."\nBrowser fixture ready. Press Enter.\n";fgets(STDIN);}
     echo "Passed $checks PDF queue checks.\n";
 } finally { if(is_resource($server)){proc_terminate($server);proc_close($server);} $connection->query("DROP DATABASE IF EXISTS `$database`");if(is_dir($fixture))qremove($fixture); }

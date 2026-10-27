@@ -30,10 +30,10 @@ try {
         $items = [];
         foreach (glob($root . '/*/item.json') as $path) {
             $item = json_decode(file_get_contents($path), true);
-            if ($item && !in_array($item['status'], ['completed', 'discarded'], true)) $items[] = $item;
+            if ($item && !in_array($item['status'], ['completed', 'discarded', 'superseded'], true)) $items[] = $item;
         }
         usort($items, fn($a, $b) => strcmp($a['created_at'], $b['created_at']));
-        if ($canUpload && array_filter($items, fn($i) => in_array($i['status'], ['queued', 'processing'], true))) mwPdfQueueKick($root);
+        if ($canUpload && array_filter($items, fn($i) => in_array($i['status'], ['queued', 'processing'], true) || ($i['status'] === 'ready' && !empty($i['replaces']) && empty($i['replaces_applied'])))) mwPdfQueueKick($root);
         echo json_encode(['items' => $items, 'can_upload' => $canUpload, 'csrf' => $csrf]); exit;
     }
     if ($method === 'GET' && $action === 'get') {
@@ -116,6 +116,8 @@ try {
         } catch (Throwable $purgeError) { error_log('Queued part saved; cache purge failed: ' . $purgeError->getMessage()); }
     }
     echo json_encode(['item' => $result]);
+} catch (MwPdfQueueDuplicate $error) {
+    http_response_code(409); echo json_encode(['error' => $error->getMessage(), 'duplicate' => $error->duplicate]);
 } catch (DomainException $error) {
     http_response_code(403); echo json_encode(['error' => $error->getMessage()]);
 } catch (InvalidArgumentException | JsonException $error) {

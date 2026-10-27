@@ -31,7 +31,7 @@
             if (!(data instanceof FormData)) for (const [key, value] of Object.entries(data)) body.set(key, String(value ?? ''));
             options = { ...options, method: 'POST', headers: { 'X-CSRF-Token': csrf }, body };
         }
-        const retryableAction = ['get', 'chunk', 'finish'].includes(action) || (action === 'create' && data?.upload_token);
+        const retryableAction = ['list', 'get', 'chunk', 'finish', 'discard'].includes(action) || (action === 'create' && data?.upload_token);
         for (let attempt = 0; ; attempt++) {
             if (request.signal?.aborted) throw uploadCancelled();
             const controller = new AbortController();
@@ -48,8 +48,10 @@
                     result = {};
                 }
                 if (!response.ok || result.error) {
-                    const error = new Error(result.error || `Upload connection failed (HTTP ${response.status}).`);
+                    const message = response.status === 525 ? 'Secure connection to the hosting server failed (HTTP 525).' : `Upload connection failed (HTTP ${response.status}).`;
+                    const error = new Error(result.error || message);
                     error.status = response.status;
+                    error.duplicate = result.duplicate;
                     error.retryable = [408, 425, 429].includes(response.status) || response.status >= 500;
                     if (error.retryable) console.warn('PDF queue request failed', { action, status: response.status, ray: response.headers?.get('cf-ray') });
                     throw error;
@@ -109,7 +111,7 @@
     }
     function retryUpload(job) {
         if (!['failed', 'cancelled'].includes(job.state) || (busy && !uploadWork)) return;
-        job.cancelled = false; job.controller = new AbortController(); job.state = 'waiting';
+        job.cancelled = false; job.alreadyUploaded = false; job.controller = new AbortController(); job.state = 'waiting';
         job.progress(job.received || 0, 'Waiting');
         return enqueueUploads([job]).catch(error => notify(error.message));
     }
@@ -150,6 +152,21 @@
         }
         progress(file.size, 'Uploaded');
     }
+    async function createUpload(job, request) {
+        const data = { name: job.file.name, size: job.file.size, ...job.details, upload_token: job.token };
+        try {
+            return await api('create', data, undefined, request);
+        } catch (error) {
+            if (!error.duplicate) throw error;
+            if (job.cancelled) throw uploadCancelled();
+            if (!confirm(`${job.file.name} is already uploaded. Overwrite it and its queued barline edits?`)) {
+                job.cancelled = true;
+                job.alreadyUploaded = true;
+                throw uploadCancelled();
+            }
+            return api('create', { ...data, overwrite_token: error.duplicate.token }, undefined, request);
+        }
+    }
     async function uploadBatch(jobs) {
         const uploaded = [];
         let submitted = 0;
@@ -166,7 +183,7 @@
                 job.state = 'uploading'; job.progress(job.received || 0);
                 if (job.file.size > 300 * 1024 * 1024) throw new Error('PDF exceeds 300 MB.');
                 const result = job.item ? await api('get', null, job.item.id, request)
-                    : await api('create', { name: job.file.name, size: job.file.size, ...job.details, upload_token: job.token }, undefined, request);
+                    : await createUpload(job, request);
                 job.item = result.item;
                 if (job.cancelled) throw uploadCancelled();
                 if (['queued', 'processing', 'ready', 'error', 'completed'].includes(job.item.status)) {
@@ -176,7 +193,7 @@
                 job.state = 'uploaded'; job.progress(job.file.size, 'Uploaded'); uploaded.push(job);
             } catch (error) {
                 job.state = job.cancelled ? 'cancelled' : 'failed';
-                job.progress(job.received || 0, job.cancelled ? 'Cancelled' : error.message);
+                job.progress(job.received || 0, job.alreadyUploaded ? 'Already uploaded' : job.cancelled ? 'Cancelled' : error.message);
             }
         }
         // Transfer the whole batch before starting server-side processing.

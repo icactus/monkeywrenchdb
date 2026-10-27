@@ -16,6 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location('low_memory', ROOT / 'scripts/compress-pdf-low-memory.py')
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
+WORKER_SPEC = importlib.util.spec_from_file_location('queue_worker', ROOT / 'scripts/process-pdf-queue.py')
+WORKER = importlib.util.module_from_spec(WORKER_SPEC)
+WORKER_SPEC.loader.exec_module(WORKER)
 
 
 class CompressionTests(unittest.TestCase):
@@ -98,6 +101,48 @@ class CompressionTests(unittest.TestCase):
             self.assertFalse((job / 'optimized.pdf').exists())
         subprocess.run([sys.executable, str(ROOT / 'scripts/process-pdf-queue.py'), str(queue)], check=True, timeout=15)
         self.assertEqual(json.loads((job / 'item.json').read_text())['status'], 'ready')
+
+    def test_worker_finishes_interrupted_replacement_activation_without_converting_again(self):
+        queue = self.root / 'queue'
+        queue.mkdir()
+        previous, replacement = queue / ('a' * 32), queue / ('b' * 32)
+        for folder in [previous, replacement]:
+            folder.mkdir()
+            (folder / 'hd.pdf').write_bytes(self.source.read_bytes())
+            (folder / 'optimized.pdf').write_bytes(b'prepared PDF retained')
+        draft = b'{"metrics":[1000],"saved_at":"previous edits"}'
+        (previous / 'draft.json').write_bytes(draft)
+        (previous / 'item.json').write_text(json.dumps({'id': previous.name, 'name': '71-3.pdf', 'status': 'ready'}))
+        (replacement / 'item.json').write_text(json.dumps({'id': replacement.name, 'name': '71-3.PDF', 'status': 'ready', 'replaces': [previous.name]}))
+        WORKER.run(queue)
+        self.assertEqual(json.loads((previous / 'item.json').read_text())['status'], 'superseded')
+        self.assertTrue(json.loads((replacement / 'item.json').read_text())['replaces_applied'])
+        self.assertEqual((previous / 'draft.json').read_bytes(), draft)
+        self.assertEqual((previous / 'hd.pdf').read_bytes(), self.source.read_bytes())
+        self.assertEqual((replacement / 'optimized.pdf').read_bytes(), b'prepared PDF retained')
+        WORKER.run(queue)
+        self.assertEqual((previous / 'draft.json').read_bytes(), draft)
+
+    def test_replacement_never_retires_a_part_published_while_its_replacement_uploaded(self):
+        queue = self.root / 'queue'
+        queue.mkdir()
+        previous, replacement = queue / ('a' * 32), queue / ('b' * 32)
+        for folder in [previous, replacement]:
+            folder.mkdir()
+        original = {'id': previous.name, 'name': '71-3.pdf', 'status': 'completed', 'metric_arr_id': 42}
+        (previous / 'item.json').write_text(json.dumps(original))
+        (replacement / 'item.json').write_text(json.dumps({'id': replacement.name, 'name': '71-3.pdf', 'status': 'ready', 'replaces': [previous.name]}))
+        WORKER.apply_replacements(queue, replacement)
+        self.assertEqual(json.loads((previous / 'item.json').read_text()), original)
+
+    def test_replacement_targets_cannot_escape_the_private_queue(self):
+        queue = self.root / 'queue'
+        queue.mkdir()
+        replacement = queue / ('b' * 32)
+        replacement.mkdir()
+        (replacement / 'item.json').write_text(json.dumps({'id': replacement.name, 'name': '71-3.pdf', 'status': 'ready', 'replaces': ['../outside']}))
+        with self.assertRaises(ValueError):
+            WORKER.apply_replacements(queue, replacement)
 
 
 if __name__ == '__main__':

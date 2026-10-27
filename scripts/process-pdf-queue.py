@@ -20,6 +20,32 @@ def write_json(path, data):
     os.replace(temp, path)
 
 
+def apply_replacements(root, folder):
+    """Retire previous queue entries only once the new PDF is ready."""
+    with (root / '.create.lock').open('a') as create_lock:
+        fcntl.flock(create_lock, fcntl.LOCK_EX)
+        replacement = json.loads((folder / 'item.json').read_text())
+        if replacement['status'] != 'ready' or not replacement.get('replaces') or replacement.get('replaces_applied'):
+            return
+        for previous_id in replacement['replaces']:
+            if previous_id == folder.name or len(previous_id) != 32 or any(c not in '0123456789abcdef' for c in previous_id):
+                raise ValueError('Invalid replacement target.')
+            previous = root / previous_id
+            with (previous / '.lock').open('a') as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX)
+                item = json.loads((previous / 'item.json').read_text())
+                if item.get('status') in ('uploading', 'queued', 'processing', 'ready', 'error') and item['name'].lower() == replacement['name'].lower():
+                    # Retain the old PDFs and edits privately, including edits
+                    # saved while the replacement was being transferred.
+                    item.update(status='superseded', replaced_by=folder.name)
+                    write_json(previous / 'item.json', item)
+        with (folder / '.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            replacement = json.loads((folder / 'item.json').read_text())
+            replacement['replaces_applied'] = True
+            write_json(folder / 'item.json', replacement)
+
+
 def run(root):
     root = Path(root)
     with (root / '.processor.lock').open('a') as global_lock:
@@ -38,6 +64,8 @@ def run(root):
                         pending.append((item['created_at'], folder))
                 except (OSError, ValueError, KeyError):
                     continue
+                if item['status'] == 'ready' and item.get('replaces') and not item.get('replaces_applied'):
+                    apply_replacements(root, folder)
             if not pending:
                 return
             folder = min(pending)[1]

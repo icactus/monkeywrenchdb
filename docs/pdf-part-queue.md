@@ -16,6 +16,12 @@ the server's saved offset. Use **Remove** in the queue to delete an incomplete
 upload. Connection failures and temporary server errors retry automatically,
 with a 30-second request deadline and at most three attempts. Retried creation
 requests reuse the same upload record, including after a lost response.
+Selecting a filename already in the waiting queue shows **Already uploaded**
+and asks whether to overwrite its queued PDF and barline edits. Declining changes
+nothing. Confirming stages a replacement; the previous entries remain usable
+until the replacement has uploaded and processed successfully. Then only the new
+entry remains in the waiting list, with previous files and edits retained
+privately. This applies only to the upload queue, never published library parts.
 The original HD file uploads in 1 MB chunks, with retry support. Interrupted
 uploads remain in the queue with **Resume upload**. Completed uploads continue
 compressing after the browser closes. Originals and work in progress live in a

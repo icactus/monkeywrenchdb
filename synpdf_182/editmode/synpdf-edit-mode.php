@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="stylesheet" href="part-pdf-queue.css?v=3">
-    <script src="part-pdf-queue.js?v=7" defer></script>
+    <script src="part-pdf-queue.js?v=8" defer></script>
     <script src="auto-barline-detection.js?v=3" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php

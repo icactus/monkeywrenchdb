@@ -1,6 +1,14 @@
 <?php
 require_once __DIR__ . '/metric-arr-functions.php';
 
+class MwPdfQueueDuplicate extends RuntimeException {
+    public array $duplicate;
+    public function __construct(string $name, array $duplicate) {
+        parent::__construct($name . ' is already uploaded.');
+        $this->duplicate = $duplicate;
+    }
+}
+
 function mwPdfQueueRoot(): string {
     $root = defined('MW_PDF_QUEUE_DIRECTORY') ? MW_PDF_QUEUE_DIRECTORY : dirname(realpath($_SERVER['DOCUMENT_ROOT'])) . '/part-pdf-queue';
     if (!is_dir($root) && !mkdir($root, 0700, true) && !is_dir($root)) throw new RuntimeException('Could not create the PDF queue.');
@@ -64,14 +72,29 @@ function mwPdfQueueCreate(string $root, array $user, array $input, mysqli $db): 
             }
             return $item;
         }
+        $duplicates = [];
+        foreach (glob($root . '/*/item.json') as $path) {
+            $existing = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+            if (in_array($existing['status'], ['uploading', 'queued', 'processing', 'ready', 'error'], true) && strcasecmp($existing['name'], $name) === 0) {
+                $duplicates[] = ['id' => $existing['id'], 'revision' => $existing['draft_revision'] ?? 0];
+            }
+        }
+        if ($duplicates) {
+            $approval = hash('sha256', json_encode($duplicates, JSON_THROW_ON_ERROR));
+            if (!hash_equals($approval, (string) ($input['overwrite_token'] ?? ''))) {
+                throw new MwPdfQueueDuplicate($name, ['name' => $name, 'count' => count($duplicates), 'token' => $approval]);
+            }
+        }
         if (!mkdir($folder, 0700)) throw new RuntimeException('Could not create the queued PDF.');
         $item = $details + ['id' => $id, 'name' => $name, 'original_bytes' => $size, 'received' => 0,
             'owner_id' => (int) $user['id'], 'created_at' => gmdate('c'), 'status' => 'uploading'];
+        if ($duplicates) $item['replaces'] = array_column($duplicates, 'id');
         mwPdfQueueWrite($folder . '/item.json', $item);
         return $item;
     } finally { flock($lock, LOCK_UN); fclose($lock); }
 }
 function mwPdfQueueChunk(array $item, string $folder, int $offset, string $chunk): array {
+    if ($item['status'] === 'superseded') throw new InvalidArgumentException('This upload was overwritten. Open its replacement from the queue.');
     if ($item['status'] !== 'uploading') throw new InvalidArgumentException('This PDF has already been uploaded.');
     $length = strlen($chunk);
     if (!$length || $length > 1024 * 1024 || $offset < 0 || $offset + $length > $item['original_bytes']) throw new InvalidArgumentException('Invalid PDF upload chunk.');
