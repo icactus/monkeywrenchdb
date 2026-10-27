@@ -11,21 +11,61 @@
     const activePanel = document.getElementById('pdf-queue-active');
     const draftStatus = document.getElementById('pdf-queue-draft-status');
     let csrf = '', canUpload = false, active = null, activeUrl = '', loading = false, busy = false, lastDraft = '', saving = null, editorSession = '', sequence = 0;
+    let uploadTask = Promise.resolve(), uploadWork = 0, refreshing = false;
     const notify = text => { status.textContent = text; };
     const bytes = number => `${(number / 1024 / 1024).toFixed(2)} MB`;
     function endpoint(action, id) { const url = new URL(apiUrl); url.searchParams.set('action', action); if (id) url.searchParams.set('id', id); return url; }
-    async function api(action, data, id) {
+    function uploadCancelled() { return new DOMException('Upload cancelled.', 'AbortError'); }
+    function retryDelay(milliseconds, signal) {
+        return new Promise((resolve, reject) => {
+            if (signal?.aborted) { reject(uploadCancelled()); return; }
+            const cancel = () => { clearTimeout(timer); reject(uploadCancelled()); };
+            const timer = setTimeout(() => { signal?.removeEventListener('abort', cancel); resolve(); }, milliseconds);
+            signal?.addEventListener('abort', cancel, { once: true });
+        });
+    }
+    async function api(action, data, id, request = {}) {
         let options = { credentials: 'same-origin', cache: 'no-store' };
         if (data) {
             const body = data instanceof FormData ? data : new FormData();
             if (!(data instanceof FormData)) for (const [key, value] of Object.entries(data)) body.set(key, String(value ?? ''));
             options = { ...options, method: 'POST', headers: { 'X-CSRF-Token': csrf }, body };
         }
-        const response = await fetch(endpoint(action, id), options);
-        let result;
-        try { result = await response.json(); } catch { throw new Error(`Queue request failed (${response.status}). Your login may have expired.`); }
-        if (!response.ok || result.error) throw new Error(result.error || `Queue request failed (${response.status}).`);
-        return result;
+        const retryableAction = ['get', 'chunk', 'finish'].includes(action) || (action === 'create' && data?.upload_token);
+        for (let attempt = 0; ; attempt++) {
+            if (request.signal?.aborted) throw uploadCancelled();
+            const controller = new AbortController();
+            const cancel = () => controller.abort();
+            request.signal?.addEventListener('abort', cancel, { once: true });
+            const timeout = setTimeout(() => controller.abort(), 30000);
+            let failure;
+            try {
+                const response = await fetch(endpoint(action, id), { ...options, signal: controller.signal });
+                let result;
+                try { result = await response.json(); } catch {
+                    if (controller.signal.aborted) throw uploadCancelled();
+                    if (response.ok) throw new Error('The server returned an incomplete response.');
+                    result = {};
+                }
+                if (!response.ok || result.error) {
+                    const error = new Error(result.error || `Upload connection failed (HTTP ${response.status}).`);
+                    error.status = response.status;
+                    error.retryable = [408, 425, 429].includes(response.status) || response.status >= 500;
+                    if (error.retryable) console.warn('PDF queue request failed', { action, status: response.status, ray: response.headers?.get('cf-ray') });
+                    throw error;
+                }
+                return result;
+            } catch (error) {
+                if (request.signal?.aborted) throw uploadCancelled();
+                failure = controller.signal.aborted ? new Error('Upload request timed out.') : error;
+            } finally {
+                clearTimeout(timeout);
+                request.signal?.removeEventListener('abort', cancel);
+            }
+            if (!retryableAction || attempt >= 2 || failure.retryable === false || (failure.status && !failure.retryable)) throw failure;
+            request.onRetry?.();
+            await retryDelay(1000 * (2 ** attempt), request.signal);
+        }
     }
     function assignment(name) {
         const match = /^(\d+)-(\d+)\.pdf$/i.exec(name);
@@ -62,16 +102,37 @@
             dialog.append(cancel, next); document.body.append(dialog); dialog.showModal();
         });
     }
-    function uploadProgress(file) {
+    function cancelUpload(job) {
+        if (!['waiting', 'uploading', 'uploaded'].includes(job.state)) return;
+        job.cancelled = true; job.controller?.abort(); job.state = 'cancelled';
+        job.progress(job.received || 0, 'Cancelled');
+    }
+    function retryUpload(job) {
+        if (!['failed', 'cancelled'].includes(job.state) || (busy && !uploadWork)) return;
+        job.cancelled = false; job.controller = new AbortController(); job.state = 'waiting';
+        job.progress(job.received || 0, 'Waiting');
+        return enqueueUploads([job]).catch(error => notify(error.message));
+    }
+    function uploadProgress(job) {
+        const file = job.file;
         const row = document.createElement('li');
         const name = document.createElement('strong'); name.textContent = file.name;
         const meter = document.createElement('progress'); meter.max = file.size; meter.value = 0;
         meter.setAttribute('aria-label', `Upload ${file.name}`);
         const label = document.createElement('span'); label.textContent = 'Waiting'; label.setAttribute('role', 'status');
-        row.append(name, meter, label); uploads.append(row);
-        return (received, text) => { meter.value = received; label.textContent = text || `Uploading ${Math.round(received / file.size * 100)}%`; };
+        const controls = document.createElement('div'); controls.className = 'pdf-upload-actions';
+        const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Cancel';
+        cancel.setAttribute('aria-label', `Cancel upload of ${file.name}`); cancel.onclick = () => cancelUpload(job);
+        const retry = document.createElement('button'); retry.type = 'button'; retry.textContent = 'Retry';
+        retry.setAttribute('aria-label', `Retry upload of ${file.name}`); retry.hidden = true; retry.onclick = () => retryUpload(job);
+        controls.append(cancel, retry); row.append(name, meter, label, controls); uploads.append(row);
+        return (received, text) => {
+            meter.value = received; label.textContent = text || `Uploading ${Math.round(received / file.size * 100)}%`;
+            cancel.hidden = !['waiting', 'uploading', 'uploaded'].includes(job.state);
+            retry.hidden = !['failed', 'cancelled'].includes(job.state);
+        };
     }
-    async function sendFile(item, file, progress) {
+    async function sendFile(item, file, progress, request = {}) {
         if (file.name !== item.name || file.size !== item.original_bytes) throw new Error('Choose the same original PDF to resume this upload.');
         if (item.prefix_sha256) {
             const hash = await crypto.subtle.digest('SHA-256', await file.slice(0, 65536).arrayBuffer());
@@ -80,13 +141,10 @@
         }
         progress(item.received);
         for (let offset = item.received; offset < file.size;) {
+            if (request.signal?.aborted) throw uploadCancelled();
             const chunk = file.slice(offset, offset + 1024 * 1024);
             const body = new FormData(); body.set('offset', String(offset)); body.set('chunk', chunk, 'chunk.bin');
-            let result;
-            for (let attempt = 0; attempt < 3; attempt++) {
-                try { result = await api('chunk', body, item.id); break; }
-                catch (error) { if (attempt === 2) throw error; await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1))); }
-            }
+            const result = await api('chunk', body, item.id, request);
             offset = result.item.received;
             progress(offset);
         }
@@ -95,24 +153,58 @@
     async function uploadBatch(jobs) {
         const uploaded = [];
         let submitted = 0;
-        for (const job of jobs) job.progress = uploadProgress(job.file);
         for (const job of jobs) {
+            if (!job.progress) {
+                job.state = 'waiting'; job.token = crypto.randomUUID().replace(/-/g, '');
+                job.controller = new AbortController(); job.progress = uploadProgress(job);
+            }
+        }
+        for (const job of jobs) {
+            if (job.cancelled) continue;
+            const request = { signal: job.controller.signal, onRetry: () => job.progress(job.received || 0, 'Connection interrupted. Retrying…') };
             try {
+                job.state = 'uploading'; job.progress(job.received || 0);
                 if (job.file.size > 300 * 1024 * 1024) throw new Error('PDF exceeds 300 MB.');
-                const result = await api('create', { name: job.file.name, size: job.file.size, ...job.details });
-                await sendFile(result.item, job.file, job.progress);
-                uploaded.push({ ...job, item: result.item });
-            } catch (error) { job.progress(0, error.message); }
+                const result = job.item ? await api('get', null, job.item.id, request)
+                    : await api('create', { name: job.file.name, size: job.file.size, ...job.details, upload_token: job.token }, undefined, request);
+                job.item = result.item;
+                if (job.cancelled) throw uploadCancelled();
+                if (['queued', 'processing', 'ready', 'error', 'completed'].includes(job.item.status)) {
+                    job.state = 'submitted'; job.progress(job.file.size, 'Submitted'); submitted++; continue;
+                }
+                await sendFile(job.item, job.file, (received, text) => { job.received = received; job.progress(received, text); }, request);
+                job.state = 'uploaded'; job.progress(job.file.size, 'Uploaded'); uploaded.push(job);
+            } catch (error) {
+                job.state = job.cancelled ? 'cancelled' : 'failed';
+                job.progress(job.received || 0, job.cancelled ? 'Cancelled' : error.message);
+            }
         }
         // Transfer the whole batch before starting server-side processing.
         for (const job of uploaded) {
+            if (job.cancelled) continue;
             try {
-                await api('finish', {}, job.item.id);
+                job.state = 'submitting'; job.progress(job.file.size, 'Submitting…');
+                await api('finish', {}, job.item.id, { signal: job.controller.signal, onRetry: () => job.progress(job.file.size, 'Connection interrupted. Retrying…') });
+                job.state = 'submitted';
                 job.progress(job.file.size, 'Submitted');
                 submitted++;
-            } catch (error) { job.progress(job.file.size, 'Not submitted: ' + error.message); }
+            } catch (error) { job.state = 'failed'; job.progress(job.file.size, 'Not submitted: ' + error.message); }
         }
         return submitted;
+    }
+    function enqueueUploads(jobs) {
+        uploadWork++; upload.disabled = true; files.disabled = true;
+        uploadTask = uploadTask.catch(() => {}).then(async () => {
+            busy = true;
+            try {
+                const submitted = await uploadBatch(jobs);
+                notify(`${submitted} of ${jobs.length} PDFs submitted.`);
+            } finally {
+                busy = false; uploadWork--; upload.disabled = uploadWork > 0; files.disabled = uploadWork > 0;
+                refresh();
+            }
+        });
+        return uploadTask;
     }
     upload.addEventListener('click', async () => {
         if (!canUpload || busy) return;
@@ -123,13 +215,15 @@
         try {
             await chooseMissing(jobs);
             uploads.replaceChildren();
-            const submitted = await uploadBatch(jobs);
-            files.value = ''; notify(`${submitted} of ${jobs.length} PDFs submitted.`);
+            await enqueueUploads(jobs);
+            files.value = '';
         } catch (error) { notify(error.message); }
-        finally { busy = false; upload.disabled = false; files.disabled = false; refresh(); }
+        finally { if (!uploadWork) { busy = false; upload.disabled = false; files.disabled = false; } refresh(); }
     });
     function label(select, id) { return Array.from(select.options).find(option => option.value === String(id))?.textContent || String(id); }
     async function refresh() {
+        if (refreshing) return;
+        refreshing = true;
         try {
             const result = await api('list'); csrf = result.csrf; canUpload = result.can_upload;
             document.getElementById('pdf-queue-upload-controls').hidden = !canUpload;
@@ -150,13 +244,14 @@
                 if (canUpload && item.status === 'uploading' && item.received === item.original_bytes) button('Submit upload', () => api('finish', {}, item.id));
                 if (canUpload && item.status === 'uploading' && item.received < item.original_bytes) button('Resume upload', () => {
                     const input = document.createElement('input'); input.type = 'file'; input.accept = '.pdf';
-                    input.onchange = async () => { if (input.files[0]) { const progress = uploadProgress(input.files[0]); try { await sendFile(item, input.files[0], progress); await api('finish', {}, item.id); progress(input.files[0].size, 'Submitted'); notify('PDF submitted.'); } catch (error) { notify(error.message); } refresh(); } }; input.click();
+                    input.onchange = () => { if (input.files[0]) enqueueUploads([{ file: input.files[0], item }]).catch(error => notify(error.message)); }; input.click();
                 });
                 if (canUpload && item.status !== 'processing') button('Remove', async () => { if (confirm(`Remove ${item.name} and its queued edits?`)) { await api('discard', {}, item.id); if (active?.id === item.id) clearActive(); } });
                 list.append(row);
             }
             if (!result.items.length) { const empty = document.createElement('li'); empty.textContent = 'No PDFs waiting for barline work.'; list.append(empty); }
         } catch (error) { notify(error.message); }
+        finally { refreshing = false; }
     }
     function matches() { return active && window.pdfFnm$$module$synpdf === activeUrl; }
     function setQueuedSaveState(queued) {

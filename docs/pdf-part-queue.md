@@ -10,6 +10,12 @@ Each file has an upload progress bar. All files upload before the batch is
 submitted for server processing. Once files show **Submitted**, the browser can
 close; processing continues on the server. Upload failures do not prevent the
 remaining files from being submitted.
+Each upload has **Cancel** and **Retry** controls. Cancel stops a waiting or
+active transfer while retaining received bytes; Retry resumes that upload from
+the server's saved offset. Use **Remove** in the queue to delete an incomplete
+upload. Connection failures and temporary server errors retry automatically,
+with a 30-second request deadline and at most three attempts. Retried creation
+requests reuse the same upload record, including after a lost response.
 The original HD file uploads in 1 MB chunks, with retry support. Interrupted
 uploads remain in the queue with **Resume upload**. Completed uploads continue
 compressing after the browser closes. Originals and work in progress live in a
@@ -94,7 +100,7 @@ functions as the existing part submission endpoint.
 python3 -m unittest tests.test_pdf_low_memory
 php tests/pdf-queue.test.php
 node --test tests/edit-mode-part-save.test.cjs
-node --test tests/auto-barline-detection.test.cjs tests/pdf-queue-upload.test.cjs
+node --test tests/auto-barline-detection.test.cjs tests/pdf-queue-upload.test.cjs tests/pdf-queue-transport.test.cjs
 ```
 
 The PHP tests use a disposable local database and private temporary web root.

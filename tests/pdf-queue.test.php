@@ -64,11 +64,16 @@ try {
     qcheck(qhttp($port,'create',$sessions['owner'],'',$input,false)[0]===403,'Upload requires CSRF.');
     qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($input,['piece_id'=>99999]))[0]===400,'Unknown piece ID is rejected.');
     qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($input,['name'=>'../bad.pdf']))[0]===400,'Filenames cannot escape the queue folder.');
+    $input['upload_token']=bin2hex(random_bytes(16));
+    qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($input,['upload_token'=>'../bad']))[0]===400,'Invalid upload tokens cannot escape the queue.');
     [$code,$created]=qhttp($port,'create',$sessions['owner'],'',$input);qcheck($code===200,'Create queued PDF.');$id=$created['item']['id'];
+    qcheck(qhttp($port,'create',$sessions['owner'],'',$input)[1]['item']['id']===$id,'Retrying a lost create response reuses the original upload.');
+    qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($input,['name'=>'72-3.pdf']))[0]===400,'An upload token cannot be reused for another file.');
     qcheck(qhttp($port,'finish',$sessions['owner'],$id,[])[0]===400,'Incomplete uploads cannot start compression.');
     $part=substr(file_get_contents($source),0,1024);file_put_contents($fixture.'/chunk.bin',$part);
     $chunk=['offset'=>0,'chunk'=>new CURLFile($fixture.'/chunk.bin')];
     [$code,$uploaded]=qhttp($port,'chunk',$sessions['owner'],$id,$chunk);qcheck($code===200&&$uploaded['item']['received']===1024,'Chunks stream to disk.');
+    qcheck(qhttp($port,'create',$sessions['owner'],'',$input)[1]['item']['received']===1024,'Retrying creation never resets bytes already saved.');
     qcheck(qhttp($port,'chunk',$sessions['owner'],$id,$chunk)[1]['item']['received']===1024,'Repeated chunk retry does not duplicate bytes.');
     file_put_contents($fixture.'/chunk.bin',str_repeat('x',1024));qcheck(qhttp($port,'chunk',$sessions['owner'],$id,$chunk)[0]===400,'Mismatched retry is rejected.');
     file_put_contents($fixture.'/chunk.bin',substr(file_get_contents($source),1024));

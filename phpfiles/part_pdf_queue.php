@@ -48,12 +48,28 @@ function mwPdfQueueCreate(string $root, array $user, array $input, mysqli $db): 
     $name = (string) ($input['name'] ?? ''); $size = (int) ($input['size'] ?? 0);
     if (!preg_match('/\.pdf$/i', $name) || strlen($name) > 255 || preg_match('/[\x00-\x1f\/\\\\]/', $name) || $size < 5 || $size > 300 * 1024 * 1024) throw new InvalidArgumentException('Choose a PDF no larger than 300 MB.');
     $details = mwPdfQueueDetails($db, $input);
-    $id = bin2hex(random_bytes(16)); $folder = $root . '/' . $id;
-    if (!mkdir($folder, 0700)) throw new RuntimeException('Could not create the queued PDF.');
-    $item = $details + ['id' => $id, 'name' => $name, 'original_bytes' => $size, 'received' => 0,
-        'owner_id' => (int) $user['id'], 'created_at' => gmdate('c'), 'status' => 'uploading'];
-    mwPdfQueueWrite($folder . '/item.json', $item);
-    return $item;
+    $token = (string) ($input['upload_token'] ?? '');
+    if ($token !== '' && !preg_match('/^[a-f0-9]{32}$/D', $token)) throw new InvalidArgumentException('Invalid upload token.');
+    $id = $token ?: bin2hex(random_bytes(16)); $folder = $root . '/' . $id;
+    $lock = fopen($root . '/.create.lock', 'c');
+    if (!$lock || !flock($lock, LOCK_EX)) throw new RuntimeException('Could not start the upload.');
+    try {
+        // A response can be lost after creation. Repeating the same request must
+        // return its original upload rather than create an orphaned duplicate.
+        if (is_file($folder . '/item.json')) {
+            $item = json_decode(file_get_contents($folder . '/item.json'), true, 512, JSON_THROW_ON_ERROR);
+            if ((int) $item['owner_id'] !== (int) $user['id'] || $item['name'] !== $name || $item['original_bytes'] !== $size ||
+                $item['piece_id'] !== $details['piece_id'] || $item['instrument_id'] !== $details['instrument_id'] || $item['edition_label'] !== $details['edition_label']) {
+                throw new InvalidArgumentException('This upload token belongs to another file.');
+            }
+            return $item;
+        }
+        if (!mkdir($folder, 0700)) throw new RuntimeException('Could not create the queued PDF.');
+        $item = $details + ['id' => $id, 'name' => $name, 'original_bytes' => $size, 'received' => 0,
+            'owner_id' => (int) $user['id'], 'created_at' => gmdate('c'), 'status' => 'uploading'];
+        mwPdfQueueWrite($folder . '/item.json', $item);
+        return $item;
+    } finally { flock($lock, LOCK_UN); fclose($lock); }
 }
 function mwPdfQueueChunk(array $item, string $folder, int $offset, string $chunk): array {
     if ($item['status'] !== 'uploading') throw new InvalidArgumentException('This PDF has already been uploaded.');
