@@ -12,6 +12,7 @@
 sessions/
 /sync-test/
 /ImageMagick-7.1.1-39/
+/node_modules/
 .env
 missing_ids.txt
 youtube_ids.txt
@@ -42,3 +43,22 @@ synpdf_182/editmode/training-folder/combined_features.csv
 # Request feature database migration
 !docs/migrations/2026-10-requests.sql
 !docs/migrations/2026-10-favorites-nullable-context.sql
+
+# Jupyter creates notebook checkpoints automatically.
+.ipynb_checkpoints/
+
+# Local editor/tool settings and Python bytecode
+/.vscode/
+/.antigravityignore
+__pycache__/
+*.pyc
+
+# Disposable local evaluation and server output
+/out.txt
+/out_grid.txt
+/test_output.txt
+/test_proportional_output.log
+/web_server.log
+/scripts/full_out.txt
+/scripts/macro_out.txt
+/scripts/math_out.txt
