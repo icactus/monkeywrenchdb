@@ -7,6 +7,9 @@
     const pieceSelect = form.querySelector('[name=piece_id]'), partSelect = form.querySelector('[name=instrument_id]');
     const files = document.getElementById('pdf-queue-files'), upload = document.getElementById('pdf-queue-upload');
     const uploads = document.getElementById('pdf-queue-uploads');
+    const clearFinished = document.getElementById('pdf-queue-clear-finished');
+    const uploadRows = new Set();
+    let visibleUploadIds = new Set(), lastUploadSummary = '';
     const status = document.getElementById('pdf-queue-status'), list = document.getElementById('pdf-queue-items');
     const activePanel = document.getElementById('pdf-queue-active');
     const draftStatus = document.getElementById('pdf-queue-draft-status');
@@ -104,6 +107,36 @@
             dialog.append(cancel, next); document.body.append(dialog); dialog.showModal();
         });
     }
+    function uploadFinished(job) {
+        return ['submitted', 'failed', 'cancelled'].includes(job.state);
+    }
+    function updateClearFinished() {
+        const finished = [...uploadRows].some(uploadFinished);
+        if (clearFinished) clearFinished.hidden = !finished;
+        if (!finished && status.textContent === lastUploadSummary) notify('');
+    }
+    function dismissUpload(job) {
+        if (!uploadFinished(job) || !uploadRows.has(job)) return;
+        const focused = job.row.contains(document.activeElement);
+        clearTimeout(job.dismissTimer);
+        job.row.remove(); uploadRows.delete(job);
+        updateClearFinished();
+        if (focused) (clearFinished && !clearFinished.hidden ? clearFinished : upload).focus();
+    }
+    function clearFinishedUploads() {
+        const focused = document.activeElement === clearFinished;
+        for (const job of [...uploadRows]) dismissUpload(job);
+        if (focused && !upload.disabled) upload.focus();
+    }
+    function scheduleUploadDismiss(job) {
+        if (job.state !== 'submitted' || !visibleUploadIds.has(job.item?.id) || job.dismissTimer != null) return;
+        job.dismissTimer = setTimeout(() => {
+            job.dismissTimer = null;
+            // Keep a row in place while someone is using its dismiss control.
+            if (job.state === 'submitted' && !job.row.contains(document.activeElement)) dismissUpload(job);
+        }, 6000);
+    }
+    clearFinished?.addEventListener('click', clearFinishedUploads);
     function cancelUpload(job) {
         if (!['waiting', 'uploading', 'uploaded'].includes(job.state)) return;
         job.cancelled = true; job.controller?.abort(); job.state = 'cancelled';
@@ -118,7 +151,13 @@
     function uploadProgress(job) {
         const file = job.file;
         const row = document.createElement('li');
+        job.row = row; uploadRows.add(job);
+        const heading = document.createElement('div'); heading.className = 'pdf-upload-heading';
         const name = document.createElement('strong'); name.textContent = file.name;
+        const dismiss = document.createElement('button'); dismiss.type = 'button'; dismiss.textContent = '×'; dismiss.hidden = true;
+        dismiss.className = 'pdf-upload-dismiss'; dismiss.title = 'Dismiss upload status';
+        dismiss.setAttribute('aria-label', `Dismiss upload status for ${file.name}`); dismiss.onclick = () => dismissUpload(job);
+        heading.append(name, dismiss);
         const meter = document.createElement('progress'); meter.max = file.size; meter.value = 0;
         meter.setAttribute('aria-label', `Upload ${file.name}`);
         const label = document.createElement('span'); label.textContent = 'Waiting'; label.setAttribute('role', 'status');
@@ -127,11 +166,15 @@
         cancel.setAttribute('aria-label', `Cancel upload of ${file.name}`); cancel.onclick = () => cancelUpload(job);
         const retry = document.createElement('button'); retry.type = 'button'; retry.textContent = 'Retry';
         retry.setAttribute('aria-label', `Retry upload of ${file.name}`); retry.hidden = true; retry.onclick = () => retryUpload(job);
-        controls.append(cancel, retry); row.append(name, meter, label, controls); uploads.append(row);
+        controls.append(cancel, retry); row.append(heading, meter, label, controls); uploads.append(row);
         return (received, text) => {
+            if (!uploadRows.has(job)) return;
             meter.value = received; label.textContent = text || `Uploading ${Math.round(received / file.size * 100)}%`;
             cancel.hidden = !['waiting', 'uploading', 'uploaded'].includes(job.state);
             retry.hidden = !['failed', 'cancelled'].includes(job.state);
+            dismiss.hidden = !uploadFinished(job);
+            updateClearFinished();
+            if (job.state === 'submitted') scheduleUploadDismiss(job);
         };
     }
     async function sendFile(item, file, progress, request = {}) {
@@ -215,7 +258,10 @@
             busy = true;
             try {
                 const submitted = await uploadBatch(jobs);
-                notify(`${submitted} of ${jobs.length} PDFs submitted.`);
+                if (jobs.some(job => uploadRows.has(job))) {
+                    lastUploadSummary = `${submitted} of ${jobs.length} PDFs submitted.`;
+                    notify(lastUploadSummary);
+                }
             } finally {
                 busy = false; uploadWork--; upload.disabled = uploadWork > 0; files.disabled = uploadWork > 0;
                 refresh();
@@ -231,7 +277,6 @@
         busy = true; upload.disabled = true; files.disabled = true;
         try {
             await chooseMissing(jobs);
-            uploads.replaceChildren();
             await enqueueUploads(jobs);
             files.value = '';
         } catch (error) { notify(error.message); }
@@ -267,6 +312,8 @@
                 list.append(row);
             }
             if (!result.items.length) { const empty = document.createElement('li'); empty.textContent = 'No PDFs waiting for barline work.'; list.append(empty); }
+            visibleUploadIds = new Set(result.items.map(item => item.id));
+            for (const job of uploadRows) scheduleUploadDismiss(job);
         } catch (error) { notify(error.message); }
         finally { refreshing = false; }
     }

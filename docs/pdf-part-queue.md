@@ -10,6 +10,14 @@ Each file has an upload progress bar. All files upload before the batch is
 submitted for server processing. Once files show **Submitted**, the browser can
 close; processing continues on the server. Upload failures do not prevent the
 remaining files from being submitted.
+
+Finished progress rows have an **×** dismiss button and a **Clear finished**
+control. Submitted rows clear automatically after six seconds once their files
+appear in the queue. Failed, cancelled and **Already uploaded** notices stay
+visible until dismissed, keeping **Retry** available. Starting another batch
+preserves these notices. Clearing affects the progress display only; queued PDFs
+and active uploads remain intact.
+
 Each upload has **Cancel** and **Retry** controls. Cancel stops a waiting or
 active transfer while retaining received bytes; Retry resumes that upload from
 the server's saved offset. Use **Remove** in the queue to delete an incomplete

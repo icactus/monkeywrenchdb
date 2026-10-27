@@ -8,8 +8,8 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
-    <link rel="stylesheet" href="part-pdf-queue.css?v=3">
-    <script src="part-pdf-queue.js?v=8" defer></script>
+    <link rel="stylesheet" href="part-pdf-queue.css?v=4">
+    <script src="part-pdf-queue.js?v=9" defer></script>
     <script src="auto-barline-detection.js?v=3" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
@@ -955,6 +955,7 @@
                     <input id="pdf-queue-files" type="file" accept="application/pdf,.pdf" multiple aria-label="HD PDFs to prepare">
                     <button id="pdf-queue-upload" type="button">Upload PDFs</button>
                     <ul id="pdf-queue-uploads" aria-label="PDF uploads"></ul>
+                    <button id="pdf-queue-clear-finished" type="button" hidden>Clear finished</button>
                 </div>
                 <p id="pdf-queue-status" role="status" aria-live="polite"></p>
                 <ul id="pdf-queue-items"></ul>
