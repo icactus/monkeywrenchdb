@@ -2,6 +2,36 @@
     'use strict';
     const status = document.getElementById('auto-barline-status');
     if (!status) return;
+    const overlay = document.getElementById('pdf-loading-overlay');
+    const loadingStages = new Map();
+    function renderLoading() {
+        if (!overlay) return;
+        const active = loadingStages.size > 0;
+        overlay.hidden = !active;
+        document.body?.classList.toggle('pdf-preparing', active);
+        document.getElementById('pdf-workspace')?.setAttribute('aria-busy', String(active));
+        for (const id of ['notation', 'pdf-edit-toolbar']) {
+            const element = document.getElementById(id);
+            if (element) element.inert = active;
+        }
+        const source = ['model', 'detection', 'preparation', 'document'].find(name => loadingStages.has(name));
+        const stage = loadingStages.get(source);
+        if (stage) {
+            document.getElementById('pdf-loading-title').textContent = stage.title;
+            const detail = document.getElementById('pdf-loading-detail');
+            detail.textContent = stage.detail;
+            detail.hidden = !stage.detail;
+        }
+        document.getElementById('pdf-loading-stage-meter').hidden = source === 'detection';
+        const progress = document.getElementById('barline-detection-progress');
+        if (progress) progress.hidden = source !== 'detection';
+    }
+    const loading = window.SynpdfPdfLoading = {
+        show(source, title, detail = '') { loadingStages.set(source, { title, detail }); renderLoading(); },
+        hide(source) { loadingStages.delete(source); renderLoading(); },
+        reset() { loadingStages.clear(); renderLoading(); },
+        get active() { return loadingStages.size > 0; }
+    };
     const rerun = document.getElementById('rerun-barline-detection');
     let generation = 0, running = false, preparation = 'idle', nextQueueDraft;
     const scoreIds = new Set([39, 48, 50, 81, 82, 83, 84, 85, 88, 89, 90, 91]);
@@ -16,11 +46,21 @@
         }
         return /piano|score|opera/i.test(name);
     }
-    function report(text) { status.hidden = !text; status.textContent = text; }
+    function report(text) {
+        if (running) {
+            if (text) loading.show('preparation', text);
+            status.hidden = true;
+            status.textContent = '';
+        } else {
+            status.hidden = !text;
+            status.textContent = text;
+        }
+    }
     function setPreparation(value) {
         preparation = value;
         running = value === 'running';
         if (rerun) rerun.disabled = running;
+        if (!running) loading.hide('preparation');
     }
     function needsPreparation(draft) {
         if (!draft) return false;
@@ -36,7 +76,21 @@
         const draft = nextQueueDraft;
         nextQueueDraft = undefined;
         const ticket = ++generation;
+        loading.reset();
         setPreparation('idle');
+        loading.show('document', 'Loading PDF…');
+        function documentReady() {
+            if (ticket !== generation) return;
+            if (!window.pdfDoc$$module$synpdf?.numPages || window.rendering$$module$synpdf ||
+                window.metricPrecomputeInProgress$$module$synpdf || !window.hasCompleteMetricPages$$module$synpdf?.()) {
+                loading.show('document', window.pdfDoc$$module$synpdf?.numPages && !window.rendering$$module$synpdf
+                    ? 'Finding staff systems…' : 'Loading PDF…');
+                setTimeout(documentReady, 100);
+                return;
+            }
+            loading.hide('document');
+        }
+        setTimeout(documentReady, 0);
         const excluded = exclusion(window.scoreFnm$$module$synpdf || window.pdfFnm$$module$synpdf);
         if (rerun) rerun.hidden = excluded;
         const progress = document.getElementById('barline-detection-progress');
@@ -53,13 +107,15 @@
             return;
         }
         setPreparation('running');
-        report('Preparing the instrument part…');
+        report('Loading PDF…');
         async function ready() {
             if (ticket !== generation) return;
             const doc = window.pdfDoc$$module$synpdf;
             const detector = window.SynpdfBarlineDetection;
             if (!doc?.numPages || window.rendering$$module$synpdf || window.metricPrecomputeInProgress$$module$synpdf ||
                 !window.hasCompleteMetricPages$$module$synpdf?.() || !detector || detector.busy) {
+                report(!doc?.numPages || window.rendering$$module$synpdf ? 'Loading PDF…' :
+                    'Finding staff systems…');
                 setTimeout(ready, 100);
                 return;
             }
@@ -93,7 +149,7 @@
 
     const editingKeys = new Set(['q', 'w', 'e', 'r', 'y', 's', 'd', 'o', 'j', 'PageDown', 'PageUp', '+', '=', '-', '_', '.', '/']);
     function guardEditing(event) {
-        if (running && !event.ctrlKey && !event.metaKey && !event.altKey &&
+        if ((running || loading.active) && !event.ctrlKey && !event.metaKey && !event.altKey &&
             editingKeys.has(event.key?.length === 1 ? event.key.toLowerCase() : event.key) &&
             !event.target.closest('input, textarea, select, [contenteditable=true]')) {
             event.preventDefault(); event.stopImmediatePropagation();
@@ -102,7 +158,7 @@
     document.addEventListener?.('keydown', guardEditing, true);
     document.addEventListener?.('keyup', guardEditing, true);
     document.addEventListener?.('mousedown', event => {
-        if (running && event.target.closest('#notation')) { event.preventDefault(); event.stopImmediatePropagation(); }
+        if ((running || loading.active) && event.target.closest('#notation')) { event.preventDefault(); event.stopImmediatePropagation(); }
     }, true);
 
     const help = document.getElementById('editor-help-dialog');

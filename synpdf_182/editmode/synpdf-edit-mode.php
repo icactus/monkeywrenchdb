@@ -9,8 +9,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="stylesheet" href="part-pdf-queue.css?v=2">
-    <script src="part-pdf-queue.js?v=5" defer></script>
-    <script src="auto-barline-detection.js?v=2" defer></script>
+    <script src="part-pdf-queue.js?v=6" defer></script>
+    <script src="auto-barline-detection.js?v=3" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
     if (file_exists('session_config.php')) {
@@ -777,17 +777,33 @@
 
         /* Shared code still reads these controls; this page has no media header or menu. */
         #buttons, #sync, #spdlbl, #fknp { display: none !important; }
-        #part-count-check[data-state="idle"] { display: none; }
+        #part-count-check[data-state="idle"], #part-count-check[data-state="loading"] { display: none; }
         #editor-sidebar-tools button { padding: 7px 12px; border: 1px solid #aaa; border-radius: 5px; background: white; cursor: pointer; }
-        #barline-detection-progress { margin: 10px 0; }
-        #barline-detection-progress progress { display: block; width: 100%; height: 18px; margin-top: 5px; }
         #part-count-check { border-left: 3px solid #94a3b8; padding: 6px 10px; margin-top: 10px; }
         #part-count-check[data-state="match"] { border-color: #16a34a; }
         #part-count-check[data-state="mismatch"], #part-count-check[data-state="error"] { border-color: #d97706; }
         #part-count-check button { margin: 4px 0; }
 
-        #pdf-workspace { flex: 1 1 auto; min-width: 0; }
+        #pdf-workspace { flex: 1 1 auto; min-width: 0; min-height: 60vh; position: relative; }
         #pdf-workspace #notation { width: calc(100% - var(--notation-scrollbar-lane)); overflow-x: auto; }
+        #pdf-loading-overlay {
+            position: absolute; inset: 0; z-index: 50;
+            display: flex; justify-content: center; align-items: flex-start;
+            padding: clamp(90px, 20vh, 200px) 20px 20px; box-sizing: border-box;
+            background: rgba(240, 245, 246, .84); cursor: wait;
+        }
+        #pdf-loading-overlay[hidden], #pdf-loading-overlay [hidden] { display: none !important; }
+        body.pdf-preparing #wait, body.pdf-preparing #render { visibility: hidden; }
+        .pdf-loading-card {
+            position: sticky; top: 20vh; width: 420px; max-width: 100%;
+            padding: 24px; box-sizing: border-box; border: 1px solid #cbd5df;
+            border-radius: 12px; background: #fff; color: #243b40;
+            box-shadow: 0 8px 30px rgba(24, 47, 60, .16); text-align: center;
+        }
+        #pdf-loading-title { display: block; font-size: 18px; line-height: 1.4; }
+        #pdf-loading-detail { margin: 10px 0; font-size: 14px; line-height: 1.5; }
+        .pdf-loading-card progress { display: block; width: 100%; height: 12px; margin-top: 18px; accent-color: #397c8a; }
+        #barline-detection-progress { margin-top: 12px; font-size: 14px; }
         #pdf-edit-toolbar {
             display: flex;
             flex-wrap: wrap;
@@ -953,10 +969,6 @@
                 <div id="part-count-check" data-state="idle">
                     <p id="part-count-status" role="status" aria-live="polite"></p>
                 </div>
-                <div id="barline-detection-progress" hidden aria-busy="false">
-                    <span id="barline-detection-status" role="status" aria-live="polite"></span>
-                    <progress id="barline-detection-meter" max="100" value="0" aria-label="Barline detection progress"></progress>
-                </div>
             </div>
             <div id="database-menu-top">
                 <h3>Submit Part</h3>
@@ -1120,6 +1132,19 @@
     </section1>
     <section2>
         <div id="pdf-workspace">
+            <div id="pdf-loading-overlay" hidden>
+                <div class="pdf-loading-card">
+                    <div role="status" aria-live="polite" aria-atomic="true">
+                        <strong id="pdf-loading-title">Loading PDF…</strong>
+                        <p id="pdf-loading-detail" hidden></p>
+                    </div>
+                    <progress id="pdf-loading-stage-meter" aria-label="Preparing the PDF"></progress>
+                    <div id="barline-detection-progress" hidden aria-busy="false">
+                        <span id="barline-detection-status" role="status" aria-live="polite"></span>
+                        <progress id="barline-detection-meter" max="100" value="0" aria-label="Barline detection progress"></progress>
+                    </div>
+                </div>
+            </div>
             <div id="pdf-edit-toolbar" role="group" aria-label="PDF part editing tools">
                 <button type="button" id="toolbar-prev-page" title="Previous page (Shift+D)" data-tooltip="Previous page · Shift+D">← Page</button>
                 <button type="button" id="toolbar-next-page" title="Next page (D)" data-tooltip="Next page · D">Page →</button>

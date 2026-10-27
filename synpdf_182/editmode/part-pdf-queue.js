@@ -211,7 +211,7 @@
             activePanel.hidden = false; setQueuedSaveState(true);
             document.getElementById('pdf-queue-active-name').textContent = active.name;
             draftStatus.textContent = window.SynpdfAutoBarlines?.prepared
-                ? (result.draft ? 'Edits restored.' : '') : 'Preparing barlines…';
+                ? (result.draft ? 'Edits restored.' : '') : '';
             notify('');
         } finally { loading = false; }
     }

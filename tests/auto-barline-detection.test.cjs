@@ -5,14 +5,19 @@ const path = require('node:path');
 const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../synpdf_182/editmode/auto-barline-detection.js'), 'utf8');
 const queue = fs.readFileSync(path.join(__dirname, '../synpdf_182/editmode/part-pdf-queue.js'), 'utf8');
+const tools = fs.readFileSync(path.join(__dirname, '../synpdf_182/editmode/edit-mode-tools.js'), 'utf8');
 
 function harness() {
     const status = {}, progress = {}, timers = [], calls = [], listeners = {};
+    const elements = Object.fromEntries(['pdf-loading-overlay', 'pdf-loading-title', 'pdf-loading-detail',
+        'pdf-loading-stage-meter', 'pdf-workspace', 'notation', 'pdf-edit-toolbar'].map(id => [id, {
+        hidden: true, inert: false, textContent: '', setAttribute(name, value) { this[name] = value; }
+    }]));
     const rerun = { hidden: true, disabled: false, addEventListener(_name, fn) { this.click = fn; } };
     const c = vm.createContext({
         document: {
             addEventListener: (name, fn) => { listeners[name] = fn; },
-            getElementById: id => ({ 'auto-barline-status': status, 'barline-detection-progress': progress, 'rerun-barline-detection': rerun }[id]),
+            getElementById: id => ({ 'auto-barline-status': status, 'barline-detection-progress': progress, 'rerun-barline-detection': rerun, ...elements }[id]),
             querySelector: () => ({ options: [{ value: '201', textContent: 'Chamber Music Score - Piano Quartet' }, { value: '202', textContent: 'Piano duet' }] })
         },
         setTimeout: fn => timers.push(fn),
@@ -23,7 +28,7 @@ function harness() {
     });
     c.window = c;
     vm.runInContext(source, c);
-    return { c, status, calls, listeners, rerun, async tick() { const current = timers.splice(0); for (const fn of current) await fn(); } };
+    return { c, status, calls, listeners, rerun, elements, async tick() { const current = timers.splice(0); await Promise.all(current.map(fn => fn())); } };
 }
 
 test('piano and all score IDs skip automatic detection; individual instrument parts still prepare', () => {
@@ -198,4 +203,91 @@ test('queue autosave rejects initial scans and failed runs, then includes succes
     h.rerun.click(); await h.tick();
     assert.equal(h.c.snapshot().barline_preparation, 'complete');
     assert.equal(h.c.snapshot().piece_id, '298');
+});
+
+test('the PDF overlay blocks the canvas and toolbar from opening through detection completion', async () => {
+    const h = harness(); let finish;
+    h.c.SynpdfBarlineDetection.runAllPages = () => new Promise(resolve => { finish = resolve; });
+    h.c.SynpdfAutoBarlines.opened();
+    assert.equal(h.elements['pdf-loading-overlay'].hidden, false);
+    assert.equal(h.elements.notation.inert, true);
+    assert.equal(h.elements['pdf-edit-toolbar'].inert, true);
+    assert.equal(h.elements['pdf-loading-title'].textContent, 'Loading PDF…');
+    assert.equal(h.status.hidden, true);
+    h.c.pdfDoc$$module$synpdf = { numPages: 2 };
+    h.c.metricPrecomputeInProgress$$module$synpdf = 1;
+    await h.tick();
+    assert.equal(h.elements['pdf-loading-title'].textContent, 'Finding staff systems…');
+    h.c.metricPrecomputeInProgress$$module$synpdf = 0;
+    const pending = h.tick();
+    assert.equal(h.elements['pdf-loading-overlay'].hidden, false);
+    finish(true); await pending;
+    assert.equal(h.elements['pdf-loading-overlay'].hidden, true);
+    assert.equal(h.elements.notation.inert, false);
+    assert.equal(h.elements['pdf-edit-toolbar'].inert, false);
+    assert.equal(h.elements['pdf-workspace']['aria-busy'], 'false');
+});
+
+test('saved parts wait behind the overlay for their PDF without rerunning detection', async () => {
+    const h = harness();
+    h.c.metric_arr$$module$synpdf = [1000, { cxs: [{}], bxs: [[10, 90]] }];
+    h.c.SynpdfAutoBarlines.opened(); await h.tick();
+    assert.equal(h.elements.notation.inert, true);
+    h.c.pdfDoc$$module$synpdf = { numPages: 1 };
+    await h.tick();
+    assert.equal(h.elements.notation.inert, false);
+    assert.equal(h.calls.length, 0);
+});
+
+test('a failed detector releases the overlay and leaves its error and retry button available', async () => {
+    const h = harness();
+    h.c.pdfDoc$$module$synpdf = { numPages: 1 };
+    h.c.SynpdfBarlineDetection.runAllPages = async () => false;
+    h.c.SynpdfAutoBarlines.opened(); await h.tick();
+    assert.equal(h.elements['pdf-loading-overlay'].hidden, true);
+    assert.equal(h.elements.notation.inert, false);
+    assert.equal(h.rerun.disabled, false);
+    assert.match(h.status.textContent, /did not finish/);
+});
+
+function modelHarness() {
+    const h = harness();
+    h.c.requestAnimationFrame = fn => fn();
+    h.c.setTimeout = fn => fn();
+    vm.runInContext(tools.slice(tools.indexOf('var barlineModelPreparation ='), tools.indexOf('var barlineDetectionProgress =')), h.c);
+    return h;
+}
+
+test('CNN loading paints its first-run explanation before download, then returns to page progress and stays cached', async () => {
+    const h = modelHarness(); let finish, calls = 0, painted;
+    h.c.requestAnimationFrame = fn => { painted = h.elements['pdf-loading-title'].textContent; fn(); };
+    h.c.BarlinePatchCNN = { loadAsync: () => { calls++; return new Promise(resolve => { finish = resolve; }); } };
+    h.c.SynpdfPdfLoading.show('detection', 'Detecting barlines…');
+    const pending = h.c.prepareBarlineDetectionModel();
+    assert.equal(painted, 'Loading CNN model…');
+    assert.match(h.elements['pdf-loading-detail'].textContent, /first run downloads/);
+    assert.equal(h.c.document.getElementById('barline-detection-progress').hidden, true);
+    assert.equal(h.elements['pdf-loading-stage-meter'].hidden, false);
+    assert.equal(h.elements.notation.inert, true);
+    await Promise.resolve();
+    assert.equal(calls, 1);
+    finish(); await pending;
+    assert.equal(h.elements['pdf-loading-title'].textContent, 'Detecting barlines…');
+    assert.equal(h.c.document.getElementById('barline-detection-progress').hidden, false);
+    assert.equal(h.elements['pdf-loading-stage-meter'].hidden, true);
+    h.c.SynpdfPdfLoading.hide('detection');
+    await h.c.prepareBarlineDetectionModel();
+    assert.equal(calls, 1);
+    assert.equal(h.elements['pdf-loading-overlay'].hidden, true);
+});
+
+test('a CNN initialization error clears its loading stage and permits retry', async () => {
+    const h = modelHarness();
+    h.c.BarlinePatchCNN = { loadAsync: async () => { throw new Error('Model download failed'); } };
+    await assert.rejects(h.c.prepareBarlineDetectionModel(), /Model download failed/);
+    assert.equal(h.elements['pdf-loading-overlay'].hidden, true);
+    assert.equal(h.elements.notation.inert, false);
+    h.c.BarlinePatchCNN.loadAsync = async () => {};
+    await h.c.prepareBarlineDetectionModel();
+    assert.equal(h.c.barlineModelPrepared, true);
 });

@@ -33,7 +33,10 @@ settings while using MuPDF rendering and a single page at a time.
 
 Choose **Edit barlines** on a ready part. Piece, part and edition populate Part
 Details. Fresh single-staff instrument parts run barline detection automatically
-and return to page 1. Piano parts and scores are excluded, using the part ID and
+and return to page 1. A loading overlay covers the PDF and disables its editing
+tools until loading and preparation finish. The first run shows a CNN model
+loading stage before page-by-page detection and geometry fitting; later runs
+reuse the loaded model. Piano parts and scores are excluded, using the part ID and
 catalog instrument label (including full, opera, choral and chamber scores).
 Individual string/wind parts of works containing piano still prepare automatically.
 Prepared drafts keep their existing edits and do not run detection again. Older

@@ -169,7 +169,7 @@ function batchHarness(failPage) {
     context.document = { getElementById: id => elements.get(id) };
     context.requestAnimationFrame = fn => fn();
     context.setTimeout = fn => fn();
-    vm.runInContext(toolsSource.slice(toolsSource.indexOf('var barlineDetectionProgress ='), toolsSource.indexOf('function setBatchButtonState(')), context);
+    vm.runInContext(toolsSource.slice(toolsSource.indexOf('var barlineModelPreparation ='), toolsSource.indexOf('function setBatchButtonState(')), context);
     vm.runInContext(toolsSource.slice(toolsSource.indexOf('    async function runAllPagesBarlineDetection('), toolsSource.indexOf('    function runCurrentPagePianoNormalize(')), context);
     return { context, visited, detections, buttonStates, alerts, elements };
 }

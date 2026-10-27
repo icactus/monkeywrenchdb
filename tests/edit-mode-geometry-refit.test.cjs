@@ -166,6 +166,7 @@ function detectionSetup() {
         const start = source.indexOf('function ' + name + '(');
         vm.runInContext(source.slice(start, source.indexOf('\n}', start) + 2), c);
     }
+    vm.runInContext(source.slice(source.indexOf('var barlineModelPreparation ='), source.indexOf('var barlineDetectionProgress =')), c);
     vm.runInContext(source.slice(source.indexOf('    async function runPageBarlineDetection('),
         source.indexOf('    function runCurrentPagePianoNormalize(')), c);
     return { c, events, writes, baselines, refreshes, navigation };

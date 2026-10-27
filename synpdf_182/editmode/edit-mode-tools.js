@@ -1160,6 +1160,32 @@ function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf,
     }
 }
 
+var barlineModelPreparation = null;
+var barlineModelPrepared = false;
+
+async function prepareBarlineDetectionModel() {
+    if (barlineModelPrepared || typeof BarlinePatchCNN === 'undefined' || typeof BarlinePatchCNN.loadAsync !== 'function') return;
+    if (typeof BarlinePatchCNN.isOnnxConfigured === 'function' && !BarlinePatchCNN.isOnnxConfigured()) return;
+    const loading = typeof SynpdfPdfLoading !== 'undefined' ? SynpdfPdfLoading : null;
+    if (loading) loading.show('model', 'Loading CNN model…', 'The first run downloads the model and prepares the detector. This can take a little longer.');
+    try {
+        if (!barlineModelPreparation) {
+            // Paint the model-loading message before downloading and initializing.
+            barlineModelPreparation = new Promise(function (resolve) {
+                requestAnimationFrame(function () { setTimeout(resolve, 0); });
+            }).then(function () { return BarlinePatchCNN.loadAsync(); }).then(function () {
+                barlineModelPrepared = true;
+            });
+        }
+        await barlineModelPreparation;
+    } catch (error) {
+        barlineModelPreparation = null;
+        throw error;
+    } finally {
+        if (loading) loading.hide('model');
+    }
+}
+
 var barlineDetectionProgress = null;
 
 function startBarlineDetectionProgress(totalPages) {
@@ -1170,6 +1196,7 @@ function startBarlineDetectionProgress(totalPages) {
     panel.setAttribute('aria-busy', 'true');
     document.getElementById('barline-detection-meter').value = 0;
     document.getElementById('barline-detection-status').textContent = 'Starting barline detection…';
+    if (typeof SynpdfPdfLoading !== 'undefined') SynpdfPdfLoading.show('detection', 'Detecting barlines and fitting geometry…');
 }
 
 async function updateBarlineDetectionProgress(pageNumber, completedSystems, totalSystems) {
@@ -1200,6 +1227,7 @@ function finishBarlineDetectionProgress(error) {
     if (meter && !error) meter.value = 100;
     if (status) status.textContent = error ? 'Barline detection stopped: ' + error :
         'Barline detection complete · ' + progress.totalPages + (progress.totalPages === 1 ? ' page' : ' pages');
+    if (typeof SynpdfPdfLoading !== 'undefined') SynpdfPdfLoading.hide('detection');
 }
 
 function setBatchButtonState(isRunning, currentPage, lastPage, activeMode) {
@@ -5575,6 +5603,7 @@ $(document).ready(function () {
         setBatchButtonState(true, getDisplayedPageNumber(), getDisplayedPageNumber(), 'cnn_page');
         var error = null;
         try {
+            await prepareBarlineDetectionModel();
             if (!await runPageBarlineDetection('cnn_only')) error = 'Could not process the current page.';
         } catch (err) {
             error = err.message;
@@ -5601,6 +5630,8 @@ $(document).ready(function () {
         startBarlineDetectionProgress(lastPage);
         var error = null;
         try {
+            if (!isCurrent()) return false;
+            await prepareBarlineDetectionModel();
             for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
                 if (!isCurrent()) return false;
                 setBatchButtonState(true, pageNum, lastPage, 'cnn');
@@ -5636,7 +5667,10 @@ $(document).ready(function () {
             batchDetectionInProgress = false;
             setBatchButtonState(false);
             if (isCurrent()) finishBarlineDetectionProgress(error);
-            else barlineDetectionProgress = null;
+            else {
+                barlineDetectionProgress = null;
+                if (typeof SynpdfPdfLoading !== 'undefined') SynpdfPdfLoading.hide('detection');
+            }
         }
     }
 
