@@ -1,5 +1,9 @@
 {
-  "dependencies": {
-    "pdfjs-dist": "^5.5.207"
+  "private": true,
+  "scripts": {
+    "test:pdf": "node --test tests/pdf-region-swapper.test.cjs"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "^0.1.96"
   }
 }

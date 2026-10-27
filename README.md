@@ -26,3 +26,22 @@ The "Monkey Wrench Database" name and logo are trademarks of Isaac Trapkus. You 
 Without the help of volunteers, this database will not be able to scale. If you find this project valuable and want to contribute (code fixes, syncing music, or otherwise), I'd love to hear from you.
 
 Contact: **icactusmusic AT gmail DOT com**
+
+### JavaScript dependencies and PDF tests
+
+The website serves its browser libraries directly from the repository, including
+PDF.js and its matching worker, jQuery, PDF-lib, and the edit mode ONNX Runtime.
+Running or deploying the website requires no npm installation or JavaScript build
+step.
+
+Node.js is used for automated JavaScript tests. The PDF passage swapper tests also
+use the development dependency `@napi-rs/canvas` to render PDFs outside a browser.
+To install that test dependency and run those tests:
+
+```sh
+npm ci
+npm run test:pdf
+```
+
+Other JavaScript tests can be run with `node --test tests/<name>.test.cjs`.
+The generated `node_modules/` directory is ignored and should not be committed.
