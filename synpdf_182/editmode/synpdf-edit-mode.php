@@ -8,9 +8,9 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
-    <link rel="stylesheet" href="part-pdf-queue.css?v=1">
-    <script src="part-pdf-queue.js?v=4" defer></script>
-    <script src="auto-barline-detection.js?v=1" defer></script>
+    <link rel="stylesheet" href="part-pdf-queue.css?v=2">
+    <script src="part-pdf-queue.js?v=5" defer></script>
+    <script src="auto-barline-detection.js?v=2" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
     if (file_exists('session_config.php')) {
@@ -936,22 +936,20 @@
             <section id="part-pdf-queue" aria-labelledby="pdf-queue-title">
                 <h2 id="pdf-queue-title">Parts waiting for barline work</h2>
                 <div id="pdf-queue-upload-controls" hidden>
-                    <p>Upload HD PDFs in a batch. A filename such as 71-39.pdf assigns the piece and part automatically.</p>
                     <input id="pdf-queue-files" type="file" accept="application/pdf,.pdf" multiple aria-label="HD PDFs to prepare">
-                    <button id="pdf-queue-upload" type="button">Upload HD PDFs</button>
-                    <p>The server compresses one PDF at a time. You can close this page after uploads finish.</p>
+                    <button id="pdf-queue-upload" type="button">Upload PDFs</button>
+                    <ul id="pdf-queue-uploads" aria-label="PDF uploads"></ul>
                 </div>
                 <p id="pdf-queue-status" role="status" aria-live="polite"></p>
                 <ul id="pdf-queue-items"></ul>
                 <div id="pdf-queue-active" hidden>
                     <strong id="pdf-queue-active-name"></strong>
                     <p id="pdf-queue-draft-status" role="status" aria-live="polite"></p>
-                    <label><input id="pdf-queue-reviewed" type="checkbox">Barline review complete — I checked every page.</label>
-                    <p>Use Part Details → Save Part to add both PDFs and the reviewed barlines to the library.</p>
                 </div>
             </section>
             <div id="editor-status">
                 <p id="auto-barline-status" role="status" aria-live="polite" hidden></p>
+                <button id="rerun-barline-detection" type="button" hidden title="Rebuild barlines and staff geometry on every page, replacing current barline edits">Rerun detection</button>
                 <div id="part-count-check" data-state="idle">
                     <p id="part-count-status" role="status" aria-live="polite"></p>
                 </div>
@@ -961,7 +959,7 @@
                 </div>
             </div>
             <div id="database-menu-top">
-                <h3>Part Details</h3>
+                <h3>Submit Part</h3>
             </div>
             <div id="database-menus">
                 <!-- add metric_arr -->
@@ -992,7 +990,7 @@
                             <label for="fknp2_hd">HD pdf</label>
                             <input type="file" id="fknp2_hd" name="file_hd" accept=".pdf" />
                         </div>
-                        <input type="submit" name="save" value="Save Part" />
+                        <input type="submit" name="save" value="Submit Part" />
                     </div>
                 </form>
                 <details id="catalog-tools">
@@ -1146,7 +1144,7 @@
                 <button type="button" id="barline-threshold-decrease" aria-label="Decrease barline threshold" title="Decrease image-based barline threshold (.) — include weaker lines" data-tooltip="More barlines · . · Replaces this page’s barlines">−</button>
                 <output id="barline-threshold-value" aria-labelledby="barline-threshold-label">0.80</output>
                 <button type="button" id="barline-threshold-increase" aria-label="Increase barline threshold" title="Increase image-based barline threshold (/) — keep stronger lines" data-tooltip="Fewer barlines · / · Replaces this page’s barlines">+</button>
-                <button type="button" id="toolbar-add-part" title="Open part details to add or save this part" data-tooltip="Choose piece and instrument, then Save Part">Part details / Save</button>
+                <button type="button" id="toolbar-add-part" title="Submit this part" data-tooltip="Submit Part">Submit Part</button>
             </div>
         <div id="notation">
         </div>
@@ -1197,7 +1195,7 @@
             </table>
             <p>Press the active editing key again to leave that mode. Check staff boundaries, divisi, barlines and multimeasure rests before saving.</p>
             <p>Measure counts update automatically as you edit. They include the final endpoint; a wrapped measure counts once.</p>
-            <p>Queued edits autosave. Use Part Details → Save Part to publish the PDFs and corrected barlines.</p>
+            <p>Queued edits autosave. Submit Part adds the PDFs and barlines to the library.</p>
         </div>
     </dialog>
     <!--</div> -->

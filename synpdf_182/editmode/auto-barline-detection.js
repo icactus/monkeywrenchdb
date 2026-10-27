@@ -2,7 +2,8 @@
     'use strict';
     const status = document.getElementById('auto-barline-status');
     if (!status) return;
-    let generation = 0, running = false;
+    const rerun = document.getElementById('rerun-barline-detection');
+    let generation = 0, running = false, preparation = 'idle', nextQueueDraft;
     const scoreIds = new Set([39, 48, 50, 81, 82, 83, 84, 85, 88, 89, 90, 91]);
     function exclusion(filename) {
         const name = String(filename || '').split(/[\\/]/).pop().split(/[?#]/)[0];
@@ -16,20 +17,42 @@
         return /piano|score|opera/i.test(name);
     }
     function report(text) { status.hidden = !text; status.textContent = text; }
-    function opened() {
+    function setPreparation(value) {
+        preparation = value;
+        running = value === 'running';
+        if (rerun) rerun.disabled = running;
+    }
+    function needsPreparation(draft) {
+        if (!draft) return false;
+        if (['pending', 'failed'].includes(draft.barline_preparation)) return true;
+        if (['complete', 'excluded'].includes(draft.barline_preparation)) return false;
+        // Older autosaves contain the initial grouped scan without any fitted
+        // geometry. A saved scan alone is not evidence that CNN preparation ran.
+        return !draft.metrics?.slice(1).some(page => page?.cxs?.some(system =>
+            system.csl?.length >= 2 && system.csr?.length >= 2));
+    }
+    function opened(options = {}) {
+        if (options.rerun && (running || window.SynpdfBarlineDetection?.busy || !window.pdfDoc$$module$synpdf?.numPages)) return;
+        const draft = nextQueueDraft;
+        nextQueueDraft = undefined;
         const ticket = ++generation;
-        running = false;
+        setPreparation('idle');
+        const excluded = exclusion(window.scoreFnm$$module$synpdf || window.pdfFnm$$module$synpdf);
+        if (rerun) rerun.hidden = excluded;
         const progress = document.getElementById('barline-detection-progress');
         if (progress) progress.hidden = true;
-        if (Array.isArray(window.metric_arr$$module$synpdf) && window.metric_arr$$module$synpdf.length > 1) {
+        if (!options.rerun && !needsPreparation(draft) &&
+            Array.isArray(window.metric_arr$$module$synpdf) && window.metric_arr$$module$synpdf.length > 1) {
+            setPreparation(excluded ? 'excluded' : 'complete');
             report('Saved barlines restored.');
             return;
         }
-        if (exclusion(window.scoreFnm$$module$synpdf || window.pdfFnm$$module$synpdf)) {
+        if (excluded) {
+            setPreparation('excluded');
             report('Piano part or score: automatic barline detection is off.');
             return;
         }
-        running = true;
+        setPreparation('running');
         report('Preparing the instrument part…');
         async function ready() {
             if (ticket !== generation) return;
@@ -43,16 +66,30 @@
             report('');
             const isCurrent = () => ticket === generation && window.pdfDoc$$module$synpdf === doc;
             try {
-                await detector.runAllPages('cnn_only', { automatic: true, isCurrent });
+                const completed = await detector.runAllPages('cnn_only', { automatic: true, isCurrent });
+                if (isCurrent()) {
+                    setPreparation(completed === true ? 'complete' : 'failed');
+                    if (completed !== true) report('Barline detection did not finish. Use Rerun detection to try again.');
+                }
             } catch (error) {
-                if (isCurrent()) report('Barline detection stopped: ' + error.message);
+                if (isCurrent()) {
+                    setPreparation('failed');
+                    report('Barline detection stopped: ' + error.message);
+                }
             } finally {
-                if (ticket === generation) running = false;
+                if (ticket === generation && running) setPreparation('failed');
             }
         }
         setTimeout(ready, 0);
     }
-    window.SynpdfAutoBarlines = { opened, exclusion, get running() { return running; } };
+    window.SynpdfAutoBarlines = {
+        opened, exclusion,
+        setQueueDraft(draft) { nextQueueDraft = draft; },
+        get running() { return running; },
+        get preparation() { return preparation; },
+        get prepared() { return preparation === 'complete' || preparation === 'excluded'; }
+    };
+    rerun?.addEventListener('click', () => opened({ rerun: true }));
 
     const editingKeys = new Set(['q', 'w', 'e', 'r', 'y', 's', 'd', 'o', 'j', 'PageDown', 'PageUp', '+', '=', '-', '_', '.', '/']);
     function guardEditing(event) {

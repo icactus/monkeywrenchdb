@@ -115,7 +115,7 @@ test('$ mode includes horizontal scrolling when anchoring its click and retains 
 });
 
 function detectionSetup() {
-    const c = setup(), events = [], writes = [], baselines = [], refreshes = [];
+    const c = setup(), events = [], writes = [], baselines = [], refreshes = [], navigation = [];
     let page = 1;
     Object.assign(c, {
         batchDetectionInProgress: false, divisiSplitInProgress: false,
@@ -148,7 +148,7 @@ function detectionSetup() {
         barlineDetectionProgress: { completedPages: 0 },
         setBatchButtonState() {}, setSingleStaffMode() {},
         getDisplayedPageNumber: () => page,
-        goToRenderedPage: async next => { page = next; },
+        goToRenderedPage: async next => { page = next; navigation.push(next); },
         SynpdfCorrectionTools: { snapshotV2BaselineForPage: (_page, data) => {
             events.push('baseline:' + page);
             baselines.push(clone(data));
@@ -168,7 +168,7 @@ function detectionSetup() {
     }
     vm.runInContext(source.slice(source.indexOf('    async function runPageBarlineDetection('),
         source.indexOf('    function runCurrentPagePianoNormalize(')), c);
-    return { c, events, writes, baselines, refreshes };
+    return { c, events, writes, baselines, refreshes, navigation };
 }
 
 for (const allPages of [false, true]) {
@@ -189,6 +189,7 @@ for (const allPages of [false, true]) {
             assert.deepEqual(saved.bxs, [[-50, 300, 500, 750], [50, 300, 500, -750]]);
         }
         assert.deepEqual(h.baselines, h.writes);
-        assert.deepEqual(h.refreshes, [pages.at(-1)]);
+        assert.deepEqual(h.refreshes, allPages ? [] : [1]);
+        assert.deepEqual(h.navigation, allPages ? [2, 3, 1] : []);
     });
 }

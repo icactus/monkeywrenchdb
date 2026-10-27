@@ -1,11 +1,15 @@
 # HD PDF preparation and barline queue
 
-Open Edit Mode. The primary administrator (user ID 1 by default) sees **Upload HD
+Open Edit Mode. The primary administrator (user ID 1 by default) sees **Upload
 PDFs** above the barline workflow. Select multiple PDFs, then upload the batch.
 A filename such as `71-39.pdf` assigns piece 71 and instrument/part 39. Leading
 zeroes are accepted. Only filenames that do not match known catalog IDs prompt
 for a piece and part. No PDF is published to the library at this stage.
 
+Each file has an upload progress bar. All files upload before the batch is
+submitted for server processing. Once files show **Submitted**, the browser can
+close; processing continues on the server. Upload failures do not prevent the
+remaining files from being submitted.
 The original HD file uploads in 1 MB chunks, with retry support. Interrupted
 uploads remain in the queue with **Resume upload**. Completed uploads continue
 compressing after the browser closes. Originals and work in progress live in a
@@ -32,7 +36,12 @@ Details. Fresh single-staff instrument parts run barline detection automatically
 and return to page 1. Piano parts and scores are excluded, using the part ID and
 catalog instrument label (including full, opera, choral and chamber scores).
 Individual string/wind parts of works containing piano still prepare automatically.
-Restored drafts keep their existing edits and do not run detection again. Blank
+Prepared drafts keep their existing edits and do not run detection again. Older
+queue autosaves with no fitted staff geometry resume automatic preparation.
+**Rerun detection** rebuilds barlines and fits geometry on every page of an
+instrument part, replacing current barline edits.
+Autosave waits for successful preparation; an initial scan or failed detection
+cannot be saved as completed barline work. Blank
 pages are retained and skipped during detection. The top Help button explains
 editing keys in a modal; measure-count comparisons update automatically without
 a recheck button. Edits autosave to the queue
@@ -41,8 +50,7 @@ the queued PDF restores that work. Stale tabs cannot overwrite a newer saved
 queue draft. Page-close saving uses a beacon when supported; for very large
 scores, wait for **Edits saved to the queue** before closing.
 
-After reviewing every page, check **Barline review complete** and use **Save
-Part**. This publishes the retained HD original, the prepared PDF, normalized
+Use **Submit Part** to publish the retained HD original, the prepared PDF, normalized
 reviewed geometry, and static metric JSON. Existing parts or filenames are never
 overwritten: choose another edition if necessary. A successful save removes the
 part from the pending queue and releases its temporary PDF copies. Ordinary
@@ -75,7 +83,7 @@ Optional constants in the private `phpfiles/config.php`:
 
 No database migration, extra browser permissions, email, or push notifications
 are required. Part publication uses the same filename and geometry-normalizing
-functions as the existing Save Part endpoint.
+functions as the existing part submission endpoint.
 
 ## Verification
 
@@ -83,6 +91,7 @@ functions as the existing Save Part endpoint.
 python3 -m unittest tests.test_pdf_low_memory
 php tests/pdf-queue.test.php
 node --test tests/edit-mode-part-save.test.cjs
+node --test tests/auto-barline-detection.test.cjs tests/pdf-queue-upload.test.cjs
 ```
 
 The PHP tests use a disposable local database and private temporary web root.

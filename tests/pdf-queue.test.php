@@ -78,19 +78,21 @@ try {
     $ready=null;for($i=0;$i<100;$i++){usleep(150000);$ready=qhttp($port,'get',$sessions['owner'],$id)[1]['item'];if(in_array($ready['status'],['ready','error']))break;}
     qcheck($ready['status']==='ready'&&$ready['pages']===2,'Actual background worker produces a two-page PDF: '.json_encode($ready));
     $metrics=[1000,['cxs'=>[['cs'=>[100,160],'xs'=>['x1'=>50,'x2'=>950]]],'bxs'=>[[50,350,650,950]]],['cxs'=>[],'bxs'=>[]]];
-    $save=['piece_id'=>71,'instrument_id'=>39,'metrics'=>json_encode($metrics),'edition_label'=>'','measures_version'=>1];
+    $save=['piece_id'=>71,'instrument_id'=>39,'metrics'=>json_encode($metrics),'edition_label'=>'','measures_version'=>1,'barline_preparation'=>'complete'];
+    qcheck(qhttp($port,'draft',$sessions['admin'],$id,array_replace($save,['barline_preparation'=>'pending']))[0]===400,'An unfinished scan cannot be saved as a prepared draft.');
     qcheck(qhttp($port,'draft',$sessions['admin'],$id,$save)[0]===200,'Reviewing admin can autosave geometry.');
     qcheck(qhttp($port,'get',$sessions['admin'],$id)[1]['draft']['metrics']===$metrics,'Queue geometry restores across sessions.');
+    qcheck(qhttp($port,'get',$sessions['admin'],$id)[1]['draft']['barline_preparation']==='complete','Successful preparation is retained separately from saved scan geometry.');
     qcheck(qhttp($port,'draft',$sessions['owner'],$id,$save)[0]===400,'A stale tab cannot overwrite another saved draft.');
     $save['revision']=1;
-    qcheck(qhttp($port,'publish',$sessions['admin'],$id,$save)[0]===400,'Publication requires explicit page review.');
+    qcheck(qhttp($port,'publish',$sessions['admin'],$id,array_replace($save,['metrics'=>json_encode(array_slice($metrics,0,2))]))[0]===400,'Submission still requires all PDF pages.');
     file_put_contents($fixture.'/public/blocked-file','preserve');mkdir($fixture.'/public/pdfs');file_put_contents($fixture.'/public/pdfs/71-39.pdf','existing');
-    qcheck(qhttp($port,'publish',$sessions['admin'],$id,$save+['reviewed'=>'1'])[0]===403,'Publication never overwrites an existing PDF.');
+    qcheck(qhttp($port,'publish',$sessions['admin'],$id,$save)[0]===403,'Publication never overwrites an existing PDF.');
     qcheck(file_get_contents($fixture.'/public/pdfs/71-39.pdf')==='existing'&&(int)$db->query('SELECT COUNT(*) FROM metric_arr')->fetch_row()[0]===0,'Conflict preserves files and rolls back database changes.');unlink($fixture.'/public/pdfs/71-39.pdf');
-    [$code,$published]=qhttp($port,'publish',$sessions['admin'],$id,$save+['reviewed'=>'1']);qcheck($code===200&&$published['item']['status']==='completed','Reviewed part publishes to library.');
+    [$code,$published]=qhttp($port,'publish',$sessions['admin'],$id,$save);qcheck($code===200&&$published['item']['status']==='completed','Submit Part publishes directly without a review checkbox.');
     qcheck(hash_file('sha256',$source)===hash_file('sha256',$fixture.'/public/hd-pdfs/71-39.pdf'),'Published HD source is exact.');
     qcheck(json_decode(file_get_contents($fixture.'/public/data/metrics/'.$published['item']['metric_arr_id'].'.json'),true)===$metrics,'Static metrics are normalized and published.');
-    qcheck(qhttp($port,'publish',$sessions['admin'],$id,$save+['reviewed'=>'1'])[0]===200&&(int)$db->query('SELECT COUNT(*) FROM metric_arr')->fetch_row()[0]===1,'Publication retry is idempotent.');
+    qcheck(qhttp($port,'publish',$sessions['admin'],$id,$save)[0]===200&&(int)$db->query('SELECT COUNT(*) FROM metric_arr')->fetch_row()[0]===1,'Publication retry is idempotent.');
     if(in_array('--browser',$argv,true)){echo json_encode(['fixture'=>$fixture,'port'=>$port,'sessions'=>$sessions])."\nBrowser fixture ready. Press Enter.\n";fgets(STDIN);}
     echo "Passed $checks PDF queue checks.\n";
 } finally { if(is_resource($server)){proc_terminate($server);proc_close($server);} $connection->query("DROP DATABASE IF EXISTS `$database`");if(is_dir($fixture))qremove($fixture); }

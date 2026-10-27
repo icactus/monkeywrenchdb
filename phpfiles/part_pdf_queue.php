@@ -119,7 +119,7 @@ function mwPdfQueueCopyExclusive(string $source, string $destination): void {
 }
 function mwPdfQueuePublish(array $item, string $folder, mysqli $db, string $webroot, array $input): array {
     if ($item['status'] === 'completed') return $item;
-    if ($item['status'] !== 'ready' || ($input['reviewed'] ?? '') !== '1') throw new InvalidArgumentException('Review every page, then confirm the barline review before saving.');
+    if ($item['status'] !== 'ready') throw new InvalidArgumentException('This PDF is not ready to submit.');
     if ((int) ($input['revision'] ?? 0) !== ($item['draft_revision'] ?? 0)) throw new InvalidArgumentException('This draft changed in another tab. Reload saved work before publishing.');
     $details = mwPdfQueueDetails($db, $input);
     $metrics = json_decode($input['metrics'] ?? '', true, 512, JSON_THROW_ON_ERROR);

@@ -6,7 +6,9 @@
 #pdf-queue-items .pdf-queue-name{font-size:14px;font-weight:bold;overflow-wrap:anywhere}
 #pdf-queue-items .pdf-queue-detail{font-size:12px;margin:4px 0;overflow-wrap:anywhere}
 #part-pdf-queue button,#pdf-queue-assignment button{font-size:13px;padding:6px 10px;margin:3px;border:1px solid #62868e;border-radius:5px;cursor:pointer}
-#pdf-queue-active{border-top:1px solid #cedddd;padding-top:10px}#pdf-queue-active label{display:flex;gap:8px;align-items:flex-start;font-size:13px}
+#pdf-queue-active{border-top:1px solid #cedddd;padding-top:10px}
+#pdf-queue-uploads{display:grid;gap:10px;padding:0;list-style:none;font-size:13px}
+#pdf-queue-uploads li{display:grid;gap:4px;overflow-wrap:anywhere}#pdf-queue-uploads progress{width:100%;height:12px}
 #pdf-queue-assignment{max-width:700px;width:90%;border:1px solid #62868e;border-radius:10px;padding:20px}
 #pdf-queue-assignment::backdrop{background:#0006}#pdf-queue-assignment .pdf-assignment-row{border-top:1px solid #cedddd;padding:12px 0}
 #pdf-queue-assignment select{display:block;width:100%;margin:6px 0;padding:8px;font-size:14px}
