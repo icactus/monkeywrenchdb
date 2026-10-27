@@ -420,9 +420,9 @@ function initGlobals$$module$synpdf() {
     repMaten$$module$synpdf = []
 }
 
-function Wijzer$$module$synpdf(a, b, c, d) {
-    this.width = b.width;
-    this.$cvs = $(b);
+function Wijzer$$module$synpdf(timeline, canvas, line, timeIndex) {
+    this.width = canvas.width;
+    this.$cvs = $(canvas);
     const $notation = $("#notation");
 
     // ensure the scroll container exists
@@ -661,8 +661,8 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     if (typeof setZoomControlsEnabled === 'function') {
         setZoomControlsEnabled(!window.twoUpMode);
     }
-    window.toggleMobileDrawer = function (e) {
-        if (e) e.stopPropagation();
+    window.toggleMobileDrawer = function (clickEvent) {
+        if (clickEvent) clickEvent.stopPropagation();
         const drawer = $('sidecontentbar');
         const backdrop = $('#mobile-drawer-backdrop');
 
@@ -697,7 +697,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         }
         try {
             localStorage.setItem('darkMode', isDark ? '1' : '0');
-        } catch (e) { /* ignore storage errors */ }
+        } catch (storageError) { /* ignore storage errors */ }
     };
     $('#invert-check-menu-mobile, #invert-check-menu-desktop').off('change').on('change', function () {
         applyDarkModeState($(this).is(':checked'));
@@ -714,7 +714,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
         if (logo && isDark) {
             logo.src = 'assets/img/monkeydark.png';
         }
-    } catch (e) { /* ignore storage errors */ }
+    } catch (storageError) { /* ignore storage errors */ }
 
     // Share Link
     $('#share-btn-dock, #share-btn-mobile').off('click').on('click', async function () {
@@ -888,15 +888,15 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     setupPlayPauseButton();
     this.maatloper = $('<div class="demaat" style="background:' + globalHighlightColor + '; opacity:0.2; left:0px; top:0px; width:0px; height:0px; z-index:2"></div>');
     $("#notation-scroll").append(this.maatloper);
-    this.times = a;
+    this.times = timeline;
     this.tixlb = tixlb$$module$synpdf;
     this.cursorTime = 0;
-    this.time_ix = d;
-    var e = this;
+    this.time_ix = timeIndex;
+    var cursor = this;
     setTimeout(function () {
-        e.setOffsetX.call(e)
+        cursor.setOffsetX.call(cursor)
     }, 0);
-    this.line = c;
+    this.line = line;
     this.repcnt = this.msre = 1;
     this.tmargin = this.lastTix = this.lastSync = 0;
     this.setTmargin();
@@ -904,31 +904,31 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     this.paused = !0
 }
 Wijzer$$module$synpdf.prototype.drawRepTokens = function () {
-    function a(a, b, c) {
-        var d = b[0],
-            f = b[1],
-            e = b[2],
-            n = b[3];
-        b = c[a] || 1;
-        c[a] = b + 1;
-        a = deMaten$$module$synpdf[a];
-        const canvasX = pageLeftInNotation(a.page ?? 1);
-        d = a.x + d * a.w + canvasX;
-        e = $('<div class="reptkn">' + e + n + "</div>");
-        e.css({
-            top: a.y - 25 * b,
-            left: d,
+    function appendRepeatToken(measureIndex, tokenSpec, tokenCounts) {
+        var tokenLeft = tokenSpec[0],
+            tokenColor = tokenSpec[1],
+            tokenLabel = tokenSpec[2],
+            tokenSuffix = tokenSpec[3];
+        var tokenLevel = tokenCounts[measureIndex] || 1;
+        tokenCounts[measureIndex] = tokenLevel + 1;
+        var measureBox = deMaten$$module$synpdf[measureIndex];
+        const canvasX = pageLeftInNotation(measureBox.page ?? 1);
+        tokenLeft = measureBox.x + tokenLeft * measureBox.w + canvasX;
+        var tokenElement = $('<div class="reptkn">' + tokenLabel + tokenSuffix + "</div>");
+        tokenElement.css({
+            top: measureBox.y - 25 * tokenLevel,
+            left: tokenLeft,
             position: "absolute",
-            color: f
+            color: tokenColor
         });
-        $("#notation-scroll").append(e)
+        $("#notation-scroll").append(tokenElement)
     }
-    var b = [],
-        c = [];
+    var jumpTokenCounts = [],
+        destinationTokenCounts = [];
     $(".reptkn").remove();
-    repMaten$$module$synpdf.forEach(function (d) {
-        a(d.jmp, d.tkj, b);
-        void 0 != d.dst && a(d.dst, d.tkd, c)
+    repMaten$$module$synpdf.forEach(function (repeat) {
+        appendRepeatToken(repeat.jmp, repeat.tkj, jumpTokenCounts);
+        void 0 != repeat.dst && appendRepeatToken(repeat.dst, repeat.tkd, destinationTokenCounts)
     });
     $(".reptkn").toggle(!!opt$$module$synpdf.synbox)
 };
@@ -936,16 +936,16 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function () {
 Wijzer$$module$synpdf.prototype.setOffsetX = function () {
     // keep xoffset for compatibility, but compute in notation-space
     this.xoffset = pageLeftInNotation(1); // left page in spread
-    const t = (window.__restoreTime != null)
+    const scoreTime = (window.__restoreTime != null)
         ? window.__restoreTime
         : (this.cursorTime ?? (elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - (window.offset$$module$synpdf || 0));
-    this.time2x(t);
+    this.time2x(scoreTime);
     if (window.__restoreTime != null) window.__restoreTime = null;
 };
 
-Wijzer$$module$synpdf.prototype.time2x = function (a) {
-    var b, c;
-    this.cursorTime = a;
+Wijzer$$module$synpdf.prototype.time2x = function (scoreTime) {
+    var timelineIndex, timelineEntry;
+    this.cursorTime = scoreTime;
 
     var low = 0;
     var high = deTijden$$module$synpdf.length - 1;
@@ -955,7 +955,7 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
     while (low <= high) {
         mid = Math.floor((low + high) / 2);
         var currentMeasure = deTijden$$module$synpdf[mid];
-        if (currentMeasure.t <= a) {
+        if (currentMeasure.t <= scoreTime) {
             foundIndex = mid;
             low = mid + 1;
         } else {
@@ -964,10 +964,10 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
     }
 
     if (foundIndex !== -1) {
-        b = foundIndex;
-        c = deTijden$$module$synpdf[b];
-        demix$$module$synpdf = c.mix;
-        detix$$module$synpdf = b;
+        timelineIndex = foundIndex;
+        timelineEntry = deTijden$$module$synpdf[timelineIndex];
+        demix$$module$synpdf = timelineEntry.mix;
+        detix$$module$synpdf = timelineIndex;
 
         if (!opt$$module$synpdf.synbox && detix$$module$synpdf === deTijden$$module$synpdf.length - 1 && !m1_timer$$module$synpdf) {
             msc_wz$$module$synpdf.goMsre(1, {});
@@ -975,18 +975,18 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
             return;
         }
 
-        c = deMaten$$module$synpdf[demix$$module$synpdf];
-        if (c) {
-            var measureX = c.x;
-            var measureWidth = c.w;
-            var measureY = c.y;
-            var measureHeight = c.h;
-            var measureScrollY = (typeof c.scrollY === "number") ? c.scrollY : measureY;
+        var measureBox = deMaten$$module$synpdf[demix$$module$synpdf];
+        if (measureBox) {
+            var measureX = measureBox.x;
+            var measureWidth = measureBox.w;
+            var measureY = measureBox.y;
+            var measureHeight = measureBox.h;
+            var measureScrollY = (typeof measureBox.scrollY === "number") ? measureBox.scrollY : measureY;
 
-            if (this.highlightedMeasure === c && measureX === xcurprev$$module$synpdf && measureY === ycurprev$$module$synpdf) {
+            if (this.highlightedMeasure === measureBox && measureX === xcurprev$$module$synpdf && measureY === ycurprev$$module$synpdf) {
                 return;
             }
-            this.highlightedMeasure = c;
+            this.highlightedMeasure = measureBox;
 
             var distanceToScrollY = measureScrollY - scrollYCurPrev$$module$synpdf;
             var distanceToScrollX = measureX - xcurprev$$module$synpdf; // Track X change
@@ -995,19 +995,19 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
             scrollYCurPrev$$module$synpdf = measureScrollY;
 
             var maatlooperStyle = this.maatloper[0].style;
-            const canvasX = pageLeftInNotation(c.page ?? 1);
+            const canvasX = pageLeftInNotation(measureBox.page ?? 1);
             const measureLeft = canvasX + measureX;
             const measureRight = measureLeft + measureWidth;
             maatlooperStyle.left = measureLeft + "px";
             maatlooperStyle.top = measureY + "px";
             maatlooperStyle.width = measureWidth + "px";
             maatlooperStyle.height = measureHeight + "px";
-            if ([c.ytl, c.ytr, c.ybl, c.ybr].every(function (v) { return typeof v === "number"; })) {
+            if ([measureBox.ytl, measureBox.ytr, measureBox.ybl, measureBox.ybr].every(function (coordinate) { return typeof coordinate === "number"; })) {
                 const clipPolygon = 'polygon(' +
-                    '0px ' + (c.ytl - c.y) + 'px,' +
-                    measureWidth + 'px ' + (c.ytr - c.y) + 'px,' +
-                    measureWidth + 'px ' + (c.ybr - c.y) + 'px,' +
-                    '0px ' + (c.ybl - c.y) + 'px)';
+                    '0px ' + (measureBox.ytl - measureBox.y) + 'px,' +
+                    measureWidth + 'px ' + (measureBox.ytr - measureBox.y) + 'px,' +
+                    measureWidth + 'px ' + (measureBox.ybr - measureBox.y) + 'px,' +
+                    '0px ' + (measureBox.ybl - measureBox.y) + 'px)';
                 maatlooperStyle.clipPath = clipPolygon;
                 maatlooperStyle.webkitClipPath = clipPolygon;
             } else {
@@ -1017,36 +1017,36 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
 
             // Handle linkedBoxes for split measures
             $('.linked-maatloper').remove();  // Clear old linked highlights
-            if (c.linkedBoxes && c.linkedBoxes.length > 0) {
-                for (var lb = 0; lb < c.linkedBoxes.length; lb++) {
-                    var lbox = c.linkedBoxes[lb];
-                    var linkedCanvasX = pageLeftInNotation(lbox.page ?? c.page ?? 1);
-                    var linkedCanvasY = pageTopInNotation(lbox.page ?? c.page ?? 1);
+            if (measureBox.linkedBoxes && measureBox.linkedBoxes.length > 0) {
+                for (var linkedBoxIndex = 0; linkedBoxIndex < measureBox.linkedBoxes.length; linkedBoxIndex++) {
+                    var linkedBox = measureBox.linkedBoxes[linkedBoxIndex];
+                    var linkedCanvasX = pageLeftInNotation(linkedBox.page ?? measureBox.page ?? 1);
+                    var linkedCanvasY = pageTopInNotation(linkedBox.page ?? measureBox.page ?? 1);
 
                     // If page not rendered yet, skip drawing linked box
                     if (linkedCanvasY === null) continue;
 
-                    var topPos = (typeof lbox.relativeY !== 'undefined')
-                        ? (linkedCanvasY + lbox.relativeY)
-                        : (lbox.y); // Fallback for old data or if relativeY missing (shouldn't happen with new knip)
+                    var topPos = (typeof linkedBox.relativeY !== 'undefined')
+                        ? (linkedCanvasY + linkedBox.relativeY)
+                        : (linkedBox.y); // Fallback for old data or if relativeY missing (shouldn't happen with new knip)
 
                     var linkedDiv = $('<div class="linked-maatloper demaat"/>').css({
                         position: 'absolute',
-                        left: (linkedCanvasX + lbox.x) + 'px',
+                        left: (linkedCanvasX + linkedBox.x) + 'px',
                         top: topPos + 'px',
-                        width: lbox.w + 'px',
-                        height: lbox.h + 'px',
+                        width: linkedBox.w + 'px',
+                        height: linkedBox.h + 'px',
                         background: globalHighlightColor,  // Same as main maatloper
                         opacity: 0.2,  // Same as main maatloper
                         pointerEvents: 'none',
                         zIndex: 2  // Same as main maatloper
                     });
-                    if ([lbox.ytl, lbox.ytr, lbox.ybl, lbox.ybr].every(function (v) { return typeof v === 'number'; })) {
+                    if ([linkedBox.ytl, linkedBox.ytr, linkedBox.ybl, linkedBox.ybr].every(function (coordinate) { return typeof coordinate === 'number'; })) {
                         var linkedClipPolygon = 'polygon(' +
-                            '0px ' + (lbox.ytl - lbox.y) + 'px,' +
-                            lbox.w + 'px ' + (lbox.ytr - lbox.y) + 'px,' +
-                            lbox.w + 'px ' + (lbox.ybr - lbox.y) + 'px,' +
-                            '0px ' + (lbox.ybl - lbox.y) + 'px)';
+                            '0px ' + (linkedBox.ytl - linkedBox.y) + 'px,' +
+                            linkedBox.w + 'px ' + (linkedBox.ytr - linkedBox.y) + 'px,' +
+                            linkedBox.w + 'px ' + (linkedBox.ybr - linkedBox.y) + 'px,' +
+                            '0px ' + (linkedBox.ybl - linkedBox.y) + 'px)';
                         linkedDiv.css({
                             clipPath: linkedClipPolygon,
                             webkitClipPath: linkedClipPolygon
@@ -1085,7 +1085,7 @@ Wijzer$$module$synpdf.prototype.time2x = function (a) {
                     useInstantScroll ||= Math.abs(distanceToScrollY) > 500;
                 }
             } else {
-                const curPage = c.page ?? 1;
+                const curPage = measureBox.page ?? 1;
                 // 1-based spreads are (1|2), (3|4), ... . Start from the
                 // spread anchor, then keep the selected measure visible at zoom.
                 const spreadStart = (curPage % 2 === 0) ? curPage - 1 : curPage;
@@ -1131,10 +1131,10 @@ function scrollNotationTo$$module$synpdf(targetY, targetX, instant) {
     }
 }
 
-Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, shiftKey) {
-    var d;
+Wijzer$$module$synpdf.prototype.x2time = function (clickX, clickY, isLongPress, shiftKey) {
+    var measureIndex;
 
-    // Helper to check if click (a,b) is within a box
+    // Check whether the notation-space click is within a measure box.
     function isClickInBox(box, clickX, clickY, pageOffset) {
         const boxLeft = (box.x + pageOffset);
         const boxRight = boxLeft + box.w;
@@ -1143,23 +1143,23 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, shiftKey) {
         return !(clickY > boxBottom || clickX > boxRight || clickX < boxLeft || clickY < boxTop);
     }
 
-    for (d = 0; d < deMaten$$module$synpdf.length; ++d) {
-        var e = deMaten$$module$synpdf[d];
-        const pageOffset = pageLeftInNotation(e.page ?? 1);
-        const exLeft = (e.x + pageOffset);
-        const exRight = exLeft + e.w;
+    for (measureIndex = 0; measureIndex < deMaten$$module$synpdf.length; ++measureIndex) {
+        var measureBox = deMaten$$module$synpdf[measureIndex];
+        const pageOffset = pageLeftInNotation(measureBox.page ?? 1);
+        const exLeft = (measureBox.x + pageOffset);
+        const exRight = exLeft + measureBox.w;
 
         // Check main measure box
-        let isInMeasure = isClickInBox(e, a, b, pageOffset);
-        let clickedBox = e;  // Track which box was clicked
+        let isInMeasure = isClickInBox(measureBox, clickX, clickY, pageOffset);
+        let clickedBox = measureBox;  // Track which box was clicked
         let clickedBoxOffset = pageOffset;  // Track the page offset of clicked box
 
         // Also check linkedBoxes (for split measures)
-        if (!isInMeasure && e.linkedBoxes) {
-            for (let lb = 0; lb < e.linkedBoxes.length; lb++) {
-                const linkedBox = e.linkedBoxes[lb];
-                const linkedPageOffset = pageLeftInNotation(linkedBox.page ?? e.page ?? 1);
-                const linkedPageTop = pageTopInNotation(linkedBox.page ?? e.page ?? 1) ?? 0;
+        if (!isInMeasure && measureBox.linkedBoxes) {
+            for (let linkedBoxIndex = 0; linkedBoxIndex < measureBox.linkedBoxes.length; linkedBoxIndex++) {
+                const linkedBox = measureBox.linkedBoxes[linkedBoxIndex];
+                const linkedPageOffset = pageLeftInNotation(linkedBox.page ?? measureBox.page ?? 1);
+                const linkedPageTop = pageTopInNotation(linkedBox.page ?? measureBox.page ?? 1) ?? 0;
 
                 // Create a temporary box with corrected Y coordinates using relativeY
                 const adjustedBox = {
@@ -1171,7 +1171,7 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, shiftKey) {
                         : linkedBox.y
                 };
 
-                if (isClickInBox(adjustedBox, a, b, linkedPageOffset)) {
+                if (isClickInBox(adjustedBox, clickX, clickY, linkedPageOffset)) {
                     isInMeasure = true;
                     clickedBox = adjustedBox;  // Use the linked box for calculations
                     clickedBoxOffset = linkedPageOffset;
@@ -1183,15 +1183,15 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, shiftKey) {
         if (isInMeasure) {
             const clickedBoxLeft = clickedBox.x + clickedBoxOffset;
 
-            if (a < clickedBoxLeft) {
+            if (clickX < clickedBoxLeft) {
                 keyDown$$module$synpdf({
                     key: " "
                 });
                 break;
             }
             if (opt$$module$synpdf.synbox) {
-                if (c) {
-                    this.setRepeat(d);
+                if (isLongPress) {
+                    this.setRepeat(measureIndex);
                     break;
                 }
                 if (!msc_wz$$module$synpdf.paused) {
@@ -1199,13 +1199,13 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, shiftKey) {
                     break;
                 }
             }
-            currentMeasureIndex = d;
+            currentMeasureIndex = measureIndex;
 
             // Find the matching time entry - if shiftKey, find LAST occurrence (for repeats)
             var timeIndex = -1;
             var matchCount = 0;
             for (var searchIdx = 0; searchIdx < deTijden$$module$synpdf.length; ++searchIdx) {
-                if (d == deTijden$$module$synpdf[searchIdx].mix) {
+                if (measureIndex == deTijden$$module$synpdf[searchIdx].mix) {
                     matchCount++;
                     if (shiftKey) {
                         timeIndex = searchIdx; // Keep updating to get the last one
@@ -1217,20 +1217,20 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, shiftKey) {
             }
 
             if (timeIndex >= 0) {
-                b = timeIndex;
-                d = deTijden$$module$synpdf[b].t;
-                currentMeasureTime = d;
+                var selectedTimeIndex = timeIndex;
+                var measureStartTime = deTijden$$module$synpdf[selectedTimeIndex].t;
+                currentMeasureTime = measureStartTime;
                 window.__lastMeasureClickTime = Date.now(); // Track when user clicked on a measure
-                var f = b < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[b + 1].t : d + 2;
+                var nextMeasureTime = selectedTimeIndex < deTijden$$module$synpdf.length - 1 ? deTijden$$module$synpdf[selectedTimeIndex + 1].t : measureStartTime + 2;
                 // Use clicked box dimensions for position calculation
-                b = d + (f - d) * (a - clickedBox.x - clickedBoxOffset) / clickedBox.w;
-                const targetMediaTime = (opt$$module$synpdf.lncsr ? b : d + TOFF$$module$synpdf) + offset$$module$synpdf;
+                var interpolatedTime = measureStartTime + (nextMeasureTime - measureStartTime) * (clickX - clickedBox.x - clickedBoxOffset) / clickedBox.w;
+                const targetMediaTime = (opt$$module$synpdf.lncsr ? interpolatedTime : measureStartTime + TOFF$$module$synpdf) + offset$$module$synpdf;
                 window.__pendingMeasureClickMediaTime = targetMediaTime;
                 if (elmed$$module$synpdf.getPlayerState() === 5) {
                     elmed$$module$synpdf.seekTo(targetMediaTime);
                     msc_wz$$module$synpdf.time2x(targetMediaTime - offset$$module$synpdf);
                 } else {
-                    c ? opt$$module$synpdf.loop && this.doLoopTag(a, clickedBox.y, b, d, f, {
+                    isLongPress ? opt$$module$synpdf.loop && this.doLoopTag(clickX, clickedBox.y, interpolatedTime, measureStartTime, nextMeasureTime, {
                         x1: clickedBox.x + clickedBoxOffset,
                         x2: clickedBox.x + clickedBoxOffset + clickedBox.w
                     }) : playPause2$$module$synpdf(!1, targetMediaTime);
@@ -1265,11 +1265,11 @@ function primeMeasureClickPlaybackStart$$module$synpdf(mediaTime) {
 
 function findCurrentMeasureTime() {
     return new Promise((resolve, reject) => {
-        let d;
-        for (let b = 0; b < deTijden$$module$synpdf.length; b++) {
-            if (demix$$module$synpdf === deTijden$$module$synpdf[b].mix) {
-                d = deTijden$$module$synpdf[b].t;
-                currentMeasureTime = d;
+        let measureTime;
+        for (let timelineIndex = 0; timelineIndex < deTijden$$module$synpdf.length; timelineIndex++) {
+            if (demix$$module$synpdf === deTijden$$module$synpdf[timelineIndex].mix) {
+                measureTime = deTijden$$module$synpdf[timelineIndex].t;
+                currentMeasureTime = measureTime;
                 resolve();
                 break;
             }
@@ -1281,10 +1281,10 @@ function findCurrentMeasureTime() {
 
 
 // No wrap-around on measure navigation
-Wijzer$$module$synpdf.prototype.goMsre = function (next, ev) {
+Wijzer$$module$synpdf.prototype.goMsre = function (next, keyEvent) {
     if (0 == deTijden$$module$synpdf.length) return;
-    if (ev && (ev.altKey || ev.ctrlKey || ev.shiftKey || ev.metaKey)) return;
-    ev && ev.preventDefault && ev.preventDefault();
+    if (keyEvent && (keyEvent.altKey || keyEvent.ctrlKey || keyEvent.shiftKey || keyEvent.metaKey)) return;
+    keyEvent && keyEvent.preventDefault && keyEvent.preventDefault();
 
     // normalize current index
     if (typeof detix$$module$synpdf !== "number" || isNaN(detix$$module$synpdf))
@@ -1315,22 +1315,22 @@ Wijzer$$module$synpdf.prototype.goMsre = function (next, ev) {
 };
 
 // 1-based page index + linear wrap (…1→2→3→…)
-Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
-    if (ev && (ev.altKey || ev.ctrlKey || ev.shiftKey || ev.metaKey)) return;
-    ev && ev.preventDefault && ev.preventDefault();
+Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, keyEvent) {
+    if (keyEvent && (keyEvent.altKey || keyEvent.ctrlKey || keyEvent.shiftKey || keyEvent.metaKey)) return;
+    keyEvent && keyEvent.preventDefault && keyEvent.preventDefault();
     if (!deMaten$$module$synpdf || !deMaten$$module$synpdf.length) return;
 
-    const pageOf = (m) => (m && m.page != null) ? m.page : 1; // 1-based
+    const pageOf = (measureBox) => (measureBox && measureBox.page != null) ? measureBox.page : 1; // 1-based
 
-    const rowKeyOf = (m) => (m && typeof m.scrollY === "number") ? m.scrollY : m.y;
+    const rowKeyOf = (measureBox) => (measureBox && typeof measureBox.scrollY === "number") ? measureBox.scrollY : measureBox.y;
 
     const collectRows = (pageIdx) => {
         const set = Object.create(null);
-        for (let i = 0; i < deMaten$$module$synpdf.length; i++) {
-            const mm = deMaten$$module$synpdf[i];
-            if (pageOf(mm) === pageIdx) set[rowKeyOf(mm)] = 1;
+        for (let measureIndex = 0; measureIndex < deMaten$$module$synpdf.length; measureIndex++) {
+            const measureBox = deMaten$$module$synpdf[measureIndex];
+            if (pageOf(measureBox) === pageIdx) set[rowKeyOf(measureBox)] = 1;
         }
-        return Object.keys(set).map(Number).sort((a, b) => a - b);
+        return Object.keys(set).map(Number).sort((leftRowY, rightRowY) => leftRowY - rightRowY);
     };
 
     const cur = deMaten$$module$synpdf[demix$$module$synpdf];
@@ -1414,22 +1414,22 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
     // safe X inside a measure on the target row (avoid indent no-ops)
     function pickTargetMeasure(targetPage, targetRowKey, preferInnerX) {
         const candidates = [];
-        for (let j = 0; j < deMaten$$module$synpdf.length; j++) {
-            const mm = deMaten$$module$synpdf[j];
-            if (pageOf(mm) !== targetPage) continue;
-            if (Math.abs(rowKeyOf(mm) - targetRowKey) <= 2) candidates.push(mm);
+        for (let measureIndex = 0; measureIndex < deMaten$$module$synpdf.length; measureIndex++) {
+            const measureBox = deMaten$$module$synpdf[measureIndex];
+            if (pageOf(measureBox) !== targetPage) continue;
+            if (Math.abs(rowKeyOf(measureBox) - targetRowKey) <= 2) candidates.push(measureBox);
         }
         if (!candidates.length) {
             // No measures on target row - find any on target page
-            for (let j = 0; j < deMaten$$module$synpdf.length; j++) {
-                const mm2 = deMaten$$module$synpdf[j];
-                if (pageOf(mm2) === targetPage) return mm2;
+            for (let measureIndex = 0; measureIndex < deMaten$$module$synpdf.length; measureIndex++) {
+                const measureBox = deMaten$$module$synpdf[measureIndex];
+                if (pageOf(measureBox) === targetPage) return measureBox;
             }
             return null;
         }
 
         // Sort candidates by X position to find leftmost/rightmost
-        candidates.sort((a, b) => a.x - b.x);
+        candidates.sort((leftMeasure, rightMeasure) => leftMeasure.x - rightMeasure.x);
         const leftmost = candidates[0];
         const rightmost = candidates[candidates.length - 1];
 
@@ -1445,10 +1445,10 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
 
         // Find the closest measure to the preferred X
         let best = candidates[0], bestDist = Math.abs((best.x + best.w * 0.5) - preferInnerX);
-        for (let j = 1; j < candidates.length; j++) {
-            const cx = candidates[j].x + candidates[j].w * 0.5;
-            const d = Math.abs(cx - preferInnerX);
-            if (d < bestDist) { bestDist = d; best = candidates[j]; }
+        for (let candidateIndex = 1; candidateIndex < candidates.length; candidateIndex++) {
+            const measureCenterX = candidates[candidateIndex].x + candidates[candidateIndex].w * 0.5;
+            const distance = Math.abs(measureCenterX - preferInnerX);
+            if (distance < bestDist) { bestDist = distance; best = candidates[candidateIndex]; }
         }
 
         return best;
@@ -1463,48 +1463,48 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (isDown, isPageJump, ev) {
     this.x2time(absX, targetY, !1, false);
 };
 
-Wijzer$$module$synpdf.prototype.changeTimesKeyb = function (a) {
+Wijzer$$module$synpdf.prototype.changeTimesKeyb = function (timeDelta) {
     if (!(detix$$module$synpdf >= deTijden$$module$synpdf.length - 1)) {
-        var b = deTijden$$module$synpdf[detix$$module$synpdf + 1];
-        b.t += a;
-        b.t = Math.round(1E3 * b.t) / 1E3
+        var nextTimeEntry = deTijden$$module$synpdf[detix$$module$synpdf + 1];
+        nextTimeEntry.t += timeDelta;
+        nextTimeEntry.t = Math.round(1E3 * nextTimeEntry.t) / 1E3
     }
 };
-Wijzer$$module$synpdf.prototype.changeOffset = function (a) {
-    offset$$module$synpdf += a;
+Wijzer$$module$synpdf.prototype.changeOffset = function (offsetDelta) {
+    offset$$module$synpdf += offsetDelta;
     offset$$module$synpdf = Math.round(1E3 * offset$$module$synpdf) / 1E3;
-    for (var b = 1; b < deTijden$$module$synpdf.length; ++b) {
-        var c = deTijden$$module$synpdf[b];
-        c.t -= a;
-        c.t = Math.round(1E3 * c.t) / 1E3
+    for (var timelineIndex = 1; timelineIndex < deTijden$$module$synpdf.length; ++timelineIndex) {
+        var timeEntry = deTijden$$module$synpdf[timelineIndex];
+        timeEntry.t -= offsetDelta;
+        timeEntry.t = Math.round(1E3 * timeEntry.t) / 1E3
     }
 };
 
 Wijzer$$module$synpdf.prototype.setTmargin = function () {
-    var a = $("#notation-scroll").offset().top,
-        b = $("#rollijn").offset().top;
-    b < a && (b = a + 15, $("#rollijn").css("top", b + "px"));
-    var c = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
-    b > c.y + a && (b = a + c.y - dottedHeight$$module$synpdf, $("#rollijn").css("top", b + "px"));
-    var d = $("#notation-scroll").height();
-    b + 2 * dottedHeight$$module$synpdf > a + d && (b = a + d - 2 * dottedHeight$$module$synpdf, $("#rollijn").css("top", b + "px"));
-    this.tmargin = dottedHeight$$module$synpdf + b - a;
-    const sc = document.getElementById('notation-scroll');
-    if (!sc || !sc.classList.contains('two-up')) {
-        doeRol$$module$synpdf(c.y - this.tmargin, 1);
+    var notationTop = $("#notation-scroll").offset().top,
+        guideTop = $("#rollijn").offset().top;
+    guideTop < notationTop && (guideTop = notationTop + 15, $("#rollijn").css("top", guideTop + "px"));
+    var measureBox = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
+    guideTop > measureBox.y + notationTop && (guideTop = notationTop + measureBox.y - dottedHeight$$module$synpdf, $("#rollijn").css("top", guideTop + "px"));
+    var notationHeight = $("#notation-scroll").height();
+    guideTop + 2 * dottedHeight$$module$synpdf > notationTop + notationHeight && (guideTop = notationTop + notationHeight - 2 * dottedHeight$$module$synpdf, $("#rollijn").css("top", guideTop + "px"));
+    this.tmargin = dottedHeight$$module$synpdf + guideTop - notationTop;
+    const scroller = document.getElementById('notation-scroll');
+    if (!scroller || !scroller.classList.contains('two-up')) {
+        doeRol$$module$synpdf(measureBox.y - this.tmargin, 1);
     }
 };
 
 Wijzer$$module$synpdf.prototype.compCountIn = function () {
-    var a = {
+    var countIn = {
         time: 2.5,
         num: 4
     },
-        b = opt$$module$synpdf.bpmsr.split("-").map(function (a) {
-            return parseInt(a)
+        beatSettings = opt$$module$synpdf.bpmsr.split("-").map(function (setting) {
+            return parseInt(setting)
         });
-    a.time = (deTijden$$module$synpdf[detix$$module$synpdf + 1].t - deTijden$$module$synpdf[detix$$module$synpdf].t) / b[0];
-    a.num = b[0];
+    countIn.time = (deTijden$$module$synpdf[detix$$module$synpdf + 1].t - deTijden$$module$synpdf[detix$$module$synpdf].t) / beatSettings[0];
+    countIn.num = beatSettings[0];
     return arecordingFullData
 };
 
@@ -1527,17 +1527,17 @@ DummyPlayer$$module$synpdf.prototype.play = function () {
     $('.demaat').show();
     $('.linked-maatloper').show();
     if (-1 == this.klok) {
-        var a = this;
+        var player = this;
         this.setKlok(function () {
-            a.currentTime += a.step / 1E3;
+            player.currentTime += player.step / 1E3;
             tick$$module$synpdf()
         }, this.step)
     }
 };
 
-DummyPlayer$$module$synpdf.prototype.setKlok = function (a, b) {
+DummyPlayer$$module$synpdf.prototype.setKlok = function (callback, intervalMs) {
     -1 != this.klok && clearInterval(this.klok);
-    this.klok = a ? setInterval(a, b) : -1;
+    this.klok = callback ? setInterval(callback, intervalMs) : -1;
     this.paused = !1
 };
 DummyPlayer$$module$synpdf.prototype.clearKlok = function () {
@@ -1547,7 +1547,7 @@ DummyPlayer$$module$synpdf.prototype.clearKlok = function () {
     tick$$module$synpdf()
 };
 
-function setPagenum$$module$synpdf(a) {
+function setPagenum$$module$synpdf(pageEvent) {
     1 > opt$$module$synpdf.pagenum && (opt$$module$synpdf.pagenum = pdfDoc$$module$synpdf.numPages);
     opt$$module$synpdf.pagenum > pdfDoc$$module$synpdf.numPages && (opt$$module$synpdf.pagenum = 1);
     $("#pagenum").val(opt$$module$synpdf.pagenum);
@@ -1556,22 +1556,22 @@ function setPagenum$$module$synpdf(a) {
     resizePdfSyn$$module$synpdf()
 }
 
-function doeRol$$module$synpdf(a, b) {
-    if (0 > a) {
-        a = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
+function doeRol$$module$synpdf(scrollTop, instantScroll) {
+    if (0 > scrollTop) {
+        var measureBox = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
         deNot$$module$synpdf.scrollTop = 0;
-        $("#rollijn").css("top", a.y + $("#notation-scroll").offset().top - dottedHeight$$module$synpdf - 1);
+        $("#rollijn").css("top", measureBox.y + $("#notation-scroll").offset().top - dottedHeight$$module$synpdf - 1);
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin();
     } else {
-        a = Math.round(a);
-        if (deNot$$module$synpdf.scrollTop != a) {
+        scrollTop = Math.round(scrollTop);
+        if (deNot$$module$synpdf.scrollTop != scrollTop) {
             if (scrollFlag === 1) {
                 deNot$$module$synpdf.style["scroll-behavior"] = "auto";
-                deNot$$module$synpdf.scrollTop = a;
+                deNot$$module$synpdf.scrollTop = scrollTop;
             }
             else {
-                deNot$$module$synpdf.style["scroll-behavior"] = b ? "auto" : "smooth";
-                deNot$$module$synpdf.scrollTop = a;
+                deNot$$module$synpdf.style["scroll-behavior"] = instantScroll ? "auto" : "smooth";
+                deNot$$module$synpdf.scrollTop = scrollTop;
             }
         }
     }
@@ -1598,64 +1598,64 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
         }
     });
     function getSystemEdgeLines(system) {
-        var cs = Array.isArray(system.cs) ? system.cs.slice() : [];
+        var staffLines = Array.isArray(system.cs) ? system.cs.slice() : [];
         function normalizeEdgeLines(edgeLines) {
             if (!Array.isArray(edgeLines) || edgeLines.length < 2) return null;
-            if (cs.length === 2 && edgeLines.length > 2) {
+            if (staffLines.length === 2 && edgeLines.length > 2) {
                 return [edgeLines[0], edgeLines[edgeLines.length - 1]];
             }
             return edgeLines.slice();
         }
-        var csl = normalizeEdgeLines(system.csl);
-        var csr = normalizeEdgeLines(system.csr);
-        if ((!csl || !csr || csl.length !== csr.length) && cs.length >= 2) {
-            csl = cs.slice();
-            csr = cs.slice();
+        var leftStaffLines = normalizeEdgeLines(system.csl);
+        var rightStaffLines = normalizeEdgeLines(system.csr);
+        if ((!leftStaffLines || !rightStaffLines || leftStaffLines.length !== rightStaffLines.length) && staffLines.length >= 2) {
+            leftStaffLines = staffLines.slice();
+            rightStaffLines = staffLines.slice();
         }
-        if ((!csl || !csr || csl.length !== csr.length) && cs.length < 2) {
-            csl = null;
-            csr = null;
+        if ((!leftStaffLines || !rightStaffLines || leftStaffLines.length !== rightStaffLines.length) && staffLines.length < 2) {
+            leftStaffLines = null;
+            rightStaffLines = null;
         }
-        if (cs.length < 2 && csl && csr && csl.length === csr.length) {
-            cs = csl.map(function (leftY, index) {
-                return (leftY + csr[index]) / 2;
+        if (staffLines.length < 2 && leftStaffLines && rightStaffLines && leftStaffLines.length === rightStaffLines.length) {
+            staffLines = leftStaffLines.map(function (leftY, index) {
+                return (leftY + rightStaffLines[index]) / 2;
             });
         }
         return {
-            cs: cs,
-            left: csl || cs.slice(),
-            right: csr || cs.slice()
+            cs: staffLines,
+            left: leftStaffLines || staffLines.slice(),
+            right: rightStaffLines || staffLines.slice()
         };
     }
     function interpolateSystemLine(system, lineIndex, x) {
-        var xs = system.xs || { x1: 0, x2: 0 };
+        var systemBounds = system.xs || { x1: 0, x2: 0 };
         var edges = getSystemEdgeLines(system);
         var left = edges.left[lineIndex];
         var right = edges.right[lineIndex];
         if (typeof left !== 'number' || typeof right !== 'number') return null;
-        if (xs.x2 === xs.x1) return left;
-        var t = (x - xs.x1) / (xs.x2 - xs.x1);
-        t = Math.max(0, Math.min(1, t));
-        return left + t * (right - left);
+        if (systemBounds.x2 === systemBounds.x1) return left;
+        var positionRatio = (x - systemBounds.x1) / (systemBounds.x2 - systemBounds.x1);
+        positionRatio = Math.max(0, Math.min(1, positionRatio));
+        return left + positionRatio * (right - left);
     }
-    for (let i = 0; i < parsedPageMetricArr.length; ++i) {
+    for (let systemIndex = 0; systemIndex < parsedPageMetricArr.length; ++systemIndex) {
         //staff means not just one staff but the entire system if applicable
-        let system = parsedPageMetricArr[i];
+        let system = parsedPageMetricArr[systemIndex];
         let edgeLines = getSystemEdgeLines(system);
         let staff = edgeLines.cs;
         var staffTopLine = staff[0];
         var staffBottomLine = staff[staff.length - 1];
-        var staffBarlineArr = pageBarlineArray[i];
-        for (let j = 0; j < staffBarlineArr.length - 1; ++j) {
+        var staffBarlineArr = pageBarlineArray[systemIndex];
+        for (let barlineIndex = 0; barlineIndex < staffBarlineArr.length - 1; ++barlineIndex) {
             // Use absolute values for coordinates (negative = split marker)
-            var measureLeftBarline = Math.abs(staffBarlineArr[j]);
-            var measureRightBarline = Math.abs(staffBarlineArr[j + 1]);
-            const k = (window.__deMScale || 1);
+            var measureLeftBarline = Math.abs(staffBarlineArr[barlineIndex]);
+            var measureRightBarline = Math.abs(staffBarlineArr[barlineIndex + 1]);
+            const geometryScale = (window.__deMScale || 1);
             var topLeft = interpolateSystemLine(system, 0, measureLeftBarline);
             var topRight = interpolateSystemLine(system, 0, measureRightBarline);
             var bottomLeft = interpolateSystemLine(system, staff.length - 1, measureLeftBarline);
             var bottomRight = interpolateSystemLine(system, staff.length - 1, measureRightBarline);
-            if ([topLeft, topRight, bottomLeft, bottomRight].some(function (v) { return typeof v !== 'number'; })) {
+            if ([topLeft, topRight, bottomLeft, bottomRight].some(function (coordinate) { return typeof coordinate !== 'number'; })) {
                 topLeft = topRight = staffTopLine;
                 bottomLeft = bottomRight = staffBottomLine;
             }
@@ -1664,22 +1664,22 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
 
             // If LEFT barline is negative, this is a continuation segment
             // Add it to the previous measure's linkedBoxes instead of creating new entry
-            if (staffBarlineArr[j] < 0 && deMaten$$module$synpdf.length > 0) {
+            if (staffBarlineArr[barlineIndex] < 0 && deMaten$$module$synpdf.length > 0) {
                 var prevMeasure = deMaten$$module$synpdf[deMaten$$module$synpdf.length - 1];
                 if (!prevMeasure.linkedBoxes) {
                     prevMeasure.linkedBoxes = [];
                 }
                 prevMeasure.linkedBoxes.push({
-                    x: (measureLeftBarline * k),
-                    y: (boxTop * k),
-                    scrollY: (staffTopLine * k),
-                    relativeY: ((boxTop - cumulativeHeight) * k),
-                    w: ((measureRightBarline - measureLeftBarline) * k),
-                    h: ((boxBottom - boxTop) * k),
-                    ytl: (topLeft * k),
-                    ytr: (topRight * k),
-                    ybl: (bottomLeft * k),
-                    ybr: (bottomRight * k),
+                    x: (measureLeftBarline * geometryScale),
+                    y: (boxTop * geometryScale),
+                    scrollY: (staffTopLine * geometryScale),
+                    relativeY: ((boxTop - cumulativeHeight) * geometryScale),
+                    w: ((measureRightBarline - measureLeftBarline) * geometryScale),
+                    h: ((boxBottom - boxTop) * geometryScale),
+                    ytl: (topLeft * geometryScale),
+                    ytr: (topRight * geometryScale),
+                    ybl: (bottomLeft * geometryScale),
+                    ybr: (bottomRight * geometryScale),
                     page: pageNum
                 });
                 prevMeasure.split = true;
@@ -1687,17 +1687,17 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
             }
 
             // Normal measure - create new entry
-            var isSplit = staffBarlineArr[j + 1] < 0;
+            var isSplit = staffBarlineArr[barlineIndex + 1] < 0;
             deMaten$$module$synpdf.push({
-                x: (measureLeftBarline * k),
-                y: (boxTop * k),
-                scrollY: (staffTopLine * k),
-                w: ((measureRightBarline - measureLeftBarline) * k),
-                h: ((boxBottom - boxTop) * k),
-                ytl: (topLeft * k),
-                ytr: (topRight * k),
-                ybl: (bottomLeft * k),
-                ybr: (bottomRight * k),
+                x: (measureLeftBarline * geometryScale),
+                y: (boxTop * geometryScale),
+                scrollY: (staffTopLine * geometryScale),
+                w: ((measureRightBarline - measureLeftBarline) * geometryScale),
+                h: ((boxBottom - boxTop) * geometryScale),
+                ytl: (topLeft * geometryScale),
+                ytr: (topRight * geometryScale),
+                ybl: (bottomLeft * geometryScale),
+                ybr: (bottomRight * geometryScale),
                 page: pageNum,
                 split: isSplit
             });
@@ -1707,33 +1707,33 @@ function knip$$module$synpdf(canvas, pageMetricArray, cumulativeHeight, pageNum)
 }
 
 function addDummySys$$module$synpdf(geometryOnly) {
-    var a = Cs$$module$synpdf[Cs$$module$synpdf.length - 1],
-        b = a.xs.x2;
+    var lastSystem = Cs$$module$synpdf[Cs$$module$synpdf.length - 1],
+        rightEdge = lastSystem.xs.x2;
     Cs$$module$synpdf.push({
-        cs: [a.cs[0], a.cs[a.cs.length - 1]],
-        csl: Array.isArray(a.csl) ? a.csl.slice() : [a.cs[0], a.cs[a.cs.length - 1]],
-        csr: Array.isArray(a.csr) ? a.csr.slice() : [a.cs[0], a.cs[a.cs.length - 1]],
+        cs: [lastSystem.cs[0], lastSystem.cs[lastSystem.cs.length - 1]],
+        csl: Array.isArray(lastSystem.csl) ? lastSystem.csl.slice() : [lastSystem.cs[0], lastSystem.cs[lastSystem.cs.length - 1]],
+        csr: Array.isArray(lastSystem.csr) ? lastSystem.csr.slice() : [lastSystem.cs[0], lastSystem.cs[lastSystem.cs.length - 1]],
         xs: {
-            x1: b,
-            x2: b - 4
+            x1: rightEdge,
+            x2: rightEdge - 4
         }
     });
     $("#render").toggle(!1);
-    a = deMaten$$module$synpdf[deMaten$$module$synpdf.length - 1];
+    var lastMeasure = deMaten$$module$synpdf[deMaten$$module$synpdf.length - 1];
     deMaten$$module$synpdf.push({
-        x: a.x + a.w,
-        y: a.y,
-        scrollY: (typeof a.scrollY === "number") ? a.scrollY : a.y,
+        x: lastMeasure.x + lastMeasure.w,
+        y: lastMeasure.y,
+        scrollY: (typeof lastMeasure.scrollY === "number") ? lastMeasure.scrollY : lastMeasure.y,
         w: 2,
-        h: a.h,
-        page: a.page   // <-- keep the dummy on the correct page
+        h: lastMeasure.h,
+        page: lastMeasure.page   // <-- keep the dummy on the correct page
     });
     // Live edits reuse the existing timeline, scroll margin, and bottom spacer.
     if (geometryOnly) return;
-    a = deTijden$$module$synpdf.length;
-    a < deMaten$$module$synpdf.length && deTijden$$module$synpdf.push({
-        t: deTijden$$module$synpdf[a - 1].t + 2,
-        mix: a
+    var timelineIndex = deTijden$$module$synpdf.length;
+    timelineIndex < deMaten$$module$synpdf.length && deTijden$$module$synpdf.push({
+        t: deTijden$$module$synpdf[timelineIndex - 1].t + 2,
+        mix: timelineIndex
     });
     $("#notation-scroll").append('<div id="leeg" style="height:' + bottomSpace$$module$synpdf +
         'px">&nbsp;</div>');
@@ -1790,22 +1790,22 @@ async function buildAllPageShells$$module$synpdf() {
     const isTwoUp = scroller?.classList.contains('two-up');
     const rowGap = isTwoUp ? (parseFloat(getComputedStyle(scroller).rowGap) || 0) : 0;
 
-    for (let p = 1; p <= pdfDoc$$module$synpdf.numPages;) {
+    for (let pageNumber = 1; pageNumber <= pdfDoc$$module$synpdf.numPages;) {
         // LEFT PAGE
-        const pageL = await (pageCache[p] || (pageCache[p] = pdfDoc$$module$synpdf.getPage(p)));
+        const pageL = await (pageCache[pageNumber] || (pageCache[pageNumber] = pdfDoc$$module$synpdf.getPage(pageNumber)));
         const viewL = pageL._pageInfo.view; // [x0,y0,x1,y1]
         const cssW = deMetriek$$module$synpdf[0];
         const cssHL = cssW * ((viewL[3] - viewL[1]) / (viewL[2] - viewL[0]));
 
         let cnvL = document.createElement('canvas');
-        cnvL.id = `canvas${p}`;
+        cnvL.id = `canvas${pageNumber}`;
         cnvL.width = 1; cnvL.height = 1;
         cnvL.style.width = cssW + 'px';
         cnvL.style.height = cssHL + 'px';
         cnvL.classList.remove('rendered');
-        cnvL = compPage$$module$synpdf(cnvL, p, cumulativeHeight); // same top for both pages in a spread
+        cnvL = compPage$$module$synpdf(cnvL, pageNumber, cumulativeHeight); // same top for both pages in a spread
         if (observer) observer.observe(cnvL);
-        if (p === 1) {
+        if (pageNumber === 1) {
             pageRenderPriorities.set(1, 0);
             renderPageIfNotRendered(1);
         }
@@ -1814,19 +1814,19 @@ async function buildAllPageShells$$module$synpdf() {
         let step = 1;
 
         // RIGHT PAGE (if any)
-        if (isTwoUp && p + 1 <= pdfDoc$$module$synpdf.numPages) {
-            const r = p + 1;
-            const pageR = await (pageCache[r] || (pageCache[r] = pdfDoc$$module$synpdf.getPage(r)));
+        if (isTwoUp && pageNumber + 1 <= pdfDoc$$module$synpdf.numPages) {
+            const rightPageNumber = pageNumber + 1;
+            const pageR = await (pageCache[rightPageNumber] || (pageCache[rightPageNumber] = pdfDoc$$module$synpdf.getPage(rightPageNumber)));
             const viewR = pageR._pageInfo.view;
             const cssHR = cssW * ((viewR[3] - viewR[1]) / (viewR[2] - viewR[0]));
 
             let cnvR = document.createElement('canvas');
-            cnvR.id = `canvas${r}`;
+            cnvR.id = `canvas${rightPageNumber}`;
             cnvR.width = 1; cnvR.height = 1;
             cnvR.style.width = cssW + 'px';
             cnvR.style.height = cssHR + 'px';
             cnvR.classList.remove('rendered');
-            cnvR = compPage$$module$synpdf(cnvR, r, cumulativeHeight); // <-- same cumulativeHeight
+            cnvR = compPage$$module$synpdf(cnvR, rightPageNumber, cumulativeHeight); // <-- same cumulativeHeight
             if (observer) observer.observe(cnvR);
 
             rowMaxH = Math.max(cssHL, cssHR);
@@ -1834,7 +1834,7 @@ async function buildAllPageShells$$module$synpdf() {
         }
 
         cumulativeHeight += isTwoUp ? (rowMaxH + rowGap) : rowMaxH;
-        p += step;
+        pageNumber += step;
     }
 }
 
@@ -1853,7 +1853,7 @@ async function readPdf$$module$synpdf(pdfData, dataType) {
     initGlobals$$module$synpdf();
 
     let pdfCopy = pdfData;
-    let d;
+    let isJpegUrl;
 
     // Debugging: Log input parameters
     console.debug("[PDF] Loading PDF with dataType:", dataType);
@@ -1861,7 +1861,7 @@ async function readPdf$$module$synpdf(pdfData, dataType) {
 
     // Handle JPEG/Blob URLs
     if (dataType === "url") {
-        d = /jpe?g$/i.test(pdfCopy);
+        isJpegUrl = /jpe?g$/i.test(pdfCopy);
         console.debug("[PDF] Detected URL type (JPEG/Blob):", pdfCopy);
     }
 
@@ -1891,7 +1891,7 @@ async function readPdf$$module$synpdf(pdfData, dataType) {
     }
 
     // Load as Image (JPEG/Blob)
-    if (dataType === "url" && (d || /^blob:/.test(pdfCopy))) {
+    if (dataType === "url" && (isJpegUrl || /^blob:/.test(pdfCopy))) {
         console.debug("[PDF] Loading as image:", pdfCopy);
         pdfDoc$$module$synpdf = new Image();
         pdfDoc$$module$synpdf.crossOrigin = "anonymous";
@@ -2081,7 +2081,7 @@ class RenderingQueue {
             job.onDiscard();
             return false;
         });
-        this.queue.sort((a, b) => a.priority() - b.priority());
+        this.queue.sort((leftJob, rightJob) => leftJob.priority() - rightJob.priority());
         while (this.running < this.concurrency && this.queue.length) {
             const job = this.queue.shift();
             this.running++;
@@ -2190,22 +2190,22 @@ function renderPageIfNotRendered(pageIndex) {
         renderingStatus[pageIndex] = 'rendering';
         const pagePromise = cache[pageIndex]
             ? Promise.resolve(cache[pageIndex])
-            : pdf.getPage(pageIndex).then(p => { cache[pageIndex] = p; return p; });
+            : pdf.getPage(pageIndex).then(page => { cache[pageIndex] = page; return page; });
         let renderTask;
 
         return pagePromise.then(function (page) {
             // A scroll or score switch may have happened while getPage awaited data.
             if (!Number.isFinite(priority())) return false;
             const devicePixelRatio = window.devicePixelRatio || 1;
-            const pv = pageView[pageIndex] || { w: page._pageInfo.view[2], h: page._pageInfo.view[3], rotation: page.rotate || 0 };
-            const baseScale = deMetriek$$module$synpdf[0] / pv.w; // logical page width / natural width
+            const pageGeometry = pageView[pageIndex] || { w: page._pageInfo.view[2], h: page._pageInfo.view[3], rotation: page.rotate || 0 };
+            const baseScale = deMetriek$$module$synpdf[0] / pageGeometry.w; // logical page width / natural width
             const enhancedScale = baseScale * Math.min(devicePixelRatio, (phoneCheck ? 1.5 : 3));
-            const viewport = page.getViewport({ scale: enhancedScale, rotation: pv.rotation || 0 });
+            const viewport = page.getViewport({ scale: enhancedScale, rotation: pageGeometry.rotation || 0 });
 
-            const ctx = canvas.getContext('2d');
+            const context = canvas.getContext('2d');
             canvas.width = Math.floor(viewport.width);
             canvas.height = Math.floor(viewport.height);
-            ctx.imageSmoothingEnabled = !phoneCheck;
+            context.imageSmoothingEnabled = !phoneCheck;
             // CSS size is already correct from shell build
 
             // Cancel any pending render task for this page
@@ -2215,7 +2215,7 @@ function renderPageIfNotRendered(pageIndex) {
             }
 
             // Start new render task
-            renderTask = page.render({ canvasContext: ctx, viewport: viewport });
+            renderTask = page.render({ canvasContext: context, viewport: viewport });
             activeRenderTasks[pageIndex] = renderTask;
 
             return renderTask.promise.then(() => true);
@@ -2256,10 +2256,10 @@ function manageRenderedCanvases(canvasId) {
     // If the number of rendered pages exceeds the maximum, remove the oldest
     while (renderedCanvasesQueue.size > MAX_RENDERED_PAGES) {
         let toDrop = null;
-        for (const id of renderedCanvasesQueue) {
-            const p = parseInt(id.replace('canvas', ''), 10);
-            if (!visiblePages.has(p)) {
-                toDrop = id;
+        for (const cachedCanvasId of renderedCanvasesQueue) {
+            const cachedPageIndex = parseInt(cachedCanvasId.replace('canvas', ''), 10);
+            if (!visiblePages.has(cachedPageIndex)) {
+                toDrop = cachedCanvasId;
                 break;
             }
         }
@@ -2348,8 +2348,8 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
         observer.observe(canvas);
     }
     if (pageNum === 1 && newInstrumentTime2xFlag === 1) {
-        const t = (elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf;
-        msc_wz$$module$synpdf.time2x(t);
+        const scoreTime = (elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0) - offset$$module$synpdf;
+        msc_wz$$module$synpdf.time2x(scoreTime);
         newInstrumentTime2xFlag = 0;
     }
     if (window.twoUpMode && !window.__didInitialTwoUpFit && pageNum === 2) {
@@ -2362,13 +2362,13 @@ function compPage$$module$synpdf(canvas, pageNum, cumulativeHeight) {
             // Wait an extra frame so layout settles before positioning the shader
             requestAnimationFrame(() => {
                 window.__didInitialTwoUpFit = true;
-                const t = (msc_wz$$module$synpdf?.cursorTime)
+                const scoreTime = (msc_wz$$module$synpdf?.cursorTime)
                     ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
                         - (window.offset$$module$synpdf || 0));
                 xcurprev$$module$synpdf = -1;
                 ycurprev$$module$synpdf = -1;
                 scrollYCurPrev$$module$synpdf = -1;
-                msc_wz$$module$synpdf?.time2x(t);
+                msc_wz$$module$synpdf?.time2x(scoreTime);
             });
         });
     }
@@ -2461,9 +2461,9 @@ function kliklang$$module$synpdf(startEvent) {
     }
 }
 
-function startIntf$$module$synpdf(a) {
+function startIntf$$module$synpdf(canvas) {
     elmed$$module$synpdf || (elmed$$module$synpdf = dummyPlayer$$module$synpdf);
-    msc_wz$$module$synpdf = new Wijzer$$module$synpdf(times$$module$synpdf, a, msc_wz$$module$synpdf ? msc_wz$$module$synpdf.line : 0, msc_wz$$module$synpdf ? msc_wz$$module$synpdf.time_ix : 1);
+    msc_wz$$module$synpdf = new Wijzer$$module$synpdf(times$$module$synpdf, canvas, msc_wz$$module$synpdf ? msc_wz$$module$synpdf.line : 0, msc_wz$$module$synpdf ? msc_wz$$module$synpdf.time_ix : 1);
     $("#wait").css("display", "none");
     $("#rollijn").on("mousedown touchstart", lijn_shift$$module$synpdf);
     opt$$module$synpdf.offrol && $("#rollijn").css("top", opt$$module$synpdf.offrol);
@@ -2499,18 +2499,18 @@ function resizePdf$$module$synpdf(scrollType) {
         const scroller = document.getElementById('notation-scroll');
         const inTwoUp = !!scroller && scroller.classList.contains('two-up');
 
-        let t;
+        let scoreTime;
         if (inTwoUp && typeof __restoreMix === 'number' &&
             Array.isArray(deTijden$$module$synpdf) &&
             deTijden$$module$synpdf[__restoreMix]) {
             // Anchor to the same measure to keep the same spread
-            t = deTijden$$module$synpdf[__restoreMix].t;
+            scoreTime = deTijden$$module$synpdf[__restoreMix].t;
             // ensure time2x() executes the 2-up spread snap branch
             window.twoUpInitialScrollPending = true;
         } else {
             // fall back to time-based restore
             const now = (elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0);
-            t = (__restoreTime != null) ? __restoreTime : (now - offset$$module$synpdf);
+            scoreTime = (__restoreTime != null) ? __restoreTime : (now - offset$$module$synpdf);
         }
 
         // force a reposition even if measure coords match cached previous
@@ -2518,7 +2518,7 @@ function resizePdf$$module$synpdf(scrollType) {
         ycurprev$$module$synpdf = -1;
         scrollYCurPrev$$module$synpdf = -1;
 
-        msc_wz$$module$synpdf.time2x(t);
+        msc_wz$$module$synpdf.time2x(scoreTime);
         msc_wz$$module$synpdf.setTmargin();
 
         // clear restore hints
@@ -2720,48 +2720,48 @@ function changeStartTime(newTime) {
 function setNotationHeight$$module$synpdf() {
     $("#buttons").toggleClass("noheight", !!opt$$module$synpdf.noplyr);
     $("#knop").toggle(!!opt$$module$synpdf.playbtn);
-    var a = parseFloat($("#buttons").css("height"));
-    // $("#vidyub").css("width", (1.52 * a).toFixed());
+    var buttonsHeight = parseFloat($("#buttons").css("height"));
+    // $("#vidyub").css("width", (1.52 * buttonsHeight).toFixed());
     msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin();
 }
 
-function lijn_shift$$module$synpdf(a) {
-    a.preventDefault();
-    a.stopPropagation();
-    var b = "touchstart" == a.type;
+function lijn_shift$$module$synpdf(startEvent) {
+    startEvent.preventDefault();
+    startEvent.stopPropagation();
+    var isTouch = "touchstart" == startEvent.type;
     $("#rollijn").toggleClass("rolgroen");
-    var c = b ? $("#rollijn") : $("body");
-    c.on(b ? "touchmove" : "mousemove", function (a) {
+    var dragTarget = isTouch ? $("#rollijn") : $("body");
+    dragTarget.on(isTouch ? "touchmove" : "mousemove", function (moveEvent) {
         $("#notation-scroll").offset();
-        opt$$module$synpdf.offrol = (100 * ((b ? a.originalEvent.touches[0].clientY : a.clientY) - dottedHeight$$module$synpdf / 2) / document.body.clientHeight).toFixed(2) + "%";
+        opt$$module$synpdf.offrol = (100 * ((isTouch ? moveEvent.originalEvent.touches[0].clientY : moveEvent.clientY) - dottedHeight$$module$synpdf / 2) / document.body.clientHeight).toFixed(2) + "%";
         $("#rollijn").css("top", opt$$module$synpdf.offrol);
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin()
     });
-    c.on(b ? "touchend" : "mouseup", function (a) {
-        c.off("mousemove touchmove mouseup touchend");
+    dragTarget.on(isTouch ? "touchend" : "mouseup", function (endEvent) {
+        dragTarget.off("mousemove touchmove mouseup touchend");
         $("#rollijn").toggleClass("rolgroen")
     })
 }
 
 var in_count_in$$module$synpdf = 0;
 
-function do_count_in$$module$synpdf(a, b) {
-    function c() {
+function do_count_in$$module$synpdf(playSpec, startDelayMs) {
+    function clearCountIn() {
         $("#countin").toggle(!1);
         clearInterval(in_count_in$$module$synpdf);
         in_count_in$$module$synpdf = 0
     }
 
-    function d() {
-        $("#countin").html("<b>" + e.num + "</b>").toggle(!0);
-        0 == e.num-- && (c(), playPause$$module$synpdf(a, b))
+    function advanceCountIn() {
+        $("#countin").html("<b>" + countIn.num + "</b>").toggle(!0);
+        0 == countIn.num-- && (clearCountIn(), playPause$$module$synpdf(playSpec, startDelayMs))
     }
-    if (in_count_in$$module$synpdf) c();
+    if (in_count_in$$module$synpdf) clearCountIn();
     else {
-        a = a.replace(":true", ":false");
-        var e = msc_wz$$module$synpdf.compCountIn();
-        d();
-        in_count_in$$module$synpdf = setInterval(d, 1E3 * e.time)
+        playSpec = playSpec.replace(":true", ":false");
+        var countIn = msc_wz$$module$synpdf.compCountIn();
+        advanceCountIn();
+        in_count_in$$module$synpdf = setInterval(advanceCountIn, 1E3 * countIn.time)
     }
 }
 
@@ -2805,8 +2805,8 @@ function playPause2$$module$synpdf(play, time) {
     playPause$$module$synpdf(play, 0)
 }
 
-function setPauseState$$module$synpdf(a) {
-    msc_wz$$module$synpdf && (msc_wz$$module$synpdf.paused = a, $("#knop").val(a ? "Play" : "Pause"), $("#sync_out").css("background", a ? "" : "#ff0"))
+function setPauseState$$module$synpdf(isPaused) {
+    msc_wz$$module$synpdf && (msc_wz$$module$synpdf.paused = isPaused, $("#knop").val(isPaused ? "Play" : "Pause"), $("#sync_out").css("background", isPaused ? "" : "#ff0"))
 }
 
 function pauseer$$module$synpdf() {
@@ -2903,57 +2903,57 @@ function keyDown$$module$synpdf(keyEvent) {
 
 function msc_check_preload$$module$synpdf() {
     // fills out opt with defaults in needed
-    for (var b in opt_default$$module$synpdf) opt$$module$synpdf[b] = b in opt$$module$synpdf ? opt$$module$synpdf[b] : opt_default$$module$synpdf[b];
+    for (var optionName in opt_default$$module$synpdf) opt$$module$synpdf[optionName] = optionName in opt$$module$synpdf ? opt$$module$synpdf[optionName] : opt_default$$module$synpdf[optionName];
     metric_arr$$module$synpdf && (deMetriek$$module$synpdf = metric_arr$$module$synpdf, schaalMetriek$$module$synpdf());
     media_dir$$module$synpdf && pdf_file$$module$synpdf && (pdf_file$$module$synpdf = media_dir$$module$synpdf + pdf_file$$module$synpdf);
     pdfFnm$$module$synpdf = pdf_file$$module$synpdf;
     pdf_file$$module$synpdf && readPdf$$module$synpdf(pdf_file$$module$synpdf, "url");
     offset_js$$module$synpdf && (offset$$module$synpdf = offset_js$$module$synpdf);
     opt$$module$synpdf.yubvid && !opt$$module$synpdf.nomed && setPlayer$$module$synpdf("", "");
-    opt$$module$synpdf.no_menu && !fullmenu$$module$synpdf && ($("#sync").css("display", "none"), opt$$module$synpdf.btns = 0, $("body").on("contextmenu", function (a) {
-        a.preventDefault()
+    opt$$module$synpdf.no_menu && !fullmenu$$module$synpdf && ($("#sync").css("display", "none"), opt$$module$synpdf.btns = 0, $("body").on("contextmenu", function (contextMenuEvent) {
+        contextMenuEvent.preventDefault()
     }));
 }
 
 function schaalMetriek$$module$synpdf() {
-    var a = (deMetriek$$module$synpdf[0]),
-        b = 1;
-    null == a ? (a = opt$$module$synpdf.pagewd, b = a / 1E3) : deMetriek$$module$synpdf[0] != opt$$module$synpdf.pagewd && (a = opt$$module$synpdf.pagewd, b = a / deMetriek$$module$synpdf[0]);
-    deMetriek$$module$synpdf[0] = a;
-    1 != b && deMetriek$$module$synpdf.forEach(function (a, d) {
-        0 != d && (a.cxs.forEach(function (a) {
-            a.cs.forEach(function (c, d) {
-                return a.cs[d] = c * b
+    var pageWidth = (deMetriek$$module$synpdf[0]),
+        scaleFactor = 1;
+    null == pageWidth ? (pageWidth = opt$$module$synpdf.pagewd, scaleFactor = pageWidth / 1E3) : deMetriek$$module$synpdf[0] != opt$$module$synpdf.pagewd && (pageWidth = opt$$module$synpdf.pagewd, scaleFactor = pageWidth / deMetriek$$module$synpdf[0]);
+    deMetriek$$module$synpdf[0] = pageWidth;
+    1 != scaleFactor && deMetriek$$module$synpdf.forEach(function (pageMetrics, pageIndex) {
+        0 != pageIndex && (pageMetrics.cxs.forEach(function (staffSystem) {
+            staffSystem.cs.forEach(function (coordinate, coordinateIndex) {
+                return staffSystem.cs[coordinateIndex] = coordinate * scaleFactor
             });
-            Array.isArray(a.csl) && a.csl.forEach(function (c, d) {
-                return a.csl[d] = c * b
+            Array.isArray(staffSystem.csl) && staffSystem.csl.forEach(function (coordinate, coordinateIndex) {
+                return staffSystem.csl[coordinateIndex] = coordinate * scaleFactor
             });
-            Array.isArray(a.csr) && a.csr.forEach(function (c, d) {
-                return a.csr[d] = c * b
+            Array.isArray(staffSystem.csr) && staffSystem.csr.forEach(function (coordinate, coordinateIndex) {
+                return staffSystem.csr[coordinateIndex] = coordinate * scaleFactor
             });
-            a.xs.x1 *= b;
-            a.xs.x2 *= b
-        }), a.bxs.forEach(function (a) {
-            a.forEach(function (c, d) {
-                return a[d] = c * b
+            staffSystem.xs.x1 *= scaleFactor;
+            staffSystem.xs.x2 *= scaleFactor
+        }), pageMetrics.bxs.forEach(function (barlines) {
+            barlines.forEach(function (coordinate, coordinateIndex) {
+                return barlines[coordinateIndex] = coordinate * scaleFactor
             })
         }))
     })
 }
 
 function doResize$$module$synpdf() {
-    var a = $("body").prop("clientWidth");
-    a == bodyWidth$$module$synpdf ? msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin() : (bodyWidth$$module$synpdf = a, clearTimeout(resizeTimer$$module$synpdf), resizeTimer$$module$synpdf = setTimeout(function () {
+    var bodyWidth = $("body").prop("clientWidth");
+    bodyWidth == bodyWidth$$module$synpdf ? msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin() : (bodyWidth$$module$synpdf = bodyWidth, clearTimeout(resizeTimer$$module$synpdf), resizeTimer$$module$synpdf = setTimeout(function () {
         resizePdfSyn$$module$synpdf()
     }, 100))
 }
 
-function hideMenuHelp$$module$synpdf(a) {
-    var b = "none" != $("#menu").css("display") || $("#help").hasClass("showhlp");
-    b ? ($("#help").toggleClass("showhlp", !1), setTimeout(hideMenu$$module$synpdf, 0)) : a && keyDown$$module$synpdf({
+function hideMenuHelp$$module$synpdf(togglePlayback) {
+    var isMenuOrHelpVisible = "none" != $("#menu").css("display") || $("#help").hasClass("showhlp");
+    isMenuOrHelpVisible ? ($("#help").toggleClass("showhlp", !1), setTimeout(hideMenu$$module$synpdf, 0)) : togglePlayback && keyDown$$module$synpdf({
         key: " "
     });
-    return b
+    return isMenuOrHelpVisible
 }
 
 // Re-render pages crisply after viewport changes (rotation/resize)
@@ -2992,11 +2992,11 @@ function reflowForViewportChange() {
         requestAnimationFrame(() => {
             window.__TwoUpAllowScaleOnce = true; // set again in case other work ran
             resizePageFitToHeight();
-            let t;
+            let scoreTime;
             if (inTwoUp && typeof __restoreMix === 'number' && Array.isArray(deTijden$$module$synpdf) && deTijden$$module$synpdf[__restoreMix]) {
-                t = deTijden$$module$synpdf[__restoreMix].t;  // prefer the exact measure we were on
+                scoreTime = deTijden$$module$synpdf[__restoreMix].t;  // prefer the exact measure we were on
             } else {
-                t = (window.msc_wz$$module$synpdf?.cursorTime)
+                scoreTime = (window.msc_wz$$module$synpdf?.cursorTime)
                     ?? ((elmed$$module$synpdf?.getCurrentTime?.() ?? elmed$$module$synpdf?.currentTime ?? 0)
                         - (window.offset$$module$synpdf || 0));
             }
@@ -3005,7 +3005,7 @@ function reflowForViewportChange() {
                 twoUpInitialScrollPending = true;
                 window.__twoUpPrevPage = undefined;
             }
-            try { window.msc_wz$$module$synpdf?.time2x(t); } catch (_) { }
+            try { window.msc_wz$$module$synpdf?.time2x(scoreTime); } catch (_) { }
         });
     }
 }
@@ -3057,11 +3057,11 @@ function toggleTwoUpMode(on = !window.twoUpMode) {
 }
 
 function setRollijnVisible(show) {
-    const r = document.getElementById('rollijn');
-    if (!r) return;
+    const scrollGuide = document.getElementById('rollijn');
+    if (!scrollGuide) return;
     // Keep it laid out so .offset() calls don’t break
-    r.style.visibility = show ? 'visible' : 'hidden';
-    r.style.pointerEvents = show ? '' : 'none';
+    scrollGuide.style.visibility = show ? 'visible' : 'hidden';
+    scrollGuide.style.pointerEvents = show ? '' : 'none';
 }
 
 $(document).ready(function () {
@@ -3071,11 +3071,11 @@ $(document).ready(function () {
     phoneCheck = isPhone();
     window.twoUpMode = false;
     updateMaxRenderedPages();
-    const sc = document.getElementById('notation-scroll');
-    if (sc) sc.classList.remove('two-up');
+    const scroller = document.getElementById('notation-scroll');
+    if (scroller) scroller.classList.remove('two-up');
     $("body").keydown(keyDown$$module$synpdf);
-    $("#buttons, #sync").keydown(function (a) {
-        " " == a.key && a.stopPropagation()
+    $("#buttons, #sync").keydown(function (keyEvent) {
+        " " == keyEvent.key && keyEvent.stopPropagation()
     });
 
     $("#closehelp").click(function () {
@@ -3087,20 +3087,21 @@ $(document).ready(function () {
     $("#helpm").click(function () {
         $("#help").toggleClass("showhlp")
     });
-    $("input[type=number]").keydown(function (a) {
-        a.stopPropagation()
+    $("input[type=number]").keydown(function (keyEvent) {
+        keyEvent.stopPropagation()
     });
     $(window).resize(function () {
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin();
     });
-    window.addEventListener("message", function (a) {
-        if (typeof a.data !== 'string') return; // Ignore non-string messages (e.g., from YouTube)
-        "play" == a.data && keyDown$$module$synpdf({
+    window.addEventListener("message", function (messageEvent) {
+        if (typeof messageEvent.data !== 'string') return; // Ignore non-string messages (e.g., from YouTube)
+        "play" == messageEvent.data && keyDown$$module$synpdf({
             key: " "
         });
-        a.data.startsWith("key=") &&
-            (a = a.data.match(/^key=(.+)$/)) && keyDown$$module$synpdf({
-                key: a[1]
+        var keyMatch;
+        messageEvent.data.startsWith("key=") &&
+            (keyMatch = messageEvent.data.match(/^key=(.+)$/)) && keyDown$$module$synpdf({
+                key: keyMatch[1]
             })
     });
 
@@ -3121,8 +3122,8 @@ $(document).ready(function () {
 // Uses CAPTURE phase to intercept events BEFORE they reach canvas handlers
 (function initPinchZoom() {
     function setupPinchZoom() {
-        var el = document.getElementById('notation-scroll');
-        if (!el) return false;
+        var notationScroller = document.getElementById('notation-scroll');
+        if (!notationScroller) return false;
 
         var startDist = 0;
         var lastDist = 0;
@@ -3145,50 +3146,50 @@ $(document).ready(function () {
         }
 
         function isInNotationScroll(target) {
-            return el.contains(target);
+            return notationScroller.contains(target);
         }
 
         // Use CAPTURE phase to intercept events before canvas handlers
-        document.addEventListener('touchstart', function (e) {
-            if (e.touches.length === 2 && isInNotationScroll(e.target)) {
+        document.addEventListener('touchstart', function (touchEvent) {
+            if (touchEvent.touches.length === 2 && isInNotationScroll(touchEvent.target)) {
                 isPinching = true;
-                startDist = getDistance(e.touches);
+                startDist = getDistance(touchEvent.touches);
                 lastDist = startDist;
-                var center = getCenter(e.touches);
+                var center = getCenter(touchEvent.touches);
                 pinchCenterX = center.x;
                 pinchCenterY = center.y;
 
-                // Set transform origin to pinch center (relative to el)
-                var rect = el.getBoundingClientRect();
+                // Set transform origin to the pinch center relative to the notation scroller.
+                var rect = notationScroller.getBoundingClientRect();
                 var originX = ((pinchCenterX - rect.left) / rect.width * 100) + '%';
                 var originY = ((pinchCenterY - rect.top) / rect.height * 100) + '%';
-                el.style.transformOrigin = originX + ' ' + originY;
+                notationScroller.style.transformOrigin = originX + ' ' + originY;
 
                 // Hide annotation canvases during gesture using CSS class (has !important)
                 document.body.classList.add('annotations-hidden');
             }
         }, { passive: true, capture: true });
 
-        document.addEventListener('touchmove', function (e) {
-            if (isPinching && e.touches.length === 2) {
-                lastDist = getDistance(e.touches);
+        document.addEventListener('touchmove', function (touchEvent) {
+            if (isPinching && touchEvent.touches.length === 2) {
+                lastDist = getDistance(touchEvent.touches);
 
                 // Calculate current scale ratio (no clamping - natural zoom)
                 var ratio = lastDist / startDist;
 
                 // Apply CSS transform for visual feedback
-                el.style.transform = 'scale(' + ratio + ')';
+                notationScroller.style.transform = 'scale(' + ratio + ')';
 
                 // Prevent default to stop scrolling during pinch
-                if (e.cancelable) e.preventDefault();
+                if (touchEvent.cancelable) touchEvent.preventDefault();
             }
         }, { passive: false, capture: true });
 
-        document.addEventListener('touchend', function (e) {
+        document.addEventListener('touchend', function (touchEvent) {
             if (isPinching) {
                 // Remove transform preview
-                el.style.transform = '';
-                el.style.transformOrigin = '';
+                notationScroller.style.transform = '';
+                notationScroller.style.transformOrigin = '';
 
                 // Show annotation canvases again (remove the hiding class)
                 document.body.classList.remove('annotations-hidden');
@@ -3214,13 +3215,13 @@ $(document).ready(function () {
 
                         // === SCROLL PRESERVATION ===
                         // Calculate the content position under the pinch center BEFORE resize
-                        var elRect = el.getBoundingClientRect();
-                        // Position of pinch center relative to el's viewport position
+                        var elRect = notationScroller.getBoundingClientRect();
+                        // Position of pinch center relative to the scroller's viewport position
                         var relX = pinchCenterX - elRect.left;
                         var relY = pinchCenterY - elRect.top;
                         // Content position under the pinch (scroll + relative offset)
-                        var contentX = el.scrollLeft + relX;
-                        var contentY = el.scrollTop + relY;
+                        var contentX = notationScroller.scrollLeft + relX;
+                        var contentY = notationScroller.scrollTop + relY;
 
                         // Do the actual resize
                         if (typeof resizeDematenAndCanvas === 'function') {
@@ -3232,8 +3233,8 @@ $(document).ready(function () {
                         var newContentX = contentX * ratio;
                         var newContentY = contentY * ratio;
                         // Set scroll so that position is at the same relative screen location
-                        el.scrollLeft = newContentX - relX;
-                        el.scrollTop = newContentY - relY;
+                        notationScroller.scrollLeft = newContentX - relX;
+                        notationScroller.scrollTop = newContentY - relY;
                     }
                 }
 
