@@ -57,7 +57,7 @@
     $onnxWasmThreads = $isLocalHost ? 1 : 4;
     ?>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=21"></script>
+    <script src="correction-log-tools.js?v=22"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
@@ -1152,7 +1152,7 @@
                 <span class="toolbar-divider" aria-hidden="true"></span>
                 <button type="button" data-edit-mode="q" aria-pressed="false" title="Edit barlines (Q)" data-tooltip="Edit barlines · Q">Barlines</button>
                 <button type="button" data-edit-mode="w" aria-pressed="false" title="Draw a staff with automatic line fitting (W)" data-tooltip="Draw staff · W">Draw staff</button>
-                <button type="button" data-edit-mode="y" aria-pressed="false" title="Y: drag to merge systems using the starting system’s barlines; Ctrl-click a system to merge the whole page" data-tooltip="Y: drag to merge · Ctrl-click: merge whole page">Refit / merge</button>
+                <button type="button" data-edit-mode="y" aria-pressed="false" title="Y: click automatic divisi to restore single staves; drag to merge systems using the starting system’s barlines; Ctrl-click a system to merge the whole page" data-tooltip="Y: click divisi to split · drag to merge · Ctrl-click: merge whole page">Refit / merge</button>
                 <button type="button" data-edit-mode="s" aria-pressed="false" title="Split a multimeasure rest (S)" data-tooltip="Split rest · S, or Shift-click in barline mode">Split rest</button>
                 <span class="toolbar-divider" aria-hidden="true"></span>
                 <label for="pdf-width-value">Detection width</label>

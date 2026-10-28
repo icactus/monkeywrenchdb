@@ -144,7 +144,7 @@ function batchHarness(failPage) {
     let displayed = 3;
     const visited = [], detections = [], buttonStates = [], alerts = [];
     const context = vm.createContext({
-        batchDetectionInProgress: false,
+        batchDetectionInProgress: false, divisiSplitInProgress: false,
         deMetriek$$module$synpdf: [1000, {}, {}, {}],
         opt$$module$synpdf: { onestf: 0 },
         getDisplayedPageNumber: () => displayed,

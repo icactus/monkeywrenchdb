@@ -1551,6 +1551,12 @@ var BarlineDetectV2 = (function () {
                         connectivity: candidate.connectivity,
                         classifierMode: "cnn_only"
                     },
+                    crop: {
+                        xCol: candidate.x,
+                        staffTop: candidate.localTop,
+                        staffBot: candidate.localBot,
+                        spatium: candidate.spatium
+                    },
                     vetoReason: vetoReason
                 });
             }

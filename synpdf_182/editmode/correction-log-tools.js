@@ -10,6 +10,10 @@ var SynpdfCorrectionTools = (function () {
         return Array.isArray(values) ? values.slice() : [];
     }
 
+    function clonePlainObject(value) {
+        return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : null;
+    }
+
     function getNotation() {
         if (!notationEl) {
             notationEl = document.getElementById('notation');
@@ -115,6 +119,7 @@ var SynpdfCorrectionTools = (function () {
 
     function getCnnTrainingTarget(entry) {
         if (!entry) return null;
+        if (entry.detectorMode === 'legacy_divisi') return null;
         if (entry.reason === 'end_of_line_no_barline') return null;
 
         if (entry.action === 'delete' && entry.acceptedNearby) {
@@ -791,7 +796,8 @@ var SynpdfCorrectionTools = (function () {
                             x: Math.round(diag.x),
                             score: typeof diag.score === 'number' ? diag.score : null,
                             vetoReason: diag.vetoReason || '',
-                            features: diag.features || {}
+                            features: diag.features || {},
+                            crop: clonePlainObject(diag.crop)
                         };
                     })
                 };
@@ -800,6 +806,26 @@ var SynpdfCorrectionTools = (function () {
 
         scheduleV2CandidateOverlayRender();
         updateCorrectionLogUI();
+    }
+
+    // A local divisi split changes system indices. Retain every unaffected
+    // candidate/crop and insert only the new single-staff CNN baselines.
+    function replaceSystemBaselinesForPage(pagenum, pageData, replacedIndex, diagnostics) {
+        var previous = baselinesByPage[pagenum];
+        var oldSystems = previous && previous.sourcePdf === getCurrentPdfName() ? previous.systems : [];
+        var allDiagnostics = [], renderGeometry = [];
+        pageData.cxs.forEach(function (_system, index) {
+            if (index >= replacedIndex && index < replacedIndex + diagnostics.length) {
+                allDiagnostics.push(diagnostics[index - replacedIndex]);
+                renderGeometry.push(null);
+            } else {
+                var oldIndex = index < replacedIndex ? index : index - diagnostics.length + 1;
+                var old = oldSystems[oldIndex];
+                allDiagnostics.push(old && old.candidates ? old.candidates : []);
+                renderGeometry.push(old ? old.renderGeometry : null);
+            }
+        });
+        snapshotV2BaselineForPage(pagenum, pageData, allDiagnostics, renderGeometry);
     }
 
     function snapshotCandidateBaselineForPage(pagenum, pageData, systemsSnapshot, detectorMode) {
@@ -1064,6 +1090,7 @@ var SynpdfCorrectionTools = (function () {
                 distance: nearestDistance,
                 score: nearest.score,
                 vetoReason: nearest.vetoReason || '',
+                crop: clonePlainObject(nearest.crop),
                 accepted: Array.isArray(systemBaseline.acceptedBarlines) && systemBaseline.acceptedBarlines.indexOf(nearest.x) !== -1
             }
         };
@@ -1086,7 +1113,8 @@ var SynpdfCorrectionTools = (function () {
         var pageData = metricData && metricData[eventData.pageNumber];
         var currentSystem = pageData && Array.isArray(pageData.cxs) ? pageData.cxs[eventData.systemIndex] : null;
         var fallbackCs = currentSystem && Array.isArray(currentSystem.cs) ? currentSystem.cs : null;
-        var nearestInfo = getNearestBaselineCandidate(eventData.pageNumber, eventData.systemIndex, eventData.xJson, eventData.yJson, fallbackCs);
+        var nearestInfo = currentSystem && currentSystem.autoDivisi ? null :
+            getNearestBaselineCandidate(eventData.pageNumber, eventData.systemIndex, eventData.xJson, eventData.yJson, fallbackCs);
         var baseline = baselinesByPage[eventData.pageNumber];
         var baselineSystemIndex = nearestInfo && typeof nearestInfo.baselineSystemIndex === 'number'
             ? nearestInfo.baselineSystemIndex
@@ -1120,7 +1148,8 @@ var SynpdfCorrectionTools = (function () {
             acceptedNearby: nearestInfo ? nearestInfo.acceptedNearby : false,
             acceptedMatchX: nearestInfo ? nearestInfo.acceptedMatchX : null,
             acceptedMatchDistance: nearestInfo ? nearestInfo.acceptedMatchDistance : null,
-            detectorMode: baseline && baseline.detectorMode ? baseline.detectorMode : null,
+            detectorMode: currentSystem && currentSystem.autoDivisi ? 'legacy_divisi' :
+                (baseline && baseline.detectorMode ? baseline.detectorMode : null),
             generatedBy: eventData.generatedBy || null,
             reason: '',
             note: ''
@@ -1262,6 +1291,7 @@ var SynpdfCorrectionTools = (function () {
         init: init,
         scheduleV2CandidateOverlayRender: scheduleV2CandidateOverlayRender,
         snapshotV2BaselineForPage: snapshotV2BaselineForPage,
+        replaceSystemBaselinesForPage: replaceSystemBaselinesForPage,
         snapshotCandidateBaselineForPage: snapshotCandidateBaselineForPage,
         snapshotFullScoreDebugForPage: snapshotFullScoreDebugForPage,
         clearFullScoreDebugState: clearFullScoreDebugState,

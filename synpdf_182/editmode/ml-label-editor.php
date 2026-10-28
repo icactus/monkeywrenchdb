@@ -50,7 +50,7 @@
     $onnxWasmThreads = $isLocalHost ? 1 : 4;
     ?>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=21"></script>
+    <script src="correction-log-tools.js?v=22"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
@@ -762,7 +762,7 @@
                 <p><!-- page coordinate editing section info -->Coordinate logging: <span id="indicator"
                         class="inactive-indicator">OFF</span> Q toggles on/off for adding or removing barlines
                     (shift-click to split multimeasure rests),<br> W draws a new staff (click top-left then
-                    bottom-right; shift-click for auto-snap to lines), Y refits or merges staves</p>
+                    bottom-right; shift-click for auto-snap to lines), Y refits staves, splits automatic divisi, or merges staves</p>
             </div>
         </div>
         <div id="sync">
