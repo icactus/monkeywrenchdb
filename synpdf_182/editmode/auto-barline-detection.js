@@ -146,6 +146,7 @@
         get prepared() { return preparation === 'complete' || preparation === 'excluded'; }
     };
     rerun?.addEventListener('click', () => opened({ rerun: true }));
+    document.addEventListener('synpdf:part-submitted', () => report(''));
 
     const editingKeys = new Set(['q', 'w', 'e', 'r', 'y', 's', 'd', 'o', 'j', 'PageDown', 'PageUp', '+', '=', '-', '_', '.', '/']);
     function guardEditing(event) {

@@ -56,9 +56,9 @@ function harness(fetcher, withoutRecheck = false) {
     const nodes = Object.fromEntries(['part-count-check','part-count-status','part-count-recheck','notation','wait','render','fknp','barline-detection-progress']
         .map(id => [id,{ dataset:{}, textContent:'', listeners:{}, addEventListener(type,fn){this.listeners[type]=fn;} }]));
     if (withoutRecheck) delete nodes['part-count-recheck'];
-    const timers = new Map(), retries = []; let timerId=0, observer;
+    const timers = new Map(), retries = [], listeners = {}; let timerId=0, observer;
     const c = vm.createContext({
-        document:{getElementById:id=>nodes[id]},
+        document:{getElementById:id=>nodes[id],addEventListener:(type,fn)=>{listeners[type]=fn;}},
         MutationObserver:class { constructor(fn){observer=fn;} observe(){} },
         setTimeout:(fn,delay)=>{ if (delay >= 10000) retries.push(fn); else timers.set(++timerId,fn); return timerId; }, clearTimeout:id=>timers.delete(id),
         fetch:fetcher,
@@ -67,7 +67,7 @@ function harness(fetcher, withoutRecheck = false) {
     });
     c.window=c;
     vm.runInContext(fs.readFileSync(file,'utf8'),c);
-    return {c,nodes,notify:()=>observer(),retry:()=>retries.shift()?.(),async settle(){
+    return {c,nodes,listeners,notify:()=>observer(),retry:()=>retries.shift()?.(),async settle(){
         for(let i=0;i<40;i++) {
             for(const [id,fn] of [...timers]){timers.delete(id);fn();}
             await Promise.resolve();
@@ -124,4 +124,39 @@ test('a late response for the previous PDF cannot replace the current piece refe
     oldResolve(jsonResponse([]));await h.settle();
     assert.equal(h.nodes['part-count-check'].dataset.state,'match');
     assert.match(h.nodes['part-count-status'].textContent,/109-1.pdf/);
+});
+
+test('submitting the first part refreshes a cached missing reference without reloading the PDF', async () => {
+    let published = false, lookups = 0, resolveOld;
+    const h = harness(async url => {
+        if (url.includes('get_parts')) {
+            lookups++;
+            if (!published) return new Promise(resolve => { resolveOld = resolve; });
+            return jsonResponse(partList);
+        }
+        return jsonResponse({metric_arr: metrics, pdf_file: '108-1.pdf'});
+    });
+    await h.settle();
+    published = true;
+    h.listeners['synpdf:part-submitted']();
+    await h.settle();
+    assert.equal(lookups, 2);
+    assert.equal(h.nodes['part-count-check'].dataset.state, 'match');
+    resolveOld({ok: false, status: 404}); await h.settle();
+    assert.equal(h.nodes['part-count-check'].dataset.state, 'match');
+    // The earlier lookup can also have finished before submission.
+    published = false; h.listeners['synpdf:part-submitted'](); await h.settle();
+    resolveOld({ok: false, status: 404}); await h.settle();
+    assert.equal(h.nodes['part-count-check'].dataset.state, 'unavailable');
+    published = true; h.listeners['synpdf:part-submitted'](); await h.settle();
+    assert.equal(h.nodes['part-count-check'].dataset.state, 'match');
+});
+
+test('switching parts of the same piece chooses another saved part as its reference', async () => {
+    const parts = [...partList, {part_id: 3, metric_arr_id: 820, label: 'Cello'}], calls = [];
+    const h = harness(async url => { calls.push(url); return jsonResponse(url.includes('get_parts') ? parts : {metric_arr: metrics, pdf_file: '108-1.pdf'}); });
+    await h.settle();
+    assert(calls.at(-1).endsWith('part=1'));
+    h.c.scoreFnm$$module$synpdf = '108-1'; h.notify(); await h.settle();
+    assert(calls.at(-1).endsWith('part=3'));
 });

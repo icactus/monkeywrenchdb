@@ -319,10 +319,11 @@ function bindPdfEditToolbar() {
                     changeBarlineThreshold(button.id === 'barline-threshold-increase' ? 1 : -1);
                     break;
                 case 'toolbar-add-part': {
-                    $('#database-menus').show();
                     const form = document.getElementById('addnewmetricform');
+                    if (form.hidden) return;
+                    $('#database-menus').show();
                     form.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                    form.querySelector('select[name="piece_id"]').focus({ preventScroll: true });
+                    form.querySelector('[name="edition_label"]').focus({ preventScroll: true });
                     break;
                 }
             }

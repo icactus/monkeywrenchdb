@@ -35,6 +35,13 @@ uploads remain in the queue with **Resume upload**. Completed uploads continue
 compressing after the browser closes. Originals and work in progress live in a
 private directory outside the public web root.
 
+Opening a queued PDF shows its assigned piece and part in **Submit Part**. Only
+the optional edition/manuscript label is editable there; the upload workflow
+already supplies both PDFs and their assignment. Successful submission keeps the
+current viewer page and geometry in place, shows a submission confirmation, and
+refreshes the saved-part count reference. The completed part leaves the waiting
+list and stops queue autosaves. Open another waiting PDF to submit the next part.
+
 The server converts one PDF at a time, using one native worker at reduced CPU
 priority. It renders each page to 2000 pixels wide, converts to grayscale and
 1-bit black/white without dithering, then stores CCITT Group 4 image streams in

@@ -9,8 +9,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="stylesheet" href="part-pdf-queue.css?v=4">
-    <script src="part-pdf-queue.js?v=9" defer></script>
-    <script src="auto-barline-detection.js?v=3" defer></script>
+    <script src="part-pdf-queue.js?v=10" defer></script>
+    <script src="auto-barline-detection.js?v=4" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
     if (file_exists('session_config.php')) {
@@ -78,7 +78,7 @@
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
     <script src="synpdf-edit-mode.js?v=100"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
-    <script src="part-count-check.js?v=2" defer></script>
+    <script src="part-count-check.js?v=3" defer></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
     <?php if ($pianoBarlineCnnBrowserJsVer > 0) { ?>
@@ -612,6 +612,7 @@
             flex-direction: column;
             gap: 16px;
         }
+        #database-menus [hidden], #database-menu-top[hidden] { display: none !important; }
 
         /* Form cards */
         .inputform {
@@ -971,13 +972,13 @@
                     <p id="part-count-status" role="status" aria-live="polite"></p>
                 </div>
             </div>
-            <div id="database-menu-top">
+            <div id="database-menu-top" hidden>
                 <h3>Submit Part</h3>
             </div>
             <div id="database-menus">
                 <!-- add metric_arr -->
-                <form class="inputform" id="addnewmetricform" method="POST" enctype="multipart/form-data">
-                    <div style="display:flex;">
+                <form class="inputform" id="addnewmetricform" method="POST" hidden>
+                    <div hidden>
                         <div>
                             <label for="piece_id">Piece</label>
                             <select class="dropdown-menu" name="piece_id">
@@ -993,16 +994,15 @@
                                 <option value="<?php echo htmlspecialchars((string) $instrumentId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $instrumentName, ENT_QUOTES, 'UTF-8'); ?></option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+                    <p id="pdf-queue-part-assignment"></p>
+                    <div>
                         <div>
                             <label for="edition_label">Edition/Manuscript (optional):</label>
                             <input type="text" id="edition_label" name="edition_label"
                                 placeholder="e.g., Anna Magdalena Bach" />
                         </div>
                         <input type="hidden" name="measures_version" value="1" />
-                        <div id="part-hd-upload">
-                            <label for="fknp2_hd">HD pdf</label>
-                            <input type="file" id="fknp2_hd" name="file_hd" accept=".pdf" />
-                        </div>
                         <input type="submit" name="save" value="Submit Part" />
                     </div>
                 </form>

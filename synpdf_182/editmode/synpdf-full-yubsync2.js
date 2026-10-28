@@ -487,7 +487,7 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function () {
         b = c[a] || 1;
         c[a] = b + 1;
         a = deMaten$$module$synpdf[a];
-        d = a.x + d * a.w + $("canvas").offset().left;
+        d = a.x + d * a.w;
         e = $('<div class="reptkn">' + e + n + "</div>");
         e.css({
             top: a.y - 25 * b,
@@ -761,14 +761,16 @@ Wijzer$$module$synpdf.prototype.setTmargin = function () {
         b = $("#rollijn").offset().top;
     b < a && (b = a + 15, $("#rollijn").css("top", b + "px"));
     var c = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
-    b > c.y + a && (b = a + c.y - dottedHeight$$module$synpdf, $("#rollijn").css("top", b + "px"));
+    if (!c) { this.tmargin = 0; return; }
+    var viewScale = getPdfViewScale$$module$synpdf();
+    b > c.y * viewScale + a && (b = a + c.y * viewScale - dottedHeight$$module$synpdf, $("#rollijn").css("top", b + "px"));
     var d = $("#notation").height();
     b + 2 * dottedHeight$$module$synpdf > a + d && (b = a + d - 2 * dottedHeight$$module$synpdf, $("#rollijn").css("top", b + "px"));
-    this.tmargin = dottedHeight$$module$synpdf + b - a;
+    this.tmargin = (dottedHeight$$module$synpdf + b - a) / viewScale;
     // --- anti-recursion + stability at fractional zooms:
     var target = Math.max(0, Math.round(c.y - this.tmargin));   // never negative
     var cur = (deNot$$module$synpdf && deNot$$module$synpdf.scrollTop) || 0;
-    if (target === cur) return;                                  // no-op -> avoid loop
+    if (Math.round(target * viewScale) === cur) return;       // no-op -> avoid loop
     cancelAnimationFrame(this.__stm_raf || 0);
     this.__stm_raf = requestAnimationFrame(function () {
         doeRol$$module$synpdf(target, 1);                          // run after layout settles
@@ -915,10 +917,10 @@ function doeRol$$module$synpdf(a, b) {
     if (0 > a) {
         a = deMaten$$module$synpdf[demix$$module$synpdf] || deMaten$$module$synpdf[0];
         deNot$$module$synpdf.scrollTop = 0;
-        $("#rollijn").css("top", a.y + $("#notation").offset().top - dottedHeight$$module$synpdf - 1);
+        $("#rollijn").css("top", a.y * getPdfViewScale$$module$synpdf() + $("#notation").offset().top - dottedHeight$$module$synpdf - 1);
         msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin();
     } else {
-        a = Math.round(a);
+        a = Math.round(a * getPdfViewScale$$module$synpdf());
         if (deNot$$module$synpdf.scrollTop != a) {
             if (hasSmooth$$module$synpdf) {
                 deNot$$module$synpdf.style["scroll-behavior"] = b ? "auto" : "smooth";
@@ -1294,9 +1296,11 @@ function tick$$module$synpdf(a) {
     }
 }
 
-// This helper converts a pointer event into coordinates relative to the #notation content,
-// correctly handling both window scrolling and #notation internal scrolling.
+function getPdfViewScale$$module$synpdf() {
+    return Number(window.YubSyncViewZoom?.scale) || 1;
+}
 
+// Convert mouse/touch positions to score coordinates, including zoom and scrolling.
 function getNotationRelativeCoords(evt) {
     const touch = (typeof touchDev$$module$synpdf === 'undefined'
         ? (evt.type && evt.type.startsWith('touch'))
@@ -1308,28 +1312,11 @@ function getNotationRelativeCoords(evt) {
     const clientX = touch.clientX;
     const clientY = touch.clientY;
 
-    // Window scroll (page) offsets
-    const pageX = (window.pageXOffset !== undefined)
-        ? window.pageXOffset
-        : (document.documentElement.scrollLeft || 0);
-    const pageY = (window.pageYOffset !== undefined)
-        ? window.pageYOffset
-        : (document.documentElement.scrollTop || 0);
-
-    // #notation element metrics
-    const $notation = $("#notation");
-    const notationOffset = $notation.offset(); // document-based
-    const notationScrollTop = $notation.scrollTop() || 0; // internal scroll in the container
-
-    // Wijzer stores the canvas' document-left in xoffset
-    const xoffsetCanvasDocLeft = (msc_wz$$module$synpdf && msc_wz$$module$synpdf.xoffset) || (notationOffset ? notationOffset.left : 0);
-
-    // Convert to document-based click position, then to #notation content coords
-    const xDoc = clientX + pageX; // document X
-    const yDoc = clientY + pageY; // document Y
-
-    const xInNotation = xDoc - xoffsetCanvasDocLeft; // same logic as before, but pageX-aware
-    const yInNotation = yDoc - (notationOffset ? notationOffset.top : 0) + notationScrollTop;
+    const notation = document.getElementById('notation');
+    const rect = notation.getBoundingClientRect();
+    const scale = getPdfViewScale$$module$synpdf();
+    const xInNotation = (clientX - rect.left + notation.scrollLeft) / scale;
+    const yInNotation = (clientY - rect.top + notation.scrollTop) / scale;
 
     return { xInNotation, yInNotation, clientX, clientY };
 }
@@ -1385,14 +1372,10 @@ function annot_move$$module$synpdf(evt) {
 
     var start = touchDev$$module$synpdf ? evt.originalEvent.changedTouches[0] : evt;
 
-    // Document-based offsets at start
-    var $notation = $("#notation");
-    var notationOffset = $notation.offset();
-    var notationScrollTop = $notation.scrollTop() || 0;
-
     var elStart = $el.offset(); // document-based
-    var grabDX = start.clientX + (window.pageXOffset || 0) - elStart.left;
-    var grabDY = start.clientY + (window.pageYOffset || 0) - elStart.top;
+    var scale = getPdfViewScale$$module$synpdf();
+    var grabDX = (start.clientX + (window.pageXOffset || 0) - elStart.left) / scale;
+    var grabDY = (start.clientY + (window.pageYOffset || 0) - elStart.top) / scale;
 
     var startClientY = start.clientY, startClientX = start.clientX;
     var isShift = start.shiftKey;
@@ -1404,15 +1387,9 @@ function annot_move$$module$synpdf(evt) {
         moveEvt.preventDefault();
         var m = touchDev$$module$synpdf ? moveEvt.originalEvent.changedTouches[0] : moveEvt;
         if (touch_moved$$module$synpdf = 10 < Math.abs(m.clientY - startClientY) + Math.abs(m.clientX - startClientX)) {
-            var mDocX = m.clientX + (window.pageXOffset || 0);
-            var mDocY = m.clientY + (window.pageYOffset || 0);
-
-            var newLeftDoc = mDocX - grabDX; // document-based left of element
-            var newTopDoc = mDocY - grabDY; // document-based top of element
-
-            // Convert to notation content coordinates for saving
-            var xInNotation = newLeftDoc - ((msc_wz$$module$synpdf && msc_wz$$module$synpdf.xoffset) || (notationOffset ? notationOffset.left : 0));
-            var yInNotation = newTopDoc - (notationOffset ? notationOffset.top : 0) + notationScrollTop;
+            var coords = getNotationRelativeCoords(moveEvt);
+            var xInNotation = coords.xInNotation - grabDX;
+            var yInNotation = coords.yInNotation - grabDY;
 
             // Move element visually (absolute positioned inside #notation)
             $el.css({ top: yInNotation + "px", left: xInNotation + "px" });

@@ -684,3 +684,33 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
 
 // Keep line to hide database tools on page load (if you want it hidden by default)
 //$('#database-menus').hide()
+
+// Display-only zoom leaves the rendered canvases, geometry and sync session intact.
+(function bindSyncViewZoom() {
+    const notation = document.getElementById('notation');
+    const decrease = document.getElementById('yubsync-zoom-out');
+    const increase = document.getElementById('yubsync-zoom-in');
+    const output = document.getElementById('yubsync-zoom-value');
+    if (!notation || !decrease || !increase || !output) return;
+    let scale = 1;
+    function change(direction) {
+        const next = Math.max(0.2, Math.min(2, Math.round((scale + direction * 0.1) * 100) / 100));
+        if (next === scale) return;
+        const ratio = next / scale;
+        const top = notation.scrollTop * ratio, left = notation.scrollLeft * ratio;
+        const cursor = window.msc_wz$$module$synpdf;
+        if (cursor) {
+            cancelAnimationFrame(cursor.__stm_raf || 0);
+            if (Number.isFinite(cursor.tmargin)) cursor.tmargin /= ratio;
+        }
+        scale = next;
+        notation.style.setProperty('--yubsync-view-scale', scale);
+        notation.scrollTo({ top, left, behavior: 'instant' });
+        output.textContent = Math.round(scale * 100) + '%';
+        decrease.disabled = scale === 0.2;
+        increase.disabled = scale === 2;
+    }
+    window.YubSyncViewZoom = { get scale() { return scale; }, change };
+    decrease.addEventListener('click', () => change(-1));
+    increase.addEventListener('click', () => change(1));
+})();

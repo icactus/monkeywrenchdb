@@ -68,6 +68,20 @@ test('opening saved library metrics keeps corrections unless a rerun is requeste
     assert.match(h.status.textContent, /restored/);
 });
 
+test('successful submission clears the restored notice without opening or detecting the PDF again', async () => {
+    const h = harness();
+    h.c.metric_arr$$module$synpdf = [1000, {cxs: [], bxs: []}];
+    h.c.pdfDoc$$module$synpdf = {numPages: 1};
+    h.c.SynpdfAutoBarlines.opened(); await h.tick();
+    assert.match(h.status.textContent, /restored/);
+    h.listeners['synpdf:part-submitted']();
+    assert.equal(h.status.textContent, '');
+    assert.equal(h.status.hidden, true);
+    assert.equal(h.elements['pdf-loading-overlay'].hidden, true);
+    assert.equal(h.calls.length, 0);
+    assert.equal(h.c.SynpdfAutoBarlines.prepared, true);
+});
+
 test('switching to an excluded score cancels a waiting part without running the detector', async () => {
     const h = harness();
     h.c.SynpdfAutoBarlines.opened();
@@ -186,7 +200,7 @@ test('piano and score PDFs keep manual preparation and do not expose single-staf
 test('queue autosave rejects initial scans and failed runs, then includes successful preparation in the draft', async () => {
     const h = harness();
     Object.assign(h.c, {
-        matches: () => true, loading: false, active: { pages: 1 },
+        matches: () => true, loading: false, active: { pages: 1, status: 'ready' },
         MetricStore: { getMetricData: () => [1000, { cxs: [{}], bxs: [[10, 90]] }] },
         pieceSelect: { value: '298' }, partSelect: { value: '3' },
         form: { querySelector: () => ({ value: '' }) }

@@ -6,6 +6,12 @@ YubSync supports focused score corrections while preserving the current synchron
 
 On desktop, the PDF fills the left pane. Score selection, recording setup, submission, and correction tools live in the right sidebar. The setup area scrolls independently beneath the video, Help button, and current measure/duration/offset information. The score keeps its own scrolling area for inspecting full-score systems and later pages.
 
+The magnifying-glass buttons above the score zoom its display from 20% to 200%.
+Zoom reuses the existing page canvases and geometry, preserving sync timings and
+playback position without a page-by-page loading pass. Score clicks, correction
+tools and cursor scrolling follow the displayed scale. The `−` and `+` keys
+continue to change playback speed.
+
 Load a saved part in YubSync and wait for the PDF to finish rendering. The sidebar toolbar provides four correction tools, also available from the keyboard:
 
 | Tool | Action |

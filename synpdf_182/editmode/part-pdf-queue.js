@@ -14,7 +14,7 @@
     const activePanel = document.getElementById('pdf-queue-active');
     const draftStatus = document.getElementById('pdf-queue-draft-status');
     let csrf = '', canUpload = false, active = null, activeUrl = '', loading = false, busy = false, lastDraft = '', saving = null, editorSession = '', sequence = 0;
-    let uploadTask = Promise.resolve(), uploadWork = 0, refreshing = false;
+    let uploadTask = Promise.resolve(), uploadWork = 0, refreshing = false, publishing = false;
     const notify = text => { status.textContent = text; };
     const bytes = number => `${(number / 1024 / 1024).toFixed(2)} MB`;
     function endpoint(action, id) { const url = new URL(apiUrl); url.searchParams.set('action', action); if (id) url.searchParams.set('id', id); return url; }
@@ -318,16 +318,16 @@
         finally { refreshing = false; }
     }
     function matches() { return active && window.pdfFnm$$module$synpdf === activeUrl; }
-    function setQueuedSaveState(queued) {
-        document.getElementById('fknp2_hd').disabled = queued;
-        document.getElementById('part-hd-upload').hidden = queued;
+    function setQueuedSaveState(editing) {
+        form.hidden = !editing;
+        document.getElementById('database-menu-top').hidden = !editing;
     }
     function clearActive() {
         active = null; activeUrl = ''; lastDraft = ''; activePanel.hidden = true;
         setQueuedSaveState(false);
     }
     function snapshot() {
-        if (!matches() || loading || window.rendering$$module$synpdf || !window.SynpdfAutoBarlines?.prepared) return null;
+        if (active?.status !== 'ready' || !matches() || loading || window.rendering$$module$synpdf || !window.SynpdfAutoBarlines?.prepared) return null;
         const metrics = window.MetricStore?.getMetricData();
         if (!metrics || metrics.length < 2 || metrics.length > active.pages + 1) return null;
         return { metrics: JSON.stringify(metrics), piece_id: pieceSelect.value, instrument_id: partSelect.value,
@@ -335,6 +335,7 @@
             barline_preparation: window.SynpdfAutoBarlines.preparation };
     }
     async function saveDraft() {
+        if (publishing) return;
         if (saving) await saving;
         const data = snapshot(); if (!data) return;
         const serialized = JSON.stringify(data); if (serialized === lastDraft) return;
@@ -345,7 +346,7 @@
         await saving;
     }
     async function openItem(item) {
-        if (loading) return;
+        if (loading || publishing) return;
         await saveDraft();
         if (window.pdfDoc$$module$synpdf?.numPages && !active && !confirm('Open this queued PDF? Save any changes to your current PDF first.')) return;
         const result = await api('get', null, item.id);
@@ -355,6 +356,7 @@
             active = result.item; editorSession = crypto.randomUUID(); sequence = 0; activeUrl = String(endpoint('file', item.id)); lastDraft = '';
             const details = result.draft?.details || active;
             pieceSelect.value = String(details.piece_id); partSelect.value = String(details.instrument_id);
+            document.getElementById('pdf-queue-part-assignment').textContent = `${label(pieceSelect, details.piece_id)} · ${label(partSelect, details.instrument_id)}`;
             form.querySelector('[name=edition_label]').value = details.edition_label || '';
             window.MetricStore.clearGroundTruthMetricData();
             window.mlLoadedMetricContext = null;
@@ -375,35 +377,42 @@
         } finally { loading = false; }
     }
     document.addEventListener('submit', async event => {
-        if (event.target !== form || !active) return;
+        if (event.target !== form) return;
         event.preventDefault(); event.stopImmediatePropagation();
+        if (!active) { notify('Open a PDF from the waiting list to submit its part.'); return; }
+        if (active.status === 'completed') return;
         if (loading || busy) return;
         if (!matches()) { notify('The loaded PDF changed. Reopen the queued PDF before saving it.'); return; }
         busy = true; const button = form.querySelector('[type=submit]'); button.disabled = true;
         try {
             await saveDraft(); const data = snapshot(); if (!data) throw new Error('Wait for every PDF page to finish loading.');
+            publishing = true;
             const result = await api('publish', { ...data, revision: active.draft_revision || 0, measures_version: form.querySelector('[name=measures_version]').value }, active.id);
-            const item = result.item; clearActive();
-            // Continue editing against the saved library PDF and geometry.
-            if (window.bootEditModeFromDb) await window.bootEditModeFromDb(String(item.piece_id), String(item.instrument_id));
-            notify(`Submitted ${item.pdf_file}.`);
+            active = result.item;
+            setQueuedSaveState(false);
+            draftStatus.textContent = 'Submitted to the library.';
+            notify(`Submitted ${active.pdf_file}.`);
+            document.dispatchEvent(new CustomEvent('synpdf:part-submitted', { detail: active }));
         } catch (error) { notify(error.message + ' The queued PDF and edits are preserved.'); }
-        finally { busy = false; button.disabled = false; refresh(); }
+        finally { publishing = false; busy = false; button.disabled = false; refresh(); }
     }, true);
     document.addEventListener('change', async event => {
         if (event.target.id !== 'fknp' || !active) return;
         event.stopImmediatePropagation();
+        if (publishing) { event.target.value = ''; notify('Wait for this part to finish submitting.'); return; }
         try { await saveDraft(); clearActive(); event.target.dispatchEvent(new Event('change', { bubbles: true })); }
         catch (error) { notify(error.message + ' Save or reload your queue work before changing PDFs.'); }
     }, true);
     document.getElementById('loadSavedMetricBtn')?.addEventListener('click', async event => {
         if (!active) return;
         event.preventDefault(); event.stopImmediatePropagation();
+        if (publishing) { notify('Wait for this part to finish submitting.'); return; }
         const button = event.currentTarget;
         try { await saveDraft(); clearActive(); button.click(); }
         catch (error) { notify(error.message + ' Save or reload your queue work before changing PDFs.'); }
     }, true);
     window.addEventListener('pagehide', () => {
+        if (publishing) return;
         const data = snapshot(); if (!data) return;
         const body = new FormData(); for (const [key, value] of Object.entries(data)) body.set(key, value);
         body.set('revision', String(active.draft_revision || 0)); body.set('editor_session', editorSession); body.set('sequence', String(++sequence));

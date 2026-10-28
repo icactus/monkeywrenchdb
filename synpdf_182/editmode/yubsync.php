@@ -27,9 +27,9 @@
     ?>
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
-    <script src="synpdf-full-yubsync2.js?v=57"></script>
+    <script src="synpdf-full-yubsync2.js?v=58"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
-    <link rel="stylesheet" href="yubsync-live-edit.css?v=4" />
+    <link rel="stylesheet" href="yubsync-live-edit.css?v=5" />
     <style>
         html {
             width: 100%;
@@ -916,6 +916,15 @@
     </section1>
     <section2 id="yubsync-workspace">
       <div id="yubsync-score">
+        <div id="yubsync-zoom-toolbar" role="group" aria-label="Score zoom">
+            <button type="button" id="yubsync-zoom-out" aria-label="Zoom out" title="Zoom out">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M15 15l6 6M6 10h8"/></svg>
+            </button>
+            <output id="yubsync-zoom-value" aria-live="polite" aria-label="Score zoom">100%</output>
+            <button type="button" id="yubsync-zoom-in" aria-label="Zoom in" title="Zoom in">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M15 15l6 6M6 10h8M10 6v8"/></svg>
+            </button>
+        </div>
         <div id="notation"> </div>
       </div>
         <sidecontent>
@@ -1028,7 +1037,7 @@ Also works with dropbox. You can load a preload file with the score file button.
             <br />
             <button id="closehelp">Close</button>
     </div>
-    <script src="yubsync-tools.js?v=85"></script>
+    <script src="yubsync-tools.js?v=86"></script>
     <script src="yubsync-live-edit.js?v=3"></script>
     <script src="yubsync-progress.js?v=1"></script>
 </body>

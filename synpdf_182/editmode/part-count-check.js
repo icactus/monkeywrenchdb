@@ -47,7 +47,7 @@
         if (status.textContent !== text) status.textContent = text;
     }
     async function fetchReference(identity) {
-        const request = { pieceId: identity.pieceId, pending: true };
+        const request = { pieceId: identity.pieceId, partId: identity.partId, pending: true };
         reference = request;
         try {
             const response = await fetch(`./get_parts.php?piece_id=${identity.pieceId}`, { cache: 'no-store' });
@@ -82,7 +82,7 @@
             show('idle', 'Load a PDF named piece-part.pdf (for example 108-1.pdf) to compare its detix count.');
             return;
         }
-        if (!reference || reference.pieceId !== identity.pieceId) fetchReference(identity);
+        if (!reference || reference.pieceId !== identity.pieceId || reference.partId !== identity.partId) fetchReference(identity);
         if (recheck) recheck.disabled = !!reference.pending;
         if (reference.pending) {
             show('loading', `Looking up a saved part for piece ${identity.pieceId}…`); return;
@@ -106,6 +106,7 @@
     }
     function schedule() { clearTimeout(timer); timer = setTimeout(refresh, 120); }
     recheck?.addEventListener('click', () => { reference = null; refresh(); });
+    document.addEventListener('synpdf:part-submitted', () => { reference = null; refresh(); });
     document.getElementById('fknp')?.addEventListener('change', schedule);
     // Redraws follow geometry edits. The wait/render indicators also cover hidden
     // page precomputation, which completes without redrawing the visible canvas.
