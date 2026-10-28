@@ -1504,6 +1504,22 @@ function normalizeDetectedSystemBarlines(system, detectedBarlines, existingBarli
     const rightBoundary = currentBarlines.length > 0 ? currentBarlines[currentBarlines.length - 1] : system.xs.x2;
     const leftAbs = Math.abs(leftBoundary);
     const rightAbs = Math.abs(rightBoundary);
+    if (!Number.isFinite(leftAbs) || !Number.isFinite(rightAbs) || rightAbs <= leftAbs) return currentBarlines;
+    const staves = system.autoDivisi?.staves?.length ? system.autoDivisi.staves : [system];
+    const gaps = [];
+    staves.forEach(function (staff) {
+        const lines = staff.csl?.length >= 5 ? staff.csl : staff.cs || [];
+        if (lines.length === 2) gaps.push(Math.abs(lines[1] - lines[0]) / 4);
+        else for (let i = 1; i < lines.length; i++) {
+            const gap = lines[i] - lines[i - 1];
+            if (Number.isFinite(gap) && gap > 0) gaps.push(gap);
+        }
+    });
+    gaps.sort((a, b) => a - b);
+    const spacing = gaps[Math.floor(gaps.length / 2)] || (rightAbs - leftAbs) * 0.01;
+    // A detected stroke beside a structural boundary is the same endpoint,
+    // not another measure. Scale the snap radius with the printed staff size.
+    const boundaryTolerance = Math.max(1, Math.min(spacing * 0.5, (rightAbs - leftAbs) * 0.005));
     const byKey = new Map();
 
     function addBarline(value) {
@@ -1511,25 +1527,20 @@ function normalizeDetectedSystemBarlines(system, detectedBarlines, existingBarli
             return;
         }
 
-        const rounded = Math.round(Math.abs(value));
+        value = Math.abs(value);
+        if (value <= leftAbs + boundaryTolerance || value >= rightAbs - boundaryTolerance) return;
+        const rounded = Math.round(value);
         if (!byKey.has(rounded)) {
-            byKey.set(rounded, Math.abs(value));
+            byKey.set(rounded, value);
         }
     }
 
-    addBarline(leftAbs);
     if (Array.isArray(detectedBarlines)) {
         detectedBarlines.forEach(addBarline);
     }
-    addBarline(rightAbs);
-
-    const normalized = Array.from(byKey.values()).sort(function (a, b) {
+    const normalized = [leftAbs, ...Array.from(byKey.values()).sort(function (a, b) {
         return a - b;
-    });
-
-    if (normalized.length < 2) {
-        return currentBarlines;
-    }
+    }), rightAbs];
 
     if (leftBoundary < 0) {
         normalized[0] = -Math.abs(normalized[0]);

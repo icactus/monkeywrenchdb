@@ -90,6 +90,17 @@ test('automatic matching and geometry corrections reuse one database reference',
     assert.equal(calls.length,2);
 });
 
+test('tiny saved measures are reported even when there is no saved reference part', async () => {
+    const h = harness(async () => ({ok: false,status: 404}));
+    h.c.deMetriek$$module$synpdf[1].bxs[0] = [50,300,949,950];
+    await h.settle();
+    assert.equal(h.nodes['part-count-check'].dataset.state, 'error');
+    assert.match(h.nodes['part-count-status'].textContent, /1 very narrow measure.*red markers.*Page: 1/);
+    h.c.deMetriek$$module$synpdf[1].bxs[0] = [50,300,950];
+    h.notify(); await h.settle();
+    assert.equal(h.nodes['part-count-check'].dataset.state, 'unavailable');
+});
+
 test('rendering and incomplete scans cannot show matching counts', async () => {
     const h=harness(async url=>jsonResponse(url.includes('get_parts')?partList:{metric_arr:metrics,pdf_file:'108-1.pdf'}));
     h.c.rendering$$module$synpdf=1;

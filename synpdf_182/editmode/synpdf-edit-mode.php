@@ -76,9 +76,9 @@
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
-    <script src="synpdf-edit-mode.js?v=101"></script>
+    <script src="synpdf-edit-mode.js?v=102"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
-    <script src="part-count-check.js?v=3" defer></script>
+    <script src="part-count-check.js?v=4" defer></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
     <?php if ($pianoBarlineCnnBrowserJsVer > 0) { ?>

@@ -35,7 +35,22 @@
         return valid.filter(part => Number(part.part_id) === Number(first.part_id))
             .sort((a, b) => Number(b.metric_arr_id) - Number(a.metric_arr_id))[0];
     }
-    if (typeof module !== 'undefined' && module.exports) module.exports = { identityFromFilename, countDetixValues, chooseReference };
+    function findNarrowMeasures(metrics) {
+        if (!Array.isArray(metrics) || !(metrics[0] > 0)) return [];
+        const result = [], threshold = 3 * metrics[0] / 1000;
+        metrics.slice(1).forEach((page, p) => {
+            page?.bxs?.forEach((bars, s) => {
+                for (let i = 1; i < bars.length; i++) {
+                    // Signed boundaries describe a shared measure continuation.
+                    const width = Math.abs(bars[i]) - Math.abs(bars[i - 1]);
+                    if (width > 0 && (bars[i - 1] < 0 || bars[i] < 0)) continue;
+                    if (Number.isFinite(width) && width <= threshold) result.push({page: p + 1, system: s + 1, width});
+                }
+            });
+        });
+        return result;
+    }
+    if (typeof module !== 'undefined' && module.exports) module.exports = { identityFromFilename, countDetixValues, chooseReference, findNarrowMeasures };
     if (typeof document === 'undefined') return;
     const panel = document.getElementById('part-count-check');
     const status = document.getElementById('part-count-status');
@@ -81,6 +96,14 @@
             reference = null; if (recheck) recheck.disabled = true;
             show('idle', 'Load a PDF named piece-part.pdf (for example 108-1.pdf) to compare its detix count.');
             return;
+        }
+        if (!window.rendering$$module$synpdf && !window.metricPrecomputeInProgress$$module$synpdf && !window.SynpdfAutoBarlines?.running) {
+            const narrow = findNarrowMeasures(window.deMetriek$$module$synpdf);
+            if (narrow.length) {
+                const pages = [...new Set(narrow.map(measure => measure.page))].join(', ');
+                show('error', `${narrow.length} very narrow measure${narrow.length === 1 ? '' : 's'}. Check the red markers. Page${pages.includes(',') ? 's' : ''}: ${pages}.`);
+                return;
+            }
         }
         if (!reference || reference.pieceId !== identity.pieceId || reference.partId !== identity.partId) fetchReference(identity);
         if (recheck) recheck.disabled = !!reference.pending;

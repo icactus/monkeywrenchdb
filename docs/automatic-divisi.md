@@ -31,6 +31,14 @@ There is no change to model weights or single-staff classification thresholds.
 Use **Rerun detection** to apply mixed grouping to a previously prepared queue
 draft. Opening an existing draft continues to preserve its saved geometry.
 
+Detected strokes that coincide with a system's existing start/end boundary are
+snapped to that one boundary. Detections outside the system are discarded. This
+prevents one-pixel phantom measures when the legacy detector and stored boundary
+differ slightly, while retaining signed continuation endpoints. Existing saved
+tiny intervals remain editable and display a red marker and page warning; the
+intentional final playback marker and positive-width continuation segments are
+excluded. Rerun detection regenerates the boundaries without those duplicates.
+
 ## Correct an incorrect group
 
 Enable **Y**, then click anywhere inside the automatically grouped shaded area,

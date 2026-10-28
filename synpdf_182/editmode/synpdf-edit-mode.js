@@ -802,7 +802,8 @@ function addDummySys$$module$synpdf() {
         x: a.x + a.w,
         y: a.y,
         w: 2,
-        h: a.h
+        h: a.h,
+        endMarker: true
     });
     a = deTijden$$module$synpdf.length;
     a < deMaten$$module$synpdf.length && deTijden$$module$synpdf.push({
@@ -2190,6 +2191,19 @@ function findBarLines$$module$synpdf(a, b, c, analysis) {
     return h
 }
 
+function markNarrowMeasure$$module$synpdf(element, measure) {
+    if (measure.endMarker || (measure.split && measure.w > 0) || measure.w > 3 * deMetriek$$module$synpdf[0] / 1000) return;
+    const scale = getPdfViewScale$$module$synpdf();
+    const width = 8 / scale;
+    element.attr('data-narrow-measure', 'true').css({
+        left: measure.x - Math.max(0, width - measure.w) / 2,
+        width: Math.max(width, measure.w),
+        background: 'rgba(220,38,38,0.8)',
+        outline: (2 / scale) + 'px solid #dc2626',
+        clipPath: 'none'
+    });
+}
+
 function maatStrepen$$module$synpdf() {
     $(".maten").remove();
     if (opt$$module$synpdf.advncd)
@@ -2215,6 +2229,7 @@ function maatStrepen$$module$synpdf() {
                         '0px ' + (b.ybl - b.y) + 'px)'
                 });
             }
+            markNarrowMeasure$$module$synpdf(box, b);
             $("#notation").append(box);
 
             // Also draw linkedBoxes for split measures (second half)
