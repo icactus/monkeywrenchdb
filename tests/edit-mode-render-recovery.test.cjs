@@ -192,6 +192,39 @@ for (const cached of [false, true]) {
     });
 }
 
+test('opening saved CNN geometry does not replace page one with an advanced-mode basic scan', () => {
+    for (const file of ['part-pdf-queue.php?action=file&id=queued', '/pdfs/299-5.pdf']) {
+        const {c} = controllerHarness();
+        const metrics = [1000, ...Array.from({length: 4}, () => ({
+            cxs: [{cs: [100, 132], csl: [98, 130], csr: [102, 134], xs: {x1: 50, x2: 950}}],
+            bxs: [[50, 123.4, 600, 950]]
+        }))];
+        const before = JSON.stringify(metrics), canvas = {width: 1000, height: 1400};
+        Object.assign(c, {
+            playLstIx$$module$synpdf: 1, opt_url$$module$synpdf: {}, opt_default$$module$synpdf: {},
+            metric_arr$$module$synpdf: metrics, adv_settings$$module$synpdf: {}, media_dir$$module$synpdf: '',
+            pdf_file$$module$synpdf: file, pdf_data$$module$synpdf: null, jpg_data$$module$synpdf: null,
+            offset_js$$module$synpdf: 0, media_file$$module$synpdf: '', msc_tracks$$module$synpdf: [], msc_credits$$module$synpdf: null,
+            pageNumChanged$$module$synpdf: 0, pageStfIx$$module$synpdf: [], Cs$$module$synpdf: [],
+            scanPageMetrics$$module$synpdf: () => assert.fail('Restored geometry must not be overwritten by a scan'),
+            startIntf$$module$synpdf: () => {c.msc_wz$$module$synpdf = {cursorTime: 0};},
+            applyPdfViewZoom$$module$synpdf() {}, kliklang$$module$synpdf() {}, maatStrepen$$module$synpdf() {}, drawStaffLines$$module$synpdf() {},
+            disableScrollingCheck: 0, resetIntf$$module$synpdf() {},
+            readPdf$$module$synpdf: () => c.compPage$$module$synpdf(canvas, 1, 0)
+        });
+        c.opt$$module$synpdf.pagewd = 1000;
+        for (const name of ['knip$$module$synpdf', 'compPage$$module$synpdf', 'schaalMetriek$$module$synpdf', 'msc_check_preload$$module$synpdf']) vm.runInContext(definition(name), c);
+        c.msc_check_preload$$module$synpdf();
+        assert.equal(JSON.stringify(c.deMetriek$$module$synpdf), before);
+        assert.equal(c.pageNumChanged$$module$synpdf, 0, 'The initial render consumes the preserve flag normally');
+        for (let page = 2; page < metrics.length; page++) {
+            c.pageNumChanged$$module$synpdf = 1;
+            c.compPage$$module$synpdf(canvas, page, 0);
+        }
+        assert.equal(JSON.stringify(c.deMetriek$$module$synpdf), before);
+    }
+});
+
 test('grouped discovery retries the other quarter only after an empty scan and restores the selected quarter', () => {
     const calls = [], detected = { cxs: [{ cs: [10,20] }], bxs: [[20,100]] };
     const c = vm.createContext({

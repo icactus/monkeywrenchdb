@@ -41,6 +41,9 @@ already supplies both PDFs and their assignment. Successful submission keeps the
 current viewer page and geometry in place, shows a submission confirmation, and
 refreshes the saved-part count reference. The completed part leaves the waiting
 list and stops queue autosaves. Open another waiting PDF to submit the next part.
+Reopening prepared queue work uses its saved CNN barlines and fitted geometry,
+including the initial advanced-mode page render, without replacing them with a
+basic staff scan.
 
 The server converts one PDF at a time, using one native worker at reduced CPU
 priority. It renders each page to 2000 pixels wide, converts to grayscale and

@@ -3154,7 +3154,13 @@ function msc_check_preload$$module$synpdf() {
     else {
         for (var a in opt_url$$module$synpdf) opt$$module$synpdf[a] = opt_url$$module$synpdf[a];
         for (var b in opt_default$$module$synpdf) opt$$module$synpdf[b] = b in opt$$module$synpdf ? opt$$module$synpdf[b] : opt_default$$module$synpdf[b];
-        metric_arr$$module$synpdf && (deMetriek$$module$synpdf = metric_arr$$module$synpdf, schaalMetriek$$module$synpdf());
+        if (metric_arr$$module$synpdf) {
+            deMetriek$$module$synpdf = metric_arr$$module$synpdf;
+            schaalMetriek$$module$synpdf();
+            // The first advanced-mode render must use the restored geometry,
+            // just as page navigation does, rather than replace it with a scan.
+            pageNumChanged$$module$synpdf = 1;
+        }
         adv_settings$$module$synpdf && (adv_parms$$module$synpdf =
             adv_settings$$module$synpdf);
         media_dir$$module$synpdf && pdf_file$$module$synpdf && (pdf_file$$module$synpdf = media_dir$$module$synpdf + pdf_file$$module$synpdf);
