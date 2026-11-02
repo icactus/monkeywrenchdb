@@ -3258,64 +3258,75 @@ function fitPianoSystemsOnPage(pageData, pageImageData) {
     return changed;
 }
 
-function detectStaffBundleAroundPoint(pixelData, stride, width, x, y, seedSpatium) {
-    var spatium = Math.max(4, Math.round(seedSpatium || 8));
-    var bandHalfWidth = Math.max(10, Math.round(1.7 * spatium));
-    var searchTop = Math.max(2, Math.round(y - 6 * spatium));
-    var searchBot = Math.min(Math.floor(pixelData.length / stride) - 3, Math.round(y + 6 * spatium));
-    var peaks = [];
-
-    for (var row = searchTop; row <= searchBot; row++) {
-        var score = scoreRowDarkness(pixelData, stride, width, row, x - bandHalfWidth, x + bandHalfWidth);
-        peaks.push({ y: row, score: score });
-    }
-
-    var candidateRows = [];
-    for (var i = 1; i < peaks.length - 1; i++) {
-        if (peaks[i].score < 0.12) continue;
-        if (peaks[i].score >= peaks[i - 1].score && peaks[i].score >= peaks[i + 1].score) {
-            candidateRows.push(peaks[i]);
+function detectStaffBundleAroundPoint(pixelData, stride, width, x, y, seedSpatium, staffHint) {
+    const spacing = Math.max(3, Number(seedSpatium) || 8);
+    const height = Math.floor(pixelData.length / stride);
+    const xs = staffHint?.xs || { x1: 0, x2: width - 1 };
+    const halfWidth = Math.max(24, 10 * spacing);
+    const x1 = Math.max(0, Math.ceil(Math.max(xs.x1, x - halfWidth)));
+    const x2 = Math.min(width - 1, Math.floor(Math.min(xs.x2, x + halfWidth)));
+    if (x2 - x1 < 12) return null;
+    const slope = staffHint?.csl?.length && staffHint?.csr?.length && xs.x2 > xs.x1
+        ? (staffHint.csr[0] - staffHint.csl[0]) / (xs.x2 - xs.x1) : 0;
+    const scores = new Map();
+    function rowScore(row) {
+        const key = Math.round(row * 2);
+        if (scores.has(key)) return scores.get(key);
+        let dark = 0, samples = 0;
+        for (let col = x1; col <= x2; col += 2) {
+            const sampleY = Math.round(row + slope * (col - x));
+            if (sampleY < 0 || sampleY >= height) continue;
+            const offset = sampleY * stride + col * 4;
+            dark += pixelData[offset] + pixelData[offset + 1] + pixelData[offset + 2] < 540 ? 1 : 0;
+            samples++;
         }
+        const score = samples ? dark / samples : 0;
+        scores.set(key, score);
+        return score;
     }
-    candidateRows.sort(function (a, b) { return b.score - a.score; });
-    candidateRows = candidateRows.slice(0, 18).sort(function (a, b) { return a.y - b.y; });
-
-    var best = null;
-    for (var a = 0; a < candidateRows.length - 4; a++) {
-        for (var b = a + 1; b < candidateRows.length - 3; b++) {
-            for (var c = b + 1; c < candidateRows.length - 2; c++) {
-                for (var d = c + 1; d < candidateRows.length - 1; d++) {
-                    for (var e = d + 1; e < candidateRows.length; e++) {
-                        var lines = [candidateRows[a].y, candidateRows[b].y, candidateRows[c].y, candidateRows[d].y, candidateRows[e].y];
-                        var gaps = [lines[1] - lines[0], lines[2] - lines[1], lines[3] - lines[2], lines[4] - lines[3]];
-                        var meanGap = (gaps[0] + gaps[1] + gaps[2] + gaps[3]) / 4;
-                        if (meanGap < Math.max(4, spatium * 0.65) || meanGap > Math.max(40, spatium * 1.45)) continue;
-                        var variance =
-                            Math.pow(gaps[0] - meanGap, 2) +
-                            Math.pow(gaps[1] - meanGap, 2) +
-                            Math.pow(gaps[2] - meanGap, 2) +
-                            Math.pow(gaps[3] - meanGap, 2);
-                        if (variance > meanGap * meanGap * 0.55) continue;
-                        if (y < lines[0] - 0.9 * meanGap || y > lines[4] + 0.9 * meanGap) continue;
-                        var rowScore =
-                            candidateRows[a].score + candidateRows[b].score + candidateRows[c].score + candidateRows[d].score + candidateRows[e].score;
-                        var centerPenalty = Math.abs(((lines[0] + lines[4]) / 2) - y) / Math.max(1, meanGap);
-                        var total = rowScore - variance * 0.02 - centerPenalty * 0.15;
-                        if (!best || total > best.score) {
-                            best = { score: total, lines: lines.map(function (v) { return Math.round(v); }) };
-                        }
+    const peaks = [];
+    const top = Math.max(1, Math.floor(y - 6 * spacing));
+    const bottom = Math.min(height - 2, Math.ceil(y + 6 * spacing));
+    for (let row = top; row <= bottom; row++) {
+        const score = rowScore(row);
+        if (score >= 0.2 && score >= rowScore(row - 1) && score >= rowScore(row + 1)) peaks.push({ y: row, score });
+    }
+    // Thick lines must contribute one peak, not consume the candidate budget.
+    peaks.sort((a, b) => b.score - a.score);
+    const candidates = [];
+    for (const peak of peaks) {
+        if (candidates.every(other => Math.abs(other.y - peak.y) >= Math.max(2, spacing * 0.45))) candidates.push(peak);
+        if (candidates.length === 18) break;
+    }
+    candidates.sort((a, b) => a.y - b.y);
+    let best = null;
+    for (let a = 0; a < candidates.length - 4; a++) {
+        for (let b = a + 1; b < candidates.length - 3; b++) {
+            for (let c = b + 1; c < candidates.length - 2; c++) {
+                for (let d = c + 1; d < candidates.length - 1; d++) {
+                    for (let e = d + 1; e < candidates.length; e++) {
+                        const rows = [a,b,c,d,e].map(index => candidates[index]);
+                        const lines = rows.map(row => row.y);
+                        const gaps = lines.slice(1).map((line, i) => line - lines[i]);
+                        const mean = (lines[4] - lines[0]) / 4;
+                        if (mean < Math.max(2, spacing * 0.7) || mean > Math.min(40, spacing * 1.35)) continue;
+                        if (gaps.some(gap => Math.abs(gap - mean) > mean * 0.25)) continue;
+                        if (y < lines[0] - 0.75 * mean || y > lines[4] + 0.75 * mean) continue;
+                        const coverage = rows.reduce((total, row) => total + row.score, 0) / 5;
+                        const weakest = Math.min(...rows.map(row => row.score));
+                        if (coverage < 0.45 || weakest < 0.25) continue;
+                        const spaces = lines.slice(1).reduce((total, line, i) => total + rowScore((line + lines[i]) / 2), 0) / 4;
+                        const outside = Math.max(lines[0] - y, y - lines[4], 0) / mean;
+                        const variance = gaps.reduce((total, gap) => total + ((gap - mean) / mean) ** 2, 0);
+                        const score = coverage + weakest * 0.4 - spaces * 0.4 - variance * 0.2 - outside * 0.1;
+                        if (!best || score > best.score) best = { score, lines };
                     }
                 }
             }
         }
     }
-
-    if (best && best.lines) {
-        return best.lines;
-    }
-
-    var topGuess = Math.round(y - 2 * spatium);
-    return [topGuess, topGuess + spatium, topGuess + 2 * spatium, topGuess + 3 * spatium, topGuess + 4 * spatium];
+    // An unsupported click must leave the previous geometry intact.
+    return best ? best.lines : null;
 }
 
 function clusterBarlineXs(xsValues, minGap) {
@@ -5101,6 +5112,36 @@ function mergeSystemsInYSelection(event, wholePage) {
     return true;
 }
 
+function refitSystemAtPoint(system, barlines, x, y, image) {
+    const result = cloneSystemForGeometrySeed(system);
+    const members = result.autoDivisi ? getDivisiSingleStaves(result, image.width) : [result];
+    if (!members.length) return null;
+    const index = findNearestSystemIndexForPoint({ cxs: members }, 0, x, y);
+    const member = members[index];
+    const bounds = getSystemTopBottomAtX(member, x);
+    const edgeLines = member.csl || member.cs;
+    const spacing = edgeLines.length === 2 ? Math.max(3, (bounds.bottom - bounds.top) / 4) : getSystemEstimatedSpatium(member);
+    const xs = result.autoDivisi ? member.xs : getSystemBoundaryXs(member, barlines);
+    if (x < xs.x1 - spacing || x > xs.x2 + spacing ||
+        y < bounds.top - 1.25 * spacing || y > bounds.bottom + 1.25 * spacing) return null;
+    const lines = detectStaffBundleAroundPoint(image.pixelData, image.stride, image.width, x, y, spacing, member);
+    if (!lines) return null;
+    const seed = { cs: lines, csl: lines.slice(), csr: lines.slice(), xs };
+    const geometry = BarlineDetectV2.buildRenderGeometry(seed, image.pixelData, image.stride, image.width,
+        { anchor: { x, lines } });
+    if (!geometry) return null;
+    const fitted = applyRenderGeometryToSystem(member, geometry, { fixedXs: xs, expandSparse: true });
+    if (!result.autoDivisi) return fitted;
+    result.autoDivisi.staves = members;
+    result.autoDivisi.width = image.width;
+    result.csl = [Math.min(...members.map(staff => (staff.csl || staff.cs)[0])),
+        Math.max(...members.map(staff => (staff.csl || staff.cs).at(-1)))];
+    result.csr = [Math.min(...members.map(staff => (staff.csr || staff.cs)[0])),
+        Math.max(...members.map(staff => (staff.csr || staff.cs).at(-1)))];
+    result.cs = result.csl.map((line, i) => (line + result.csr[i]) / 2);
+    return result;
+}
+
 function handleYCxs(event) {
     if (!YisActive) {
         return false;
@@ -5142,61 +5183,13 @@ function handleYCxs(event) {
             return true;
         }
     }
-    if (!system) {
-        system = {
-            cs: [y - 16, y + 16],
-            xs: { x1: 0, x2: pageImageData.width - 1 }
-        };
-    }
-    var seedSpatium = getSystemEstimatedSpatium(system);
-    var localLines = detectStaffBundleAroundPoint(pageImageData.pixelData, pageImageData.stride, pageImageData.width, x, y, seedSpatium);
-    if (!localLines || localLines.length !== 5) {
-        alert("Could not fit staff lines for that click.");
+    if (!system) return true;
+    const fitted = refitSystemAtPoint(system, existingBarlines, x, y, pageImageData);
+    if (!fitted) {
+        alert("Could not fit that staff. Click within its printed five lines, away from dense notes.");
         return true;
     }
-
-    var seededSystem = {
-        cs: localLines.slice(),
-        csl: localLines.slice(),
-        csr: localLines.slice(),
-        xs: getSystemBoundaryXs(system, existingBarlines)
-    };
-    var renderGeometry = BarlineDetectV2.buildRenderGeometry(
-        seededSystem,
-        pageImageData.pixelData,
-        pageImageData.stride,
-        pageImageData.width
-    );
-
-    var baseSystem = cloneSystemForGeometrySeed(system);
-    var newSystem = renderGeometry
-        ? applyRenderGeometryToSystem(baseSystem, renderGeometry, {
-            fixedXs: getSystemBoundaryXs(system, existingBarlines),
-            expandSparse: true
-        })
-        : applyRenderGeometryToSystem(baseSystem, {
-            left: { lines: localLines.slice() },
-            right: { lines: localLines.slice() },
-            xs: getSystemBoundaryXs(system, existingBarlines)
-        }, {
-            fixedXs: getSystemBoundaryXs(system, existingBarlines),
-            expandSparse: true
-        });
-
-    newSystem = cloneSystemForGeometrySeed(newSystem);
-    var newBarlines = Array.isArray(existingBarlines) && existingBarlines.length
-        ? existingBarlines.slice()
-        : [newSystem.xs.x1, newSystem.xs.x2];
-
-    pageData[pagenum].cxs.push(newSystem);
-    pageData[pagenum].bxs.push(newBarlines);
-
-    var oldCxsOrder = pageData[pagenum].cxs.slice();
-    var oldBxsOrder = pageData[pagenum].bxs.slice();
-    pageData[pagenum].cxs.sort(function (a, b) { return getSystemSortTop(a) - getSystemSortTop(b); });
-    pageData[pagenum].bxs = pageData[pagenum].cxs.map(function (systemEntry) {
-        return oldBxsOrder[oldCxsOrder.indexOf(systemEntry)];
-    });
+    pageData[pagenum].cxs[systemIndex] = fitted;
 
     MetricStore.setMetricData(pageData, { clone: false });
     requestRefresh({ preferLiveData: true });
@@ -5234,26 +5227,13 @@ function handleSCxs(event) {
 
     var system = pageData[pagenum].cxs[systemIndex];
     var existingBarlines = pageData[pagenum].bxs && pageData[pagenum].bxs[systemIndex];
-    var seededSystem = shiftSystemSeedToTopLine(
-        applyExistingBoundaryXs(cloneSystemForGeometrySeed(system), existingBarlines),
-        y,
-        x
-    );
-    var renderGeometry = BarlineDetectV2.buildRenderGeometry(
-        seededSystem,
-        pageImageData.pixelData,
-        pageImageData.stride,
-        pageImageData.width
-    );
-
-    if (!renderGeometry) {
-        alert("Could not fit staff geometry for that system.");
+    const fitted = refitSystemAtPoint(system, existingBarlines, x, y, pageImageData);
+    if (!fitted) {
+        alert("Could not fit that staff. Click within its printed five lines, away from dense notes.");
         return true;
     }
+    pageData[pagenum].cxs[systemIndex] = fitted;
 
-    pageData[pagenum].cxs[systemIndex] = applyRenderGeometryToSystem(system, renderGeometry, {
-        fixedXs: getSystemBoundaryXs(system, existingBarlines)
-    });
     MetricStore.setMetricData(pageData, { clone: false });
     requestRefresh({ preferLiveData: true });
     return true;

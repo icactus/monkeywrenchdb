@@ -106,6 +106,11 @@ test('$ mode includes horizontal scrolling when anchoring its click and retains 
         document: { getElementById: () => ({ value: '1' }) },
         notation: { scrollLeft: 350, scrollTop: 60, getBoundingClientRect: () => ({ left: 100, top: 200 }) },
         getCurrentPageImageData: () => ({ pixelData: [], stride: 3200, width: 800 }),
+        refitSystemAtPoint(system, existing, x, y) {
+            assert.equal(x,400);assert.equal(y,110);
+            assert.deepEqual(clone(existing),bars);
+            return c.applyRenderGeometryToSystem(system, {left: {lines},right: {lines: lines.map(v=>v+20)}}, {fixedXs: xs});
+        },
         requestRefresh() {}, alert: message => assert.fail(message)
     });
     c.handleSCxs({ clientX: 150, clientY: 250 }); // score (400,110), on its sloping top line

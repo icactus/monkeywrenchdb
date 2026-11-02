@@ -31,6 +31,15 @@ There is no change to model weights or single-staff classification thresholds.
 Use **Rerun detection** to apply mixed grouping to a previously prepared queue
 draft. Opening an existing draft continues to preserve its saved geometry.
 
+For geometry-only correction, press **$** (Shift+4) and click within the printed
+staff. Top-line and middle clicks select the same five-line bundle. On divisi,
+this refits only the clicked member and retains its partner, grouping and bars.
+Y-click on a single staff uses the same fitter and replaces it in place;
+Y-click on an automatic divisi group continues to split that group.
+The click fitter checks a wider strip of pixels, constrains staff spacing, and
+anchors the full-width fit to the selected bundle. Unsupported clicks retain
+the previous geometry instead of inventing lines or jumping to another bundle.
+
 Detected strokes that coincide with a system's existing start/end boundary are
 snapped to that one boundary. Detections outside the system are discarded. This
 prevents one-pixel phantom measures when the legacy detector and stored boundary
@@ -86,6 +95,13 @@ six-line candidate. Both member staves retained fitted geometry. No browser
 errors occurred. The report is
 `artifacts/divisi-detection/299-5-browser-check.json`. Queue writes were mocked;
 production drafts were unchanged. This verifies this PDF, not all possible scans.
+
+Manual refit checks on all **44 staves** in that PDF produced identical results
+for top-line and middle clicks and remained stable on repeated fits. Divisi
+partners were preserved. Unit tests also cover misaligned and sparse seeds,
+sloping lines, noteheads, unsupported clicks, and avoiding duplicate Y systems.
+These exercise the fitter and handlers; a final native mouse-interaction check
+was left for user review.
 
 An initial Chrome check on all 14 pages of `75-5.pdf` found 26 of the 31 labeled
 paired divisi regions, with zero extra groups under a 15-pixel envelope matching

@@ -417,7 +417,8 @@ var BarlineDetectV2 = (function () {
         return null;
     }
 
-    function buildRenderGeometry(system, pixelData, stride, imageWidth) {
+    function buildRenderGeometry(system, pixelData, stride, imageWidth, options) {
+        options = options || {};
         var seedLines = getSystemSeedLines(system);
         if (!system || !system.xs || !seedLines || seedLines.length < 2) return null;
 
@@ -442,6 +443,17 @@ var BarlineDetectV2 = (function () {
         var sparseBoundsMargin = 0;
         var sparseXSearchRange = 0;
         var normalizationReason = "";
+
+        function matchesClickAnchor(left, right) {
+            var anchor = options.anchor;
+            if (!anchor || !Array.isArray(anchor.lines) || anchor.lines.length !== 5) return true;
+            var t = (anchor.x - left.x) / (right.x - left.x || 1);
+            t = Math.max(0, Math.min(1, t));
+            var tolerance = Math.max(1, (anchor.lines[4] - anchor.lines[0]) / 4 * 0.2);
+            return anchor.lines.every(function (line, i) {
+                return Math.abs(left.lines[i] + (right.lines[i] - left.lines[i]) * t - line) <= tolerance;
+            });
+        }
 
         function scoreBundleInBand(lines, bandStart, bandEnd) {
             var lineCoverage = 0;
@@ -809,6 +821,7 @@ var BarlineDetectV2 = (function () {
                 var rightLines = linesFromOffset(rightFit.candidateFits[rf].offset);
                 if (!rightLines) continue;
                 var testRightGeom = buildGeometryFromLines(rightFit.x, rightLines);
+                if (!matchesClickAnchor(testLeftGeom, testRightGeom)) continue;
                 var pairEdgeScore = scoreEndpointGeometry(testLeftGeom, testRightGeom);
                 if (!pairEdgeScore || !pairEdgeScore.isUsable) continue;
 
@@ -837,6 +850,11 @@ var BarlineDetectV2 = (function () {
         if (!edgeScore || !edgeScore.isUsable) {
             leftGeom = getEffectiveLinesAtCol(xs.x1);
             rightGeom = getEffectiveLinesAtCol(xs.x2);
+        }
+
+        if (options.anchor) {
+            var manualScore = scoreEndpointGeometry(leftGeom, rightGeom);
+            if (!manualScore || !manualScore.isUsable || !matchesClickAnchor(leftGeom, rightGeom)) return null;
         }
 
         return {
