@@ -13,7 +13,7 @@
         controller?.abort();
         const request = new AbortController();
         controller = request;
-        status.textContent = 'Loading leaderboard…';
+        status.textContent = 'Refreshing leaderboard…';
         status.hidden = false;
         table.hidden = true;
         retry.hidden = true;
@@ -66,13 +66,11 @@
         document.getElementById('help-backdrop')?.classList.remove('visible');
         document.getElementById('about-backdrop')?.classList.remove('visible');
         dialog.showModal();
-        loadLeaderboard();
     };
     document.getElementById('leaderboard-close').addEventListener('click', () => dialog.close());
     dialog.addEventListener('close', () => {
         // A queued close event may arrive after the popup has already reopened.
         if (dialog.open) return;
-        controller?.abort();
         opener?.focus();
     });
     dialog.addEventListener('click', event => {

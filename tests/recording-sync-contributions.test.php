@@ -2,6 +2,9 @@
 // Run: php tests/recording-sync-contributions.test.php
 // All database writes use a disposable local database.
 require_once dirname(__DIR__) . '/phpfiles/config.php';
+$cacheFixture = sys_get_temp_dir() . '/mw_sync_cache_' . bin2hex(random_bytes(6));
+mkdir($cacheFixture, 0700);
+define('MW_SYNC_LEADERBOARD_CACHE_PATH', $cacheFixture . '/leaderboard.json');
 require_once dirname(__DIR__) . '/phpfiles/recording_sync_contributions.php';
 if (!in_array(DB_HOST, ['localhost', '127.0.0.1', '::1'], true)) exit('Tests require a local database.');
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
@@ -71,7 +74,7 @@ try {
     }
     $insert->close();
     $config = '<?php ' . implode("\n", array_map(fn($key, $value) => 'define(' . var_export($key, true) . ', ' . var_export($value, true) . ');',
-        ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'], [DB_HOST, DB_USER, DB_PASSWORD, $database]));
+        ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'MW_SYNC_LEADERBOARD_CACHE_PATH'], [DB_HOST, DB_USER, DB_PASSWORD, $database, MW_SYNC_LEADERBOARD_CACHE_PATH]));
     file_put_contents("$fixture/config.php", $config);
     chmod("$fixture/config.php", 0600);
     $cli = [$root . '/scripts/backfill-recording-sync-contributions.php', '--config=' . $fixture . '/config.php', '--user-id=1', '--through-recording-id=12'];
@@ -90,6 +93,7 @@ try {
     check($report['alternate_timing_columns']['times_arr_data_2'] === [12], 'Audit reports alternate timing columns.');
     [$status, $out, $err] = runCli([...$cli, '--apply']);
     check($status === 0 && $err === '' && json_decode($out, true)['stored_user_measures'] === '10', 'Backfill applies the reviewed total.');
+    check(mwSyncReadLeaderboardCache()['entries'][0]['score'] === '10', 'Backfill generates its committed leaderboard snapshot.');
     $original = $db->query('SELECT * FROM recording_sync_contributions ORDER BY recording_id')->fetch_all(MYSQLI_ASSOC);
     check($original[0]['contributed_at'] === null && $original[1]['audit_note'] !== null, 'Legacy credit preserves unknown contribution dates and the override audit note.');
     [$status, $out] = runCli([...$cli, '--apply']);
@@ -101,6 +105,7 @@ try {
     $newId = mwSyncSubmitRecording($db, 2, $recording);
     $credit = $db->query("SELECT * FROM recording_sync_contributions WHERE recording_id=$newId")->fetch_assoc();
     check((int) $credit['user_id'] === 2 && (int) $credit['measures_synced'] === 4 && $credit['source'] === 'user_submission' && $credit['contributed_at'] !== null, 'New recordings earn their submitting user all performed measures.');
+    check(mwSyncReadLeaderboardCache()['entries'][1]['score'] === '4', 'Submission refreshes the file after committing the score.');
     check(mwSyncSubmitRecording($db, 2, $recording) === $newId &&
         (int) $db->query('SELECT COUNT(*) FROM recordings')->fetch_row()[0] === 6, 'An identical retry reuses its recording and never awards credit twice.');
     rejects(fn() => mwSyncSubmitRecording($db, 3, $recording), 'Another user cannot claim the same recording.');
@@ -109,7 +114,9 @@ try {
     check(mwSyncUpdateRecording($db, $newId, 'newvideo001', '1.25', $changed) === 2, 'Timing corrections return the piece for export.');
     $credit = $db->query("SELECT * FROM recording_sync_contributions WHERE recording_id=$newId")->fetch_assoc();
     check((int) $credit['user_id'] === 2 && (int) $credit['measures_synced'] === 2, 'Corrections adjust the original contributor count.');
-    $db->query("UPDATE recording_sync_contributions SET revoked_at=UTC_TIMESTAMP(), revocation_reason='Duplicate' WHERE recording_id=$newId");
+    check(mwSyncReadLeaderboardCache()['entries'][1]['score'] === '2', 'Corrections refresh the cached count.');
+    mwSyncRevokeRecordingCredit($db, $newId, 'Duplicate');
+    check(count(mwSyncReadLeaderboardCache()['entries']) === 1, 'Revocation immediately removes invalid points from the cached scores.');
     mwSyncUpdateRecording($db, $newId, 'newvideo001', '1.25', $repeats);
     check($db->query("SELECT revoked_at FROM recording_sync_contributions WHERE recording_id=$newId")->fetch_row()[0] !== null, 'Corrections cannot restore revoked credit.');
     $db->query("DELETE FROM recordings WHERE recording_id=$newId");
@@ -117,8 +124,10 @@ try {
 
     $badUser = $recording; $badUser['youtube_id'] = 'baduser0001';
     $before = $db->query('SELECT COUNT(*) FROM recordings')->fetch_row()[0];
+    $beforeCache = file_get_contents(MW_SYNC_LEADERBOARD_CACHE_PATH);
     rejects(fn() => mwSyncSubmitRecording($db, 999, $badUser), 'Missing users prevent a contribution.');
     check($db->query('SELECT COUNT(*) FROM recordings')->fetch_row()[0] === $before, 'Failed contribution creation rolls back its new recording.');
+    check(file_get_contents(MW_SYNC_LEADERBOARD_CACHE_PATH) === $beforeCache, 'Rolled-back submissions never publish uncommitted scores.');
     $db->query('RENAME TABLE recording_sync_contributions TO saved_credits');
     rejects(fn() => mwSyncUpdateRecording($db, 10, 'abcdefghij0', '3.00', $changed), 'A credit write failure rejects a correction.');
     check($db->query('SELECT times_arr_data FROM recordings WHERE recording_id=10')->fetch_row()[0] === $repeats, 'Failed credit correction rolls back its timing update.');
@@ -147,7 +156,7 @@ try {
 
     // Exercise real handlers over HTTP with private fixtures and no cache network calls.
     mkdir("$fixture/phpfiles"); mkdir("$fixture/data"); mkdir("$fixture/data/times");
-    foreach (['submit_recording.php', 'update_recording_sync.php', 'recording_sync_contributions.php'] as $file) {
+    foreach (['submit_recording.php', 'update_recording_sync.php', 'recording_sync_contributions.php', 'leaderboard_cache.php'] as $file) {
         copy("$root/phpfiles/$file", "$fixture/phpfiles/$file");
     }
     copy("$fixture/config.php", "$fixture/phpfiles/config.php");
@@ -157,10 +166,10 @@ try {
     file_put_contents("$fixture/session_config.php", '<?php // Fixture session is supplied by the router.');
     file_put_contents("$fixture/phpfiles/cloudflare_purge.php", '<?php function purgePieceRecordingsCache($id) { return ["success" => true]; }');
     file_put_contents("$fixture/phpfiles/static_recordings.php", '<?php function writePieceRecordingsJson($db, $id) { return "fixture"; }');
-    file_put_contents("$fixture/router.php", '<?php if ($_SERVER["REQUEST_URI"] === "/ready") { echo "ready"; return; } ' .
+    file_put_contents("$fixture/router.php", '<?php require __DIR__ . "/phpfiles/config.php"; if ($_SERVER["REQUEST_URI"] === "/ready") { echo "ready"; return; } ' .
         'if (str_starts_with($_SERVER["REQUEST_URI"], "/leaderboard")) { ' .
-        '$_SESSION = $_SERVER["REQUEST_URI"] === "/leaderboard-guest" ? [] : ["user_id" => $_SERVER["REQUEST_URI"] === "/leaderboard-forged" ? 2 : 1, "user_role" => "admin"]; ' .
-        'if ($_SERVER["REQUEST_URI"] === "/leaderboard-markup") { require __DIR__ . "/site-navigation.php"; require __DIR__ . "/site-information.php"; return; } ' .
+        '$_SESSION = str_contains($_SERVER["REQUEST_URI"], "guest") ? [] : ["user_id" => str_contains($_SERVER["REQUEST_URI"], "forged") ? 2 : 1, "user_role" => "admin"]; ' .
+        'if (str_ends_with($_SERVER["REQUEST_URI"], "-markup")) { require __DIR__ . "/site-navigation.php"; require __DIR__ . "/site-information.php"; return; } ' .
         'require __DIR__ . "/leaderboard-data.php"; return; } ' .
         '$_SESSION = $_SERVER["REQUEST_URI"] === "/guest" ? [] : ["user_id" => 2]; ' .
         'require __DIR__ . "/phpfiles/" . ($_SERVER["REQUEST_URI"] === "/update" ? "update_recording_sync.php" : "submit_recording.php");');
@@ -199,26 +208,42 @@ try {
     check(array_map('intval', array_column($board, 'user_id')) === [1, 2, 3, 4], 'Leaderboard sums all active credits and excludes revoked credits, missing accounts and zero scores.');
     check(array_column($board, 'rank') === [1, 2, 2, 4] && array_column($board, 'score') === ['4294967302', '6', '6', '1'], 'Tied scores share a rank, preserve exact totals and sort stably.');
     check($board[3]['username'] === 'User 4', 'Accounts without a display name receive a username fallback.');
+    mwSyncRefreshLeaderboardCache($db);
     [$status, $json] = postRecording($port, 'leaderboard');
     $response = json_decode($json, true);
     check($status === 200 && $response['entries'][0] === ['rank' => 1, 'username' => 'Historical owner', 'score' => '4294967302'], 'Admin endpoint returns rank, username and exact integer score.');
     [$status, $html] = postRecording($port, 'leaderboard-markup');
     check($status === 200 && str_contains($html, '<dialog id="leaderboard"') && str_contains($html, '>Rank</th>') && str_contains($html, '>Username</th>') && str_contains($html, '>Score</th>'), 'Shared information panels include the leaderboard popup with the requested columns.');
+    check(str_contains($html, '4,294,967,302') && !str_contains($html, 'Loading leaderboard'), 'Cached scores are already rendered in the page before the popup opens.');
+    check(str_contains($html, '&lt;svg onload=alert(1)&gt;') && !str_contains($html, '<svg onload=alert(1)>'), 'Cached usernames are escaped when embedded in page HTML.');
     check(substr_count($html, 'href="#leaderboard"') === 2 && !str_contains($html, 'href="leaderboard.php"'), 'Desktop and mobile admin links open a popup without navigating.');
     foreach (['leaderboard-guest', 'leaderboard-forged'] as $route) {
         [$status, $denied] = postRecording($port, $route);
         check($status === 403 && !isset(json_decode($denied, true)['entries']), 'Guests and regular users with stale admin session roles cannot retrieve scores.');
+        [$status, $denied] = postRecording($port, $route . '-markup');
+        check($status === 200 && !str_contains($denied, '<dialog id="leaderboard"') && !str_contains($denied, '4,294,967,302'), 'Unauthorized page loads never embed private leaderboard rows.');
     }
     $db->query('UPDATE recording_sync_contributions SET revoked_at=UTC_TIMESTAMP()');
+    [$status] = runCli([$root . '/scripts/rebuild-leaderboard-cache.php', '--config=' . $fixture . '/config.php']);
+    check($status === 0 && mwSyncReadLeaderboardCache()['entries'] === [], 'Manual data changes can rebuild the file with the CLI tool.');
     [$status, $html] = postRecording($port, 'leaderboard');
     check($status === 200 && json_decode($html, true)['entries'] === [], 'An empty leaderboard returns no entries.');
+    $beforeCache = file_get_contents(MW_SYNC_LEADERBOARD_CACHE_PATH);
     $db->query('RENAME TABLE recording_sync_contributions TO unavailable_credits');
+    rejects(fn() => mwSyncRefreshLeaderboardCache($db), 'A failed rebuild reports its database failure.');
+    check(file_get_contents(MW_SYNC_LEADERBOARD_CACHE_PATH) === $beforeCache, 'A failed rebuild preserves the last complete snapshot.');
     [$status, $html] = postRecording($port, 'leaderboard');
-    check($status === 503 && str_contains($html, 'temporarily unavailable') && !str_contains($html, 'unavailable_credits'), 'Missing storage returns a friendly unavailable state without database details.');
+    check($status === 200 && json_decode($html, true)['entries'] === [], 'Reading cached scores never queries the contribution table.');
+    [$status, $html] = postRecording($port, 'leaderboard-markup');
+    check($status === 200 && str_contains($html, 'No synced measures have been credited yet.'), 'The popup markup also renders from the file with contribution storage unavailable.');
+    unlink(MW_SYNC_LEADERBOARD_CACHE_PATH);
+    [$status, $html] = postRecording($port, 'leaderboard');
+    check($status === 503 && str_contains($html, 'temporarily unavailable') && !str_contains($html, 'unavailable_credits'), 'Missing cache returns a friendly unavailable state without database details.');
 
     echo "Passed $checks recording contribution checks.\n";
 } finally {
     if (is_resource($server)) { proc_terminate($server); proc_close($server); }
     $admin->query("DROP DATABASE IF EXISTS `$database`");
     if (is_dir($fixture)) removeFixture($fixture);
+    if (is_dir($cacheFixture)) removeFixture($cacheFixture);
 }

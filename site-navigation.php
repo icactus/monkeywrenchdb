@@ -4,6 +4,28 @@ $standaloneNavigation = $standaloneNavigation ?? false;
 $navigationSignedIn = isset($_SESSION['user_id']);
 $navigationUserName = $user['name'] ?? $_SESSION['user_name'] ?? 'Account';
 $navigationIsAdmin = $standaloneNavigation ? $isAdmin : (($_SESSION['user_role'] ?? '') === 'admin');
+// Embedded private leaderboard data needs the same current-role check as its
+// former API request. Standalone account pages already checked this role.
+if ($navigationIsAdmin && !$standaloneNavigation) {
+    $navigationDb = null;
+    try {
+        $navigationPrivate = is_file(__DIR__ . '/phpfiles/config.php') ? __DIR__ . '/phpfiles' : __DIR__ . '/../phpfiles';
+        require_once $navigationPrivate . '/config.php';
+        $navigationDb = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+        $navigationDb->set_charset('utf8mb4');
+        $navigationUserId = (int) ($_SESSION['user_id'] ?? 0);
+        $navigationRole = $navigationDb->prepare('SELECT role FROM users WHERE id = ?');
+        $navigationRole->bind_param('i', $navigationUserId);
+        $navigationRole->execute();
+        $navigationIsAdmin = ($navigationRole->get_result()->fetch_assoc()['role'] ?? '') === 'admin';
+        $navigationRole->close();
+    } catch (Throwable $e) {
+        error_log('Admin navigation: ' . $e->getMessage());
+        $navigationIsAdmin = false;
+    } finally {
+        if ($navigationDb) $navigationDb->close();
+    }
+}
 ?>
 <div class="nav-menu">
     <!-- Mobile Hamburger Button -->

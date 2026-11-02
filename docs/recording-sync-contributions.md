@@ -79,17 +79,38 @@ cannot undo revocation. Older recordings without a credit are not automatically
 claimed by the correcting user. Removing a recording or replacing an unavailable
 video does not erase its historical credit.
 
-To revoke invalid credit, set both `revoked_at = UTC_TIMESTAMP()` and
-`revocation_reason`. The stored count and authorship remain available for audit.
+To revoke invalid credit, use `mwSyncRevokeRecordingCredit()` with a reason. The
+stored count and authorship remain available for audit, and the cache is refreshed.
 
 ## Admin leaderboard
 
 The leaderboard opens in a popup from the desktop and mobile Admin menus, like
-Help and About. `leaderboard-data.php` checks the current database role and
-supplies only rank, username and score. Ties share
+Help and About. The page embeds its rows from a private JSON file, so opening or
+reopening the popup performs no network request and no database query. Ties share
 a rank (1, 1, 3); user ID provides stable ordering within ties. Empty display
 names fall back to `User ID`, and revoked credits are excluded. Tier visuals and
 secondary metrics are deferred.
+
+`phpfiles/cache/recording-leaderboard.json` is generated after committed recording
+submissions, timing corrections, backfills and credit revocations. Display name
+changes at sign-in also refresh it. Writers serialize with a file lock and query
+the latest committed scores after taking the lock, then publish the complete JSON
+with an atomic rename. Failed rebuilds preserve the previous file. Cache files
+are private, generated at runtime and excluded from Git.
+
+Create the initial snapshot before deploying the popup, or rebuild after manual
+SQL changes (including user deletion/role changes):
+
+```bash
+php scripts/rebuild-leaderboard-cache.php
+# Production checkout:
+php scripts/rebuild-leaderboard-cache.php --config=/home/monkcdmb/phpfiles/config.php
+```
+
+The authenticated `leaderboard-data.php` endpoint remains only for the explicit
+retry button if page rendering could not read the cache. It validates the current
+database role but reads all scores from the JSON file; it never aggregates them.
+The popup shows the snapshot loaded with the page until that page is reloaded.
 
 The underlying all-time score query is:
 

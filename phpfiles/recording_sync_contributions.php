@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/leaderboard_cache.php';
 
 /** All-time scores; ties share a rank (1, 1, 3), with stable ordering by user ID. */
 function mwSyncLeaderboard(mysqli $db): array
@@ -128,6 +129,7 @@ function mwSyncSubmitRecording(mysqli $db, int $userId, array $recording): int
             mwSyncCreditRecording($db, $recordingId, $userId, $count);
         }
         $db->commit();
+        mwSyncRefreshLeaderboardCache($db);
         return $recordingId;
     } catch (Throwable $e) {
         $db->rollback();
@@ -158,9 +160,23 @@ function mwSyncUpdateRecording(mysqli $db, int $recordingId, string $youtubeId, 
         $update->close();
         mwSyncCorrectRecordingCredit($db, $recordingId, $count);
         $db->commit();
+        mwSyncRefreshLeaderboardCache($db);
         return (int) $row['piece_id'];
     } catch (Throwable $e) {
         $db->rollback();
         throw $e;
     }
+}
+
+/** Revoke invalid credit while preserving its count and attribution for audit. */
+function mwSyncRevokeRecordingCredit(mysqli $db, int $recordingId, string $reason): void
+{
+    if ($recordingId <= 0 || trim($reason) === '' || strlen($reason) > 500) {
+        throw new InvalidArgumentException('A recording and revocation reason are required.');
+    }
+    $stmt = $db->prepare('UPDATE recording_sync_contributions SET revoked_at = UTC_TIMESTAMP(), revocation_reason = ? WHERE recording_id = ? AND revoked_at IS NULL');
+    $stmt->bind_param('si', $reason, $recordingId);
+    $stmt->execute();
+    $stmt->close();
+    mwSyncRefreshLeaderboardCache($db);
 }

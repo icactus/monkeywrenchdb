@@ -1,4 +1,17 @@
 <?php if (!empty($navigationIsAdmin)): ?>
+<?php
+$leaderboardRows = [];
+$leaderboardError = '';
+try {
+    $leaderboardPrivate = is_file(__DIR__ . '/phpfiles/leaderboard_cache.php') ? __DIR__ . '/phpfiles' : __DIR__ . '/../phpfiles';
+    require_once $leaderboardPrivate . '/leaderboard_cache.php';
+    $leaderboardRows = mwSyncReadLeaderboardCache()['entries'];
+} catch (Throwable $e) {
+    error_log('Leaderboard snapshot: ' . $e->getMessage());
+    $leaderboardError = 'The leaderboard is temporarily unavailable. Please try again.';
+}
+$leaderboardEscape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+?>
 <dialog id="leaderboard" aria-labelledby="leaderboard-title" aria-describedby="leaderboard-description">
     <div class="modal-header">
         <h3 id="leaderboard-title">Leaderboard</h3>
@@ -6,19 +19,27 @@
     </div>
     <div class="modal-content">
         <p id="leaderboard-description">All-time contributions. One point per measure synced, including repeats.</p>
-        <p id="leaderboard-status" role="status" aria-live="polite">Loading leaderboard…</p>
-        <button type="button" id="leaderboard-retry" hidden>Try again</button>
-        <table class="leaderboard-table" id="leaderboard-table" aria-label="All-time contribution leaderboard" hidden>
+        <p id="leaderboard-status" role="status" aria-live="polite" <?= $leaderboardRows ? 'hidden' : '' ?>><?= $leaderboardEscape($leaderboardError ?: 'No synced measures have been credited yet.') ?></p>
+        <button type="button" id="leaderboard-retry" <?= $leaderboardError ? '' : 'hidden' ?>>Try again</button>
+        <table class="leaderboard-table" id="leaderboard-table" aria-label="All-time contribution leaderboard" <?= $leaderboardRows ? '' : 'hidden' ?>>
             <thead><tr>
                 <th scope="col" class="leaderboard-rank">Rank</th>
                 <th scope="col" class="leaderboard-username">Username</th>
                 <th scope="col" class="leaderboard-score">Score</th>
             </tr></thead>
-            <tbody id="leaderboard-entries"></tbody>
+            <tbody id="leaderboard-entries">
+                <?php foreach ($leaderboardRows as $entry): ?>
+                    <tr>
+                        <td class="leaderboard-rank"><?= (int) $entry['rank'] ?></td>
+                        <th scope="row" class="leaderboard-username"><?= $leaderboardEscape($entry['username']) ?></th>
+                        <td class="leaderboard-score"><?= $leaderboardEscape(preg_replace('/\B(?=(\d{3})+(?!\d))/', ',', $entry['score'])) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
         </table>
     </div>
 </dialog>
-<script src="/js/leaderboard.js?v=2" defer></script>
+<script src="/js/leaderboard.js?v=3" defer></script>
 <?php endif; ?>
 <!-- Help/About Backdrops -->
 <div id="help-backdrop" class="modal-backdrop"></div>

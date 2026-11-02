@@ -62,6 +62,7 @@ deployment:
     - /bin/cp phpfiles/pieces-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/submit_recording.php $DEPLOYPATH2
     - /bin/cp phpfiles/recording_sync_contributions.php $DEPLOYPATH2
+    - /bin/cp phpfiles/leaderboard_cache.php $DEPLOYPATH2
     - /bin/cp phpfiles/update_recording_sync.php $DEPLOYPATH2
     - /bin/cp phpfiles/static_recordings.php $DEPLOYPATH2
     - /bin/cp phpfiles/music_requests.php $DEPLOYPATH2
@@ -97,3 +98,4 @@ deployment:
     - /bin/cp synpdf_182/editmode/save_correction_log.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/.htaccess ${DEPLOYPATH3}.htaccess
     - /bin/cp -R synpdf_182/editmode/vendor $DEPLOYPATH3
+    - /usr/local/bin/php scripts/rebuild-leaderboard-cache.php --config=/home/monkcdmb/phpfiles/config.php

@@ -17,6 +17,9 @@ try {
     if (isset($options['config'])) require $options['config'];
     elseif (file_exists($root . '/phpfiles/config.php')) require $root . '/phpfiles/config.php';
     else require dirname($root) . '/phpfiles/config.php';
+    if (isset($options['config']) && !defined('MW_SYNC_LEADERBOARD_CACHE_PATH')) {
+        define('MW_SYNC_LEADERBOARD_CACHE_PATH', dirname(realpath($options['config'])) . '/cache/recording-leaderboard.json');
+    }
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     $db = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
     $db->set_charset('utf8mb4');
@@ -119,6 +122,7 @@ try {
         }
         $db->commit();
         $transaction = false;
+        mwSyncRefreshLeaderboardCache($db);
     }
     $report['applied'] = $apply;
     if ($tableExists) {

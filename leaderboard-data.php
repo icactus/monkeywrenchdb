@@ -32,9 +32,7 @@ try {
         http_response_code(403);
         echo json_encode(['error' => 'Administrator access is required to view the leaderboard.']);
     } else {
-        echo json_encode(['entries' => array_map(fn($entry) => [
-            'rank' => $entry['rank'], 'username' => $entry['username'], 'score' => $entry['score'],
-        ], mwSyncLeaderboard($db))], JSON_INVALID_UTF8_SUBSTITUTE);
+        echo json_encode(mwSyncReadLeaderboardCache(), JSON_INVALID_UTF8_SUBSTITUTE);
     }
     $db->close();
 } catch (Throwable $e) {

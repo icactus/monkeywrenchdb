@@ -93,6 +93,11 @@ if ($provider === 'google') {
     }
 
     // Prepare Statement (Upsert)
+    $previousName = $mysqli->prepare("SELECT name FROM users WHERE oauth_provider = 'google' AND oauth_uid = ?");
+    $previousName->bind_param('s', $oauth_uid);
+    $previousName->execute();
+    $previousUser = $previousName->get_result()->fetch_assoc();
+    $previousName->close();
     $stmt = $mysqli->prepare("
         INSERT INTO users (oauth_provider, oauth_uid, email, name, picture_url, last_login) 
         VALUES (?, ?, ?, ?, ?, NOW())
@@ -107,6 +112,15 @@ if ($provider === 'google') {
     $stmt->bind_param("sssss", $providerName, $oauth_uid, $email, $name, $picture);
 
     if ($stmt->execute()) {
+        if ($previousUser && $previousUser['name'] !== $name) {
+            try {
+                $private = is_file(__DIR__ . '/phpfiles/recording_sync_contributions.php') ? __DIR__ . '/phpfiles' : __DIR__ . '/../phpfiles';
+                require_once $private . '/recording_sync_contributions.php';
+                mwSyncRefreshLeaderboardCache($mysqli);
+            } catch (Throwable $e) {
+                error_log('Leaderboard name refresh: ' . $e->getMessage());
+            }
+        }
         // Success! Set Session
         $user_id = $stmt->insert_id;
         if ($user_id == 0) {

@@ -65,3 +65,6 @@ __pycache__/
 
 # Recording sync contribution migration
 !docs/migrations/2026-11-recording-sync-contributions.sql
+
+# Generated private leaderboard snapshot
+/phpfiles/cache/
