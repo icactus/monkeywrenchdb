@@ -110,6 +110,7 @@ if ($hasInitialRecordingTarget) {
     <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=288" />
     <link rel="stylesheet" href="assets/css/homepage.css?v=14" />
     <link rel="stylesheet" href="assets/css/request-notifications.css?v=2" />
+    <link rel="stylesheet" href="assets/css/leaderboard.css?v=1" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

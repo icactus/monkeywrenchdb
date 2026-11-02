@@ -40,6 +40,7 @@ $actions = [
     'add_piece' => 'pieces-addnew.php',
     'add_metric_arr' => 'metric-arr-post.php',
     'add_recording' => 'submit_recording.php',
+    'update_recording_sync' => 'update_recording_sync.php',
 ];
 
 // Check if the requested action is allowed and the file exists

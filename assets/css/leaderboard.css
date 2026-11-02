@@ -1,0 +1,115 @@
+#leaderboard {
+    --leaderboard-line: #d5e1e2;
+    --leaderboard-soft: #edf5f5;
+    --leaderboard-muted: #62757a;
+    width: 90%;
+    max-width: 560px;
+    max-height: 85vh;
+    box-sizing: border-box;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: #fff;
+    color: #233e45;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .2);
+    overflow: hidden;
+}
+
+#leaderboard[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+#leaderboard::backdrop {
+    background: rgba(0, 0, 0, .5);
+}
+
+#leaderboard [hidden] {
+    display: none !important;
+}
+
+#leaderboard .modal-header {
+    flex-shrink: 0;
+    border-bottom-color: var(--leaderboard-line);
+}
+
+#leaderboard .modal-content {
+    min-height: 0;
+    color: inherit;
+}
+
+#leaderboard-close {
+    min-height: 32px;
+}
+
+#leaderboard-description,
+#leaderboard-status {
+    margin: 0 0 16px;
+    font-size: 13px;
+    color: var(--leaderboard-muted);
+}
+
+html.inverted #leaderboard {
+    --leaderboard-line: var(--mw-border, #35484e);
+    --leaderboard-soft: var(--mw-surface-2, #243136);
+    --leaderboard-muted: var(--mw-muted, #a4b7bb);
+    background: var(--mw-surface, #1c2629);
+    color: var(--mw-text, #e6eded);
+    border: 1px solid var(--leaderboard-line);
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+    padding: 14px 12px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.leaderboard-table thead {
+    background: var(--leaderboard-soft);
+    color: var(--leaderboard-muted);
+    font-size: 12px;
+}
+
+.leaderboard-table tbody tr + tr {
+    border-top: 1px solid var(--leaderboard-line);
+}
+
+.leaderboard-table .leaderboard-rank {
+    width: 64px;
+    color: var(--leaderboard-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.leaderboard-username {
+    overflow-wrap: anywhere;
+    font-weight: 500;
+}
+
+.leaderboard-table .leaderboard-score {
+    width: 150px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 16px 12px;
+    }
+
+    .leaderboard-table .leaderboard-rank {
+        width: 58px;
+    }
+
+    .leaderboard-table .leaderboard-score {
+        width: 120px;
+    }
+}

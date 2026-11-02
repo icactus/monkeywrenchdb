@@ -171,6 +171,7 @@ $presets = [
     <link rel="stylesheet" href="assets/css/fonts.css?v=34">
     <link rel="stylesheet" href="assets/css/requests.css?v=5">
     <link rel="stylesheet" href="assets/css/request-notifications.css?v=2">
+    <link rel="stylesheet" href="assets/css/leaderboard.css?v=1">
     <script>try { if (localStorage.getItem('darkMode') === '1') document.documentElement.classList.add('inverted'); } catch (e) {}</script>
     <script src="js/requests.js?v=5" defer></script>
 </head>

@@ -62,3 +62,6 @@ __pycache__/
 /scripts/full_out.txt
 /scripts/macro_out.txt
 /scripts/math_out.txt
+
+# Recording sync contribution migration
+!docs/migrations/2026-11-recording-sync-contributions.sql

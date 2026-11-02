@@ -31,6 +31,7 @@ deployment:
     - /bin/cp history_api.php $DEPLOYPATH
     - /bin/cp favorites_api.php $DEPLOYPATH
     - /bin/cp requests.php $DEPLOYPATH
+    - /bin/cp leaderboard-data.php $DEPLOYPATH
     - /bin/cp request-notifications.php $DEPLOYPATH
     - /bin/cp admin-live-edit.js $DEPLOYPATH
     - /bin/cp update_monkeywrench_metric_arr.php $DEPLOYPATH
@@ -60,6 +61,8 @@ deployment:
     - /bin/cp phpfiles/metric-arr-functions.php phpfiles/part_pdf_queue.php $DEPLOYPATH2
     - /bin/cp phpfiles/pieces-addnew.php $DEPLOYPATH2
     - /bin/cp phpfiles/submit_recording.php $DEPLOYPATH2
+    - /bin/cp phpfiles/recording_sync_contributions.php $DEPLOYPATH2
+    - /bin/cp phpfiles/update_recording_sync.php $DEPLOYPATH2
     - /bin/cp phpfiles/static_recordings.php $DEPLOYPATH2
     - /bin/cp phpfiles/music_requests.php $DEPLOYPATH2
     - /bin/cp phpfiles/auth_config.example.php $DEPLOYPATH2
