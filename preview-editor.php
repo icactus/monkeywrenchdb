@@ -234,7 +234,7 @@ $is_share_link = isset($_GET['share']);
                                         }
                                         var script = document.createElement('script');
                                         script.id = 'admin-live-edit-script';
-                                        script.src = 'admin-live-edit.js?v=2-' + new Date().getTime();
+                                        script.src = 'admin-live-edit.js?v=3-' + new Date().getTime();
                                         document.body.appendChild(script);
                                     }
                                 </script>
@@ -685,7 +685,8 @@ $is_share_link = isset($_GET['share']);
     <script src="js/history-manager.js?v=4"></script>
     <script src="js/favorites-manager.js?v=1"></script>
     <script src="js/contact-email.js?v=1" defer></script>
-    <script src="stripped-synpdf.js?v=342"></script>
+    <script src="js/part-jumps.js?v=2"></script>
+    <script src="stripped-synpdf.js?v=344"></script>
     <script src="stripped-synpdf-extras.js?v=276"></script>
     <script>
         window.setDarkMode = function (isDark) {

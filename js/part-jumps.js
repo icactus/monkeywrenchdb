@@ -32,7 +32,10 @@
     function inspect(metrics) {
         const data = layout(metrics), saved = metadata(metrics);
         const jumps = saved?.jumps || [];
-        if (saved && (saved.version !== 1 || saved.shape !== data.shape || !Array.isArray(saved.jumps))) {
+        if (saved && saved.version !== 1) {
+            throw Error('Saved Jump / Repeat data is invalid. Restore the original marks before editing or saving this part.');
+        }
+        if (saved && (saved.shape !== data.shape || !Array.isArray(saved.jumps))) {
             throw Error('Barlines changed. Remove and mark the Jump / Repeat pairs again.');
         }
         const bySource = new Map();
@@ -74,9 +77,36 @@
         return data.order.map(printed => ({ ...JSON.parse(JSON.stringify(boxes[printed])),
             page: boxes[printed].page || data.measures[printed].page, printedMeasure: printed }));
     }
+    function rebase(before, after) {
+        if (!metadata(before)) return after;
+        const previous = inspect(before), next = layout(after);
+        if (previous.shape === next.shape) {
+            save(after, previous.jumps);
+            return after;
+        }
+        function anchor(metrics, segment, atEnd) {
+            const page = metrics[segment.page], system = page.cxs[segment.system];
+            const bars = page.bxs[segment.system], factor = 1000 / metrics[0];
+            return { page: segment.page, x: Math.abs(bars[segment.bar + (atEnd ? 1 : 0)]) * factor,
+                top: Math.min(...system.cs) * factor, bottom: Math.max(...system.cs) * factor };
+        }
+        function locate(printed, atEnd) {
+            const segments = previous.segments.filter(segment => segment.printed === printed);
+            const old = anchor(before, atEnd ? segments.at(-1) : segments[0], atEnd);
+            const matches = new Set(next.segments.filter(segment => {
+                const candidate = anchor(after, segment, atEnd);
+                return candidate.page === old.page && Math.abs(candidate.x - old.x) < .75 &&
+                    candidate.top <= old.bottom && candidate.bottom >= old.top;
+            }).map(segment => segment.printed));
+            if (matches.size !== 1) throw Error('This edit removes or changes a Jump / Repeat boundary. The edit was cancelled to preserve your jumps.');
+            return [...matches][0];
+        }
+        save(after, previous.jumps.map(jump => ({ jmp: locate(jump.jmp, true), dst: locate(jump.dst, false) })));
+        return after;
+    }
     function samePrintedMeasure(boxes, first, second) {
         if (first === second) return true;
         return boxes[first]?.printedMeasure !== undefined && boxes[first].printedMeasure === boxes[second]?.printedMeasure;
     }
-    return { layout, metadata, inspect, save, expandBoxes, samePrintedMeasure };
+    return { layout, metadata, inspect, save, expandBoxes, samePrintedMeasure, rebase };
 });

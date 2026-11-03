@@ -75,6 +75,51 @@ test('database save normalization and JSON reload preserve jump indices and sche
     }
 });
 
+test('the live save endpoint preserves jumps at viewer widths that previously scaled their indices', () => {
+    const php = read('update_monkeywrench_metric_arr.php');
+    const conversion = php.slice(php.indexOf('function normalizeMetricDataForStorage('), php.indexOf('\ntry {'));
+    for (const width of [500, 1096, 1500, 3000]) {
+        const metrics = fixture();
+        metrics[0] = width;
+        metrics[1].bxs[0] = metrics[1].bxs[0].map(x => x * width / 1000);
+        jumps.save(metrics, [{jmp:7,dst:4}]);
+        const saved = JSON.parse(execFileSync('php', ['-r', conversion + '\necho normalizeMetricDataForStorage(stream_get_contents(STDIN));'],
+            { input: JSON.stringify(metrics), encoding: 'utf8' }));
+        assert.deepEqual(saved[1].partJumps, metrics[1].partJumps);
+        assert.equal(jumps.inspect(saved).order.length, 16);
+        assert.deepEqual(saved[1].bxs, fixture()[1].bxs);
+    }
+});
+
+test('live edits before and inside a repeated passage retain the original boundary anchors', () => {
+    const before = fixture();
+    jumps.save(before, [{jmp:7,dst:4}]);
+    const after = structuredClone(before);
+    after[1].bxs[0].splice(2,0,150);
+    jumps.rebase(before,after);
+    assert.deepEqual(after[1].partJumps.jumps,[{jmp:8,dst:5}]);
+    assert.equal(jumps.inspect(after).added,4);
+    const split = structuredClone(after);
+    split[1].bxs[0].splice(7,0,550);
+    jumps.rebase(after,split);
+    assert.deepEqual(split[1].partJumps.jumps,[{jmp:9,dst:5}]);
+    assert.equal(jumps.inspect(split).added,5);
+});
+
+test('geometry-only edits preserve exact indices and deleting a Jump / Repeat boundary is rejected', () => {
+    const before = fixture();
+    jumps.save(before, [{jmp:7,dst:4}]);
+    const after = structuredClone(before);
+    after[1].cxs[0].cs = [110,150];
+    jumps.rebase(before,after);
+    assert.deepEqual(after[1].partJumps,before[1].partJumps);
+    for (const index of [4,8]) {
+        const removed = structuredClone(before);
+        removed[1].bxs[0].splice(index,1);
+        assert.throws(()=>jumps.rebase(before,removed),/preserve your jumps/);
+    }
+});
+
 function dummyHarness(file) {
     const source = read(file), start = source.indexOf('function addDummySys$$module$synpdf(');
     const end = source.indexOf('\n}', start) + 2;

@@ -140,6 +140,16 @@
         }
         event.stopPropagation();
 
+        const metrics = window.deMetriek$$module$synpdf || window.metric_arr$$module$synpdf;
+        savedMetricArr = null;
+        if (metrics?.[1]?.partJumps) {
+            try {
+                if (!window.SynpdfPartJumps) throw Error('Reload the page before editing a part with Jump / Repeat marks.');
+                window.SynpdfPartJumps.inspect(metrics);
+                savedMetricArr = JSON.parse(JSON.stringify(metrics));
+            } catch (error) { alert(error.message); return; }
+        }
+
         if (liveEditMode === "barline" && event.altKey) {
             handleWrappedMeasureMark(event);
         } else if (liveEditMode === "system") {
@@ -209,6 +219,15 @@
     }
 
     function refreshPlayer() {
+        if (savedMetricArr) {
+            try {
+                window.SynpdfPartJumps.rebase(savedMetricArr, window.deMetriek$$module$synpdf || window.metric_arr$$module$synpdf);
+            } catch (error) {
+                window.deMetriek$$module$synpdf = window.metric_arr$$module$synpdf = savedMetricArr;
+                alert(error.message);
+            }
+            savedMetricArr = null;
+        }
         // Geometry edits do not need a new PDF viewer or playback cursor.
         if (typeof window.refreshMetricGeometry$$module$synpdf === 'function') {
             window.refreshMetricGeometry$$module$synpdf();
@@ -527,6 +546,12 @@
 
         // Deep clone current viewer data and let the server normalize it back to 1000-wide storage.
         let dataToSave = JSON.parse(JSON.stringify(metricArr));
+        if (dataToSave[1]?.partJumps) {
+            try {
+                if (!window.SynpdfPartJumps) throw Error('Reload the page before saving a part with Jump / Repeat marks.');
+                window.SynpdfPartJumps.inspect(dataToSave);
+            } catch (error) { alert(error.message); return; }
+        }
 
         // Get ID from Globals or URL
         let metricArrId = null;

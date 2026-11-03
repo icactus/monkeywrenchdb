@@ -76,6 +76,10 @@ function normalizeMetricNodeForStorage($node, $scaleFactor)
         }
 
         foreach ($node as $key => $value) {
+            // Jump indices and the schema version are not PDF coordinates.
+            if ($key === 'partJumps') {
+                continue;
+            }
             if ($key === 'cs' && is_array($value)) {
                 continue;
             }

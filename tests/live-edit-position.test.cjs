@@ -183,3 +183,26 @@ test('drawing system boundaries retains the paused cursor', () => {
     assert.equal(h.context.deNot$$module$synpdf.scrollTop, 2050);
     assert.equal(h.context.deNot$$module$synpdf.scrollLeft, 100);
 });
+
+test('actual live barline edits rebase saved jump anchors and preserve them on a second edit', () => {
+    const h = setup(), jumps = require('../js/part-jumps.js');
+    h.context.SynpdfPartJumps = jumps;
+    jumps.save(h.metric,[{jmp:13,dst:12}]);
+    h.mode('q'); h.click(700,140);
+    assert.deepEqual(clone(h.metric[1].partJumps.jumps),[{jmp:14,dst:13}]);
+    assert.equal(jumps.inspect(h.metric).added,2);
+    h.click(700,140);
+    assert.deepEqual(clone(h.metric[1].partJumps.jumps),[{jmp:13,dst:12}]);
+});
+
+test('removing a live Jump boundary rolls back the barline edit and retains the marks', () => {
+    const h = setup(), jumps = require('../js/part-jumps.js'), alerts = [];
+    h.context.SynpdfPartJumps = jumps;
+    h.context.alert = message => alerts.push(message);
+    jumps.save(h.metric,[{jmp:13,dst:12}]);
+    const before = clone(h.metric);
+    h.mode('q'); h.click(950,140,{},4);
+    assert.match(alerts[0],/preserve your jumps/);
+    assert.deepEqual(clone(h.context.deMetriek$$module$synpdf),before);
+    assert.equal(jumps.inspect(h.context.deMetriek$$module$synpdf).added,2);
+});
