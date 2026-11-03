@@ -91,7 +91,7 @@ try {
             }
             $id = mwRequestSubmit($db, $userId, $data);
             unset($_SESSION['music_request_draft']);
-            requestRedirect('requests.php#request-' . $id, 'Your request has been submitted. You can follow its progress below.');
+            requestRedirect('requests.php?status=requested#request-' . $id, 'Your request has been submitted. You can follow its progress below.');
         } elseif ($action === 'requester_reply') {
             if (!$user) {
                 http_response_code(401);
@@ -108,12 +108,16 @@ try {
             }
             mwRequestDelete($db, $userId, (int) requestScalar($_POST, 'request_id'));
             requestRedirect('requests.php', 'Your request has been deleted.');
-        } elseif (in_array($action, ['reply', 'status'], true)) {
+        } elseif (in_array($action, ['reply', 'status', 'acknowledge'], true)) {
             if (!$isAdmin || !$adminView) {
                 http_response_code(403);
                 throw new DomainException('Administrator access is required to respond to requests.');
             }
             $postedRequestId = (int) requestScalar($_POST, 'request_id');
+            if ($action === 'acknowledge') {
+                mwRequestAcknowledge($db, $userId, $postedRequestId, (int) requestScalar($_POST, 'version'));
+                requestRedirect($listUrl . '#request-' . $postedRequestId, 'Request acknowledged. You can return to it later to send a reply.');
+            }
             $replyDraft = requestScalar($_POST, 'message');
             if ($action === 'reply' && preg_match('/\[(?:timeframe|link)\]/i', $replyDraft)) {
                 throw new InvalidArgumentException('Replace the preset’s bracketed placeholder before saving your reply.');
@@ -173,7 +177,7 @@ $presets = [
     <link rel="stylesheet" href="assets/css/request-notifications.css?v=2">
     <link rel="stylesheet" href="assets/css/leaderboard.css?v=1">
     <script>try { if (localStorage.getItem('darkMode') === '1') document.documentElement.classList.add('inverted'); } catch (e) {}</script>
-    <script src="js/requests.js?v=5" defer></script>
+    <script src="js/requests.js?v=6" defer></script>
 </head>
 <body>
 <header class="request-header">
@@ -216,21 +220,22 @@ $presets = [
     <?php endif; ?>
     <?php if ($user && !$denied && !$unavailable): ?>
         <section aria-labelledby="request-list-title">
-            <div class="list-heading"><h2 id="request-list-title"><?= $adminView ? ($filter === 'new' ? 'New requests & replies' : 'All requests') : ($filter === 'updates' ? 'Unread request updates' : 'My requests') ?></h2>
+            <div class="list-heading"><h2 id="request-list-title"><?= $adminView ? ($filter === 'new' ? 'Needs a response' : 'All requests') : ($filter === 'updates' ? 'Unread request updates' : 'My requests') ?></h2>
                 <form method="get" class="filter-form"><input type="hidden" name="view" value="<?= $adminView ? 'admin' : 'mine' ?>">
                     <label for="request-filter">Show</label>
                     <select name="status" id="request-filter">
-                        <?php foreach (['all' => 'All requests', 'open' => 'Unfinished'] + ($adminView ? ['new' => 'New requests & replies'] : ['updates' => 'Unread updates']) + MW_REQUEST_STATUSES as $key => $label): ?>
+                        <?php foreach (['all' => 'All requests', 'open' => 'Unfinished'] + ($adminView ? ['new' => 'Needs a response'] : ['updates' => 'Unread updates']) + MW_REQUEST_STATUSES as $key => $label): ?>
                             <option value="<?= requestEscape($key) ?>" <?= $key === $filter ? 'selected' : '' ?>><?= requestEscape($label) ?></option>
                         <?php endforeach; ?>
                     </select><button type="submit">Filter</button>
                 </form>
             </div>
-            <?php if (!$requests): ?><p class="empty"><?= $filter === 'new' ? 'You’re caught up. No new requests or replies.' : ($filter === 'updates' ? 'You’re caught up. No unread request updates.' : 'No requests here yet.') ?></p><?php endif; ?>
+            <?php if (!$requests): ?><p class="empty"><?= $filter === 'new' ? 'You’re caught up. No requests or replies need a response.' : ($filter === 'updates' ? 'You’re caught up. No unread request updates.' : 'No requests here yet.') ?></p><?php endif; ?>
             <?php foreach ($requests as $request): $id = (int) $request['id']; ?>
                 <?php $newRequest = $adminView && !empty($request['is_new_request']); $unread = !$adminView && (int) $request['update_version'] > (int) $request['seen_version']; ?>
-                <article class="panel request-card<?= ($unread || $newRequest) ? ' request-unread' : '' ?>" id="request-<?= $id ?>"<?= $unread ? ' data-unread-version="' . (int) $request['update_version'] . '"' : ($newRequest ? ' data-unread-version="' . (int) $request['admin_update_version'] . '" data-notification-kind="new_request"' : '') ?>>
+                <article class="panel request-card<?= ($unread || $newRequest) ? ' request-unread' : '' ?>" id="request-<?= $id ?>"<?= $unread ? ' data-unread-version="' . (int) $request['update_version'] . '"' : ($newRequest ? ' data-pending-version="' . (int) $request['admin_update_version'] . '" data-notification-kind="new_request"' : '') ?>>
                     <?php if ($newRequest): ?><p class="request-update-note" role="status"><strong><?= (int) $request['admin_update_version'] > 1 ? 'New reply from requester' : 'New request' ?></strong> · <?= requestEscape(requestDate($request['updated_at'])) ?></p><?php endif; ?>
+                    <?php if ($adminView && !$newRequest && !empty($request['admin_acknowledged_at'])): ?><p class="hint">Acknowledged · <?= requestEscape(requestDate($request['admin_acknowledged_at'])) ?></p><?php endif; ?>
                     <?php if ($unread): ?><p class="request-update-note" role="status"><strong>New update</strong> · <?= requestEscape(requestDate($request['updated_at'])) ?> — <?= requestEscape(MW_REQUEST_STATUSES[$request['status']]) ?><?= !empty($threads[$id]) ? '. See the reply below.' : '.' ?></p><?php endif; ?>
                     <div class="card-heading"><div><p class="eyebrow">Request #<?= $id ?> · <?= requestEscape(requestDate($request['created_at'])) ?></p>
                         <h3><?= requestEscape($request['piece_name']) ?></h3><p><?= requestEscape($request['composer_name']) ?> · <strong><?= requestEscape($request['part_name']) ?></strong></p>
@@ -263,6 +268,14 @@ $presets = [
                         </form>
                     <?php endif; ?>
                     <?php if ($adminView): ?>
+                        <?php if ($newRequest): ?>
+                            <form method="post" action="<?= requestEscape($listUrl) ?>#request-<?= $id ?>">
+                                <input type="hidden" name="csrf" value="<?= requestEscape($csrf) ?>">
+                                <input type="hidden" name="request_id" value="<?= $id ?>">
+                                <input type="hidden" name="version" value="<?= (int) $request['admin_update_version'] ?>">
+                                <button name="action" value="acknowledge" type="submit">Acknowledge request</button>
+                            </form>
+                        <?php endif; ?>
                         <form method="post" action="<?= requestEscape($listUrl) ?>#request-<?= $id ?>" class="admin-response">
                             <input type="hidden" name="csrf" value="<?= requestEscape($csrf) ?>"><input type="hidden" name="request_id" value="<?= $id ?>">
                             <div class="response-controls"><label>Status<select name="status" class="response-status">

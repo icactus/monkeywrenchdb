@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS music_requests (
     update_version INT UNSIGNED NOT NULL DEFAULT 0,
     seen_version INT UNSIGNED NOT NULL DEFAULT 0,
     admin_update_version INT UNSIGNED NOT NULL DEFAULT 1,
+    admin_acknowledged_version INT UNSIGNED NOT NULL DEFAULT 0,
+    admin_acknowledged_at DATETIME NULL,
     PRIMARY KEY (id),
     KEY user_created (user_id, created_at),
     KEY queue_status (status, created_at)

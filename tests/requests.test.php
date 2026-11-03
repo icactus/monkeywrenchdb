@@ -117,9 +117,12 @@ try {
         $legacyId = (int) $db->insert_id;
         $db->query("INSERT INTO music_request_replies (request_id, admin_user_id, message) VALUES ($legacyId, 1, 'Existing admin reply')");
         $db->query("INSERT INTO music_request_admin_views (admin_user_id, request_id) VALUES (1, $legacyId)");
+        $db->query("INSERT INTO music_requests (user_id, composer_name, piece_name, part_name) VALUES (2, 'Bach', 'Viewed but unanswered request', 'Flute')");
+        $legacyUnansweredId = (int) $db->insert_id;
+        $db->query("INSERT INTO music_request_admin_views (admin_user_id, request_id) VALUES (1, $legacyUnansweredId)");
         $db->query('ALTER TABLE music_request_admin_views DROP COLUMN seen_version');
         $db->query('ALTER TABLE music_request_replies DROP COLUMN requester_user_id, MODIFY COLUMN admin_user_id INT NOT NULL');
-        $db->query('ALTER TABLE music_requests DROP COLUMN deleted_at, DROP COLUMN update_version, DROP COLUMN seen_version, DROP COLUMN admin_update_version');
+        $db->query('ALTER TABLE music_requests DROP COLUMN deleted_at, DROP COLUMN update_version, DROP COLUMN seen_version, DROP COLUMN admin_update_version, DROP COLUMN admin_acknowledged_version, DROP COLUMN admin_acknowledged_at');
         for ($run = 0; $run < 2; $run++) {
             $pipes = [];
             $setup = proc_open([PHP_BINARY, $root . '/scripts/setup-requests.php', '--config=' . $upgradeConfig], [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
@@ -130,10 +133,13 @@ try {
         check($db->query("SHOW COLUMNS FROM music_requests LIKE 'deleted_at'")->num_rows === 1, 'Upgrade adds deletion support to the original schema.');
         $legacyReplies = mwRequestReplies($db, 2, false, [$legacyId])[$legacyId];
         check(count($legacyReplies) === 1 && $legacyReplies[0]['requester_user_id'] === null && (int) $legacyReplies[0]['admin_user_id'] === 1, 'Upgrade preserves existing admin replies and authorship.');
-        check(mwRequestAdminNewCount($db, 1) === 0 && mwRequestAdminNewCount($db, 6) === 1, 'Upgrade preserves existing administrator read receipts.');
+        check(mwRequestAdminNewCount($db, 1) === 1 && mwRequestAdminNewCount($db, 6) === 1, 'Upgrade acknowledges existing responses while restoring reminders for viewed but unanswered requests.');
+        check((int) $db->query("SELECT COUNT(*) FROM music_request_admin_views WHERE request_id = $legacyUnansweredId")->fetch_row()[0] === 1, 'Upgrade preserves legacy viewport receipts without treating them as acknowledgments.');
         $db->query("DELETE FROM music_request_replies WHERE request_id = $legacyId");
         $db->query("DELETE FROM music_request_admin_views WHERE request_id = $legacyId");
         $db->query("DELETE FROM music_requests WHERE id = $legacyId");
+        $db->query("DELETE FROM music_request_admin_views WHERE request_id = $legacyUnansweredId");
+        $db->query("DELETE FROM music_requests WHERE id = $legacyUnansweredId");
     } finally { unlink($upgradeConfig); }
 
     $input = ['composer_name' => '  Antonín Dvořák  ', 'piece_name' => 'Symphony No. 9', 'part_name' => 'Cello'];
@@ -151,8 +157,12 @@ try {
     rejects(fn() => mwRequestList($db, 2, false, 'new'), 'Regular users cannot filter other users’ submissions.');
     mwRequestAdminMarkSeen($db, 1, $id);
     mwRequestAdminMarkSeen($db, 1, $id);
-    check(mwRequestAdminNewCount($db, 1) === 0, 'Viewing a request clears it once, without changing its status.');
-    check(mwRequestAdminNewCount($db, 6) === 1, 'Each administrator keeps their own unread submissions.');
+    check(mwRequestAdminNewCount($db, 1) === 1, 'Viewing a request repeatedly leaves the admin reminder active.');
+    rejects(fn() => mwRequestAcknowledge($db, 2, $id, 1), 'Only an administrator can explicitly acknowledge a request.');
+    mwRequestAcknowledge($db, 1, $id, 1);
+    mwRequestAcknowledge($db, 1, $id, 1);
+    check(mwRequestAdminNewCount($db, 1) === 0 && mwRequestAdminNewCount($db, 6) === 0, 'Explicit acknowledgment resolves the shared reminder without changing request status.');
+    check(mwRequestUnreadCount($db, 2) === 0 && mwRequestList($db, 2, false)[0]['status'] === 'requested', 'Acknowledgment does not notify the requester or change status.');
     $ownId = mwRequestSubmit($db, 1, ['composer_name' => 'Bach', 'piece_name' => 'Admin request', 'part_name' => 'Violin']);
     check(mwRequestAdminNewCount($db, 1) === 0, 'An admin does not receive a new-request alert for their own submission.');
     $ownSecond = mwRequestSubmit($db, 1, $input);
@@ -221,18 +231,20 @@ try {
     $replyEmails = array_filter(capturedEmails(), fn($email) => str_contains($email, 'Subject: MonkeyWrenchDB: Requester reply to request #' . $id));
     check(count($replyEmails) === 1 && str_contains(emailBody(array_values($replyEmails)[0]), "A public domain edition: Dvořák\nhttps://example.test/score"), 'Reply email contains the Unicode reply and request context.');
     check($db->query("SELECT status FROM music_requests WHERE id = $id")->fetch_row()[0] === 'unable_to_add' && mwRequestUnreadCount($db, 2) === 2, 'Requester replies preserve status and requester unread updates.');
-    mwRequestAdminMarkSeen($db, 1, $second);
-    mwRequestAdminMarkSeen($db, 6, $second);
+    mwRequestAcknowledge($db, 1, $second, 1);
     check(mwRequestAdminNewCount($db, 1) === 1, 'A requester reply alerts admins even on a finished request.');
     mwRequestAdminMarkSeen($db, 1, $id, 1);
     mwRequestAdminMarkSeen($db, 1, $id, 99);
     check(mwRequestAdminNewCount($db, 1) === 1, 'Stale or forged future admin acknowledgments leave a new reply unread.');
     mwRequestAdminMarkSeen($db, 1, $id, 2);
-    check(mwRequestAdminNewCount($db, 1) === 0 && mwRequestAdminNewCount($db, 6) === 1, 'Each admin acknowledges replies independently.');
+    check(mwRequestAdminNewCount($db, 1) === 1, 'Reading the latest requester reply leaves its reminder active.');
+    mwRequestAcknowledge($db, 1, $id, 2);
+    check(mwRequestAdminNewCount($db, 1) === 0 && mwRequestAdminNewCount($db, 6) === 0, 'Explicit acknowledgment resolves the latest reply for the admin queue.');
     mwRequestReply($db, 2, $id, 'A second reply');
-    mwRequestAdminMarkSeen($db, 1, $id, 2);
+    mwRequestAcknowledge($db, 1, $id, 2);
+    mwRequestAcknowledge($db, 1, $id, 99);
     check(mwRequestAdminNewCount($db, 1) === 1, 'A reply arriving after the displayed version remains unread.');
-    mwRequestAdminMarkSeen($db, 1, $id, 3);
+    mwRequestAcknowledge($db, 1, $id, 3);
 
     rejects(fn() => mwRequestDelete($db, 3, $id), 'Another user cannot delete someone else’s request.');
     rejects(fn() => mwRequestDelete($db, 1, $id), 'Admin status does not bypass ownership for user deletion.');
@@ -331,6 +343,9 @@ try {
     check(count(array_filter($emails, fn($email) => str_contains(emailBody($email), 'Recording: https://www.youtube.com/watch?v=dQw4w9WgXcQ'))) === 1, 'Email includes the canonical recording link.');
     $webRows = mwRequestList($db, 5, false);
     $webId = (int) $webRows[0]['id'];
+    check(str_contains($webPost['headers'], 'Location: requests.php?status=requested#request-' . $webId), 'Submitting a request redirects to the Requested filter and the submitted card.');
+    $submittedPage = httpRequest($port, 'requests.php?status=requested', $sessions['user']);
+    check(str_contains($submittedPage['body'], 'value="requested" selected') && str_contains($submittedPage['body'], 'id="request-' . $webId . '"'), 'The Requested filter shows the newly submitted request.');
     $webPage = httpRequest($port, 'requests.php', $sessions['user']);
     check(str_contains($webPage['body'], '&lt;script&gt;alert(1)&lt;/script&gt;') && !str_contains($webPage['body'], '<script>alert(1)</script>'), 'Submitted content is escaped on rendering.');
     $otherPage = httpRequest($port, 'requests.php', $sessions['other']);
@@ -343,13 +358,17 @@ try {
     check($adminNotifications['new_request_count'] === 1 && $adminNotifications['count'] === 1 && $adminNotifications['update_count'] === 0, 'Admin bell counts incoming requests separately from personal updates.');
     $newPage = httpRequest($port, 'requests.php?view=admin&status=new', $sessions['admin']);
     check(str_contains($newPage['body'], 'data-notification-kind="new_request"') && str_contains($newPage['body'], '<strong>New request</strong>'), 'Clicking admin notification reveals the new request notice.');
+    check(!str_contains($newPage['body'], 'data-unread-version=') && str_contains($newPage['body'], 'Acknowledge request'), 'Admin notices require an explicit acknowledgment instead of viewport auto-clearing.');
     check(mwRequestAdminNewCount($db, 1) === 1, 'Rendering the queue alone does not acknowledge an unseen card.');
     $adminSeen = ['csrf' => str_repeat('a', 64), 'request_id' => $webId, 'version' => 1, 'kind' => 'new_request'];
     check(httpRequest($port, 'request-notifications.php', $sessions['user'], $adminSeen)['status'] === 403, 'A stale forged admin session cannot clear queue notifications.');
     check(httpRequest($port, 'request-notifications.php', $sessions['admin'], array_diff_key($adminSeen, ['csrf' => true]))['status'] === 403, 'Admin queue acknowledgment requires CSRF.');
     $adminAcknowledged = json_decode(httpRequest($port, 'request-notifications.php', $sessions['admin'], $adminSeen)['body'], true);
-    check($adminAcknowledged['new_request_count'] === 0 && mwRequestUnreadCount($db, 5) === 0, 'Viewing an incoming request clears only the admin receipt.');
-    check(mwRequestAdminNewCount($db, 6) === 1, 'One admin viewing a request does not clear another admin’s bell.');
+    check($adminAcknowledged['new_request_count'] === 1 && mwRequestUnreadCount($db, 5) === 0, 'Legacy viewport notifications cannot clear the admin reminder.');
+    $ackPost = ['action' => 'acknowledge', 'csrf' => str_repeat('a', 64), 'request_id' => $webId, 'version' => 1];
+    check(httpRequest($port, 'requests.php?view=admin', $sessions['user'], $ackPost)['status'] === 403, 'A regular user cannot submit an acknowledgment.');
+    check(httpRequest($port, 'requests.php?view=admin', $sessions['admin'], array_diff_key($ackPost, ['csrf' => true]))['status'] === 403, 'Explicit acknowledgment requires CSRF.');
+    check(httpRequest($port, 'requests.php?view=admin', $sessions['admin'], $ackPost)['status'] === 303 && mwRequestAdminNewCount($db, 1) === 0 && mwRequestAdminNewCount($db, 6) === 0, 'The acknowledgment button clears the shared admin reminder.');
     $replyPost = httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reply', 'csrf' => str_repeat('a', 64), 'request_id' => $webId, 'status' => 'in_progress', 'message' => 'I expect to finish this next week.']);
     check($replyPost['status'] === 303 && !str_contains($replyPost['headers'], 'compose='), 'Admin reply saves without preparing email.');
     preg_match('/Location: ([^\r\n]+)/', $replyPost['headers'], $location);
@@ -404,7 +423,7 @@ try {
     $requesterPage = httpRequest($port, $replyLocation[1], $sessions['user']);
     check(str_contains($requesterPage['body'], 'Your reply has been sent') && str_contains($requesterPage['body'], 'Your reply') && str_contains($requesterPage['body'], '&lt;script&gt;alert(2)&lt;/script&gt;') && !str_contains($requesterPage['body'], '<script>alert(2)</script>'), 'Requester confirmation and conversation escape reply text.');
     $repliedQueue = httpRequest($port, 'requests.php?view=admin&status=new', $sessions['admin']);
-    check(str_contains($repliedQueue['body'], 'New reply from requester') && str_contains($repliedQueue['body'], 'Reply from requester') && str_contains($repliedQueue['body'], 'data-unread-version="2"'), 'New-queue filter surfaces the requester reply with its unread version.');
+    check(str_contains($repliedQueue['body'], 'New reply from requester') && str_contains($repliedQueue['body'], 'Reply from requester') && str_contains($repliedQueue['body'], 'data-pending-version="2"'), 'Needs-a-response filter surfaces the requester reply and its pending version.');
     check($db->query("SELECT status FROM music_requests WHERE id = $webId")->fetch_row()[0] === 'in_progress', 'Forged status fields cannot change a request through requester replies.');
     check(!str_contains(httpRequest($port, 'requests.php', $sessions['other'])['body'], 'original edition'), 'Another user cannot see the conversation.');
     $replyBadge = json_decode(httpRequest($port, 'request-notifications.php', $sessions['admin'])['body'], true);
@@ -412,10 +431,11 @@ try {
     httpRequest($port, 'request-notifications.php', $sessions['admin'], $adminSeen);
     check(mwRequestAdminNewCount($db, 1) === 1, 'A stale HTTP acknowledgment cannot clear the requester reply.');
     httpRequest($port, 'request-notifications.php', $sessions['admin'], array_replace($adminSeen, ['version' => 2]));
-    check(mwRequestAdminNewCount($db, 1) === 0, 'Viewing the latest reply clears the admin bell.');
+    check(mwRequestAdminNewCount($db, 1) === 1, 'Viewing the latest reply leaves the admin bell active until a response.');
     $emailCount = count(capturedEmails());
     $followupPost = httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reply', 'csrf' => str_repeat('a', 64), 'request_id' => $webId, 'status' => 'in_progress', 'message' => 'Thanks, I have the edition now.']);
     check($followupPost['status'] === 303 && count(mwRequestReplies($db, 5, false, [$webId])[$webId]) === 3 && count(capturedEmails()) === $emailCount, 'Admin and requester can continue a shared conversation; admin replies remain on-site.');
+    check(mwRequestAdminNewCount($db, 1) === 0 && mwRequestAdminNewCount($db, 6) === 0, 'An admin response clears the current reminder for the request.');
     check(str_contains($userPage['body'], 'Delete request'), 'Owner sees a delete button.');
     $deleteMissingCsrf = httpRequest($port, 'requests.php', $sessions['user'], ['action' => 'delete', 'request_id' => $webId]);
     check($deleteMissingCsrf['status'] === 403 && count(mwRequestList($db, 5, false)) === 1, 'Deletion requires a valid CSRF token.');

@@ -97,7 +97,7 @@ if ($navigationIsAdmin && !$standaloneNavigation) {
             <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
             <span class="request-notification-count" aria-hidden="true"></span>
         </a>
-        <script src="/js/request-notifications.js?v=3" defer></script>
+        <script src="/js/request-notifications.js?v=4" defer></script>
         <div class="nav-user-dropdown">
             <button class="nav-user-trigger" aria-label="Account menu" onclick="toggleUserDropdown(event)">
                 <span

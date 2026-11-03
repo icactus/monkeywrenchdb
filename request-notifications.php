@@ -34,7 +34,7 @@ try {
         } else throw new InvalidArgumentException('Invalid notification type.');
     }
     $updates = mwRequestUnreadCount($db, $userId);
-    // Keep the existing API key; incoming queue updates now include requester replies.
+    // Incoming reminders remain pending until a response or explicit acknowledgment.
     $newRequests = $user['role'] === 'admin' ? mwRequestAdminNewCount($db, $userId) : 0;
     echo json_encode(['count' => $updates + $newRequests, 'update_count' => $updates, 'new_request_count' => $newRequests]);
 } catch (InvalidArgumentException $e) {

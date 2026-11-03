@@ -208,7 +208,7 @@ function mwRequestRespond(mysqli $db, int $adminId, int $requestId, string $stat
         $previous = $stmt->get_result()->fetch_assoc();
         if (!$previous) throw new InvalidArgumentException('This request could not be found.');
         $changed = (int) ($previous['status'] !== $status || $message !== null);
-        $stmt = $db->prepare('UPDATE music_requests SET status = ?, update_version = update_version + ?, updated_at = IF(?, UTC_TIMESTAMP(), updated_at) WHERE id = ?');
+        $stmt = $db->prepare('UPDATE music_requests SET status = ?, update_version = update_version + ?, updated_at = IF(?, UTC_TIMESTAMP(), updated_at), admin_acknowledged_version = admin_update_version, admin_acknowledged_at = UTC_TIMESTAMP() WHERE id = ?');
         $stmt->bind_param('siii', $status, $changed, $changed, $requestId);
         $stmt->execute();
         $replyId = null;
@@ -299,7 +299,18 @@ function mwRequestMarkSeen(mysqli $db, int $userId, int $requestId, int $version
 
 function mwRequestAdminNewCondition(int $adminId): string
 {
-    return "r.user_id <> $adminId AND (r.status = 'requested' OR r.admin_update_version > 1) AND NOT EXISTS (SELECT 1 FROM music_request_admin_views v WHERE v.request_id = r.id AND v.admin_user_id = $adminId AND v.seen_version >= r.admin_update_version)";
+    return "r.user_id <> $adminId AND (r.status = 'requested' OR r.admin_update_version > 1) AND r.admin_acknowledged_version < r.admin_update_version";
+}
+
+function mwRequestAcknowledge(mysqli $db, int $adminId, int $requestId, int $version): void
+{
+    mwRequestRequireAdmin($db, $adminId);
+    if ($version < 1) throw new InvalidArgumentException('Invalid request update.');
+    // An explicit action covers only the displayed version. It does not notify
+    // the requester or clear a newer reply that arrived while this page was open.
+    $stmt = $db->prepare('UPDATE music_requests SET admin_acknowledged_at = IF(admin_acknowledged_version < ?, UTC_TIMESTAMP(), admin_acknowledged_at), admin_acknowledged_version = GREATEST(admin_acknowledged_version, ?), updated_at = updated_at WHERE id = ? AND deleted_at IS NULL AND admin_update_version >= ?');
+    $stmt->bind_param('iiii', $version, $version, $requestId, $version);
+    $stmt->execute();
 }
 
 function mwRequestAdminNewCount(mysqli $db, int $adminId): int
@@ -312,7 +323,8 @@ function mwRequestAdminMarkSeen(mysqli $db, int $adminId, int $requestId, int $v
 {
     mwRequestRequireAdmin($db, $adminId);
     if ($version < 1) throw new InvalidArgumentException('Invalid request update.');
-    // Acknowledge only the displayed version, preserving replies arriving later.
+    // Legacy viewport receipts remain compatible with older clients, but no
+    // longer clear the reminder. Only a response or explicit acknowledgment does.
     $stmt = $db->prepare("INSERT INTO music_request_admin_views (admin_user_id, request_id, seen_version) SELECT ?, id, ? FROM music_requests WHERE id = ? AND user_id <> ? AND deleted_at IS NULL AND admin_update_version >= ? AND (status = 'requested' OR admin_update_version > 1) ON DUPLICATE KEY UPDATE seen_version = GREATEST(music_request_admin_views.seen_version, VALUES(seen_version)), seen_at = UTC_TIMESTAMP()");
     $stmt->bind_param('iiiii', $adminId, $version, $requestId, $adminId, $version);
     $stmt->execute();

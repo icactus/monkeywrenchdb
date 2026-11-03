@@ -36,4 +36,15 @@ if ($db->query("SHOW COLUMNS FROM music_request_replies LIKE 'admin_user_id'")->
 if ($db->query("SHOW COLUMNS FROM music_request_admin_views LIKE 'seen_version'")->num_rows === 0) {
     $db->query('ALTER TABLE music_request_admin_views ADD COLUMN seen_version INT UNSIGNED NOT NULL DEFAULT 1');
 }
+if ($db->query("SHOW COLUMNS FROM music_requests LIKE 'admin_acknowledged_version'")->num_rows === 0) {
+    $db->query('ALTER TABLE music_requests ADD COLUMN admin_acknowledged_version INT UNSIGNED NOT NULL DEFAULT 0, ADD COLUMN admin_acknowledged_at DATETIME NULL');
+    // A past viewport receipt was not an acknowledgment. Preserve actual replies
+    // and status responses, while leaving later requester replies outstanding.
+    $db->query("UPDATE music_requests r SET admin_acknowledged_version = admin_update_version,
+        admin_acknowledged_at = updated_at, updated_at = updated_at
+        WHERE (admin_update_version = 1 AND status <> 'requested') OR EXISTS (
+            SELECT 1 FROM music_request_replies a WHERE a.request_id = r.id AND a.admin_user_id IS NOT NULL
+            AND a.id > COALESCE((SELECT MAX(q.id) FROM music_request_replies q
+                WHERE q.request_id = r.id AND q.requester_user_id IS NOT NULL), 0))");
+}
 echo "Music request tables ready.\n";

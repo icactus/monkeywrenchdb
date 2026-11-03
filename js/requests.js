@@ -81,7 +81,7 @@
 // Acknowledge only updates that actually enter the viewport. Opening another
 // page or a filtered list must not clear updates the requester has not seen.
 (() => {
-    const cards = document.querySelectorAll('[data-unread-version]');
+    const cards = document.querySelectorAll('[data-unread-version]:not([data-notification-kind="new_request"])');
     const csrf = document.querySelector('main[data-request-csrf]')?.dataset.requestCsrf;
     if (!cards.length || !csrf || !('IntersectionObserver' in window)) return;
     const pending = new Set();

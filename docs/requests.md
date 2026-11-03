@@ -4,6 +4,7 @@
 seven days, with at most two unfinished requests. Composer, piece, and part are
 required. A YouTube video link is optional. Google sign-in identifies the requester. Request drafts survive
 sign-in, and users see only their own requests and replies.
+After submission, the page opens the **Requested** filter at the new request.
 
 The primary super user has unlimited submissions, with no weekly cooldown or
 unfinished-request cap. This uses the current database administrator role and
@@ -42,16 +43,21 @@ other pages, and updates arriving after the displayed version remain unread.
 Acknowledgment is stored per request in the database, so it persists across
 logouts, devices, and browsers. Deleted requests do not generate notifications.
 
-Administrators also see new incoming requests and requester replies in the same
-bell. The bell opens **New requests & replies** in the admin queue; a separate
-count appears beside **Request queue**. Viewing an incoming notice clears it for
-that administrator only, across sessions and devices. Filtered-out requests stay
-unread. Requests submitted by the administrator, deleted requests, and requests
-already in progress or finished are excluded unless they have unread requester
-replies. Acknowledgments cover only the displayed version, so a newer reply stays
-unread. Personal request updates continue to use **My Requests** and are available
-from the bell after incoming requests
-have been viewed. These are site indicators only; no push permission is requested.
+Administrators also see incoming requests and requester replies in the same bell.
+The bell opens **Needs a response** in the admin queue; a separate count appears
+beside **Request queue**. Opening a request or scrolling it into view keeps the
+reminder active. An administrator reply, a saved status, or the explicit
+**Acknowledge request** button clears the reminder for the shared queue.
+Acknowledgment leaves the request status unchanged and does not send a message
+or notify the requester. Its date remains visible in the admin view.
+
+Requests submitted by the viewing administrator and deleted requests are excluded.
+Requests already in progress or finished are excluded unless a new requester
+reply needs a response. Acknowledgments cover only the displayed incoming version,
+so a newer reply restores the reminder, including when it arrives while the page
+is open. Personal updates continue to use **My Requests** and still clear when
+their update notices enter the viewport. These are site indicators only; no push
+permission is requested.
 
 Each successfully submitted new request or requester reply also sends an email to
 `icactusmusic@gmail.com`, including the requester, composer, piece, part, optional
@@ -78,6 +84,9 @@ php scripts/setup-requests.php --config=/home/monkcdmb/phpfiles/config.php
 The setup script is idempotent and does not modify existing users or catalog data.
 Run it again when upgrading an existing installation to add deletion support,
 notification versions, requester reply authorship, and administrator view receipts.
+The current upgrade also adds explicit acknowledgment versions and dates. It
+preserves actual past admin responses, and restores pending reminders for requests
+that were only viewed. Legacy viewport receipts no longer clear admin reminders.
 Run this migration before deploying the new PHP files. It preserves existing
 administrator replies and read receipts.
 `.cpanel.yml` copies the PHP page, private storage helper, and existing asset
