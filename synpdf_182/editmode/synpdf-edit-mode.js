@@ -167,7 +167,7 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     $("#notation").append(this.btag);
     b = $('<div id="rollijn" class="dashed"></div>');
     $("#notation").append(b);
-    this.maatloper = $('<div class="demaat" style="background:#00d4ff; opacity:0.2; left:0px; top:0px; width:0px; height:0px"></div>');
+    this.maatloper = $('<div class="demaat" style="display:none; background:#00d4ff; opacity:0.2; left:0px; top:0px; width:0px; height:0px"></div>');
     $("#notation").append(this.maatloper);
     this.times = a;
     this.tixlb = tixlb$$module$synpdf;
@@ -2602,6 +2602,9 @@ function playPause$$module$synpdf(a, b) {
         var c = a.split(":"),
             d = "true" == c[0],
             e = parseFloat(c[1]);
+        // Barline editing has no audio clock. Keep explicit measure navigation,
+        // but ignore playback commands from Space, score clicks, or messages.
+        if (d && elmed$$module$synpdf === dummyPlayer$$module$synpdf) return;
         c = "true" == c[2];
         var f = yubchk$$module$synpdf ? elmed$$module$synpdf.getPlayerState() : 0,
             g = yubchk$$module$synpdf ? 1 != f : elmed$$module$synpdf.paused;
