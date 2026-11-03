@@ -188,6 +188,41 @@ test('drawing system boundaries retains the paused cursor', () => {
     assert.equal(h.context.deNot$$module$synpdf.scrollLeft, 100);
 });
 
+test('adding the first barline extends an existing staff and keeps its sloped geometry', () => {
+    const h = setup({ scale:1.5 });
+    const system=h.metric[3].cxs[0];
+    Object.assign(system,{cs:[115,147],csl:[100,108,116,124,132],csr:[130,138,146,154,162],xs:{x1:200,x2:950}});
+    h.metric[3].bxs[0]=[200,500,950];
+    const other=clone(h.metric[3].cxs[1]);
+    h.mode('q'); h.click(50,98);
+    assert.deepEqual(clone(h.metric[3].bxs[0]),[50,200,500,950]);
+    assert.deepEqual(clone(system.xs),{x1:50,x2:950});
+    assert.deepEqual(clone(system.csl),[94,102,110,118,126]);
+    assert.deepEqual(clone(system.csr),[130,138,146,154,162]);
+    assert.deepEqual(clone(system.cs),[112,144]);
+    assert.equal(h.metric[3].cxs.length,2);
+    assert.deepEqual(clone(h.metric[3].cxs[1]),other);
+    assert.equal(h.context.msc_wz$$module$synpdf,h.cursor);
+    assert.equal(h.cursor.cursorTime,18.01);
+    h.click(50,98);
+    assert.deepEqual(clone(h.metric[3].bxs[0]),[200,500,950]);
+    assert.deepEqual(clone(system.xs),{x1:200,x2:950});
+    assert.deepEqual(clone(system.csl),[100,108,116,124,132]);
+    assert.deepEqual(clone(system.cs),[115,147]);
+});
+
+test('a new first barline updates flat system bounds without creating a staff', () => {
+    const h=setup();
+    const originalCs=clone(h.metric[3].cxs[0].cs);
+    h.metric[3].bxs[0]=[300,500,950];
+    h.metric[3].cxs[0].xs.x1=300;
+    h.mode('q');h.click(50,140);
+    assert.deepEqual(clone(h.metric[3].bxs[0]),[50,300,500,950]);
+    assert.deepEqual(clone(h.metric[3].cxs[0].xs),{x1:50,x2:950});
+    assert.deepEqual(clone(h.metric[3].cxs[0].cs),originalCs);
+    assert.equal(h.metric[3].cxs.length,2);
+});
+
 test('actual live barline edits rebase saved jump anchors and preserve them on a second edit', () => {
     const h = setup(), jumps = require('../js/part-jumps.js');
     h.context.SynpdfPartJumps = jumps;

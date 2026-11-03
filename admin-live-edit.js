@@ -430,12 +430,12 @@
 
         // Find which system (cxs) was clicked
         for (let j = 0; j < pageData.cxs.length; j++) {
-            let cs_group = pageData.cxs[j].cs;
-            let minY = Math.min(...cs_group);
-            let maxY = Math.max(...cs_group);
+            const system = pageData.cxs[j];
+            const bounds = getSystemHitBounds(system, x);
+            if (!bounds) continue;
 
             // Expand hit area slightly
-            if (y >= minY - 10 && y <= maxY + 10) {
+            if (y >= bounds.top - 10 && y <= bounds.bottom + 10) {
                 let bxs_group = pageData.bxs[j]; // array of x-coords
                 let isValueRemoved = false;
 
@@ -454,6 +454,7 @@
                     bxs_group.sort((a, b) => Math.abs(a) - Math.abs(b));
                 }
 
+                updateSystemBarlineBounds(system, bxs_group);
                 console.log("Barline update:", isValueRemoved ? "Removed" : "Added", x);
                 refreshPlayer();
                 return;
@@ -588,18 +589,17 @@
 
         if (Array.isArray(system?.csl) && Array.isArray(system?.csr) &&
             system.csl.length === system.csr.length &&
-            system.csl.length === cs.length &&
+            system.csl.length >= 2 &&
             system.xs &&
             system.xs.x2 !== system.xs.x1) {
             const ratio = (x - system.xs.x1) / (system.xs.x2 - system.xs.x1);
-            const clampedRatio = Math.max(0, Math.min(1, ratio));
-            const ys = cs.map((_, idx) => {
+            const ys = system.csl.map((_, idx) => {
                 const left = system.csl[idx];
                 const right = system.csr[idx];
                 if (typeof left === "number" && typeof right === "number") {
-                    return left + ((right - left) * clampedRatio);
+                    return left + ((right - left) * ratio);
                 }
-                return cs[idx];
+                return cs[Math.min(idx, cs.length - 1)];
             });
             return {
                 top: Math.min(...ys),
@@ -611,6 +611,27 @@
             top: Math.min(...cs),
             bottom: Math.max(...cs)
         };
+    }
+
+    function updateSystemBarlineBounds(system, bars) {
+        if (bars.length < 2) return;
+        const x1 = Math.abs(bars[0]), x2 = Math.abs(bars[bars.length - 1]);
+        const previous = system.xs;
+        if (previous && previous.x1 === x1 && previous.x2 === x2) return;
+        if (previous && previous.x2 !== previous.x1 &&
+            Array.isArray(system.csl) && Array.isArray(system.csr) &&
+            system.csl.length >= 2 && system.csl.length === system.csr.length &&
+            (system.cs.length === 2 || system.cs.length === system.csl.length)) {
+            const left = system.csl, right = system.csr;
+            // Edge coordinates belong to xs. Re-evaluate both edges at the new
+            // boundaries so existing notes/measure boxes retain their slope.
+            const at = x => left.map((y, i) => y + (right[i] - y) * (x - previous.x1) / (previous.x2 - previous.x1));
+            system.csl = at(x1);
+            system.csr = at(x2);
+            const middle = system.csl.map((y, i) => (y + system.csr[i]) / 2);
+            system.cs = system.cs.length === 2 ? [middle[0], middle[middle.length - 1]] : middle;
+        }
+        system.xs = { x1, x2 };
     }
 
     function handleSystem(event) {
