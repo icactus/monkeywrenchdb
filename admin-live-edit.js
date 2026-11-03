@@ -169,8 +169,8 @@
         if (metrics?.[1]?.partJumps) {
             try {
                 if (!window.SynpdfPartJumps) throw Error('Reload the page before editing a part with Jump / Repeat marks.');
-                window.SynpdfPartJumps.inspect(metrics);
-                savedMetricArr = JSON.parse(JSON.stringify(metrics));
+                jumpInfo(metrics);
+                if (metrics[1].partJumps) savedMetricArr = JSON.parse(JSON.stringify(metrics));
             } catch (error) { alert(error.message); return; }
         }
 
@@ -207,6 +207,19 @@
         return window.MW?.player?.metricArrId || window.currentMetricArrGlobal || window.currentRecordingFullData?.metric_arr_id || '';
     }
 
+    function jumpInfo(metrics) {
+        const api = window.SynpdfPartJumps;
+        if (!api) throw Error('Reload the page to add Jump / Repeat marks.');
+        if (api.forEditing) return api.forEditing(metrics);
+        // An already-open viewer may still have the previous helper loaded.
+        try { return api.inspect(metrics); }
+        catch (_error) {
+            api.layout(metrics);
+            delete metrics[1].partJumps;
+            return api.inspect(metrics);
+        }
+    }
+
     function trackBarlinePress(event) {
         if (!barlinePress) return;
         const coords = getPointerClientCoords(event);
@@ -231,7 +244,7 @@
             const api = window.SynpdfPartJumps, metrics = window.deMetriek$$module$synpdf;
             if (!api) throw Error('Reload the page to add Jump / Repeat marks.');
             if (markMetrics !== metrics) { pendingJump = null; markMetrics = metrics; markSignature = ''; }
-            const info = api.inspect(metrics), page = metrics[ctx.pageIdx];
+            const info = jumpInfo(metrics), page = metrics[ctx.pageIdx];
             const hit = info.segments.find(segment => {
                 if (segment.page !== ctx.pageIdx) return false;
                 const bars = page.bxs[segment.system], bounds = getSystemHitBounds(page.cxs[segment.system], ctx.x);
@@ -272,8 +285,8 @@
             pendingJump = null; markMetrics = metrics; markSignature = '';
         }
         let info;
-        try { info = window.SynpdfPartJumps?.inspect(metrics); }
-        catch (error) { jumpStatus.textContent = error.message + ' G removes invalid repeat marks.'; }
+        try { if (window.SynpdfPartJumps) info = jumpInfo(metrics); }
+        catch (error) { jumpStatus.textContent = error.message; }
         if (pendingJump && pendingJump.shape !== info?.shape) pendingJump = null;
         const marks = info ? info.jumps.map(jump => ({ ...jump })) : [];
         if (pendingJump) marks.push({ jmp: pendingJump.jmp });
@@ -712,7 +725,7 @@
         if (dataToSave[1]?.partJumps) {
             try {
                 if (!window.SynpdfPartJumps) throw Error('Reload the page before saving a part with Jump / Repeat marks.');
-                window.SynpdfPartJumps.inspect(dataToSave);
+                jumpInfo(dataToSave);
             } catch (error) { alert(error.message); return; }
         }
 

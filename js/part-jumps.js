@@ -33,7 +33,7 @@
         const data = layout(metrics), saved = metadata(metrics);
         const jumps = saved?.jumps || [];
         if (saved && saved.version !== 1) {
-            throw Error('Saved Jump / Repeat data is invalid. Restore the original marks before editing or saving this part.');
+            throw Error('Saved Jump / Repeat marks are invalid.');
         }
         if (saved && (saved.shape !== data.shape || !Array.isArray(saved.jumps))) {
             throw Error('Barlines changed. Remove and mark the Jump / Repeat pairs again.');
@@ -71,11 +71,23 @@
         return metrics;
     }
     function expandBoxes(metrics, boxes) {
-        if (!metadata(metrics)?.jumps?.length) return boxes;
-        const data = inspect(metrics);
+        if (!metadata(metrics)) return boxes;
+        const data = forEditing(metrics);
+        if (!data.jumps.length) return boxes;
         if (boxes.length !== data.printed) throw Error('Part geometry does not match its saved jumps.');
         return data.order.map(printed => ({ ...JSON.parse(JSON.stringify(boxes[printed])),
             page: boxes[printed].page || data.measures[printed].page, printedMeasure: printed }));
+    }
+    function forEditing(metrics) {
+        try { return inspect(metrics); }
+        catch (error) {
+            if (!metadata(metrics)) throw error;
+            // Bad old marks must not prevent opening the PDF or marking a new
+            // reading order. Only discard metadata after geometry is usable.
+            layout(metrics);
+            delete metrics[1].partJumps;
+            return inspect(metrics);
+        }
     }
     function rebase(before, after) {
         if (!metadata(before)) return after;
@@ -108,5 +120,5 @@
         if (first === second) return true;
         return boxes[first]?.printedMeasure !== undefined && boxes[first].printedMeasure === boxes[second]?.printedMeasure;
     }
-    return { layout, metadata, inspect, save, expandBoxes, samePrintedMeasure, rebase };
+    return { layout, metadata, inspect, save, expandBoxes, samePrintedMeasure, rebase, forEditing };
 });

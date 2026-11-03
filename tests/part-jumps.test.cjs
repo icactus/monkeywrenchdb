@@ -60,6 +60,26 @@ test('structural edits invalidate marks while geometry adjustments and width cha
     assert.equal(countDetixValues(metrics), null);
 });
 
+test('opening a part with corrupted old jumps uses its printed boxes and permits new marks', () => {
+    const metrics=fixture(),bars=JSON.stringify(metrics[1].bxs);
+    metrics[1].partJumps={version:.9,jumps:[{jmp:6.3,dst:3.6}]};
+    const boxes=Array.from({length:12},(_,printed)=>({x:printed*100,y:100,w:100,h:40}));
+    assert.equal(jumps.expandBoxes(metrics,boxes),boxes);
+    assert.equal(metrics[1].partJumps,undefined);
+    assert.equal(JSON.stringify(metrics[1].bxs),bars);
+    jumps.save(metrics,[{jmp:7,dst:4}]);
+    assert.equal(jumps.expandBoxes(metrics,boxes).length,16);
+});
+
+test('setting aside invalid marks never hides incomplete page geometry or removes valid marks', () => {
+    const metrics=fixture();jumps.save(metrics,[{jmp:7,dst:4}]);
+    const saved=metrics[1].partJumps;
+    jumps.forEditing(metrics);assert.equal(metrics[1].partJumps,saved);
+    metrics.push(null);
+    assert.throws(()=>jumps.forEditing(metrics),/Wait for all page metrics/);
+    assert.equal(metrics[1].partJumps,saved);
+});
+
 test('database save normalization and JSON reload preserve jump indices and schema version at every width', () => {
     const php = read('phpfiles/metric-arr-functions.php');
     const conversion = php.slice(php.indexOf('function processMetricData('));

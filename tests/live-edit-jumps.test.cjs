@@ -110,10 +110,22 @@ test('short clicks edit barlines on release while drags, scrolls and part switch
     h.down(2,400,120);h.context.currentMetricArrGlobal=838;h.up(2,400,120,600);assert.deepEqual(copy(h.metrics),after);
 });
 
-test('G can discard corrupted repeat marks so the user can mark them again in live mode',()=>{
+test('corrupted old marks do not block adding and saving new jumps in live mode',async()=>{
     const h=setup();
     h.metrics[1].partJumps={version:.9,jumps:[{jmp:6.3,dst:1.8}]};
-    h.key('g');assert.equal(h.metrics[1].partJumps,undefined);
     h.press(2,500,120);h.press(1,500,120);
     assert.equal(jumps.inspect(h.metrics).added,6);
+    assert.deepEqual(h.alerts,[]);
+    await h.save();
+    assert.deepEqual(h.requests[0].fields.metric_arr_id,837);
+    assert.deepEqual(JSON.parse(h.requests[0].fields.metric_arr_data)[1].partJumps.jumps,[{jmp:7,dst:2}]);
+});
+
+test('an already-open viewer with the previous helper can also replace invalid marks',()=>{
+    const h=setup();
+    h.context.SynpdfPartJumps={...jumps,forEditing:undefined};
+    h.metrics[1].partJumps={version:.9,jumps:[{jmp:6.3,dst:1.8}]};
+    h.press(2,500,120);h.press(1,500,120);
+    assert.equal(jumps.inspect(h.metrics).added,6);
+    assert.deepEqual(h.alerts,[]);
 });

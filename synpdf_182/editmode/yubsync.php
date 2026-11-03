@@ -27,7 +27,7 @@
     ?>
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
-    <script src="/js/part-jumps.js?v=2"></script>
+    <script src="/js/part-jumps.js?v=3"></script>
     <script src="synpdf-full-yubsync2.js?v=59"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=5" />

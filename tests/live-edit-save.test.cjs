@@ -62,8 +62,12 @@ test('live save submits the original Jump / Repeat metadata at viewer width', as
     });
 });
 
-test('a corrupted saved jump cannot be silently overwritten by live saving', async () => {
+test('live saving sets aside invalid old jumps without blocking the part', async () => {
     const metrics = [1000,{cxs:[{cs:[100,140]}],bxs:[[0,200,400,600]],partJumps:{version:.9,jumps:[{jmp:2.7,dst:.9}]}}];
-    const messages = await save({success:true},true,metrics,undefined,false);
-    assert.match(messages[0],/Saved Jump.*invalid/);
+    const messages = await save({success:true},true,metrics,fields=>{
+        const saved = JSON.parse(fields.metric_arr_data);
+        assert.equal(saved[1].partJumps,undefined);
+        assert.deepEqual(saved[1].bxs,metrics[1].bxs);
+    });
+    assert.deepEqual(messages,['Saved successfully!']);
 });
