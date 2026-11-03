@@ -17,6 +17,7 @@ function setup({ paused = true, twoUp = false, scale = 1 } = {}) {
     });
     const notation = element();
     const scroller = { scrollTop: 0, scrollLeft: 100, clientWidth: 1000, clientHeight: 600,
+        appendChild() {},
         style: { 'scroll-behavior': 'smooth' },
         classList: { contains: cls => cls === 'two-up' && twoUp },
         scrollTo(options) {
@@ -115,6 +116,9 @@ function setup({ paused = true, twoUp = false, scale = 1 } = {}) {
         notation.listeners.mousedown({ type: 'mousedown', button: 0, target: canvas,
             clientX: rect.left + x * scale, clientY: rect.top + y * scale,
             preventDefault() {}, stopImmediatePropagation() {}, stopPropagation() {}, ...extra });
+        listeners.mouseup({ type: 'mouseup', button: 0,
+            clientX: rect.left + x * scale, clientY: rect.top + y * scale,
+            preventDefault() {}, stopImmediatePropagation() {}, stopPropagation() {} });
     }
     function preserved() {
         assert.equal(rebuilds, 0, 'live edit must not rebuild the viewer');

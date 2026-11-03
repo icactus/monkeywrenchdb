@@ -12,6 +12,12 @@
     let exactBoundariesMode = false;
     let systemStartPoint = null;
     let savedMetricArr = null;
+    let barlinePress = null;
+    let pendingJump = null;
+    let suppressClick = false;
+    let markSignature = '';
+    let markMetrics = null;
+    let repeatTokens = [];
 
     // Create UI elements
     const saveBtn = document.createElement("button");
@@ -36,8 +42,15 @@
         '<li><b>W</b>: click two corners to draw a system.</li>' +
         '<li><b>Shift + W</b>: draw exact system boundaries.</li>' +
         '<li><b>Shift-click</b>: split a measure in barline mode.</li>' +
-        '<li><b>Alt-click</b>: mark a wrapped measure in barline mode.</li></ul>' +
+        '<li><b>Alt-click</b>: mark a wrapped measure in barline mode.</li>' +
+        '<li><b>Long click</b>: mark Jump, then long click the earlier Repeat measure (Q mode).</li>' +
+        '<li><b>G</b>: remove a pair of repeat marks, or the pending Jump.</li></ul>' +
         '<p style="margin: 0;">Press the current mode key again to stop editing. Use Save Changes to save your edits.</p>';
+    const jumpStatus = document.createElement('div');
+    jumpStatus.id = 'live-edit-jump-status';
+    jumpStatus.style.cssText = 'margin-top:8px;';
+    jumpStatus.setAttribute?.('role', 'status');
+    controlsHelp.appendChild(jumpStatus);
     document.getElementById("sidecontent")?.appendChild(controlsHelp);
 
     // Save Logic
@@ -49,7 +62,8 @@
     // Toggle Logic
     document.addEventListener("keydown", function (e) {
         // Ignore if typing in an input
-        if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName) || e.target?.isContentEditable ||
+            e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
 
         const key = (e.key || "").toLowerCase();
 
@@ -59,6 +73,9 @@
             setLiveEditMode("split");
         } else if (key === "w") {
             setLiveEditMode("system", e.shiftKey);
+        } else if (key === 'g' && liveEditActive && !e.repeat) {
+            e.preventDefault?.();
+            removeRepeatMarks();
         }
     });
 
@@ -78,6 +95,9 @@
 
     function resetModeState() {
         systemStartPoint = null;
+        barlinePress = null;
+        pendingJump = null;
+        suppressClick = false;
     }
 
     function setLiveEditMode(mode, exactMode) {
@@ -86,6 +106,7 @@
             && liveEditMode === mode
             && exactBoundariesMode === nextExactBoundariesMode;
 
+        if (mode !== liveEditMode) resetModeState();
         liveEditMode = mode;
         exactBoundariesMode = nextExactBoundariesMode;
         updateIndicator();
@@ -115,6 +136,7 @@
             document.getElementById("notation").style.cursor = "default";
             resetModeState();
         }
+        drawRepeatMarks();
     }
 
     // Interaction Logic (Intercept pointer presses on notation)
@@ -139,6 +161,8 @@
             event.stopImmediatePropagation();
         }
         event.stopPropagation();
+        suppressClick = true;
+        barlinePress = null;
 
         const metrics = window.deMetriek$$module$synpdf || window.metric_arr$$module$synpdf;
         savedMetricArr = null;
@@ -157,13 +181,146 @@
         } else if (liveEditMode === "split" || event.shiftKey) {
             handleSplit(event);
         } else {
-            handleBarline(event);
+            const coords = getPointerClientCoords(event);
+            const ctx = getEventContext(event);
+            if (ctx) barlinePress = { started: Date.now(), coords, ctx, metrics,
+                part: partIdentity(), event: { target: event.target, clientX: coords.clientX, clientY: coords.clientY } };
         }
     }
 
     // Use capture so we beat the main player handlers.
     notation.addEventListener("mousedown", handleLiveEditPointer, true);
     notation.addEventListener("touchstart", handleLiveEditPointer, { capture: true, passive: false });
+    document.addEventListener('mousemove', trackBarlinePress, true);
+    document.addEventListener('touchmove', trackBarlinePress, { capture: true, passive: false });
+    document.addEventListener('mouseup', finishBarlinePress, true);
+    document.addEventListener('touchend', finishBarlinePress, { capture: true, passive: false });
+    document.addEventListener('touchcancel', () => { barlinePress = null; }, true);
+    document.addEventListener('scroll', () => { barlinePress = null; }, true);
+    notation.addEventListener('click', event => {
+        if (!suppressClick) return;
+        suppressClick = false;
+        event.preventDefault(); event.stopImmediatePropagation();
+    }, true);
+
+    function partIdentity() {
+        return window.MW?.player?.metricArrId || window.currentMetricArrGlobal || window.currentRecordingFullData?.metric_arr_id || '';
+    }
+
+    function trackBarlinePress(event) {
+        if (!barlinePress) return;
+        const coords = getPointerClientCoords(event);
+        if (Math.abs(coords.clientX - barlinePress.coords.clientX) + Math.abs(coords.clientY - barlinePress.coords.clientY) > 10) barlinePress = null;
+    }
+
+    function finishBarlinePress(event) {
+        const press = barlinePress;
+        if (!press) return;
+        trackBarlinePress(event);
+        if (!barlinePress) return;
+        barlinePress = null;
+        event.preventDefault(); event.stopImmediatePropagation(); event.stopPropagation();
+        if (!liveEditActive || liveEditMode !== 'barline' || press.metrics !== window.deMetriek$$module$synpdf || press.part !== partIdentity()) return;
+        if (Date.now() - press.started > 500) addRepeatMark(press.ctx);
+        else handleBarline(press.event);
+    }
+
+    function addRepeatMark(ctx) {
+        savedMetricArr = null;
+        try {
+            const api = window.SynpdfPartJumps, metrics = window.deMetriek$$module$synpdf;
+            if (!api) throw Error('Reload the page to add Jump / Repeat marks.');
+            if (markMetrics !== metrics) { pendingJump = null; markMetrics = metrics; markSignature = ''; }
+            const info = api.inspect(metrics), page = metrics[ctx.pageIdx];
+            const hit = info.segments.find(segment => {
+                if (segment.page !== ctx.pageIdx) return false;
+                const bars = page.bxs[segment.system], bounds = getSystemHitBounds(page.cxs[segment.system], ctx.x);
+                return bounds && ctx.y >= bounds.top && ctx.y <= bounds.bottom &&
+                    ctx.x >= Math.abs(bars[segment.bar]) && ctx.x <= Math.abs(bars[segment.bar + 1]);
+            });
+            if (!hit) return;
+            if (pendingJump && (pendingJump.metrics !== metrics || pendingJump.part !== partIdentity() || pendingJump.shape !== info.shape)) pendingJump = null;
+            if (!pendingJump) pendingJump = { jmp: hit.printed, metrics, part: partIdentity(), shape: info.shape };
+            else {
+                api.save(metrics, [...info.jumps, { jmp: pendingJump.jmp, dst: hit.printed }]);
+                pendingJump = null;
+                refreshPlayer();
+            }
+            drawRepeatMarks();
+        } catch (error) { jumpStatus.textContent = error.message; }
+    }
+
+    function removeRepeatMarks() {
+        barlinePress = null;
+        savedMetricArr = null;
+        if (pendingJump) pendingJump = null;
+        else {
+            const metrics = window.deMetriek$$module$synpdf, saved = metrics?.[1]?.partJumps;
+            if (!saved) return;
+            try {
+                window.SynpdfPartJumps.inspect(metrics);
+                window.SynpdfPartJumps.save(metrics, saved.jumps.slice(0, -1));
+            } catch (_error) { delete metrics[1].partJumps; }
+            refreshPlayer();
+        }
+        drawRepeatMarks();
+    }
+
+    function drawRepeatMarks() {
+        const metrics = window.deMetriek$$module$synpdf;
+        if (markMetrics !== metrics || (pendingJump && pendingJump.part !== partIdentity())) {
+            pendingJump = null; markMetrics = metrics; markSignature = '';
+        }
+        let info;
+        try { info = window.SynpdfPartJumps?.inspect(metrics); }
+        catch (error) { jumpStatus.textContent = error.message + ' G removes invalid repeat marks.'; }
+        if (pendingJump && pendingJump.shape !== info?.shape) pendingJump = null;
+        const marks = info ? info.jumps.map(jump => ({ ...jump })) : [];
+        if (pendingJump) marks.push({ jmp: pendingJump.jmp });
+        const placements = [];
+        marks.forEach((jump, index) => {
+            for (const [field, label, color, fraction] of [['jmp','Jump_','blue',.75], ['dst','Repeat_','red',0]]) {
+                if (jump[field] === undefined) continue;
+                const segment = field === 'jmp' ? info.segments.filter(s => s.printed === jump.jmp).at(-1) : info.measures[jump.dst];
+                const canvas = document.getElementById('canvas' + segment.page);
+                if (!canvas) continue;
+                const page = metrics[segment.page], bars = page.bxs[segment.system];
+                const x = Math.abs(bars[segment.bar]) + fraction * (Math.abs(bars[segment.bar + 1]) - Math.abs(bars[segment.bar]));
+                const bounds = getSystemHitBounds(page.cxs[segment.system], x);
+                const scale = canvas.getBoundingClientRect().width / metrics[0];
+                placements.push({ text: label + (index + 1), color,
+                    left: (canvas.offsetLeft || 0) + x * scale,
+                    top: (canvas.offsetTop || 0) + bounds.top * scale - 25 - index * 15 });
+            }
+        });
+        const signature = JSON.stringify([liveEditActive, partIdentity(), placements, metrics?.[1]?.partJumps, pendingJump?.jmp]);
+        if (signature === markSignature) return;
+        markSignature = signature;
+        repeatTokens.forEach(token => token.remove?.()); repeatTokens = [];
+        if (!liveEditActive) return;
+        if (info) jumpStatus.textContent = pendingJump ? `Jump_${info.jumps.length + 1}: long click the earlier Repeat_${info.jumps.length + 1} measure.`
+            : info.jumps.length ? `${info.jumps.length} Jump / Repeat pair${info.jumps.length === 1 ? '' : 's'} · ${info.printed} printed + ${info.added} repeated = ${info.order.length} measures.`
+                : 'Long click the Jump measure, then long click the earlier Repeat measure. G removes repeat marks.';
+        const container = document.getElementById('notation-scroll') || notation;
+        placements.forEach(placement => {
+            const token = document.createElement('div');
+            token.className = 'live-edit-repeat-token'; token.textContent = placement.text;
+            Object.assign(token.style, { position:'absolute', pointerEvents:'none', zIndex:'5', color:placement.color,
+                left:placement.left+'px', top:placement.top+'px', fontSize:'14px' });
+            container.appendChild(token); repeatTokens.push(token);
+        });
+    }
+
+    if (typeof MutationObserver !== 'undefined') {
+        let scheduled = false;
+        const observer = new MutationObserver(() => {
+            if (scheduled) return;
+            scheduled = true;
+            requestAnimationFrame(() => { scheduled = false; drawRepeatMarks(); });
+        });
+        observer.observe(notation, { childList:true, subtree:true, attributes:true, attributeFilter:['style'] });
+        window.addEventListener('resize', drawRepeatMarks);
+    }
 
 
     // --- Core Editing Logic Prototypes (Ported) ---
@@ -234,6 +391,7 @@
         } else {
             console.error("refreshMetricGeometry not found!");
         }
+        drawRepeatMarks();
     }
 
     function handleBarline(event) {
@@ -538,6 +696,11 @@
     }
 
     function saveToDatabase() {
+        if (pendingJump && (pendingJump.metrics !== window.deMetriek$$module$synpdf || pendingJump.part !== partIdentity())) pendingJump = null;
+        if (pendingJump) {
+            alert('Add the Repeat mark or press G to remove the pending Jump before saving.');
+            return;
+        }
         const metricArr = window.deMetriek$$module$synpdf;
         if (!metricArr) {
             alert("No data to save.");

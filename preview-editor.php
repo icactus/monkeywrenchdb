@@ -234,7 +234,7 @@ $is_share_link = isset($_GET['share']);
                                         }
                                         var script = document.createElement('script');
                                         script.id = 'admin-live-edit-script';
-                                        script.src = 'admin-live-edit.js?v=3-' + new Date().getTime();
+                                        script.src = 'admin-live-edit.js?v=4-' + new Date().getTime();
                                         document.body.appendChild(script);
                                     }
                                 </script>
