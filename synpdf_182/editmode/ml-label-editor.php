@@ -62,8 +62,10 @@
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
-    <script src="synpdf-edit-mode.js?v=103"></script>
+    <script src="/js/part-jumps.js?v=1"></script>
+    <script src="synpdf-edit-mode.js?v=104"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
+    <script src="part-jump-editor.js?v=1" defer></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
     <script src="barline-detect-v2.js?v=<?php echo $barlineDetectVer; ?>"></script>
     <script src="ml-label-tools.js?v=93"></script>

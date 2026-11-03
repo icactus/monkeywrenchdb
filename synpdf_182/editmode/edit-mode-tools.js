@@ -1148,7 +1148,9 @@ function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf,
             return null;
         }
 
+        const savedPartJumps = deMetriek$$module$synpdf[pagenum]?.partJumps;
         deMetriek$$module$synpdf[pagenum] = pageData.cxs.length ? pageData : { cxs: [], bxs: [] };
+        if (savedPartJumps) deMetriek$$module$synpdf[pagenum].partJumps = savedPartJumps;
         MetricStore.setMetricData(deMetriek$$module$synpdf, { clone: false });
 
         if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.snapshotV2BaselineForPage) {

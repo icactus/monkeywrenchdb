@@ -1,6 +1,7 @@
 /* Compare a new part's geometry with one saved part for the same piece. */
 (function () {
     'use strict';
+    const jumpsApi = typeof module !== 'undefined' && module.exports ? require('../../js/part-jumps.js') : window.SynpdfPartJumps;
     function identityFromFilename(filename) {
         const basename = String(filename || '').split(/[\\/]/).pop().split(/[?#]/)[0];
         const match = basename.match(/^(\d+)-(\d+)(?:[._-]|$)/);
@@ -11,6 +12,12 @@
     // page alone or repeat-expanded recording timings. The player adds one end marker.
     function countDetixValues(metrics) {
         if (!Array.isArray(metrics) || metrics.length < 2) return null;
+        if (jumpsApi && jumpsApi.metadata(metrics)) {
+            try {
+                const info = jumpsApi.inspect(metrics);
+                return info.order.length ? info.order.length + 1 : 0;
+            } catch (_error) { return null; }
+        }
         let measures = 0;
         for (let p = 1; p < metrics.length; p++) {
             const page = metrics[p];
@@ -113,6 +120,10 @@
         if (reference.error) { show('error', `${reference.error} Retrying automatically…`); return; }
         if (reference.missing) { show('unavailable', `No saved part found for piece ${identity.pieceId} yet.`); return; }
         const metrics = window.deMetriek$$module$synpdf;
+        if (jumpsApi && jumpsApi.metadata(metrics) && !window.rendering$$module$synpdf && !window.metricPrecomputeInProgress$$module$synpdf) {
+            try { jumpsApi.inspect(metrics); }
+            catch (error) { show('error', error.message); return; }
+        }
         const pages = window.pdfDoc$$module$synpdf?.numPages;
         if (!pages || window.rendering$$module$synpdf || window.metricPrecomputeInProgress$$module$synpdf ||
             window.barlineDetectionProgress || window.SynpdfAutoBarlines?.running || !metrics || metrics.length !== pages + 1 ||
@@ -123,13 +134,16 @@
         if (!count) { show('unavailable', 'No measures found in the current part yet.'); return; }
         const difference = count - saved.count;
         const ref = `${saved.label || 'Saved part'} (${saved.filename})`;
-        show(difference ? 'mismatch' : 'match', difference
+        const jumpInfo = jumpsApi && jumpsApi.metadata(metrics) ? jumpsApi.inspect(metrics) : null;
+        const jumpText = jumpInfo ? ` ${jumpInfo.printed} printed + ${jumpInfo.added} repeated = ${jumpInfo.order.length} measures.` : '';
+        show(difference ? 'mismatch' : 'match', (difference
             ? `Current: ${count} detix values · saved: ${saved.count} · ${Math.abs(difference)} ${difference > 0 ? 'more' : 'fewer'}. Reference: ${ref}.`
-            : `Counts match: ${count} detix values. Reference: ${ref}.`);
+            : `Counts match: ${count} detix values. Reference: ${ref}.`) + jumpText);
     }
     function schedule() { clearTimeout(timer); timer = setTimeout(refresh, 120); }
     recheck?.addEventListener('click', () => { reference = null; refresh(); });
     document.addEventListener('synpdf:part-submitted', () => { reference = null; refresh(); });
+    document.addEventListener('synpdf:part-jumps-changed', schedule);
     document.getElementById('fknp')?.addEventListener('change', schedule);
     // Redraws follow geometry edits. The wait/render indicators also cover hidden
     // page precomputation, which completes without redrawing the visible canvas.

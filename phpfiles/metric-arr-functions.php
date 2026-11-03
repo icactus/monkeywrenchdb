@@ -91,6 +91,10 @@ function scaleValues($item, $scaleFactor)
             $item->cs = [$item->cs[0], end($item->cs)];
         }
         foreach ($item as $key => $value) {
+            // Part reading-order indices and schema version are not coordinates.
+            if ($key === 'partJumps') {
+                continue;
+            }
             $item->$key = scaleValues($value, $scaleFactor);
         }
         return $item;

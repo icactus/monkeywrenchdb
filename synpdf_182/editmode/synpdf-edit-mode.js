@@ -1097,7 +1097,9 @@ function disableScrolling() {
 function compPage$$module$synpdf(a, b, c) {
     var d = deMetriek$$module$synpdf[b];
     if (!d || opt$$module$synpdf.advncd && !pageNumChanged$$module$synpdf) {
+        var savedPartJumps = d && d.partJumps;
         d = scanPageMetrics$$module$synpdf(a, parseInt(opt$$module$synpdf.seln));
+        if (savedPartJumps) d.partJumps = savedPartJumps;
         deMetriek$$module$synpdf[b] = d
     }
     pageNumChanged$$module$synpdf = 0;
@@ -1189,6 +1191,9 @@ function kliklang$$module$synpdf(evt) {
                 var coords = getNotationRelativeCoords(endEvt);
                 var x = coords.xInNotation;
                 var y = coords.yInNotation;
+
+                if (500 < (new Date).getTime() - touch_tb$$module$synpdf &&
+                    window.SynpdfPartJumpEditor && window.SynpdfPartJumpEditor.handleLongClick(coords)) return;
 
                 longOrShift && opt$$module$synpdf.annot ? msc_wz$$module$synpdf.annot(x, y)
                     : msc_wz$$module$synpdf.x2time(x, y, longOrShift);

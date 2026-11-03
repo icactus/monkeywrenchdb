@@ -1205,7 +1205,9 @@ Wijzer$$module$synpdf.prototype.x2time = function (clickX, clickY, isLongPress, 
             var timeIndex = -1;
             var matchCount = 0;
             for (var searchIdx = 0; searchIdx < deTijden$$module$synpdf.length; ++searchIdx) {
-                if (measureIndex == deTijden$$module$synpdf[searchIdx].mix) {
+                if (measureIndex == deTijden$$module$synpdf[searchIdx].mix ||
+                    (typeof SynpdfPartJumps !== 'undefined' && SynpdfPartJumps.samePrintedMeasure(
+                        deMaten$$module$synpdf, measureIndex, deTijden$$module$synpdf[searchIdx].mix))) {
                     matchCount++;
                     if (shiftKey) {
                         timeIndex = searchIdx; // Keep updating to get the last one
@@ -1218,6 +1220,7 @@ Wijzer$$module$synpdf.prototype.x2time = function (clickX, clickY, isLongPress, 
 
             if (timeIndex >= 0) {
                 var selectedTimeIndex = timeIndex;
+                currentMeasureIndex = deTijden$$module$synpdf[selectedTimeIndex].mix;
                 var measureStartTime = deTijden$$module$synpdf[selectedTimeIndex].t;
                 currentMeasureTime = measureStartTime;
                 window.__lastMeasureClickTime = Date.now(); // Track when user clicked on a measure
@@ -1719,6 +1722,9 @@ function addDummySys$$module$synpdf(geometryOnly) {
         }
     });
     $("#render").toggle(!1);
+    if (typeof SynpdfPartJumps !== 'undefined') {
+        deMaten$$module$synpdf = SynpdfPartJumps.expandBoxes(deMetriek$$module$synpdf, deMaten$$module$synpdf);
+    }
     var lastMeasure = deMaten$$module$synpdf[deMaten$$module$synpdf.length - 1];
     deMaten$$module$synpdf.push({
         x: lastMeasure.x + lastMeasure.w,

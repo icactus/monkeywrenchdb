@@ -872,6 +872,7 @@ DummyPlayer$$module$synpdf.prototype.clearKlok = function () {
 };
 
 function getPage$$module$synpdf(a) {
+    if (deMaten$$module$synpdf[a]?.printedMeasure !== undefined) return deMaten$$module$synpdf[a].page;
     for (var b = 1, c = 0; c <= a && b < deMetriek$$module$synpdf.length;) c += deMetriek$$module$synpdf[b].bxs.reduce(function (a, b) {
         return a + b.length - 1
     }, 0), b += 1;
@@ -879,6 +880,9 @@ function getPage$$module$synpdf(a) {
 }
 
 function page2msr$$module$synpdf(a) {
+    if (deMaten$$module$synpdf[0]?.printedMeasure !== undefined) {
+        return Math.max(0, deMaten$$module$synpdf.findIndex(box => box.page === a));
+    }
     var b, c = 0;
     for (b = 1; b < a; ++b) c += deMetriek$$module$synpdf[b].bxs.reduce(function (a, b) {
         return a + b.length - 1
@@ -1053,6 +1057,9 @@ function addDummySys$$module$synpdf() {
         }
     });
     $("#render").toggle(!1);
+    if (typeof SynpdfPartJumps !== 'undefined') {
+        deMaten$$module$synpdf = SynpdfPartJumps.expandBoxes(deMetriek$$module$synpdf, deMaten$$module$synpdf);
+    }
     a = deMaten$$module$synpdf[deMaten$$module$synpdf.length - 1];
     deMaten$$module$synpdf.push({
         x: a.x + a.w,

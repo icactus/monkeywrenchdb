@@ -55,6 +55,13 @@
         return result;
     }
     function remapSession(metrics, draft, lineage, state, beforeLineage) {
+        if (typeof SynpdfPartJumps !== 'undefined' && SynpdfPartJumps.metadata(metrics)) {
+            // Expanded indices remain stable for geometry corrections. Structural
+            // changes need new Jump / Repeat marks in the part editor first.
+            SynpdfPartJumps.inspect(metrics);
+            SynpdfPartJumps.inspect(draft);
+            return { ...state };
+        }
         const before = measures(metrics, beforeLineage), after = measures(draft, lineage);
         const byOwner = new Map();
         after.forEach((next, index) => {
