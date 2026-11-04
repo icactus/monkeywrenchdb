@@ -31,7 +31,7 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=60"></script>
+    <script src="synpdf-full-yubsync2.js?v=61"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=6" />
     <style>
@@ -911,7 +911,6 @@
                                 </div>
                                 <input type="submit" value="Submit" />
                                 <div id="yubsync-submit-status" role="status" aria-live="polite"></div>
-                                <button type="button" id="download-sync">Download sync data</button>
                             </div>
                         </div>
                     </form>
@@ -1042,9 +1041,9 @@ Also works with dropbox. You can load a preload file with the score file button.
             <br />
             <button id="closehelp">Close</button>
     </div>
-    <script src="yubsync-tools.js?v=86"></script>
+    <script src="yubsync-tools.js?v=87"></script>
     <script src="yubsync-live-edit.js?v=5"></script>
-    <script src="yubsync-progress.js?v=1"></script>
+    <script src="yubsync-progress.js?v=2"></script>
 </body>
 
 </html>

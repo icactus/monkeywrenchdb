@@ -124,6 +124,17 @@ test('typing in form fields bypasses timestamp shortcuts, including superuser Do
     assert.equal(h.seeks.length, 0);
 });
 
+test('timestamps and timing adjustments save before keyup or a polling timer can run', () => {
+    for (const key of ['b', 'B', 'ArrowDown', ',', '.', '<', '>']) {
+        const h = setup({ superuser: true });
+        const saved = [];
+        h.c.window.YubSyncProgress = { save() { saved.push(h.snapshot()); } };
+        h.key(key);
+        assert.equal(saved.length, 1, key);
+        assert.deepEqual(saved[0], h.snapshot(), key);
+    }
+});
+
 test('the page grants Down Arrow stamping to the configured superuser alone', () => {
     const gate = page.slice(page.indexOf('    // ADMIN CHECK'), page.indexOf('    ?>', page.indexOf('    // ADMIN CHECK')));
     for (const [role, id, configuredId, expected] of [

@@ -15,11 +15,11 @@ function setup({ edit = false, save = async () => true, response, fetchError } =
         document: { getElementById(id) {
             if (id === 'addnewrecordingform') return form;
             if (id === 'yubsync-submit-status') return status;
-            if (id === 'download-sync') return { addEventListener() {} };
+            if (id === 'download-sync') assert.fail('The download button has been removed');
             return fields[id] ||= { value: '' };
         } },
         window: { yubsyncMetricContext: { pieceId: '71' },
-            YubSyncProgress: { save() { calls.push('backup'); } },
+            YubSyncProgress: { save() { calls.push('backup'); return true; } },
             YubSyncLiveEdit: { active: edit, prepareSubmission: save },
             dispatchEvent(event) { calls.push(event.type); } },
         opt$$module$synpdf: { yubvid: 'abcdefghijk' }, lastSynced$$module$synpdf: 1,
@@ -72,9 +72,18 @@ for (const [name, options] of [
     await state.submit();
     assert.equal(state.calls.includes('yubsync:submitted'), false);
     assert.match(state.status.textContent, /Submission failed/);
+    assert.match(state.status.textContent, /saved in this browser/);
+    assert.doesNotMatch(state.status.textContent, /download/i);
     assert.ok(state.calls.some(call => Array.isArray(call) && call[0] === 'error'));
     assert.equal(state.calls.filter(call => call === 'backup').length, 2);
     assert.equal(state.button.disabled, false);
+});
+test('a submission failure cannot claim recovery is saved when browser storage fails', async () => {
+    const state = setup({ fetchError: new TypeError('Failed to fetch') });
+    state.c.window.YubSyncProgress.save = () => false;
+    await state.submit();
+    assert.match(state.status.textContent, /Automatic browser saving could not be confirmed/);
+    assert.doesNotMatch(state.status.textContent, /timestamps are saved/);
 });
 test('local backup includes live geometry and timings without fetching or changing active sync options', () => {
     const options = { synbox: 1, lastSynced: -1, wpdf: 1, yubvid: 'abcdefghijk' };

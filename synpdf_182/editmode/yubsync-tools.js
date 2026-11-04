@@ -575,7 +575,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!response.ok || result !== 'success') {
                 console.error('[YubSync] Submission response:', response.status, result);
                 throw new Error(response.redirected || /<(!doctype|html)/i.test(result)
-                    ? 'Your login may have expired. Download your sync data before signing in again.'
+                    ? 'Your login may have expired. Sign in again before retrying.'
                     : `Server did not confirm the recording was saved (${response.status}): ${result.slice(0, 300) || response.statusText}`);
             }
             console.info('[YubSync] Recording submitted successfully.');
@@ -584,23 +584,15 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Form submitted successfully');
         } catch (error) {
             console.error('[YubSync] Recording submission failed:', error);
-            submitStatus.textContent = `Submission failed: ${error.message} Your sync is preserved. You can download a copy below.`;
-            window.YubSyncProgress?.save();
+            const saved = window.YubSyncProgress?.save();
+            submitStatus.textContent = `Submission failed: ${error.message} Your sync is preserved. ` +
+                (saved ? 'Your timestamps are saved in this browser. Load the same score and video to restore them.' :
+                    'Automatic browser saving could not be confirmed. Keep this page open and try again.');
         } finally {
             submitting = false;
             submitButton.disabled = false;
             submitButton.value = 'Submit';
             form.setAttribute('aria-busy', 'false');
-        }
-    });
-
-    document.getElementById('download-sync').addEventListener('click', function() {
-        try {
-            saveTiming$$module$synpdf.call(this);
-            submitStatus.textContent = 'Sync data download started. Keep this file as a backup.';
-        } catch (error) {
-            console.error('[YubSync] Sync download failed:', error);
-            submitStatus.textContent = `Download failed: ${error.message} Your sync is preserved.`;
         }
     });
 

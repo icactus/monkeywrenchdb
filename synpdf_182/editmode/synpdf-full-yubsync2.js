@@ -676,6 +676,9 @@ Wijzer$$module$synpdf.prototype.keySync = function (keyType) {
         this.time2x(currentTime);
         demix ==
             deMaten$$module$synpdf.length - 1 && (opt$$module$synpdf.synbox = 0, syncChk$$module$synpdf(), $("#synbox").prop("checked", !1), pauseer$$module$synpdf(), playPause2$$module$synpdf(!1, TOFF$$module$synpdf + offset$$module$synpdf))
+        // Save synchronously after every timestamp, including clicks and the
+        // superuser Down Arrow shortcut; keyup/unload may never arrive.
+        window.YubSyncProgress?.save();
     }
 };
 Wijzer$$module$synpdf.prototype.goMsre = function (a, b) {
@@ -721,6 +724,7 @@ Wijzer$$module$synpdf.prototype.changeTimesKeyb = function (a) {
         var b = deTijden$$module$synpdf[detix$$module$synpdf + 1];
         b.t += a;
         b.t = Math.round(1E3 * b.t) / 1E3
+        window.YubSyncProgress?.save();
     }
 };
 Wijzer$$module$synpdf.prototype.changeOffset = function (a) {
@@ -731,6 +735,7 @@ Wijzer$$module$synpdf.prototype.changeOffset = function (a) {
         c.t -= a;
         c.t = Math.round(1E3 * c.t) / 1E3
     }
+    window.YubSyncProgress?.save();
 };
 Wijzer$$module$synpdf.prototype.startSync = function () {
     deTijden$$module$synpdf.splice(lastSynced$$module$synpdf + 1);
@@ -2302,6 +2307,7 @@ function downloadSyncFile$$module$synpdf(text) {
 
 function resetTiming$$module$synpdf() {
     $(this).blur(); - 1 != lastSynced$$module$synpdf && (lastSynced$$module$synpdf = detix$$module$synpdf - 1, msc_wz$$module$synpdf.startSync())
+    window.YubSyncProgress?.save();
 }
 
 function get_file$$module$synpdf(a, b) {

@@ -59,6 +59,7 @@
     const status = document.getElementById('yubsync-progress-status');
     let checkedContext = null, checkedKey = '', generation = 0, checkedGeneration = -1, pendingSeek = null;
     let suppressedKey = '', scheduled = false, freshVideo = false;
+    let lastSavedKey = '', lastSavedPayload = '', recoveryFailed = false;
     function message(text) { if (status && status.textContent !== text) status.textContent = text; }
     function identity() {
         const context = window.yubsyncMetricContext;
@@ -74,10 +75,17 @@
         const id = identity();
         // Never replace a stored draft before offering to restore it.
         if (!id || id.context !== checkedContext || id.key !== checkedKey ||
-            checkedGeneration !== generation || id.key === suppressedKey) return false;
+            checkedGeneration !== generation || id.key === suppressedKey || recoveryFailed) return false;
         const times = get('deTijden').slice(0, Math.max(0, get('lastSynced') + 1));
         const editor = window.YubSyncLiveEdit?.exportProgress();
-        if (!times.length && !editor) return false;
+        if (!times.length && !editor) {
+            // Backspacing the first timestamp must not resurrect an older draft.
+            try {
+                localStorage.removeItem(id.key);
+                lastSavedKey = lastSavedPayload = '';
+                return true;
+            } catch (_) { message('Progress could not be saved in this browser. Keep this page open and try again.'); return false; }
+        }
         let mediaTime = get('elmed').getCurrentTime();
         if (pendingSeek && Date.now() - pendingSeek.started < 2000 && Math.abs(mediaTime - pendingSeek.time) > 1) {
             mediaTime = pendingSeek.time;
@@ -87,16 +95,22 @@
             details[name] = document.querySelector(`[name="${name}"]`)?.value || '';
         }
         const saved = { version: 1, metricArrId: id.metricArrId, youtubeId: id.youtubeId, pdfFile: id.pdfFile,
-            pieceId: id.context.pieceId, partId: id.context.partId, savedAt: Date.now(),
+            pieceId: id.context.pieceId, partId: id.context.partId,
             metrics: get('deMetriek'), editor, times, offset: get('offset'), lastSynced: times.length - 1,
             detix: get('detix'), demix: get('demix'), repeats: get('repMaten'), cursor: get('msc_wz').cursorTime,
             sync: !!get('opt').synbox, mediaTime, scrollTop: notation.scrollTop, scrollLeft: notation.scrollLeft, details };
         if (!validProgress(saved, id)) return false;
         try {
-            localStorage.setItem(id.key, JSON.stringify(saved));
+            const payload = JSON.stringify(saved);
+            if (lastSavedKey !== id.key || lastSavedPayload !== payload) {
+                // One replaceable draft per score/video, never a file per keypress.
+                // Score metrics are geometry only; no PDF data is stored.
+                localStorage.setItem(id.key, JSON.stringify({ ...saved, savedAt: Date.now() }));
+                lastSavedKey = id.key; lastSavedPayload = payload;
+            }
             message('Progress saved in this browser.');
             return true;
-        } catch (_) { message('Progress could not be saved in this browser.'); return false; }
+        } catch (_) { message('Progress could not be saved in this browser. Keep this page open and try again.'); return false; }
     }
     function resume(saved) {
         const width = get('deMetriek')[0], scale = width / saved.metrics[0];
@@ -130,20 +144,27 @@
         if (id.context !== checkedContext || id.key !== checkedKey || checkedGeneration !== generation) {
             checkedContext = id.context; checkedKey = id.key; checkedGeneration = generation;
             suppressedKey = ''; pendingSeek = null;
+            lastSavedKey = lastSavedPayload = '';
+            recoveryFailed = false;
             if (freshVideo) { startVideo(); freshVideo = false; }
             try {
                 const saved = JSON.parse(localStorage.getItem(id.key) || 'null');
                 if (validProgress(saved, id) && (saved.times.length || saved.editor)) {
                     const measure = saved.times[saved.detix]?.mix;
                     const position = `${Math.floor(saved.mediaTime / 60)}:${String(Math.floor(saved.mediaTime % 60)).padStart(2, '0')}`;
-                    if (window.confirm(`Continue the saved sync for this score and YouTube video?\n\n${measure === undefined ? 'Before the first measure' : `Measure ${measure + 1}`} · video ${position}\n\nOK resumes your timings and score corrections. Cancel starts over.`)) {
+                    if (window.confirm(`Do you want to restore previous timestamps?\n\n${measure === undefined ? 'Before the first measure' : `Measure ${measure + 1}`} · video ${position}\n\nOK restores your saved progress for this score and YouTube video. Cancel starts a new sync.`)) {
                         resume(saved);
                     } else {
                         localStorage.removeItem(id.key);
                         message('Starting a new sync.');
                     }
                 }
-            } catch (_) { message('Saved progress could not be restored. Your loaded score is still available.'); }
+            } catch (_) {
+                // Keep the last good draft if reading/restoring it fails.
+                recoveryFailed = true;
+                message('Saved progress could not be restored. Reload this score and video to try again.');
+                return;
+            }
         }
         save();
     }
