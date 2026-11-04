@@ -140,6 +140,7 @@ def deskew(source, destination, max_pages=500):
                 digest.update(chunk)
         result = {'pages': pages, 'corrected_pages': len(corrections), 'corrections': corrections,
                   'bytes': destination.stat().st_size, 'sha256': digest.hexdigest(),
+                  'peak_rss_kb': resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
                   'seconds': round(time.perf_counter() - started, 3)}
         emit('completed', **result)
         return result
@@ -156,7 +157,10 @@ def main():
     # NumPy/OpenCV stay within one private child and do not start CPU pools.
     os.environ['OPENBLAS_NUM_THREADS'] = '1'
     os.environ['OMP_NUM_THREADS'] = '1'
-    cap = 384 * 1024 * 1024
+    # The shared host reserves ~500 MB of virtual address space just loading
+    # Python/OpenCV, with under 100 MB resident. Leave bounded room for those
+    # library mappings and one analysis page; compression keeps its 384 MB cap.
+    cap = 768 * 1024 * 1024
     _, hard = resource.getrlimit(resource.RLIMIT_AS)
     if hard != resource.RLIM_INFINITY:
         cap = min(cap, hard)

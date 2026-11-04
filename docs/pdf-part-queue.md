@@ -152,8 +152,12 @@ Before deploying the skew option, update the private environment using the
 requirements command above. It now includes NumPy 1.26.4 and headless OpenCV
 4.9.0.80 alongside PyMuPDF and Pillow. The deployment copies the requirements and
 deskew script into `pdf-queue-tools` too; updating code alone does not install
-Python dependencies. Skew analysis runs in a separate child capped at 384 MB and
-180 CPU seconds, with one OpenCV/BLAS thread. Uploads without **Fix skew** do not
+Python dependencies. Skew analysis runs in a separate child capped at 768 MB of
+virtual address space and 180 CPU seconds, with one OpenCV/BLAS thread. The shared
+host's Python and OpenCV library mappings alone reserve about 500 MB of address
+space while using under 100 MB of resident RAM; the larger cap permits those
+mappings and page analysis. The compression child retains its 384 MB cap.
+Uploads without **Fix skew** do not
 import or run the skew detector. A failed skew stage stops the job before
 compression and offers **Retry processing**.
 

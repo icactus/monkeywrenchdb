@@ -128,6 +128,17 @@ class DeskewTests(unittest.TestCase):
         self.assertEqual([row['done'] for row in events if row['type'] == 'page'], [1, 2, 3])
         self.assertEqual(events[-1]['corrected_pages'], 2)
 
+    def test_cli_allows_shared_host_library_mappings_without_high_resident_memory(self):
+        # Shared hosting's interpreter/library mappings reserve much more
+        # address space than the workstation, without consuming equivalent RAM.
+        wrapper = ('import mmap,runpy,sys; reservation=mmap.mmap(-1,220*1024*1024); '
+                   'sys.argv=sys.argv[1:]; runpy.run_path(sys.argv[0],run_name="__main__")')
+        result = subprocess.run([sys.executable, '-c', wrapper, str(ROOT / 'scripts/deskew-pdf.py'), str(self.source), str(self.output)],
+                                capture_output=True, text=True, check=True, timeout=30)
+        completed = json.loads(result.stdout.splitlines()[-1])
+        self.assertEqual(completed['corrected_pages'], 2)
+        self.assertLess(completed['peak_rss_kb'], 200 * 1024)
+
     def test_queue_compresses_corrected_master_and_retries_from_the_upload(self):
         queue = self.root / 'queue'
         job = queue / ('a' * 32)
