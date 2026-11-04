@@ -125,18 +125,22 @@ html.inverted .study-title:active,html.inverted .study-recording:active{backgrou
 .study-sort-label{margin-left:auto;color:var(--muted);font-size:11px;white-space:nowrap}
 .study-summary{grid-template-columns:minmax(0,1fr) 44px;padding:0 9px 0 0;align-items:center}
 .study-title{
-    display:grid;grid-template-columns:minmax(0,1fr) 90px 14px;gap:12px;
+    display:grid;grid-template-columns:minmax(0,1fr) 90px 16px;gap:12px;
     min-height:60px;padding:12px 13px 12px 20px;
 }
 .study-row-label{display:grid;grid-template-columns:110px minmax(0,1fr);align-items:center;gap:16px}
 .study-composer{font-size:13px;font-weight:400}
 .study-work{min-width:0;overflow-wrap:anywhere}
 .study-work-name{font-size:15px;font-weight:550;line-height:1.4}
-.study-recording-count{font-size:11px;color:var(--muted);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.study-chevron{font-size:20px;line-height:1;text-align:center}
+.study-recording-count{font-size:11px;line-height:16px;color:var(--muted);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.study-chevron{display:block;width:16px;height:16px;color:var(--muted);transform-origin:center}
 .study-material-note{display:block;margin:4px 0 0;font-size:11px;line-height:1.4}
 .study-piece.expanded{background:#edf5f5}
-.study-star{align-self:center;height:44px}
+.study-home .study-star{display:flex;align-items:center;justify-content:center;align-self:center;height:44px;color:var(--muted)}
+.study-star-icon{display:block;width:18px;height:18px;fill:none}
+.study-home .study-star[aria-pressed=true]{color:#8a6610}
+.study-star[aria-pressed=true] .study-star-icon{fill:currentColor}
+html.inverted .study-home .study-star[aria-pressed=true]{color:#e9c96b}
 .study-chooser{margin:0 20px 20px 146px;padding-top:17px}
 .study-chooser-top{margin-bottom:13px}
 .study-chooser-top p{font-size:12px}
@@ -153,7 +157,7 @@ html.inverted .study-home .study-category:hover{background:#243136;color:var(--i
 html.inverted .study-home .study-category[aria-pressed=true]{background:#253d42;border-color:#57777d;color:var(--teal);box-shadow:none}
 @media(max-width:800px){
     .study-row-label{grid-template-columns:92px minmax(0,1fr);gap:13px}
-    .study-title{grid-template-columns:minmax(0,1fr) 14px;padding-left:16px}
+    .study-title{grid-template-columns:minmax(0,1fr) 16px;padding-left:16px}
     .study-recording-count{display:none}
     .study-chooser{margin-left:121px}
 }

@@ -27,6 +27,12 @@
     const favoritesPending = new Set();
     const node = (tag, className, text) => { const el = document.createElement(tag); el.className = className; if (text != null) el.textContent = text; return el; };
     const button = (label, className, action) => { const el = node('button', className, label); el.type = 'button'; el.addEventListener('click', action); return el; };
+    const outlineIcon = (className, pathData) => {
+        const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg');
+        for (const [key, value] of Object.entries({ class: className, viewBox: '0 0 24 24', width: '18', height: '18', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.7', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', focusable: 'false' })) svg.setAttribute(key, value);
+        const path = document.createElementNS(ns, 'path'); path.setAttribute('d', pathData); svg.append(path);
+        return svg;
+    };
     const message = text => { $('message').textContent = text; $('message').hidden = !text; };
     const persist = () => write('state', { query: search.value, view: state.view, scroll: window.scrollY, category: state.category });
     const json = async (url, options) => {
@@ -139,13 +145,13 @@
     function updateStars() {
         root.querySelectorAll('[data-study-star]').forEach(el => {
             const id = Number(el.dataset.studyStar), saved = favorites.has(id);
-            el.textContent = saved ? '★' : '☆'; el.setAttribute('aria-pressed', String(saved));
+            el.setAttribute('aria-pressed', String(saved));
             el.setAttribute('aria-label', (saved ? 'Remove from favorites: ' : 'Save to favorites: ') + el.dataset.title);
             el.title = saved ? 'Remove from favorites' : 'Save to favorites'; el.disabled = favoritesPending.has(id);
         });
     }
     function star(piece) {
-        const el = button('☆', 'study-star', async () => {
+        const el = button('', 'study-star', async () => {
             if (!window.loggedInUserId) { toast('Sign in to save favorites.'); return; }
             if (favoritesPending.has(piece.piece_id)) return;
             favoritesPending.add(piece.piece_id); updateStars();
@@ -160,6 +166,7 @@
             finally { favoritesPending.delete(piece.piece_id); updateStars(); }
         });
         el.dataset.studyStar = piece.piece_id; el.dataset.title = piece.piece_name;
+        el.append(outlineIcon('study-star-icon', 'm12 3 2.78 5.63 6.22.91-4.5 4.38 1.06 6.2L12 17.19l-5.56 2.93 1.06-6.2L3 9.54l6.22-.91Z'));
         return el;
     }
     function showView(view) {
@@ -194,7 +201,7 @@
         const work = node('span', 'study-work', '');
         work.append(node('span', 'study-work-name', piece.piece_name));
         label.append(composer, work);
-        const chevron = node('span', 'study-chevron', '›'); chevron.setAttribute('aria-hidden', 'true');
+        const chevron = outlineIcon('study-chevron', 'm9 6 6 6-6 6');
         const count = Number(piece.recording_count) || 0;
         title.append(label, node('span', 'study-recording-count', count + (count === 1 ? ' recording' : ' recordings')), chevron);
         return title;
@@ -256,7 +263,7 @@
             const row = button('', 'study-recording', event => start(piece, state.part, recording, event.currentTarget)), info = node('span', '', ''), name = node('span', 'study-recording-name', recordingName(recording));
             if (recording.recording_id === last) name.append(node('span', 'study-last', 'Last practiced'));
             info.append(name, node('span', 'study-recording-credit', recordingCredit(recording)));
-            const arrow = node('span', 'study-chevron', '→'); arrow.setAttribute('aria-hidden', 'true');
+            const arrow = outlineIcon('study-chevron', 'M5 12h14m-6-6 6 6-6 6');
             row.setAttribute('aria-label', 'Start ' + piece.piece_name + ' with ' + recordingName(recording)); row.append(info, arrow); holder.append(row);
         });
     }

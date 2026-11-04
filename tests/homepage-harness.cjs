@@ -122,6 +122,7 @@ function buildContext(sourceOverride, options = {}) {
         document: {
             getElementById: id => els[id] || allElements.find(e => e.id === id && e.isConnected) || null,
             createElement: tag => makeEl(tag),
+            createElementNS: (_, tag) => makeEl(tag),
             activeElement: { tagName: 'BODY' },
             addEventListener() {},
             body: { classList: { contains: () => false } },
