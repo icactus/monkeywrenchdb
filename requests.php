@@ -300,6 +300,6 @@ $presets = [
     <?php endif; ?>
 </main>
 <?php require __DIR__ . '/site-information.php'; ?>
-<script src="js/contact-email.js?v=1" defer></script>
+<script src="js/contact-email.js?v=2" defer></script>
 </body>
 </html>

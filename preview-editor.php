@@ -508,7 +508,7 @@ $is_share_link = isset($_GET['share']);
                     </tr>
                 </table>
                 <p class="help-note">This project is a work in progress. Want to help? Email
-                    <b><a href="#contact-email" data-contact-email>icactusmusic AT gmail DOT com</a></b>
+                    <b><a href="#contact-email" data-contact-email>monkeywrenchdb AT gmail DOT com</a></b>
                 </p>
             </div>
         </div>
@@ -530,7 +530,7 @@ $is_share_link = isset($_GET['share']);
                     through at 1–2x speed.</p>
                 <p>Without the help of volunteers, this database will not be able to scale. If you find this project
                     valuable and want to contribute, I'd love to hear from you:
-                    <b><a href="#contact-email" data-contact-email>icactusmusic AT gmail DOT com</a></b></p>
+                    <b><a href="#contact-email" data-contact-email>monkeywrenchdb AT gmail DOT com</a></b></p>
             </div>
         </div>
     </section3>
@@ -684,7 +684,7 @@ $is_share_link = isset($_GET['share']);
     </button>
     <script src="js/history-manager.js?v=4"></script>
     <script src="js/favorites-manager.js?v=1"></script>
-    <script src="js/contact-email.js?v=1" defer></script>
+    <script src="js/contact-email.js?v=2" defer></script>
     <script src="js/part-jumps.js?v=3"></script>
     <script src="stripped-synpdf.js?v=345"></script>
     <script src="stripped-synpdf-extras.js?v=276"></script>

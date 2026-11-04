@@ -80,7 +80,7 @@ $leaderboardEscape = static fn($value) => htmlspecialchars((string) $value, ENT_
             </tr>
         </table>
         <p class="help-note">This project is a work in progress. Want to help? Email
-            <b><a href="#contact-email" data-contact-email>icactusmusic AT gmail DOT com</a></b>
+            <b><a href="#contact-email" data-contact-email>monkeywrenchdb AT gmail DOT com</a></b>
         </p>
     </div>
 </div>
@@ -102,6 +102,6 @@ $leaderboardEscape = static fn($value) => htmlspecialchars((string) $value, ENT_
             through at 1–2x speed.</p>
         <p>Without the help of volunteers, this database will not be able to scale. If you find this project
             valuable and want to contribute, I'd love to hear from you:
-            <b><a href="#contact-email" data-contact-email>icactusmusic AT gmail DOT com</a></b></p>
+            <b><a href="#contact-email" data-contact-email>monkeywrenchdb AT gmail DOT com</a></b></p>
     </div>
 </div>
