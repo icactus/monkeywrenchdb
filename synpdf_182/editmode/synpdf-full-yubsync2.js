@@ -2199,12 +2199,16 @@ function keyDown$$module$synpdf(a) {
                 msc_wz$$module$synpdf.keySync('b');
                 break;
             case ".":
-            case ">":
                 a.ctrlKey ? msc_wz$$module$synpdf.changeOffset(gFac$$module$synpdf) : msc_wz$$module$synpdf.changeTimesKeyb(gFac$$module$synpdf);
                 break;
             case ",":
-            case "<":
                 a.ctrlKey ? msc_wz$$module$synpdf.changeOffset(-gFac$$module$synpdf) : msc_wz$$module$synpdf.changeTimesKeyb(-gFac$$module$synpdf);
+                break;
+            case ">":
+                msc_wz$$module$synpdf.changeOffset(gFac$$module$synpdf);
+                break;
+            case "<":
+                msc_wz$$module$synpdf.changeOffset(-gFac$$module$synpdf);
                 break;
             // case "w":
             //     saveTiming$$module$synpdf();

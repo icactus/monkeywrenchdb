@@ -31,7 +31,7 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=61"></script>
+    <script src="synpdf-full-yubsync2.js?v=62"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=6" />
     <style>
@@ -404,13 +404,48 @@
             border: grey double 5px;
         }
 
-        .helptbl td:nth-child(3) {
-            border-left: thin black solid
+        #help {
+            box-sizing: border-box;
+            width: min(90%, 760px);
+            padding: 20px;
+            font: 15px/1.5 system-ui, sans-serif;
         }
 
-        .helptbl td:first-child,
-        .helptbl td:nth-child(3) {
+        #help h2 {
+            margin: 0 0 8px;
+        }
+
+        #help h3 {
+            margin: 20px 0 8px;
+        }
+
+        #help li + li {
+            margin-top: 8px;
+        }
+
+        #help .helptbl {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #help .helptbl td {
+            padding: 7px 8px;
+            border-bottom: 1px solid #ddd;
+            vertical-align: top;
+        }
+
+        #help .helptbl td:first-child {
             text-align: center;
+            width: 30%;
+        }
+
+        #help summary {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #help #closehelp {
+            margin-top: 16px;
         }
 
         #help.showhlp {
@@ -952,91 +987,83 @@
     <div id="render" class="dlog" style="left:5%; padding:0.5em;"></div>
     <div id="noklik"></div>
     <div id="help">
-        <span>You can use the following keys:</span>
+        <h2>How to sync a recording</h2>
+        <p>Match the score to the recording by pressing <b>B</b> as you follow the music.</p>
+        <p>Use speakers or wired headphones. Wireless headphones can add a delay and affect your timings.</p>
+
+        <ol>
+            <li><b>Load the score.</b> In Step 1, choose the piece and part, then click <b>Load</b>.
+                A full score or piano score usually works best.</li>
+            <li><b>Load the recording.</b> In Step 2, enter the YouTube video ID, click <b>Load</b>,
+                then click the video to start playback. Syncing is ready automatically after the score loads.</li>
+            <li><b>Follow the measures.</b> Press <b>B</b> a little before the first beat of each movement.
+                For the remaining measures, press <b>B</b> on the first beat of each measure.
+                Each press records a timing and advances the highlight.</li>
+            <li><b>Redo a mistake.</b> Press <b>Backspace</b> to go back one measure and erase its timing
+                and any following timings. Continue with <b>B</b> to record them again.</li>
+            <li><b>Mark the conclusion.</b> Make the final <b>B</b> press a few seconds after the final cutoff
+                of the piece. This ends syncing and returns you to the first measure for review.</li>
+            <li><b>Review and submit.</b> Play back the recording to check the alignment, then enter the recording
+                details in Step 3 and click <b>Submit</b>. Leave any unknown details blank.</li>
+        </ol>
+
+        <h3>Essential controls</h3>
         <table class="helptbl">
             <tr>
-                <td><b>spacebar</b> or tap<br>in left margin</td>
-                <td>pause / continue</td>
-                <td><b>+</b>/<b>-</b></td>
-                <td>increase / decrease speed</td>
+                <td><b>B</b></td>
+                <td>Record a timing and advance to the next measure while syncing.
+                    You can also tap the score<?php if ($canStampWithDownArrow): ?> or press <b>Down Arrow</b><?php endif; ?>.</td>
             </tr>
             <tr>
-                <td><b>left arrow</b></td>
-                <td>go to previous measure</td>
-                <td><b>h</b></td>
-                <td>toggle help</td>
+                <td><b>Space</b></td>
+                <td>Pause or resume playback.</td>
             </tr>
             <tr>
+                <td><b>Backspace</b></td>
+                <td>Go back one measure and erase its timing and any following timings.</td>
             </tr>
             <tr>
-                <td><b>right arrow</b></td>
-                <td>go to next measure</td>
+                <td><b>Left / Right Arrow</b></td>
+                <td>Go to the previous or next recorded measure.</td>
+            </tr>
+            <tr>
+                <td><b>+</b> / <b>&minus;</b></td>
+                <td>Increase or decrease playback speed.</td>
+            </tr>
+            <tr>
+                <td><b>H</b></td>
+                <td>Open or close Help.</td>
             </tr>
         </table>
 
-        In addition, when sync is enabled:
+        <h3>Fine-tune timing</h3>
+        <p>Pause playback while syncing to make precise adjustments. The current measure's duration and the
+            overall offset are shown beside the Help button.</p>
         <table class="helptbl">
             <tr>
-                <td><b>b / B</b><?php if ($canStampWithDownArrow): ?> or <b>down arrow</b><?php endif; ?> or tap in score</td>
-                <td>record <a href="https://wim.vree.org/js2/readme.html#sync" target="_blank">sync point</a>,
-                    move to the next measure</td>
-                <td><b>long</b> click or <b>shift</b> click in measure</td>
-                <td>add a <a href="https://wim.vree.org/js2/readme.html#repeats" target="_blank">repeat mark</a> to the
-                    measure</td>
+                <td><b>,</b></td>
+                <td>Shorten the current highlighted measure by 0.1 seconds.</td>
             </tr>
             <tr>
-                <td><b>backspace</b></td>
-                <td>backup one measure: erase current sync point (and all following, if any)</td>
-                <td><b>g</b></td>
-                <td>remove a pair of <a href="https://wim.vree.org/js2/readme.html#repeats" target="_blank">repeat
-                        marks</a></td>
+                <td><b>.</b></td>
+                <td>Lengthen the current highlighted measure by 0.1 seconds.</td>
             </tr>
             <tr>
-                <td><b>, / &lt;</b></td>
-                <td>shorten the duration of the current measure by 0.1 seconds</td>
-                <td><b>ctrl + ,</b></td>
-                <td>shorten the initial offset by 0.1 seconds (playback time in the youtube video where the first
-                    measure starts)</td>
+                <td><b>&lt;</b> / <b>&gt;</b></td>
+                <td>Move the start of the first measure earlier / later by 0.1 seconds (the overall offset).
+                    Hold <b>Shift</b> and press <b>,</b> / <b>.</b> on a US keyboard.
+                    <b>Ctrl + ,</b> / <b>Ctrl + .</b> also work.</td>
             </tr>
-            <tr>
-                <td><b>. / &gt;</b></td>
-                <td>lengthen the duration of the current measure by 0.1 seconds</td>
-                <td><b>ctrl + .</b></td>
-                <td>lengthen the initial offset by 0.1 seconds</td>
-            </tr>
-            <!-- No save timing needed <tr>
-<td><b>w</b> or<br />save&nbsp;button</td>
-<td colspan="3">save timings, pdf data and other settings to a file (see
-<a href="readme.html#preload" target="_blank">preload file</a>).\n
-Also works with dropbox. You can load a preload file with the score file button.
-</td>
-</tr> -->
         </table>
-        Sync basics:
-        <ul>
-            <li>**DO NOT sync using wireless headphones as it will cause a delay. Wired headphones are fine.</li>
-            <li>This program requires you to manually sync the first beat of each measure to the youtube audio by
-                pressing 'b'.</li>
-            <li>Each time you press 'b', the program advances to the next measure. </li>
-            <li>If you make a mistake you can press Backspace to try again or manually correct the length of the
-                currently highlighted measure with the ',' and '.' keys. Manual correction is mostly useful between
-                movements for adding an extra second before the first beat. Otherwise, syncing should always happen
-                right on the start of the measure.</li>
-            <li>The duration of the current measure and the initial offset are shown in the top right corner of the
-                display. You can precisely adjust these numbers with the keyboard sync commands (preferably when media
-                is paused).</li>
-        </ul>
-        Starting Sync:
-        <ul>
-            <li>Load the score to prepare a new sync. After loading a youtube video in step 2, click the youtube
-                player to begin.</li>
-            <li>Press 'b' a second or so before the first beat to begin syncing and then press 'b' again for each
-                barline. At the final measure, wait several seconds longer than the actual length (if the video allows)
-                and then press 'b' for the final time. This will take you back to the first measure and exit sync mode.
-            </li>
-            <li>Enter the recording info in Step 4, leaving fields blank if necessary.</li>
-            <br />
-            <button id="closehelp">Close</button>
+        <p>Use <b>,</b> and <b>.</b> after the following measure's timing has been recorded.
+            These adjustments are useful between movements; use <b>Backspace</b> to redo a mistimed press.</p>
+
+        <details>
+            <summary>Repeats</summary>
+            <p><b>Shift-click</b> or <b>long-click</b> a measure to add a repeat mark.
+                Press <b>G</b> to remove the most recent pair of repeat marks.</p>
+        </details>
+        <button type="button" id="closehelp">Close Help</button>
     </div>
     <script src="yubsync-tools.js?v=87"></script>
     <script src="yubsync-live-edit.js?v=5"></script>

@@ -97,8 +97,8 @@ test('C and correction-mode keys cannot record or alter timestamps', () => {
     assert.equal(h.seeks.length, 0);
 });
 
-test('timing and Ctrl-offset adjustments work for comma, period and their shifted keys', () => {
-    for (const [key, change] of [[',', -0.1], ['<', -0.1], ['.', 0.1], ['>', 0.1]]) {
+test('comma and period change the highlighted measure duration and retain Ctrl-offset shortcuts', () => {
+    for (const [key, change] of [[',', -0.1], ['.', 0.1]]) {
         const h = setup();
         h.key(key);
         assert.equal(h.c.deTijden$$module$synpdf[2].t, 4 + change);
@@ -106,6 +106,21 @@ test('timing and Ctrl-offset adjustments work for comma, period and their shifte
         const offset = setup();
         offset.key(key, { ctrlKey: true });
         assert.equal(offset.c.offset$$module$synpdf, 1 + change);
+    }
+});
+
+test('angle brackets move only the first measure start, preserving later absolute timings', () => {
+    for (const [key, change] of [['<', -0.1], ['>', 0.1]]) {
+        const h = setup();
+        const before = h.snapshot();
+        h.key(key, { shiftKey: true });
+        assert.equal(h.c.offset$$module$synpdf, before.offset + change);
+        assert.equal(h.c.deTijden$$module$synpdf[0].t, 0);
+        for (let i = 1; i < before.times.length; i++) {
+            assert.equal(h.c.deTijden$$module$synpdf[i].t + h.c.offset$$module$synpdf,
+                before.times[i].t + before.offset);
+        }
+        assert.equal(h.c.lastSynced$$module$synpdf, before.lastSynced);
     }
 });
 
