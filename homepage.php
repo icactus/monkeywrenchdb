@@ -5,7 +5,8 @@
             <div class="study-search-controls">
                 <div><label for="study-search">Find a piece</label>
                     <div class="study-search-wrap">
-                        <div class="study-input-box"><span aria-hidden="true">⌕</span>
+                        <div class="study-input-box">
+                            <svg class="study-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
                             <input id="study-search" type="search" placeholder="Composer, piece, or instrument…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="study-suggestions">
                             <button id="study-clear-search" type="button" aria-label="Clear search" hidden>×</button>
                             <kbd title="Press / to search" aria-hidden="true">/</kbd>
