@@ -943,7 +943,7 @@ Wijzer$$module$synpdf.prototype.setOffsetX = function () {
     if (window.__restoreTime != null) window.__restoreTime = null;
 };
 
-Wijzer$$module$synpdf.prototype.time2x = function (scoreTime) {
+Wijzer$$module$synpdf.prototype.time2x = function (scoreTime, isPlaybackUpdate) {
     var timelineIndex, timelineEntry;
     this.cursorTime = scoreTime;
 
@@ -986,9 +986,16 @@ Wijzer$$module$synpdf.prototype.time2x = function (scoreTime) {
             if (this.highlightedMeasure === measureBox && measureX === xcurprev$$module$synpdf && measureY === ycurprev$$module$synpdf) {
                 return;
             }
+            var previousMeasureBox = this.highlightedMeasure;
             this.highlightedMeasure = measureBox;
 
             var distanceToScrollY = measureScrollY - scrollYCurPrev$$module$synpdf;
+            // Playback leaves manual vertical scrolling alone until the next
+            // system. Explicit seeks/navigation still recover offscreen boxes.
+            // Use the system anchor, since sloped boxes vary in Y within a row.
+            var followVertically = !isPlaybackUpdate || !previousMeasureBox ||
+                distanceToScrollY !== 0 || (previousMeasureBox.page ?? 1) !== (measureBox.page ?? 1) ||
+                twoUpInitialScrollPending;
             var distanceToScrollX = measureX - xcurprev$$module$synpdf; // Track X change
             xcurprev$$module$synpdf = measureX;
             ycurprev$$module$synpdf = measureY;
@@ -1077,14 +1084,14 @@ Wijzer$$module$synpdf.prototype.time2x = function (scoreTime) {
             const inTwoUp = notationEl.classList.contains('two-up');
 
             if (!inTwoUp) {
-                // Check visibility as well as row changes: a previous animation or
-                // manual scroll may have left this row outside the viewport.
-                if (distanceToScrollY !== 0 || measureY < currentScrollTop ||
-                    measureY + Math.min(measureHeight, viewportHeight) > currentScrollTop + viewportHeight) {
+                // Navigation also checks visibility in case a previous animation
+                // or manual scroll left the destination outside the viewport.
+                if (followVertically && (distanceToScrollY !== 0 || measureY < currentScrollTop ||
+                    measureY + Math.min(measureHeight, viewportHeight) > currentScrollTop + viewportHeight)) {
                     targetScrollTop = measureScrollY - this.tmargin;
                     useInstantScroll ||= Math.abs(distanceToScrollY) > 500;
                 }
-            } else {
+            } else if (followVertically) {
                 const curPage = measureBox.page ?? 1;
                 // 1-based spreads are (1|2), (3|4), ... . Start from the
                 // spread anchor, then keep the selected measure visible at zoom.
@@ -1105,8 +1112,10 @@ Wijzer$$module$synpdf.prototype.time2x = function (scoreTime) {
 
             // Keep the whole shaded box in view when it fits. For systems
             // larger than the viewport, keep their top/left edge visible.
-            targetScrollTop = Math.max(0, Math.min(measureY,
-                Math.max(targetScrollTop, measureY + Math.min(measureHeight, viewportHeight) - viewportHeight)));
+            if (followVertically) {
+                targetScrollTop = Math.max(0, Math.min(measureY,
+                    Math.max(targetScrollTop, measureY + Math.min(measureHeight, viewportHeight) - viewportHeight)));
+            }
             if (measureLeft < targetScrollLeft + marginX) {
                 targetScrollLeft = Math.max(0, measureLeft - marginX);
             } else if (measureRight > targetScrollLeft + viewportWidth - marginX) {
@@ -2404,7 +2413,7 @@ function tick$$module$synpdf(frameCount) {
         } else if (frameCount && 0 != frameCount % 10) {
             // Skip update to throttle calls
         } else {
-            msc_wz$$module$synpdf.time2x(scoreTime);
+            msc_wz$$module$synpdf.time2x(scoreTime, true);
         }
         scrollFlag = 0;
     }

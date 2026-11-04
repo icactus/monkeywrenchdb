@@ -151,3 +151,67 @@ test('two-up redraws the highlight on the other page even at identical local coo
     h.finish();
     h.visible();
 });
+
+for (const twoUp of [false, true]) {
+    for (const manualTop of [250, 800]) {
+        test(`playback preserves a manual vertical scroll to ${manualTop} until the next system in ${twoUp ? 'two-up' : 'one-up'}`, () => {
+            const measures = [
+                // Sloped, full-score systems: box tops vary within one row.
+                { x: 100, y: 500, scrollY: 500, w: 200, h: 700, page: 1 },
+                { x: 300, y: 505, scrollY: 500, w: 200, h: 700, page: 1 },
+                { x: 500, y: 510, scrollY: 500, w: 200, h: 700, page: 1 },
+                { x: 100, y: 1400, scrollY: 1400, w: 200, h: 100, page: 1 },
+                { x: 300, y: 1400, scrollY: 1400, w: 200, h: 100, page: 1 }
+            ];
+            const h = setup({ twoUp, measures });
+            h.cursor.time2x(0);
+            h.finish();
+            h.scroller.style['scroll-behavior'] = 'auto';
+            h.scroller.scrollTop = manualTop;
+            h.calls.length = 0;
+            for (const time of [2, 2.5, 4, 4.5]) {
+                h.context.elmed$$module$synpdf.currentTime = time;
+                h.context.tick$$module$synpdf();
+                h.finish();
+                assert.equal(h.scroller.scrollTop, manualTop);
+            }
+            assert.equal(h.highlight.style.left, '500px', 'the highlight still advances');
+            assert.equal(h.calls.length, 0);
+
+            h.context.elmed$$module$synpdf.currentTime = 6;
+            h.context.tick$$module$synpdf();
+            h.finish();
+            h.visible();
+        });
+    }
+}
+
+test('playback still follows horizontally across a zoomed system without resetting vertical scroll', () => {
+    const h = setup();
+    h.cursor.time2x(0);
+    h.finish();
+    h.scroller.style['scroll-behavior'] = 'auto';
+    h.scroller.scrollTop = 650;
+    h.context.elmed$$module$synpdf.currentTime = 2;
+    h.context.tick$$module$synpdf();
+    h.finish();
+    assert.equal(h.scroller.scrollTop, 650);
+    assert.ok(h.scroller.scrollLeft > 0, 'the next measure remains reachable horizontally');
+});
+
+test('playback follows a page change even when two-up systems have identical vertical anchors', () => {
+    const measures = [
+        { x: 100, y: 500, scrollY: 500, w: 300, h: 100, page: 1 },
+        { x: 100, y: 500, scrollY: 500, w: 300, h: 100, page: 2 },
+        { x: 100, y: 900, scrollY: 900, w: 300, h: 100, page: 2 }
+    ];
+    const h = setup({ twoUp: true, measures });
+    h.cursor.time2x(0);
+    h.finish();
+    h.scroller.style['scroll-behavior'] = 'auto';
+    h.scroller.scrollTop = 1000;
+    h.context.elmed$$module$synpdf.currentTime = 2;
+    h.context.tick$$module$synpdf();
+    h.finish();
+    h.visible();
+});
