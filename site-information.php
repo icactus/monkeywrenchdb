@@ -18,7 +18,7 @@ $leaderboardEscape = static fn($value) => htmlspecialchars((string) $value, ENT_
         <button type="button" class="modal-close" id="leaderboard-close" aria-label="Close leaderboard" autofocus>&times;</button>
     </div>
     <div class="modal-content">
-        <p id="leaderboard-description">All-time contributions. One point per measure synced, including repeats.</p>
+        <p id="leaderboard-description">All-time contributions. One point per measure synced.</p>
         <p id="leaderboard-status" role="status" aria-live="polite" <?= $leaderboardRows ? 'hidden' : '' ?>><?= $leaderboardEscape($leaderboardError ?: 'No synced measures have been credited yet.') ?></p>
         <button type="button" id="leaderboard-retry" <?= $leaderboardError ? '' : 'hidden' ?>>Try again</button>
         <table class="leaderboard-table" id="leaderboard-table" aria-label="All-time contribution leaderboard" <?= $leaderboardRows ? '' : 'hidden' ?>>
