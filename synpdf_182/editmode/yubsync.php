@@ -844,6 +844,12 @@
                         <div>
                             <h2>2. Recording</h2>
                         </div>
+                        <div>
+                            <label for="recordingsAlready">Check Already Synced Recordings</label>
+                            <select class="dropdown-menu" id="recordingsAlready">
+                                <option value="">-- Existing Recordings --</option>
+                            </select>
+                        </div>
                         <div id="yubfile">
                             <label id="yvdlbl">
                                 <div class="label-wrapper">Youtube id to sync:
@@ -872,15 +878,6 @@
                                             tabindex="4" /></label>
                                 </div>
                             </label>
-                        </div>
-                        <div>
-                            <label for="recordingsAlready">Check Already Synced Recordings</label>
-                            <select class="dropdown-menu" id="recordingsAlready">
-                                <option value="">-- Existing Recordings --</option>
-                            </select>
-                        </div>
-                        <div>
-                            <p>Sync sheet music to audio (Press 'h' for full help info).</p>
                         </div>
                     </div>
                 </div>
