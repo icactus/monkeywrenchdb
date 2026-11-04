@@ -26,8 +26,12 @@
         </div>
         <p id="study-message" role="status" hidden></p>
         <section id="study-library-panel" role="tabpanel" aria-labelledby="study-library-tab">
-            <button id="study-reset" class="study-text-button" hidden>Clear filters</button>
             <div id="study-categories" class="study-categories" role="group" aria-label="Filter by category" hidden></div>
+            <div class="study-results-head">
+                <h2 id="study-results-count" role="status" aria-live="polite" aria-atomic="true"></h2>
+                <button id="study-reset" class="study-text-button" hidden>Clear filters</button>
+                <span class="study-sort-label">Composer A–Z</span>
+            </div>
             <div id="study-results" class="study-results"></div>
         </section>
         <section id="study-history-panel" role="tabpanel" aria-labelledby="study-history-tab" hidden><div id="study-history-list" class="study-results"></div></section>

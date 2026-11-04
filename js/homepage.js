@@ -187,12 +187,16 @@
     }
     function rowButton(piece, action) {
         const title = button('', 'study-title', action);
+        title.setAttribute('aria-label', 'Open ' + piece.composerLabel + ' — ' + piece.piece_name);
         const label = node('span', 'study-row-label', '');
         const composer = node('span', 'study-composer', piece.composerLabel);
         composer.title = piece.composer;
-        label.append(composer, node('span', 'study-title-divider', ' — '), node('span', 'study-work-name', piece.piece_name));
+        const work = node('span', 'study-work', '');
+        work.append(node('span', 'study-work-name', piece.piece_name));
+        label.append(composer, work);
         const chevron = node('span', 'study-chevron', '›'); chevron.setAttribute('aria-hidden', 'true');
-        title.append(label, chevron);
+        const count = Number(piece.recording_count) || 0;
+        title.append(label, node('span', 'study-recording-count', count + (count === 1 ? ' recording' : ' recordings')), chevron);
         return title;
     }
     function sessionRow(piece, item) {
@@ -206,7 +210,7 @@
                 else openSaved(piece);
             } catch (error) { message(error.message); }
         });
-        title.querySelector('.study-row-label').append(node('span', 'study-history-info', [part ? partLabel(part) : '', decode(item.conductor_name), decode(item.ensemble_name), item.viewed_at ? 'Opened ' + item.viewed_at : ''].filter(Boolean).join(' · ')));
+        title.querySelector('.study-work').append(node('span', 'study-history-info', [part ? partLabel(part) : '', decode(item.conductor_name), decode(item.ensemble_name), item.viewed_at ? 'Opened ' + item.viewed_at : ''].filter(Boolean).join(' · ')));
         title.setAttribute('aria-label', 'Reopen ' + piece.composerLabel + ' — ' + piece.piece_name);
         row.append(title); return row;
     }
@@ -286,8 +290,8 @@
         });
         if (!savedView) { title.id = 'study-title-' + piece.piece_id; title.setAttribute('aria-expanded', String(expanded)); if (expanded) title.setAttribute('aria-controls', 'study-chooser-' + piece.piece_id); }
         const part = preferredPart(piece);
-        if (state.instrument && part?.is_score) title.querySelector('.study-row-label').append(node('span', 'study-material-note', scoreLabel(part) + ' only'));
-        h3.append(title); summary.append(star(piece), h3); row.append(summary);
+        if (state.instrument && part?.is_score) title.querySelector('.study-work').append(node('span', 'study-material-note', scoreLabel(part) + ' only'));
+        h3.append(title); summary.append(h3, star(piece)); row.append(summary);
         if (expanded) row.append(chooser(piece)); return row;
     }
     const byComposer = (a, b) => a.composer_last.localeCompare(b.composer_last, undefined, { numeric: true }) || a.piece_name.localeCompare(b.piece_name, undefined, { numeric: true });
@@ -295,14 +299,12 @@
         const words = normalize(search.value).trim().split(/\s+/).filter(Boolean);
         return { words, scoped: pieces.filter(p => preferredPart(p) && words.every(word => p.search.includes(word))) };
     }
-    function sortPieces(a, b) {
-        return (state.instrument ? Number(b.parts.some(p => p.instrument_name === state.instrument && !p.is_score)) - Number(a.parts.some(p => p.instrument_name === state.instrument && !p.is_score)) : 0) || byComposer(a, b);
-    }
     function renderLibrary() {
         const { scoped } = scopePieces();
-        const matches = scoped.filter(p => !state.category || p.category_name === state.category).sort(sortPieces);
+        const matches = scoped.filter(p => !state.category || p.category_name === state.category).sort(byComposer);
         if (!matches.some(p => p.piece_id === state.expanded)) state.expanded = null;
         $('clear-search').hidden = !search.value; $('reset').hidden = !search.value && !state.instrument && !state.category;
+        $('results-count').textContent = matches.length + (matches.length === 1 ? ' piece' : ' pieces');
         const list = $('results'); list.replaceChildren(...matches.map(p => pieceRow(p)));
         if (!matches.length) {
             empty(list, 'No matching pieces. Try a shorter title, another composer, or another instrument.');
@@ -332,7 +334,9 @@
         // and never leave the row empty: a lone category stands alone.
         const names = categories.filter(name => counts.has(name) || name === state.category);
         const makeTab = (label, value, n) => {
-            const tab = button(label + ' (' + n + ')', 'study-category', () => setCategory(value));
+            const tab = button(label + ' ', 'study-category', () => setCategory(value));
+            tab.dataset.category = value;
+            tab.append(node('span', 'study-category-count', String(n)));
             tab.setAttribute('aria-pressed', String(state.category === value));
             tab.setAttribute('aria-label', (value === '' ? 'Show all categories' : 'Filter by ' + value) + ', ' + n + (n === 1 ? ' piece' : ' pieces'));
             return tab;

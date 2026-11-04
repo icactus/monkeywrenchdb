@@ -36,11 +36,13 @@ const FIXTURE_RECORDINGS = {
 
 function makeEl(tag) {
     const el = {
-        tag, children: [], dataset: {}, style: {}, className: '', textContent: '',
+        tag, children: [], dataset: {}, style: {}, className: '', _textContent: '',
+        get textContent() { return el._textContent + el.children.map(c => typeof c === 'object' ? c.textContent : String(c)).join(''); },
+        set textContent(value) { el._textContent = String(value); el.children.forEach(c => { if (c && typeof c === 'object') c.parent = null; }); el.children = []; },
         hidden: false, value: '', id: '', title: '', tabIndex: 0, href: '', parent: null, _l: {},
         append(...items) { items.flat().forEach(c => { if (c !== null && c !== undefined && c !== false) { el.children.push(c); if (c && typeof c === 'object') c.parent = el; } }); },
         appendChild(c) { el.append(c); return c; },
-        replaceChildren(...items) { el.children.forEach(c => { c.parent = null; }); el.children = []; el.append(...items); },
+        replaceChildren(...items) { el.textContent = ''; el.append(...items); },
         addEventListener(type, fn) { el._l[type] = fn; },
         removeEventListener() {},
         setAttribute(k, v) { el[k] = v; },
@@ -95,7 +97,7 @@ function buildContext(sourceOverride, options = {}) {
     launched = [];
     els = {};
     const staticIds = ['study-home', 'study-construction-notice', 'study-construction-dismiss', 'study-search', 'study-instrument', 'study-suggestions',
-        'study-message', 'study-results', 'notification',
+        'study-message', 'study-results', 'study-results-count', 'notification',
         'study-clear-search', 'study-reset', 'study-search-form', 'study-categories', 'recordings-dropdown',
         'study-library-panel', 'study-history-panel', 'study-favorites-panel',
         'study-library-tab', 'study-history-tab', 'study-favorites-tab',
@@ -191,7 +193,7 @@ function resetFilters() {
     els['study-instrument'].value = '';
     fire(els['study-instrument'], 'change');
     const all = findByClass(els['study-categories'], 'study-category')
-        .find(b => b.textContent === 'All' || String(b.textContent).startsWith('All ('));
+        .find(b => b.dataset.category === '');
     if (all && all['aria-pressed'] !== 'true') fire(all, 'click');
 }
 
