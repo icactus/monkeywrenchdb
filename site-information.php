@@ -24,7 +24,7 @@ $leaderboardEscape = static fn($value) => htmlspecialchars((string) $value, ENT_
         <table class="leaderboard-table" id="leaderboard-table" aria-label="All-time contribution leaderboard" <?= $leaderboardRows ? '' : 'hidden' ?>>
             <thead><tr>
                 <th scope="col" class="leaderboard-rank">Rank</th>
-                <th scope="col" class="leaderboard-username">Username</th>
+                <th scope="col" class="leaderboard-username">User</th>
                 <th scope="col" class="leaderboard-score">Score</th>
             </tr></thead>
             <tbody id="leaderboard-entries">
