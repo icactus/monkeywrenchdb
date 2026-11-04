@@ -400,6 +400,8 @@ function initPreload$$module$synpdf() {
 }
 
 function initGlobals$$module$synpdf() {
+    // Each new PDF must refit after its pages restore the vertical scrollbar.
+    window.__didInitialOneUpFit = false;
     offset$$module$synpdf = offset_js$$module$synpdf || 0; // need this =offsetjs || part otherwise offset stays 0 on instrument swap
     pdfDoc$$module$synpdf = {};
     jpgData$$module$synpdf = pdfData$$module$synpdf = null;
