@@ -604,7 +604,7 @@ Wijzer$$module$synpdf.prototype.doLoopTag = function (a, b, c, d, e, f) {
             m < n ? g("atag", 3, "loopStart") : g("btag", 3, "loopEnd")
     }
 };
-Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
+Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, isNavigation) {
     var d;
     for (d = 0; d < deMaten$$module$synpdf.length; ++d) {
         var e = deMaten$$module$synpdf[d];
@@ -620,7 +620,7 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c) {
                     this.setRepeat(d);
                     break
                 }
-                if (!msc_wz$$module$synpdf.paused) {
+                if (!msc_wz$$module$synpdf.paused && !isNavigation) {
                     this.keySync(0);
                     break
                 }
@@ -695,6 +695,7 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (a, b, c) {
                 return a - b
             });
             var f = deMaten$$module$synpdf[demix$$module$synpdf];
+            if (!f) return;
             c = f.x + f.w / 2;
             for (e = 0; d[e] < f.y;) e += 1;
             if (b) {
@@ -703,7 +704,8 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (a, b, c) {
                 a ? b == pageStfIx$$module$synpdf.length && (b = 0) : (b -= 2, 0 > b && (b = pageStfIx$$module$synpdf.length - 1));
                 a = d[pageStfIx$$module$synpdf[b]] - 5
             } else a ? (a = d[e + 1] - 5, e == d.length - 1 && (a = d[0] - 5)) : (0 == e && (e = d.length), a = d[e - 1]);
-            this.x2time(c, a, !1)
+            // Row/page navigation must never take the click-to-record path.
+            this.x2time(c, a, !1, true)
         }
     }
 };
@@ -2126,7 +2128,13 @@ function keyDown$$module$synpdf(a) {
             break;
         case "ArrowDown":
         case "Down":
-            msc_wz$$module$synpdf.goUpDown(1, 0, a);
+            if (opt$$module$synpdf.synbox && window.yubsyncCanStampWithDownArrow === true &&
+                !a.altKey && !a.ctrlKey && !a.shiftKey && !a.metaKey) {
+                a.preventDefault && a.preventDefault();
+                msc_wz$$module$synpdf.keySync('b');
+            } else {
+                msc_wz$$module$synpdf.goUpDown(1, 0, a);
+            }
             break;
         case "PageUp":
             msc_wz$$module$synpdf.goUpDown(0, 1, a);
@@ -2182,13 +2190,15 @@ function keyDown$$module$synpdf(a) {
     if (opt$$module$synpdf.synbox && msc_wz$$module$synpdf && !c) {
         switch (b) {
             case "b":
-            case "c":
-                msc_wz$$module$synpdf.keySync(b);
+            case "B":
+                msc_wz$$module$synpdf.keySync('b');
                 break;
             case ".":
+            case ">":
                 a.ctrlKey ? msc_wz$$module$synpdf.changeOffset(gFac$$module$synpdf) : msc_wz$$module$synpdf.changeTimesKeyb(gFac$$module$synpdf);
                 break;
             case ",":
+            case "<":
                 a.ctrlKey ? msc_wz$$module$synpdf.changeOffset(-gFac$$module$synpdf) : msc_wz$$module$synpdf.changeTimesKeyb(-gFac$$module$synpdf);
                 break;
             // case "w":

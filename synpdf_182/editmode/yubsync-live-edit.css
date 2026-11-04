@@ -19,6 +19,7 @@ body > section2 { flex: 1; min-height: 60vh; height: auto; }
     border: 1px solid #b6c2d2; border-radius: 5px 5px 0 0;
 }
 #yubsync-edit-toolbar button { padding: 6px 8px; cursor: pointer; background: #fff; color: #162237; border: 1px solid #9aa9bb; }
+#yubsync-edit-toolbar[hidden] { display: none; }
 #yubsync-edit-toolbar button:disabled { cursor: default; opacity: .5; }
 #yubsync-edit-toolbar button[aria-pressed="true"] { background: #194f9a; color: white; }
 #yubsync-edit-toolbar kbd { font: inherit; font-size: .85em; border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; }

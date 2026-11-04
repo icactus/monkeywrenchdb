@@ -24,13 +24,16 @@
     if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
         die("<h1>Access Denied</h1><p>You must be an Administrator to access this page.</p><p><a href='/'>Go Home</a></p>");
     }
+    $canStampWithDownArrow = (int) ($_SESSION['user_id'] ?? 0)
+        === (defined('MW_SUPER_ADMIN_USER_ID') ? MW_SUPER_ADMIN_USER_ID : 1);
     ?>
+    <script>window.yubsyncCanStampWithDownArrow = <?= json_encode($canStampWithDownArrow) ?>;</script>
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=59"></script>
+    <script src="synpdf-full-yubsync2.js?v=60"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
-    <link rel="stylesheet" href="yubsync-live-edit.css?v=5" />
+    <link rel="stylesheet" href="yubsync-live-edit.css?v=6" />
     <style>
         html {
             width: 100%;
@@ -784,7 +787,8 @@
         <input id="knop" type="button" value="play" style="display: none;">
         <div id="database-menus-wrapper">
             <div id="database-menus">
-                <div id="yubsync-edit-toolbar" role="toolbar" aria-label="Score corrections">
+                <!-- Keep correction controls dormant while retaining saved-progress support. -->
+                <div id="yubsync-edit-toolbar" role="toolbar" aria-label="Score corrections" hidden>
                     <span>Score corrections</span>
                     <button type="button" data-yub-edit="q" title="Add or remove a barline (Q)" aria-pressed="false">Barlines <kbd>Q</kbd></button>
                     <button type="button" data-yub-edit="w" title="Draw a staff: click two opposite corners (W)" aria-pressed="false">Draw staff <kbd>W</kbd></button>
@@ -977,7 +981,7 @@
         In addition, when sync is enabled:
         <table class="helptbl">
             <tr>
-                <td><b>b</b> or tap in score</td>
+                <td><b>b / B</b><?php if ($canStampWithDownArrow): ?> or <b>down arrow</b><?php endif; ?> or tap in score</td>
                 <td>record <a href="https://wim.vree.org/js2/readme.html#sync" target="_blank">sync point</a>,
                     move to the next measure</td>
                 <td><b>long</b> click or <b>shift</b> click in measure</td>
@@ -992,14 +996,14 @@
                         marks</a></td>
             </tr>
             <tr>
-                <td><b>,</b></td>
+                <td><b>, / &lt;</b></td>
                 <td>shorten the duration of the current measure by 0.1 seconds</td>
                 <td><b>ctrl + ,</b></td>
                 <td>shorten the initial offset by 0.1 seconds (playback time in the youtube video where the first
                     measure starts)</td>
             </tr>
             <tr>
-                <td><b>.</b></td>
+                <td><b>. / &gt;</b></td>
                 <td>lengthen the duration of the current measure by 0.1 seconds</td>
                 <td><b>ctrl + .</b></td>
                 <td>lengthen the initial offset by 0.1 seconds</td>
@@ -1039,7 +1043,7 @@ Also works with dropbox. You can load a preload file with the score file button.
             <button id="closehelp">Close</button>
     </div>
     <script src="yubsync-tools.js?v=86"></script>
-    <script src="yubsync-live-edit.js?v=4"></script>
+    <script src="yubsync-live-edit.js?v=5"></script>
     <script src="yubsync-progress.js?v=1"></script>
 </body>
 

@@ -153,6 +153,7 @@
         };
     }
     function begin(nextMode) {
+        if (toolbar.hidden) return;
         if (busy || session?.saved) return;
         if (!session) {
             const context = window.yubsyncMetricContext;
@@ -328,6 +329,7 @@
     function block(event) { event.preventDefault(); event.stopImmediatePropagation(); }
     function field(target) { return target?.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, select, [contenteditable]:not([contenteditable="false"])'); }
     document.addEventListener('keydown', event => {
+        if (toolbar.hidden) return;
         if (field(event.target) || event.isComposing || event.keyCode === 229 || event.ctrlKey || event.metaKey || event.altKey) return;
         const key = event.key.toLowerCase();
         if ('qwsy'.includes(key) && key.length === 1) { block(event); if (!event.repeat) begin(key); return; }
