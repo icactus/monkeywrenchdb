@@ -168,7 +168,7 @@ try {
     file_put_contents("$fixture/phpfiles/static_recordings.php", '<?php function writePieceRecordingsJson($db, $id) { return "fixture"; }');
     file_put_contents("$fixture/router.php", '<?php require __DIR__ . "/phpfiles/config.php"; if ($_SERVER["REQUEST_URI"] === "/ready") { echo "ready"; return; } ' .
         'if (str_starts_with($_SERVER["REQUEST_URI"], "/leaderboard")) { ' .
-        '$_SESSION = str_contains($_SERVER["REQUEST_URI"], "guest") ? [] : ["user_id" => str_contains($_SERVER["REQUEST_URI"], "forged") ? 2 : 1, "user_role" => "admin"]; ' .
+        '$_SESSION = str_contains($_SERVER["REQUEST_URI"], "guest") ? [] : ["user_id" => (str_contains($_SERVER["REQUEST_URI"], "forged") || str_contains($_SERVER["REQUEST_URI"], "regular")) ? 2 : 1, "user_role" => str_contains($_SERVER["REQUEST_URI"], "regular") ? "user" : "admin"]; ' .
         'if (str_ends_with($_SERVER["REQUEST_URI"], "-markup")) { require __DIR__ . "/site-navigation.php"; require __DIR__ . "/site-information.php"; return; } ' .
         'require __DIR__ . "/leaderboard-data.php"; return; } ' .
         '$_SESSION = $_SERVER["REQUEST_URI"] === "/guest" ? [] : ["user_id" => 2]; ' .
@@ -213,16 +213,22 @@ try {
     $response = json_decode($json, true);
     check($status === 200 && $response['entries'][0] === ['rank' => 1, 'username' => 'Historical owner', 'score' => '4294967302'], 'Admin endpoint returns rank, username and exact integer score.');
     [$status, $html] = postRecording($port, 'leaderboard-markup');
-    check($status === 200 && str_contains($html, '<dialog id="leaderboard"') && str_contains($html, '>Rank</th>') && str_contains($html, '>Username</th>') && str_contains($html, '>Score</th>'), 'Shared information panels include the leaderboard popup with the requested columns.');
+    check($status === 200 && str_contains($html, '<dialog id="leaderboard"') && str_contains($html, '>Rank</th>') && str_contains($html, '>User</th>') && str_contains($html, '>Score</th>'), 'Shared information panels include the leaderboard popup with the requested columns.');
     check(str_contains($html, '4,294,967,302') && !str_contains($html, 'Loading leaderboard'), 'Cached scores are already rendered in the page before the popup opens.');
     check(str_contains($html, '&lt;svg onload=alert(1)&gt;') && !str_contains($html, '<svg onload=alert(1)>'), 'Cached usernames are escaped when embedded in page HTML.');
-    check(substr_count($html, 'href="#leaderboard"') === 2 && !str_contains($html, 'href="leaderboard.php"'), 'Desktop and mobile admin links open a popup without navigating.');
-    foreach (['leaderboard-guest', 'leaderboard-forged'] as $route) {
+    check(substr_count($html, 'href="#leaderboard"') === 2 && !str_contains($html, 'href="leaderboard.php"'), 'Desktop and mobile account links open a popup without navigating.');
+    check(preg_match_all('/href="#leaderboard"[^>]*>.*?<\/a>\s*<a href="requests\.php"/s', $html) === 2, 'Leaderboard appears directly above My Requests in both menus.');
+    foreach (['leaderboard-regular', 'leaderboard-forged'] as $route) {
         [$status, $denied] = postRecording($port, $route);
-        check($status === 403 && !isset(json_decode($denied, true)['entries']), 'Guests and regular users with stale admin session roles cannot retrieve scores.');
+        check($status === 200 && isset(json_decode($denied, true)['entries']), 'Regular signed-in users can retrieve scores regardless of a stale admin session role.');
         [$status, $denied] = postRecording($port, $route . '-markup');
-        check($status === 200 && !str_contains($denied, '<dialog id="leaderboard"') && !str_contains($denied, '4,294,967,302'), 'Unauthorized page loads never embed private leaderboard rows.');
+        check($status === 200 && str_contains($denied, '<dialog id="leaderboard"') && substr_count($denied, 'href="#leaderboard"') === 2, 'Regular users receive the leaderboard popup and both menu links.');
+        check(!str_contains($denied, 'class="nav-dropdown-label">Admin') && !str_contains($denied, 'href="requests.php?view=admin"'), 'Regular users still cannot see administrator navigation.');
     }
+    [$status, $denied] = postRecording($port, 'leaderboard-guest');
+    check($status === 403 && !isset(json_decode($denied, true)['entries']), 'Guests cannot retrieve leaderboard scores.');
+    [$status, $denied] = postRecording($port, 'leaderboard-guest-markup');
+    check($status === 200 && !str_contains($denied, '<dialog id="leaderboard"') && !str_contains($denied, '4,294,967,302'), 'Guest page loads do not embed leaderboard rows.');
     $db->query('UPDATE recording_sync_contributions SET revoked_at=UTC_TIMESTAMP()');
     [$status] = runCli([$root . '/scripts/rebuild-leaderboard-cache.php', '--config=' . $fixture . '/config.php']);
     check($status === 0 && mwSyncReadLeaderboardCache()['entries'] === [], 'Manual data changes can rebuild the file with the CLI tool.');

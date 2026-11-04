@@ -4,8 +4,8 @@ $standaloneNavigation = $standaloneNavigation ?? false;
 $navigationSignedIn = isset($_SESSION['user_id']);
 $navigationUserName = $user['name'] ?? $_SESSION['user_name'] ?? 'Account';
 $navigationIsAdmin = $standaloneNavigation ? $isAdmin : (($_SESSION['user_role'] ?? '') === 'admin');
-// Embedded private leaderboard data needs the same current-role check as its
-// former API request. Standalone account pages already checked this role.
+// Verify administrator navigation against the current database role.
+// Standalone account pages already checked this role.
 if ($navigationIsAdmin && !$standaloneNavigation) {
     $navigationDb = null;
     try {
@@ -47,10 +47,10 @@ if ($navigationIsAdmin && !$standaloneNavigation) {
                 <?= $standaloneNavigation ? '' : 'onclick="toggleHistoryMenu(); toggleMobileHeaderMenu();"' ?>>History</a>
             <a href="<?= $standaloneNavigation ? '/?account=favorites' : 'javascript:void(0)' ?>"
                 <?= $standaloneNavigation ? '' : 'onclick="toggleFavoritesMenu(); toggleMobileHeaderMenu();"' ?>>Favorites</a>
+            <a href="#leaderboard" onclick="toggleLeaderboardMenu(event); return false;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10h5v10M9 20V4h6v16M15 20v-7h5v7M3 20h18"/></svg> Leaderboard</a>
             <a href="requests.php"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> My Requests <span class="request-menu-count" hidden></span></a>
             <?php if ($navigationIsAdmin): ?>
                 <a href="requests.php?view=admin"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> Request queue <span class="request-queue-count request-menu-count" hidden></span></a>
-                <a href="#leaderboard" onclick="toggleLeaderboardMenu(event); return false;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10h5v10M9 20V4h6v16M15 20v-7h5v7M3 20h18"/></svg> Leaderboard</a>
             <?php endif; ?>
             <!-- <a href="javascript:void(0)"
                 onclick="toggleAnnotationsManager(); toggleMobileHeaderMenu();">My
@@ -128,6 +128,7 @@ if ($navigationIsAdmin && !$standaloneNavigation) {
                     </svg>
                     Favorites
                 </a>
+                <a href="#leaderboard" onclick="toggleLeaderboardMenu(event); return false;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10h5v10M9 20V4h6v16M15 20v-7h5v7M3 20h18"/></svg> Leaderboard</a>
                 <a href="requests.php"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> My Requests <span class="request-menu-count" hidden></span></a>
                 <!-- <a href="javascript:void(0)" onclick="toggleAnnotationsManager(); closeUserDropdown();">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -141,7 +142,6 @@ if ($navigationIsAdmin && !$standaloneNavigation) {
                     <div class="nav-dropdown-divider"></div>
                     <div class="nav-dropdown-label">Admin</div>
                     <a href="requests.php?view=admin"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> Request queue <span class="request-queue-count request-menu-count" hidden></span></a>
-                    <a href="#leaderboard" onclick="toggleLeaderboardMenu(event); return false;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10h5v10M9 20V4h6v16M15 20v-7h5v7M3 20h18"/></svg> Leaderboard</a>
                     <a href="/editmode/synpdf-edit-mode.php">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">

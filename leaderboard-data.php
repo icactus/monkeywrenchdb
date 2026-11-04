@@ -12,7 +12,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
 $userId = (int) ($_SESSION['user_id'] ?? 0);
 if ($userId <= 0) {
     http_response_code(403);
-    echo json_encode(['error' => 'Administrator access is required to view the leaderboard.']);
+    echo json_encode(['error' => 'Sign in to view the leaderboard.']);
     exit;
 }
 try {
@@ -22,15 +22,15 @@ try {
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     $db = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
     $db->set_charset('utf8mb4');
-    // Always check the current database role, including for stale admin sessions.
-    $stmt = $db->prepare('SELECT role FROM users WHERE id = ?');
+    // Only an existing signed-in account is required to view the leaderboard.
+    $stmt = $db->prepare('SELECT id FROM users WHERE id = ?');
     $stmt->bind_param('i', $userId);
     $stmt->execute();
     $user = $stmt->get_result()->fetch_assoc();
     $stmt->close();
-    if (($user['role'] ?? '') !== 'admin') {
+    if (!$user) {
         http_response_code(403);
-        echo json_encode(['error' => 'Administrator access is required to view the leaderboard.']);
+        echo json_encode(['error' => 'Sign in to view the leaderboard.']);
     } else {
         echo json_encode(mwSyncReadLeaderboardCache(), JSON_INVALID_UTF8_SUBSTITUTE);
     }

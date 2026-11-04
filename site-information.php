@@ -1,4 +1,4 @@
-<?php if (!empty($navigationIsAdmin)): ?>
+<?php if (!empty($navigationSignedIn)): ?>
 <?php
 $leaderboardRows = [];
 $leaderboardError = '';
