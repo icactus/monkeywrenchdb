@@ -20,6 +20,57 @@ def write_json(path, data):
     os.replace(temp, path)
 
 
+def clean_conversion_temps(folder):
+    # Only the globally locked worker owns these page-conversion scratch files.
+    for pattern in ('.mw-deskew-*.pdf', '.mw-pdf-*.pdf'):
+        for path in folder.glob(pattern):
+            path.unlink()
+
+
+def process_stage(folder, stage, source, output):
+    """Run each bounded child to completion before starting the next stage."""
+    script = 'deskew-pdf.py' if stage == 'deskew' else 'compress-pdf-low-memory.py'
+    command = [sys.executable, str(Path(__file__).with_name(script)), str(source), str(output)]
+    with (folder / '.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        item = json.loads((folder / 'item.json').read_text())
+        item.update(stage=stage, progress=0)
+        write_json(folder / 'item.json', item)
+    last = None
+    failure = None
+    with tempfile.TemporaryFile(mode='w+t') as error_log:
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=error_log, text=True)
+        try:
+            for line in process.stdout:
+                try:
+                    event = json.loads(line)
+                except ValueError:
+                    continue
+                if event['type'] == 'completed':
+                    last = event
+                if event['type'] == 'error':
+                    failure = event['message']
+                with (folder / '.lock').open('a') as lock:
+                    fcntl.flock(lock, fcntl.LOCK_EX)
+                    item = json.loads((folder / 'item.json').read_text())
+                    if event['type'] == 'started':
+                        item['pages'] = event['pages']
+                    elif event['type'] == 'page':
+                        item.update(progress=event['done'], pages=event['pages'])
+                    write_json(folder / 'item.json', item)
+            code = process.wait()
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+            process.stdout.close()
+        error_log.seek(0)
+        errors = error_log.read()[-1000:]
+    if code or not last:
+        raise RuntimeError(failure or errors[-400:] or 'Processing stopped before completing. Retry this PDF.')
+    return last
+
+
 def apply_replacements(root, folder):
     """Retire previous queue entries only once the new PDF is ready."""
     with (root / '.create.lock').open('a') as create_lock:
@@ -77,41 +128,30 @@ def run(root):
                 item.update(status='processing', progress=0, error=None)
                 write_json(folder / 'item.json', item)
             output = folder / 'optimized.pdf'
-            # This worker owns conversion exclusively. An interrupted conversion
-            # can be restarted from its retained HD original.
-            if output.exists():
-                output.unlink()
-            command = [sys.executable, str(Path(__file__).with_name('compress-pdf-low-memory.py')),
-                       str(folder / 'hd.pdf'), str(output)]
+            master = folder / 'hd.pdf'
+            corrected = folder / 'deskewed.pdf'
             try:
-                last = None
-                error_log = tempfile.TemporaryFile(mode='w+t')
-                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=error_log, text=True)
-                for line in process.stdout:
-                    try:
-                        event = json.loads(line)
-                    except ValueError:
-                        continue
-                    if event['type'] == 'completed':
-                        last = event
-                    with (folder / '.lock').open('a') as lock:
-                        fcntl.flock(lock, fcntl.LOCK_EX)
-                        item = json.loads((folder / 'item.json').read_text())
-                        if event['type'] == 'page':
-                            item.update(progress=event['done'], pages=event['pages'])
-                        elif event['type'] == 'error':
-                            item['error'] = event['message']
-                        write_json(folder / 'item.json', item)
-                code = process.wait()
-                error_log.seek(0); errors = error_log.read()[-1000:]; error_log.close()
-                if code or not last:
-                    raise RuntimeError(item.get('error') or errors[-400:] or 'Conversion stopped before completing. Retry this PDF.')
+                clean_conversion_temps(folder)
+                # Retries always start with the immutable upload, never a PDF
+                # that may already have been rotated by an interrupted attempt.
+                for path in (output, corrected):
+                    if path.exists():
+                        path.unlink()
+                skew = None
+                if item.get('fix_skew'):
+                    skew = process_stage(folder, 'deskew', master, corrected)
+                    master = corrected
+                last = process_stage(folder, 'compress', master, output)
                 with (folder / '.lock').open('a') as lock:
                     fcntl.flock(lock, fcntl.LOCK_EX)
                     item = json.loads((folder / 'item.json').read_text())
                     item.update(status='ready', pages=last['pages'], optimized_bytes=last['bytes'],
                                 compression_seconds=last['seconds'], peak_rss_kb=last['peak_rss_kb'],
                                 optimized_sha256=last['sha256'], error=None)
+                    if skew is not None:
+                        item.update(original_sha256=skew['sha256'], hd_bytes=skew['bytes'],
+                                    skew_corrected_pages=skew['corrected_pages'],
+                                    skew_corrections=skew['corrections'], deskew_seconds=skew['seconds'])
                     write_json(folder / 'item.json', item)
             except Exception as error:
                 with (folder / '.lock').open('a') as lock:
@@ -119,6 +159,8 @@ def run(root):
                     item = json.loads((folder / 'item.json').read_text())
                     item.update(status='error', error=str(error)[:500])
                     write_json(folder / 'item.json', item)
+            finally:
+                clean_conversion_temps(folder)
 
 
 if __name__ == '__main__':

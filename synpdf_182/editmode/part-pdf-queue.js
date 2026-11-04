@@ -6,6 +6,7 @@
     const form = document.getElementById('addnewmetricform');
     const pieceSelect = form.querySelector('[name=piece_id]'), partSelect = form.querySelector('[name=instrument_id]');
     const files = document.getElementById('pdf-queue-files'), upload = document.getElementById('pdf-queue-upload');
+    const fixSkew = document.getElementById('pdf-queue-fix-skew');
     const uploads = document.getElementById('pdf-queue-uploads');
     const clearFinished = document.getElementById('pdf-queue-clear-finished');
     const uploadRows = new Set();
@@ -80,19 +81,31 @@
             ? { piece_id: piece, instrument_id: part } : null;
     }
     function chooseMissing(jobs) {
-        const missing = jobs.filter(job => !job.details);
-        if (!missing.length) return Promise.resolve();
+        const eligible = part => ['4', '5'].includes(String(part));
+        const configurable = jobs.filter(job => !job.details || eligible(job.details.instrument_id));
+        if (!configurable.length) return Promise.resolve();
         return new Promise((resolve, reject) => {
             const dialog = document.createElement('dialog'); dialog.id = 'pdf-queue-assignment';
-            const heading = document.createElement('h2'); heading.textContent = 'Choose the piece and part'; dialog.append(heading);
-            const text = document.createElement('p'); text.textContent = 'These filenames do not match a known piece-part ID. The other PDFs were matched automatically.'; dialog.append(text);
-            const controls = missing.map(job => {
+            const heading = document.createElement('h2'); heading.textContent = 'Confirm PDF parts'; dialog.append(heading);
+            const text = document.createElement('p'); text.textContent = 'Check the piece and instrument. If cello and bass share this part, select Combined cello/bass part to save both from the same barline work.'; dialog.append(text);
+            const controls = configurable.map(job => {
                 const row = document.createElement('div'); row.className = 'pdf-assignment-row';
                 const name = document.createElement('strong'); name.textContent = job.file.name; row.append(name);
                 const piece = pieceSelect.cloneNode(true), part = partSelect.cloneNode(true);
-                piece.removeAttribute('id'); part.removeAttribute('id'); piece.value = part.value = '';
+                piece.removeAttribute('id'); part.removeAttribute('id');
+                piece.value = String(job.details?.piece_id || ''); part.value = String(job.details?.instrument_id || '');
                 piece.setAttribute('aria-label', `Piece for ${job.file.name}`); part.setAttribute('aria-label', `Part for ${job.file.name}`);
-                row.append(piece, part); dialog.append(row); return { job, piece, part };
+                const combinedLabel = document.createElement('label'), combined = document.createElement('input');
+                combined.type = 'checkbox'; combined.checked = !!job.combinedCelloBass;
+                combined.setAttribute('aria-label', `Combined cello/bass part for ${job.file.name}`);
+                combinedLabel.append(combined, ' Combined cello/bass part');
+                const updateCombined = () => {
+                    combinedLabel.hidden = !eligible(part.value);
+                    combined.disabled = combinedLabel.hidden;
+                    if (combined.disabled) combined.checked = false;
+                };
+                part.addEventListener('change', updateCombined); updateCombined();
+                row.append(piece, part, combinedLabel); dialog.append(row); return { job, piece, part, combined };
             });
             const cancel = document.createElement('button'); cancel.textContent = 'Cancel'; cancel.type = 'button';
             const next = document.createElement('button'); next.textContent = 'Upload PDFs'; next.type = 'button';
@@ -101,7 +114,10 @@
             dialog.addEventListener('cancel', () => { dialog.remove(); reject(new Error('Upload cancelled.')); });
             next.onclick = () => {
                 for (const { piece, part } of controls) if (!piece.value || !part.value) { (!piece.value ? piece : part).focus(); return; }
-                for (const { job, piece, part } of controls) job.details = { piece_id: piece.value, instrument_id: part.value };
+                for (const { job, piece, part, combined } of controls) {
+                    job.details = { ...job.details, piece_id: piece.value, instrument_id: part.value };
+                    job.combinedCelloBass = eligible(part.value) && combined.checked;
+                }
                 cleanup(); resolve();
             };
             dialog.append(cancel, next); document.body.append(dialog); dialog.showModal();
@@ -196,7 +212,8 @@
         progress(file.size, 'Uploaded');
     }
     async function createUpload(job, request) {
-        const data = { name: job.file.name, size: job.file.size, ...job.details, upload_token: job.token };
+        const data = { name: job.file.name, size: job.file.size, ...job.details, upload_token: job.token,
+            fix_skew: job.fixSkew ? '1' : '0', combined_cello_bass: job.combinedCelloBass ? '1' : '0' };
         try {
             return await api('create', data, undefined, request);
         } catch (error) {
@@ -273,7 +290,7 @@
         if (!canUpload || busy) return;
         const selected = Array.from(files.files);
         if (!selected.length) { notify('Choose PDFs to upload.'); return; }
-        const jobs = selected.map(file => ({ file, details: assignment(file.name) }));
+        const jobs = selected.map(file => ({ file, details: assignment(file.name), fixSkew: fixSkew.checked }));
         busy = true; upload.disabled = true; files.disabled = true;
         try {
             await chooseMissing(jobs);
@@ -294,15 +311,20 @@
                 const row = document.createElement('li');
                 const name = document.createElement('div'); name.className = 'pdf-queue-name'; name.textContent = item.name;
                 const detail = document.createElement('div'); detail.className = 'pdf-queue-detail';
-                const state = { queued: 'Submitted', processing: 'Processing', ready: 'Ready', uploading: 'Upload incomplete', error: 'Failed' }[item.status] || item.status;
+                const state = item.status === 'processing'
+                    ? `${item.stage === 'deskew' ? 'Fixing skew' : 'Compressing'}${item.pages ? ` (${item.progress || 0}/${item.pages})` : ''}`
+                    : ({ queued: 'Submitted', ready: 'Ready', uploading: 'Upload incomplete', error: 'Failed' }[item.status] || item.status);
                 detail.textContent = `${label(pieceSelect, item.piece_id)} · ${label(partSelect, item.instrument_id)} · ${state}`;
+                if (item.combined_cello_bass) detail.textContent += ' · Combined cello/bass part';
                 const size = document.createElement('div'); size.className = 'pdf-queue-detail';
                 size.textContent = item.pages ? `${item.pages} pages` : bytes(item.original_bytes);
+                if (item.fix_skew) size.textContent += item.status === 'ready'
+                    ? ` · Skew fixed on ${item.skew_corrected_pages || 0} pages` : ' · Fix skew enabled';
                 row.append(name, detail, size);
                 const button = (text, callback) => { const element = document.createElement('button'); element.type = 'button'; element.textContent = text; element.onclick = async () => { element.disabled = true; try { await callback(); } catch (error) { notify(error.message); } finally { element.disabled = false; refresh(); } }; row.append(element); };
                 if (item.error) { const error = document.createElement('div'); error.textContent = item.error; row.append(error); }
                 if (item.status === 'ready') button(active?.id === item.id ? 'Reload saved work' : 'Edit barlines', () => openItem(item));
-                if (canUpload && item.status === 'error') button('Retry compression', () => api('retry', {}, item.id));
+                if (canUpload && item.status === 'error') button('Retry processing', () => api('retry', {}, item.id));
                 if (canUpload && item.status === 'uploading' && item.received === item.original_bytes) button('Submit upload', () => api('finish', {}, item.id));
                 if (canUpload && item.status === 'uploading' && item.received < item.original_bytes) button('Resume upload', () => {
                     const input = document.createElement('input'); input.type = 'file'; input.accept = '.pdf';
@@ -357,6 +379,7 @@
             const details = result.draft?.details || active;
             pieceSelect.value = String(details.piece_id); partSelect.value = String(details.instrument_id);
             document.getElementById('pdf-queue-part-assignment').textContent = `${label(pieceSelect, details.piece_id)} · ${label(partSelect, details.instrument_id)}`;
+            if (active.combined_cello_bass) document.getElementById('pdf-queue-part-assignment').textContent += ' · Combined cello/bass part — saves both instruments';
             form.querySelector('[name=edition_label]').value = details.edition_label || '';
             window.MetricStore.clearGroundTruthMetricData();
             window.mlLoadedMetricContext = null;
@@ -391,7 +414,7 @@
             active = result.item;
             setQueuedSaveState(false);
             draftStatus.textContent = 'Submitted to the library.';
-            notify(`Submitted ${active.pdf_file}.`);
+            notify(`Submitted ${active.published_parts?.map(part => part.pdf_file).join(' and ') || active.pdf_file}.`);
             document.dispatchEvent(new CustomEvent('synpdf:part-submitted', { detail: active }));
         } catch (error) { notify(error.message + ' The queued PDF and edits are preserved.'); }
         finally { publishing = false; busy = false; button.disabled = false; refresh(); }

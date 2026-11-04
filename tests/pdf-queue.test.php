@@ -7,11 +7,15 @@ mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $checks = 0;
 function qcheck($ok, $message) { global $checks; if (!$ok) throw new RuntimeException($message); $checks++; }
 function qremove($path) { foreach (scandir($path) as $name) if ($name!=='.' && $name!=='..') { $file=$path.'/'.$name; if (is_dir($file)&&!is_link($file)) qremove($file); else unlink($file); } rmdir($path); }
-function qfixturePdf(string $path): void {
+function qfixturePdf(string $path, float $tilt = 0): void {
     $content = "0.5 w\n";
     foreach ([120,280,440,600] as $top) {
         for($line=0;$line<5;$line++){ $y=$top+$line*8; $content.="50 $y m 550 $y l S\n"; }
         foreach([50,200,380,550] as $x)$content.="$x $top m $x ".($top+32)." l S\n";
+    }
+    if ($tilt) {
+        $cos=cos(deg2rad($tilt));$sin=sin(deg2rad($tilt));$e=300-300*$cos+400*$sin;$f=400-300*$sin-400*$cos;
+        $content=sprintf("q\n%.8f %.8f %.8f %.8f %.8f %.8f cm\n",$cos,$sin,-$sin,$cos,$e,$f).$content."Q\n";
     }
     $objects=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>',
         '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Contents 5 0 R /Resources << >> >>',
@@ -44,7 +48,7 @@ try {
     $db->query('CREATE TABLE users (id INT PRIMARY KEY, role VARCHAR(20))');$db->query("INSERT INTO users VALUES (1,'admin'),(2,'admin'),(3,'user')");
     $db->query('CREATE TABLE composers (composer_id INT PRIMARY KEY, composer_first VARCHAR(100), composer_last VARCHAR(100))');$db->query("INSERT INTO composers VALUES (1,'Gustav','Mahler')");
     $db->query('CREATE TABLE pieces (piece_id INT PRIMARY KEY, piece_name VARCHAR(100),composer_id INT)');$db->query("INSERT INTO pieces VALUES (71,'Test Symphony',1),(72,'Another test piece',1)");
-    $db->query('CREATE TABLE instruments (instrument_id INT PRIMARY KEY,instrument_name VARCHAR(100),part_number VARCHAR(20),instrument_key VARCHAR(20))');$db->query("INSERT INTO instruments VALUES (39,'Full Score','',''),(3,'Cello','','')");
+    $db->query('CREATE TABLE instruments (instrument_id INT PRIMARY KEY,instrument_name VARCHAR(100),part_number VARCHAR(20),instrument_key VARCHAR(20))');$db->query("INSERT INTO instruments VALUES (39,'Full Score','',''),(3,'Viola','',''),(4,'Cello','',''),(5,'Double Bass','',''),(6,'Solo Cello','','')");
     $db->query('CREATE TABLE piece_categories(category_id INT PRIMARY KEY,category_name VARCHAR(100))');
     $db->query('CREATE TABLE metric_arr(metric_arr_id INT AUTO_INCREMENT PRIMARY KEY,piece_id INT,instrument_id INT,measures_version INT,metric_arr_data LONGTEXT,edition_label VARCHAR(100)) ENGINE=InnoDB');
     $db->query('CREATE TABLE recordings(recording_id INT PRIMARY KEY,piece_id INT)');
@@ -54,6 +58,7 @@ try {
     $text='<?php ';foreach($config as $key=>$value)$text.='define('.var_export($key,true).','.var_export($value,true).');';
     file_put_contents($fixture.'/phpfiles/config.php',$text);chmod($fixture.'/phpfiles/config.php',0600);file_put_contents($fixture.'/phpfiles/read_only_user_config.php',$text);
     foreach(['part_pdf_queue.php','metric-arr-functions.php','get_pieces_and_composers.php'] as $file)copy($root.'/phpfiles/'.$file,$fixture.'/phpfiles/'.$file);
+    file_put_contents($fixture.'/phpfiles/cloudflare_purge.php','<?php function purgeMetricArrCache($metric,$piece,$instrument,$recordings=[]) { file_put_contents('.var_export($fixture.'/purges.jsonl',true).',json_encode([$metric,$piece,$instrument])."\n",FILE_APPEND); return ["success"=>true]; }');
     copy($root.'/session_config.php',$fixture.'/public/session_config.php');
     foreach(['part-pdf-queue.php','synpdf-edit-mode.php','get_parts.php','get_metric_arr.php'] as $file)copy($root.'/synpdf_182/editmode/'.$file,$fixture.'/public/editmode/'.$file);
     foreach(glob($root.'/synpdf_182/editmode/*') as $path)if(is_file($path)&&preg_match('/\.(js|css)$/',$path))symlink($path,$fixture.'/public/editmode/'.basename($path));
@@ -71,10 +76,15 @@ try {
     qcheck(qhttp($port,'create',$sessions['owner'],'',$input,false)[0]===403,'Upload requires CSRF.');
     qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($input,['piece_id'=>99999]))[0]===400,'Unknown piece ID is rejected.');
     qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($input,['name'=>'../bad.pdf']))[0]===400,'Filenames cannot escape the queue folder.');
+    qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($input,['fix_skew'=>'invalid']))[0]===400,'Invalid skew options are rejected.');
+    qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($input,['combined_cello_bass'=>'invalid']))[0]===400,'Invalid combined part options are rejected.');
+    foreach ([3,6,39] as $otherPart) qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($input,['instrument_id'=>$otherPart,'combined_cello_bass'=>'1']))[0]===400,'Combined cello/bass is rejected for instrument '.$otherPart.', including Solo Cello.');
     $input['upload_token']=bin2hex(random_bytes(16));
     qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($input,['upload_token'=>'../bad']))[0]===400,'Invalid upload tokens cannot escape the queue.');
     [$code,$created]=qhttp($port,'create',$sessions['owner'],'',$input);qcheck($code===200,'Create queued PDF.');$id=$created['item']['id'];
     qcheck(qhttp($port,'create',$sessions['owner'],'',$input)[1]['item']['id']===$id,'Retrying a lost create response reuses the original upload.');
+    qcheck($created['item']['fix_skew']===false,'Skew correction is opt-in.');
+    qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($input,['fix_skew'=>'1']))[0]===400,'Upload retries cannot change the chosen skew option.');
     qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($input,['name'=>'72-3.pdf']))[0]===400,'An upload token cannot be reused for another file.');
     qcheck(qhttp($port,'finish',$sessions['owner'],$id,[])[0]===400,'Incomplete uploads cannot start compression.');
     $part=substr(file_get_contents($source),0,1024);file_put_contents($fixture.'/chunk.bin',$part);
@@ -150,6 +160,93 @@ try {
     $libraryOverwrite=array_replace($save,['revision'=>0,'metrics'=>json_encode($changedMetrics),'overwrite_token'=>$duplicates['duplicate']['token']]);
     qcheck(qhttp($port,'publish',$sessions['admin'],$goodId,$libraryOverwrite)[0]===403,'Queue overwrite approval never authorizes replacing a published library part.');
     qcheck((int)$db->query('SELECT COUNT(*) FROM metric_arr')->fetch_row()[0]===1&&hash_file('sha256',$fixture.'/public/hd-pdfs/71-39.pdf')===hash_file('sha256',$source),'The published library part remains intact.');
+    $tilted=$fixture.'/tilted.pdf';qfixturePdf($tilted,1.5);
+    $skewInput=['name'=>'tilted.pdf','size'=>filesize($tilted),'piece_id'=>72,'instrument_id'=>39,'edition_label'=>'Corrected skew','fix_skew'=>'1','upload_token'=>bin2hex(random_bytes(16))];
+    [$code,$skewUpload]=qhttp($port,'create',$sessions['owner'],'',$skewInput);$skewId=$skewUpload['item']['id'];
+    qcheck($code===200&&$skewUpload['item']['fix_skew']===true,'Upload retains the Fix skew checkbox choice.');
+    qhttp($port,'chunk',$sessions['owner'],$skewId,['offset'=>0,'chunk'=>new CURLFile($tilted)]);
+    qhttp($port,'finish',$sessions['owner'],$skewId,[]);$skewReady=qterminal($port,$sessions['owner'],$skewId);
+    qcheck($skewReady['status']==='ready'&&$skewReady['skew_corrected_pages']===2,'Actual background processing straightens both pages before compression: '.json_encode($skewReady));
+    $skewFolder=$fixture.'/queue/'.$skewId;
+    qcheck(hash_file('sha256',$skewFolder.'/hd.pdf')===hash_file('sha256',$tilted),'Raw upload stays intact for retry.');
+    $masterHash=hash_file('sha256',$skewFolder.'/deskewed.pdf');$optimizedHash=hash_file('sha256',$skewFolder.'/optimized.pdf');
+    qcheck($masterHash!==hash_file('sha256',$tilted)&&$masterHash===$skewReady['original_sha256'],'Canonical HD checksum describes the corrected master.');
+    $download=curl_init('http://127.0.0.1:'.$port.'/editmode/part-pdf-queue.php?action=file&kind=hd&id='.$skewId);
+    curl_setopt_array($download,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>20,CURLOPT_COOKIE=>'PHPSESSID='.$sessions['owner']]);
+    $downloaded=curl_exec($download);curl_close($download);
+    qcheck(is_string($downloaded)&&hash('sha256',$downloaded)===$masterHash,'Queue HD downloads use the corrected master.');
+    $skewSave=array_replace($save,['piece_id'=>72,'instrument_id'=>39,'edition_label'=>'Corrected skew','revision'=>0]);
+    [$code,$skewPublished]=qhttp($port,'publish',$sessions['admin'],$skewId,$skewSave);
+    qcheck($code===200&&$skewPublished['item']['status']==='completed','Corrected part publishes successfully.');
+    $skewName=$skewPublished['item']['pdf_file'];
+    qcheck(hash_file('sha256',$fixture.'/public/hd-pdfs/'.$skewName)===$masterHash&&hash_file('sha256',$fixture.'/public/pdfs/'.$skewName)===$optimizedHash,'Both published qualities come from corrected processing.');
+    qcheck(!is_file($skewFolder.'/hd.pdf')&&!is_file($skewFolder.'/deskewed.pdf')&&!is_file($skewFolder.'/optimized.pdf'),'Publication removes all temporary PDF copies.');
+    file_put_contents($skewFolder.'/deskewed.pdf','left over after interrupted cleanup');
+    qcheck(qhttp($port,'publish',$sessions['admin'],$skewId,$skewSave)[0]===200&&!is_file($skewFolder.'/deskewed.pdf'),'Corrected publication retries are idempotent and finish cleanup.');
+    $discardInput=array_replace($skewInput,['name'=>'discard-skew.pdf','upload_token'=>bin2hex(random_bytes(16))]);
+    $discardId=qhttp($port,'create',$sessions['owner'],'',$discardInput)[1]['item']['id'];
+    $discardFolder=$fixture.'/queue/'.$discardId;file_put_contents($discardFolder.'/deskewed.pdf','temporary correction');file_put_contents($discardFolder.'/.mw-deskew-interrupted.pdf','partial temporary output');
+    qcheck(qhttp($port,'discard',$sessions['owner'],$discardId,[])[0]===200&&!is_file($discardFolder.'/deskewed.pdf')&&!is_file($discardFolder.'/.mw-deskew-interrupted.pdf'),'Removing a queued part also removes its corrected master and interrupted scratch output.');
+    foreach ([4,5] as $selectedPart) {
+        $edition='Combined from'.$selectedPart;
+        $combinedInput=['name'=>'combined-'.$selectedPart.'.pdf','size'=>filesize($selectedPart===4?$tilted:$source),'piece_id'=>72,'instrument_id'=>$selectedPart,
+            'edition_label'=>$edition,'combined_cello_bass'=>'1','fix_skew'=>$selectedPart===4?'1':'0','upload_token'=>bin2hex(random_bytes(16))];
+        [$code,$combinedUpload]=qhttp($port,'create',$sessions['owner'],'',$combinedInput);$combinedId=$combinedUpload['item']['id'];
+        qcheck($code===200&&$combinedUpload['item']['combined_cello_bass']===true,'Combined option is stored when instrument '.$selectedPart.' is selected.');
+        qcheck(qhttp($port,'create',$sessions['owner'],'',$combinedInput)[1]['item']['id']===$combinedId,'Repeated creation preserves the combined upload.');
+        qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($combinedInput,['combined_cello_bass'=>'0']))[0]===400,'The combined choice cannot change on a retried upload token.');
+        qhttp($port,'chunk',$sessions['owner'],$combinedId,['offset'=>0,'chunk'=>new CURLFile($selectedPart===4?$tilted:$source)]);
+        qhttp($port,'finish',$sessions['owner'],$combinedId,[]);$combinedReady=qterminal($port,$sessions['owner'],$combinedId);
+        qcheck($combinedReady['status']==='ready','Combined upload processes once: '.json_encode($combinedReady));
+        $combinedFolder=$fixture.'/queue/'.$combinedId;
+        qcheck(!is_file($fixture.'/public/pdfs/'.buildPdfFilename(72,4,$edition))&&!is_file($fixture.'/public/pdfs/'.buildPdfFilename(72,5,$edition)),'Combined parts are not published until barline work is submitted.');
+        $combinedSave=array_replace($save,['piece_id'=>72,'instrument_id'=>$selectedPart,'edition_label'=>$edition,'revision'=>0,'measures_version'=>3]);
+        qcheck(qhttp($port,'draft',$sessions['admin'],$combinedId,array_replace($combinedSave,['instrument_id'=>6]))[0]===400,'A combined draft cannot be changed to Solo Cello.');
+        qcheck(qhttp($port,'draft',$sessions['admin'],$combinedId,$combinedSave)[0]===200,'Combined barline data autosaves once.');
+        qcheck(qhttp($port,'get',$sessions['admin'],$combinedId)[1]['item']['combined_cello_bass']===true,'The combined choice survives autosave and reload.');
+        $combinedSave['revision']=1;
+        qcheck(qhttp($port,'publish',$sessions['admin'],$combinedId,array_replace($combinedSave,['instrument_id'=>6]))[0]===400,'Combined publication cannot target Solo Cello.');
+        [$code,$combinedPublished]=qhttp($port,'publish',$sessions['admin'],$combinedId,$combinedSave);
+        qcheck($code===200&&count($combinedPublished['item']['published_parts'])===2,'One submission publishes both cello and bass: '.json_encode($combinedPublished).($code!==200?' Log: '.substr(file_get_contents($fixture.'/web.log'),-2000):''));
+        qcheck($combinedPublished['item']['instrument_id']===$selectedPart,'Publication retains the selected instrument as the primary part.');
+        $rows=$db->query("SELECT instrument_id,metric_arr_id,metric_arr_data,measures_version,edition_label FROM metric_arr WHERE piece_id=72 AND edition_label='$edition' ORDER BY instrument_id")->fetch_all(MYSQLI_ASSOC);
+        qcheck(array_map(fn($r)=>(int)$r['instrument_id'],$rows)===[4,5],'Exactly instrument IDs 4 and 5 receive records.');
+        foreach($rows as $row) {
+            qcheck(json_decode($row['metric_arr_data'],true)===$metrics&&(int)$row['measures_version']===3&&$row['edition_label']===$edition,'Each part receives identical reviewed barlines, version and edition.');
+            $filename=buildPdfFilename(72,$row['instrument_id'],$edition);
+            qcheck(hash_file('sha256',$fixture.'/public/hd-pdfs/'.$filename)===$combinedReady['original_sha256']&&hash_file('sha256',$fixture.'/public/pdfs/'.$filename)===$combinedReady['optimized_sha256'],'Each part receives the same prepared HD and compressed PDFs.');
+            qcheck(json_decode(file_get_contents($fixture.'/public/data/metrics/'.$row['metric_arr_id'].'.json'),true)===$metrics,'Each part has its own static geometry JSON.');
+        }
+        if($selectedPart===4)qcheck($combinedReady['skew_corrected_pages']===2,'The corrected master is shared by both parts after skew correction.');
+        $purges=array_map(fn($line)=>json_decode($line,true),file($fixture.'/purges.jsonl',FILE_IGNORE_NEW_LINES));
+        qcheck(array_map(fn($row)=>$row[2],array_slice($purges,-2))===[4,5],'Both published instruments have their caches purged.');
+        qcheck(!is_file($combinedFolder.'/hd.pdf')&&!is_file($combinedFolder.'/deskewed.pdf')&&!is_file($combinedFolder.'/optimized.pdf'),'Combined publication releases temporary PDFs only after both copies are saved.');
+        $completed=json_decode(file_get_contents($combinedFolder.'/item.json'),true);$completed['status']='ready';file_put_contents($combinedFolder.'/item.json',json_encode($completed));
+        qcheck(qhttp($port,'publish',$sessions['admin'],$combinedId,$combinedSave)[0]===200&&(int)$db->query("SELECT COUNT(*) FROM metric_arr WHERE piece_id=72 AND edition_label='$edition'")->fetch_row()[0]===2,'Recovery after a lost completion update reuses both records without duplicating them.');
+    }
+    $rollbackInput=['name'=>'combined-rollback.pdf','size'=>filesize($source),'piece_id'=>72,'instrument_id'=>4,'edition_label'=>'Combined rollback','combined_cello_bass'=>'1'];
+    $rollbackId=qhttp($port,'create',$sessions['owner'],'',$rollbackInput)[1]['item']['id'];
+    qhttp($port,'chunk',$sessions['owner'],$rollbackId,['offset'=>0,'chunk'=>new CURLFile($source)]);qhttp($port,'finish',$sessions['owner'],$rollbackId,[]);
+    qcheck(qterminal($port,$sessions['owner'],$rollbackId)['status']==='ready','Conflict fixture is ready.');
+    $rollbackSave=array_replace($save,['piece_id'=>72,'instrument_id'=>4,'edition_label'=>'Combined rollback','revision'=>0]);
+    $bassConflict=$fixture.'/public/pdfs/72-5-combined_rollback.pdf';file_put_contents($bassConflict,'keep existing bass PDF');
+    qcheck(qhttp($port,'publish',$sessions['admin'],$rollbackId,$rollbackSave)[0]===403,'A bass filename conflict prevents combined publication.');
+    qcheck(file_get_contents($bassConflict)==='keep existing bass PDF'&&!is_file($fixture.'/public/pdfs/72-4-combined_rollback.pdf')&&(int)$db->query("SELECT COUNT(*) FROM metric_arr WHERE edition_label='Combined rollback'")->fetch_row()[0]===0,'Conflict preserves the existing bass file and creates no partial cello entry.');unlink($bassConflict);
+    $beforeStatic=glob($fixture.'/public/data/metrics/*.json');
+    $db->query("CREATE TRIGGER reject_combined_bass BEFORE INSERT ON metric_arr FOR EACH ROW BEGIN IF NEW.instrument_id=5 AND NEW.edition_label='Combined rollback' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Test bass insert failure'; END IF; END");
+    qcheck(qhttp($port,'publish',$sessions['admin'],$rollbackId,$rollbackSave)[0]===500,'A failure saving the second part is reported.');
+    qcheck((int)$db->query("SELECT COUNT(*) FROM metric_arr WHERE edition_label='Combined rollback'")->fetch_row()[0]===0&&glob($fixture.'/public/data/metrics/*.json')===$beforeStatic,'Failure rolls back both database entries and all new geometry JSON.');
+    foreach(['pdfs','hd-pdfs']as$directory)foreach([4,5]as$part)qcheck(!is_file($fixture.'/public/'.$directory.'/72-'.$part.'-combined_rollback.pdf'),'Failure removes newly created '.$directory.' copy for instrument '.$part.'.');
+    qcheck(is_file($fixture.'/queue/'.$rollbackId.'/hd.pdf')&&is_file($fixture.'/queue/'.$rollbackId.'/optimized.pdf')&&qhttp($port,'get',$sessions['admin'],$rollbackId)[1]['item']['status']==='ready','Failed combined submission keeps its PDFs and barline work available for retry.');
+    $db->query('DROP TRIGGER reject_combined_bass');
+    qcheck(qhttp($port,'publish',$sessions['admin'],$rollbackId,$rollbackSave)[0]===200,'The same queued combined part can be submitted successfully after failure.');
+    $singleInput=['name'=>'cello-only.pdf','size'=>filesize($source),'piece_id'=>72,'instrument_id'=>4,'edition_label'=>'Cello only'];
+    $singleId=qhttp($port,'create',$sessions['owner'],'',$singleInput)[1]['item']['id'];
+    qhttp($port,'chunk',$sessions['owner'],$singleId,['offset'=>0,'chunk'=>new CURLFile($source)]);qhttp($port,'finish',$sessions['owner'],$singleId,[]);
+    qcheck(qterminal($port,$sessions['owner'],$singleId)['status']==='ready','Ordinary cello upload is ready.');
+    $singleSave=array_replace($save,['piece_id'=>72,'instrument_id'=>4,'edition_label'=>'Cello only','revision'=>0,'combined_cello_bass'=>'1']);
+    [$code,$singleResult]=qhttp($port,'publish',$sessions['admin'],$singleId,$singleSave);
+    qcheck($code===200&&count($singleResult['item']['published_parts'])===1&&(int)$db->query("SELECT COUNT(*) FROM metric_arr WHERE edition_label='Cello only'")->fetch_row()[0]===1&&!is_file($fixture.'/public/pdfs/72-5-cello_only.pdf'),'An unchecked upload remains cello-only, even if a later request attempts to enable duplication.');
     if(in_array('--browser',$argv,true)){echo json_encode(['fixture'=>$fixture,'port'=>$port,'sessions'=>$sessions])."\nBrowser fixture ready. Press Enter.\n";fgets(STDIN);}
     echo "Passed $checks PDF queue checks.\n";
 } finally { if(is_resource($server)){proc_terminate($server);proc_close($server);} $connection->query("DROP DATABASE IF EXISTS `$database`");if(is_dir($fixture))qremove($fixture); }

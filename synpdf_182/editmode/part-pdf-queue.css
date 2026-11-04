@@ -14,4 +14,5 @@
 .pdf-upload-actions{display:flex;gap:4px}
 #pdf-queue-assignment{max-width:700px;width:90%;border:1px solid #62868e;border-radius:10px;padding:20px}
 #pdf-queue-assignment::backdrop{background:#0006}#pdf-queue-assignment .pdf-assignment-row{border-top:1px solid #cedddd;padding:12px 0}
+#pdf-queue-assignment [hidden]{display:none!important}
 #pdf-queue-assignment select{display:block;width:100%;margin:6px 0;padding:8px;font-size:14px}

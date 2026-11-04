@@ -18,7 +18,7 @@ function harness({ failUpload, failSubmit, loseChunkResponse, loseSubmitResponse
             return (bytes, text) => updates.push([file.name, bytes, text]);
         },
         api: async (action, data, id, request) => {
-            calls.push({ action, id, name: data?.name, overwrite: data?.overwrite_token });
+            calls.push({ action, id, name: data?.name, overwrite: data?.overwrite_token, fixSkew: data?.fix_skew, combined: data?.combined_cello_bass });
             if (action === 'create') {
                 if (data.name === duplicate && !data.overwrite_token) {
                     const error = new Error('Already uploaded'); error.duplicate = { token: 'confirmed-duplicate' }; throw error;
@@ -149,4 +149,41 @@ test('confirming Overwrite sends the duplicate approval once before transferring
     assert.equal(h.prompts.length, 1);
     assert.equal(h.calls.filter(c => c.action === 'create' && c.overwrite === 'confirmed-duplicate').length, 1);
     assert.equal(h.jobs[0].state, 'submitted');
+});
+
+test('skew choice follows each upload through duplicate approval and transfer retries', async () => {
+    const h = harness({ duplicate: '71-3.pdf', overwrite: true, loseChunkResponse: '71-3.pdf' });
+    h.jobs[0].fixSkew = true;
+    assert.equal(await h.c.uploadBatch(h.jobs), 1);
+    assert.deepEqual(h.calls.filter(call => call.action === 'create' && call.name === '71-3.pdf').map(call => call.fixSkew), ['1', '1']);
+    assert.equal(h.calls.find(call => call.action === 'create' && call.name === '72-3.pdf').fixSkew, '0');
+    assert.equal(await h.c.retryUpload(h.jobs[0]), 1);
+    assert.equal(h.jobs[0].fixSkew, true);
+});
+
+test('clicking Upload snapshots the checkbox for every selected file', async () => {
+    let click, submitted;
+    const checkbox = { checked: true };
+    const context = vm.createContext({
+        upload: { addEventListener: (_name, listener) => { click = listener; } },
+        files: { files: [{ name: '71-3.pdf' }, { name: '72-3.pdf' }], value: '' },
+        fixSkew: checkbox, canUpload: true, busy: false, uploadWork: 0,
+        assignment: () => ({}), chooseMissing: async () => { checkbox.checked = false; },
+        enqueueUploads: async jobs => { submitted = jobs; }, notify: assert.fail, refresh: () => {}
+    });
+    vm.runInContext(source.slice(source.indexOf("    upload.addEventListener('click'"), source.indexOf('    function label(')), context);
+    await click();
+    assert.equal(submitted.length, 2);
+    assert(submitted.every(job => job.fixSkew === true));
+});
+
+test('combined cello/bass choice follows each file through overwrite confirmation and resume', async () => {
+    const h = harness({ duplicate: '71-3.pdf', overwrite: true, loseChunkResponse: '71-3.pdf' });
+    h.jobs[0].details.instrument_id = 4; h.jobs[0].combinedCelloBass = true;
+    h.jobs[1].details.instrument_id = 5;
+    assert.equal(await h.c.uploadBatch(h.jobs), 1);
+    assert.deepEqual(h.calls.filter(call => call.action === 'create' && call.name === '71-3.pdf').map(call => call.combined), ['1', '1']);
+    assert.equal(h.calls.find(call => call.action === 'create' && call.name === '72-3.pdf').combined, '0');
+    assert.equal(await h.c.retryUpload(h.jobs[0]), 1);
+    assert.equal(h.jobs[0].combinedCelloBass, true);
 });

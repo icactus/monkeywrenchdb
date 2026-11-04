@@ -17,6 +17,14 @@ function mwPdfQueueRoot(): string {
 function mwPdfQueueCanUpload(array $user): bool {
     return $user['role'] === 'admin' && (int) $user['id'] === (defined('MW_SUPER_ADMIN_USER_ID') ? MW_SUPER_ADMIN_USER_ID : 1);
 }
+function mwPdfQueueHdName(array $item): string {
+    return !empty($item['fix_skew']) ? 'deskewed.pdf' : 'hd.pdf';
+}
+function mwPdfQueueCleanupFiles(string $folder): void {
+    $paths = array_map(fn($file) => $folder . '/' . $file, ['hd.pdf', 'deskewed.pdf', 'optimized.pdf', 'draft.json']);
+    foreach (['.mw-deskew-*.pdf', '.mw-pdf-*.pdf'] as $pattern) $paths = array_merge($paths, glob($folder . '/' . $pattern));
+    foreach ($paths as $path) if (is_file($path)) unlink($path);
+}
 function mwPdfQueueFolder(string $root, string $id): string {
     if (!preg_match('/^[a-f0-9]{32}$/D', $id)) throw new InvalidArgumentException('Invalid queued PDF.');
     $path = $root . '/' . $id;
@@ -51,11 +59,22 @@ function mwPdfQueueDetails(mysqli $db, array $input): array {
     if (mb_strlen($edition) > 100) throw new InvalidArgumentException('Edition must be 100 characters or fewer.');
     return ['piece_id' => $piece, 'instrument_id' => $part, 'edition_label' => $edition ?: null];
 }
+function mwPdfQueueValidateCombined(bool $combined, array $details): void {
+    if ($combined && !in_array($details['instrument_id'], [4, 5], true)) {
+        throw new InvalidArgumentException('Combined cello/bass part is available only for cello or bass.');
+    }
+}
 function mwPdfQueueCreate(string $root, array $user, array $input, mysqli $db): array {
     if (!mwPdfQueueCanUpload($user)) throw new DomainException('Only the super admin can upload PDFs.');
     $name = (string) ($input['name'] ?? ''); $size = (int) ($input['size'] ?? 0);
     if (!preg_match('/\.pdf$/i', $name) || strlen($name) > 255 || preg_match('/[\x00-\x1f\/\\\\]/', $name) || $size < 5 || $size > 300 * 1024 * 1024) throw new InvalidArgumentException('Choose a PDF no larger than 300 MB.');
     $details = mwPdfQueueDetails($db, $input);
+    $fixSkew = filter_var($input['fix_skew'] ?? '0', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    if ($fixSkew === null) throw new InvalidArgumentException('Invalid Fix skew option.');
+    $combined = filter_var($input['combined_cello_bass'] ?? '0', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    if ($combined === null) throw new InvalidArgumentException('Invalid Combined cello/bass part option.');
+    mwPdfQueueValidateCombined($combined, $details);
+    if ($combined) mwPdfQueueDetails($db, array_replace($details, ['instrument_id' => $details['instrument_id'] === 4 ? 5 : 4]));
     $token = (string) ($input['upload_token'] ?? '');
     if ($token !== '' && !preg_match('/^[a-f0-9]{32}$/D', $token)) throw new InvalidArgumentException('Invalid upload token.');
     $id = $token ?: bin2hex(random_bytes(16)); $folder = $root . '/' . $id;
@@ -67,7 +86,8 @@ function mwPdfQueueCreate(string $root, array $user, array $input, mysqli $db): 
         if (is_file($folder . '/item.json')) {
             $item = json_decode(file_get_contents($folder . '/item.json'), true, 512, JSON_THROW_ON_ERROR);
             if ((int) $item['owner_id'] !== (int) $user['id'] || $item['name'] !== $name || $item['original_bytes'] !== $size ||
-                $item['piece_id'] !== $details['piece_id'] || $item['instrument_id'] !== $details['instrument_id'] || $item['edition_label'] !== $details['edition_label']) {
+                $item['piece_id'] !== $details['piece_id'] || $item['instrument_id'] !== $details['instrument_id'] || $item['edition_label'] !== $details['edition_label'] ||
+                (bool) ($item['fix_skew'] ?? false) !== $fixSkew || (bool) ($item['combined_cello_bass'] ?? false) !== $combined) {
                 throw new InvalidArgumentException('This upload token belongs to another file.');
             }
             return $item;
@@ -87,7 +107,8 @@ function mwPdfQueueCreate(string $root, array $user, array $input, mysqli $db): 
         }
         if (!mkdir($folder, 0700)) throw new RuntimeException('Could not create the queued PDF.');
         $item = $details + ['id' => $id, 'name' => $name, 'original_bytes' => $size, 'received' => 0,
-            'owner_id' => (int) $user['id'], 'created_at' => gmdate('c'), 'status' => 'uploading'];
+            'owner_id' => (int) $user['id'], 'created_at' => gmdate('c'), 'status' => 'uploading', 'fix_skew' => $fixSkew,
+            'combined_cello_bass' => $combined];
         if ($duplicates) $item['replaces'] = array_column($duplicates, 'id');
         mwPdfQueueWrite($folder . '/item.json', $item);
         return $item;
@@ -157,63 +178,92 @@ function mwPdfQueueCopyExclusive(string $source, string $destination): void {
     fclose($stream); fclose($input);
 }
 function mwPdfQueuePublish(array $item, string $folder, mysqli $db, string $webroot, array $input): array {
-    if ($item['status'] === 'completed') return $item;
+    if ($item['status'] === 'completed') { mwPdfQueueCleanupFiles($folder); return $item; }
     if ($item['status'] !== 'ready') throw new InvalidArgumentException('This PDF is not ready to submit.');
     if ((int) ($input['revision'] ?? 0) !== ($item['draft_revision'] ?? 0)) throw new InvalidArgumentException('This draft changed in another tab. Reload saved work before publishing.');
     $details = mwPdfQueueDetails($db, $input);
+    mwPdfQueueValidateCombined(!empty($item['combined_cello_bass']), $details);
     $metrics = json_decode($input['metrics'] ?? '', true, 512, JSON_THROW_ON_ERROR);
     if (!is_array($metrics)) throw new InvalidArgumentException('Missing reviewed page geometry.');
     $normalized = mwPdfQueueMetrics($metrics, $item['pages']);
-    $filename = buildPdfFilename($details['piece_id'], $details['instrument_id'], $details['edition_label']);
-    $lockName = 'mw_pdf_' . substr(hash('sha256', $filename), 0, 40);
-    $lock = $db->prepare('SELECT GET_LOCK(?, 10)'); $lock->bind_param('s', $lockName); $lock->execute();
-    if ((int) $lock->get_result()->fetch_row()[0] !== 1) throw new RuntimeException('Another save is using this part. Retry in a moment.');
-    $created = []; $committed = false;
+    // A stable order lets combined saves share locks with ordinary single-part
+    // saves without two simultaneous combined submissions locking each other.
+    $partIds = !empty($item['combined_cello_bass']) ? [4, 5] : [$details['instrument_id']];
+    $targets = []; $locks = []; $created = []; $committed = false; $transaction = false;
     try {
+        foreach ($partIds as $partId) {
+            mwPdfQueueDetails($db, array_replace($details, ['instrument_id' => $partId]));
+            $filename = buildPdfFilename($details['piece_id'], $partId, $details['edition_label']);
+            $lockName = 'mw_pdf_' . substr(hash('sha256', $filename), 0, 40);
+            $lock = $db->prepare('SELECT GET_LOCK(?, 10)'); $lock->bind_param('s', $lockName); $lock->execute();
+            if ((int) $lock->get_result()->fetch_row()[0] !== 1) throw new RuntimeException('Another save is using this part. Retry in a moment.');
+            $locks[] = $lockName;
+            $targets[] = ['instrument_id' => $partId, 'pdf_file' => $filename];
+        }
         $db->begin_transaction();
-        $stmt = $db->prepare('SELECT metric_arr_id, metric_arr_data FROM metric_arr WHERE piece_id = ? AND instrument_id = ? AND (edition_label = ? OR (edition_label IS NULL AND ? IS NULL)) LIMIT 1');
-        $stmt->bind_param('iiss', $details['piece_id'], $details['instrument_id'], $details['edition_label'], $details['edition_label']); $stmt->execute();
-        $existing = $stmt->get_result()->fetch_assoc();
-        if ($existing) {
-            $same = $existing['metric_arr_data'] === $normalized;
-            foreach (['pdfs' => 'optimized_sha256', 'hd-pdfs' => 'original_sha256'] as $directory => $hash) {
-                $path = $webroot . '/' . $directory . '/' . $filename;
-                $same = $same && is_file($path) && hash_file('sha256', $path) === ($item[$hash] ?? '');
+        $transaction = true;
+        // Check both destinations before creating either. An existing identical
+        // result is accepted after a lost successful response or metadata write.
+        foreach ($targets as &$target) {
+            $stmt = $db->prepare('SELECT metric_arr_id, metric_arr_data FROM metric_arr WHERE piece_id = ? AND instrument_id = ? AND (edition_label = ? OR (edition_label IS NULL AND ? IS NULL)) LIMIT 1');
+            $stmt->bind_param('iiss', $details['piece_id'], $target['instrument_id'], $details['edition_label'], $details['edition_label']); $stmt->execute();
+            $existing = $stmt->get_result()->fetch_assoc();
+            if ($existing) {
+                $same = $existing['metric_arr_data'] === $normalized;
+                foreach (['pdfs' => 'optimized_sha256', 'hd-pdfs' => 'original_sha256'] as $directory => $hash) {
+                    $path = $webroot . '/' . $directory . '/' . $target['pdf_file'];
+                    $same = $same && is_file($path) && hash_file('sha256', $path) === ($item[$hash] ?? '');
+                }
+                if (!$same) throw new DomainException('This part and edition is already in the library. Choose a new edition to add this PDF.');
+                $target['metric_arr_id'] = (int) $existing['metric_arr_id'];
+            } else {
+                foreach (['pdfs', 'hd-pdfs'] as $directory) {
+                    if (file_exists($webroot . '/' . $directory . '/' . $target['pdf_file'])) throw new DomainException('A PDF with this piece, part and edition already exists. Choose a different edition.');
+                }
             }
-            if (!$same) throw new DomainException('This part and edition is already in the library. Choose a new edition to add this PDF.');
-            $db->rollback();
-            $item = array_replace($item, $details, ['status' => 'completed', 'metric_arr_id' => (int) $existing['metric_arr_id'], 'pdf_file' => $filename]);
-            mwPdfQueueWrite($folder . '/item.json', $item);
-            return $item;
         }
-        foreach (['pdfs' => 'optimized.pdf', 'hd-pdfs' => 'hd.pdf'] as $directory => $source) {
-            $path = $webroot . '/' . $directory;
-            if (!is_dir($path) && !mkdir($path, 0755, true)) throw new RuntimeException('Could not create the PDF library folder.');
-            $destination = $path . '/' . $filename;
-            mwPdfQueueCopyExclusive($folder . '/' . $source, $destination); $created[] = $destination;
-        }
+        unset($target);
         $version = max(1, (int) ($input['measures_version'] ?? 1));
-        $stmt = $db->prepare('INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data, edition_label) VALUES (?, ?, ?, ?, ?)');
-        $stmt->bind_param('iiiss', $details['piece_id'], $details['instrument_id'], $version, $normalized, $details['edition_label']); $stmt->execute();
-        $metricId = (int) $db->insert_id;
-        $directory = $webroot . '/data/metrics';
-        if (!is_dir($directory) && !mkdir($directory, 0755, true)) throw new RuntimeException('Could not create the metrics folder.');
-        $path = $directory . '/' . $metricId . '.json';
-        $stream = @fopen($path, 'xb');
-        if (!$stream) throw new RuntimeException('Could not create static part geometry.');
-        $created[] = $path;
-        $written = fwrite($stream, $normalized); fclose($stream);
-        if ($written !== strlen($normalized)) throw new RuntimeException('Could not save static part geometry.');
+        $primary = null;
+        foreach ($targets as &$target) {
+            if (!isset($target['metric_arr_id'])) {
+                foreach (['pdfs' => 'optimized.pdf', 'hd-pdfs' => mwPdfQueueHdName($item)] as $directory => $source) {
+                    $path = $webroot . '/' . $directory;
+                    if (!is_dir($path) && !mkdir($path, 0755, true)) throw new RuntimeException('Could not create the PDF library folder.');
+                    $destination = $path . '/' . $target['pdf_file'];
+                    mwPdfQueueCopyExclusive($folder . '/' . $source, $destination); $created[] = $destination;
+                }
+                $stmt = $db->prepare('INSERT INTO metric_arr (piece_id, instrument_id, measures_version, metric_arr_data, edition_label) VALUES (?, ?, ?, ?, ?)');
+                $stmt->bind_param('iiiss', $details['piece_id'], $target['instrument_id'], $version, $normalized, $details['edition_label']); $stmt->execute();
+                $target['metric_arr_id'] = (int) $db->insert_id;
+                $directory = $webroot . '/data/metrics';
+                if (!is_dir($directory) && !mkdir($directory, 0755, true)) throw new RuntimeException('Could not create the metrics folder.');
+                $path = $directory . '/' . $target['metric_arr_id'] . '.json';
+                $stream = @fopen($path, 'xb');
+                if (!$stream) throw new RuntimeException('Could not create static part geometry.');
+                $created[] = $path;
+                $written = fwrite($stream, $normalized); fclose($stream);
+                if ($written !== strlen($normalized)) throw new RuntimeException('Could not save static part geometry.');
+            }
+            if ($target['instrument_id'] === $details['instrument_id']) $primary = $target;
+        }
+        unset($target);
         $db->commit(); $committed = true;
-        $item = array_replace($item, $details, ['status' => 'completed', 'metric_arr_id' => $metricId, 'pdf_file' => $filename]);
+        $item = array_replace($item, $details, $primary, ['status' => 'completed', 'published_parts' => $targets]);
         mwPdfQueueWrite($folder . '/item.json', $item);
         // Canonical library copies are complete; release temporary queue storage.
-        foreach (['hd.pdf', 'optimized.pdf', 'draft.json'] as $file) if (is_file($folder . '/' . $file)) unlink($folder . '/' . $file);
+        mwPdfQueueCleanupFiles($folder);
         return $item;
     } catch (Throwable $error) {
-        if (!$committed) { $db->rollback(); foreach ($created as $path) if (is_file($path)) unlink($path); }
+        if (!$committed) {
+            if ($transaction) $db->rollback();
+            foreach ($created as $path) if (is_file($path)) unlink($path);
+        }
         throw $error;
     } finally {
-        $release = $db->prepare('SELECT RELEASE_LOCK(?)'); $release->bind_param('s', $lockName); $release->execute();
+        foreach (array_reverse($locks) as $lockName) {
+            $release = $db->prepare('SELECT RELEASE_LOCK(?)'); $release->bind_param('s', $lockName); $release->execute();
+            $release->get_result()->free(); $release->close();
+        }
     }
 }

@@ -45,7 +45,10 @@ try {
     if ($method === 'GET' && $action === 'file') {
         $kind = ($_GET['kind'] ?? '') === 'hd' ? 'hd.pdf' : 'optimized.pdf';
         if ($kind === 'hd.pdf' && !$canUpload) throw new DomainException('Only the super admin can download queue originals.');
-        $folder = mwPdfQueueFolder($root, $id); $file = $folder . '/' . $kind;
+        $folder = mwPdfQueueFolder($root, $id);
+        $item = json_decode(file_get_contents($folder . '/item.json'), true);
+        if ($kind === 'hd.pdf' && !empty($item['fix_skew']) && !in_array($item['status'], ['ready', 'completed'], true)) throw new InvalidArgumentException('This PDF is not ready yet.');
+        $file = $folder . '/' . ($kind === 'hd.pdf' ? mwPdfQueueHdName($item) : $kind);
         if (!is_file($file)) {
             $item = json_decode(file_get_contents($folder . '/item.json'), true);
             if (($item['status'] ?? '') === 'completed') {
@@ -71,15 +74,16 @@ try {
                 if ($item['status'] !== 'uploading') return $item;
                 if ($item['received'] !== $item['original_bytes'] || filesize($folder . '/hd.pdf') !== $item['original_bytes']) throw new InvalidArgumentException('The PDF upload is incomplete.');
                 $item['original_sha256'] = hash_file('sha256', $folder . '/hd.pdf');
+                $item['upload_sha256'] = $item['original_sha256'];
                 $item['status'] = 'queued';
             } elseif ($action === 'retry') {
                 if ($item['status'] !== 'error') throw new InvalidArgumentException('This PDF is not waiting for a retry.');
                 $item['status'] = 'queued'; $item['error'] = null;
             } elseif ($action === 'discard') {
-                if ($item['status'] === 'processing') throw new InvalidArgumentException('Wait for compression to finish before removing this PDF.');
+                if ($item['status'] === 'processing') throw new InvalidArgumentException('Wait for processing to finish before removing this PDF.');
                 if ($item['status'] === 'completed') throw new InvalidArgumentException('This part has already been saved to the library.');
                 $item['status'] = 'discarded';
-                foreach (['hd.pdf', 'optimized.pdf', 'draft.json'] as $file) if (is_file($folder . '/' . $file)) unlink($folder . '/' . $file);
+                mwPdfQueueCleanupFiles($folder);
             } elseif ($action === 'draft') {
                 if ($item['status'] !== 'ready') throw new InvalidArgumentException('This PDF is not available for editing.');
                 if (strlen($_POST['metrics'] ?? '') > 16 * 1024 * 1024) throw new InvalidArgumentException('The page geometry is too large.');
@@ -93,6 +97,7 @@ try {
                 $metrics = json_decode($_POST['metrics'] ?? '', true, 512, JSON_THROW_ON_ERROR);
                 mwPdfQueueMetrics($metrics, $item['pages'], false);
                 $details = mwPdfQueueDetails($db, $_POST);
+                mwPdfQueueValidateCombined(!empty($item['combined_cello_bass']), $details);
                 $preparation = (string) ($_POST['barline_preparation'] ?? 'unverified');
                 if (!in_array($preparation, ['complete', 'excluded', 'unverified'], true)) throw new InvalidArgumentException('Wait for barline detection to finish before saving the queue draft.');
                 mwPdfQueueWrite($folder . '/draft.json', ['metrics' => $metrics, 'details' => $details,
@@ -112,7 +117,9 @@ try {
         $recordings = [];
         $stmt = $db->prepare('SELECT recording_id FROM recordings WHERE piece_id = ?'); $stmt->bind_param('i', $result['piece_id']); $stmt->execute();
         foreach ($stmt->get_result() as $row) $recordings[] = (int) $row['recording_id'];
-        purgeMetricArrCache($result['metric_arr_id'], $result['piece_id'], $result['instrument_id'], $recordings);
+        foreach ($result['published_parts'] ?? [$result] as $part) {
+            purgeMetricArrCache($part['metric_arr_id'], $result['piece_id'], $part['instrument_id'], $recordings);
+        }
         } catch (Throwable $purgeError) { error_log('Queued part saved; cache purge failed: ' . $purgeError->getMessage()); }
     }
     echo json_encode(['item' => $result]);

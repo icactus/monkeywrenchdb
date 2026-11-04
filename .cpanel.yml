@@ -73,7 +73,7 @@ deployment:
     - /bin/cp synpdf_182/editmode/synpdf-edit-mode.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/part-pdf-queue.php synpdf_182/editmode/part-pdf-queue.js synpdf_182/editmode/part-pdf-queue.css synpdf_182/editmode/auto-barline-detection.js $DEPLOYPATH3
     - /bin/mkdir -p /home/monkcdmb/pdf-queue-tools
-    - /bin/cp scripts/compress-pdf-low-memory.py scripts/process-pdf-queue.py /home/monkcdmb/pdf-queue-tools/
+    - /bin/cp scripts/compress-pdf-low-memory.py scripts/process-pdf-queue.py scripts/deskew-pdf.py scripts/pdf-compressor-requirements.txt /home/monkcdmb/pdf-queue-tools/
     - /bin/cp synpdf_182/editmode/CNN-editor-mode.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/ml-label-editor.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/edit-mode-tools.js $DEPLOYPATH3

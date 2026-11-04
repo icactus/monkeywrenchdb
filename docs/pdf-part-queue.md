@@ -3,8 +3,50 @@
 Open Edit Mode. The primary administrator (user ID 1 by default) sees **Upload
 PDFs** above the barline workflow. Select multiple PDFs, then upload the batch.
 A filename such as `71-39.pdf` assigns piece 71 and instrument/part 39. Leading
-zeroes are accepted. Only filenames that do not match known catalog IDs prompt
-for a piece and part. No PDF is published to the library at this stage.
+zeroes are accepted. Filenames that do not match known catalog IDs prompt for a
+piece and part. Cello and bass uploads also open the assignment dialog so their
+shared-part option can be selected. No PDF is published to the library at this stage.
+
+For instrument IDs **4** (cello) and **5** (bass), the upload assignment dialog
+offers **Combined cello/bass part**. The checkbox appears only for these two IDs;
+Solo Cello and other instruments do not qualify. It is off by default and applies
+to that individual PDF. Changing the instrument to another ID clears the choice.
+Known cello/bass filenames start with their assignment filled in; the checkbox
+also appears when selecting cello or bass for an unmatched filename.
+
+Combined parts upload, process and receive barline edits once. The queue and
+Submit Part assignment show that both instruments will be saved. Clicking
+**Submit Part** creates separate entries for instrument IDs 4 and 5, each with
+its own HD PDF, compressed PDF, database record and static geometry JSON. Both
+copies share the same reviewed barline data, measures version and edition label.
+If **Fix skew** is selected, both copies use the same corrected master. The
+primary selected instrument remains the viewer's part after submission.
+
+Both destinations are checked and locked before publication. A conflict in
+either instrument prevents saving the pair, and a failure while saving the
+second part rolls back the new records and files for both. The queued upload and
+edits remain available for retry. Retrying a completed save does not duplicate
+the records. Both instruments' metadata caches are purged after publication;
+temporary queue PDFs are released after the pair is saved. No duplication occurs
+when the checkbox was left unchecked.
+
+Select **Fix skew** before clicking **Upload PDFs** to straighten tilted scans.
+The choice applies to the selected batch and stays with each upload through
+resume, retry and overwrite confirmation. It is off by default. The server first
+creates a corrected HD master, then generates the compressed PDF from that same
+master. This happens before the PDF is opened for barline work, so both qualities
+and the reviewed coordinates line up. The queue shows **Fixing skew**, followed
+by **Compressing**, with page progress and a corrected-page count when ready.
+
+Correction measures staff-line angles in small grayscale previews. Only confident
+tilts between 0.1 and 4.5 degrees are corrected. Blank pages, covers without a
+reliable staff pattern, ambiguous scans and pages with interactive annotations,
+widgets or links are preserved. The original PDF content is rotated and fitted
+inside the original page dimensions; embedded scans are not resampled. Small
+printed curves in a scan are not dewarped. If no pages need correction, the HD
+master remains byte-for-byte identical to the upload. The raw upload stays private
+for retries, which always restart from it rather than rotating an already
+corrected PDF. Temporary copies are removed on publication or queue removal.
 
 Each file has an upload progress bar. All files upload before the batch is
 submitted for server processing. Once files show **Submitted**, the browser can
@@ -83,7 +125,7 @@ the queued PDF restores that work. Stale tabs cannot overwrite a newer saved
 queue draft. Page-close saving uses a beacon when supported; for very large
 scores, wait for **Edits saved to the queue** before closing.
 
-Use **Submit Part** to publish the retained HD original, the prepared PDF, normalized
+Use **Submit Part** to publish the HD master (corrected when **Fix skew** was selected), the prepared PDF, normalized
 reviewed geometry, and static metric JSON. Existing parts or filenames are never
 overwritten: choose another edition if necessary. A successful save removes the
 part from the pending queue and releases its temporary PDF copies. Ordinary
@@ -106,6 +148,15 @@ worker through `nohup nice`; the worker takes a global filesystem lock, so
 multiple browser requests cannot start concurrent conversions. If a process
 stops unexpectedly, the next primary-admin queue refresh restarts pending work.
 
+Before deploying the skew option, update the private environment using the
+requirements command above. It now includes NumPy 1.26.4 and headless OpenCV
+4.9.0.80 alongside PyMuPDF and Pillow. The deployment copies the requirements and
+deskew script into `pdf-queue-tools` too; updating code alone does not install
+Python dependencies. Skew analysis runs in a separate child capped at 384 MB and
+180 CPU seconds, with one OpenCV/BLAS thread. Uploads without **Fix skew** do not
+import or run the skew detector. A failed skew stage stops the job before
+compression and offers **Retry processing**.
+
 Optional constants in the private `phpfiles/config.php`:
 
 - `MW_SUPER_ADMIN_USER_ID`: primary administrator ID; defaults to 1.
@@ -122,9 +173,11 @@ functions as the existing part submission endpoint.
 
 ```sh
 python3 -m unittest tests.test_pdf_low_memory
+python3 -m unittest tests.test_pdf_deskew
 php tests/pdf-queue.test.php
 node --test tests/edit-mode-part-save.test.cjs
 node --test tests/auto-barline-detection.test.cjs tests/pdf-queue-upload.test.cjs tests/pdf-queue-transport.test.cjs
+node --test tests/pdf-queue-assignment.test.cjs tests/pdf-queue-submission.test.cjs
 ```
 
 The PHP tests use a disposable local database and private temporary web root.

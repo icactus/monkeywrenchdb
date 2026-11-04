@@ -8,8 +8,8 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
-    <link rel="stylesheet" href="part-pdf-queue.css?v=4">
-    <script src="part-pdf-queue.js?v=10" defer></script>
+    <link rel="stylesheet" href="part-pdf-queue.css?v=5">
+    <script src="part-pdf-queue.js?v=12" defer></script>
     <script src="auto-barline-detection.js?v=4" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
@@ -956,6 +956,7 @@
                 <h2 id="pdf-queue-title">Parts waiting for barline work</h2>
                 <div id="pdf-queue-upload-controls" hidden>
                     <input id="pdf-queue-files" type="file" accept="application/pdf,.pdf" multiple aria-label="HD PDFs to prepare">
+                    <label><input id="pdf-queue-fix-skew" type="checkbox"> Fix skew</label>
                     <button id="pdf-queue-upload" type="button">Upload PDFs</button>
                     <ul id="pdf-queue-uploads" aria-label="PDF uploads"></ul>
                     <button id="pdf-queue-clear-finished" type="button" hidden>Clear finished</button>

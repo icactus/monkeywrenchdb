@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../synpdf_182/editmode/part-pdf-queue.js'), 'utf8');
 
-function harness({ fail = false, hold = false } = {}) {
+function harness({ fail = false, hold = false, combined = false } = {}) {
     const calls = [], events = [], notices = [], listeners = {};
     const fields = {piece_id: {value: '299'}, instrument_id: {value: '39'}, edition_label: {value: 'Test edition'}, measures_version: {value: '1'}};
     const button = {disabled: false}, form = {hidden: false, querySelector: selector => selector === '[type=submit]' ? button : fields[selector.match(/name=(\w+)/)[1]]};
@@ -24,6 +24,8 @@ function harness({ fail = false, hold = false } = {}) {
             assert.equal(action, 'publish');
             if (fail) throw new Error('Server unavailable');
             const result = {item: {id, status: 'completed', piece_id: 299, instrument_id: 39, pdf_file: '299-39-test_edition.pdf'}};
+            if (combined) Object.assign(result.item, {instrument_id: 5, pdf_file: '299-5-test_edition.pdf', combined_cello_bass: true,
+                published_parts: [{instrument_id: 4, metric_arr_id: 1, pdf_file: '299-4-test_edition.pdf'}, {instrument_id: 5, metric_arr_id: 2, pdf_file: '299-5-test_edition.pdf'}]});
             if (hold) return new Promise(resolve => {resolvePublish = () => resolve(result);});
             return result;
         },
@@ -90,4 +92,15 @@ test('submission without a queued part never falls through to the legacy upload 
     assert(h.event.prevented && h.event.stopped);
     assert.equal(h.calls.length, 0);
     assert.match(h.notices.at(-1), /Open a PDF from the waiting list/);
+});
+
+test('one combined submission reports both saved files without reopening or rescanning the PDF', async () => {
+    const h = harness({combined: true}), doc = h.c.pdfDoc$$module$synpdf;
+    await h.submit();
+    assert.equal(h.calls.filter(call => call.action === 'publish').length, 1);
+    assert.equal(h.notices.at(-1), 'Submitted 299-4-test_edition.pdf and 299-5-test_edition.pdf.');
+    assert.equal(h.events[0].detail.published_parts.length, 2);
+    assert.equal(h.c.pdfDoc$$module$synpdf, doc);
+    assert.equal(h.c.MetricStore.getMetricData(), h.metrics);
+    assert.equal(h.c.snapshot(), null);
 });
