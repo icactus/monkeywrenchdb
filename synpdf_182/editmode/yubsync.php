@@ -204,25 +204,29 @@
         }
 
         .tooltip-container {
-            position: relative;
             display: inline-block;
+            flex-shrink: 0;
         }
 
         .tooltip-text {
             visibility: hidden;
-            width: 300px;
+            box-sizing: border-box;
+            width: min(300px, 100%);
             background-color: #555;
             color: #fff;
             text-align: center;
             border-radius: 6px;
             padding: 5px 8px;
             position: absolute;
-            z-index: 1;
-            left: 100%;
+            z-index: 5;
+            left: 0;
+            top: 100%;
             opacity: 0;
             transition: opacity 0.3s;
             font-size: 14px;
             line-height: 1.4;
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
 
         .tooltip-container:hover .tooltip-text {
@@ -735,6 +739,7 @@
         }
 
         .label-wrapper {
+            position: relative;
             display: flex;
             flex-direction: row;
         }
