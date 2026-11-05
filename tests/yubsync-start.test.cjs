@@ -7,16 +7,16 @@ const folder = path.join(__dirname, '../synpdf_182/editmode');
 const core = fs.readFileSync(path.join(folder, 'synpdf-full-yubsync2.js'), 'utf8');
 const tools = fs.readFileSync(path.join(folder, 'yubsync-tools.js'), 'utf8');
 const clone = value => JSON.parse(JSON.stringify(value));
-function definition(name) {
-    const start = core.indexOf('function ' + name + '(');
+function definition(name, source = core) {
+    const start = source.indexOf('function ' + name + '(');
     assert(start >= 0, name);
-    return core.slice(start, core.indexOf('\n}', start) + 2);
+    return source.slice(start, source.indexOf('\n}', start) + 2);
 }
-function setup({ sync = true, pending = false } = {}) {
+function setup({ sync = true, pending = false, confirm = true } = {}) {
     const calls = [];
     const jq = { css() { return this; }, html() { return this; }, toggle() { return this; }, prop(key, value) { calls.push([key, value]); return this; } };
     const c = vm.createContext({
-        window: {}, $: selector => Object.assign(Object.create(jq), {
+        window: { confirm(message) { calls.push(['confirm', message]); return confirm; } }, $: selector => Object.assign(Object.create(jq), {
             toggle(value) { calls.push(['toggle', selector, value]); return this; }
         }),
         Wijzer$$module$synpdf: function () {},
@@ -39,7 +39,7 @@ function setup({ sync = true, pending = false } = {}) {
     for (const name of ['knip', 'addDummySys', 'syncChk', 'initGlobals']) {
         vm.runInContext(definition(name + '$$module$synpdf'), c);
     }
-    for (const name of ['startSync', 'keySync', 'time2x']) {
+    for (const name of ['startSync', 'keySync', 'time2x', 'endSyncHere', 'changeOffset', 'changeTimesKeyb']) {
         const start = core.indexOf('Wijzer$$module$synpdf.prototype.' + name + ' =');
         vm.runInContext(core.slice(start, core.indexOf('\n};', start) + 3), c);
     }
@@ -129,6 +129,131 @@ test('a new sync starts and finishes without changing a checkbox, leaving its in
     assert.deepEqual(calls.filter(call => call[0] === 'toggle' && call[1] === '#sync_out').at(-1),
         ['toggle', '#sync_out', true]);
     assert(calls.some(call => call[0] === 'checked' && call[1] === false));
+});
+
+function earlyEndingFixture(options) {
+    const h = setup(options), { c } = h;
+    renderPage(c); renderPage(c, 1400); renderPage(c, 2700); renderPage(c, 4000);
+    c.addDummySys$$module$synpdf();
+    // A jump reaches a cadenza, with one later timing that must be discarded.
+    c.deTijden$$module$synpdf = [{ t: 0, mix: 0 }, { t: 12, mix: 6 }, { t: 20, mix: 7 }];
+    c.lastSynced$$module$synpdf = 2;
+    c.msc_wz$$module$synpdf.time2x(15);
+    h.calls.length = 0;
+    return h;
+}
+
+test('ending at a jumped-to measure confirms, trims later timings and holds the highlight', () => {
+    const { c, calls } = earlyEndingFixture();
+    let saved;
+    c.window.YubSyncProgress = { save() { saved = clone(c.deTijden$$module$synpdf); } };
+    const cursor = c.msc_wz$$module$synpdf.maatloper[0].style;
+    const before = clone(cursor);
+    assert.equal(c.msc_wz$$module$synpdf.endSyncHere(), true);
+    assert.match(calls[0][1], /unusual.*measure 7/);
+    assert.deepEqual(saved, [{ t: 0, mix: 0 }, { t: 12, mix: 6 }, { t: 9999, mix: 8, end: true }]);
+    assert.equal(c.lastSynced$$module$synpdf, 2);
+    assert.equal(c.detix$$module$synpdf, 1);
+    assert.equal(c.demix$$module$synpdf, 6);
+    assert.deepEqual(clone(cursor), before);
+    assert.equal(c.msc_wz$$module$synpdf.paused, true);
+    assert.equal(c.opt$$module$synpdf.synbox, 0);
+    assert(!calls.some(call => call[0] === 'seek'), 'ending must not advance or rewind the video');
+    c.msc_wz$$module$synpdf.time2x(100);
+    assert.equal(c.demix$$module$synpdf, 6, 'later playback holds the final selected measure');
+});
+
+test('cancelling an early ending preserves all timings and playback state', () => {
+    const { c, calls } = earlyEndingFixture({ confirm: false });
+    const times = clone(c.deTijden$$module$synpdf);
+    assert.equal(c.msc_wz$$module$synpdf.endSyncHere(), false);
+    assert.deepEqual(clone(c.deTijden$$module$synpdf), times);
+    assert.equal(c.opt$$module$synpdf.synbox, 1);
+    assert.equal(c.msc_wz$$module$synpdf.paused, false);
+    assert.deepEqual(calls.map(call => call[0]), ['confirm']);
+});
+
+test('ending is unavailable before recording or during a score save', () => {
+    const { c, calls } = setup();
+    assert.equal(c.msc_wz$$module$synpdf.endSyncHere(), false);
+    c.deTijden$$module$synpdf = [{ t: 0, mix: 0 }];
+    c.detix$$module$synpdf = c.lastSynced$$module$synpdf = 0;
+    c.window.YubSyncLiveEdit = { busy: true };
+    assert.equal(c.msc_wz$$module$synpdf.endSyncHere(), false);
+    assert.deepEqual(calls, []);
+});
+
+test('ending suppresses fillers through review, score rerenders and player loads', () => {
+    const { c } = earlyEndingFixture();
+    c.msc_wz$$module$synpdf.endSyncHere();
+    const times = clone(c.deTijden$$module$synpdf);
+    c.syncChk$$module$synpdf();
+    c.deMaten$$module$synpdf = []; c.Cs$$module$synpdf = [];
+    renderPage(c); renderPage(c, 1400); renderPage(c, 2700); renderPage(c, 4000);
+    c.addDummySys$$module$synpdf();
+    assert.deepEqual(clone(c.deTijden$$module$synpdf), times);
+
+    const player = fs.readFileSync(path.join(folder, '../../stripped-synpdf.js'), 'utf8');
+    vm.runInContext(definition('addDummySys$$module$synpdf', player), c);
+    c.bottomSpace$$module$synpdf = 500;
+    c.$ = () => ({ toggle() {}, append() {} });
+    c.deMaten$$module$synpdf.pop();
+    c.addDummySys$$module$synpdf();
+    assert.deepEqual(clone(c.deTijden$$module$synpdf), times);
+});
+
+test('timing adjustments keep the closing timestamp exactly 9999', () => {
+    const { c } = earlyEndingFixture();
+    c.msc_wz$$module$synpdf.endSyncHere();
+    c.msc_wz$$module$synpdf.changeOffset(.1);
+    assert.equal(c.deTijden$$module$synpdf[1].t, 11.9);
+    c.msc_wz$$module$synpdf.changeTimesKeyb(.1);
+    assert.equal(c.deTijden$$module$synpdf.at(-1).t, 9999);
+});
+
+test('resuming an early ending removes its closing marker before recording more measures', () => {
+    const { c } = earlyEndingFixture();
+    c.msc_wz$$module$synpdf.endSyncHere();
+    c.opt$$module$synpdf.synbox = 1;
+    c.syncChk$$module$synpdf();
+    assert.deepEqual(clone(c.deTijden$$module$synpdf), [{ t: 0, mix: 0 }, { t: 12, mix: 6 }]);
+    assert.equal(c.lastSynced$$module$synpdf, 1);
+    assert.equal(c.demix$$module$synpdf, 6);
+});
+
+test('the End sync here button enables submission for a selected section', () => {
+    const { c } = earlyEndingFixture();
+    const elements = new Map();
+    function element(id) {
+        if (!elements.has(id)) elements.set(id, {
+            textContent: '', hidden: false, disabled: false, dataset: {}, listeners: {},
+            classList: { toggle() {} }, getAttribute() { return null; },
+            addEventListener(type, handler) { this.listeners[type] = handler; },
+            querySelector() { return element('submit'); }
+        });
+        return elements.get(id);
+    }
+    c.confirm = c.window.confirm;
+    c.window = c;
+    c.document = { getElementById: element };
+    c.addEventListener = () => {};
+    c.setInterval = () => {};
+    c.deMetriek$$module$synpdf = [];
+    c.pdfDoc$$module$synpdf = { numPages: 4 };
+    c.yubsyncMetricContext = { metrics: c.deMetriek$$module$synpdf };
+    c.yubsyncLoadedVideoId = c.opt$$module$synpdf.yubvid = 'abcdefghijk';
+    c.yubchk$$module$synpdf = true;
+    vm.runInContext(tools.slice(tools.indexOf('(function bindYubSyncGuidance()')), c);
+    assert.equal(element('yubsync-end-here').hidden, false);
+    assert.equal(element('yubsync-end-here').disabled, false);
+    assert.equal(c.YubSyncGuidance.canSubmit(), false);
+    element('yubsync-end-here').listeners.click();
+    assert.equal(c.YubSyncGuidance.canSubmit(), true);
+    assert.equal(element('yubsync-end-here').hidden, true);
+    assert.equal(element('addnewrecordingform').hidden, false);
+    assert.equal(element('submit').disabled, false);
+    assert.equal(element('yubsync-completion-eyebrow').textContent, 'SELECTED SECTION SYNCED');
+    assert.match(element('yubsync-completion-copy').textContent, /ends at measure 7.*Later measures are excluded/);
 });
 
 test('sync information shows the current measure and duration, including before the first barline', () => {

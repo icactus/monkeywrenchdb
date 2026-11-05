@@ -1748,7 +1748,7 @@ function addDummySys$$module$synpdf(geometryOnly) {
     // Live edits reuse the existing timeline, scroll margin, and bottom spacer.
     if (geometryOnly) return;
     var timelineIndex = deTijden$$module$synpdf.length;
-    timelineIndex < deMaten$$module$synpdf.length && deTijden$$module$synpdf.push({
+    !deTijden$$module$synpdf.at(-1)?.end && timelineIndex < deMaten$$module$synpdf.length && deTijden$$module$synpdf.push({
         t: deTijden$$module$synpdf[timelineIndex - 1].t + 2,
         mix: timelineIndex
     });

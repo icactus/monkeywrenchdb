@@ -31,7 +31,7 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=63"></script>
+    <script src="synpdf-full-yubsync2.js?v=64"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=7" />
     <style>
@@ -829,6 +829,7 @@
             </form>
             <div id="sync_out">
                 <div id="sync_info"></div>
+                <button type="button" id="yubsync-end-here" hidden disabled title="Make the highlighted measure the final synced measure">End sync here</button>
                 <div id="yubsync-progress-status" role="status" aria-live="polite"></div>
                 <label hidden><span><button id="reset">Backspace</button></span> one measure</label>
             </div>
@@ -954,7 +955,7 @@
             </aside>
             <div id="yubsync-completion" role="region" aria-labelledby="yubsync-completion-title" hidden>
                 <div class="yubsync-completion-card">
-                    <span class="yubsync-completion-eyebrow">ALL MEASURES SYNCED</span>
+                    <span id="yubsync-completion-eyebrow" class="yubsync-completion-eyebrow">ALL MEASURES SYNCED</span>
                     <h2 id="yubsync-completion-title">Sync complete</h2>
                     <p id="yubsync-completion-copy">Fill in the recording information and submit. Leave unknown details blank.</p>
                     <form id="addnewrecordingform" method="POST" hidden>
@@ -1083,7 +1084,7 @@
             Press <b>G</b> to remove the most recent pair of repeat marks.</p>
         <button type="button" id="closehelp">Close Help</button>
     </div>
-    <script src="yubsync-tools.js?v=88"></script>
+    <script src="yubsync-tools.js?v=90"></script>
     <script src="yubsync-live-edit.js?v=5"></script>
     <script src="yubsync-progress.js?v=2"></script>
 </body>

@@ -721,6 +721,7 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
     const form = byId('addnewrecordingform');
     if (!offset || !guide || !completion || !form) return;
     const earlier = byId('yubsync-offset-earlier'), later = byId('yubsync-offset-later');
+    const endHere = byId('yubsync-end-here');
     const submit = form.querySelector('[type="submit"]');
     let loadingScore = false, loadingVideo = false, submitted = false;
     let context = null, video = null;
@@ -735,7 +736,11 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
             window.yubsyncLoadedVideoId === get('opt')?.yubvid && !!get('yubchk');
         const recorded = videoReady && Number.isInteger(last) && last >= 0 && last < times.length;
         const complete = recorded && last > 0 && times[last]?.mix === boxes.length - 1;
+        const current = times[get('detix')];
         return { scoreReady, videoReady, recorded, complete, last,
+            endedHere: complete && !!times[last]?.end,
+            canEndHere: recorded && !complete && !!get('opt')?.synbox && !!current &&
+                get('detix') <= last && current.mix < boxes.length - 1,
             finishing: recorded && !complete && !!get('opt')?.synbox && times[last]?.mix === boxes.length - 2 };
     }
     function canSubmit() { return state().complete && !submitted; }
@@ -750,6 +755,10 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
             byId('yubsync-submit-status').textContent = '';
         }
         const s = state();
+        if (endHere) {
+            endHere.hidden = !s.canEndHere;
+            endHere.disabled = !s.canEndHere || !!window.YubSyncLiveEdit?.busy;
+        }
         offset.hidden = !s.scoreReady;
         earlier.disabled = later.disabled = !s.recorded || !!window.YubSyncLiveEdit?.busy;
         offset.classList.toggle('is-first-measure', s.recorded && s.last === 0);
@@ -776,7 +785,9 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
         form.hidden = !s.complete || submitted;
         submit.disabled = !s.complete || submitted || form.getAttribute('aria-busy') === 'true';
         text('yubsync-completion-title', submitted ? 'Recording submitted' : 'Sync complete');
+        text('yubsync-completion-eyebrow', s.endedHere ? 'SELECTED SECTION SYNCED' : 'ALL MEASURES SYNCED');
         text('yubsync-completion-copy', submitted ? 'Your recording has been saved. Choose another piece or recording to sync next.' :
+            (s.endedHere ? `Sync ends at measure ${get('deTijden')[s.last - 1].mix + 1}. Later measures are excluded. ` : '') +
             'Fill in the recording information and submit. Leave unknown details blank.');
     }
     function adjust(amount) {
@@ -787,6 +798,9 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
     }
     earlier.addEventListener('click', () => adjust(-0.1));
     later.addEventListener('click', () => adjust(0.1));
+    endHere?.addEventListener('click', () => {
+        if (state().canEndHere) get('msc_wz').endSyncHere();
+    });
     window.addEventListener('yubsync:before-score-load', () => { loadingScore = true; update(); });
     window.addEventListener('yubsync:before-video-load', () => { loadingVideo = true; update(); });
     window.addEventListener('yubsync:video-ready', () => {

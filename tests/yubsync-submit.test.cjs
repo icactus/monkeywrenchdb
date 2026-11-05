@@ -54,6 +54,17 @@ test('submission waits for pending score corrections, rejects repeated clicks, a
     assert.match(state.status.textContent, /submitted successfully/);
     assert.equal(state.button.disabled, false);
 });
+test('submission preserves a short sync and its explicit 9999 closing timestamp', async () => {
+    const state = setup();
+    const times = [{ t: 0, mix: 0 }, { t: 12, mix: 6 }, { t: 9999, mix: 80, end: true }];
+    state.c.deTijden$$module$synpdf = times;
+    state.c.lastSynced$$module$synpdf = 2;
+    await state.submit();
+    assert.deepEqual(JSON.parse(state.fields.times_arr_data.value), times);
+    assert.equal(state.calls.filter(call => call === 'post').length, 1);
+    assert.ok(state.calls.includes('yubsync:submitted'));
+});
+
 test('failed geometry save leaves the draft intact and never posts incompatible recording timings', async () => {
     const state = setup({ edit: true, save: async () => false });
     await state.submit();

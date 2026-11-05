@@ -682,6 +682,33 @@ Wijzer$$module$synpdf.prototype.keySync = function (keyType) {
         window.YubSyncGuidance?.update();
     }
 };
+Wijzer$$module$synpdf.prototype.endSyncHere = function () {
+    const point = deTijden$$module$synpdf[detix$$module$synpdf];
+    if (!opt$$module$synpdf.synbox || window.YubSyncLiveEdit?.busy ||
+        !point || detix$$module$synpdf > lastSynced$$module$synpdf ||
+        point.mix >= deMaten$$module$synpdf.length - 1) return false;
+    if (point.t >= 9999) {
+        alert('This measure starts at or after 9999 seconds, so the closing timestamp cannot be placed after it.');
+        return false;
+    }
+    if (!window.confirm(`Ending before the end of the score is unusual. Are you sure you want to end the sync at measure ${point.mix + 1}?\n\nThis highlighted measure will be the last synced measure. All later timings will be removed, and later measures will not be added automatically.`)) return false;
+
+    pauseer$$module$synpdf();
+    this.paused = true;
+    deTijden$$module$synpdf.splice(detix$$module$synpdf + 1);
+    // Use the score's existing stop marker, without advancing to another measure.
+    // Keep an explicit flag so rendering never fills the excluded measures.
+    deTijden$$module$synpdf.push({ t: 9999, mix: deMaten$$module$synpdf.length - 1, end: true });
+    lastSynced$$module$synpdf = deTijden$$module$synpdf.length - 1;
+    repMaten$$module$synpdf = [];
+    opt$$module$synpdf.synbox = 0;
+    $("#synbox").prop("checked", false);
+    syncChk$$module$synpdf();
+    this.showSyncInfo();
+    window.YubSyncProgress?.save();
+    window.YubSyncGuidance?.update();
+    return true;
+};
 Wijzer$$module$synpdf.prototype.goMsre = function (a, b) {
     0 == deTijden$$module$synpdf.length || b.altKey || b.ctrlKey || b.shiftKey || b.metaKey || (b.preventDefault && b.preventDefault(), detix$$module$synpdf += a ? 1 : -1, 0 > detix$$module$synpdf && (detix$$module$synpdf = deTijden$$module$synpdf.length - 1), detix$$module$synpdf >= deTijden$$module$synpdf.length && (detix$$module$synpdf = 0), playPause2$$module$synpdf(!1, deTijden$$module$synpdf[detix$$module$synpdf].t + TOFF$$module$synpdf + offset$$module$synpdf))
 };
@@ -717,12 +744,14 @@ Wijzer$$module$synpdf.prototype.showSyncInfo = function () {
     const point = deTijden$$module$synpdf[detix$$module$synpdf];
     const next = deTijden$$module$synpdf[detix$$module$synpdf + 1];
     const duration = point && next ? next.t - point.t : 0;
-    this.sinfo.html("measure: " + (point ? point.mix + 1 : 'Ready') + "<br>duration: " + duration.toFixed(3) + " sec.");
+    this.sinfo.html("measure: " + (point ? point.mix + 1 : 'Ready') + "<br>" +
+        (next?.end ? 'Final synced measure' : "duration: " + duration.toFixed(3) + " sec."));
     window.YubSyncGuidance?.update();
 };
 Wijzer$$module$synpdf.prototype.changeTimesKeyb = function (a) {
     if (!(detix$$module$synpdf >= deTijden$$module$synpdf.length - 1)) {
         var b = deTijden$$module$synpdf[detix$$module$synpdf + 1];
+        if (b.end) return;
         b.t += a;
         b.t = Math.round(1E3 * b.t) / 1E3
         window.YubSyncProgress?.save();
@@ -734,6 +763,7 @@ Wijzer$$module$synpdf.prototype.changeOffset = function (a) {
     offset$$module$synpdf = Math.round(1E3 * offset$$module$synpdf) / 1E3;
     for (var b = 1; b < deTijden$$module$synpdf.length; ++b) {
         var c = deTijden$$module$synpdf[b];
+        if (c.end) continue;
         c.t -= a;
         c.t = Math.round(1E3 * c.t) / 1E3
     }
@@ -742,6 +772,7 @@ Wijzer$$module$synpdf.prototype.changeOffset = function (a) {
 };
 Wijzer$$module$synpdf.prototype.startSync = function () {
     deTijden$$module$synpdf.splice(lastSynced$$module$synpdf + 1);
+    if (deTijden$$module$synpdf.at(-1)?.end) deTijden$$module$synpdf.pop();
     lastSynced$$module$synpdf = deTijden$$module$synpdf.length - 1;
     if (-1 == lastSynced$$module$synpdf) {
         $(".demaat").css({
@@ -1044,7 +1075,7 @@ function knip$$module$synpdf(a, b, c) {
             })
         }
     }
-    for (e = deTijden$$module$synpdf.length; !opt$$module$synpdf.synbox && e < deMaten$$module$synpdf.length; ++e) deTijden$$module$synpdf.push({
+    for (e = deTijden$$module$synpdf.length; !opt$$module$synpdf.synbox && !deTijden$$module$synpdf.at(-1)?.end && e < deMaten$$module$synpdf.length; ++e) deTijden$$module$synpdf.push({
         t: 0 < e ? deTijden$$module$synpdf[e - 1].t +
             2 : 0,
         mix: e
@@ -1078,7 +1109,7 @@ function addDummySys$$module$synpdf() {
         h: a.h
     });
     a = deTijden$$module$synpdf.length;
-    !opt$$module$synpdf.synbox && a < deMaten$$module$synpdf.length && deTijden$$module$synpdf.push({
+    !opt$$module$synpdf.synbox && !deTijden$$module$synpdf.at(-1)?.end && a < deMaten$$module$synpdf.length && deTijden$$module$synpdf.push({
         t: deTijden$$module$synpdf[a - 1].t + 2,
         mix: a
     });
@@ -2799,8 +2830,8 @@ function syncChk$$module$synpdf() {
             // 2. Start the synchronization process
             msc_wz$$module$synpdf.startSync();
             msc_wz$$module$synpdf.showSyncInfo();
-        } else {
-            //If sync is disabled...
+        } else if (!deTijden$$module$synpdf.at(-1)?.end) {
+            //If sync is disabled without an explicit ending...
             //Don't push more filler timestamps if we haven't synced anything and there are already timestamps.
             if (lastSynced$$module$synpdf === -1 && deTijden$$module$synpdf.length > 0) {
                 return;

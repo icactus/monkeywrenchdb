@@ -139,6 +139,21 @@ test('reopening after a refresh or restart prompts and restores timestamps, offs
     assert.equal(reopened.prompts.length, 1, 'periodic checks do not repeat the restore prompt');
 });
 
+test('an early ending survives browser recovery with its exact marker and final highlight', () => {
+    const original = browser(); original.stamp(0); original.stamp(2);
+    original.c.deTijden$$module$synpdf.push({ t: 9999, mix: 3, end: true });
+    original.c.lastSynced$$module$synpdf = 2;
+    original.c.opt$$module$synpdf.synbox = false;
+    assert.equal(original.c.YubSyncProgress.save(), true);
+    const reopened = browser({ storage: original.storage });
+    assert.equal(reopened.prompts.length, 1);
+    assert.deepEqual(JSON.parse(JSON.stringify(reopened.c.deTijden$$module$synpdf)),
+        [{ t: 0, mix: 0 }, { t: 2, mix: 1 }, { t: 9999, mix: 3, end: true }]);
+    assert.equal(reopened.c.opt$$module$synpdf.synbox, false);
+    assert.equal(reopened.c.detix$$module$synpdf, 1);
+    assert.equal(reopened.c.demix$$module$synpdf, 1);
+});
+
 test('declining restore clears that draft and the next timestamp starts a new one', () => {
     const original = browser(); original.stamp(0); original.stamp(2);
     const reopened = browser({ storage: original.storage, restore: false });
