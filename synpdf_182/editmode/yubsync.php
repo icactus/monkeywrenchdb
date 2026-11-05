@@ -445,11 +445,6 @@
             width: 30%;
         }
 
-        #help summary {
-            cursor: pointer;
-            font-weight: bold;
-        }
-
         #help #closehelp {
             margin-top: 16px;
         }
@@ -1065,11 +1060,9 @@
         <p>Use <b>,</b> and <b>.</b> after the following measure's timing has been recorded.
             These adjustments are useful between movements; use <b>Backspace</b> to redo a mistimed press.</p>
 
-        <details>
-            <summary>Repeats</summary>
-            <p><b>Shift-click</b> or <b>long-click</b> a measure to add a repeat mark.
-                Press <b>G</b> to remove the most recent pair of repeat marks.</p>
-        </details>
+        <h3>Repeats</h3>
+        <p><b>Shift-click</b> or <b>long-click</b> a measure to add a repeat mark.
+            Press <b>G</b> to remove the most recent pair of repeat marks.</p>
         <button type="button" id="closehelp">Close Help</button>
     </div>
     <script src="yubsync-tools.js?v=87"></script>
