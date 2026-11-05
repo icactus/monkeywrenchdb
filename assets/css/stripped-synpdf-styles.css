@@ -3799,7 +3799,7 @@ body.hand-cursor-active #pdf-container {
 
 .mobile-controls-label {
     font-weight: 400;
-    color: #333;
+    color: inherit;
     font-size: 15px;
 }
 
