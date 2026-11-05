@@ -31,7 +31,7 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=64"></script>
+    <script src="synpdf-full-yubsync2.js?v=65"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=7" />
     <style>
@@ -1084,7 +1084,7 @@
             Press <b>G</b> to remove the most recent pair of repeat marks.</p>
         <button type="button" id="closehelp">Close Help</button>
     </div>
-    <script src="yubsync-tools.js?v=90"></script>
+    <script src="yubsync-tools.js?v=91"></script>
     <script src="yubsync-live-edit.js?v=5"></script>
     <script src="yubsync-progress.js?v=2"></script>
 </body>

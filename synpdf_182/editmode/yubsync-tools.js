@@ -420,6 +420,7 @@ async function bootFromDB(pieceId, partId) {
     }
     const data = await r.json();
     if (window.YubSyncLiveEdit?.active) throw new Error('Save or cancel score corrections before loading another score.');
+    window.resetSyncVideo$$module$synpdf();
 
     // Bind edits to the loaded row, never to dropdowns changed after loading.
     window.yubsyncMetricContext = {

@@ -14,10 +14,12 @@ function definition(name, source = core) {
 }
 function setup({ sync = true, pending = false, confirm = true } = {}) {
     const calls = [];
-    const jq = { css() { return this; }, html() { return this; }, toggle() { return this; }, prop(key, value) { calls.push([key, value]); return this; } };
+    const jq = { css() { return this; }, attr() { return this; }, html() { return this; }, toggle() { return this; }, prop(key, value) { calls.push([key, value]); return this; } };
     const c = vm.createContext({
         window: { confirm(message) { calls.push(['confirm', message]); return confirm; } }, $: selector => Object.assign(Object.create(jq), {
-            toggle(value) { calls.push(['toggle', selector, value]); return this; }
+            toggle(value) { calls.push(['toggle', selector, value]); return this; },
+            hide() { calls.push(['hide', selector]); return this; },
+            val(value) { calls.push(['value', selector, value]); return this; }
         }),
         Wijzer$$module$synpdf: function () {},
         opt$$module$synpdf: { synbox: +sync, lastSynced: -1 },
@@ -27,6 +29,8 @@ function setup({ sync = true, pending = false, confirm = true } = {}) {
         detix$$module$synpdf: 0, demix$$module$synpdf: 0, offset$$module$synpdf: 0,
         xcurprev$$module$synpdf: -1, ycurprev$$module$synpdf: -1, m1_timer$$module$synpdf: null,
         yubchk$$module$synpdf: false, elmed$$module$synpdf: { currentTime: 0 }, TOFF$$module$synpdf: .01,
+        opt_url$$module$synpdf: {}, ybplayer$$module$synpdf: null,
+        dummyPlayer$$module$synpdf: { currentTime: 0, pause() {} },
         pauseer$$module$synpdf() { calls.push(['pause']); },
         doeRol$$module$synpdf(top, immediate) { calls.push(['scroll', top, immediate]); },
         playPause2$$module$synpdf(play, time) {
@@ -36,7 +40,7 @@ function setup({ sync = true, pending = false, confirm = true } = {}) {
         },
         alert(message) { throw new Error(message); }
     });
-    for (const name of ['knip', 'addDummySys', 'syncChk', 'initGlobals']) {
+    for (const name of ['knip', 'addDummySys', 'syncChk', 'initGlobals', 'resetSyncVideo']) {
         vm.runInContext(definition(name + '$$module$synpdf'), c);
     }
     for (const name of ['startSync', 'keySync', 'time2x', 'endSyncHere', 'changeOffset', 'changeTimesKeyb']) {
@@ -70,7 +74,7 @@ test('database Load discards previous session options and arms sync only after r
     assert.equal(c.opt$$module$synpdf.btime, 0);
     assert.equal(c.lastSynced$$module$synpdf, -1);
     c.syncChk$$module$synpdf();
-    assert.deepEqual(calls, [], 'an old score/player must not be restarted during the fetch');
+    assert(!calls.some(call => ['seek', 'info'].includes(call[0])), 'an old score/player must not be restarted during the fetch');
     renderPage(c); renderPage(c, 1400);
     assert.equal(c.deTijden$$module$synpdf.length, 0);
     c.addDummySys$$module$synpdf();
@@ -81,6 +85,95 @@ test('database Load discards previous session options and arms sync only after r
     assert.deepEqual(clone(c.deTijden$$module$synpdf), []);
     assert(calls.some(call => call[0] === 'seek' && call[2] === 0));
     assert(calls.some(call => call[0] === 'checked' && call[1] === true));
+});
+
+function bindDatabaseLoad(c) {
+    c.window = c;
+    c.msc_check_preload$$module$synpdf = () => {
+        c.initGlobals$$module$synpdf();
+        assert.equal(c.opt$$module$synpdf.yubvid, '', 'preload cannot reuse the previous video');
+    };
+    const start = tools.indexOf('async function bootFromDB(');
+    vm.runInContext(tools.slice(start, tools.indexOf('// Re-added function', start)), c);
+}
+
+test('loading another part clears the video and its input after preserving the previous progress', async () => {
+    const { c, calls } = setup();
+    bindDatabaseLoad(c);
+    c.opt$$module$synpdf.yubvid = c.opt_url$$module$synpdf.yubvid = c.yubsyncLoadedVideoId = 'abcdefghijk';
+    c.yubchk$$module$synpdf = true;
+    c.elmed$$module$synpdf = c.ybplayer$$module$synpdf = {
+        stopVideo() { calls.push(['stop-video']); }, clearVideo() { calls.push(['clear-video']); }
+    };
+    c.CustomEvent = class { constructor(type) { this.type = type; } };
+    c.dispatchEvent = event => { calls.push([event.type, c.yubsyncLoadedVideoId]); };
+    c.fetch = async () => ({ ok: true, json: async () => ({ metric_arr_id: 820, pdf_file: '108-2.pdf', metric_arr: [] }) });
+    await c.bootFromDB('108', '2');
+    assert.deepEqual(calls[0], ['yubsync:before-score-load', 'abcdefghijk']);
+    assert.equal(c.yubsyncLoadedVideoId, null);
+    assert.equal(c.yubchk$$module$synpdf, 0);
+    assert.equal(c.opt_url$$module$synpdf.yubvid, undefined);
+    assert.equal(c.elmed$$module$synpdf, c.dummyPlayer$$module$synpdf);
+    assert.equal(c.msc_wz$$module$synpdf.paused, true);
+    assert(calls.some(call => call[0] === 'stop-video'));
+    assert(calls.some(call => call[0] === 'clear-video'));
+    assert(calls.some(call => call[0] === 'hide' && call[1].includes('#vidyub')));
+    assert(calls.some(call => call[0] === 'value' && call[1].includes('#yubid') && call[2] === ''));
+    assert.equal(c.yubsyncMetricContext.partId, '2');
+});
+
+test('a failed part load retains the current recording', async () => {
+    const { c, calls } = setup();
+    bindDatabaseLoad(c);
+    c.opt$$module$synpdf.yubvid = c.yubsyncLoadedVideoId = 'abcdefghijk';
+    c.fetch = async () => ({ ok: false, status: 503, text: async () => 'Try again' });
+    await assert.rejects(c.bootFromDB('108', '2'), /Try again/);
+    assert.equal(c.opt$$module$synpdf.yubvid, 'abcdefghijk');
+    assert.equal(c.yubsyncLoadedVideoId, 'abcdefghijk');
+    assert.deepEqual(calls, []);
+});
+
+test('delayed YouTube callbacks cannot reload a recording cleared by a new part', () => {
+    const { c, calls } = setup();
+    const callbacks = [];
+    c.window = c;
+    c.opt$$module$synpdf.yubvid = 'abcdefghijk';
+    c.ybplayer$$module$synpdf = { stopVideo() {}, cueVideoById() { calls.push(['cue']); } };
+    c.yubload$$module$synpdf = callback => { callbacks.push(callback); c.onYouTubeAPIContinue$$module$synpdf = callback; };
+    vm.runInContext(definition('setPlayer$$module$synpdf'), c);
+    c.setPlayer$$module$synpdf('', '');
+    c.resetSyncVideo$$module$synpdf();
+    c.onYouTubeAPIContinue$$module$synpdf();
+    callbacks[0]();
+    assert(!calls.some(call => call[0] === 'cue'));
+    assert.equal(c.yubsyncLoadedVideoId, null);
+
+    let events;
+    c.YT = { Player: function (id, options) { events = options.events; }, PlayerState: { PLAYING: 1 } };
+    vm.runInContext(definition('yubApiReady$$module$synpdf'), c);
+    c.yubApiReady$$module$synpdf();
+    assert.doesNotThrow(() => events.onStateChange({ data: 1 }), 'old state changes cannot restart the sync clock');
+});
+
+test('a new video can be explicitly loaded after switching parts', () => {
+    const { c, calls } = setup();
+    c.window = c;
+    c.ybplayer$$module$synpdf = {
+        stopVideo() {}, clearVideo() {}, cueVideoById(options) { calls.push(['cue', clone(options)]); }
+    };
+    c.resetSyncVideo$$module$synpdf();
+    c.setSpeed$$module$synpdf = c.setNotationHeight$$module$synpdf = () => {};
+    c.CustomEvent = class { constructor(type) { this.type = type; } };
+    c.dispatchEvent = event => { calls.push([event.type]); };
+    c.yubload$$module$synpdf = callback => callback();
+    vm.runInContext(definition('setPlayer$$module$synpdf'), c);
+    c.opt$$module$synpdf.yubvid = 'lmnopqrstuv';
+    c.setPlayer$$module$synpdf('', '');
+    assert.equal(c.yubsyncLoadedVideoId, 'lmnopqrstuv');
+    assert.equal(c.yubchk$$module$synpdf, 1);
+    assert.equal(c.elmed$$module$synpdf, c.ybplayer$$module$synpdf);
+    assert.deepEqual(calls.find(call => call[0] === 'cue'), ['cue', { videoId: 'lmnopqrstuv', startSeconds: 0 }]);
+    assert(calls.some(call => call[0] === 'yubsync:video-ready'));
 });
 
 test('Start Sync resets preview navigation without inventing recorded measures', () => {

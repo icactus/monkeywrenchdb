@@ -1916,6 +1916,7 @@ function yubApiReady$$module$synpdf() {
                 yubload$$module$synpdf()
             },
             onStateChange: function (a) {
+                if (!yubchk$$module$synpdf || !opt$$module$synpdf.yubvid) return;
                 a.data == YT.PlayerState.PLAYING ? (dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100), setSpeed$$module$synpdf(0), setPauseState$$module$synpdf(!1)) : (dummyPlayer$$module$synpdf.clearKlok(), setPauseState$$module$synpdf(!0));
                 a.data == YT.PlayerState.CUED && setNotationHeight$$module$synpdf()
             }
@@ -1932,6 +1933,26 @@ function yubload$$module$synpdf(a) {
     }
     a && (onYouTubeAPIContinue$$module$synpdf = a);
     "undefined" == typeof YT ? (b(!0), $("#yubuse").prop("checked", !1), $.getScript("https://www.youtube.com/iframe_api")) : (b(!1), onYouTubeAPIContinue$$module$synpdf())
+}
+
+function resetSyncVideo$$module$synpdf() {
+    opt$$module$synpdf.yubvid = '';
+    delete opt_url$$module$synpdf.yubvid;
+    window.yubsyncLoadedVideoId = null;
+    // An iframe API request from the previous recording may still be pending.
+    onYouTubeAPIContinue$$module$synpdf = function () {};
+    yubchk$$module$synpdf = 0;
+    elmed$$module$synpdf = null;
+    dummyPlayer$$module$synpdf.pause();
+    dummyPlayer$$module$synpdf.currentTime = 0;
+    elmed$$module$synpdf = dummyPlayer$$module$synpdf;
+    media_file$$module$synpdf = mediaFnm$$module$synpdf = '';
+    ybplayer$$module$synpdf?.stopVideo?.();
+    ybplayer$$module$synpdf?.clearVideo?.();
+    $("#vidyub, #yubload").hide();
+    $("#yubid, #youtube_id, #recordingsAlready").val('');
+    $("#yubuse").prop("checked", false);
+    if (msc_wz$$module$synpdf) msc_wz$$module$synpdf.paused = true;
 }
 
 function setPlayer$$module$synpdf(a, b) {
@@ -1981,6 +2002,7 @@ function setPlayer$$module$synpdf(a, b) {
         setSpeed$$module$synpdf(0);
         setNotationHeight$$module$synpdf() // below media_height is changed from 30% to 200px
     } else yubchk$$module$synpdf = 1, opt$$module$synpdf.media_height || (opt$$module$synpdf.media_height = "200px"), $("#vid, #aud").css("display", "none"), $("#vidyub").css("display", "inline-block"), yubload$$module$synpdf(function () {
+        if (!yubchk$$module$synpdf || !opt$$module$synpdf.yubvid) return;
         elmed$$module$synpdf = ybplayer$$module$synpdf;
         /// pbrates$$module$synpdf = elmed$$module$synpdf.getAvailablePlaybackRates();     ///COMMENTING OUT ALLOWS YOUTUBE RATES AT 0.05 SPEED INCREMENT
         setSpeed$$module$synpdf(0);
