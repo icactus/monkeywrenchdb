@@ -1031,8 +1031,7 @@
         <table class="helptbl">
             <tr>
                 <td><b>B</b></td>
-                <td>Record a timing and advance to the next measure while syncing.
-                    You can also tap the score<?php if ($canStampWithDownArrow): ?> or press <b>Down Arrow</b><?php endif; ?>.</td>
+                <td>Record a timing and advance to the next measure while syncing.</td>
             </tr>
             <tr>
                 <td><b>Space</b></td>
