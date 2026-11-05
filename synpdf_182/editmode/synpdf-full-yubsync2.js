@@ -679,6 +679,7 @@ Wijzer$$module$synpdf.prototype.keySync = function (keyType) {
         // Save synchronously after every timestamp, including clicks and the
         // superuser Down Arrow shortcut; keyup/unload may never arrive.
         window.YubSyncProgress?.save();
+        window.YubSyncGuidance?.update();
     }
 };
 Wijzer$$module$synpdf.prototype.goMsre = function (a, b) {
@@ -716,8 +717,8 @@ Wijzer$$module$synpdf.prototype.showSyncInfo = function () {
     const point = deTijden$$module$synpdf[detix$$module$synpdf];
     const next = deTijden$$module$synpdf[detix$$module$synpdf + 1];
     const duration = point && next ? next.t - point.t : 0;
-    this.sinfo.html("measure: " + (point ? point.mix + 1 : 'Ready') + "<br>duration: " + duration.toFixed(3) + " sec.<br>");
-    this.sinfo.append("overall&nbsp;offset: " + offset$$module$synpdf.toFixed(3) + " sec.")
+    this.sinfo.html("measure: " + (point ? point.mix + 1 : 'Ready') + "<br>duration: " + duration.toFixed(3) + " sec.");
+    window.YubSyncGuidance?.update();
 };
 Wijzer$$module$synpdf.prototype.changeTimesKeyb = function (a) {
     if (!(detix$$module$synpdf >= deTijden$$module$synpdf.length - 1)) {
@@ -728,6 +729,7 @@ Wijzer$$module$synpdf.prototype.changeTimesKeyb = function (a) {
     }
 };
 Wijzer$$module$synpdf.prototype.changeOffset = function (a) {
+    if (lastSynced$$module$synpdf < 0 || !deTijden$$module$synpdf.length) return;
     offset$$module$synpdf += a;
     offset$$module$synpdf = Math.round(1E3 * offset$$module$synpdf) / 1E3;
     for (var b = 1; b < deTijden$$module$synpdf.length; ++b) {
@@ -736,6 +738,7 @@ Wijzer$$module$synpdf.prototype.changeOffset = function (a) {
         c.t = Math.round(1E3 * c.t) / 1E3
     }
     window.YubSyncProgress?.save();
+    window.YubSyncGuidance?.update();
 };
 Wijzer$$module$synpdf.prototype.startSync = function () {
     deTijden$$module$synpdf.splice(lastSynced$$module$synpdf + 1);
@@ -1091,6 +1094,7 @@ function addDummySys$$module$synpdf() {
         opt$$module$synpdf.synbox = 1;
         $("#synbox").prop("checked", true);
         syncChk$$module$synpdf();
+        window.YubSyncGuidance?.scoreReady();
     }
 }
 
@@ -2118,6 +2122,15 @@ function keyDown$$module$synpdf(a) {
     if (a.target?.closest?.('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
     var b = a.key,
         c = 1;
+    // First-measure adjustments also remain available after the final B press.
+    const offsetDirection = b === '>' || (b === '.' && a.ctrlKey) ? 1 :
+        b === '<' || (b === ',' && a.ctrlKey) ? -1 : 0;
+    if (offsetDirection && msc_wz$$module$synpdf && !a.altKey && !a.metaKey) {
+        a.preventDefault && a.preventDefault();
+        msc_wz$$module$synpdf.changeOffset(offsetDirection * gFac$$module$synpdf);
+        msc_wz$$module$synpdf.showSyncInfo();
+        return;
+    }
     switch (b) {
         case "ArrowLeft":
         case "Left":
@@ -2203,12 +2216,6 @@ function keyDown$$module$synpdf(a) {
                 break;
             case ",":
                 a.ctrlKey ? msc_wz$$module$synpdf.changeOffset(-gFac$$module$synpdf) : msc_wz$$module$synpdf.changeTimesKeyb(-gFac$$module$synpdf);
-                break;
-            case ">":
-                msc_wz$$module$synpdf.changeOffset(gFac$$module$synpdf);
-                break;
-            case "<":
-                msc_wz$$module$synpdf.changeOffset(-gFac$$module$synpdf);
                 break;
             // case "w":
             //     saveTiming$$module$synpdf();

@@ -131,7 +131,7 @@ test('a new sync starts and finishes without changing a checkbox, leaving its in
     assert(calls.some(call => call[0] === 'checked' && call[1] === false));
 });
 
-test('sync information shows the current measure, duration and overall offset, including before the first barline', () => {
+test('sync information shows the current measure and duration, including before the first barline', () => {
     const { c } = setup();
     const start = core.indexOf('Wijzer$$module$synpdf.prototype.showSyncInfo =');
     vm.runInContext(core.slice(start, core.indexOf('\n};', start) + 3), c);
@@ -150,7 +150,7 @@ test('sync information shows the current measure, duration and overall offset, i
     c.msc_wz$$module$synpdf.showSyncInfo();
     assert.match(information, /measure: 1/);
     assert.match(information, /duration: 2\.500 sec/);
-    assert.match(information, /overall&nbsp;offset: 4\.800 sec/);
+    assert.doesNotMatch(information, /overall.*offset/);
 });
 
 test('rendering an active sync preserves recorded timings without adding future ones', () => {

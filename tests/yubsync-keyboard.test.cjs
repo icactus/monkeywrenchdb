@@ -208,3 +208,12 @@ test('hidden correction controls cannot be activated while saved-progress helper
     assert.equal(notation.scrollTop, 250);
     assert.equal(c.window.YubSyncLiveEdit.active, false);
 });
+
+test('first-measure adjustments remain available after syncing, without seeking playback', () => {
+    const h = setup({ sync: false });
+    const before = h.snapshot();
+    h.key('>', { shiftKey: true });
+    assert.equal(h.c.offset$$module$synpdf, before.offset + 0.1);
+    assert.equal(h.c.deTijden$$module$synpdf[2].t + h.c.offset$$module$synpdf, 5);
+    assert.equal(h.seeks.length, 0);
+});

@@ -31,9 +31,9 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=62"></script>
+    <script src="synpdf-full-yubsync2.js?v=63"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
-    <link rel="stylesheet" href="yubsync-live-edit.css?v=6" />
+    <link rel="stylesheet" href="yubsync-live-edit.css?v=7" />
     <style>
         html {
             width: 100%;
@@ -772,6 +772,18 @@
                     title="0.1 <= float <= 2.0">
             </form>
         </div>
+        <aside id="yubsync-offset-control" aria-labelledby="yubsync-offset-label" hidden>
+            <div class="yubsync-offset-heading">
+                <h2 id="yubsync-offset-label">First measure start</h2>
+                <output id="yubsync-offset-value" aria-label="First measure start in the video" aria-live="polite">—</output>
+            </div>
+            <div class="yubsync-offset-buttons" role="group" aria-label="Adjust first measure start">
+                <button type="button" id="yubsync-offset-earlier" disabled><kbd>&lt;</kbd> Earlier <small>0.1s</small></button>
+                <button type="button" id="yubsync-offset-later" disabled>Later <small>0.1s</small> <kbd>&gt;</kbd></button>
+            </div>
+            <p id="yubsync-offset-hint">Press B to set the first measure's start.</p>
+            <p class="yubsync-offset-shortcuts">Use these buttons or the <kbd>&lt;</kbd> and <kbd>&gt;</kbd> keys.</p>
+        </aside>
         <div id="sync">
             <div id="mbar">
             </div>
@@ -918,37 +930,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="step-wrapper">
-                    <form class="inputform" id="addnewrecordingform" method="POST">
-                        <div>
-                            <h2>3. Submit</h2>
-                        </div>
-                        <div id="step3-container">
-                            <div class="step3-row">
-                                <div>
-                                    <label for="conductor_name">Conductor/Soloist</label>
-                                    <input type="text" name="conductor_name" size="16" placeholder="First Last" />
-                                </div>
-                                <div>
-                                    <label for="year">Year Performed</label>
-                                    <input type="text" name="year" size="12" placeholder="Not Yr Uploaded" />
-                                </div>
-                            </div>
-                            <div class="step3-row">
-                                <div style="display:flex;flex-direction:column">
-                                    <label for="ensemble_name">Ensemble Name</label>
-                                    <input type="text" name="ensemble_name" placeholder="English Version of Name" />
-                                    <input type="hidden" name="piece_id" id="piece_id" />
-                                    <input type="hidden" name="offset_js" id="offset_js" />
-                                    <input type="hidden" name="youtube_id" id="youtube_id" />
-                                    <input type="hidden" name="times_arr_data" id="times_arr_data" />
-                                </div>
-                                <input type="submit" value="Submit" />
-                                <div id="yubsync-submit-status" role="status" aria-live="polite"></div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
             </div>
         </div>
     </section1>
@@ -963,7 +944,44 @@
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M15 15l6 6M6 10h8M10 6v8"/></svg>
             </button>
         </div>
-        <div id="notation"> </div>
+        <div id="yubsync-score-stage">
+            <div id="notation"> </div>
+            <aside id="yubsync-guide" role="status" aria-live="polite" hidden>
+                <span id="yubsync-guide-eyebrow">GET STARTED</span>
+                <h2 id="yubsync-guide-title">Ready to sync</h2>
+                <p id="yubsync-guide-copy"></p>
+                <p id="yubsync-guide-keys"><kbd>Space</kbd> Pause / resume <span>·</span> <kbd>Backspace</kbd> Redo a measure</p>
+            </aside>
+            <div id="yubsync-completion" role="region" aria-labelledby="yubsync-completion-title" hidden>
+                <div class="yubsync-completion-card">
+                    <span class="yubsync-completion-eyebrow">ALL MEASURES SYNCED</span>
+                    <h2 id="yubsync-completion-title">Sync complete</h2>
+                    <p id="yubsync-completion-copy">Fill in the recording information and submit. Leave unknown details blank.</p>
+                    <form id="addnewrecordingform" method="POST" hidden>
+                        <div class="yubsync-recording-fields">
+                            <div>
+                                <label for="conductor_name">Conductor / soloist</label>
+                                <input type="text" id="conductor_name" name="conductor_name" placeholder="First Last" />
+                            </div>
+                            <div>
+                                <label for="year">Year performed</label>
+                                <input type="text" id="year" name="year" placeholder="Year performed, not uploaded" />
+                            </div>
+                            <div class="yubsync-ensemble-field">
+                                <label for="ensemble_name">Ensemble name</label>
+                                <input type="text" id="ensemble_name" name="ensemble_name" placeholder="Ensemble name in English" />
+                            </div>
+                        </div>
+                        <input type="hidden" name="piece_id" id="piece_id" />
+                        <input type="hidden" name="offset_js" id="offset_js" />
+                        <input type="hidden" name="youtube_id" id="youtube_id" />
+                        <input type="hidden" name="times_arr_data" id="times_arr_data" />
+                        <input type="submit" value="Submit recording" disabled />
+                        <div id="yubsync-submit-status" role="status" aria-live="polite"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
       </div>
         <sidecontent>
         </sidecontent>
@@ -1005,8 +1023,8 @@
                 and any following timings. Continue with <b>B</b> to record them again.</li>
             <li><b>Mark the conclusion.</b> Make the final <b>B</b> press a few seconds after the final cutoff
                 of the piece. This ends syncing.</li>
-            <li><b>Fill in the information and submit.</b> Enter the recording details in Step 3 and click
-                <b>Submit</b>. Leave any unknown details blank.</li>
+            <li><b>Fill in the information and submit.</b> After the final B press, fill in the recording information
+                that appears over the score and click <b>Submit recording</b>. Leave any unknown details blank.</li>
         </ol>
 
         <h3>Essential controls</h3>
@@ -1039,8 +1057,8 @@
         </table>
 
         <h3>Fine-tune timing</h3>
-        <p>Pause playback while syncing to make precise adjustments. The current measure's duration and the
-            overall offset are shown beside the Help button.</p>
+        <p>Pause playback while syncing to make precise adjustments. The current measure's duration is shown beside
+            Help. The <b>First measure start</b> control beneath the video shows the start time in the recording.</p>
         <table class="helptbl">
             <tr>
                 <td><b>,</b></td>
@@ -1054,7 +1072,8 @@
                 <td><b>&lt;</b> / <b>&gt;</b></td>
                 <td>Move the start of the first measure earlier / later by 0.1 seconds (the overall offset).
                     Hold <b>Shift</b> and press <b>,</b> / <b>.</b> on a US keyboard.
-                    <b>Ctrl + ,</b> / <b>Ctrl + .</b> also work.</td>
+                    <b>Ctrl + ,</b> / <b>Ctrl + .</b> also work, as do the <b>Earlier</b> and <b>Later</b> buttons
+                    beneath the video. Later measure timings stay unchanged.</td>
             </tr>
         </table>
         <p>Use <b>,</b> and <b>.</b> after the following measure's timing has been recorded.
@@ -1065,7 +1084,7 @@
             Press <b>G</b> to remove the most recent pair of repeat marks.</p>
         <button type="button" id="closehelp">Close Help</button>
     </div>
-    <script src="yubsync-tools.js?v=87"></script>
+    <script src="yubsync-tools.js?v=88"></script>
     <script src="yubsync-live-edit.js?v=5"></script>
     <script src="yubsync-progress.js?v=2"></script>
 </body>

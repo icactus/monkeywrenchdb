@@ -6,7 +6,7 @@ const path = require('node:path');
 const folder = path.join(__dirname, '../synpdf_182/editmode');
 const tools = fs.readFileSync(path.join(folder, 'yubsync-tools.js'), 'utf8');
 const core = fs.readFileSync(path.join(folder, 'synpdf-full-yubsync2.js'), 'utf8');
-function setup({ edit = false, save = async () => true, response, fetchError } = {}) {
+function setup({ edit = false, save = async () => true, response, fetchError, complete = true } = {}) {
     const listeners = {}, fields = {}, calls = [];
     const button = { value: 'Submit', disabled: false };
     const status = { textContent: '' };
@@ -19,6 +19,7 @@ function setup({ edit = false, save = async () => true, response, fetchError } =
             return fields[id] ||= { value: '' };
         } },
         window: { yubsyncMetricContext: { pieceId: '71' },
+            YubSyncGuidance: { canSubmit: () => complete, update() {} },
             YubSyncProgress: { save() { calls.push('backup'); return true; } },
             YubSyncLiveEdit: { active: edit, prepareSubmission: save },
             dispatchEvent(event) { calls.push(event.type); } },
@@ -108,4 +109,11 @@ test('local backup includes live geometry and timings without fetching or changi
     assert.match(output, /offset_js = 4.80/);
     assert.equal(options.synbox, 1);
     assert.equal(options.lastSynced, -1);
+});
+
+test('unfinished syncs cannot submit even if the form is submitted programmatically', async () => {
+    const state = setup({ complete: false });
+    await state.submit();
+    assert.equal(state.calls.includes('post'), false);
+    assert.match(state.status.textContent, /Finish syncing first/);
 });

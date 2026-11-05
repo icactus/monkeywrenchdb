@@ -557,6 +557,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (lastSynced$$module$synpdf < 0 || !deTijden$$module$synpdf.length) {
                 throw new Error('Record measure timings before submitting.');
             }
+            if (!window.YubSyncGuidance?.canSubmit()) {
+                throw new Error('Finish syncing first. Press B a few seconds after the final cutoff to complete the piece.');
+            }
             if (window.YubSyncLiveEdit?.active) {
                 submitStatus.textContent = 'Saving score corrections…';
                 if (!await window.YubSyncLiveEdit.prepareSubmission()) {
@@ -581,7 +584,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.info('[YubSync] Recording submitted successfully.');
             window.dispatchEvent(new CustomEvent('yubsync:submitted'));
             submitStatus.textContent = 'Recording submitted successfully.';
-            alert('Form submitted successfully');
         } catch (error) {
             console.error('[YubSync] Recording submission failed:', error);
             const saved = window.YubSyncProgress?.save();
@@ -591,8 +593,9 @@ document.addEventListener('DOMContentLoaded', function() {
         } finally {
             submitting = false;
             submitButton.disabled = false;
-            submitButton.value = 'Submit';
+            submitButton.value = 'Submit recording';
             form.setAttribute('aria-busy', 'false');
+            window.YubSyncGuidance?.update();
         }
     });
 
@@ -641,6 +644,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadAlreadySyncedRecordings(pieceId); // you already have this function
         } catch (err) {
             console.error('Error booting from DB:', err);
+            window.YubSyncGuidance?.scoreReady();
             document.getElementById('err')?.append?.(` ${err.message}`);
             alert(`Error loading score: ${err.message}`);
         }
@@ -705,4 +709,94 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
     window.YubSyncViewZoom = { get scale() { return scale; }, change };
     decrease.addEventListener('click', () => change(-1));
     increase.addEventListener('click', () => change(1));
+})();
+
+// Keep guidance tied to recorded timings, never to generated preview timestamps.
+(function bindYubSyncGuidance() {
+    const byId = id => document.getElementById(id);
+    const get = name => window[name + '$$module$synpdf'];
+    const offset = byId('yubsync-offset-control');
+    const guide = byId('yubsync-guide');
+    const completion = byId('yubsync-completion');
+    const form = byId('addnewrecordingform');
+    if (!offset || !guide || !completion || !form) return;
+    const earlier = byId('yubsync-offset-earlier'), later = byId('yubsync-offset-later');
+    const submit = form.querySelector('[type="submit"]');
+    let loadingScore = false, loadingVideo = false, submitted = false;
+    let context = null, video = null;
+
+    function state() {
+        const metric = window.yubsyncMetricContext;
+        const times = get('deTijden') || [], boxes = get('deMaten') || [];
+        const last = get('lastSynced');
+        const scoreReady = !loadingScore && !!metric && metric.metrics === get('deMetriek') &&
+            !!get('pdfDoc')?.numPages && !get('rendering') && !get('startSyncOnLoad') && boxes.length > 1;
+        const videoReady = scoreReady && !loadingVideo && !!window.yubsyncLoadedVideoId &&
+            window.yubsyncLoadedVideoId === get('opt')?.yubvid && !!get('yubchk');
+        const recorded = videoReady && Number.isInteger(last) && last >= 0 && last < times.length;
+        const complete = recorded && last > 0 && times[last]?.mix === boxes.length - 1;
+        return { scoreReady, videoReady, recorded, complete, last,
+            finishing: recorded && !complete && !!get('opt')?.synbox && times[last]?.mix === boxes.length - 2 };
+    }
+    function canSubmit() { return state().complete && !submitted; }
+    function text(id, value) {
+        const element = byId(id);
+        if (element.textContent !== value) element.textContent = value;
+    }
+    function update() {
+        if (context !== window.yubsyncMetricContext || video !== window.yubsyncLoadedVideoId) {
+            context = window.yubsyncMetricContext; video = window.yubsyncLoadedVideoId;
+            submitted = false;
+            byId('yubsync-submit-status').textContent = '';
+        }
+        const s = state();
+        offset.hidden = !s.scoreReady;
+        earlier.disabled = later.disabled = !s.recorded || !!window.YubSyncLiveEdit?.busy;
+        offset.classList.toggle('is-first-measure', s.recorded && s.last === 0);
+        const seconds = Math.round((get('offset') || 0) * 10) / 10;
+        const absolute = Math.abs(seconds);
+        const timestamp = (seconds < 0 ? '−' : '') + Math.floor(absolute / 60) + ':' +
+            (absolute % 60).toFixed(1).padStart(4, '0');
+        text('yubsync-offset-value', s.recorded ? timestamp : '—');
+        text('yubsync-offset-hint', !s.recorded ? "Press B to set the first measure's start." :
+            s.last === 0 ? 'Need to adjust the beginning? Use Earlier or Later.' :
+            'Adjust the beginning. Later measure timings stay unchanged.');
+
+        const stage = !s.scoreReady || s.complete ? '' : !s.videoReady ? 'video' : !s.recorded ? 'ready' : s.finishing ? 'finish' : '';
+        guide.hidden = !stage;
+        guide.dataset.stage = stage;
+        text('yubsync-guide-eyebrow', stage === 'finish' ? 'LAST MEASURE' : 'GET STARTED');
+        text('yubsync-guide-title', stage === 'video' ? 'Score loaded' : stage === 'finish' ? 'Almost finished' : 'Ready to sync');
+        text('yubsync-guide-copy', stage === 'video' ? 'Load a YouTube recording in Step 2 to start syncing.' :
+            stage === 'finish' ? 'Let the final measure finish. Press B a few seconds after the final cutoff to complete the sync.' :
+            'Start the video. Press B a little before the movement begins, then on the first beat of each remaining measure.');
+        byId('yubsync-guide-keys').hidden = stage !== 'ready';
+
+        completion.hidden = !s.complete;
+        form.hidden = !s.complete || submitted;
+        submit.disabled = !s.complete || submitted || form.getAttribute('aria-busy') === 'true';
+        text('yubsync-completion-title', submitted ? 'Recording submitted' : 'Sync complete');
+        text('yubsync-completion-copy', submitted ? 'Your recording has been saved. Choose another piece or recording to sync next.' :
+            'Fill in the recording information and submit. Leave unknown details blank.');
+    }
+    function adjust(amount) {
+        if (!state().recorded || window.YubSyncLiveEdit?.busy) return;
+        get('msc_wz').changeOffset(amount);
+        get('msc_wz').showSyncInfo();
+        update();
+    }
+    earlier.addEventListener('click', () => adjust(-0.1));
+    later.addEventListener('click', () => adjust(0.1));
+    window.addEventListener('yubsync:before-score-load', () => { loadingScore = true; update(); });
+    window.addEventListener('yubsync:before-video-load', () => { loadingVideo = true; update(); });
+    window.addEventListener('yubsync:video-ready', () => {
+        // Let automatic progress recovery restore or reset the timeline first.
+        setTimeout(() => { loadingVideo = false; update(); }, 0);
+    });
+    window.addEventListener('yubsync:submitted', () => { submitted = true; update(); });
+    window.YubSyncGuidance = { update, state, isComplete: () => state().complete, canSubmit,
+        scoreReady() { loadingScore = false; update(); } };
+    // Also catches render completion, restored drafts, and geometry updates.
+    setInterval(update, 500);
+    update();
 })();
