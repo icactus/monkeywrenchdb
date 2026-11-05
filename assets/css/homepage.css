@@ -1,5 +1,4 @@
-body:not(.recording-loaded):not(.initial-recording-target) {
-    color-scheme: light;
+body {
     --home-page: #f5f7f7;
     --home-surface: #fff;
     --home-soft: #f0f5f5;
@@ -15,8 +14,7 @@ body:not(.recording-loaded):not(.initial-recording-target) {
     --home-news-background: #edf1f0;
     --home-shadow: 0 3px 14px #203c2912;
 }
-html.inverted body:not(.recording-loaded):not(.initial-recording-target) {
-    color-scheme: dark;
+html.inverted body {
     --home-page: #141d20;
     --home-surface: #1d292d;
     --home-soft: #25363b;
@@ -32,6 +30,8 @@ html.inverted body:not(.recording-loaded):not(.initial-recording-target) {
     --home-news-background: #243237;
     --home-shadow: 0 3px 14px #0002;
 }
+body:not(.recording-loaded):not(.initial-recording-target) { color-scheme: light; }
+html.inverted body:not(.recording-loaded):not(.initial-recording-target) { color-scheme: dark; }
 /* Library layout is isolated from the existing player and direct recording links. */
 body:not(.recording-loaded):not(.initial-recording-target) { background: var(--home-page); height: auto; min-height: 100%; overflow-y: auto; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
 body:not(.recording-loaded):not(.initial-recording-target) section1 { margin: 0; flex: none; }
@@ -281,33 +281,42 @@ body.initial-recording-target #study-construction-notice, body.recording-loaded 
     }
 }
 
-/* Homepage-only header and announcement. Player header rules remain unchanged. */
-body:not(.recording-loaded):not(.initial-recording-target) #header { height: auto; min-height: 78px; margin: 0; overflow: visible; flex-direction: row; align-items: center; justify-content: center; background: linear-gradient(110deg, #f5d366 0%, #e5cc80 28%, #9dbba3 57%, #5b9da4 80%, #397780 100%); border-bottom: 1px solid #39778040; }
-body:not(.recording-loaded):not(.initial-recording-target) #logo-bar-wrapper { position: relative; max-width: 1000px; width: calc(100% - 64px); min-height: 78px; margin: 0; padding: 0; gap: 12px; align-items: center; box-sizing: border-box; }
-body:not(.recording-loaded):not(.initial-recording-target) #logo-link { display: flex; flex: none; }
-body:not(.recording-loaded):not(.initial-recording-target) #monkey-logo { width: 46px; height: 46px; margin: 0; image-rendering: pixelated; object-fit: contain; }
-body:not(.recording-loaded):not(.initial-recording-target) #header-content-column { display: flex; flex: 1; min-width: 0; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 20px; }
-body:not(.recording-loaded):not(.initial-recording-target) #logo-bar { height: auto; max-height: none; }
-body:not(.recording-loaded):not(.initial-recording-target) #monkeywrench-logo-text { color: #173f49; text-shadow: none; }
-body:not(.recording-loaded):not(.initial-recording-target) #monkeywrench-logo-text a { color: inherit; align-items: flex-start; text-align: left; }
-body:not(.recording-loaded):not(.initial-recording-target) #monkeywrench-logo-text h2 { margin: 0; font: 400 27px/1.1 PixelOperator, monospace; letter-spacing: .2px; }
-body:not(.recording-loaded):not(.initial-recording-target) #logotext-line2 { margin: 4px 0 0; font: 400 12px/1.5 'IBM Plex Sans', system-ui, sans-serif; color: #28515a; }
-body:not(.recording-loaded):not(.initial-recording-target) .nav-menu { position: relative; display: flex; align-items: center; gap: 14px; margin-left: auto; }
-body:not(.recording-loaded):not(.initial-recording-target) .nav-menu > .nav-link { display: inline-flex; align-items: center; min-height: 44px; margin: 0; padding: 8px 3px; color: #173f49; font-size: 14px; font-weight: 500; text-decoration: none; }
-body:not(.recording-loaded):not(.initial-recording-target) .nav-menu > .nav-link:hover { text-decoration: underline; }
-body:not(.recording-loaded):not(.initial-recording-target) .nav-user-trigger { min-height: 44px; padding: 6px 11px 6px 6px; background: #ffffffa8; border: 1px solid #ffffff90; color: #173f49; box-shadow: none; }
-body:not(.recording-loaded):not(.initial-recording-target) .nav-user-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; font-size: 14px; }
-body:not(.recording-loaded):not(.initial-recording-target) .nav-user-avatar { width: 28px; height: 28px; background: #376a73; }
-body:not(.recording-loaded):not(.initial-recording-target) .nav-user-chevron { color: inherit; }
-body:not(.recording-loaded):not(.initial-recording-target) .nav-dropdown-menu { min-width: 220px; max-height: calc(100dvh - 120px); overflow-y: auto; background: var(--home-surface); border: 1px solid var(--home-line); }
-body:not(.recording-loaded):not(.initial-recording-target) .nav-dropdown-menu a { min-height: 44px; font: 400 14px/1.5 'IBM Plex Sans', system-ui, sans-serif; color: var(--home-ink); }
-body:not(.recording-loaded):not(.initial-recording-target) .nav-dropdown-menu a:hover { background: var(--home-soft); color: var(--home-ink) !important; }
-body:not(.recording-loaded):not(.initial-recording-target) .nav-menu a.request-notification-link { width: 44px; height: 44px; flex-basis: 44px; }
-body:not(.recording-loaded):not(.initial-recording-target) .nav-menu button:focus-visible, body:not(.recording-loaded):not(.initial-recording-target) .nav-menu a:focus-visible { outline: 3px solid var(--home-focus); outline-offset: 3px; }
-html.inverted body:not(.recording-loaded):not(.initial-recording-target) #header { background: linear-gradient(#14252b99, #14252b99), linear-gradient(110deg, #f5d366, #9dbba3 57%, #397780); border-bottom-color: #91bca838; }
-html.inverted body:not(.recording-loaded):not(.initial-recording-target) #monkeywrench-logo-text, html.inverted body:not(.recording-loaded):not(.initial-recording-target) .nav-menu > .nav-link { color: #edf4ee; }
-html.inverted body:not(.recording-loaded):not(.initial-recording-target) #logotext-line2 { color: #d5e5dc; }
-html.inverted body:not(.recording-loaded):not(.initial-recording-target) .nav-user-trigger { color: #edf4ee; background: #142c2bc9; border-color: #c1dbce40; }
+/* Shared branding and navigation, with separate library and player layouts. */
+body #header { font-family: 'IBM Plex Sans', system-ui, sans-serif; overflow: visible; background: linear-gradient(110deg, #f5d366 0%, #e5cc80 28%, #9dbba3 57%, #5b9da4 80%, #397780 100%); border-bottom: 1px solid #39778040; }
+body #header .nav-menu a, body #header .nav-menu button, body #mobile-header-menu { box-sizing: border-box; }
+body #logo-bar-wrapper { position: relative; min-height: 78px; gap: 12px; align-items: center; box-sizing: border-box; }
+body:not(.recording-loaded):not(.initial-recording-target) #header { height: auto; min-height: 78px; margin: 0; flex-direction: row; align-items: center; justify-content: center; }
+body:not(.recording-loaded):not(.initial-recording-target) #logo-bar-wrapper { max-width: 1000px; width: calc(100% - 64px); margin: 0; padding: 0; }
+body #logo-link { display: flex; flex: none; }
+body #monkey-logo { width: 46px; height: 46px; margin: 0; image-rendering: pixelated; object-fit: contain; }
+body #header-content-column { display: flex; flex: 1; min-width: 0; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 20px; }
+body #logo-bar { height: auto; max-height: none; min-width: 0; }
+body #monkeywrench-logo-text { color: #173f49; text-shadow: none; }
+body #monkeywrench-logo-text a { color: inherit; align-items: flex-start; text-align: left; }
+body #monkeywrench-logo-text h2 { margin: 0; font: 400 27px/1.1 PixelOperator, monospace; letter-spacing: .2px; }
+body #logotext-line2 { margin: 4px 0 0; font: 400 12px/1.5 'IBM Plex Sans', system-ui, sans-serif; color: #28515a; }
+body #header .nav-menu { position: relative; display: flex; align-items: center; gap: 14px; margin-left: auto; }
+body #header .nav-menu > .nav-link { display: inline-flex; align-items: center; min-height: 44px; margin: 0; padding: 8px 3px; color: #173f49; font-size: 14px; font-weight: 500; text-decoration: none; }
+body #header .nav-menu > .nav-link:hover { text-decoration: underline; }
+body #header .nav-user-trigger { min-height: 44px; padding: 6px 11px 6px 6px; background: #ffffffa8; border: 1px solid #ffffff90; color: #173f49; box-shadow: none; }
+body #header .nav-user-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; font-size: 14px; }
+body #header .nav-user-avatar { width: 28px; height: 28px; background: #376a73; }
+body #header .nav-user-chevron { color: inherit; }
+body #header .nav-dropdown-menu { min-width: 220px; max-height: calc(100dvh - 120px); overflow-y: auto; background: var(--home-surface); border: 1px solid var(--home-line); }
+body #header .nav-dropdown-menu a { min-height: 44px; font: 400 14px/1.5 'IBM Plex Sans', system-ui, sans-serif; color: var(--home-ink); }
+body #header .nav-dropdown-menu a:hover { background: var(--home-soft); color: var(--home-ink) !important; }
+body #header .nav-menu a.request-notification-link { width: 44px; height: 44px; flex-basis: 44px; }
+body #header .nav-menu button:focus-visible, body #header .nav-menu a:focus-visible { outline: 3px solid var(--home-focus); outline-offset: 3px; }
+html.inverted body #header { background: linear-gradient(#14252b99, #14252b99), linear-gradient(110deg, #f5d366, #9dbba3 57%, #397780); border-bottom-color: #91bca838; }
+html.inverted body #header .nav-menu > .nav-link { color: #edf4ee; }
+html.inverted body #monkeywrench-logo-text, html.inverted body #monkeywrench-logo-text a, html.inverted body #monkeywrench-logo-text h2 { color: inherit; text-shadow: none; }
+html.inverted body #monkeywrench-logo-text { color: #edf4ee; }
+html.inverted body #logotext-line2 { color: #d5e5dc; }
+html.inverted body #header .nav-dropdown-menu { background: var(--home-surface); border-color: var(--home-line); }
+html.inverted body #header .nav-dropdown-menu a { color: var(--home-ink); }
+html.inverted body #header .nav-dropdown-menu a:hover { background: var(--home-soft); }
+html.inverted body #header .nav-user-name, html.inverted body #header .nav-user-chevron { color: inherit; }
+html.inverted body #header .nav-user-trigger { color: #edf4ee; background: #142c2bc9; border-color: #c1dbce40; }
 .study-construction-notice { flex: none; margin: 0; background: var(--home-news-background); border-bottom: 1px solid var(--home-line); color: var(--home-muted); font: 12px/1.5 'IBM Plex Sans', system-ui, sans-serif; white-space: normal; }
 .study-news-content { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; max-width: 1000px; width: calc(100% - 64px); margin: auto; }
 .study-news-content p { flex: 0 1 auto; min-width: 0; padding-block: 3px; margin: 0; text-align: center; }
@@ -318,33 +327,70 @@ html.inverted body:not(.recording-loaded):not(.initial-recording-target) .nav-us
 .study-construction-dismiss:focus-visible, .study-news-content a:focus-visible { outline: 3px solid var(--home-focus); outline-offset: 2px; }
 @media (max-width: 800px) {
  body:not(.recording-loaded):not(.initial-recording-target) #logo-bar-wrapper, .study-news-content { width: calc(100% - 40px); }
- body:not(.recording-loaded):not(.initial-recording-target) #monkeywrench-logo-text h2 { font-size: 24px; }
+ body #monkeywrench-logo-text h2 { font-size: 24px; }
 }
 @media (max-width: 767px), (max-height: 500px) and (orientation: landscape) {
- body:not(.recording-loaded):not(.initial-recording-target) #mobile-header-burger { position: static !important; width: 44px; height: 44px; margin: 0; padding: 0; background: #ffffffd9; border: 1px solid #ffffff80; border-radius: 8px; color: #173f49; flex: none; }
- body:not(.recording-loaded):not(.initial-recording-target) #mobile-header-burger svg { box-sizing: border-box; width: 24px; height: 24px; padding: 0; background: none; box-shadow: none; color: inherit; }
- body:not(.recording-loaded):not(.initial-recording-target) #mobile-header-menu { top: calc(100% + 8px) !important; right: 0 !important; left: auto !important; position: absolute; width: min(280px, calc(100vw - 32px)); max-height: calc(100dvh - 125px); overflow-y: auto; background: var(--home-surface); border: 1px solid var(--home-line); }
- body:not(.recording-loaded):not(.initial-recording-target) #mobile-header-menu a { display: flex; align-items: center; min-height: 44px; font-size: 14px; color: var(--home-ink); }
- body:not(.recording-loaded):not(.initial-recording-target) #mobile-header-menu a:hover { background: var(--home-soft); }
- body:not(.recording-loaded):not(.initial-recording-target) #mobile-header-menu a svg { width: 18px; height: 18px; flex: none; margin-right: 8px; }
- body:not(.recording-loaded):not(.initial-recording-target) .mobile-controls-label { color: var(--home-ink); }
- body:not(.recording-loaded):not(.initial-recording-target) .toggle-switch { min-height: 44px; display: flex; align-items: center; }
- body:not(.recording-loaded):not(.initial-recording-target) .toggle-slider { top: 10px; bottom: 10px; }
- body:not(.recording-loaded):not(.initial-recording-target) .toggle-switch input:focus-visible + .toggle-slider { outline: 3px solid var(--home-focus); outline-offset: 3px; }
- html.inverted body:not(.recording-loaded):not(.initial-recording-target) #mobile-header-burger { color: #edf4ee; background: #142c2bc9; border-color: #c1dbce40; }
+ body #mobile-header-burger { position: static !important; width: 44px; height: 44px; margin: 0; padding: 0; background: #ffffffd9; border: 1px solid #ffffff80; border-radius: 8px; color: #173f49; flex: none; }
+ body #mobile-header-burger svg { box-sizing: border-box; width: 24px; height: 24px; padding: 0; background: none; box-shadow: none; color: inherit; }
+ body #mobile-header-menu { top: calc(100% + 8px) !important; right: 0 !important; left: auto !important; position: absolute; width: min(280px, calc(100vw - 32px)); max-height: calc(100dvh - 125px); overflow-y: auto; background: var(--home-surface); border: 1px solid var(--home-line); }
+ body #mobile-header-menu a { display: flex; align-items: center; min-height: 44px; font-size: 14px; color: var(--home-ink); }
+ body #mobile-header-menu a:hover { background: var(--home-soft); }
+ body #mobile-header-menu a svg { width: 18px; height: 18px; flex: none; margin-right: 8px; }
+ body .mobile-controls-label { color: var(--home-ink); }
+ body .toggle-switch { min-height: 44px; display: flex; align-items: center; }
+ body .toggle-slider { top: 10px; bottom: 10px; }
+ body .toggle-switch input:focus-visible + .toggle-slider { outline: 3px solid var(--home-focus); outline-offset: 3px; }
+ html.inverted body #mobile-header-menu { background: var(--home-surface); border-color: var(--home-line); }
+ html.inverted body #mobile-header-menu a { color: var(--home-ink); }
+ html.inverted body #mobile-header-menu a:hover, html.inverted body #mobile-header-menu a:active { background: var(--home-soft); }
+ html.inverted body #mobile-header-burger svg { color: inherit; background: none; box-shadow: none; }
+ html.inverted body #mobile-header-burger { color: #edf4ee; background: #142c2bc9; border-color: #c1dbce40; }
 }
 @media (max-width: 540px) {
  body:not(.recording-loaded):not(.initial-recording-target) #header { min-height: 74px; }
  body:not(.recording-loaded):not(.initial-recording-target) #logo-bar-wrapper, .study-news-content { width: calc(100% - 32px); }
- body:not(.recording-loaded):not(.initial-recording-target) #logo-bar-wrapper { min-height: 74px; gap: 8px; padding-block: 12px; }
- body:not(.recording-loaded):not(.initial-recording-target) #monkey-logo { width: 36px; height: 36px; }
- body:not(.recording-loaded):not(.initial-recording-target) #header-content-column { gap: 8px; }
- body:not(.recording-loaded):not(.initial-recording-target) #monkeywrench-logo-text h2 { font-size: 21px; letter-spacing: 0; }
- body:not(.recording-loaded):not(.initial-recording-target) #logotext-line2 { font-size: 11px; margin-top: 3px; }
+ body #logo-bar-wrapper { min-height: 74px; gap: 8px; padding-block: 12px; }
+ body #monkey-logo { width: 36px; height: 36px; }
+ body #header-content-column { gap: 8px; }
+ body #monkeywrench-logo-text h2 { font-size: 21px; letter-spacing: 0; }
+ body #logotext-line2 { font-size: 11px; margin-top: 3px; }
 }
 @media (max-width: 360px) {
- body:not(.recording-loaded):not(.initial-recording-target) #monkey-logo { width: 30px; height: 30px; }
- body:not(.recording-loaded):not(.initial-recording-target) #monkeywrench-logo-text h2 { font-size: 18px; }
- body:not(.recording-loaded):not(.initial-recording-target) #logotext-line2 { font-size: 10px; }
+ body #monkey-logo { width: 30px; height: 30px; }
+ body #monkeywrench-logo-text h2 { font-size: 18px; }
+ body #logotext-line2 { font-size: 10px; }
  .study-home .study-tabs { gap: 18px; }
+}
+
+/* Reserve the existing video column while keeping the compact shared header. */
+@media screen and (min-width: 768px) and (min-height: 501px) {
+ body:is(.recording-loaded, .initial-recording-target) #header { align-items: flex-start; }
+ body:is(.recording-loaded, .initial-recording-target) #logo-bar-wrapper { padding: 0 24px; }
+}
+@media screen and (min-width: 768px) and (max-width: 1100px) and (min-height: 501px) {
+ body:is(.recording-loaded, .initial-recording-target) #header-content-column { flex-wrap: wrap; gap: 0 16px; padding-block: 6px; }
+ body:is(.recording-loaded, .initial-recording-target) #logo-bar { flex: 0 1 auto; }
+ body:is(.recording-loaded, .initial-recording-target) #logo-link { align-self: flex-start; margin-top: 16px; }
+}
+@media screen and (max-width: 767px) and (orientation: portrait) {
+ body:is(.recording-loaded, .initial-recording-target) #header { align-items: center; }
+ body:is(.recording-loaded, .initial-recording-target) section1 { flex: none; margin-bottom: 0; }
+ body:is(.recording-loaded, .initial-recording-target) section2 { min-height: 0; margin-top: 0; }
+ body:is(.recording-loaded, .initial-recording-target) #logo-bar-wrapper { width: calc(100% - 32px); min-height: 74px; padding: 12px 0; flex: none; }
+ body:is(.recording-loaded, .initial-recording-target) #header-content-column { gap: 8px; }
+ body:is(.recording-loaded, .initial-recording-target) #vidyub { flex: none; margin-top: 0; }
+}
+@media screen and (max-width: 767px), screen and (max-height: 500px) and (orientation: landscape) {
+ body.recording-loaded #monkeywrench-logo-text h2 { max-width: none; font: 550 16px/1.4 'IBM Plex Sans', system-ui, sans-serif; letter-spacing: 0; }
+ body:is(.recording-loaded, .initial-recording-target) #monkeywrench-logo-text { min-width: 0; }
+ body:is(.recording-loaded, .initial-recording-target) #monkeywrench-logo-text a { display: block; }
+ body:is(.recording-loaded, .initial-recording-target) .nav-menu { flex: none; }
+}
+@media screen and (max-height: 500px) and (orientation: landscape) {
+ body:is(.recording-loaded, .initial-recording-target) #header { --desktop-player-width: 200px; align-items: flex-start; justify-content: flex-start; }
+ body:is(.recording-loaded, .initial-recording-target) #logo-bar-wrapper { width: calc(100% - 200px); max-width: none; min-height: 50px; padding: 3px 12px; gap: 8px; }
+ body:is(.recording-loaded, .initial-recording-target) #header-content-column { gap: 8px; }
+ body:is(.recording-loaded, .initial-recording-target) #monkey-logo { width: 36px; height: 36px; }
+ body:is(.recording-loaded, .initial-recording-target) #logotext-line2 { display: none; }
+ body:is(.recording-loaded, .initial-recording-target) #mobile-header-menu { right: 0 !important; max-height: calc(100dvh - 70px); }
 }
