@@ -413,6 +413,7 @@
             width: min(90%, 760px);
             padding: 20px;
             font: 15px/1.5 system-ui, sans-serif;
+            overflow-wrap: anywhere;
         }
 
         #help h2 {
@@ -429,6 +430,7 @@
 
         #help .helptbl {
             width: 100%;
+            margin-left: 0;
             border-collapse: collapse;
         }
 
@@ -1007,9 +1009,9 @@
             <li><b>Redo a mistake.</b> Press <b>Backspace</b> to go back one measure and erase its timing
                 and any following timings. Continue with <b>B</b> to record them again.</li>
             <li><b>Mark the conclusion.</b> Make the final <b>B</b> press a few seconds after the final cutoff
-                of the piece. This ends syncing and returns you to the first measure for review.</li>
-            <li><b>Review and submit.</b> Play back the recording to check the alignment, then enter the recording
-                details in Step 3 and click <b>Submit</b>. Leave any unknown details blank.</li>
+                of the piece. This ends syncing.</li>
+            <li><b>Fill in the information and submit.</b> Enter the recording details in Step 3 and click
+                <b>Submit</b>. Leave any unknown details blank.</li>
         </ol>
 
         <h3>Essential controls</h3>
