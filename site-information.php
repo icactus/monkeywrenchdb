@@ -25,7 +25,7 @@ $leaderboardEscape = static fn($value) => htmlspecialchars((string) $value, ENT_
             <thead><tr>
                 <th scope="col" class="leaderboard-rank">Rank</th>
                 <th scope="col" class="leaderboard-username">User</th>
-                <th scope="col" class="leaderboard-score">Score</th>
+                <th scope="col" class="leaderboard-score">Measures synced</th>
             </tr></thead>
             <tbody id="leaderboard-entries">
                 <?php foreach ($leaderboardRows as $entry): ?>
