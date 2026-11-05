@@ -295,7 +295,7 @@ $presets = [
                         <form method="post" action="<?= requestEscape($listUrl) ?>#request-<?= $id ?>" class="admin-reset" data-requester-name="<?= requestEscape($request['user_name'] ?? 'Deleted account') ?>">
                             <input type="hidden" name="csrf" value="<?= requestEscape($csrf) ?>">
                             <input type="hidden" name="request_id" value="<?= $id ?>">
-                            <button type="submit" class="delete-request-button">Reset 7-day limit</button>
+                            <button name="action" value="reset_queue" type="submit" class="delete-request-button">Reset 7-day limit</button>
                         </form>
                     <?php endif; ?>
                 </article>

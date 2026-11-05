@@ -476,6 +476,7 @@ try {
     mwRequestRespond($db, 1, $resetHttpId, 'unable_to_add', null);
     $buttonPage = httpRequest($port, 'requests.php?view=admin&status=all', $sessions['admin']);
     check(str_contains($buttonPage['body'], 'Reset 7-day limit') && str_contains($buttonPage['body'], 'admin-reset'), 'The admin queue includes the cooldown reset button.');
+    check(str_contains($buttonPage['body'], '<button name="action" value="reset_queue" type="submit"'), 'The reset button submits its reset_queue action.');
     check(str_contains($buttonPage['body'], 'id="request-' . $resetHttpId . '"') && str_contains($buttonPage['body'], 'data-requester-name="Other user"'), 'The reset button carries the requester name for its confirmation.');
     check(httpRequest($port, 'requests.php?view=admin', $sessions['user'], ['action' => 'reset_queue', 'csrf' => str_repeat('a', 64), 'request_id' => $resetHttpId])['status'] === 403, 'A regular user cannot reset a request cooldown.');
     check(httpRequest($port, 'requests.php', $sessions['admin'], ['action' => 'reset_queue', 'csrf' => str_repeat('a', 64), 'request_id' => $resetHttpId])['status'] === 403, 'Cooldown reset only works in the admin view.');
