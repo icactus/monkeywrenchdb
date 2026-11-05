@@ -40,8 +40,11 @@ if (!$pieceLanding) {
     exit;
 }
 
-$pageTitle = $pieceLanding['composer_last'] . ' - ' . $pieceLanding['piece_name'] . ' | Monkey Wrench Database';
-$metaDescription = $pieceLanding['piece_name'] . ' by ' . $pieceLanding['composer_last'] . ' on Monkey Wrench Database.';
+$pieceName = html_entity_decode($pieceLanding['piece_name'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+$composerName = html_entity_decode($pieceLanding['composer_last'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+$pageTitle = $composerName . ' - ' . $pieceName . ' | Monkey Wrench Database';
+$metaDescription = 'Follow ' . $pieceName . ' by ' . $composerName
+    . ' with sheet music synced to YouTube performances. Click any measure to jump to that point in the recording.';
 $canonicalUrl = $pieceLanding['piece_url'];
 $baseHref = '/';
 $seoLandingConfig = [

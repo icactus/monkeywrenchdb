@@ -1,4 +1,4 @@
-<div id="study-home" class="study-home">
+<div id="study-home" class="study-home" data-nosnippet>
     <section class="study-search-panel" aria-label="Find sheet music">
         <form id="study-search-form" role="search">
             <div class="study-search-controls">

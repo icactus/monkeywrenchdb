@@ -44,7 +44,7 @@ $leaderboardEscape = static fn($value) => htmlspecialchars((string) $value, ENT_
 <!-- Help/About Backdrops -->
 <div id="help-backdrop" class="modal-backdrop"></div>
 <div id="about-backdrop" class="modal-backdrop"></div>
-<div id="help">
+<div id="help" data-nosnippet>
     <div class="modal-header">
         <h3>How to Use</h3>
         <button class="modal-close" onclick="toggleHelpLinkMenu()" aria-label="Close">&times;</button>
@@ -84,7 +84,7 @@ $leaderboardEscape = static fn($value) => htmlspecialchars((string) $value, ENT_
         </p>
     </div>
 </div>
-<div id="about">
+<div id="about" data-nosnippet>
     <div class="modal-header">
         <h3>About</h3>
         <button class="modal-close" onclick="toggleAboutLinkMenu()" aria-label="Close">&times;</button>

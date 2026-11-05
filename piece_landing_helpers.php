@@ -2,6 +2,12 @@
 
 function mwGetBaseUrl(): string
 {
+    $host = $_SERVER['HTTP_HOST'] ?? 'monkeywrenchdb.org';
+    // Both public hostnames serve the same site; use one canonical origin for
+    // page metadata and the sitemap, regardless of the requested alias.
+    if (in_array(strtolower((string) $host), ['monkeywrenchdb.org', 'www.monkeywrenchdb.org'], true)) {
+        return 'https://monkeywrenchdb.org';
+    }
     $forwardedProto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '';
     $scheme = 'https';
     if (strtolower((string) $forwardedProto) === 'http') {
@@ -13,7 +19,6 @@ function mwGetBaseUrl(): string
     ) {
         $scheme = 'https';
     }
-    $host = $_SERVER['HTTP_HOST'] ?? 'monkeywrenchdb.org';
     return $scheme . '://' . $host;
 }
 

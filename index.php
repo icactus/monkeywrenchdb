@@ -6,11 +6,17 @@ if (file_exists(__DIR__ . '/session_config.php')) {
 }
 
 $is_share_link = isset($_GET['share']);
-$pageTitle = isset($pageTitle) && is_string($pageTitle) && $pageTitle !== '' ? $pageTitle : 'monkey wrench database';
+require_once __DIR__ . '/piece_landing_helpers.php';
+$siteName = 'Monkey Wrench Database';
+$siteUrl = mwGetBaseUrl() . '/';
+$homeMetaDescription = 'Free sheet music synced with YouTube performances. Follow scores and instrumental parts, jump to any measure, and compare recordings as you practice.';
+$pageTitle = isset($pageTitle) && is_string($pageTitle) && $pageTitle !== ''
+    ? $pageTitle
+    : $siteName . ' | Sheet Music Synced with YouTube';
 $metaDescription = isset($metaDescription) && is_string($metaDescription) && $metaDescription !== ''
     ? $metaDescription
-    : 'Sheet music synced with YouTube performances on Monkey Wrench Database.';
-$canonicalUrl = isset($canonicalUrl) && is_string($canonicalUrl) && $canonicalUrl !== '' ? $canonicalUrl : null;
+    : $homeMetaDescription;
+$canonicalUrl = isset($canonicalUrl) && is_string($canonicalUrl) && $canonicalUrl !== '' ? $canonicalUrl : $siteUrl;
 $baseHref = isset($baseHref) && is_string($baseHref) && $baseHref !== '' ? $baseHref : null;
 $seoLandingConfigJson = isset($seoLandingConfig)
     ? json_encode($seoLandingConfig, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)
@@ -27,7 +33,7 @@ if ($hasInitialRecordingTarget) {
 }
 ?>
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
 
 <head>
     <?php if ($baseHref): ?>
@@ -128,13 +134,32 @@ if ($hasInitialRecordingTarget) {
     </script>
     <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
     <meta name="description" content="<?= htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="application-name" content="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>">
     <?php if ($canonicalUrl): ?>
         <link rel="canonical" href="<?= htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8') ?>">
         <meta property="og:url" content="<?= htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8') ?>">
     <?php endif; ?>
     <meta property="og:title" content="<?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?>">
     <meta property="og:description" content="<?= htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:site_name" content="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>">
     <meta property="og:type" content="website">
+    <meta property="og:image" content="<?= htmlspecialchars($siteUrl . 'assets/img/pwa-icon-512-v3.png', ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
+    <meta property="og:image:alt" content="Monkey Wrench Database logo">
+    <meta name="twitter:card" content="summary">
+    <?php if (!$isSeoLandingEntry): ?>
+        <script type="application/ld+json"><?= json_encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            '@id' => $siteUrl . '#website',
+            'url' => $siteUrl,
+            'name' => $siteName,
+            'alternateName' => 'MonkeyWrenchDB',
+            'description' => $homeMetaDescription,
+            'inLanguage' => 'en',
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+    <?php endif; ?>
     <!-- Load dark mode preference early to prevent flash -->
     <script>
         try {
@@ -171,7 +196,7 @@ if ($hasInitialRecordingTarget) {
 
 <body<?= $bodyClasses ? ' class="' . htmlspecialchars(implode(' ', $bodyClasses), ENT_QUOTES, 'UTF-8') . '"' : '' ?>>
     <aside id="study-construction-notice" class="study-construction-notice" data-notice-id="requests-2026-10-16" aria-label="Site news">
-        <div class="study-news-content">
+        <div class="study-news-content" data-nosnippet>
             <p><strong>New:</strong> Request a piece, part, or recording in <a href="requests.php">My Requests</a>.</p>
             <button type="button" id="study-construction-dismiss" class="study-construction-dismiss" aria-label="Dismiss news announcement">×</button>
         </div>
@@ -206,7 +231,7 @@ if ($hasInitialRecordingTarget) {
     <!-- History Modal Backdrop -->
     <div id="history-backdrop" class="modal-backdrop"></div>
     <!-- History Modal -->
-    <div id="history-modal" class="history-modal">
+    <div id="history-modal" class="history-modal" data-nosnippet>
         <div class="history-header">
             <h3>
                 <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -224,7 +249,7 @@ if ($hasInitialRecordingTarget) {
     <!-- Favorites Modal Backdrop -->
     <div id="favorites-backdrop" class="modal-backdrop"></div>
     <!-- Favorites Modal -->
-    <div id="favorites-modal" class="favorites-modal">
+    <div id="favorites-modal" class="favorites-modal" data-nosnippet>
         <div class="favorites-header">
             <h3>
                 <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -298,7 +323,7 @@ if ($hasInitialRecordingTarget) {
         </div>
 
         <sidecontentbar>
-            <div id="sidecontent">
+            <div id="sidecontent" data-nosnippet>
                 <div class="homepage-sidecontent-copy">
                     <div class="homepage-sidecontent-title">Practice Better</div>
                     <ul class="homepage-sidecontent-list">
