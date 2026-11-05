@@ -205,3 +205,4 @@ if ($navigationIsAdmin && !$standaloneNavigation) {
         <a href="auth_login.php?provider=google<?= $standaloneNavigation ? '&amp;return_to=requests.php' : '' ?>" class="nav-link">Login</a>
     <?php endif; ?>
 </div>
+<script src="/js/mobile-header-menu.js?v=1" defer></script>
