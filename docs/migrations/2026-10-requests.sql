@@ -43,3 +43,11 @@ CREATE TABLE IF NOT EXISTS music_request_admin_views (
     KEY request_views (request_id),
     CONSTRAINT music_request_admin_views_request FOREIGN KEY (request_id) REFERENCES music_requests (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Administrative cooldown resets: requests (re)submitted before reset_at no
+-- longer count toward the seven-day submission limit. History is preserved.
+CREATE TABLE IF NOT EXISTS music_request_cooldown_resets (
+    user_id INT NOT NULL,
+    reset_at DATETIME NOT NULL,
+    PRIMARY KEY (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

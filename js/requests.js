@@ -60,6 +60,13 @@
             }
         });
     });
+    document.querySelectorAll('.admin-reset').forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!window.confirm('Reset ' + form.dataset.requesterName + '’s seven-day submission limit? Their request history is kept, and if they already have two unfinished requests that rule still applies.')) {
+                event.preventDefault();
+            }
+        });
+    });
     document.querySelectorAll('.request-preset').forEach(select => {
         select.addEventListener('change', () => {
             if (!select.value) return;

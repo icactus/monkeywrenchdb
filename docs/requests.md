@@ -29,6 +29,14 @@ Saving the same status without a reply does not create a notification. Added and
 unable to add count as finished. Administrator replies and status changes notify
 the requester on-site.
 
+Any administrator can press **Reset 7-day limit** on a request card to clear that
+requester's seven-day submission cooldown, for example when a request cannot be
+added. The requester's requests and reply history are kept, and they can submit a
+new request immediately. A request submitted after the reset restarts the
+seven-day clock as usual, and the unfinished-request cap still applies on its own.
+Resets are stored per requester in `music_request_cooldown_resets` and never
+notify the requester.
+
 Requesters can use **Send reply** under each of their requests to answer questions
 or provide more details. Both sides see the conversation with each author labeled.
 Replies do not consume a request allowance or change its status, and remain
@@ -60,7 +68,7 @@ their update notices enter the viewport. These are site indicators only; no push
 permission is requested.
 
 Each successfully submitted new request or requester reply also sends an email to
-`icactusmusic@gmail.com`, including the requester, composer, piece, part, optional
+`monkeywrenchdb@gmail.com`, including the requester, composer, piece, part, optional
 YouTube recording, reply text when applicable, and a link to the administrator
 queue. Email is sent through PHP's `mail()` using `requests@monkeywrenchdb.org`
 as the sender. Rejected or
@@ -84,7 +92,8 @@ php scripts/setup-requests.php --config=/home/monkcdmb/phpfiles/config.php
 The setup script is idempotent and does not modify existing users or catalog data.
 Run it again when upgrading an existing installation to add deletion support,
 notification versions, requester reply authorship, and administrator view receipts.
-The current upgrade also adds explicit acknowledgment versions and dates. It
+The current upgrade also adds explicit acknowledgment versions and dates, plus the
+cooldown-reset table for the seven-day-limit reset button. It
 preserves actual past admin responses, and restores pending reminders for requests
 that were only viewed. Legacy viewport receipts no longer clear admin reminders.
 Run this migration before deploying the new PHP files. It preserves existing
@@ -104,7 +113,8 @@ node --test tests/homepage-search.test.cjs
 The PHP suite requires a local database account that can create a disposable
 test database. It cleans up that database and its temporary web root, and does
 not write to real users or requests. It covers required fields, YouTube URL
-validation, Unicode, cooldown and unfinished limits, concurrent submissions,
+validation, Unicode, cooldown and unfinished limits, cooldown resets by
+administrators, concurrent submissions,
 access control, CSRF, escaping, draft preservation, status changes, reply
 history, requester replies, super user quota exemptions, captured email delivery
 and failures, unread updates, acknowledgment ownership, and stale-page races. No

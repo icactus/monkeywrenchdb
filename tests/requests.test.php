@@ -146,7 +146,7 @@ try {
     $id = mwRequestSubmit($db, 2, $input);
     $emails = capturedEmails();
     check(count($emails) === 1, 'A successful submission sends exactly one email.');
-    check(str_contains($emails[0], 'To: icactusmusic@gmail.com') && str_contains($emails[0], 'From: MonkeyWrenchDB <requests@monkeywrenchdb.org>'), 'New-request email uses the fixed recipient and site sender.');
+    check(str_contains($emails[0], 'To: monkeywrenchdb@gmail.com') && str_contains($emails[0], 'From: MonkeyWrenchDB <requests@monkeywrenchdb.org>'), 'New-request email uses the fixed recipient and site sender.');
     $body = emailBody($emails[0]);
     check(str_contains($body, 'Requester: Requester <requester@example.test>') && str_contains($body, 'Composer: Antonín Dvořák') && str_contains($body, 'Piece: Symphony No. 9') && str_contains($body, 'Part: Cello'), 'Email preserves requester details and Unicode request fields.');
     check(str_contains($body, 'https://monkeywrenchdb.org/requests.php?view=admin&status=all#request-' . $id) && !str_contains($body, 'Recording:'), 'Email links to the queue and omits an absent recording.');
@@ -261,6 +261,29 @@ try {
     check(mwRequestUnreadCount($db, 2) === 0, 'Deleting requests removes their unread indicators.');
     check(mwRequestList($db, 2, false) === [] && mwRequestList($db, 1, true) === [], 'Deleted requests disappear from user history and admin queue.');
     rejects(fn() => mwRequestSubmit($db, 2, $input), 'Deleting all requests cannot bypass the weekly cooldown.');
+
+    $resetTarget = (int) mwRequestSubmit($db, 3, array_merge($input, ['piece_name' => 'Reset blocked request']));
+    mwRequestRespond($db, 1, $resetTarget, 'unable_to_add', 'I cannot add this one.');
+    mwRequestReply($db, 3, $resetTarget, 'Thanks for looking.');
+    rejects(fn() => mwRequestSubmit($db, 3, $input), 'A finished request blocks the requester for seven days.');
+    rejects(fn() => mwRequestResetCooldown($db, 3, $resetTarget), 'Non-administrators cannot reset a submission cooldown.');
+    rejects(fn() => mwRequestResetCooldown($db, 1, 999999), 'Resetting a nonexistent request fails.');
+    mwRequestResetCooldown($db, 6, $resetTarget);
+    check(mwRequestQuota($db, 3)['can_submit'] && mwRequestQuota($db, 3)['wait_seconds'] === 0, 'A cooldown reset immediately restores the seven-day allowance.');
+    $resetHistory = mwRequestList($db, 3, false);
+    check(count($resetHistory) === 1 && $resetHistory[0]['piece_name'] === 'Reset blocked request' && count(mwRequestReplies($db, 3, false, [$resetTarget])[$resetTarget]) === 2, 'A cooldown reset keeps the requester’s history and replies intact.');
+    // A request submitted seconds after the reset restarts the seven-day clock,
+    // so give the submission a later DATETIME second than the reset timestamp.
+    sleep(2);
+    $resetSecond = (int) mwRequestSubmit($db, 3, array_merge($input, ['piece_name' => 'Cooldown reset submission']));
+    check(mwRequestList($db, 3, false)[0]['piece_name'] === 'Cooldown reset submission' && count(mwRequestList($db, 3, false)) === 2, 'A reset requester can submit a new request immediately and keeps prior history.');
+    check(!mwRequestQuota($db, 3)['can_submit'], 'A submission after a reset restarts the seven-day clock.');
+    mwRequestResetCooldown($db, 6, $resetTarget);
+    check(mwRequestQuota($db, 3)['can_submit'], 'Repeating a reset also clears submissions made after the previous reset.');
+    mwRequestDelete($db, 3, $resetSecond);
+    check(mwRequestQuota($db, 3)['can_submit'], 'Deleting the post-reset unfinished request returns its slot while the reset still holds.');
+    mwRequestDelete($db, 3, $resetTarget);
+    check(mwRequestQuota($db, 3)['can_submit'] && mwRequestQuota($db, 3)['open_count'] === 0, 'After deletions the reset still covers previously deleted finished requests.');
 
     $processes = [];
     $emailCount = count(capturedEmails());
@@ -449,6 +472,19 @@ try {
     $replacementPost = httpRequest($port, 'requests.php', $sessions['user'], $webInput + ['action' => 'create', 'csrf' => str_repeat('a', 64)]);
     check($replacementPost['status'] === 303 && count(mwRequestList($db, 5, false)) === 1, 'User can immediately submit a replacement through the form.');
     mwRequestDelete($db, 5, (int) mwRequestList($db, 5, false)[0]['id']);
+    $resetHttpId = mwRequestSubmit($db, 3, array_merge($input, ['piece_name' => 'HTTP reset target']));
+    mwRequestRespond($db, 1, $resetHttpId, 'unable_to_add', null);
+    $buttonPage = httpRequest($port, 'requests.php?view=admin&status=all', $sessions['admin']);
+    check(str_contains($buttonPage['body'], 'Reset 7-day limit') && str_contains($buttonPage['body'], 'admin-reset'), 'The admin queue includes the cooldown reset button.');
+    check(str_contains($buttonPage['body'], 'id="request-' . $resetHttpId . '"') && str_contains($buttonPage['body'], 'data-requester-name="Other user"'), 'The reset button carries the requester name for its confirmation.');
+    check(httpRequest($port, 'requests.php?view=admin', $sessions['user'], ['action' => 'reset_queue', 'csrf' => str_repeat('a', 64), 'request_id' => $resetHttpId])['status'] === 403, 'A regular user cannot reset a request cooldown.');
+    check(httpRequest($port, 'requests.php', $sessions['admin'], ['action' => 'reset_queue', 'csrf' => str_repeat('a', 64), 'request_id' => $resetHttpId])['status'] === 403, 'Cooldown reset only works in the admin view.');
+    check(httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reset_queue', 'request_id' => $resetHttpId])['status'] === 403, 'Cooldown reset requires CSRF.');
+    $historyBefore = count(mwRequestList($db, 3, false));
+    $queueReset = httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reset_queue', 'csrf' => str_repeat('a', 64), 'request_id' => $resetHttpId]);
+    check($queueReset['status'] === 303 && count(mwRequestList($db, 3, false)) === $historyBefore && mwRequestQuota($db, 3)['can_submit'], 'Admin can clear a requester’s seven-day limit through the form while their history is kept.');
+    $queueResetPage = httpRequest($port, 'requests.php?view=admin&status=all', $sessions['admin']);
+    check(str_contains($queueResetPage['body'], 'seven-day limit was cleared'), 'Cooldown reset confirms on the next page load.');
     $emailCount = count(capturedEmails());
     touch($mailDirectory . '/fail');
     try {

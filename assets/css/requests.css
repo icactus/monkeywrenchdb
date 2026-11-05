@@ -11,6 +11,7 @@ input::placeholder,textarea::placeholder{color:#9aa5a8;opacity:1;font-weight:400
 html.inverted input::placeholder,html.inverted textarea::placeholder{color:#88989d}
 @media(min-width:601px) and (max-width:800px){.request-header-inner{flex-wrap:wrap}.request-header nav{margin-left:70px}}
 .request-delete{margin-top:18px;text-align:right}.delete-request-button{background:transparent;color:#99442d;border-color:#dcc6bb;font-size:13px}html.inverted .delete-request-button{color:#f6baa5;border-color:#9b604b}
+.admin-reset{margin:6px 0 0;text-align:right}
 
 /* Use the homepage account navigation and information panels. */
 .nav-user-dropdown {

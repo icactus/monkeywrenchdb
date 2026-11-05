@@ -108,7 +108,7 @@ try {
             }
             mwRequestDelete($db, $userId, (int) requestScalar($_POST, 'request_id'));
             requestRedirect('requests.php', 'Your request has been deleted.');
-        } elseif (in_array($action, ['reply', 'status', 'acknowledge'], true)) {
+        } elseif (in_array($action, ['reply', 'status', 'acknowledge', 'reset_queue'], true)) {
             if (!$isAdmin || !$adminView) {
                 http_response_code(403);
                 throw new DomainException('Administrator access is required to respond to requests.');
@@ -117,6 +117,10 @@ try {
             if ($action === 'acknowledge') {
                 mwRequestAcknowledge($db, $userId, $postedRequestId, (int) requestScalar($_POST, 'version'));
                 requestRedirect($listUrl . '#request-' . $postedRequestId, 'Request acknowledged. You can return to it later to send a reply.');
+            }
+            if ($action === 'reset_queue') {
+                mwRequestResetCooldown($db, $userId, $postedRequestId);
+                requestRedirect($listUrl . '#request-' . $postedRequestId, 'Requester’s seven-day limit was cleared. Their request history is kept; if they already have two unfinished requests, that rule still applies.');
             }
             $replyDraft = requestScalar($_POST, 'message');
             if ($action === 'reply' && preg_match('/\[(?:timeframe|link)\]/i', $replyDraft)) {
@@ -173,11 +177,11 @@ $presets = [
     <meta name="robots" content="noindex, nofollow">
     <title><?= $adminView ? 'Request queue' : 'Request a piece or part' ?> | Monkey Wrench Database</title>
     <link rel="stylesheet" href="assets/css/fonts.css?v=34">
-    <link rel="stylesheet" href="assets/css/requests.css?v=5">
+    <link rel="stylesheet" href="assets/css/requests.css?v=6">
     <link rel="stylesheet" href="assets/css/request-notifications.css?v=2">
     <link rel="stylesheet" href="assets/css/leaderboard.css?v=1">
     <script>try { if (localStorage.getItem('darkMode') === '1') document.documentElement.classList.add('inverted'); } catch (e) {}</script>
-    <script src="js/requests.js?v=6" defer></script>
+    <script src="js/requests.js?v=7" defer></script>
 </head>
 <body>
 <header class="request-header">
@@ -287,6 +291,11 @@ $presets = [
                             <label>Your reply<textarea name="message" rows="5" maxlength="5000" placeholder="Write a message to the requester…" required><?= $postedRequestId === $id ? requestEscape($replyDraft) : '' ?></textarea></label>
                             <p class="hint">Presets are editable. Saving publishes your reply under My requests and notifies the requester on their next visit.</p>
                             <button class="primary" name="action" value="reply" type="submit">Save reply &amp; notify</button>
+                        </form>
+                        <form method="post" action="<?= requestEscape($listUrl) ?>#request-<?= $id ?>" class="admin-reset" data-requester-name="<?= requestEscape($request['user_name'] ?? 'Deleted account') ?>">
+                            <input type="hidden" name="csrf" value="<?= requestEscape($csrf) ?>">
+                            <input type="hidden" name="request_id" value="<?= $id ?>">
+                            <button type="submit" class="delete-request-button">Reset 7-day limit</button>
                         </form>
                     <?php endif; ?>
                 </article>

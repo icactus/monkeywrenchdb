@@ -80,13 +80,22 @@ function mwRequestQuota(mysqli $db, int $userId): array
     $user = mwRequestUser($db, $userId);
     $unlimited = $user && $user['role'] === 'admin'
         && (int) $user['id'] === (defined('MW_SUPER_ADMIN_USER_ID') ? MW_SUPER_ADMIN_USER_ID : 1);
+    // A cooldown reset makes the limit ignore every submission before reset_at;
+    // requests submitted after the reset restart the seven-day clock as usual.
+    $reset = $db->prepare('SELECT reset_at FROM music_request_cooldown_resets WHERE user_id = ?');
+    $reset->bind_param('i', $userId);
+    $reset->execute();
+    $resetAt = $reset->get_result()->fetch_column();
+    $ignore = $resetAt === false ? '' : ' AND created_at > ?';
+    $types = ($resetAt === false ? 'i' : 'si');
+    $arguments = ($resetAt === false ? [$userId] : [$resetAt, $userId]);
     $stmt = $db->prepare("SELECT
         COALESCE(SUM(deleted_at IS NULL AND status IN ('requested', 'in_progress')), 0) AS open_count,
         GREATEST(0, COALESCE(TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), DATE_ADD(
-            MAX(CASE WHEN deleted_at IS NULL OR status IN ('added', 'unable_to_add') THEN created_at END),
+            MAX(CASE WHEN (deleted_at IS NULL OR status IN ('added', 'unable_to_add'))$ignore THEN created_at END),
             INTERVAL 7 DAY)), 0)) AS wait_seconds
         FROM music_requests WHERE user_id = ?");
-    $stmt->bind_param('i', $userId);
+    $stmt->bind_param($types, ...$arguments);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     return [
@@ -152,7 +161,7 @@ function mwRequestNotifyAdmin(int $requestId, array $data, array $user, ?string 
         . 'https://monkeywrenchdb.org/requests.php?view=admin&status=all#request-' . $requestId . "\n";
     try {
         $sent = mail(
-            'icactusmusic@gmail.com',
+            'monkeywrenchdb@gmail.com',
             'MonkeyWrenchDB: ' . $subject . ' #' . $requestId,
             chunk_split(base64_encode($body)),
             "From: MonkeyWrenchDB <requests@monkeywrenchdb.org>\r\n"
@@ -277,6 +286,22 @@ function mwRequestDelete(mysqli $db, int $userId, int $requestId): void
         $db->rollback();
         throw $e;
     }
+}
+
+function mwRequestResetCooldown(mysqli $db, int $adminId, int $requestId): void
+{
+    mwRequestRequireAdmin($db, $adminId);
+    if ($requestId < 1) throw new InvalidArgumentException('This request could not be found.');
+    $stmt = $db->prepare('SELECT user_id FROM music_requests WHERE id = ? AND deleted_at IS NULL');
+    $stmt->bind_param('i', $requestId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    if (!$row) throw new InvalidArgumentException('This request could not be found.');
+    // Requests and reply history stay untouched. Submissions made before this
+    // moment stop counting toward the seven-day limit; later ones restart it.
+    $stmt = $db->prepare('INSERT INTO music_request_cooldown_resets (user_id, reset_at) VALUES (?, UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE reset_at = UTC_TIMESTAMP()');
+    $stmt->bind_param('i', $row['user_id']);
+    $stmt->execute();
 }
 
 function mwRequestUnreadCount(mysqli $db, int $userId): int
