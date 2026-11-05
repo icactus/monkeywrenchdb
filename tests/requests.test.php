@@ -120,6 +120,10 @@ try {
         $db->query("INSERT INTO music_requests (user_id, composer_name, piece_name, part_name) VALUES (2, 'Bach', 'Viewed but unanswered request', 'Flute')");
         $legacyUnansweredId = (int) $db->insert_id;
         $db->query("INSERT INTO music_request_admin_views (admin_user_id, request_id) VALUES (1, $legacyUnansweredId)");
+        $db->query("UPDATE music_requests SET created_at = UTC_TIMESTAMP() - INTERVAL 10 SECOND WHERE id = $legacyId");
+        $db->query("UPDATE music_requests SET created_at = UTC_TIMESTAMP() WHERE id = $legacyUnansweredId");
+        $db->query('ALTER TABLE music_request_cooldown_resets DROP COLUMN last_request_id');
+        $db->query("INSERT INTO music_request_cooldown_resets (user_id, reset_at) SELECT user_id, created_at FROM music_requests WHERE id = $legacyId");
         $db->query('ALTER TABLE music_request_admin_views DROP COLUMN seen_version');
         $db->query('ALTER TABLE music_request_replies DROP COLUMN requester_user_id, MODIFY COLUMN admin_user_id INT NOT NULL');
         $db->query('ALTER TABLE music_requests DROP COLUMN deleted_at, DROP COLUMN update_version, DROP COLUMN seen_version, DROP COLUMN admin_update_version, DROP COLUMN admin_acknowledged_version, DROP COLUMN admin_acknowledged_at');
@@ -131,6 +135,7 @@ try {
             check(proc_close($setup) === 0 && $errors === '' && str_contains($output, 'tables ready'), 'Existing schema upgrade succeeds and can be repeated.');
         }
         check($db->query("SHOW COLUMNS FROM music_requests LIKE 'deleted_at'")->num_rows === 1, 'Upgrade adds deletion support to the original schema.');
+        check((int) $db->query('SELECT last_request_id FROM music_request_cooldown_resets WHERE user_id = 2')->fetch_column() === $legacyId, 'Upgrade preserves an existing reset while leaving later requests outside its cutoff, including on a repeated upgrade.');
         $legacyReplies = mwRequestReplies($db, 2, false, [$legacyId])[$legacyId];
         check(count($legacyReplies) === 1 && $legacyReplies[0]['requester_user_id'] === null && (int) $legacyReplies[0]['admin_user_id'] === 1, 'Upgrade preserves existing admin replies and authorship.');
         check(mwRequestAdminNewCount($db, 1) === 1 && mwRequestAdminNewCount($db, 6) === 1, 'Upgrade acknowledges existing responses while restoring reminders for viewed but unanswered requests.');
@@ -140,6 +145,7 @@ try {
         $db->query("DELETE FROM music_requests WHERE id = $legacyId");
         $db->query("DELETE FROM music_request_admin_views WHERE request_id = $legacyUnansweredId");
         $db->query("DELETE FROM music_requests WHERE id = $legacyUnansweredId");
+        $db->query('DELETE FROM music_request_cooldown_resets WHERE user_id = 2');
     } finally { unlink($upgradeConfig); }
 
     $input = ['composer_name' => '  Antonín Dvořák  ', 'piece_name' => 'Symphony No. 9', 'part_name' => 'Cello'];
@@ -262,28 +268,56 @@ try {
     check(mwRequestList($db, 2, false) === [] && mwRequestList($db, 1, true) === [], 'Deleted requests disappear from user history and admin queue.');
     rejects(fn() => mwRequestSubmit($db, 2, $input), 'Deleting all requests cannot bypass the weekly cooldown.');
 
-    $resetTarget = (int) mwRequestSubmit($db, 3, array_merge($input, ['piece_name' => 'Reset blocked request']));
-    mwRequestRespond($db, 1, $resetTarget, 'unable_to_add', 'I cannot add this one.');
-    mwRequestReply($db, 3, $resetTarget, 'Thanks for looking.');
-    rejects(fn() => mwRequestSubmit($db, 3, $input), 'A finished request blocks the requester for seven days.');
-    rejects(fn() => mwRequestResetCooldown($db, 3, $resetTarget), 'Non-administrators cannot reset a submission cooldown.');
-    rejects(fn() => mwRequestResetCooldown($db, 1, 999999), 'Resetting a nonexistent request fails.');
-    mwRequestResetCooldown($db, 6, $resetTarget);
-    check(mwRequestQuota($db, 3)['can_submit'] && mwRequestQuota($db, 3)['wait_seconds'] === 0, 'A cooldown reset immediately restores the seven-day allowance.');
-    $resetHistory = mwRequestList($db, 3, false);
-    check(count($resetHistory) === 1 && $resetHistory[0]['piece_name'] === 'Reset blocked request' && count(mwRequestReplies($db, 3, false, [$resetTarget])[$resetTarget]) === 2, 'A cooldown reset keeps the requester’s history and replies intact.');
-    // A request submitted seconds after the reset restarts the seven-day clock,
-    // so give the submission a later DATETIME second than the reset timestamp.
-    sleep(2);
-    $resetSecond = (int) mwRequestSubmit($db, 3, array_merge($input, ['piece_name' => 'Cooldown reset submission']));
-    check(mwRequestList($db, 3, false)[0]['piece_name'] === 'Cooldown reset submission' && count(mwRequestList($db, 3, false)) === 2, 'A reset requester can submit a new request immediately and keeps prior history.');
-    check(!mwRequestQuota($db, 3)['can_submit'], 'A submission after a reset restarts the seven-day clock.');
-    mwRequestResetCooldown($db, 6, $resetTarget);
-    check(mwRequestQuota($db, 3)['can_submit'], 'Repeating a reset also clears submissions made after the previous reset.');
-    mwRequestDelete($db, 3, $resetSecond);
-    check(mwRequestQuota($db, 3)['can_submit'], 'Deleting the post-reset unfinished request returns its slot while the reset still holds.');
-    mwRequestDelete($db, 3, $resetTarget);
-    check(mwRequestQuota($db, 3)['can_submit'] && mwRequestQuota($db, 3)['open_count'] === 0, 'After deletions the reset still covers previously deleted finished requests.');
+    // Freeze database time so requests and repeated resets share the same second.
+    $resetTime = time();
+    $db->query('SET timestamp = ' . $resetTime);
+    try {
+        $resetTarget = (int) mwRequestSubmit($db, 3, array_merge($input, ['piece_name' => 'Reset blocked request']));
+        mwRequestRespond($db, 1, $resetTarget, 'unable_to_add', 'I cannot add this one.');
+        mwRequestReply($db, 3, $resetTarget, 'Thanks for looking.');
+        rejects(fn() => mwRequestSubmit($db, 3, $input), 'A finished request blocks the requester for seven days.');
+        rejects(fn() => mwRequestResetCooldown($db, 3, $resetTarget), 'Non-administrators cannot reset a submission cooldown.');
+        rejects(fn() => mwRequestResetCooldown($db, 1, 999999), 'Resetting a nonexistent request fails.');
+        mwRequestResetCooldown($db, 6, $resetTarget);
+        check(mwRequestQuota($db, 3)['can_submit'] && mwRequestQuota($db, 3)['wait_seconds'] === 0, 'A cooldown reset immediately restores the seven-day allowance.');
+        $resetHistory = mwRequestList($db, 3, false);
+        check(count($resetHistory) === 1 && $resetHistory[0]['piece_name'] === 'Reset blocked request' && count(mwRequestReplies($db, 3, false, [$resetTarget])[$resetTarget]) === 2, 'A cooldown reset keeps the requester’s history and replies intact.');
+        $resetSecond = (int) mwRequestSubmit($db, 3, array_merge($input, ['piece_name' => 'Cooldown reset submission']));
+        check(mwRequestList($db, 3, false)[0]['piece_name'] === 'Cooldown reset submission' && count(mwRequestList($db, 3, false)) === 2, 'A reset requester can submit a new request immediately and keeps prior history.');
+        check((int) $db->query("SELECT r.created_at = c.reset_at FROM music_requests r JOIN music_request_cooldown_resets c ON c.user_id = r.user_id WHERE r.id = $resetSecond")->fetch_column() === 1, 'The regression submission and reset have identical timestamps.');
+        check(!mwRequestQuota($db, 3)['can_submit'] && mwRequestQuota($db, 3)['wait_seconds'] === MW_REQUEST_INTERVAL_SECONDS, 'A submission in the same second as a reset restarts the full seven-day clock.');
+        rejects(fn() => mwRequestSubmit($db, 3, $input), 'A same-second reset submission blocks an extra request.');
+        $resetConnection = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, $database);
+        $lock = mwRequestAcquireUserLock($db, 3);
+        try {
+            rejects(fn() => mwRequestResetCooldown($resetConnection, 6, $resetTarget), 'A reset cannot bypass the lock held by a concurrent submission.');
+            check(mwRequestQuota($db, 3)['wait_seconds'] === MW_REQUEST_INTERVAL_SECONDS, 'A reset that cannot acquire the lock leaves the current cooldown intact.');
+        } finally {
+            mwRequestReleaseUserLock($db, $lock);
+            $resetConnection->close();
+        }
+        mwRequestRespond($db, 1, $resetSecond, 'added', null);
+        rejects(fn() => mwRequestSubmit($db, 3, $input), 'Completing a same-second reset submission does not clear its cooldown.');
+        $db->query('SET timestamp = ' . ($resetTime + 5));
+        check(mwRequestQuota($db, 3)['wait_seconds'] === MW_REQUEST_INTERVAL_SECONDS - 5, 'The cooldown persists after the reset second passes.');
+        // Restore the unfinished request and original second for repeated-reset coverage.
+        mwRequestRespond($db, 1, $resetSecond, 'in_progress', null);
+        $db->query('SET timestamp = ' . $resetTime);
+        mwRequestResetCooldown($db, 6, $resetTarget);
+        check(mwRequestQuota($db, 3)['can_submit'], 'Repeating a reset in the same second clears submissions made after the previous reset.');
+        $resetThird = mwRequestSubmit($db, 3, $input);
+        check(mwRequestQuota($db, 3)['wait_seconds'] === MW_REQUEST_INTERVAL_SECONDS, 'A submission after a repeated same-second reset restarts the cooldown.');
+        mwRequestResetCooldown($db, 6, $resetTarget);
+        check(mwRequestQuota($db, 3)['open_count'] === 2 && mwRequestQuota($db, 3)['wait_seconds'] === 0 && !mwRequestQuota($db, 3)['can_submit'], 'A reset clears the cooldown without bypassing the two-unfinished-request cap.');
+        rejects(fn() => mwRequestSubmit($db, 3, $input), 'The unfinished-request cap still blocks submission after a reset.');
+        mwRequestDelete($db, 3, $resetThird);
+        mwRequestDelete($db, 3, $resetSecond);
+        check(mwRequestQuota($db, 3)['can_submit'], 'Deleting the post-reset unfinished request returns its slot while the reset still holds.');
+        mwRequestDelete($db, 3, $resetTarget);
+        check(mwRequestQuota($db, 3)['can_submit'] && mwRequestQuota($db, 3)['open_count'] === 0, 'After deletions the reset still covers previously deleted finished requests.');
+    } finally {
+        $db->query('SET timestamp = 0');
+    }
 
     $processes = [];
     $emailCount = count(capturedEmails());

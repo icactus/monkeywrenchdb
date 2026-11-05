@@ -93,8 +93,10 @@ The setup script is idempotent and does not modify existing users or catalog dat
 Run it again when upgrading an existing installation to add deletion support,
 notification versions, requester reply authorship, and administrator view receipts.
 The current upgrade also adds explicit acknowledgment versions and dates, plus the
-cooldown-reset table for the seven-day-limit reset button. It
-preserves actual past admin responses, and restores pending reminders for requests
+cooldown-reset table for the seven-day-limit reset button. It upgrades existing
+resets to request ID cutoffs so a submission in the same second as its reset
+starts a new seven-day cooldown. It preserves actual past admin responses,
+and restores pending reminders for requests
 that were only viewed. Legacy viewport receipts no longer clear admin reminders.
 Run this migration before deploying the new PHP files. It preserves existing
 administrator replies and read receipts.

@@ -80,15 +80,14 @@ function mwRequestQuota(mysqli $db, int $userId): array
     $user = mwRequestUser($db, $userId);
     $unlimited = $user && $user['role'] === 'admin'
         && (int) $user['id'] === (defined('MW_SUPER_ADMIN_USER_ID') ? MW_SUPER_ADMIN_USER_ID : 1);
-    // A cooldown reset makes the limit ignore every submission before reset_at;
-    // requests submitted after the reset restart the seven-day clock as usual.
-    $reset = $db->prepare('SELECT reset_at FROM music_request_cooldown_resets WHERE user_id = ?');
+    // IDs distinguish submissions on either side of a reset, even within one second.
+    $reset = $db->prepare('SELECT last_request_id FROM music_request_cooldown_resets WHERE user_id = ?');
     $reset->bind_param('i', $userId);
     $reset->execute();
-    $resetAt = $reset->get_result()->fetch_column();
-    $ignore = $resetAt === false ? '' : ' AND created_at > ?';
-    $types = ($resetAt === false ? 'i' : 'si');
-    $arguments = ($resetAt === false ? [$userId] : [$resetAt, $userId]);
+    $lastRequestId = $reset->get_result()->fetch_column();
+    $ignore = $lastRequestId === false ? '' : ' AND id > ?';
+    $types = ($lastRequestId === false ? 'i' : 'ii');
+    $arguments = ($lastRequestId === false ? [$userId] : [(int) $lastRequestId, $userId]);
     $stmt = $db->prepare("SELECT
         COALESCE(SUM(deleted_at IS NULL AND status IN ('requested', 'in_progress')), 0) AS open_count,
         GREATEST(0, COALESCE(TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), DATE_ADD(
@@ -106,14 +105,9 @@ function mwRequestQuota(mysqli $db, int $userId): array
     ];
 }
 
-function mwRequestSubmit(mysqli $db, int $userId, array $input): int
+function mwRequestAcquireUserLock(mysqli $db, int $userId): string
 {
-    $data = mwRequestInput($input);
-    $user = mwRequestUser($db, $userId);
-    if (!$user || !filter_var($user['email'], FILTER_VALIDATE_EMAIL)) {
-        throw new DomainException('Please sign in again with a Google account that has a valid email address.');
-    }
-    // Serialize submissions across PHP workers, including installations with MyISAM users.
+    // Serialize submissions and resets, including installations with MyISAM users.
     $database = $db->query('SELECT DATABASE()')->fetch_row()[0];
     $lock = 'mw_request_' . substr(hash('sha256', $database), 0, 16) . '_' . $userId;
     $stmt = $db->prepare('SELECT GET_LOCK(?, 5)');
@@ -122,6 +116,24 @@ function mwRequestSubmit(mysqli $db, int $userId, array $input): int
     if ((int) $stmt->get_result()->fetch_row()[0] !== 1) {
         throw new DomainException('Another request is being submitted. Please try again in a moment.');
     }
+    return $lock;
+}
+
+function mwRequestReleaseUserLock(mysqli $db, string $lock): void
+{
+    $stmt = $db->prepare('SELECT RELEASE_LOCK(?)');
+    $stmt->bind_param('s', $lock);
+    $stmt->execute();
+}
+
+function mwRequestSubmit(mysqli $db, int $userId, array $input): int
+{
+    $data = mwRequestInput($input);
+    $user = mwRequestUser($db, $userId);
+    if (!$user || !filter_var($user['email'], FILTER_VALIDATE_EMAIL)) {
+        throw new DomainException('Please sign in again with a Google account that has a valid email address.');
+    }
+    $lock = mwRequestAcquireUserLock($db, $userId);
     try {
         $quota = mwRequestQuota($db, $userId);
         if (!$quota['unlimited'] && $quota['open_count'] >= MW_REQUEST_OPEN_LIMIT) {
@@ -135,9 +147,7 @@ function mwRequestSubmit(mysqli $db, int $userId, array $input): int
         $stmt->execute();
         $requestId = (int) $db->insert_id;
     } finally {
-        $stmt = $db->prepare('SELECT RELEASE_LOCK(?)');
-        $stmt->bind_param('s', $lock);
-        $stmt->execute();
+        mwRequestReleaseUserLock($db, $lock);
     }
     // Notify only after saving and releasing the submission lock. Email failure
     // must not turn a saved request into an error that invites resubmission.
@@ -297,11 +307,20 @@ function mwRequestResetCooldown(mysqli $db, int $adminId, int $requestId): void
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     if (!$row) throw new InvalidArgumentException('This request could not be found.');
-    // Requests and reply history stay untouched. Submissions made before this
-    // moment stop counting toward the seven-day limit; later ones restart it.
-    $stmt = $db->prepare('INSERT INTO music_request_cooldown_resets (user_id, reset_at) VALUES (?, UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE reset_at = UTC_TIMESTAMP()');
-    $stmt->bind_param('i', $row['user_id']);
-    $stmt->execute();
+    $userId = (int) $row['user_id'];
+    $lock = mwRequestAcquireUserLock($db, $userId);
+    try {
+        // Recheck the target after waiting for any submission to finish.
+        $stmt->execute();
+        if (!$stmt->get_result()->fetch_assoc()) throw new InvalidArgumentException('This request could not be found.');
+        // Keep history, ignoring only the requests that exist at this reset.
+        // The shared lock ensures every later submission receives a higher ID.
+        $stmt = $db->prepare('INSERT INTO music_request_cooldown_resets (user_id, reset_at, last_request_id) SELECT ?, UTC_TIMESTAMP(), COALESCE(MAX(id), 0) FROM music_requests WHERE user_id = ? ON DUPLICATE KEY UPDATE reset_at = VALUES(reset_at), last_request_id = VALUES(last_request_id)');
+        $stmt->bind_param('ii', $userId, $userId);
+        $stmt->execute();
+    } finally {
+        mwRequestReleaseUserLock($db, $lock);
+    }
 }
 
 function mwRequestUnreadCount(mysqli $db, int $userId): int

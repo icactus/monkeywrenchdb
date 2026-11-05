@@ -16,6 +16,11 @@ do {
     if ($result) $result->free();
 } while ($db->more_results() && $db->next_result());
 // Upgrade existing request installations as well as creating fresh tables.
+if ($db->query("SHOW COLUMNS FROM music_request_cooldown_resets LIKE 'last_request_id'")->num_rows === 0) {
+    $db->query('ALTER TABLE music_request_cooldown_resets ADD COLUMN last_request_id INT NOT NULL DEFAULT 0');
+    // Preserve the previous timestamp cutoff when upgrading existing resets.
+    $db->query('UPDATE music_request_cooldown_resets c SET last_request_id = COALESCE((SELECT MAX(r.id) FROM music_requests r WHERE r.user_id = c.user_id AND r.created_at <= c.reset_at), 0)');
+}
 if ($db->query("SHOW COLUMNS FROM music_requests LIKE 'deleted_at'")->num_rows === 0) {
     $db->query('ALTER TABLE music_requests ADD COLUMN deleted_at DATETIME NULL');
 }
