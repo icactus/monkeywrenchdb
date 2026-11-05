@@ -5,7 +5,8 @@
     if (!root || document.body.classList.contains('initial-recording-target')) return;
     const $ = id => document.getElementById('study-' + id);
     const search = $('search'), instrument = $('instrument');
-    const wide = matchMedia('(min-width:801px)');
+    document.getElementById('invert-check-menu-mobile')?.setAttribute('aria-label', 'Dark mode');
+    const narrow = matchMedia('(max-width:540px)');
     const views = ['library', 'history', 'favorites'];
     const decode = value => window.decodeHtmlEntities(value == null ? '' : String(value));
     const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -17,7 +18,7 @@
     if (notice && dismissNotice) {
         const noticeKey = 'notice-dismissed-' + (notice.dataset.noticeId || 'legacy');
         if (read(noticeKey, false)) notice.hidden = true;
-        dismissNotice.addEventListener('click', () => { notice.hidden = true; write(noticeKey, true); });
+        dismissNotice.addEventListener('click', () => { notice.hidden = true; write(noticeKey, true); search.focus({ preventScroll: true }); });
     }
     const state = { query: typeof saved.query === 'string' ? saved.query : '', instrument: read('instrument', ''), view: views.includes(saved.view) ? saved.view : 'library', expanded: null, part: null, category: typeof saved.category === 'string' ? saved.category : '' };
     let pieces = [], suggestions = [], activeSuggestion = -1, candidates = [], catalogLoaded = false;
@@ -170,7 +171,8 @@
         return el;
     }
     function showView(view) {
-        state.view = wide.matches && views.includes(view) ? view : 'library';
+        state.view = window.loggedInUserId && views.includes(view) ? view : 'library';
+        for (const name of ['history', 'favorites']) $(name + '-tab').hidden = !window.loggedInUserId;
         views.forEach(name => { const selected = name === state.view; $(name + '-panel').hidden = !selected; $(name + '-tab').setAttribute('aria-selected', String(selected)); $(name + '-tab').tabIndex = selected ? 0 : -1; });
         if (state.view !== 'library') loadAccount().catch(error => message(error.message));
         persist();
@@ -263,24 +265,33 @@
             const row = button('', 'study-recording', event => start(piece, state.part, recording, event.currentTarget)), info = node('span', '', ''), name = node('span', 'study-recording-name', recordingName(recording));
             if (recording.recording_id === last) name.append(node('span', 'study-last', 'Last practiced'));
             info.append(name, node('span', 'study-recording-credit', recordingCredit(recording)));
-            const arrow = outlineIcon('study-chevron', 'M5 12h14m-6-6 6 6-6 6');
-            row.setAttribute('aria-label', 'Start ' + piece.piece_name + ' with ' + recordingName(recording)); row.append(info, arrow); holder.append(row);
+            const action = node('span', 'study-recording-action', 'Play');
+            const arrow = outlineIcon('study-action-arrow', 'M4 12 12 4M4 4h8v8');
+            arrow.setAttribute('viewBox', '0 0 16 16'); arrow.setAttribute('stroke-width', '1.5');
+            action.setAttribute('aria-hidden', 'true'); action.append(arrow);
+            row.setAttribute('aria-label', 'Play ' + piece.piece_name + ' with ' + recordingName(recording)); row.append(info, action); holder.append(row);
         });
     }
     function chooser(piece) {
         const panel = node('section', 'study-chooser', ''); panel.id = 'study-chooser-' + piece.piece_id;
-        const top = node('div', 'study-chooser-top', ''), info = node('div', '', ''), heading = node('h4', '', 'Choose your starting recording');
+        const heading = node('h4', 'study-chooser-label', 'Part');
         heading.id = 'study-chooser-heading-' + piece.piece_id; panel.setAttribute('aria-labelledby', heading.id);
-        info.append(heading, node('p', '', piece.recording_count + ' recordings · ' + partLabel(state.part)));
-        const close = button('Close ↑', 'study-text-button', () => { state.expanded = null; renderLibrary(); $('title-' + piece.piece_id)?.focus({ preventScroll: true }); persist(); });
-        top.append(info, close); panel.append(top);
+        panel.append(heading);
         const parts = availableParts(piece);
         if (parts.length > 1) {
-            const materials = node('div', 'study-materials', ''); materials.setAttribute('role', 'group'); materials.setAttribute('aria-label', 'Study material');
-            parts.forEach(part => { const b = button(partLabel(part), 'study-open', () => openPiece(piece, part)); b.setAttribute('aria-pressed', String(part.metric_arr_id === state.part.metric_arr_id)); materials.append(b); }); panel.append(materials);
-        }
-        panel.append(requestLink('Missing a part? Request it', { composer_name: piece.composer, piece_name: piece.piece_name, part_name: state.instrument }));
-        const recordings = node('div', 'study-recordings', ''); empty(recordings, 'Loading recordings…'); panel.append(recordings); return panel;
+            const materials = node('div', 'study-materials', ''); materials.setAttribute('role', 'group'); materials.setAttribute('aria-label', 'Choose your part');
+            parts.forEach(part => {
+                const b = button(partLabel(part), 'study-open', () => { openPiece(piece, part); $('part-' + part.metric_arr_id)?.focus({ preventScroll: true }); });
+                b.id = 'study-part-' + part.metric_arr_id; b.setAttribute('aria-pressed', String(part.metric_arr_id === state.part.metric_arr_id)); materials.append(b);
+            }); panel.append(materials);
+        } else panel.append(node('p', 'study-selected-part', partLabel(state.part)));
+        const recordingHeading = node('h4', 'study-chooser-label', 'Recording'); recordingHeading.id = 'study-recording-heading-' + piece.piece_id;
+        const recordings = node('div', 'study-recordings', ''); recordings.setAttribute('role', 'group'); recordings.setAttribute('aria-labelledby', recordingHeading.id);
+        empty(recordings, 'Loading recordings…'); panel.append(recordingHeading, recordings);
+        const bottom = node('div', 'study-chooser-bottom', '');
+        const close = button('Collapse ↑', 'study-text-button', () => { state.expanded = null; renderLibrary(); $('title-' + piece.piece_id)?.focus({ preventScroll: true }); persist(); });
+        bottom.append(requestLink('Missing a part or recording? Request it ↗', { composer_name: piece.composer, piece_name: piece.piece_name, part_name: state.instrument }), close);
+        panel.append(bottom); return panel;
     }
     function pieceRow(piece, savedView = false) {
         const expanded = !savedView && state.expanded === piece.piece_id;
@@ -325,7 +336,13 @@
     function setCategory(name) {
         state.category = name; state.expanded = null; showView('library');
         if (catalogLoaded) { renderLibrary(); }
+        closeCategories();
+        if (narrow.matches) $('category-toggle').focus({ preventScroll: true });
+        else [...$('categories').children].find(tab => tab.dataset.category === name)?.focus({ preventScroll: true });
         persist();
+    }
+    function closeCategories() {
+        $('filter-toolbar').classList.remove('open'); $('category-toggle').setAttribute('aria-expanded', 'false');
     }
     function renderCategories(opts = {}) {
         const box = $('categories'); if (!box) return;
@@ -355,6 +372,7 @@
             names.forEach(name => box.append(makeTab(name, name, counts.get(name) || 0)));
         }
         box.hidden = false;
+        $('category-toggle').replaceChildren(document.createTextNode(state.category || 'All categories'), outlineIcon('study-filter-chevron', 'm6 9 6 6 6-6'));
     }
     function closeSuggestions() { $('suggestions').hidden = true; search.setAttribute('aria-expanded', 'false'); search.removeAttribute('aria-activedescendant'); activeSuggestion = -1; }
     function changeInstrument(name) {
@@ -426,15 +444,25 @@
             finally { catalogRequest = null; }
         })(); return catalogRequest;
     }
-    views.forEach((view, i) => {
+    views.forEach(view => {
         $(view + '-tab').addEventListener('click', () => showView(view));
         $(view + '-tab').addEventListener('keydown', event => {
             if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-            event.preventDefault(); const target = event.key === 'Home' ? views[0] : event.key === 'End' ? views.at(-1) : views[(i + (event.key === 'ArrowRight' ? 1 : -1) + views.length) % views.length];
+            const visible = views.filter(name => !$(name + '-tab').hidden), i = visible.indexOf(view);
+            event.preventDefault(); const target = event.key === 'Home' ? visible[0] : event.key === 'End' ? visible.at(-1) : visible[(i + (event.key === 'ArrowRight' ? 1 : -1) + visible.length) % visible.length];
             showView(target); $(target + '-tab').focus();
         });
     });
-    wide.addEventListener('change', () => { if (!wide.matches) { const focusWasHidden = document.activeElement.closest('.study-tabs, #study-history-panel, #study-favorites-panel'); showView('library'); if (focusWasHidden) search.focus(); } });
+    $('category-toggle').addEventListener('click', () => {
+        const open = $('filter-toolbar').classList.toggle('open'); $('category-toggle').setAttribute('aria-expanded', String(open));
+    });
+    $('filter-toolbar').addEventListener('keydown', event => { if (event.key === 'Escape') { closeCategories(); if (narrow.matches) $('category-toggle').focus(); } });
+    narrow.addEventListener('change', () => {
+        const focused = document.activeElement;
+        closeCategories();
+        if (!narrow.matches && focused === $('category-toggle')) [...$('categories').children].find(tab => tab.dataset.category === state.category)?.focus({ preventScroll: true });
+        else if (narrow.matches && $('categories').contains(focused)) $('category-toggle').focus({ preventScroll: true });
+    });
     search.addEventListener('input', () => { changeSearch(); suggest(); }); search.addEventListener('focus', suggest); search.addEventListener('blur', closeSuggestions);
     search.addEventListener('keydown', event => {
         if (event.key === 'Escape') { event.preventDefault(); closeSuggestions(); return; }
@@ -447,7 +475,7 @@
     $('clear-search').addEventListener('click', () => { search.value = ''; changeSearch({ clearCategory: true }); search.focus(); });
     $('reset').addEventListener('click', () => { search.value = ''; instrument.value = ''; state.instrument = ''; write('instrument', ''); state.category = ''; if (catalogLoaded) renderCategories(); changeSearch(); });
     root.querySelectorAll('[data-study-query]').forEach(el => el.addEventListener('click', () => { search.value = el.dataset.studyQuery; changeSearch({ clearCategory: true }); if (search.blur) search.blur(); }));
-    document.addEventListener('keydown', event => { if (root.isConnected && !document.body.classList.contains('recording-loaded') && event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) { event.preventDefault(); search.focus(); } });
+    document.addEventListener('keydown', event => { if (root.isConnected && !document.body.classList.contains('recording-loaded') && !document.querySelector('#help.showhlp, #about.showabout, dialog[open]') && event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) { event.preventDefault(); search.focus(); } });
     window.addEventListener('pagehide', () => { if (root.isConnected) persist(); });
     // Events from the existing account menus/player keep the new tabs synchronized.
     window.addEventListener('mw-account-changed', () => { if (root.isConnected) loadAccount(true).catch(error => message(error.message)); });

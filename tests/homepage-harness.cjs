@@ -46,14 +46,21 @@ function makeEl(tag) {
         addEventListener(type, fn) { el._l[type] = fn; },
         removeEventListener() {},
         setAttribute(k, v) { el[k] = v; },
+        getAttribute(k) { return el[k] ?? null; },
         removeAttribute(k) { delete el[k]; },
-        focus() {}, click() {}, remove() {},
+        focus() { ctx.document.activeElement = el; }, click() {}, remove() {},
         closest() { return null; },
-        contains() { return true; },
+        contains(other) { for (let current = other; current; current = current.parent) if (current === el) return true; return false; },
         get isConnected() { return el.parent ? el.parent.isConnected : Object.values(els || {}).includes(el); },
         get firstChild() { return el.children[0]; },
         querySelector(sel) { return findAll(el, sel)[0] || null; },
         querySelectorAll(sel) { return findAll(el, sel); },
+    };
+    el.classList = {
+        contains: name => el.className.split(/\s+/).includes(name),
+        add(name) { if (!this.contains(name)) el.className = (el.className + ' ' + name).trim(); },
+        remove(name) { el.className = el.className.split(/\s+/).filter(value => value !== name).join(' '); },
+        toggle(name) { if (this.contains(name)) { this.remove(name); return false; } this.add(name); return true; },
     };
     allElements.push(el);
     return el;
@@ -90,15 +97,16 @@ function fire(el, type, event = {}) {
     return el._l[type]?.({ preventDefault() {}, currentTarget: el, target: el, ...event });
 }
 
-let ctx, els, launched;
+let ctx, els, launched, mediaQueries;
 
 function buildContext(sourceOverride, options = {}) {
     allElements = [];
     launched = [];
     els = {};
+    mediaQueries = new Map();
     const staticIds = ['study-home', 'study-construction-notice', 'study-construction-dismiss', 'study-search', 'study-instrument', 'study-suggestions',
         'study-message', 'study-results', 'study-results-count', 'notification',
-        'study-clear-search', 'study-reset', 'study-search-form', 'study-categories', 'recordings-dropdown',
+        'study-clear-search', 'study-reset', 'study-search-form', 'study-categories', 'study-filter-toolbar', 'study-category-toggle', 'recordings-dropdown',
         'study-library-panel', 'study-history-panel', 'study-favorites-panel',
         'study-library-tab', 'study-history-tab', 'study-favorites-tab',
         'study-history-list', 'study-favorites-list'];
@@ -109,7 +117,6 @@ function buildContext(sourceOverride, options = {}) {
     }
     els['study-search'].value = '';
     els['study-construction-notice'].dataset.noticeId = 'requests-2026-10-16';
-    els['study-search'].focus = () => {};
     els['study-home'].querySelectorAll = sel => allElements.filter(el => el.isConnected && matches(el, sel));
 
     const store = { ...options.storage };
@@ -123,11 +130,19 @@ function buildContext(sourceOverride, options = {}) {
             getElementById: id => els[id] || allElements.find(e => e.id === id && e.isConnected) || null,
             createElement: tag => makeEl(tag),
             createElementNS: (_, tag) => makeEl(tag),
+            createTextNode: text => String(text),
+            querySelector: () => null,
             activeElement: { tagName: 'BODY' },
             addEventListener() {},
             body: { classList: { contains: () => false } },
         },
-        matchMedia: () => ({ matches: !!options.wide, addEventListener() {} }),
+        matchMedia: query => {
+            if (!mediaQueries.has(query)) mediaQueries.set(query, {
+                matches: query.includes('max-width') ? !options.wide : !!options.wide,
+                listeners: [], addEventListener(type, listener) { if (type === 'change') this.listeners.push(listener); },
+            });
+            return mediaQueries.get(query);
+        },
         setTimeout: options.setTimeout || ((fn, delay) => { const timer = setTimeout(fn, delay); timer.unref(); return timer; }),
         clearTimeout: options.clearTimeout || clearTimeout,
         localStorage: {
@@ -210,4 +225,5 @@ function starButtons() {
 
 
 module.exports = { buildContext, settled, titles, searchFor, chooseInstrument, resetFilters,
-    titleButton, starButtons, fire, findByClass, els: () => els, launched: () => launched, ctx: () => ctx };
+    titleButton, starButtons, fire, findByClass, els: () => els, launched: () => launched, ctx: () => ctx,
+    setNarrow(matches) { const media = mediaQueries.get('(max-width:540px)'); media.matches = matches; media.listeners.forEach(listener => listener({ matches })); } };

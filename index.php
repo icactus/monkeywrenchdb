@@ -99,7 +99,7 @@ if ($hasInitialRecordingTarget) {
     </script>
     <meta charset="utf-8">
     <meta name="viewport"
-        content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+        content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -108,7 +108,7 @@ if ($hasInitialRecordingTarget) {
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=34" />
     <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=288" />
-    <link rel="stylesheet" href="assets/css/homepage.css?v=18" />
+    <link rel="stylesheet" href="assets/css/homepage.css?v=19" />
     <link rel="stylesheet" href="assets/css/request-notifications.css?v=2" />
     <link rel="stylesheet" href="assets/css/leaderboard.css?v=1" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
@@ -170,6 +170,12 @@ if ($hasInitialRecordingTarget) {
 </head>
 
 <body<?= $bodyClasses ? ' class="' . htmlspecialchars(implode(' ', $bodyClasses), ENT_QUOTES, 'UTF-8') . '"' : '' ?>>
+    <aside id="study-construction-notice" class="study-construction-notice" data-notice-id="requests-2026-10-16" aria-label="Site news">
+        <div class="study-news-content">
+            <p><strong>New:</strong> Request a piece, part, or recording in <a href="requests.php">My Requests</a>.</p>
+            <button type="button" id="study-construction-dismiss" class="study-construction-dismiss" aria-label="Dismiss news announcement">×</button>
+        </div>
+    </aside>
     <!-- <sidebar></sidebar> -->
     <section1>
         <div id="header">
@@ -553,7 +559,7 @@ if ($hasInitialRecordingTarget) {
     <script src="stripped-synpdf.js?v=346"></script>
     <script src="stripped-synpdf-extras.js?v=289"></script>
     <script src="js/player-page-scroll.js?v=1"></script>
-    <script src="js/homepage.js?v=21"></script>
+    <script src="js/homepage.js?v=22"></script>
     <script>
         // Dark Mode: mobile menu toggle + desktop floating button, persisted in localStorage
         window.setDarkMode = function (isDark) {

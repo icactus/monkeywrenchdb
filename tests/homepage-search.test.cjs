@@ -444,3 +444,86 @@ test('numbered works sort numerically, not lexicographically', async () => {
     h.buildContext();
     await h.settled();
 });
+
+test('signed-in account views remain usable across mobile and desktop widths', async () => {
+    h.buildContext(undefined, { userId: 8, wide: false });
+    await h.settled();
+    await h.fire(h.els()['study-history-tab'], 'click');
+    assert.equal(h.els()['study-history-panel'].hidden, false);
+    h.setNarrow(false);
+    assert.equal(h.els()['study-history-panel'].hidden, false, 'resizing must not discard the current account view');
+    await h.fire(h.els()['study-favorites-tab'], 'click');
+    assert.equal(h.els()['study-favorites-panel'].hidden, false);
+    h.setNarrow(true);
+    assert.equal(h.els()['study-favorites-panel'].hidden, false);
+});
+
+test('signed-out tab keyboard navigation skips unavailable account views', async () => {
+    h.buildContext(undefined, { wide: false });
+    await h.settled();
+    assert.equal(h.els()['study-history-tab'].hidden, true);
+    assert.equal(h.els()['study-favorites-tab'].hidden, true);
+    await h.fire(h.els()['study-library-tab'], 'keydown', { key: 'ArrowRight' });
+    assert.equal(h.ctx().document.activeElement, h.els()['study-library-tab']);
+    assert.equal(h.els()['study-library-panel'].hidden, false);
+});
+
+test('mobile category selection closes the disclosure and returns focus', async () => {
+    h.buildContext(undefined, { wide: false });
+    await h.settled();
+    const toggle = h.els()['study-category-toggle'], toolbar = h.els()['study-filter-toolbar'];
+    await h.fire(toggle, 'click');
+    assert.equal(toolbar.classList.contains('open'), true);
+    assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+    const orchestra = h.findByClass(h.els()['study-categories'], 'study-category').find(tab => tab.dataset.category === 'Orchestra');
+    await h.fire(orchestra, 'click');
+    assert.deepEqual(h.titles(), ['Symphony No. 5', 'Symphony No. 9']);
+    assert.equal(toolbar.classList.contains('open'), false);
+    assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+    assert.match(toggle.textContent, /Orchestra/);
+    assert.equal(h.ctx().document.activeElement, toggle);
+    await h.fire(toggle, 'click');
+    await h.fire(toolbar, 'keydown', { key: 'Escape' });
+    assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+    assert.equal(h.ctx().document.activeElement, toggle);
+});
+
+test('category disclosure closes on resize without clearing the selected filter', async () => {
+    h.buildContext(undefined, { wide: false });
+    await h.settled();
+    const solo = h.findByClass(h.els()['study-categories'], 'study-category').find(tab => tab.dataset.category === 'Solo');
+    await h.fire(solo, 'click');
+    await h.fire(h.els()['study-category-toggle'], 'click');
+    h.setNarrow(false);
+    assert.equal(h.els()['study-category-toggle'].getAttribute('aria-expanded'), 'false');
+    assert.match(h.els()['study-category-toggle'].textContent, /Solo/);
+    assert.deepEqual(h.titles(), ['Cello Suite No. 1', 'Nocturne']);
+});
+
+test('full-score fallback is named in the chooser and launches the correct material', async () => {
+    h.buildContext();
+    await h.settled();
+    h.chooseInstrument('Viola');
+    await h.fire(h.titleButton('Symphony No. 9'), 'click');
+    const panel = h.ctx().document.getElementById('study-chooser-3');
+    assert.equal(h.findByClass(panel, 'study-selected-part')[0].textContent, 'Full Score');
+    await h.fire(h.findByClass(panel, 'study-recording')[0], 'click');
+    assert.equal(h.launched().length, 1);
+    assert.equal(h.launched()[0].metric_arr_id, 33);
+});
+
+test('choosing a second part preserves focus and Play launches that part in the existing player', async () => {
+    h.buildContext();
+    await h.settled();
+    h.chooseInstrument('Violin');
+    await h.fire(h.titleButton('Symphony No. 9'), 'click');
+    const panel = () => h.ctx().document.getElementById('study-chooser-3');
+    const second = h.findByClass(panel(), 'study-open').find(button => button.textContent === 'Violin 2');
+    await h.fire(second, 'click');
+    assert.equal(h.ctx().document.activeElement.id, 'study-part-32');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const recording = h.findByClass(panel(), 'study-recording')[0];
+    assert.equal(h.findByClass(recording, 'study-recording-action')[0].textContent, 'Play');
+    await h.fire(recording, 'click');
+    assert.equal(h.launched()[0].metric_arr_id, 32);
+});
