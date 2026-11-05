@@ -12,13 +12,12 @@ try {
 }
 $leaderboardEscape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 ?>
-<dialog id="leaderboard" aria-labelledby="leaderboard-title" aria-describedby="leaderboard-description">
+<dialog id="leaderboard" aria-labelledby="leaderboard-title">
     <div class="modal-header">
         <h3 id="leaderboard-title">Leaderboard</h3>
         <button type="button" class="modal-close" id="leaderboard-close" aria-label="Close leaderboard" autofocus>&times;</button>
     </div>
     <div class="modal-content">
-        <p id="leaderboard-description">All-time contributions. One point per measure synced.</p>
         <p id="leaderboard-status" role="status" aria-live="polite" <?= $leaderboardRows ? 'hidden' : '' ?>><?= $leaderboardEscape($leaderboardError ?: 'No synced measures have been credited yet.') ?></p>
         <button type="button" id="leaderboard-retry" <?= $leaderboardError ? '' : 'hidden' ?>>Try again</button>
         <table class="leaderboard-table" id="leaderboard-table" aria-label="All-time contribution leaderboard" <?= $leaderboardRows ? '' : 'hidden' ?>>
