@@ -28,7 +28,7 @@ try {
     $conn->set_charset('utf8mb4');
 
     // Prepare the SQL query
-    // Note the JOIN on instrument_groups (ig), and the CASE handling for the solo_instrument_id
+    // Group metadata is optional: manuscripts and newly added instruments may be ungrouped.
     $stmt = $conn->prepare("
         SELECT 
             m.metric_arr_id,
@@ -41,7 +41,7 @@ try {
         JOIN pieces p            ON m.piece_id      = p.piece_id
         JOIN recordings r        ON p.piece_id      = r.piece_id
         JOIN instruments i       ON m.instrument_id = i.instrument_id
-        JOIN instrument_group ig ON i.instrument_group_id = ig.instrument_group_id
+        LEFT JOIN instrument_group ig ON i.instrument_group_id = ig.instrument_group_id
         WHERE r.recording_id = ?
         ORDER BY
             CASE 
@@ -50,6 +50,7 @@ try {
                 THEN 0
                 ELSE 1
             END,
+            ig.instrument_group_order IS NULL,
             ig.instrument_group_order,
             i.instrument_id
     ");

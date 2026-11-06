@@ -19,7 +19,7 @@ try {
         LEFT JOIN piece_categories pc ON pc.category_id = p.category_id
         JOIN metric_arr m ON m.piece_id = p.piece_id
         JOIN instruments i ON i.instrument_id = m.instrument_id
-        JOIN instrument_group g ON g.instrument_group_id = i.instrument_group_id
+        LEFT JOIN instrument_group g ON g.instrument_group_id = i.instrument_group_id
         LEFT JOIN (SELECT piece_id, COUNT(*) recording_count FROM recordings GROUP BY piece_id) rc ON rc.piece_id = p.piece_id
         ORDER BY c.composer_last, p.piece_name, i.instrument_id, m.metric_arr_id");
     $pieces = [];

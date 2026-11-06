@@ -25,14 +25,14 @@ try {
               i.instrument_name,
               GROUP_CONCAT(DISTINCT i.instrument_id ORDER BY i.instrument_id) AS instrument_ids, 
               i.instrument_group_id, 
-              g.instrument_group_name, 
-              g.instrument_group_order,
+              COALESCE(g.instrument_group_name, 'Other') AS instrument_group_name,
+              COALESCE(g.instrument_group_order, 99) AS instrument_group_order,
               COUNT(DISTINCT ma.piece_id) AS total_metric_value
             FROM instruments AS i
-            JOIN instrument_group AS g ON i.instrument_group_id = g.instrument_group_id
+            LEFT JOIN instrument_group AS g ON i.instrument_group_id = g.instrument_group_id
             LEFT JOIN metric_arr AS ma ON i.instrument_id = ma.instrument_id
             GROUP BY i.instrument_name, i.instrument_group_id, g.instrument_group_name, g.instrument_group_order
-            ORDER BY g.instrument_group_order, i.instrument_name";
+            ORDER BY instrument_group_order, i.instrument_name";
 
     $stmt = $conn->prepare($sql);
     $stmt->execute();
