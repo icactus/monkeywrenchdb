@@ -731,6 +731,7 @@ var BarlineDetectV2 = (function () {
             var lineCoverages = [];
             for (var lineIdx = 0; lineIdx < 5; lineIdx++) {
                 var hits = 0;
+                var faintHits = 0;
                 var samples = 0;
                 var leftY = leftGeom.lines[lineIdx];
                 var rightY = rightGeom.lines[lineIdx];
@@ -739,12 +740,14 @@ var BarlineDetectV2 = (function () {
                     var t = (endX !== startX) ? (x - startX) / (endX - startX) : 0;
                     var y = Math.round(leftY + t * (rightY - leftY));
                     var dark = false;
+                    var faint = false;
                     for (var dy = -2; dy <= 2; dy++) {
                         var sy = y + dy;
                         if (sy < 0) continue;
                         var idx = sy * stride + x * 4;
                         if (idx < 0 || idx + 2 >= pixelData.length) continue;
                         var brightness = (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3;
+                        if (brightness < 216) faint = true;
                         if (brightness < 128) {
                             dark = true;
                             break;
@@ -752,9 +755,15 @@ var BarlineDetectV2 = (function () {
                     }
                     samples++;
                     if (dark) hits++;
+                    if (faint) faintHits++;
                 }
 
-                lineCoverages.push(samples > 0 ? hits / samples : 0);
+                // A faint staff line spans the system; ledger strokes do not.
+                // Count lighter ink only with broad support so a dark partial
+                // ledger cannot displace a real outer staff line.
+                var darkCoverage = samples > 0 ? hits / samples : 0;
+                var faintCoverage = samples > 0 ? faintHits / samples : 0;
+                lineCoverages.push(darkCoverage < 0.22 && faintCoverage >= 0.6 ? faintCoverage : darkCoverage);
             }
 
             var total = lineCoverages.reduce(function (sum, cov) { return sum + cov; }, 0);

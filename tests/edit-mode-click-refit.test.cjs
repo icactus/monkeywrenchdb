@@ -94,6 +94,17 @@ test('an incorrect old slope does not hide a level printed staff', () => {
     assert(Math.abs(h.metrics()[1].cxs[0].cs[0]-100)<=2);
 });
 
+test('a faint printed outer line is retained instead of clicking into nearby ledger strokes', () => {
+    for(const above of [true,false]) {
+        const h = setup();
+        for(let x=50;x<=750;x++)h.pixels.set([180,180,180,255],((above?132:100)*800+x)*4);
+        for(let x=275;x<=625;x++)if(x%25<18)h.pixels.set([0,0,0,255],((above?92:140)*800+x)*4);
+        h.click(400,116);
+        assert.equal(h.alerts.length,0);
+        h.metrics()[1].cxs[0].cs.forEach((line,i)=>assert(Math.abs(line-(100+i*8))<=2));
+    }
+});
+
 test('repeated clicks remain stable, including sloping staves and clicks over noteheads', () => {
     for(const options of [{},{slope:12},{notes:true}]) {
         const h = setup(options),y=116+(options.slope||0)/2;

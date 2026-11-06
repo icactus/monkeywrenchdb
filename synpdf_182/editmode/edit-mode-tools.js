@@ -3274,15 +3274,21 @@ function detectStaffBundleAroundPoint(pixelData, stride, width, x, y, seedSpatiu
     function rowScore(row) {
         const key = Math.round(row * 2);
         if (scores.has(key)) return scores.get(key);
-        let dark = 0, samples = 0;
+        let dark = 0, faint = 0, samples = 0;
         for (let col = x1; col <= x2; col += 2) {
             const sampleY = Math.round(row + slope * (col - x));
             if (sampleY < 0 || sampleY >= height) continue;
             const offset = sampleY * stride + col * 4;
-            dark += pixelData[offset] + pixelData[offset + 1] + pixelData[offset + 2] < 540 ? 1 : 0;
+            const brightness = pixelData[offset] + pixelData[offset + 1] + pixelData[offset + 2];
+            dark += brightness < 540 ? 1 : 0;
+            faint += brightness < 648 ? 1 : 0;
             samples++;
         }
-        const score = samples ? dark / samples : 0;
+        // Recover faint continuous staff lines without giving isolated light
+        // marks the same support as a printed line across this strip.
+        const darkCoverage = samples ? dark / samples : 0;
+        const faintCoverage = samples ? faint / samples : 0;
+        const score = darkCoverage < 0.25 && faintCoverage >= 0.6 ? faintCoverage : darkCoverage;
         scores.set(key, score);
         return score;
     }
