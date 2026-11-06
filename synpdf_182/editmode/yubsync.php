@@ -736,7 +736,7 @@
             gap: 10px;
         }
     </style>
-    <link rel="stylesheet" href="yubsync-live-edit.css?v=11" />
+    <link rel="stylesheet" href="yubsync-live-edit.css?v=13" />
 </head>
 
 <body class="yubsync-editor<?= $canSync ? '' : ' yubsync-locked' ?>">
@@ -830,6 +830,7 @@
         <div id="database-menus-wrapper">
             <div id="database-menus">
                 <!-- Superuser correction shortcuts work without displaying a toolbar. -->
+                <p id="yubsync-edit-status" role="status" aria-live="polite" hidden></p>
                 <div id="yubsync-edit-toolbar" role="toolbar" aria-label="Score corrections" hidden>
                     <span>Score corrections</span>
                     <button type="button" data-yub-edit="q" title="Add or remove a barline (Q)" aria-pressed="false">Barlines <kbd>Q</kbd></button>
@@ -839,7 +840,6 @@
                     <button type="button" id="yubsync-edit-undo" disabled>Undo edit</button>
                     <button type="button" id="yubsync-edit-save" disabled>Save changes</button>
                     <button type="button" id="yubsync-edit-cancel" disabled>Cancel edits</button>
-                    <span id="yubsync-edit-status" role="status" aria-live="polite">Q / W / S / Y edit the score. Clicks update measures immediately.</span>
                 </div>
                 <div class="step-wrapper">
                     <form class="inputform" id="loadScore" method="POST">
@@ -1089,8 +1089,9 @@
         <button type="button" id="closehelp">Close Help</button>
     </div>
     <?php if ($canSync): ?>
+    <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
     <script src="yubsync-tools.js?v=91"></script>
-    <script src="yubsync-live-edit.js?v=7"></script>
+    <script src="yubsync-live-edit.js?v=9"></script>
     <script src="yubsync-progress.js?v=2"></script>
     <?php endif; ?>
     <?php $siteInformationIncludeHelp = false; require $yubsyncSiteRoot . '/site-information.php'; ?>

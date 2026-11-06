@@ -226,7 +226,7 @@ test('users without correction access cannot activate hidden tools while saved-p
     for (const mode of ['q', 'w', 's', 'y']) modeButtons.push({ ...node(), dataset: { yubEdit: mode } });
     const toolbar = { ...node(), hidden: true, querySelectorAll: () => modeButtons };
     const notation = { ...node(), querySelectorAll: () => [] };
-    for (const id of ['yubsync-edit-status', 'yubsync-edit-save', 'yubsync-edit-cancel', 'yubsync-edit-undo']) buttons[id] = node();
+    for (const id of ['yubsync-edit-status', 'yubsync-edit-save', 'yubsync-edit-cancel', 'yubsync-edit-undo', 'yubsync-split-popup']) buttons[id] = node();
     const c = vm.createContext({ window: { addEventListener() {} }, document: {
         getElementById: id => id === 'yubsync-edit-toolbar' ? toolbar : id === 'notation' ? notation : buttons[id],
         addEventListener(type, handler) { listeners[type] = handler; }

@@ -117,18 +117,47 @@
     const saveButton = document.getElementById('yubsync-edit-save');
     const cancelButton = document.getElementById('yubsync-edit-cancel');
     const undoButton = document.getElementById('yubsync-edit-undo');
+    const splitPopup = document.getElementById('yubsync-split-popup');
     const get = name => window[name + '$$module$synpdf'];
     const set = (name, value) => { window[name + '$$module$synpdf'] = value; };
     const canEdit = () => window.yubsyncCanEditScore === true;
     let session = null, mode = '', first = null, gesture = null, busy = false, savePromise = null;
-    let draft, lineage, history = [];
+    let draft, lineage, splitInput = null, history = [];
     const hints = {
         q: 'Q: click a barline to remove it, or click inside a system to add one.',
         w: 'W: click the top-left and bottom-right corners of a staff. Lines fit automatically.',
-        s: 'S: click a multimeasure rest and enter its measure count.',
+        s: 'S: click a multimeasure rest, then press its measure count. Hold Shift for multiple digits.',
         y: 'Y: click to refit a staff, drag to combine systems using the starting system’s bars, or Ctrl-click to combine the page.'
     };
-    function message(text) { status.textContent = text; }
+    function message(text) { status.textContent = text; status.hidden = !text; }
+    function cancelSplit() {
+        splitInput = null;
+        splitPopup.hidden = true;
+    }
+    function showSplit() {
+        splitPopup.textContent = `${splitInput.value || '_'} measures · Shift for multiple digits`;
+        splitPopup.hidden = false;
+    }
+    function applySplit(value) {
+        const count = Number(value);
+        if (!Number.isInteger(count) || count < 1 || count > 100) {
+            message('Enter a whole number from 1 to 100. Escape cancels this split.'); return;
+        }
+        const selection = splitInput;
+        cancelSplit();
+        if (count === 1) { message(hints.s); return; }
+        commit(selection.page, () => {
+            const { left, end, right, index } = selection;
+            if ((end - left) / count < 1) throw new Error('Too many divisions for this rest’s width.');
+            draft[selection.page].bxs[index].splice(right, 0,
+                ...Array.from({ length: count - 1 }, (_, i) => left + (i + 1) * (end - left) / count));
+            return true;
+        });
+    }
+    function digit(event) {
+        if (/^(Digit|Numpad)[0-9]$/.test(event.code || '')) return event.code.at(-1);
+        return /^[0-9]$/.test(event.key) ? event.key : null;
+    }
     function update() {
         toolbar.classList.toggle('is-editing', !!session);
         toolbar.setAttribute('aria-busy', String(busy));
@@ -156,6 +185,7 @@
     function begin(nextMode) {
         if (!canEdit()) return;
         if (busy || session?.saved) return;
+        cancelSplit();
         if (!session) {
             const context = window.yubsyncMetricContext;
             const canvases = notation.querySelectorAll('canvas[data-pdf-page]');
@@ -172,7 +202,7 @@
         mode = mode === nextMode ? '' : nextMode;
         first = gesture = null;
         if (!mode && !history.length) { finish(); message('Continue syncing.'); return; }
-        message(mode ? hints[mode] : 'Changes are active. Continue syncing; Save changes writes them to the database.');
+        message(mode ? hints[mode] : 'Changes are active. Continue syncing; submitting the recording saves them.');
         paint(); update();
     }
     function restore(state, metrics) {
@@ -195,6 +225,7 @@
         window.scrollTo(state.windowX, state.windowY);
     }
     function finish() {
+        cancelSplit();
         session = null; mode = ''; first = gesture = null; history = [];
         paint(); update(); document.activeElement?.blur();
     }
@@ -202,6 +233,10 @@
         if (savePromise) return savePromise;
         if (!session) return Promise.resolve(true);
         if (!canEdit()) return Promise.resolve(false);
+        if (splitInput) {
+            message('Finish entering the measure count, or press Escape to cancel the split before submitting.');
+            return Promise.resolve(false);
+        }
         savePromise = persist().finally(() => { savePromise = null; });
         return savePromise;
     }
@@ -224,7 +259,7 @@
             return true;
         } catch (error) {
             console.error('[YubSync] Score correction save failed:', error);
-            message(session.saved ? `Score saved to the database. ${error.message} Your sync is preserved; use Retry save to finish.` :
+            message(session.saved ? `Score saved to the database. ${error.message} Your sync is preserved; retry submitting to finish.` :
                 `Save could not be confirmed: ${error.message} Your edits and sync are preserved. Retry to finish saving.`);
             return false;
         } finally { busy = false; update(); }
@@ -308,26 +343,39 @@
             const bars = page.bxs[index];
             const right = bars.findIndex(x => Math.abs(x) > ctx.x);
             if (right < 1) return;
-            const answer = prompt('Number of measures in this multimeasure rest (2–100):', '2');
-            if (answer === null) return;
-            const count = Number(answer);
-            if (!Number.isInteger(count) || count < 2 || count > 100) { message('Enter a whole number from 2 to 100.'); return; }
-            commit(ctx.page, () => {
-                const left = Math.abs(bars[right - 1]), end = Math.abs(bars[right]);
-                if ((end - left) / count < 1) throw new Error('Too many divisions for this rest’s width.');
-                bars.splice(right, 0, ...Array.from({ length: count - 1 }, (_, i) => left + (i + 1) * (end - left) / count));
-                return true;
-            });
+            splitInput = { page: ctx.page, index, right, left: Math.abs(bars[right - 1]), end: Math.abs(bars[right]), value: '' };
+            splitPopup.style.left = `${Math.max(8, Math.min(event.clientX + 12, window.innerWidth - 240))}px`;
+            splitPopup.style.top = `${Math.max(8, Math.min(event.clientY + 12, window.innerHeight - 70))}px`;
+            showSplit();
+            message(hints.s);
         } else if (index >= 0 && mode === 'y') {
             commit(ctx.page, () => {
                 if (event.ctrlKey) return merge(page, owners, index, page.cxs.map((_, i) => i));
                 fit(page.cxs[index], ctx.canvas); return true;
             });
-        }
+        } else if (index < 0) message('Click within the staff lines to change its measures.');
     }
     function paint() {
-        // Match live edit: the PDF and its current-measure cursor are enough.
         notation.querySelectorAll('.yubsync-edit-overlay').forEach(el => el.remove());
+        if (!mode) return;
+        // Render the edited boundaries separately from the PDF pixels. Each page
+        // uses the same coordinates and display zoom as the player's measure boxes.
+        notation.querySelectorAll('canvas[data-pdf-page]').forEach(canvas => {
+            const page = draft[Number(canvas.dataset.pdfPage)];
+            const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            overlay.setAttribute('class', 'yubsync-edit-overlay');
+            overlay.setAttribute('aria-hidden', 'true');
+            overlay.setAttribute('width', canvas.width);
+            overlay.setAttribute('height', canvas.height);
+            overlay.style.top = `${Number(canvas.dataset.pageOffset) || 0}px`;
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', page.bxs.flatMap((bars, system) => bars.map(bar => {
+                const x = Math.abs(bar), edge = bounds(page.cxs[system], x);
+                return `M${x},${edge.top}V${edge.bottom}`;
+            })).join(''));
+            overlay.appendChild(path);
+            notation.appendChild(overlay);
+        });
     }
     function block(event) { event.preventDefault(); event.stopImmediatePropagation(); }
     function field(target) { return target?.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, select, [contenteditable]:not([contenteditable="false"])'); }
@@ -342,13 +390,40 @@
             }
             return;
         }
+        if (splitInput) {
+            const number = digit(event);
+            if (event.key === 'Escape') {
+                block(event); cancelSplit(); message('Split cancelled. ' + hints.s); return;
+            }
+            if (event.key === 'Backspace') {
+                block(event);
+                if (splitInput.value) { splitInput.value = splitInput.value.slice(0, -1); showSplit(); }
+                else cancelSplit();
+                return;
+            }
+            if (number !== null) {
+                block(event);
+                if (!event.repeat) {
+                    if (event.shiftKey) { splitInput.value = (splitInput.value + number).slice(0, 3); showSplit(); }
+                    else applySplit(number);
+                }
+                return;
+            }
+            if (event.key === 'Enter') {
+                block(event); if (splitInput.value && !event.repeat) applySplit(splitInput.value); return;
+            }
+        }
         if ('qwsy'.includes(key) && key.length === 1) { block(event); if (!event.repeat) begin(key); return; }
         if (busy) { block(event); return; }
         if (session && event.key === 'Escape') {
             block(event); mode = ''; first = gesture = null;
             if (!history.length) finish();
-            paint(); update(); message('Continue syncing. Save changes when ready.');
+            paint(); update(); message('Continue syncing. Submitting the recording saves pending corrections.');
         }
+    }, true);
+    document.addEventListener('keyup', event => {
+        if (!canEdit() || !splitInput || field(event.target) || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (event.key === 'Shift' && splitInput.value) { block(event); applySplit(splitInput.value); }
     }, true);
     notation.addEventListener('pointerdown', event => {
         if (!session || !mode) return;
@@ -382,6 +457,7 @@
     saveButton.addEventListener('click', save);
     undoButton.addEventListener('click', () => {
         if (!canEdit() || busy || session?.saved || !history.length || history.at(-1).restored) return;
+        cancelSplit();
         const prior = history.at(-1), target = draft.slice(), owners = lineage.slice();
         target[prior.page] = copy(prior.data); owners[prior.page] = copy(prior.lineage);
         try {
@@ -421,7 +497,7 @@
                 session = { context: { ...window.yubsyncMetricContext }, metrics: copy(editor.baseline),
                     lineage: editor.baseline.map((page, p) => p ? page.cxs.map((_, s) => [origin(p, s)]) : null) };
                 history = [{ restored: true }];
-                update(); message('Saved progress restored, including local score corrections. Save changes to update the database.');
+                update(); message('Saved progress restored, including local score corrections. Submitting the recording saves them to the database.');
             }
         }
     };

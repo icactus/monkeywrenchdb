@@ -18,11 +18,11 @@ Load a saved part in YubSync and wait for the PDF to finish rendering. Correctio
 | --- | --- |
 | Q | Click to add or remove a barline. At least two boundaries must remain in a system. |
 | W | Click two opposite corners to draw a staff. Staff geometry and barlines are fitted from the existing page pixels. |
-| S | Click a multimeasure rest and enter its measure count. |
+| S | Click a multimeasure rest to show the count box beside it. One digit applies immediately; hold Shift to enter multiple digits, then release Shift or press Enter to apply. Backspace edits the count, and Escape cancels it. |
 | Y | Click to refit one staff; drag across systems to merge using the starting system's exact barlines. Ctrl-click merges the page using the clicked source. |
 | Ctrl/Cmd + Z | Undo the last unsaved score correction outside text fields. |
 
-Corrections work like the public live editor: each click immediately rebuilds the usable measure boxes without red barlines or shaded system overlays. Playback, its current position, and the normal current-measure highlight stay intact. B, Backspace, and Space remain available while correcting the score. Pressing a tool's key again or Escape returns to normal score clicks. Form typing and browser modifier shortcuts do not activate geometry tools.
+Each click immediately rebuilds the usable measure boxes. Thin blue barline guides show the current boundaries while a correction tool is active, including edits ahead of the highlighted measure. Correction status and rejected-edit messages appear above the piece selector without showing the toolbar. Playback, its current position, and the normal current-measure highlight stay intact. B, Backspace, and Space remain available while correcting the score. Pressing a tool's key again or Escape hides the guides and returns to normal score clicks. Form typing and browser modifier shortcuts do not activate geometry tools.
 
 Recording submission saves pending score corrections first, writing the current geometry to the exact loaded database metric row through the existing live-edit endpoint, which verifies superuser access for YubSync correction saves. There is no Ctrl/Cmd + S save shortcut. Measures already work before saving, and saving preserves sync points recorded after a correction. **Ctrl/Cmd + Z** undoes a correction while preserving the latest timings and playback position. Undo refuses to remove a boundary that has since been used by the sync. No PDF download or rerender is needed.
 
