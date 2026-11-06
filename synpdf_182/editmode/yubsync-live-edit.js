@@ -4,17 +4,19 @@
     const copy = value => JSON.parse(JSON.stringify(value));
     const origin = (page, system) => `${page}:${system}`;
     function bounds(system, x) {
-        const ratio = Math.max(0, Math.min(1, (x - system.xs.x1) / (system.xs.x2 - system.xs.x1 || 1)));
+        const ratio = (x - system.xs.x1) / (system.xs.x2 - system.xs.x1 || 1);
         // Saved metrics compress cs to top/bottom while retaining all edge lines.
         const hasEdges = system.csl?.length >= 2 && system.csl.length === system.csr?.length;
         const left = hasEdges ? system.csl : system.cs, right = hasEdges ? system.csr : system.cs;
         const ys = left.map((y, i) => y + (right[i] - y) * ratio);
         return { top: Math.min(...ys), bottom: Math.max(...ys) };
     }
-    function hit(page, x, y) {
+    function hit(page, x, y, barlineMode = false) {
         return page.cxs.findIndex(system => {
             const b = bounds(system, x);
-            return x >= system.xs.x1 - 6 && x <= system.xs.x2 + 6 && y >= b.top - 6 && y <= b.bottom + 6;
+            const margin = barlineMode ? 10 : 6;
+            return (barlineMode || (x >= system.xs.x1 - margin && x <= system.xs.x2 + margin)) &&
+                y >= b.top - margin && y <= b.bottom + margin;
         });
     }
     function sortPage(page, owners) {
@@ -55,14 +57,15 @@
         return result;
     }
     function remapSession(metrics, draft, lineage, state, beforeLineage) {
+        let before = measures(metrics, beforeLineage), after;
         if (typeof SynpdfPartJumps !== 'undefined' && SynpdfPartJumps.metadata(metrics)) {
-            // Expanded indices remain stable for geometry corrections. Structural
-            // changes need new Jump / Repeat marks in the part editor first.
-            SynpdfPartJumps.inspect(metrics);
-            SynpdfPartJumps.inspect(draft);
-            return { ...state };
-        }
-        const before = measures(metrics, beforeLineage), after = measures(draft, lineage);
+            const previous = SynpdfPartJumps.inspect(metrics);
+            // Use the same jump-boundary rebasing as the working live editor.
+            SynpdfPartJumps.rebase(metrics, draft);
+            const next = SynpdfPartJumps.inspect(draft), printed = measures(draft, lineage);
+            before = previous.order.map(index => before[index]).concat({ end: true });
+            after = next.order.map(index => printed[index]).concat({ end: true });
+        } else after = measures(draft, lineage);
         const byOwner = new Map();
         after.forEach((next, index) => {
             if (next.end) return;
@@ -78,10 +81,12 @@
                 .filter(next => Math.abs(old.x - next.x) < 0.75).map(next => next.index));
             return matches.size === 1 ? [...matches][0] : -1;
         });
+        let conflict = false;
         function required(index) {
             if (index === -1) return -1;
-            if (!Number.isInteger(index) || mapping[index] === undefined || mapping[index] < 0)
-                throw new Error('This edit removes a barline already used by your sync. Undo it, or cancel and use Backspace to move before that correction first.');
+            if (!Number.isInteger(index) || mapping[index] === undefined || mapping[index] < 0) {
+                conflict = true; return -1;
+            }
             return mapping[index];
         }
         const seen = new Map();
@@ -93,7 +98,7 @@
             if ((i === 0 && point.mix === 0 && mix !== 0) ||
                 (i > 0 && point.mix === recorded[i - 1].mix + 1 && mix !== required(recorded[i - 1].mix) + 1) ||
                 (seen.has(mix) && seen.get(mix) !== point.mix))
-                throw new Error('This edit changes measures inside the section you already synced. Undo it, or cancel and use Backspace to resume before that section first.');
+                conflict = true;
             seen.set(mix, point.mix);
             return { ...point, mix };
         });
@@ -101,6 +106,20 @@
             ...(repeat.dst === undefined ? {} : { dst: required(repeat.dst) }) }));
         const current = mapping[state.demix];
         const preview = !state.sync && state.lastSynced < 0;
+        if (conflict && !preview) {
+            // Like live edit, a geometry correction must not be rolled back just
+            // because these measure numbers already have timestamps. Retain
+            // those timestamps; Backspace can redo any affected timing later.
+            const last = after.length - 1;
+            times = recorded.filter(point => point.end || point.mix === before.length - 1 || point.mix < last)
+                .map(point => ({ ...point, mix: point.end || point.mix === before.length - 1 ? last : point.mix }));
+            const detix = Math.min(state.detix, times.length - 1);
+            const clamp = mix => Math.max(0, Math.min(mix, last));
+            return { ...state, times, detix, lastSynced: times.length - 1,
+                demix: state.demix < 0 ? -1 : clamp(state.demix),
+                repeats: state.repeats.map(repeat => ({ ...repeat, jmp: clamp(repeat.jmp),
+                    ...(repeat.dst === undefined ? {} : { dst: clamp(repeat.dst) }) })) };
+        }
         if (preview) times = after.map((_, mix) => ({ t: mix * 2, mix }));
         const detix = preview ? Math.max(0, current ?? 0) : Math.min(state.detix, times.length - 1);
         return { ...state, times, repeats, detix, lastSynced: Math.min(state.lastSynced, times.length - 1),
@@ -194,7 +213,7 @@
                 message('Load a database score and wait for it to finish rendering before correcting it.'); return;
             }
             if (get('opt').advncd) { message('Score corrections require the normal scrolling score view.'); return; }
-            draft = copy(get('deMetriek'));
+            draft = get('deMetriek');
             lineage = draft.map((page, p) => p ? page.cxs.map((_, s) => [origin(p, s)]) : null);
             session = { context: { ...context }, metrics: copy(draft), lineage: copy(lineage) };
             history = [];
@@ -272,9 +291,10 @@
         });
         if (!canvas) return null;
         const rect = canvas.getBoundingClientRect();
+        const scale = Number(draft[0]) / rect.width;
         return { page: Number(canvas.dataset.pdfPage), canvas,
-            x: Math.max(0, Math.min(canvas.width - 1, (point.clientX - rect.left) * canvas.width / rect.width)),
-            y: Math.max(0, Math.min(canvas.height - 1, (point.clientY - rect.top) * canvas.height / rect.height)) };
+            x: (point.clientX - rect.left) * scale,
+            y: (point.clientY - rect.top) * scale };
     }
     function fit(system, canvas) {
         const envelope = bounds(system, (system.xs.x1 + system.xs.x2) / 2);
@@ -292,7 +312,8 @@
     function commit(pageNumber, action) {
         if (busy || session?.saved) return;
         // Undo retains only the changed page, even for a long full score.
-        const backup = { page: pageNumber, data: copy(draft[pageNumber]), lineage: copy(lineage[pageNumber]) };
+        const backup = { page: pageNumber, data: copy(draft[pageNumber]), lineage: copy(lineage[pageNumber]),
+            jumps: copy(draft[1].partJumps || null) };
         const before = draft.slice(), beforeLineage = lineage.slice(), state = captureState();
         before[pageNumber] = backup.data; beforeLineage[pageNumber] = backup.lineage;
         try {
@@ -303,13 +324,15 @@
             message(`Measure geometry updated. ${hints[mode]} Unsaved corrections: ${history.length}.`);
         } catch (error) {
             draft[pageNumber] = backup.data; lineage[pageNumber] = backup.lineage;
+            if (backup.jumps) draft[1].partJumps = backup.jumps;
+            else delete draft[1].partJumps;
             restore(state, draft);
             message(error.message); paint(pageNumber);
         }
     }
     function act(ctx, event) {
         const page = draft[ctx.page], owners = lineage[ctx.page];
-        const index = hit(page, ctx.x, ctx.y);
+        const index = hit(page, ctx.x, ctx.y, mode === 'q');
         if (mode === 'w') {
             if (!first || first.page !== ctx.page) { first = ctx; paint(); message('W: now click the opposite corner on this page.'); return; }
             const start = first; first = null;
@@ -357,25 +380,6 @@
     }
     function paint() {
         notation.querySelectorAll('.yubsync-edit-overlay').forEach(el => el.remove());
-        if (!mode) return;
-        // Render the edited boundaries separately from the PDF pixels. Each page
-        // uses the same coordinates and display zoom as the player's measure boxes.
-        notation.querySelectorAll('canvas[data-pdf-page]').forEach(canvas => {
-            const page = draft[Number(canvas.dataset.pdfPage)];
-            const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            overlay.setAttribute('class', 'yubsync-edit-overlay');
-            overlay.setAttribute('aria-hidden', 'true');
-            overlay.setAttribute('width', canvas.width);
-            overlay.setAttribute('height', canvas.height);
-            overlay.style.top = `${Number(canvas.dataset.pageOffset) || 0}px`;
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', page.bxs.flatMap((bars, system) => bars.map(bar => {
-                const x = Math.abs(bar), edge = bounds(page.cxs[system], x);
-                return `M${x},${edge.top}V${edge.bottom}`;
-            })).join(''));
-            overlay.appendChild(path);
-            notation.appendChild(overlay);
-        });
     }
     function block(event) { event.preventDefault(); event.stopImmediatePropagation(); }
     function field(target) { return target?.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, select, [contenteditable]:not([contenteditable="false"])'); }
@@ -426,7 +430,7 @@
         if (event.key === 'Shift' && splitInput.value) { block(event); applySplit(splitInput.value); }
     }, true);
     notation.addEventListener('pointerdown', event => {
-        if (!session || !mode) return;
+        if (!session || mode !== 'y') return;
         block(event);
         if (!mode || busy || session.saved || (event.button !== undefined && event.button !== 0)) return;
         const ctx = context(event); if (!ctx) return;
@@ -435,6 +439,15 @@
             notation.setPointerCapture(event.pointerId);
         } else act(ctx, event);
     }, true);
+    // Match live edit's mouse/touch capture path. Pointer events are reserved
+    // for Y dragging; processing both would toggle a barline twice per click.
+    ['mousedown', 'touchstart'].forEach(type => notation.addEventListener(type, event => {
+        if (!session || !mode) return;
+        block(event);
+        if (mode === 'y' || busy || session.saved || (event.button !== undefined && event.button !== 0)) return;
+        const ctx = context(event);
+        if (ctx) act(ctx, event.touches?.[0] || event);
+    }, { capture: true, passive: false }));
     notation.addEventListener('pointerup', event => {
         if (!session || !mode) return;
         block(event);
@@ -450,7 +463,7 @@
     }, true);
     notation.addEventListener('pointercancel', () => { gesture = null; });
     // Legacy player handlers use mouse/touch events, including synthetic compatibility events.
-    ['mousedown', 'mouseup', 'click', 'dblclick', 'touchstart', 'touchend', 'contextmenu'].forEach(type => notation.addEventListener(type, event => {
+    ['mouseup', 'click', 'dblclick', 'touchend', 'contextmenu'].forEach(type => notation.addEventListener(type, event => {
         if (session && (mode || busy)) block(event);
     }, { capture: true, passive: false }));
     toolbar.querySelectorAll('[data-yub-edit]').forEach(button => button.addEventListener('click', () => { begin(button.dataset.yubEdit); button.blur(); }));

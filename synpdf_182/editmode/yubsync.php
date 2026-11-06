@@ -736,7 +736,7 @@
             gap: 10px;
         }
     </style>
-    <link rel="stylesheet" href="yubsync-live-edit.css?v=13" />
+    <link rel="stylesheet" href="yubsync-live-edit.css?v=14" />
 </head>
 
 <body class="yubsync-editor<?= $canSync ? '' : ' yubsync-locked' ?>">
@@ -1091,7 +1091,7 @@
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
     <script src="yubsync-tools.js?v=91"></script>
-    <script src="yubsync-live-edit.js?v=9"></script>
+    <script src="yubsync-live-edit.js?v=10"></script>
     <script src="yubsync-progress.js?v=2"></script>
     <?php endif; ?>
     <?php $siteInformationIncludeHelp = false; require $yubsyncSiteRoot . '/site-information.php'; ?>

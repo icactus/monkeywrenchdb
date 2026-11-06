@@ -41,11 +41,11 @@ test('future corrections preserve real times, offset, playback position and curs
  const draft=clone(original);draft[2].bxs[0].splice(1,0,200);
  const saved=state();assert.deepEqual(remapSession(original,draft,owners(),saved),saved);
 });
-test('continued syncing uses the new boundary and cannot undo a boundary it has recorded',()=>{
+test('continued syncing uses the new boundary and permits undo after recording it',()=>{
  const corrected=clone(original);corrected[1].bxs[0].splice(2,0,700);
  const live=state({times:[{t:0,mix:0},{t:2,mix:1},{t:4,mix:2}],lastSynced:2,detix:2,demix:2});
  assert.deepEqual(remapSession(corrected,clone(corrected),owners(),live,owners()),live);
- assert.throws(()=>remapSession(corrected,original,owners(),live,owners()),/removes a barline/);
+ assert.deepEqual(remapSession(corrected,original,owners(),live,owners()).times,live.times);
 });
 test('successive changes and undo retain merged-system ancestry',()=>{
  const corrected=clone(original),lineage=owners();
@@ -70,15 +70,16 @@ test('an active empty sync remains empty and keeps its pre-start cursor',()=>{
  const mapped=remapSession(original,clone(original),owners(),state({times:[],lastSynced:-1,detix:-1,demix:-1}));
  assert.deepEqual(mapped.times,[]);assert.equal(mapped.detix,-1);assert.equal(mapped.demix,-1);
 });
-test('recorded boundaries cannot be removed or separated by an unrecorded measure',()=>{
+test('recorded boundaries can be removed or split while retaining existing timestamps by measure number',()=>{
  const removed=clone(original);removed[1].bxs[0].splice(1,1);
- assert.throws(()=>remapSession(original,removed,owners(),state()),/removes a barline/);
+ assert.deepEqual(remapSession(original,removed,owners(),state()).times,state().times);
  const inserted=clone(original);inserted[1].bxs[0].splice(1,0,300);
- assert.throws(()=>remapSession(original,inserted,owners(),state()),/already synced/);
+ assert.deepEqual(remapSession(original,inserted,owners(),state()).times,state().times);
 });
-test('future merged duplicates do not collapse distinct already recorded measures',()=>{
+test('merged duplicates keep already recorded timestamps at their existing measure numbers',()=>{
  const draft=clone(original),lineage=owners();merge(draft[1],lineage[1],0,[0,1]);
- assert.throws(()=>remapSession(original,draft,lineage,state({times:[{t:0,mix:0},{t:2,mix:1},{t:4,mix:2}],lastSynced:2})),/already synced/);
+ const live=state({times:[{t:0,mix:0},{t:2,mix:1},{t:4,mix:2}],lastSynced:2});
+ assert.deepEqual(remapSession(original,draft,lineage,live).times,live.times);
 });
 test('repeat visits retain their exact times and future repeat anchors are remapped',()=>{
  const draft=clone(original);draft[1].bxs[2].splice(1,0,300);

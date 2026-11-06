@@ -58,15 +58,20 @@ function setup({ allowed = true, failSave = false } = {}) {
             preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...options };
         keys[type](event); return event;
     }
-    function click(x, y) {
+    function click(x, y, touch = false) {
         const event = { clientX: x, clientY: y, button: 0, pointerId: 1, preventDefault() {}, stopImmediatePropagation() {} };
-        pointer.pointerdown(event); pointer.pointerup(event);
+        pointer.pointerdown(event);
+        if (touch) pointer.touchstart({ ...event, touches: [{ clientX: x, clientY: y }] });
+        else pointer.mousedown(event);
+        pointer.pointerup(event);
+        if (touch) pointer.touchend(event);
+        else { pointer.mouseup(event); pointer.click(event); }
     }
     const snapshot = () => clone({ times: c.deTijden$$module$synpdf, offset: c.offset$$module$synpdf,
         last: c.lastSynced$$module$synpdf, detix: c.detix$$module$synpdf, demix: c.demix$$module$synpdf,
         time: c.elmed$$module$synpdf.currentTime, cursor: c.msc_wz$$module$synpdf.cursorTime,
         scrollTop: notation.scrollTop, scrollLeft: notation.scrollLeft });
-    return { c, toolbar, buttons, modes, requests, key, click, snapshot, overlays };
+    return { c, toolbar, buttons, modes, requests, key, click, snapshot, overlays, canvas };
 }
 
 function usePlayerGeometry(h) {
@@ -81,42 +86,88 @@ function usePlayerGeometry(h) {
     }
 }
 
-test('Q immediately splits the current highlight using real player geometry and redraws the boundary', () => {
+test('Q mouse clicks immediately update the loaded array and split the current player highlight', () => {
     const h = setup(), before = h.snapshot(); usePlayerGeometry(h);
+    const loaded = h.c.deMetriek$$module$synpdf;
     h.key('q'); h.click(300, 120);
+    assert.equal(h.c.deMetriek$$module$synpdf, loaded);
     assert.equal(h.c.deMaten$$module$synpdf.length, 4);
     assert.equal(h.c.msc_wz$$module$synpdf.maatloper.box.width, 250);
     assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].bxs[0]), [50, 300, 500, 950]);
-    assert.match(h.overlays[0].children[0].attributes.d, /M300,100V140/);
+    assert.equal(h.overlays.length, 0);
     assert.equal(h.buttons['yubsync-edit-status'].hidden, false);
     assert.deepEqual(h.snapshot(), before);
     h.key('z', { ctrlKey: true });
     assert.equal(h.c.msc_wz$$module$synpdf.maatloper.box.width, 450);
-    assert.doesNotMatch(h.overlays[0].children[0].attributes.d, /M300,/);
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].bxs[0]), [50, 500, 950]);
     h.key('Escape');
     assert.equal(h.overlays.length, 0);
 });
 
-test('Q shows a boundary added ahead of the highlight without moving it or changing recorded timings', () => {
+test('Q updates a future boundary without moving the highlight or changing recorded timings', () => {
     const h = setup(), before = h.snapshot(); usePlayerGeometry(h);
     h.key('q'); h.click(700, 120);
     assert.equal(h.c.deMaten$$module$synpdf.length, 4);
     assert.equal(h.c.msc_wz$$module$synpdf.maatloper.box.width, 450);
-    assert.match(h.overlays[0].children[0].attributes.d, /M700,100V140/);
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].bxs[0]), [50, 500, 700, 950]);
     assert.deepEqual(h.snapshot(), before);
 });
 
-test('a rejected edit reports the reason outside the hidden toolbar and preserves geometry', () => {
+test('Q touch clicks add and remove exactly once with stale horizontal staff bounds', () => {
+    const h = setup(); usePlayerGeometry(h);
+    h.c.deMetriek$$module$synpdf[1].cxs[0].xs.x2 = 600;
+    h.key('q'); h.click(700, 147, true);
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].bxs[0]), [50, 500, 700, 950]);
+    h.click(700, 147, true);
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].bxs[0]), [50, 500, 950]);
+});
+
+test('Q maps clicks into logical metric coordinates rather than the canvas pixel buffer', () => {
+    const h = setup(); usePlayerGeometry(h);
+    h.canvas.width = 2000; h.canvas.height = 1200;
+    h.key('q'); h.click(300, 120);
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].bxs[0]), [50, 300, 500, 950]);
+    assert.equal(h.c.msc_wz$$module$synpdf.maatloper.box.width, 250);
+});
+
+test('Q adds and removes boundaries inside already recorded measures without rolling the edit back', () => {
     const h = setup(); usePlayerGeometry(h);
     h.c.deTijden$$module$synpdf.push({ t: 2, mix: 1 });
     h.c.lastSynced$$module$synpdf = 1;
-    const before = clone(h.c.deMetriek$$module$synpdf);
+    const before = h.snapshot();
     h.key('q'); h.click(300, 120);
-    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf), before);
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].bxs[0]), [50, 300, 500, 950]);
+    assert.deepEqual(h.snapshot(), before);
+    h.click(300, 120);
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].bxs[0]), [50, 500, 950]);
+    assert.deepEqual(h.snapshot(), before);
     assert.equal(h.buttons['yubsync-edit-status'].hidden, false);
-    assert.match(h.buttons['yubsync-edit-status'].textContent, /already synced/);
-    assert.doesNotMatch(h.overlays[0].children[0].attributes.d, /M300,/);
+    assert.match(h.buttons['yubsync-edit-status'].textContent, /geometry updated/);
     assert.equal(h.toolbar.hidden, true);
+});
+
+test('Q rebases saved part jumps using live edit logic and rebuilds the expanded player boxes', () => {
+    const h = setup(); usePlayerGeometry(h);
+    h.c.SynpdfPartJumps = require(path.join(root, 'js/part-jumps.js'));
+    h.c.SynpdfPartJumps.save(h.c.deMetriek$$module$synpdf, [{ jmp: 1, dst: 0 }]);
+    h.key('q'); h.click(700, 120);
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].bxs[0]), [50, 500, 700, 950]);
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].partJumps.jumps), [{ jmp: 2, dst: 0 }]);
+    assert.equal(h.c.deMaten$$module$synpdf.length, 7);
+    h.key('z', { ctrlKey: true });
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].bxs[0]), [50, 500, 950]);
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].partJumps.jumps), [{ jmp: 1, dst: 0 }]);
+    assert.equal(h.c.deMaten$$module$synpdf.length, 5);
+});
+
+test('Q edits in a finished sync retain the concluding 9999 timestamp without generating extra times', () => {
+    const h = setup(); usePlayerGeometry(h);
+    h.c.deTijden$$module$synpdf.push({ t: 2, mix: 1 }, { t: 9999, mix: 2, end: true });
+    h.c.lastSynced$$module$synpdf = 2;
+    h.c.opt$$module$synpdf.synbox = 0;
+    h.key('q'); h.click(300, 120);
+    assert.deepEqual(clone(h.c.deTijden$$module$synpdf), [{ t: 0, mix: 0 }, { t: 2, mix: 1 }, { t: 9999, mix: 3, end: true }]);
+    assert.equal(h.c.deMaten$$module$synpdf.length, 4);
 });
 
 test('S shows its count box by the measure and a digit immediately splits the player boxes', () => {
@@ -133,7 +184,6 @@ test('S shows its count box by the measure and a digit immediately splits the pl
     assert.equal(h.c.deMaten$$module$synpdf.length, 6);
     assert.equal(h.c.msc_wz$$module$synpdf.maatloper.box.width, 112.5);
     assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].bxs[0]), [50, 162.5, 275, 387.5, 500, 950]);
-    assert.match(h.overlays[0].children[0].attributes.d, /M275,100V140/);
     assert.deepEqual(h.snapshot(), before);
     h.key('z', { ctrlKey: true });
     assert.equal(h.c.msc_wz$$module$synpdf.maatloper.box.width, 450);
