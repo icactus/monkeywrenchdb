@@ -5124,13 +5124,33 @@ function refitSystemAtPoint(system, barlines, x, y, image) {
     const edgeLines = member.csl || member.cs;
     const spacing = edgeLines.length === 2 ? Math.max(3, (bounds.bottom - bounds.top) / 4) : getSystemEstimatedSpatium(member);
     const xs = result.autoDivisi ? member.xs : getSystemBoundaryXs(member, barlines);
-    if (x < xs.x1 - spacing || x > xs.x2 + spacing ||
-        y < bounds.top - 1.25 * spacing || y > bounds.bottom + 1.25 * spacing) return null;
-    const lines = detectStaffBundleAroundPoint(image.pixelData, image.stride, image.width, x, y, spacing, member);
-    if (!lines) return null;
-    const seed = { cs: lines, csl: lines.slice(), csr: lines.slice(), xs };
-    const geometry = BarlineDetectV2.buildRenderGeometry(seed, image.pixelData, image.stride, image.width,
-        { anchor: { x, lines } });
+    if (x < xs.x1 - spacing || x > xs.x2 + spacing) return null;
+    // The click locates the printed staff, even when its old vertical box misses
+    // it. Pixel support and the click anchor still have to validate all five lines.
+    const spacings = [spacing];
+    if (edgeLines.length !== 5) {
+        // Missing lines inflate adjacent gaps; extra detections shrink them.
+        // Also try the outer bounds as a four-space staff instead of trusting
+        // how many lines recognition happened to return.
+        const boundsSpacing = (bounds.bottom - bounds.top) / 4;
+        if (boundsSpacing >= 3 && boundsSpacing <= 40 && Math.abs(boundsSpacing - spacing) > 0.5) {
+            spacings.push(boundsSpacing);
+        }
+    }
+    let geometry = null;
+    for (const hint of [{ ...member, xs }, { xs }]) {
+        // A bad fitted slope can erase real lines from the local projection.
+        // Retry without that slope, retaining the same pixel validation.
+        for (const candidateSpacing of spacings) {
+            const lines = detectStaffBundleAroundPoint(image.pixelData, image.stride, image.width, x, y, candidateSpacing, hint);
+            if (!lines) continue;
+            const seed = { cs: lines, csl: lines.slice(), csr: lines.slice(), xs };
+            geometry = BarlineDetectV2.buildRenderGeometry(seed, image.pixelData, image.stride, image.width,
+                { anchor: { x, lines } });
+            if (geometry) break;
+        }
+        if (geometry) break;
+    }
     if (!geometry) return null;
     const fitted = applyRenderGeometryToSystem(member, geometry, { fixedXs: xs, expandSparse: true });
     if (!result.autoDivisi) return fitted;

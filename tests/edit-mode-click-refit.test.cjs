@@ -14,7 +14,7 @@ function definition(name) {
 }
 const staff = (top = 100, slope = 0) => ({cs: [0,8,16,24,32].map(y=>top+y+slope/2),
     csl: [0,8,16,24,32].map(y=>top+y),csr: [0,8,16,24,32].map(y=>top+y+slope),xs: {x1: 50,x2: 750}});
-function setup({blank = false,slope = 0,divisi = false,sparse = false,notes = false} = {}) {
+function setup({blank = false,slope = 0,divisi = false,sparse = false,notes = false,seedTop = 108,seedOffsets,seedSlope = slope} = {}) {
     const width = 800,height = 350,pixels = new Uint8ClampedArray(width*height*4).fill(255);
     const ink = (x,y) => {if(x>=0&&x<width&&y>=0&&y<height)pixels.set([0,0,0,255],(y*width+x)*4);};
     if(!blank) {
@@ -24,7 +24,12 @@ function setup({blank = false,slope = 0,divisi = false,sparse = false,notes = fa
             for(let x=390;x<=410;x++) {ink(x,92);ink(x,140);}
         }
     }
-    const bars = [-50,300,-500,750],base = staff(108,slope);
+    const bars = [-50,300,-500,750],base = staff(seedTop,seedSlope);
+    if(seedOffsets) {
+        base.cs=seedOffsets.map(y=>seedTop+y+seedSlope/2);
+        base.csl=seedOffsets.map(y=>seedTop+y);
+        base.csr=seedOffsets.map(y=>seedTop+y+seedSlope);
+    }
     if(sparse) {base.cs=[base.cs[0],base.cs.at(-1)];base.csl=[base.csl[0],base.csl.at(-1)];base.csr=[base.csr[0],base.csr.at(-1)];}
     const system = divisi ? {cs:[108,232],csl:[108,232],csr:[108+slope,232+slope],xs: {x1:50,x2:750},
         autoDivisi:{width,staves:[base,staff(200,slope)],bridgeXs:[300,500]}} : base;
@@ -61,6 +66,32 @@ test('Y refits in place without duplicating a system or its barlines', () => {
     assert.equal(h.metrics()[1].bxs.length,1);
     assert.deepEqual(h.metrics()[1].bxs[0],h.bars);
     assert.deepEqual(h.metrics()[2],h.original[2]);
+});
+
+test('clicks on printed lines recover a staff outside its old vertical box', () => {
+    for(const seedTop of [60,140])for(const y of [100,116,132]) {
+        const h = setup({seedTop});h.click(400,y);
+        assert.equal(h.alerts.length,0,`seed ${seedTop}, click ${y}`);
+        assert(Math.abs(h.metrics()[1].cxs[0].cs[0]-100)<=2);
+        assert.deepEqual(h.metrics()[1].bxs[0],h.bars);
+        assert.deepEqual(h.metrics()[2],h.original[2]);
+    }
+});
+
+test('missing or extra recognized lines do not dictate the printed staff spacing', () => {
+    for(const seedOffsets of [[0,16,32],[0,8,32],[0,4,8,12,16,20,24,28,32]]) {
+        const h = setup({seedOffsets});h.click(400,116);
+        assert.equal(h.alerts.length,0,JSON.stringify(seedOffsets));
+        assert.equal(h.metrics()[1].cxs[0].cs.length,5);
+        assert(Math.abs(h.metrics()[1].cxs[0].cs[0]-100)<=2);
+        assert.deepEqual(h.metrics()[1].bxs[0],h.bars);
+    }
+});
+
+test('an incorrect old slope does not hide a level printed staff', () => {
+    const h = setup({seedSlope:40});h.click(400,116);
+    assert.equal(h.alerts.length,0);
+    assert(Math.abs(h.metrics()[1].cxs[0].cs[0]-100)<=2);
 });
 
 test('repeated clicks remain stable, including sloping staves and clicks over noteheads', () => {
