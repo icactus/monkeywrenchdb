@@ -736,7 +736,7 @@
             gap: 10px;
         }
     </style>
-    <link rel="stylesheet" href="yubsync-live-edit.css?v=10" />
+    <link rel="stylesheet" href="yubsync-live-edit.css?v=11" />
 </head>
 
 <body class="yubsync-editor<?= $canSync ? '' : ' yubsync-locked' ?>">

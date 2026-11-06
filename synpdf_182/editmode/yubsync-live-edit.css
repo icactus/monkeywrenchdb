@@ -315,10 +315,14 @@ body > section2 { flex: 1; min-height: 60vh; height: auto; }
 .toggle-switch input:checked + .toggle-slider { background: #376a73; }
 .toggle-switch input:checked + .toggle-slider .toggle-slider-knob { transform: translateX(16px); }
 .toggle-switch input:focus-visible + .toggle-slider { outline: 3px solid var(--home-focus); outline-offset: 3px; }
-#darkmode-fab { position: fixed; z-index: 10; bottom: 16px; left: 16px; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 10px; border-radius: 50%; border-color: var(--home-line); background: var(--home-surface); color: var(--home-ink); box-shadow: 0 3px 14px #0002; }
+#darkmode-fab { position: fixed; z-index: 10; right: 20px; bottom: 20px; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--home-line); border-radius: 50%; background: var(--home-surface); color: var(--home-ink); box-shadow: 0 2px 10px #0003; }
+#darkmode-fab:hover { box-shadow: 0 4px 14px #0004; }
 #darkmode-fab svg { width: 22px; height: 22px; }
 #darkmode-fab .darkmode-icon-sun, html.inverted #darkmode-fab .darkmode-icon-moon { display: none; }
 html.inverted #darkmode-fab .darkmode-icon-sun { display: block; }
+@media screen and (max-width: 767px), screen and (max-height: 500px) and (orientation: landscape) {
+    #darkmode-fab { display: none; }
+}
 html.inverted #yubsync-site-header { background: linear-gradient(#14252b99, #14252b99), linear-gradient(110deg, #f5d366, #9dbba3 57%, #397780); border-bottom-color: #91bca838; color: #edf4ee; }
 html.inverted .yubsync-brand-tagline { color: #d5e5dc; }
 html.inverted .yubsync-header-nav > :is(a, button), html.inverted .yubsync-header-nav .nav-user-trigger, html.inverted #mobile-header-burger { color: #edf4ee; background: #142c2bc9; border-color: #c1dbce40; }
