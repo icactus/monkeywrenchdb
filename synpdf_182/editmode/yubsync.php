@@ -34,9 +34,11 @@
     $canSync = (int) ($_SESSION['user_id'] ?? 0) > 0 && ($_SESSION['user_role'] ?? '') === 'admin';
     $canStampWithDownArrow = $canSync && (int) ($_SESSION['user_id'] ?? 0)
         === (defined('MW_SUPER_ADMIN_USER_ID') ? MW_SUPER_ADMIN_USER_ID : 1);
+    $canEditSyncScore = $canStampWithDownArrow;
     ?>
     <?php if ($canSync): ?>
-    <script>window.yubsyncCanStampWithDownArrow = <?= json_encode($canStampWithDownArrow) ?>;</script>
+    <script>window.yubsyncCanStampWithDownArrow = <?= json_encode($canStampWithDownArrow) ?>;
+        window.yubsyncCanEditScore = <?= json_encode($canEditSyncScore) ?>;</script>
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
@@ -827,7 +829,7 @@
         <input id="knop" type="button" value="play" style="display: none;">
         <div id="database-menus-wrapper">
             <div id="database-menus">
-                <!-- Keep correction controls dormant while retaining saved-progress support. -->
+                <!-- Superuser correction shortcuts work without displaying a toolbar. -->
                 <div id="yubsync-edit-toolbar" role="toolbar" aria-label="Score corrections" hidden>
                     <span>Score corrections</span>
                     <button type="button" data-yub-edit="q" title="Add or remove a barline (Q)" aria-pressed="false">Barlines <kbd>Q</kbd></button>
@@ -1088,7 +1090,7 @@
     </div>
     <?php if ($canSync): ?>
     <script src="yubsync-tools.js?v=91"></script>
-    <script src="yubsync-live-edit.js?v=5"></script>
+    <script src="yubsync-live-edit.js?v=7"></script>
     <script src="yubsync-progress.js?v=2"></script>
     <?php endif; ?>
     <?php $siteInformationIncludeHelp = false; require $yubsyncSiteRoot . '/site-information.php'; ?>

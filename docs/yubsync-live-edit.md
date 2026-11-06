@@ -12,7 +12,7 @@ playback position without a page-by-page loading pass. Score clicks, correction
 tools and cursor scrolling follow the displayed scale. The `−` and `+` keys
 continue to change playback speed.
 
-Load a saved part in YubSync and wait for the PDF to finish rendering. The sidebar toolbar provides four correction tools, also available from the keyboard:
+Load a saved part in YubSync and wait for the PDF to finish rendering. Correction shortcuts are currently enabled only for the configured superuser (`MW_SUPER_ADMIN_USER_ID`, default user ID 1). The correction toolbar stays hidden for everyone; keyboard access does not depend on its visibility.
 
 | Tool | Action |
 | --- | --- |
@@ -20,10 +20,11 @@ Load a saved part in YubSync and wait for the PDF to finish rendering. The sideb
 | W | Click two opposite corners to draw a staff. Staff geometry and barlines are fitted from the existing page pixels. |
 | S | Click a multimeasure rest and enter its measure count. |
 | Y | Click to refit one staff; drag across systems to merge using the starting system's exact barlines. Ctrl-click merges the page using the clicked source. |
+| Ctrl/Cmd + Z | Undo the last unsaved score correction outside text fields. |
 
 Corrections work like the public live editor: each click immediately rebuilds the usable measure boxes without red barlines or shaded system overlays. Playback, its current position, and the normal current-measure highlight stay intact. B, Backspace, and Space remain available while correcting the score. Pressing a tool's key again or Escape returns to normal score clicks. Form typing and browser modifier shortcuts do not activate geometry tools.
 
-**Save changes** writes the current geometry to the exact loaded database metric row through the existing administrator live-edit endpoint. Measures already work before saving, and saving preserves sync points recorded after a correction. **Undo edit** and **Cancel edits** apply immediately too, preserving the latest timings and playback position. They refuse to remove a boundary that has since been used by the sync. No PDF download or rerender is needed.
+Recording submission saves pending score corrections first, writing the current geometry to the exact loaded database metric row through the existing live-edit endpoint, which verifies superuser access for YubSync correction saves. There is no Ctrl/Cmd + S save shortcut. Measures already work before saving, and saving preserves sync points recorded after a correction. **Ctrl/Cmd + Z** undoes a correction while preserving the latest timings and playback position. Undo refuses to remove a boundary that has since been used by the sync. No PDF download or rerender is needed.
 
 ## Automatic progress recovery
 

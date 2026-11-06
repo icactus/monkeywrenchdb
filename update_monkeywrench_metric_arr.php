@@ -18,6 +18,14 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
     exit;
 }
 
+// YubSync correction tools are currently limited to the primary administrator.
+if (($_POST['source'] ?? '') === 'yubsync' &&
+    (int) ($_SESSION['user_id'] ?? 0) !== (defined('MW_SUPER_ADMIN_USER_ID') ? MW_SUPER_ADMIN_USER_ID : 1)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Only the superuser can save score corrections from YubSync.']);
+    exit;
+}
+
 // 2. Database Connection (Standardized)
 if (file_exists('phpfiles/config.php')) {
     require_once 'phpfiles/config.php';

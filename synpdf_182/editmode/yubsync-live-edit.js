@@ -119,6 +119,7 @@
     const undoButton = document.getElementById('yubsync-edit-undo');
     const get = name => window[name + '$$module$synpdf'];
     const set = (name, value) => { window[name + '$$module$synpdf'] = value; };
+    const canEdit = () => window.yubsyncCanEditScore === true;
     let session = null, mode = '', first = null, gesture = null, busy = false, savePromise = null;
     let draft, lineage, history = [];
     const hints = {
@@ -153,7 +154,7 @@
         };
     }
     function begin(nextMode) {
-        if (toolbar.hidden) return;
+        if (!canEdit()) return;
         if (busy || session?.saved) return;
         if (!session) {
             const context = window.yubsyncMetricContext;
@@ -200,6 +201,7 @@
     function save() {
         if (savePromise) return savePromise;
         if (!session) return Promise.resolve(true);
+        if (!canEdit()) return Promise.resolve(false);
         savePromise = persist().finally(() => { savePromise = null; });
         return savePromise;
     }
@@ -209,6 +211,7 @@
             if (history.length && (!session.saved || session.storagePending)) {
                 const body = new FormData();
                 body.append('action', 'update_metric_arr');
+                body.append('source', 'yubsync');
                 body.append('metric_arr_id', session.context.metricArrId);
                 body.append('metric_arr_data', JSON.stringify(draft));
                 const response = await fetch('/update_monkeywrench_metric_arr.php', { method: 'POST', body });
@@ -329,9 +332,16 @@
     function block(event) { event.preventDefault(); event.stopImmediatePropagation(); }
     function field(target) { return target?.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, select, [contenteditable]:not([contenteditable="false"])'); }
     document.addEventListener('keydown', event => {
-        if (toolbar.hidden) return;
-        if (field(event.target) || event.isComposing || event.keyCode === 229 || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (!canEdit()) return;
+        if (field(event.target) || event.isComposing || event.keyCode === 229 || event.altKey) return;
         const key = event.key.toLowerCase();
+        if (event.ctrlKey || event.metaKey) {
+            if (session && !event.shiftKey && key === 'z') {
+                block(event);
+                if (!busy && !event.repeat) undoButton.click();
+            }
+            return;
+        }
         if ('qwsy'.includes(key) && key.length === 1) { block(event); if (!event.repeat) begin(key); return; }
         if (busy) { block(event); return; }
         if (session && event.key === 'Escape') {
@@ -371,7 +381,7 @@
     toolbar.querySelectorAll('[data-yub-edit]').forEach(button => button.addEventListener('click', () => { begin(button.dataset.yubEdit); button.blur(); }));
     saveButton.addEventListener('click', save);
     undoButton.addEventListener('click', () => {
-        if (busy || session?.saved || !history.length || history.at(-1).restored) return;
+        if (!canEdit() || busy || session?.saved || !history.length || history.at(-1).restored) return;
         const prior = history.at(-1), target = draft.slice(), owners = lineage.slice();
         target[prior.page] = copy(prior.data); owners[prior.page] = copy(prior.lineage);
         try {
@@ -381,7 +391,7 @@
         } catch (error) { message(error.message); }
     });
     cancelButton.addEventListener('click', () => {
-        if (!session || busy || session.saved) return;
+        if (!canEdit() || !session || busy || session.saved) return;
         try {
             const metrics = copy(session.metrics);
             const mapped = remapSession(draft, metrics, session.lineage, captureState(), lineage);
@@ -404,6 +414,7 @@
         exportProgress() { return history.length ? { baseline: session.metrics, lineage } : null; },
         restoreProgress(state, metrics, editor) {
             if (busy) throw new Error('Wait for the current save to finish.');
+            if (editor && !canEdit()) throw new Error('Only the superuser can restore unsaved score corrections. Sign in with that account to continue.');
             restore(state, metrics); finish();
             if (editor) {
                 draft = metrics; lineage = copy(editor.lineage);

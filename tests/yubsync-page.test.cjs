@@ -112,6 +112,11 @@ test('the branded account shell is public while sync controls remain restricted 
         assert.match(admin, /src="synpdf-full-yubsync2.js/);
         assert.match(admin, /href="\/requests.php\?view=admin"/);
         assert.equal((admin.match(/id="help"/g) || []).length, 1);
+        assert.match(admin, /window.yubsyncCanEditScore = true/);
+        assert.match(admin, /id="yubsync-edit-toolbar"[^>]*hidden/);
+        const otherAdmin = render({ user_id: 2, user_role: 'admin', user_name: 'Bob' });
+        assert.match(otherAdmin, /id="yubsync-sidebar"/);
+        assert.match(otherAdmin, /window.yubsyncCanEditScore = false/);
     } finally { fs.rmSync(fixture, { recursive: true, force: true }); }
 });
 

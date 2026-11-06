@@ -204,7 +204,7 @@ test('timestamps and timing adjustments save before keyup or a polling timer can
     }
 });
 
-test('the page grants Down Arrow stamping to the configured superuser alone', () => {
+test('the page grants Down Arrow stamping and score corrections to the configured superuser alone', () => {
     const gate = page.slice(page.indexOf('    // ADMIN CHECK'), page.indexOf('    ?>', page.indexOf('    // ADMIN CHECK')));
     for (const [role, id, configuredId, expected] of [
         ['admin', 1, null, true], ['admin', 2, null, false], ['user', 1, null, false],
@@ -212,13 +212,13 @@ test('the page grants Down Arrow stamping to the configured superuser alone', ()
     ]) {
         const php = `$_SESSION = ['user_role' => '${role}', 'user_id' => ${id}];\n` +
             (configuredId === null ? '' : `define('MW_SUPER_ADMIN_USER_ID', ${configuredId});\n`) +
-            gate + '\necho json_encode($canStampWithDownArrow);';
+            gate + '\necho json_encode([$canStampWithDownArrow, $canEditSyncScore]);';
         const output = execFileSync('php', ['-r', php], { encoding: 'utf8' });
-        assert.equal(output === 'true', expected, `${role} ${id}, configured ID ${configuredId}`);
+        assert.deepEqual(JSON.parse(output), [expected, expected], `${role} ${id}, configured ID ${configuredId}`);
     }
 });
 
-test('hidden correction controls cannot be activated while saved-progress helpers remain available', async () => {
+test('users without correction access cannot activate hidden tools while saved-progress helpers remain available', async () => {
     assert.match(page, /id="yubsync-edit-toolbar"[^>]*\bhidden\b/);
     const listeners = {}, buttons = {}, modeButtons = [];
     const node = () => ({ classList: { toggle() {} }, setAttribute() {}, blur() {},
