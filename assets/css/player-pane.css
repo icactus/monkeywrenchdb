@@ -86,8 +86,8 @@ body:is(.recording-loaded, .initial-recording-target) #notation {
 #notation #control-buttons-row #favorite-btn #star-filled { fill: var(--home-gold-fill); stroke: var(--home-gold); }
 #notation #control-buttons-row #play-pause-button {
     gap: 7px;
-    width: auto;
-    min-width: 80px;
+    width: 88px;
+    min-width: 88px;
     padding: 0 12px;
     background: var(--home-teal);
     color: var(--home-surface);
@@ -163,7 +163,7 @@ body.recording-loaded #mobile-drawer-backdrop { display: none !important; }
 @media (max-width: 1024px), (max-height: 500px) and (orientation: landscape) {
     #notation #control-buttons-row.player-pane-toolbar { min-height: 54px; padding: 4px 7px; gap: 5px; }
     #notation #control-buttons-row .toolbar-btn { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
-    #notation #control-buttons-row #play-pause-button { min-width: 74px; padding-inline: 9px; }
+    #notation #control-buttons-row #play-pause-button { width: 80px; min-width: 80px; padding-inline: 9px; }
     #notation #control-buttons-row .toolbar-speed button { width: 40px; height: 42px; }
     #notation #control-buttons-row #toolbar-speed-val { min-width: 43px; }
 }
