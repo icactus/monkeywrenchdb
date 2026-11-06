@@ -13,6 +13,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/request-notifications.css?v=2">
+    <link rel="stylesheet" href="/assets/css/leaderboard.css?v=1">
+    <script>try { if (localStorage.getItem('darkMode') === '1') document.documentElement.classList.add('inverted'); } catch (e) {}</script>
+    <script src="/js/yubsync-page.js?v=1" defer></script>
+    <script src="/js/contact-email.js?v=2" defer></script>
     <?php
     if (file_exists('session_config.php')) {
         require_once 'session_config.php';
@@ -24,27 +29,27 @@
         session_start();
     }
 
+    $yubsyncSiteRoot = is_file(__DIR__ . '/../../site-navigation.php') ? dirname(__DIR__, 2) : dirname(__DIR__);
     // ADMIN CHECK
-    if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
-        die("<h1>Access Denied</h1><p>You must be an Administrator to access this page.</p><p><a href='/'>Go Home</a></p>");
-    }
-    $canStampWithDownArrow = (int) ($_SESSION['user_id'] ?? 0)
+    $canSync = (int) ($_SESSION['user_id'] ?? 0) > 0 && ($_SESSION['user_role'] ?? '') === 'admin';
+    $canStampWithDownArrow = $canSync && (int) ($_SESSION['user_id'] ?? 0)
         === (defined('MW_SUPER_ADMIN_USER_ID') ? MW_SUPER_ADMIN_USER_ID : 1);
     ?>
+    <?php if ($canSync): ?>
     <script>window.yubsyncCanStampWithDownArrow = <?= json_encode($canStampWithDownArrow) ?>;</script>
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=65"></script>
+    <script src="synpdf-full-yubsync2.js?v=67"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
-    <link rel="stylesheet" href="yubsync-live-edit.css?v=8" />
+    <?php endif; ?>
     <style>
         html {
             width: 100%;
             height: 100%;
             margin: 0px;
             padding: 0px;
-            background: white;
+            background: var(--home-page);
         }
 
         body {
@@ -52,7 +57,8 @@
             height: 100%;
             margin: 0px;
             padding: 0px;
-            background: #262626;
+            background: var(--home-page);
+            color: var(--home-ink);
             transition: filter 0.5s;
         }
 
@@ -103,7 +109,7 @@
         }
 
         button:active {
-            filter: invert(1);
+            filter: brightness(.95);
             /* invert colors */
             transition: filter 0.1s;
         }
@@ -444,12 +450,6 @@
             display: block;
         }
 
-        #helpm {
-            /* Help menu item - keep */
-            text-align: center;
-            padding: 3px;
-        }
-
         #noklik {
             /* Overlay for dialogs - keep */
             position: absolute;
@@ -569,7 +569,6 @@
             display: flex;
             margin-top: 10px;
             margin-left: 20px;
-            filter: brightness(1.5);
             /*overflow-x: hidden; Hiding because R refresh keeps moving canvas*/
         }
 
@@ -625,16 +624,6 @@
             background-color: #f3f6fc;
         }
 
-        body.yubsync-editor > :not(#yubsync-site-header) {
-            /* Keep the editor's color treatment below the site branding. */
-            filter: invert(0.85);
-        }
-
-        #notation {
-            /* Color filter - keep */
-            filter: invert(1);
-        }
-
         #player-wrapper {
             position: fixed;
             top: 200px;
@@ -646,7 +635,6 @@
             /* YouTube player container - keep */
             width: 320px !important;
             height: 200px;
-            filter: invert(1);
         }
 
         #database-menus {
@@ -746,9 +734,10 @@
             gap: 10px;
         }
     </style>
+    <link rel="stylesheet" href="yubsync-live-edit.css?v=10" />
 </head>
 
-<body class="yubsync-editor">
+<body class="yubsync-editor<?= $canSync ? '' : ' yubsync-locked' ?>">
     <header id="yubsync-site-header">
         <a class="yubsync-brand" href="/" aria-label="Monkey Wrench Database home">
             <img id="monkey-logo" src="/assets/img/monkeywrench-monkey100x100.png" width="46" height="46" alt="">
@@ -759,9 +748,12 @@
         </a>
         <nav class="yubsync-header-nav" aria-label="Site navigation">
             <span class="yubsync-page-label">Sync a recording</span>
+            <button type="button" id="helpm" aria-controls="help" title="Help (H)">Help</button>
             <a href="/">Library <span aria-hidden="true">↗</span></a>
+            <?php $standaloneNavigation = true; $navigationSyncPage = true; $isAdmin = $canSync; require $yubsyncSiteRoot . '/site-navigation.php'; ?>
         </nav>
     </header>
+    <?php if ($canSync): ?>
     <?php include "../../phpfiles/get_pieces_and_composers.php"; ?>
     <section1 id="yubsync-sidebar" aria-label="Sync setup and controls">
         <div id="player-wrapper">
@@ -777,11 +769,11 @@
                 <output id="yubsync-offset-value" aria-label="First measure start in the video" aria-live="polite">—</output>
             </div>
             <div class="yubsync-offset-buttons" role="group" aria-label="Adjust first measure start">
-                <button type="button" id="yubsync-offset-earlier" disabled><kbd>&lt;</kbd> Earlier <small>0.1s</small></button>
-                <button type="button" id="yubsync-offset-later" disabled>Later <small>0.1s</small> <kbd>&gt;</kbd></button>
+                <button type="button" id="yubsync-offset-earlier" disabled>Earlier <small>0.1s</small></button>
+                <button type="button" id="yubsync-offset-later" disabled>Later <small>0.1s</small></button>
             </div>
             <p id="yubsync-offset-hint">Press B to set the first measure's start.</p>
-            <p class="yubsync-offset-shortcuts">Use these buttons or the <kbd>&lt;</kbd> and <kbd>&gt;</kbd> keys.</p>
+            <p class="yubsync-offset-shortcuts"><kbd>Ctrl</kbd> + <kbd>↑</kbd> / <kbd>→</kbd> later; <kbd>Ctrl</kbd> + <kbd>↓</kbd> / <kbd>←</kbd> earlier.</p>
         </aside>
         <div id="sync">
             <div id="mbar">
@@ -824,7 +816,6 @@
                         id="fixwd"></label>
                 <label class="mexp" id="lj"><span>no menu:</span> <input id="no_menu" type="checkbox"></label>
                 <label class="mexp" id="lc"><span>pdf data:</span> <input id="wpdf" type="checkbox"></label>
-                <button type="button" id="helpm">Help</button>
             </form>
             <div id="sync_out">
                 <div id="sync_info"></div>
@@ -1006,6 +997,15 @@
     <div id="saveDiv" style="display:none;"></div>
     <div id="render" class="dlog" style="left:5%; padding:0.5em;"></div>
     <div id="noklik"></div>
+    <?php else: ?>
+    <main class="yubsync-access-panel">
+        <h1>Sync a recording</h1>
+        <p><?= isset($_SESSION['user_id']) ? 'An administrator account is required to sync recordings.' : 'Sign in with your administrator account to sync a recording.' ?></p>
+        <?php if (!isset($_SESSION['user_id'])): ?>
+            <a class="yubsync-sign-in" href="/auth_login.php?provider=google&amp;return_to=editmode%2Fyubsync.php">Sign in with Google</a>
+        <?php endif; ?>
+    </main>
+    <?php endif; ?>
     <div id="help">
         <h2>How to sync a recording</h2>
         <p>Match the score to the recording by pressing <b>B</b> as you follow the music.</p>
@@ -1056,36 +1056,46 @@
         </table>
 
         <h3>Fine-tune timing</h3>
-        <p>Pause playback while syncing to make precise adjustments. The current measure's duration is shown beside
-            Help. The <b>First measure start</b> control beneath the video shows the start time in the recording.</p>
+        <p>Pause playback while syncing to make precise adjustments. The current measure's duration is shown in the
+            sync controls. The <b>First measure start</b> control beneath the video shows the start time in the recording.</p>
         <table class="helptbl">
             <tr>
-                <td><b>,</b></td>
-                <td>Shorten the current highlighted measure by 0.1 seconds.</td>
-            </tr>
-            <tr>
-                <td><b>.</b></td>
+                <td><b>Shift + ↑</b> / <b>Shift + →</b></td>
                 <td>Lengthen the current highlighted measure by 0.1 seconds.</td>
             </tr>
             <tr>
-                <td><b>&lt;</b> / <b>&gt;</b></td>
-                <td>Move the start of the first measure earlier / later by 0.1 seconds (the overall offset).
-                    Hold <b>Shift</b> and press <b>,</b> / <b>.</b> on a US keyboard.
-                    <b>Ctrl + ,</b> / <b>Ctrl + .</b> also work, as do the <b>Earlier</b> and <b>Later</b> buttons
-                    beneath the video. Later measure timings stay unchanged.</td>
+                <td><b>Shift + ↓</b> / <b>Shift + ←</b></td>
+                <td>Shorten the current highlighted measure by 0.1 seconds.</td>
+            </tr>
+            <tr>
+                <td><b>Ctrl + ↑</b> / <b>Ctrl + →</b></td>
+                <td>Move 1st measure start later by 0.1 seconds.</td>
+            </tr>
+            <tr>
+                <td><b>Ctrl + ↓</b> / <b>Ctrl + ←</b></td>
+                <td>Move 1st measure start earlier by 0.1 seconds.</td>
             </tr>
         </table>
-        <p>Use <b>,</b> and <b>.</b> after the following measure's timing has been recorded.
+        <p>Use <b>Shift + Arrow</b> after the following measure's timing has been recorded.
             These adjustments are useful between movements; use <b>Backspace</b> to redo a mistimed press.</p>
+        <p>You can also move the 1st measure start with the <b>Earlier</b> and <b>Later</b> buttons beneath the video.
+            Later measure timings stay unchanged.</p>
 
         <h3>Repeats</h3>
         <p><b>Shift-click</b> or <b>long-click</b> a measure to add a repeat mark.
             Press <b>G</b> to remove the most recent pair of repeat marks.</p>
         <button type="button" id="closehelp">Close Help</button>
     </div>
+    <?php if ($canSync): ?>
     <script src="yubsync-tools.js?v=91"></script>
     <script src="yubsync-live-edit.js?v=5"></script>
     <script src="yubsync-progress.js?v=2"></script>
+    <?php endif; ?>
+    <?php $siteInformationIncludeHelp = false; require $yubsyncSiteRoot . '/site-information.php'; ?>
+    <button type="button" id="darkmode-fab" aria-label="Toggle dark mode" title="Toggle dark mode" aria-pressed="false">
+        <svg class="darkmode-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20.9 13a9 9 0 0 1-9.9-9.9A9 9 0 1 0 20.9 13Z"/></svg>
+        <svg class="darkmode-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
 </body>
 
 </html>

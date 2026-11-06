@@ -749,7 +749,8 @@ Wijzer$$module$synpdf.prototype.showSyncInfo = function () {
     window.YubSyncGuidance?.update();
 };
 Wijzer$$module$synpdf.prototype.changeTimesKeyb = function (a) {
-    if (!(detix$$module$synpdf >= deTijden$$module$synpdf.length - 1)) {
+    if (detix$$module$synpdf >= 0 && detix$$module$synpdf < lastSynced$$module$synpdf &&
+        detix$$module$synpdf < deTijden$$module$synpdf.length - 1) {
         var b = deTijden$$module$synpdf[detix$$module$synpdf + 1];
         if (b.end) return;
         b.t += a;
@@ -2160,7 +2161,7 @@ function sendMsg$$module$synpdf(a) {
 }
 
 function setPauseState$$module$synpdf(a) {
-    msc_wz$$module$synpdf && (msc_wz$$module$synpdf.paused = a, $("#knop").val(a ? "Play" : "Pause"), $("#sync_out").css("background", a ? "" : "#ff0"), $("#vidyub, #vid").blur(), sendMsg$$module$synpdf(a ? "paused" : "playing"))
+    msc_wz$$module$synpdf && (msc_wz$$module$synpdf.paused = a, $("#knop").val(a ? "Play" : "Pause"), $("#sync_out").toggleClass("is-playing", !a), $("#vidyub, #vid").blur(), sendMsg$$module$synpdf(a ? "paused" : "playing"))
 }
 
 function pauseer$$module$synpdf() {
@@ -2175,12 +2176,15 @@ function keyDown$$module$synpdf(a) {
     if (a.target?.closest?.('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
     var b = a.key,
         c = 1;
-    // First-measure adjustments also remain available after the final B press.
-    const offsetDirection = b === '>' || (b === '.' && a.ctrlKey) ? 1 :
-        b === '<' || (b === ',' && a.ctrlKey) ? -1 : 0;
-    if (offsetDirection && msc_wz$$module$synpdf && !a.altKey && !a.metaKey) {
+    // Handle timing modifiers before navigation and the superuser's Down shortcut.
+    const direction = ['ArrowUp', 'Up', 'ArrowRight', 'Right'].includes(b) ? 1 :
+        ['ArrowDown', 'Down', 'ArrowLeft', 'Left'].includes(b) ? -1 : 0;
+    if (direction && (a.ctrlKey || a.shiftKey) && !a.altKey && !a.metaKey) {
         a.preventDefault && a.preventDefault();
-        msc_wz$$module$synpdf.changeOffset(offsetDirection * gFac$$module$synpdf);
+        if (!msc_wz$$module$synpdf) return;
+        // Offset adjustments remain available after syncing is complete.
+        if (a.ctrlKey) msc_wz$$module$synpdf.changeOffset(direction * gFac$$module$synpdf);
+        else msc_wz$$module$synpdf.changeTimesKeyb(direction * gFac$$module$synpdf);
         msc_wz$$module$synpdf.showSyncInfo();
         return;
     }
@@ -2263,12 +2267,6 @@ function keyDown$$module$synpdf(a) {
             case "b":
             case "B":
                 msc_wz$$module$synpdf.keySync('b');
-                break;
-            case ".":
-                a.ctrlKey ? msc_wz$$module$synpdf.changeOffset(gFac$$module$synpdf) : msc_wz$$module$synpdf.changeTimesKeyb(gFac$$module$synpdf);
-                break;
-            case ",":
-                a.ctrlKey ? msc_wz$$module$synpdf.changeOffset(-gFac$$module$synpdf) : msc_wz$$module$synpdf.changeTimesKeyb(-gFac$$module$synpdf);
                 break;
             // case "w":
             //     saveTiming$$module$synpdf();
@@ -2990,12 +2988,6 @@ $(document).ready(function () {
     $("body").keydown(keyDown$$module$synpdf);
     $("#buttons, #sync").keydown(function (a) {
         " " == a.key && a.stopPropagation()
-    });
-    $("#closehelp").click(function () {
-        $("#help").toggleClass("showhlp", 0)
-    });
-    $("#helpm").click(function () {
-        $("#help").toggleClass("showhlp")
     });
     $("#buttons").on("mousedown touchstart", msc_shift$$module$synpdf);
     // File button now has file as correct parameter 

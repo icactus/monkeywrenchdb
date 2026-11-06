@@ -1,6 +1,8 @@
 <?php
 // Shared navigation for the player/homepage and standalone account pages.
 $standaloneNavigation = $standaloneNavigation ?? false;
+$navigationSyncPage = $navigationSyncPage ?? false;
+$navigationReturnQuery = $navigationSyncPage ? '&amp;return_to=editmode%2Fyubsync.php' : ($standaloneNavigation ? '&amp;return_to=requests.php' : '');
 $navigationSignedIn = isset($_SESSION['user_id']);
 $navigationUserName = $user['name'] ?? $_SESSION['user_name'] ?? 'Account';
 $navigationIsAdmin = $standaloneNavigation ? $isAdmin : (($_SESSION['user_role'] ?? '') === 'admin');
@@ -48,15 +50,15 @@ if ($navigationIsAdmin && !$standaloneNavigation) {
             <a href="<?= $standaloneNavigation ? '/?account=favorites' : 'javascript:void(0)' ?>"
                 <?= $standaloneNavigation ? '' : 'onclick="toggleFavoritesMenu(); toggleMobileHeaderMenu();"' ?>>Favorites</a>
             <a href="#leaderboard" onclick="toggleLeaderboardMenu(event); return false;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10h5v10M9 20V4h6v16M15 20v-7h5v7M3 20h18"/></svg> Leaderboard</a>
-            <a href="requests.php"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> My Requests <span class="request-menu-count" hidden></span></a>
+            <a href="/requests.php"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> My Requests <span class="request-menu-count" hidden></span></a>
             <?php if ($navigationIsAdmin): ?>
-                <a href="requests.php?view=admin"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> Request queue <span class="request-queue-count request-menu-count" hidden></span></a>
+                <a href="/requests.php?view=admin"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> Request queue <span class="request-queue-count request-menu-count" hidden></span></a>
             <?php endif; ?>
             <!-- <a href="javascript:void(0)"
                 onclick="toggleAnnotationsManager(); toggleMobileHeaderMenu();">My
                 Markings</a> -->
         <?php else: ?>
-            <a href="auth_login.php?provider=google<?= $standaloneNavigation ? '&amp;return_to=requests.php' : '' ?>" class="mobile-menu-login">
+            <a href="/auth_login.php?provider=google<?= $navigationReturnQuery ?>" class="mobile-menu-login">
                 <svg viewBox="0 0 24 24" width="18" height="18" class="inline-svg-icon">
                     <path fill="#4285F4"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -85,13 +87,15 @@ if ($navigationIsAdmin && !$standaloneNavigation) {
             onclick="toggleHelpLinkMenu(); toggleMobileHeaderMenu();">Help</a>
         <?php if ($navigationSignedIn): ?>
             <div class="mobile-menu-divider"></div>
-            <a href="auth_logout.php" class="mobile-menu-logout">Logout</a>
+            <a href="/auth_logout.php" class="mobile-menu-logout">Logout</a>
         <?php endif; ?>
     </div>
+    <?php if (!$navigationSyncPage): ?>
     <a id="about-link" href="javascript:void(0)" onclick="toggleAboutLinkMenu(); return false;"
         class="nav-link">About</a>
     <a id="help-link" href="javascript:void(0)" onclick="toggleHelpLinkMenu(); return false;"
         class="nav-link">Help</a>
+    <?php endif; ?>
     <?php if ($navigationSignedIn): ?>
         <a class="request-notification-link" href="/requests.php?status=updates#request-list-title" aria-label="Unread request updates" hidden>
             <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
@@ -129,7 +133,7 @@ if ($navigationIsAdmin && !$standaloneNavigation) {
                     Favorites
                 </a>
                 <a href="#leaderboard" onclick="toggleLeaderboardMenu(event); return false;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10h5v10M9 20V4h6v16M15 20v-7h5v7M3 20h18"/></svg> Leaderboard</a>
-                <a href="requests.php"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> My Requests <span class="request-menu-count" hidden></span></a>
+                <a href="/requests.php"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> My Requests <span class="request-menu-count" hidden></span></a>
                 <!-- <a href="javascript:void(0)" onclick="toggleAnnotationsManager(); closeUserDropdown();">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2">
@@ -141,7 +145,7 @@ if ($navigationIsAdmin && !$standaloneNavigation) {
                 <?php if ($navigationIsAdmin): ?>
                     <div class="nav-dropdown-divider"></div>
                     <div class="nav-dropdown-label">Admin</div>
-                    <a href="requests.php?view=admin"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> Request queue <span class="request-queue-count request-menu-count" hidden></span></a>
+                    <a href="/requests.php?view=admin"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3h6v2M9 11h6M9 15h6"/></svg> Request queue <span class="request-queue-count request-menu-count" hidden></span></a>
                     <a href="/editmode/synpdf-edit-mode.php">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
@@ -161,7 +165,7 @@ if ($navigationIsAdmin && !$standaloneNavigation) {
                     </a>
                 <?php endif; ?>
                 <div class="nav-dropdown-divider"></div>
-                <a href="auth_logout.php" class="nav-dropdown-logout">
+                <a href="/auth_logout.php" class="nav-dropdown-logout">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -202,7 +206,7 @@ if ($navigationIsAdmin && !$standaloneNavigation) {
             </script>
         <?php endif; ?>
     <?php else: ?>
-        <a href="auth_login.php?provider=google<?= $standaloneNavigation ? '&amp;return_to=requests.php' : '' ?>" class="nav-link">Login</a>
+        <a href="/auth_login.php?provider=google<?= $navigationReturnQuery ?>" class="nav-link">Login</a>
     <?php endif; ?>
 </div>
 <script src="/js/mobile-header-menu.js?v=1" defer></script>

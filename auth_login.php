@@ -19,7 +19,8 @@ $provider = $_GET['provider'] ?? 'google';
 
 if ($provider === 'google') {
     // Keep the return destination local and explicitly allowlisted.
-    $_SESSION['oauth_return_to'] = ($_GET['return_to'] ?? '') === 'requests.php' ? 'requests.php' : 'index.php';
+    $returnTo = $_GET['return_to'] ?? '';
+    $_SESSION['oauth_return_to'] = in_array($returnTo, ['requests.php', 'editmode/yubsync.php'], true) ? $returnTo : 'index.php';
     $authUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
     $scope = 'email profile';
 

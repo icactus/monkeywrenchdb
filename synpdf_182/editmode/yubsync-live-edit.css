@@ -1,4 +1,35 @@
-/* Match the library branding without importing its player layout styles. */
+/* Use the homepage palette without importing its player layout styles. */
+body.yubsync-editor {
+    --home-page: #f5f7f7; --home-surface: #fff; --home-soft: #f0f5f5;
+    --home-ink: #233e45; --home-muted: #586e74; --home-teal: #376a73;
+    --home-teal-soft: #eaf3f3; --home-line: #dce5e5; --home-strong-line: #adc3c7;
+    --home-focus: #936810; --home-on-teal: #fff;
+    font: 15px/1.5 'IBM Plex Sans', system-ui, sans-serif;
+}
+html.inverted body.yubsync-editor {
+    --home-page: #141d20; --home-surface: #1d292d; --home-soft: #25363b;
+    --home-ink: #e7eeee; --home-muted: #a6b9bd; --home-teal: #95d0d5;
+    --home-teal-soft: #253e43; --home-line: #34494e; --home-strong-line: #57777d;
+    --home-focus: #f2d178; --home-on-teal: #141d20;
+}
+html { color-scheme: light; }
+html.inverted { color-scheme: dark; }
+body.yubsync-editor :is(button, input, select, option) { font: inherit; color: inherit; }
+body.yubsync-editor :is(button, input, select) { border-color: var(--home-strong-line); background: var(--home-surface); }
+body.yubsync-editor input::placeholder { color: var(--home-muted); opacity: 1; }
+body.yubsync-editor :is(a, button, input, select):focus-visible { outline: 3px solid var(--home-focus); outline-offset: 3px; }
+.yubsync-editor #notation { background: var(--home-soft); }
+.yubsync-editor #notation canvas { background: #fff; }
+.yubsync-editor :is(.inputform, .stepbox, #help, .dlog, #saveDlg) {
+    background: var(--home-surface); color: var(--home-ink); border-color: var(--home-line);
+    box-shadow: 0 3px 14px #203c2912;
+}
+.yubsync-editor :is(.inputform, .stepbox) h2 { color: var(--home-ink); font-family: inherit; }
+.yubsync-editor #help .helptbl td { border-color: var(--home-line); }
+.yubsync-editor .helptbl tr:nth-child(even) { background: var(--home-soft); }
+.yubsync-editor #notation-loader { background: var(--home-surface); color: var(--home-ink); }
+.yubsync-editor #notation-loader .nl-text { color: inherit; }
+.yubsync-editor #notation-loader .nl-line { background: var(--home-teal); }
 #yubsync-site-header {
     display: flex; align-items: center; justify-content: space-between; gap: 24px;
     box-sizing: border-box; min-height: 78px; flex-shrink: 0; padding: 12px 24px;
@@ -13,48 +44,49 @@
 .yubsync-brand-tagline { margin-top: 4px; font-size: 12px; color: #28515a; }
 .yubsync-header-nav { display: flex; align-items: center; gap: 20px; flex: none; }
 .yubsync-page-label { font-size: 12px; }
-.yubsync-header-nav a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border: 1px solid #ffffff90; border-radius: 8px; background: #ffffffa8; color: inherit; text-decoration: none; }
-.yubsync-header-nav a:hover { background: #fff; }
-#yubsync-site-header a:focus-visible { outline: 3px solid #936810; outline-offset: 3px; }
+.yubsync-header-nav > :is(a, button) { display: inline-flex; align-items: center; gap: 8px; box-sizing: border-box; min-height: 44px; padding: 0 12px; border: 1px solid #ffffff90; border-radius: 8px; background: #ffffffa8; color: inherit; font: inherit; text-decoration: none; }
+.yubsync-header-nav > :is(a, button):hover { background: var(--home-surface); }
+.yubsync-header-nav button:active { filter: none; }
+#yubsync-site-header :is(a, button):focus-visible { outline: 3px solid #936810; outline-offset: 3px; }
 
 /* Keep room to inspect a full-score system on short screens. The document can
    scroll past the controls, while notation retains its own score scroller. */
 body > section1 { flex-shrink: 0; }
 body > section2 { flex: 1; min-height: 60vh; height: auto; }
 /* Sync is armed when the score finishes loading and ends at its final marker. */
-#menu > :not(#helpm), #sync_out > label { display: none !important; }
+#menu, #sync_out > label { display: none !important; }
 #yubsync-score { display: flex; flex-direction: column; width: 1000px; max-width: 100%; height: 100%; min-height: 0; }
 #yubsync-score #notation { flex: 1; min-height: 0; width: 100%; }
 #yubsync-score #notation > canvas { display: block; }
 #yubsync-score #notation > :not(#rollijn):not(#notation-loader) { zoom: var(--yubsync-view-scale, 1); }
 #yubsync-zoom-toolbar { display: flex; align-items: center; justify-content: center; gap: 8px; flex: 0 0 auto; padding: 4px; }
-#yubsync-zoom-toolbar button { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; min-height: 34px; background: #fff; color: #162237; }
+#yubsync-zoom-toolbar button { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; min-height: 34px; background: var(--home-surface); color: var(--home-ink); }
 #yubsync-zoom-toolbar button:disabled { opacity: .5; cursor: default; }
 #yubsync-zoom-value { min-width: 4em; text-align: center; font: 13px sans-serif; }
 #yubsync-edit-toolbar {
     flex: 0 0 auto; box-sizing: border-box; max-width: 1000px;
     display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-    padding: 9px; background: #f3f6fc; color: #162237;
-    border: 1px solid #b6c2d2; border-radius: 5px 5px 0 0;
+    padding: 9px; background: var(--home-soft); color: var(--home-ink);
+    border: 1px solid var(--home-strong-line); border-radius: 5px 5px 0 0;
 }
-#yubsync-edit-toolbar button { padding: 6px 8px; cursor: pointer; background: #fff; color: #162237; border: 1px solid #9aa9bb; }
+#yubsync-edit-toolbar button { padding: 6px 8px; cursor: pointer; background: var(--home-surface); color: var(--home-ink); border: 1px solid var(--home-strong-line); }
 #yubsync-edit-toolbar[hidden] { display: none; }
 #yubsync-edit-toolbar button:disabled { cursor: default; opacity: .5; }
-#yubsync-edit-toolbar button[aria-pressed="true"] { background: #194f9a; color: white; }
+#yubsync-edit-toolbar button[aria-pressed="true"] { background: var(--home-teal); color: var(--home-on-teal); }
 #yubsync-edit-toolbar kbd { font: inherit; font-size: .85em; border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; }
-#yubsync-edit-toolbar.is-editing { border-color: #194f9a; }
+#yubsync-edit-toolbar.is-editing { border-color: var(--home-teal); }
 #yubsync-edit-status { flex-basis: 100%; font-size: 13px; }
 #notation.yubsync-correcting { cursor: crosshair; touch-action: none; }
 #yubsync-progress-status { margin-top: 4px; font: 11px/1.4 sans-serif; }
 
 /* Guidance sits outside the PDF canvases, so score clicks and zoom stay intact. */
-.yubsync-editor #yubsync-workspace { background: #fff; }
+.yubsync-editor #yubsync-workspace { background: var(--home-surface); }
 #yubsync-score-stage { position: relative; flex: 1; min-height: 0; display: flex; }
 #yubsync-offset-control[hidden], #yubsync-guide[hidden], #yubsync-completion[hidden], #addnewrecordingform[hidden] { display: none !important; }
 #yubsync-offset-control {
     flex: 0 0 auto; margin: 8px 12px 0; padding: 12px;
-    border: 1px solid #bbc8d9; border-radius: 8px; background: #fff;
-    color: #162237; font: 13px/1.4 system-ui, sans-serif; overflow-wrap: anywhere;
+    border: 1px solid var(--home-line); border-radius: 8px; background: var(--home-surface);
+    color: var(--home-ink); font: 13px/1.4 system-ui, sans-serif; overflow-wrap: anywhere;
 }
 .yubsync-offset-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #yubsync-offset-label { margin: 0; font-size: 14px; font-weight: 650; }
@@ -62,56 +94,57 @@ body > section2 { flex: 1; min-height: 60vh; height: auto; }
 .yubsync-offset-buttons { display: flex; gap: 8px; margin-top: 12px; }
 .yubsync-offset-buttons button {
     display: flex; flex: 1; align-items: center; justify-content: center; gap: 6px;
-    min-width: 0; min-height: 38px; padding: 6px; background: #f3f6fc; color: #162237;
-    border: 1px solid #b6c2d2; font: inherit;
+    min-width: 0; min-height: 38px; padding: 6px; background: var(--home-soft); color: var(--home-ink);
+    border: 1px solid var(--home-strong-line); font: inherit;
 }
 .yubsync-offset-buttons button:disabled { opacity: .45; cursor: default; }
 .yubsync-offset-buttons small { font-size: 11px; }
 #yubsync-offset-control kbd, #yubsync-guide kbd {
-    display: inline-block; padding: 1px 4px; border: 1px solid #b6c2d2; border-radius: 4px;
+    display: inline-block; padding: 1px 4px; border: 1px solid var(--home-strong-line); border-radius: 4px;
     font: inherit; font-size: .9em;
 }
 #yubsync-offset-hint { margin: 10px 0 0; }
-#yubsync-offset-control .yubsync-offset-shortcuts { margin: 6px 0 0; font-size: 11px; color: #53617a; }
-#yubsync-offset-control.is-first-measure { border-color: #506f9f; background: #edf3ff; }
+#yubsync-offset-control .yubsync-offset-shortcuts { margin: 6px 0 0; font-size: 11px; color: var(--home-muted); }
+#yubsync-offset-control.is-first-measure { border-color: var(--home-teal); background: var(--home-teal-soft); }
 #yubsync-guide {
     position: absolute; z-index: 3; right: 18px; bottom: 18px; box-sizing: border-box;
-    width: min(380px, calc(100% - 36px)); padding: 20px; border: 1px solid #b6c2d2;
-    border-radius: 12px; background: #fff; color: #162237; box-shadow: 0 8px 30px #16223726;
+    width: min(380px, calc(100% - 36px)); padding: 20px; border: 1px solid var(--home-strong-line);
+    border-radius: 12px; background: var(--home-surface); color: var(--home-ink); box-shadow: 0 8px 30px #16223726;
     font: 14px/1.5 system-ui, sans-serif; overflow-wrap: anywhere; pointer-events: none;
 }
-#yubsync-guide[data-stage="finish"] { top: 16px; bottom: auto; padding: 16px; border-left: 4px solid #5273a9; }
+#yubsync-guide[data-stage="finish"] { top: 16px; bottom: auto; padding: 16px; border-left: 4px solid var(--home-teal); }
 #yubsync-guide h2 { margin: 5px 0 8px; font-size: 22px; line-height: 1.25; }
 #yubsync-guide p { margin: 0; }
-#yubsync-guide-eyebrow, .yubsync-completion-eyebrow { color: #53617a; font-size: 10px; font-weight: 700; letter-spacing: .12em; }
-#yubsync-guide #yubsync-guide-keys { margin-top: 14px; font-size: 11px; color: #53617a; }
+#yubsync-guide-eyebrow, .yubsync-completion-eyebrow { color: var(--home-muted); font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+#yubsync-guide #yubsync-guide-keys { margin-top: 14px; font-size: 11px; color: var(--home-muted); }
 #yubsync-guide-keys span { margin: 0 5px; }
 #yubsync-completion {
     position: absolute; z-index: 4; inset: 0; display: flex; align-items: center; justify-content: center;
-    padding: 20px; box-sizing: border-box; overflow-y: auto; background: #edf2f7d9;
-    font: 15px/1.5 system-ui, sans-serif; color: #162237; overflow-wrap: anywhere;
+    padding: 20px; box-sizing: border-box; overflow-y: auto; background: color-mix(in srgb, var(--home-page) 85%, transparent);
+    font: 15px/1.5 system-ui, sans-serif; color: var(--home-ink); overflow-wrap: anywhere;
 }
 .yubsync-completion-card {
     box-sizing: border-box; width: 100%; max-width: 500px; max-height: 100%; overflow-y: auto;
-    padding: 28px; border: 1px solid #b6c2d2; border-radius: 14px; background: #fff; box-shadow: 0 10px 40px #1622371a;
+    padding: 28px; border: 1px solid var(--home-strong-line); border-radius: 14px; background: var(--home-surface); box-shadow: 0 10px 40px #1622371a;
 }
 #yubsync-completion-title { margin: 6px 0 8px; font-size: 28px; line-height: 1.2; }
-#yubsync-completion-copy { margin: 0 0 24px; color: #53617a; }
+#yubsync-completion-copy { margin: 0 0 24px; color: var(--home-muted); }
 .yubsync-recording-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
 .yubsync-ensemble-field { grid-column: 1 / -1; }
 #addnewrecordingform label { white-space: normal; margin-bottom: 5px; font-size: 13px; }
-#addnewrecordingform input[type="text"] { box-sizing: border-box; width: 100%; min-width: 0; padding: 10px; background: #fff; color: #162237; }
-#addnewrecordingform input[type="submit"] { width: 100%; margin-top: 24px; padding: 12px; font-size: 15px; font-weight: 600; background: #234c88; color: #fff; border: none; }
+#addnewrecordingform input[type="text"] { box-sizing: border-box; width: 100%; min-width: 0; padding: 10px; background: var(--home-surface); color: var(--home-ink); }
+#addnewrecordingform input[type="submit"] { width: 100%; margin-top: 24px; padding: 12px; font-size: 15px; font-weight: 600; background: var(--home-teal); color: var(--home-on-teal); border: none; }
 #addnewrecordingform input[type="submit"]:disabled { opacity: .5; cursor: default; }
 #yubsync-submit-status { margin-top: 12px; font-size: 13px; }
 @media screen and (max-width: 767px) {
-    #yubsync-site-header { gap: 12px; padding: 12px 16px; }
+    #yubsync-site-header { flex-wrap: wrap; gap: 12px; padding: 12px 16px; }
     .yubsync-brand { gap: 8px; }
     .yubsync-brand #monkey-logo { width: 36px; height: 36px; }
     .yubsync-brand-title { font-size: 21px; letter-spacing: 0; }
     .yubsync-brand-tagline { font-size: 11px; }
+    .yubsync-header-nav { gap: 8px; width: 100%; }
     .yubsync-page-label { display: none; }
-    #yubsync-sidebar { display: flex; flex-direction: column; min-width: 0; background: #f3f6fc; }
+    #yubsync-sidebar { display: flex; flex-direction: column; min-width: 0; background: var(--home-soft); }
     #yubsync-sidebar #player-wrapper { position: static; }
     #yubsync-sidebar #player-wrapper:not(:has(iframe)) { display: none; }
     #yubsync-sidebar #vidyub { display: block; width: 100% !important; height: 200px; }
@@ -139,7 +172,7 @@ body > section2 { flex: 1; min-height: 60vh; height: auto; }
     .yubsync-brand #monkey-logo { width: 30px; height: 30px; }
     .yubsync-brand-title { font-size: 18px; }
     .yubsync-brand-tagline { font-size: 10px; }
-    .yubsync-header-nav a { padding-inline: 8px; font-size: 12px; }
+    .yubsync-header-nav > :is(a, button) { padding-inline: 8px; font-size: 12px; }
 }
 
 /* Desktop: reserve the full left column for the score. Setup scrolls on the
@@ -162,8 +195,8 @@ body > section2 { flex: 1; min-height: 60vh; height: auto; }
         min-height: 0;
         min-width: 0;
         overflow: hidden;
-        background: #f3f6fc;
-        border-left: 1px solid #b6c2d2;
+        background: var(--home-soft);
+        border-left: 1px solid var(--home-strong-line);
     }
     #yubsync-sidebar #player-wrapper {
         position: static;
@@ -197,19 +230,11 @@ body > section2 { flex: 1; min-height: 60vh; height: auto; }
     #yubsync-sidebar #mbar {
         display: none;
     }
-    #yubsync-sidebar #menu {
-        order: 1;
-        background: transparent;
-    }
-    #yubsync-sidebar #helpm {
-        padding: 8px 12px;
-        cursor: pointer;
-    }
     #yubsync-sidebar #sync_out {
         flex: 1;
         padding: 6px;
-        background: #f3f6fc;
-        border: 1px solid #b6c2d2;
+        background: var(--home-soft);
+        border: 1px solid var(--home-strong-line);
         border-radius: 4px;
     }
     #yubsync-sidebar #sync_info {
@@ -263,4 +288,58 @@ body > section2 { flex: 1; min-height: 60vh; height: auto; }
     #yubsync-workspace > sidecontent {
         display: none;
     }
+}
+
+/* Shared account menu stays outside the independently scrolling editor. */
+.yubsync-header-nav .nav-menu { position: relative; display: flex; align-items: center; gap: 14px; margin-left: auto; }
+.yubsync-header-nav .nav-menu > .nav-link { color: inherit; text-decoration: none; padding: 10px; }
+.yubsync-header-nav .nav-user-trigger { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 11px 6px 6px; border-radius: 24px; background: #ffffffa8; border-color: #ffffff90; color: #173f49; }
+.yubsync-header-nav .nav-user-avatar { display: flex; align-items: center; justify-content: center; flex: none; width: 28px; height: 28px; border-radius: 50%; background: #376a73; color: #fff; font-size: 13px; font-weight: 600; }
+.yubsync-header-nav .nav-user-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.yubsync-header-nav .nav-dropdown-menu { position: fixed; z-index: 30; visibility: hidden; opacity: 0; box-sizing: border-box; min-width: 220px; max-width: calc(100vw - 24px); max-height: calc(100dvh - 120px); overflow-y: auto; border: 1px solid var(--home-line); border-radius: 12px; background: var(--home-surface); color: var(--home-ink); box-shadow: 0 4px 20px #0002; }
+.yubsync-header-nav .nav-dropdown-menu.open { visibility: visible; opacity: 1; }
+.yubsync-header-nav :is(.nav-dropdown-menu, #mobile-header-menu) a { display: flex; align-items: center; gap: 12px; box-sizing: border-box; min-height: 44px; padding: 10px 16px; color: var(--home-ink); text-decoration: none; }
+.yubsync-header-nav :is(.nav-dropdown-menu, #mobile-header-menu) a:hover { background: var(--home-soft); }
+.yubsync-header-nav :is(.nav-dropdown-menu, #mobile-header-menu) a svg { flex: none; width: 18px; height: 18px; }
+.yubsync-header-nav :is(.nav-dropdown-divider, .mobile-menu-divider) { height: 1px; margin: 4px 0; background: var(--home-line); }
+.yubsync-header-nav .nav-dropdown-label { padding: 8px 16px 4px; color: var(--home-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+#mobile-header-burger { display: none; align-items: center; justify-content: center; box-sizing: border-box; width: 44px; height: 44px; padding: 0; border-radius: 8px; background: #ffffffd9; color: #173f49; }
+#mobile-header-burger svg { width: 24px; height: 24px; }
+#mobile-header-menu { display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; flex-direction: column; box-sizing: border-box; width: min(280px, calc(100vw - 32px)); padding: 8px; max-height: calc(100dvh - 160px); overflow-y: auto; border: 1px solid var(--home-line); border-radius: 12px; background: var(--home-surface); color: var(--home-ink); box-shadow: 0 4px 24px #0002; }
+.mobile-menu-greeting { padding: 10px 16px; color: var(--home-muted); }
+.nav-dropdown-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; }
+.toggle-switch { position: relative; display: inline-flex; width: 40px; height: 24px; flex: none; }
+.toggle-switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; }
+.toggle-slider { position: absolute; inset: 0; border-radius: 20px; background: var(--home-strong-line); pointer-events: none; }
+.toggle-slider-knob { position: absolute; width: 18px; height: 18px; top: 3px; left: 3px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.toggle-switch input:checked + .toggle-slider { background: #376a73; }
+.toggle-switch input:checked + .toggle-slider .toggle-slider-knob { transform: translateX(16px); }
+.toggle-switch input:focus-visible + .toggle-slider { outline: 3px solid var(--home-focus); outline-offset: 3px; }
+#darkmode-fab { position: fixed; z-index: 10; bottom: 16px; left: 16px; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 10px; border-radius: 50%; border-color: var(--home-line); background: var(--home-surface); color: var(--home-ink); box-shadow: 0 3px 14px #0002; }
+#darkmode-fab svg { width: 22px; height: 22px; }
+#darkmode-fab .darkmode-icon-sun, html.inverted #darkmode-fab .darkmode-icon-moon { display: none; }
+html.inverted #darkmode-fab .darkmode-icon-sun { display: block; }
+html.inverted #yubsync-site-header { background: linear-gradient(#14252b99, #14252b99), linear-gradient(110deg, #f5d366, #9dbba3 57%, #397780); border-bottom-color: #91bca838; color: #edf4ee; }
+html.inverted .yubsync-brand-tagline { color: #d5e5dc; }
+html.inverted .yubsync-header-nav > :is(a, button), html.inverted .yubsync-header-nav .nav-user-trigger, html.inverted #mobile-header-burger { color: #edf4ee; background: #142c2bc9; border-color: #c1dbce40; }
+body.yubsync-editor #sync_out.is-playing { background: var(--home-teal-soft); border-color: var(--home-teal); }
+body.yubsync-locked { display: block; min-height: 100dvh; height: auto; overflow: auto; }
+.yubsync-access-panel { box-sizing: border-box; max-width: 600px; margin: 48px auto; padding: 28px; background: var(--home-surface); border: 1px solid var(--home-line); border-radius: 12px; }
+.yubsync-access-panel h1 { margin-top: 0; font-size: 26px; }
+.yubsync-sign-in { display: inline-block; padding: 10px 16px; border-radius: 8px; background: var(--home-teal); color: var(--home-on-teal); text-decoration: none; }
+#about { display: none; position: fixed; z-index: 25; top: 50%; left: 50%; transform: translate(-50%, -50%); box-sizing: border-box; width: min(90%, 760px); max-height: 85dvh; overflow-y: auto; border: 1px solid var(--home-line); border-radius: 12px; background: var(--home-surface); color: var(--home-ink); }
+#about.showabout { display: block; }
+.modal-backdrop { display: none; position: fixed; z-index: 24; inset: 0; background: #0007; }
+.modal-backdrop.visible { display: block; }
+:is(#about, #leaderboard) .modal-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--home-line); }
+:is(#about, #leaderboard) .modal-header h3 { margin: 0; }
+:is(#about, #leaderboard) .modal-content { padding: 20px; overflow-y: auto; }
+:is(#about, #leaderboard) .modal-close { border: 0; background: transparent; color: inherit; font-size: 24px; }
+.yubsync-editor a { text-underline-offset: 3px; }
+.yubsync-editor :is(#help, #about) a { color: var(--home-teal); }
+@media (max-width: 1100px) { .yubsync-page-label { display: none; } }
+@media (max-width: 767px) {
+    .yubsync-header-nav .nav-user-dropdown, .yubsync-header-nav .nav-menu > .nav-link { display: none; }
+    #mobile-header-burger { display: flex; }
+    .yubsync-access-panel { margin: 24px 16px; padding: 20px; }
 }

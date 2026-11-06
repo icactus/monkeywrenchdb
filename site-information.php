@@ -41,8 +41,11 @@ $leaderboardEscape = static fn($value) => htmlspecialchars((string) $value, ENT_
 <script src="/js/leaderboard.js?v=3" defer></script>
 <?php endif; ?>
 <!-- Help/About Backdrops -->
+<?php if ($siteInformationIncludeHelp ?? true): ?>
 <div id="help-backdrop" class="modal-backdrop"></div>
+<?php endif; ?>
 <div id="about-backdrop" class="modal-backdrop"></div>
+<?php if ($siteInformationIncludeHelp ?? true): ?>
 <div id="help" data-nosnippet>
     <div class="modal-header">
         <h3>How to Use</h3>
@@ -83,6 +86,7 @@ $leaderboardEscape = static fn($value) => htmlspecialchars((string) $value, ENT_
         </p>
     </div>
 </div>
+<?php endif; ?>
 <div id="about" data-nosnippet>
     <div class="modal-header">
         <h3>About</h3>

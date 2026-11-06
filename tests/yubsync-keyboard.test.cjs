@@ -50,7 +50,7 @@ function setup({ superuser = false, sync = true, paused = false } = {}) {
 }
 
 for (const paused of [false, true]) {
-    for (const key of ['ArrowUp', 'Up', 'ArrowDown', 'Down', 'PageUp', 'PageDown']) {
+    for (const key of ['ArrowUp', 'Up', 'ArrowDown', 'Down', 'ArrowLeft', 'Left', 'ArrowRight', 'Right', 'PageUp', 'PageDown']) {
         test(`${key} navigates without changing recorded timestamps while ${paused ? 'paused' : 'playing'}`, () => {
             const h = setup({ paused }), before = h.snapshot();
             h.key(key);
@@ -97,31 +97,80 @@ test('C and correction-mode keys cannot record or alter timestamps', () => {
     assert.equal(h.seeks.length, 0);
 });
 
-test('comma and period change the highlighted measure duration and retain Ctrl-offset shortcuts', () => {
-    for (const [key, change] of [[',', -0.1], ['.', 0.1]]) {
-        const h = setup();
-        h.key(key);
-        assert.equal(h.c.deTijden$$module$synpdf[2].t, 4 + change);
-        assert.equal(h.c.offset$$module$synpdf, 1);
-        const offset = setup();
-        offset.key(key, { ctrlKey: true });
-        assert.equal(offset.c.offset$$module$synpdf, 1 + change);
+const arrows = [
+    ['ArrowUp', 0.1], ['Up', 0.1], ['ArrowRight', 0.1], ['Right', 0.1],
+    ['ArrowDown', -0.1], ['Down', -0.1], ['ArrowLeft', -0.1], ['Left', -0.1]
+];
+
+test('Shift with any arrow adjusts only measure length without navigating or stamping', () => {
+    for (const superuser of [false, true]) for (const paused of [false, true]) {
+        for (const [key, change] of arrows) {
+            const h = setup({ superuser, paused }), before = h.snapshot();
+            assert.equal(h.key(key, { shiftKey: true }).prevented, true);
+            assert.deepEqual(clone(h.c.deTijden$$module$synpdf.slice(0, 2)), before.times.slice(0, 2));
+            assert.equal(h.c.deTijden$$module$synpdf[2].t, 4 + change);
+            assert.equal(h.c.offset$$module$synpdf, before.offset);
+            assert.equal(h.c.lastSynced$$module$synpdf, before.lastSynced);
+            assert.equal(h.c.detix$$module$synpdf, 1);
+            assert.equal(h.c.demix$$module$synpdf, 1);
+            assert.equal(h.c.msc_wz$$module$synpdf.paused, paused);
+            assert.equal(h.seeks.length, 0);
+        }
     }
 });
 
-test('angle brackets move only the first measure start, preserving later absolute timings', () => {
-    for (const [key, change] of [['<', -0.1], ['>', 0.1]]) {
-        const h = setup();
-        const before = h.snapshot();
-        h.key(key, { shiftKey: true });
-        assert.equal(h.c.offset$$module$synpdf, before.offset + change);
-        assert.equal(h.c.deTijden$$module$synpdf[0].t, 0);
-        for (let i = 1; i < before.times.length; i++) {
-            assert.equal(h.c.deTijden$$module$synpdf[i].t + h.c.offset$$module$synpdf,
-                before.times[i].t + before.offset);
+test('Ctrl with any arrow adjusts the offset, preserving later absolute timings and cursor', () => {
+    for (const superuser of [false, true]) for (const [key, change] of arrows) {
+        for (const shiftKey of [false, true]) {
+            const h = setup({ superuser }), before = h.snapshot();
+            assert.equal(h.key(key, { ctrlKey: true, shiftKey }).prevented, true);
+            assert.equal(h.c.offset$$module$synpdf, before.offset + change);
+            assert.equal(h.c.deTijden$$module$synpdf[0].t, 0);
+            for (let i = 1; i < before.times.length; i++) {
+                assert.equal(h.c.deTijden$$module$synpdf[i].t + h.c.offset$$module$synpdf,
+                    before.times[i].t + before.offset);
+            }
+            assert.equal(h.c.lastSynced$$module$synpdf, before.lastSynced);
+            assert.equal(h.c.detix$$module$synpdf, 1);
+            assert.equal(h.c.demix$$module$synpdf, 1);
+            assert.equal(h.seeks.length, 0);
         }
-        assert.equal(h.c.lastSynced$$module$synpdf, before.lastSynced);
     }
+});
+
+test('punctuation keys no longer change timings or offsets', () => {
+    const h = setup(), before = h.snapshot();
+    for (const key of [',', '.', '<', '>']) {
+        for (const options of [{}, { shiftKey: true }, { ctrlKey: true }]) h.key(key, options);
+    }
+    assert.deepEqual(h.snapshot(), before);
+});
+
+test('measure adjustments require a current measure and a recorded following timing', () => {
+    for (const [detix, lastSynced] of [[-1, 2], [2, 2], [1, 1]]) {
+        const h = setup();
+        h.c.detix$$module$synpdf = detix;
+        h.c.lastSynced$$module$synpdf = lastSynced;
+        const before = h.snapshot();
+        assert.doesNotThrow(() => h.key('ArrowUp', { shiftKey: true }));
+        assert.deepEqual(h.snapshot(), before);
+    }
+    const h = setup();
+    h.c.deTijden$$module$synpdf[2] = { t: 9999, mix: 4, end: true };
+    const before = h.snapshot();
+    h.key('ArrowDown', { shiftKey: true });
+    assert.deepEqual(h.snapshot(), before, 'the concluding 9999 marker stays fixed');
+});
+
+test('Alt or Meta combined with timing modifiers cannot alter recordings', () => {
+    const h = setup({ superuser: true }), before = h.snapshot();
+    for (const [key] of arrows) {
+        for (const modifier of ['ctrlKey', 'shiftKey']) {
+            for (const guard of ['altKey', 'metaKey']) h.key(key, { [modifier]: true, [guard]: true });
+        }
+    }
+    assert.deepEqual(h.snapshot(), before);
+    assert.equal(h.seeks.length, 0);
 });
 
 test('navigation before the first recorded measure does not crash or stamp', () => {
@@ -134,17 +183,22 @@ test('navigation before the first recorded measure does not crash or stamp', () 
 
 test('typing in form fields bypasses timestamp shortcuts, including superuser Down Arrow', () => {
     const h = setup({ superuser: true }), before = h.snapshot();
-    for (const key of ['b', 'B', 'ArrowDown', '.', ',']) h.key(key, { target: { closest: () => ({}) } });
+    for (const key of ['b', 'B', 'ArrowDown', ...arrows.map(([key]) => key)]) {
+        for (const options of [{}, { shiftKey: true }, { ctrlKey: true }]) {
+            h.key(key, { ...options, target: { closest: () => ({}) } });
+        }
+    }
     assert.deepEqual(h.snapshot(), before);
     assert.equal(h.seeks.length, 0);
 });
 
 test('timestamps and timing adjustments save before keyup or a polling timer can run', () => {
-    for (const key of ['b', 'B', 'ArrowDown', ',', '.', '<', '>']) {
+    for (const [key, options] of [['b', {}], ['B', {}], ['ArrowDown', {}],
+        ...arrows.flatMap(([key]) => [[key, { shiftKey: true }], [key, { ctrlKey: true }]])]) {
         const h = setup({ superuser: true });
         const saved = [];
         h.c.window.YubSyncProgress = { save() { saved.push(h.snapshot()); } };
-        h.key(key);
+        h.key(key, options);
         assert.equal(saved.length, 1, key);
         assert.deepEqual(saved[0], h.snapshot(), key);
     }
@@ -209,11 +263,15 @@ test('hidden correction controls cannot be activated while saved-progress helper
     assert.equal(c.window.YubSyncLiveEdit.active, false);
 });
 
-test('first-measure adjustments remain available after syncing, without seeking playback', () => {
+test('arrow timing adjustments remain available after syncing, without seeking playback', () => {
     const h = setup({ sync: false });
     const before = h.snapshot();
-    h.key('>', { shiftKey: true });
+    h.key('ArrowRight', { ctrlKey: true });
     assert.equal(h.c.offset$$module$synpdf, before.offset + 0.1);
     assert.equal(h.c.deTijden$$module$synpdf[2].t + h.c.offset$$module$synpdf, 5);
     assert.equal(h.seeks.length, 0);
+    const duration = setup({ sync: false });
+    duration.key('ArrowLeft', { shiftKey: true });
+    assert.equal(duration.c.deTijden$$module$synpdf[2].t, 3.9);
+    assert.equal(duration.seeks.length, 0);
 });
