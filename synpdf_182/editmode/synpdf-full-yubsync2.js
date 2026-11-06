@@ -1205,7 +1205,10 @@ function setBtnLoading(state, ids = ['loadBtn']) {
     });
 }
 
+var pdfLoadGeneration$$module$synpdf = 0;
+
 function readPdf$$module$synpdf(a, b) {
+    const loadGeneration = ++pdfLoadGeneration$$module$synpdf;
     initGlobals$$module$synpdf();
 
     // TURN SPINNER ON immediately when we start fetching
@@ -1228,6 +1231,7 @@ function readPdf$$module$synpdf(a, b) {
         pdfDoc$$module$synpdf.crossOrigin = "anonymous";
         pdfDoc$$module$synpdf.src = c;
         pdfDoc$$module$synpdf.onload = function () {
+            if (loadGeneration !== pdfLoadGeneration$$module$synpdf) return;
             hideNotationLoader();
             setBtnLoading(false);             // <— turn spinner OFF
             readPdfdoc$$module$synpdf();
@@ -1235,10 +1239,14 @@ function readPdf$$module$synpdf(a, b) {
     } else {
         // PDF path (URL or binary) — use onProgress for a proper percentage
         const task = pdfjsLib.getDocument(a);
+        let downloadFinished = false;
         updateNotationLoader(0, "Starting download…");
 
         task.onProgress = function (p) {
-            const pct = p.total ? Math.round(100 * p.loaded / p.total) : null;
+            // PDF.js may report another range/stream progress event after its
+            // document promise resolves. Never reopen a completed load's overlay.
+            if (downloadFinished || loadGeneration !== pdfLoadGeneration$$module$synpdf) return;
+            const pct = p.total ? Math.max(0, Math.min(100, Math.round(100 * p.loaded / p.total))) : null;
             const loadedMB = (p.loaded / 1048576).toFixed(1);
             const totalMB = p.total ? (p.total / 1048576).toFixed(1) : "?";
             updateNotationLoader(
@@ -1248,14 +1256,22 @@ function readPdf$$module$synpdf(a, b) {
         };
 
         task.promise.then(function (doc) {
+            downloadFinished = true;
+            task.onProgress = null;
+            if (loadGeneration !== pdfLoadGeneration$$module$synpdf) return;
             pdfDoc$$module$synpdf = doc;
             $("#pagenum").attr("max", pdfDoc$$module$synpdf.numPages);
             hideNotationLoader();
             setBtnLoading(false);             // <— turn spinner OFF
             readPdfdoc$$module$synpdf();
         }).catch(function (err) {
+            downloadFinished = true;
+            task.onProgress = null;
+            if (loadGeneration !== pdfLoadGeneration$$module$synpdf) return;
             updateNotationLoader(null, "Failed to load PDF");
-            setTimeout(hideNotationLoader, 1200);
+            setTimeout(function () {
+                if (loadGeneration === pdfLoadGeneration$$module$synpdf) hideNotationLoader();
+            }, 1200);
             setBtnLoading(false);             // <— ensure OFF on error too
             throw err;
         });
