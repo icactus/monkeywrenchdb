@@ -7,8 +7,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <title>Edit Mode - Simplified</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+    <title>Sync a recording | Monkey Wrench Database</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicon-32x32.png">
+    <link rel="stylesheet" href="/assets/css/fonts.css?v=34">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
     <?php
     if (file_exists('session_config.php')) {
         require_once 'session_config.php';
@@ -33,7 +37,7 @@
     <script src="/js/part-jumps.js?v=3"></script>
     <script src="synpdf-full-yubsync2.js?v=65"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
-    <link rel="stylesheet" href="yubsync-live-edit.css?v=7" />
+    <link rel="stylesheet" href="yubsync-live-edit.css?v=8" />
     <style>
         html {
             width: 100%;
@@ -48,7 +52,7 @@
             height: 100%;
             margin: 0px;
             padding: 0px;
-            background: white;
+            background: #262626;
             transition: filter 0.5s;
         }
 
@@ -136,19 +140,6 @@
             /* Hide default audio player */
             margin-right: 5px;
             vertical-align: middle;
-        }
-
-        #logo-div {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            z-index: 1;
-        }
-
-        #monkey-logo {
-            width: 50px;
-            filter: invert(100%);
-            margin: 10px 0 0 10px;
         }
 
         #vid,
@@ -634,8 +625,8 @@
             background-color: #f3f6fc;
         }
 
-        html {
-            /* Color filter - keep */
+        body.yubsync-editor > :not(#yubsync-site-header) {
+            /* Keep the editor's color treatment below the site branding. */
             filter: invert(0.85);
         }
 
@@ -758,11 +749,19 @@
 </head>
 
 <body class="yubsync-editor">
-    <div id="logo-div">
-        <a href="/">
-            <img id="monkey-logo" src="../monkeydark.png"></img>
+    <header id="yubsync-site-header">
+        <a class="yubsync-brand" href="/" aria-label="Monkey Wrench Database home">
+            <img id="monkey-logo" src="/assets/img/monkeywrench-monkey100x100.png" width="46" height="46" alt="">
+            <span class="yubsync-brand-text">
+                <span class="yubsync-brand-title">MONKEY WRENCH DATABASE</span>
+                <span class="yubsync-brand-tagline">sheet music synced with youtube</span>
+            </span>
         </a>
-    </div>
+        <nav class="yubsync-header-nav" aria-label="Site navigation">
+            <span class="yubsync-page-label">Sync a recording</span>
+            <a href="/">Library <span aria-hidden="true">↗</span></a>
+        </nav>
+    </header>
     <?php include "../../phpfiles/get_pieces_and_composers.php"; ?>
     <section1 id="yubsync-sidebar" aria-label="Sync setup and controls">
         <div id="player-wrapper">
