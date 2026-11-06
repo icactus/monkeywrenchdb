@@ -27,8 +27,19 @@
             overflow: displayOrder.filter(name => priority.includes(name) && !selected.has(name))
         };
     }
+    // Keep a pressed button attached unless the responsive layout really changes.
+    function reconcileActions(parent, buttons, anchor = null) {
+        let next = anchor;
+        for (let index = buttons.length - 1; index >= 0; index--) {
+            const button = buttons[index];
+            if (button.parentNode !== parent || button.nextElementSibling !== next) {
+                parent.insertBefore(button, next);
+            }
+            next = button;
+        }
+    }
     if (typeof module === 'object' && module.exports) {
-        module.exports = { priorityFor, selectActions };
+        module.exports = { priorityFor, selectActions, reconcileActions };
         return;
     }
 
@@ -110,23 +121,25 @@
         if (actions.annotations && actions.annotations.style.display !== 'none') priority.push('annotations');
         const eligible = new Set(priority);
         const focused = document.activeElement;
-        // Measure the actual buttons at their toolbar size, before overflowing.
+        // Every optional toolbar action uses the same square button size.
+        // Read it from More even when hidden, instead of detaching live buttons
+        // to measure them between pointerdown and pointerup.
         for (const name of displayOrder) {
             const button = actions[name];
             if (!button) continue;
-            button.hidden = !eligible.has(name);
-            if (button.parentNode !== group) group.insertBefore(button, more);
+            const hidden = !eligible.has(name);
+            if (button.hidden !== hidden) button.hidden = hidden;
         }
-        more.hidden = false;
         const style = getComputedStyle(row);
         const gap = parseFloat(style.columnGap) || 0;
         const fixed = [pane.play, pane.speed];
         const available = row.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
             - fixed.reduce((sum, element) => sum + element.offsetWidth, 0) - gap * fixed.length;
-        const widths = Object.fromEntries(priority.map(name => [name, actions[name].offsetWidth]));
-        const result = selectActions(available, priority, widths, parseFloat(getComputedStyle(group).columnGap) || 0, more.offsetWidth);
-        for (const name of result.visible) group.insertBefore(actions[name], more);
-        for (const name of result.overflow) menu.append(actions[name]);
+        const actionWidth = parseFloat(getComputedStyle(more).width) || 40;
+        const widths = Object.fromEntries(priority.map(name => [name, actionWidth]));
+        const result = selectActions(available, priority, widths, parseFloat(getComputedStyle(group).columnGap) || 0, actionWidth);
+        reconcileActions(group, result.visible.map(name => actions[name]), more);
+        reconcileActions(menu, result.overflow.map(name => actions[name]));
         more.hidden = result.overflow.length === 0;
         if (more.hidden) closeMenu();
         if (focused?.dataset.paneAction && document.activeElement !== focused) {
