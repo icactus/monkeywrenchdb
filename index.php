@@ -115,6 +115,7 @@ if ($hasInitialRecordingTarget) {
     <link rel="stylesheet" href="assets/css/fonts.css?v=34" />
     <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=289" />
     <link rel="stylesheet" href="assets/css/homepage.css?v=20" />
+    <link rel="stylesheet" href="assets/css/player-pane.css?v=1" />
     <link rel="stylesheet" href="assets/css/request-notifications.css?v=2" />
     <link rel="stylesheet" href="assets/css/leaderboard.css?v=1" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
@@ -585,6 +586,7 @@ if ($hasInitialRecordingTarget) {
     <script src="stripped-synpdf-extras.js?v=289"></script>
     <script src="js/player-page-scroll.js?v=1"></script>
     <script src="js/homepage.js?v=22"></script>
+    <script src="js/player-pane.js?v=1"></script>
     <script>
         // Dark Mode: mobile menu toggle + desktop floating button, persisted in localStorage
         window.setDarkMode = function (isDark) {
