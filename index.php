@@ -114,7 +114,7 @@ if ($hasInitialRecordingTarget) {
     <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192-v3.png" />
     <link rel="stylesheet" href="assets/css/fonts.css?v=34" />
     <link rel="stylesheet" type="text/css" href="assets/css/stripped-synpdf-styles.css?v=289" />
-    <link rel="stylesheet" href="assets/css/homepage.css?v=20" />
+    <link rel="stylesheet" href="assets/css/homepage.css?v=21" />
     <link rel="stylesheet" href="assets/css/player-pane.css?v=2" />
     <link rel="stylesheet" href="assets/css/request-notifications.css?v=2" />
     <link rel="stylesheet" href="assets/css/leaderboard.css?v=1" />

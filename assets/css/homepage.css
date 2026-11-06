@@ -47,6 +47,8 @@ body.initial-recording-target #study-construction-notice, body.recording-loaded 
 .study-home button, .study-home input, .study-home select { font: inherit; color: inherit; touch-action: manipulation; }
 .study-home button { border: 0; background: none; cursor: pointer; }
 .study-home a { color: var(--home-teal); text-underline-offset: 3px; }
+/* Override the legacy score-pane link states with the dark theme accent. */
+html.inverted #study-home a.study-request-link:any-link { color: var(--home-teal); }
 .study-home button:disabled { cursor: wait; opacity: .65; }
 .study-home button:focus-visible, .study-home a:focus-visible, .study-home input:focus-visible, .study-home select:focus-visible { outline: 3px solid var(--home-focus); outline-offset: 3px; }
 .study-home label { display: block; font-size: 13px; font-weight: 550; margin-bottom: 8px; }
