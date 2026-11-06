@@ -405,7 +405,8 @@
         if (catalogRequest) return catalogRequest;
         catalogRequest = (async () => {
             try {
-                const data = await json('fetch_catalog.php');
+                // Match the player's fresh part reads, even when CDN rules cache GET responses.
+                const data = await json('fetch_catalog.php', { method: 'POST', cache: 'no-store' });
                 pieces = data.pieces.map(p => {
                     const piece = { ...p, piece_name: decode(p.piece_name), composer_last: decode(p.composer_last), composer_first: decode(p.composer_first), category_name: decode(p.category_name), parts: p.parts.map(part => ({ ...part, instrument_name: decode(part.instrument_name), part_number: decode(part.part_number), instrument_key: decode(part.instrument_key), edition_label: decode(part.edition_label) })) };
                     piece.composer = [piece.composer_first, piece.composer_last].filter(Boolean).join(' ');

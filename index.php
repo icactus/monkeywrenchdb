@@ -585,7 +585,7 @@ if ($hasInitialRecordingTarget) {
     <script src="stripped-synpdf.js?v=347"></script>
     <script src="stripped-synpdf-extras.js?v=289"></script>
     <script src="js/player-page-scroll.js?v=1"></script>
-    <script src="js/homepage.js?v=22"></script>
+    <script src="js/homepage.js?v=23"></script>
     <script src="js/player-pane.js?v=2"></script>
     <script>
         // Dark Mode: mobile menu toggle + desktop floating button, persisted in localStorage
