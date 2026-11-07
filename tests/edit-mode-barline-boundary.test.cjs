@@ -36,6 +36,22 @@ test('a detected end stroke and the saved system endpoint form one boundary, not
     assert(c.deMaten$$module$synpdf.every(box => box.w > 3));
 });
 
+test('fresh CNN preparation retains the measured staff edge when the legacy barline scan stops early', () => {
+    const c = harness(), system = {cs: [844,860,877,893,910], xs: {x1: 93,x2: 1907}};
+    c.opt$$module$synpdf = {onestf: 0,seln: 0};
+    c.deMetriek$$module$synpdf = [2000, {partJumps: [{from: 3,to: 1}]}];
+    c.getCurrentPageCanvas = () => ({});
+    c.countPix$$module$synpdf = () => assert.fail('Use the requested multiband scan');
+    c.scanPageMetrics$$module$synpdf = () => ({cxs: [system],bxs: [[93,379,1698,1869]]});
+    c.MetricStore = {setMetricData() {}};
+    vm.runInContext(definition(tools, 'rebuildCurrentPageMetricData'), c);
+    const page = c.rebuildCurrentPageMetricData(1, true, undefined, true);
+    assert.deepEqual(plain(page.bxs[0]), [93,379,1698,1869,1907]);
+    assert.equal(page.cxs[0].xs.x2, 1907);
+    assert.deepEqual(plain(page.partJumps), [{from: 3,to: 1}]);
+    assert.equal(c.opt$$module$synpdf.onestf, 0);
+});
+
 test('boundary snapping scales with staff geometry and retains the canonical fractional endpoints', () => {
     for (const factor of [.5,1,2,3]) {
         const c = harness(), system = staff(factor);

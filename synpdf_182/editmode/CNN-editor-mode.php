@@ -59,7 +59,7 @@ $onnxWasmThreads = 1;
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-edit-mode.js?v=105"></script>
+    <script src="synpdf-edit-mode.js?v=106"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="part-jump-editor.js?v=1" defer></script>
     <script src="../models/ml-barline-model.js?v=26"></script>

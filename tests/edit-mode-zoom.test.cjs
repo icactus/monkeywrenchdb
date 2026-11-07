@@ -116,3 +116,22 @@ test('training export retains the actual detection coordinate width', () => {
     assert.equal(exported[0], 2000);
     assert.deepEqual(exported[1].bxs, [[-40, 800, 1900]]);
 });
+
+test('restoring reviewed 1000-pixel metrics at 2000 preserves visible positions and continuation signs', () => {
+    const { c } = setup();
+    const lines = [100,108,116,124,132];
+    c.opt$$module$synpdf.pagewd = c.opt$$module$synpdf.fixwd = 2000;
+    c.opt$$module$synpdf.viewZoom = .5;
+    c.deMetriek$$module$synpdf = [1000, {
+        cxs: [{ cs: lines, csl: lines.slice(), csr: lines.map(y => y + 2), xs: { x1: 40, x2: 950 } }],
+        bxs: [[-40,400,950]], partJumps: [{ from: 3, to: 1 }]
+    }];
+    c.schaalMetriek$$module$synpdf();
+    const page = c.deMetriek$$module$synpdf[1], scale = c.getPdfViewScale$$module$synpdf();
+    assert.equal(c.deMetriek$$module$synpdf[0], 2000);
+    assert.deepEqual(page.bxs[0], [-80,800,1900]);
+    assert.deepEqual(page.bxs[0].map(x => x * scale), [-40,400,950]);
+    assert.deepEqual(page.cxs[0].cs.map(y => y * scale), lines);
+    assert.deepEqual(page.cxs[0].csr.map(y => y * scale), lines.map(y => y + 2));
+    assert.deepEqual(page.partJumps, [{ from: 3, to: 1 }]);
+});

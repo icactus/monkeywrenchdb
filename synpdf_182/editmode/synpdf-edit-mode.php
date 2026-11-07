@@ -77,7 +77,7 @@
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-edit-mode.js?v=105"></script>
+    <script src="synpdf-edit-mode.js?v=106"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="part-jump-editor.js?v=1" defer></script>
     <script src="part-count-check.js?v=5" defer></script>
@@ -1160,7 +1160,7 @@
                 <span class="toolbar-divider" aria-hidden="true"></span>
                 <label for="pdf-width-value">Detection width</label>
                 <button type="button" id="pdf-width-decrease" aria-label="Decrease detection width" data-tooltip="Decrease detection width by 20 px">−</button>
-                <input type="number" id="pdf-width-value" aria-label="Detection width in pixels" min="500" max="3000" step="20" value="1000">
+                <input type="number" id="pdf-width-value" aria-label="Detection width in pixels" min="500" max="3000" step="20" value="2000">
                 <span>px</span>
                 <button type="button" id="pdf-width-increase" aria-label="Increase detection width" data-tooltip="Increase detection width by 20 px">+</button>
                 <span class="toolbar-divider" aria-hidden="true"></span>

@@ -60,6 +60,15 @@ function documentHarness() {
     return { context, checkbox, reads };
 }
 
+test('fresh PDFs default to native 2000-pixel analysis at the existing display zoom', () => {
+    const { context } = documentHarness();
+    assert.equal(context.opt_default$$module$synpdf.fixwd, 2000);
+    assert.equal(context.opt$$module$synpdf.fixwd, 2000);
+    assert.equal(context.opt$$module$synpdf.pagewd, 2000);
+    assert.equal(context.opt$$module$synpdf.viewZoom, .5);
+    assert.deepEqual(plain(context.deMetriek$$module$synpdf), [2000]);
+});
+
 test('normal loading uses grouped discovery until single-staff mode is explicitly enabled', () => {
     const { context } = documentHarness();
     let selected;

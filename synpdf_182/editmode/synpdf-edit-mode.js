@@ -58,7 +58,7 @@ var msc_VERSION$$module$synpdf = 182,
         spdctl: 1,
         cropx: 0,
         drmpl: .4,
-        pagewd: 1000,
+        pagewd: 2000,
         synbox: 0,
         wpdf: 0,
         lncsr: 0,
@@ -83,7 +83,9 @@ var msc_VERSION$$module$synpdf = 182,
         advncd: 1,
         playbtn: 0,
         mmin: "",
-        fixwd: 1000,
+        // Queued PDFs contain 2000px raster pages. Analyze them at native size;
+        // reducing to 1000px can erase one-pixel barlines before CNN inference.
+        fixwd: 2000,
         viewZoom: 0.5,
         lastSynced: -2,
         eerst: 0,
@@ -824,7 +826,7 @@ function getNotationRenderWidth$$module$synpdf() {
 
 function readPdfdoc$$module$synpdf() {
     var renderToken = ++foregroundRenderToken$$module$synpdf;
-    opt$$module$synpdf.pagewd = Number(opt$$module$synpdf.fixwd) || 1000;
+    opt$$module$synpdf.pagewd = Number(opt$$module$synpdf.fixwd) || 2000;
     updatePdfWidthLabel$$module$synpdf();
     if (typeof updateBarlineThresholdControl === "function") updateBarlineThresholdControl();
     schaalMetriek$$module$synpdf();
@@ -2682,7 +2684,7 @@ function getPdfViewScale$$module$synpdf() {
     var zoom = Number(opt$$module$synpdf.viewZoom);
     if (!Number.isFinite(zoom) || zoom <= 0) zoom = 0.5;
     // Zoom is relative to the native 2000px page, independent of analysis width.
-    return zoom * 2000 / (width > 0 ? width : 1000);
+    return zoom * 2000 / (width > 0 ? width : 2000);
 }
 
 function applyPdfViewZoom$$module$synpdf() {
@@ -2725,7 +2727,7 @@ function changePdfViewZoom$$module$synpdf(direction) {
 function setPdfDetectionWidth$$module$synpdf(value) {
     var increaseButton = document.getElementById('pdf-width-increase');
     if (rendering$$module$synpdf || (increaseButton && increaseButton.disabled)) return false;
-    var width = Number(opt$$module$synpdf.fixwd) || 1000;
+    var width = Number(opt$$module$synpdf.fixwd) || 2000;
     var nextWidth = Number(value);
     if (!Number.isFinite(nextWidth) || nextWidth < 500 || nextWidth > 3000) {
         updatePdfWidthLabel$$module$synpdf();
@@ -2747,7 +2749,7 @@ function setPdfDetectionWidth$$module$synpdf(value) {
 }
 
 function changePdfWidth$$module$synpdf(direction) {
-    return setPdfDetectionWidth$$module$synpdf((Number(opt$$module$synpdf.fixwd) || 1000) + direction * 20);
+    return setPdfDetectionWidth$$module$synpdf((Number(opt$$module$synpdf.fixwd) || 2000) + direction * 20);
 }
 
 function keyDown$$module$synpdf(a) {

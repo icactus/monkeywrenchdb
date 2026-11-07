@@ -1148,6 +1148,16 @@ function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf,
             return null;
         }
 
+        if (forceSingleStaves && useMultiBandStaffScan) {
+            // These are fresh pixel measurements, not reviewed boundaries. The
+            // legacy scan can omit a close final stroke; do not let its last
+            // interior detection truncate the staff before CNN inference.
+            pageData.bxs = pageData.cxs.map(function (system, index) {
+                return normalizeDetectedSystemBarlines(system, pageData.bxs && pageData.bxs[index],
+                    [system.xs.x1, system.xs.x2]);
+            });
+        }
+
         const savedPartJumps = deMetriek$$module$synpdf[pagenum]?.partJumps;
         deMetriek$$module$synpdf[pagenum] = pageData.cxs.length ? pageData : { cxs: [], bxs: [] };
         if (savedPartJumps) deMetriek$$module$synpdf[pagenum].partJumps = savedPartJumps;
