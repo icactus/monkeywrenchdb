@@ -1283,10 +1283,35 @@ var BarlineDetectV2 = (function () {
         var subStaves = parseSubStaves(staffLines);
         var spatium = getDominantSpatium(subStaves);
         var tracedLines = traceStaffLines(normLines, pixelData, stride, imageWidth, 20);
+        // Keep CNN crops tied to the same full-width fit used for display.
+        // A local five-line template can move by one space near ledger notes,
+        // leaving a convincing barline cropped against the wrong staff bounds.
+        var fittedGeometry = buildRenderGeometry(system, pixelData, stride, imageWidth);
+        var maxTraceDrift = Math.max(1, spatium * 0.35);
         var staffGeomCache = new Array(imageWidth);
 
         function getStaffGeometry(col) {
             if (staffGeomCache[col]) return staffGeomCache[col];
+
+            if (fittedGeometry) {
+                var left = fittedGeometry.left, right = fittedGeometry.right;
+                var t = Math.max(0, Math.min(1, (col - left.x) / (right.x - left.x || 1)));
+                var fittedLines = left.lines.map(function (y, index) {
+                    return Math.round(y + (right.lines[index] - y) * t);
+                });
+                var followsFit = tracedLines && fittedLines.every(function (y, index) {
+                    return Math.abs(Math.round(tracedLines[index][col]) - y) <= maxTraceDrift;
+                });
+                if (!followsFit) {
+                    return staffGeomCache[col] = {
+                        lines: fittedLines,
+                        top: fittedLines[0],
+                        bot: fittedLines[4],
+                        height: fittedLines[4] - fittedLines[0],
+                        usedTraceFallback: false
+                    };
+                }
+            }
 
             var effectiveLines = [];
             var usedTraceFallback = false;

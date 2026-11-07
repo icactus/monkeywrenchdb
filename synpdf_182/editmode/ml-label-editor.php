@@ -50,7 +50,7 @@
     $onnxWasmThreads = $isLocalHost ? 1 : 4;
     ?>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=22"></script>
+    <script src="correction-log-tools.js?v=23"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
@@ -63,7 +63,7 @@
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-edit-mode.js?v=104"></script>
+    <script src="synpdf-edit-mode.js?v=105"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="part-jump-editor.js?v=1" defer></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>

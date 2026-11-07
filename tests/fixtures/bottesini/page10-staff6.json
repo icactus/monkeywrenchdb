@@ -1,0 +1,28 @@
+{
+  "sourcePdf": "bottesini1-basspart-normalpitch.pdf",
+  "pageNumber": 10,
+  "systemNumber": 6,
+  "renderWidth": 1000,
+  "cropTop": 670,
+  "system": {
+    "cs": [
+      14,
+      22,
+      30,
+      38,
+      46
+    ],
+    "xs": {
+      "x1": 46,
+      "x2": 953
+    }
+  },
+  "targetX": 458,
+  "printedLines": [
+    13.043885075188882,
+    21.21431836894908,
+    29.38480152803311,
+    37.555234821793306,
+    45.7256681155535
+  ]
+}

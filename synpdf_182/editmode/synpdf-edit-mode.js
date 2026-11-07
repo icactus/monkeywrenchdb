@@ -3437,10 +3437,11 @@ function syncChk$$module$synpdf() {
 
 
 function doResize$$module$synpdf() {
-    var a = $("body").prop("clientWidth");
-    a == bodyWidth$$module$synpdf ? msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin() : (bodyWidth$$module$synpdf = a, clearTimeout(resizeTimer$$module$synpdf), resizeTimer$$module$synpdf = setTimeout(function () {
-        resizePdfSyn$$module$synpdf()
-    }, 200))
+    bodyWidth$$module$synpdf = $("body").prop("clientWidth");
+    clearTimeout(resizeTimer$$module$synpdf);
+    // Analysis width is explicit. Browser zoom and viewport changes only
+    // reflow the view; rescanning here replaces CNN results and manual edits.
+    msc_wz$$module$synpdf && msc_wz$$module$synpdf.setTmargin();
 }
 
 function loaddrop$$module$synpdf() {

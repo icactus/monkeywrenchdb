@@ -15,6 +15,7 @@ function definition(name) {
 }
 function harness(stored = new Map()) {
     let splits = 0;
+    const status = {textContent: ''};
     const system = {cs: [100, 108, 116, 124, 132], csl: [100,108,116,124,132], csr: [101,109,117,125,133], xs: {x1: 50, x2: 950}};
     const page = {cxs: [system], bxs: [[50, 300, 950]]};
     const c = vm.createContext({
@@ -28,7 +29,7 @@ function harness(stored = new Map()) {
         getNotationPoint: event => ({x: event.clientX, y: event.clientY}),
         getSystemHitBounds: () => ({top: 100, bottom: 132}),
         requestRefresh() {}, setTimeout: () => 1, clearTimeout() {},
-        document: {getElementById: id => id === 'pagenum' ? {value: '1', addEventListener() {}} : null},
+        document: {getElementById: id => id === 'pagenum' ? {value: '1', addEventListener() {}} : id === 'correction-log-status' ? status : null},
         localStorage: {getItem: key => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value)}
     });
     c.window = c;
@@ -38,7 +39,7 @@ function harness(stored = new Map()) {
     for (const name of ['handleSplit', 'addRemoveBxs$$module$synpdf']) vm.runInContext(definition(name), c);
     const start = tools.indexOf('function handleClick(event) {');
     vm.runInContext('var click = ' + tools.slice(start, tools.indexOf('\n        });', start)) + '\n};', c);
-    return {c, stored, page, splits: () => splits};
+    return {c, stored, page, status, splits: () => splits};
 }
 test('ordinary Q corrections persist, retain geometry without a detector baseline, and survive reopening', () => {
     const h = harness();
@@ -80,5 +81,20 @@ test('Shift-Q, S, and Alt-Q split-measure actions never produce correction label
         assert.equal(h.c.MetricStore.getCorrectionLog().length, 0, mode);
         assert.equal(h.splits(), mode === 'off' ? 0 : 1);
         assert.deepEqual(clone(h.c.MetricStore.getMetricData()[1]), h.page);
+    }
+});
+
+test('E reports an actual proposal miss separately from missing candidate history', () => {
+    for (const diagnostics of [null, [], [[]], [[{x: 600, score: .2}]]]) {
+        const h = harness();
+        h.c.QisActive = false; h.c.NisActive = true;
+        if (diagnostics) h.c.SynpdfCorrectionTools.snapshotV2BaselineForPage(1, h.page, diagnostics, []);
+        h.c.click({clientX: 500, clientY: 116});
+        const entry = clone(h.c.MetricStore.getCorrectionLog())[0];
+        const scanned = !!diagnostics?.length;
+        assert.equal(entry.candidateScanComplete, scanned);
+        assert.equal(entry.cnnTarget, null, 'a missing proposal is never relabeled as a classifier example');
+        assert.equal(entry.cnnExclusionReason, scanned ? 'not_proposed' : 'candidate_history_unavailable');
+        assert.match(h.status.textContent, scanned ? /1 missed before CNN/ : /1 without candidate history/);
     }
 });

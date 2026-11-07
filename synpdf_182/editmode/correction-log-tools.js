@@ -177,6 +177,16 @@ var SynpdfCorrectionTools = (function () {
         }).filter(Boolean);
     }
 
+    function getCnnExclusionReason(entry) {
+        if (getCnnTrainingTarget(entry)) return null;
+        if (entry.detectorMode === 'legacy_divisi') return 'legacy_divisi';
+        if (entry.reason === 'end_of_line_no_barline') return 'end_of_line_no_barline';
+        if (entry.action === 'add' && !entry.hadNearbyCandidate) {
+            return entry.candidateScanComplete ? 'not_proposed' : 'candidate_history_unavailable';
+        }
+        return 'not_a_candidate_correction';
+    }
+
     function buildCnnScoreHistogram(entries) {
         var buckets = {};
         (entries || []).forEach(function (entry) {
@@ -193,11 +203,17 @@ var SynpdfCorrectionTools = (function () {
         var status = document.getElementById('correction-log-status');
         var currentPdfCorrections = getCurrentPdfCorrections();
         var cnnTrainingExamples = getCurrentPdfCnnTrainingExamples();
+        var exclusions = {};
+        currentPdfCorrections.forEach(function (entry) {
+            var reason = getCnnExclusionReason(entry);
+            if (reason) exclusions[reason] = (exclusions[reason] || 0) + 1;
+        });
         var payload = {
             sourcePdf: getCurrentPdfName(),
             fixwd: getCurrentFixwdValue(),
             corrections: currentPdfCorrections,
             cnn_training_examples: cnnTrainingExamples,
+            cnn_exclusion_counts: exclusions,
             cnn_score_histogram: buildCnnScoreHistogram(currentPdfCorrections)
         };
 
@@ -205,8 +221,11 @@ var SynpdfCorrectionTools = (function () {
             output.value = JSON.stringify(payload, null, 2);
         }
         if (status) {
+            var details = cnnTrainingExamples.length + ' CNN-usable';
+            if (exclusions.not_proposed) details += ', ' + exclusions.not_proposed + ' missed before CNN';
+            if (exclusions.candidate_history_unavailable) details += ', ' + exclusions.candidate_history_unavailable + ' without candidate history';
             status.textContent = currentPdfCorrections.length + ' corrections for ' + payload.sourcePdf +
-                ' (' + cnnTrainingExamples.length + ' CNN-usable, ' + correctionLog.length + ' total cached)';
+                ' (' + details + ', ' + correctionLog.length + ' total cached)';
         }
     }
 
@@ -783,6 +802,7 @@ var SynpdfCorrectionTools = (function () {
                 var renderGeometry = Array.isArray(systemRenderGeometry) ? systemRenderGeometry[index] : null;
                 return {
                     systemIndex: index,
+                    candidateScanComplete: Array.isArray(systemDiagnostics[index]),
                     xs: system && system.xs ? { x1: system.xs.x1, x2: system.xs.x2 } : null,
                     cs: cloneSimpleArray(system && system.cs),
                     csl: cloneSimpleArray(system && system.csl),
@@ -843,6 +863,7 @@ var SynpdfCorrectionTools = (function () {
                 var candidates = Array.isArray(snapshot.candidates) ? snapshot.candidates : [];
                 return {
                     systemIndex: index,
+                    candidateScanComplete: Array.isArray(snapshot.candidates),
                     xs: system && system.xs ? { x1: system.xs.x1, x2: system.xs.x2 } : null,
                     cs: cloneSimpleArray(system && system.cs),
                     csl: cloneSimpleArray(system && system.csl),
@@ -1143,6 +1164,7 @@ var SynpdfCorrectionTools = (function () {
             systemCsl: loggedSystem ? cloneSimpleArray(loggedSystem.csl) : null,
             systemCsr: loggedSystem ? cloneSimpleArray(loggedSystem.csr) : null,
             baselineAvailable: !!baseline,
+            candidateScanComplete: !!(systemBaseline && systemBaseline.candidateScanComplete),
             nearestCandidate: nearestInfo ? nearestInfo.nearestCandidate : null,
             hadNearbyCandidate: nearestInfo ? nearestInfo.hadNearbyCandidate : false,
             acceptedNearby: nearestInfo ? nearestInfo.acceptedNearby : false,
@@ -1156,6 +1178,7 @@ var SynpdfCorrectionTools = (function () {
         });
 
         correctionLog[correctionLog.length - 1].cnnTarget = getCnnTrainingTarget(correctionLog[correctionLog.length - 1]);
+        correctionLog[correctionLog.length - 1].cnnExclusionReason = getCnnExclusionReason(correctionLog[correctionLog.length - 1]);
         persistCorrectionLogState();
     }
 

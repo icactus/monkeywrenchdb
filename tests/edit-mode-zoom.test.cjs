@@ -67,6 +67,27 @@ test('changing detection width preserves visible page size, scroll position and 
     assert.equal(c.pageNumChanged$$module$synpdf, 1);
 });
 
+test('browser zoom and window resizing preserve CNN barlines and staff geometry without rescanning', () => {
+    const { c } = setup();
+    const before = JSON.stringify(c.deMetriek$$module$synpdf);
+    let viewportWidth = 1400, marginUpdates = 0;
+    Object.assign(c, {
+        $: () => ({ prop: () => viewportWidth }),
+        clearTimeout() {}, resizeTimer$$module$synpdf: -1,
+        bodyWidth$$module$synpdf: viewportWidth,
+        msc_wz$$module$synpdf: { setTmargin: () => marginUpdates++ },
+        resizePdfSyn$$module$synpdf: () => assert.fail('A viewport resize must not render or rescan'),
+        setTimeout: () => assert.fail('A viewport resize must not schedule a rescan')
+    });
+    vm.runInContext(definition(core, 'doResize$$module$synpdf'), c);
+    for (const width of [1272, 1400, 900, 900]) {
+        viewportWidth = width;
+        c.doResize$$module$synpdf();
+        assert.equal(JSON.stringify(c.deMetriek$$module$synpdf), before);
+    }
+    assert.equal(marginUpdates, 4);
+});
+
 test('all edit modes map scrolled viewport points back to detection pixels at each zoom and width', () => {
     const { c, notation } = setup();
     for (const width of [1000, 1020, 2000]) for (const zoom of [.2, .5, 1, 2]) {
