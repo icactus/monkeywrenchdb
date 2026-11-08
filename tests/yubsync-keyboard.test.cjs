@@ -28,14 +28,14 @@ function setup({ superuser = false, sync = true, paused = false } = {}) {
         },
         alert: message => assert.fail(message)
     });
-    for (const name of ['x2time', 'keySync', 'goMsre', 'goUpDown', 'changeTimesKeyb', 'changeOffset']) {
+    for (const name of ['x2time', 'keySync', 'goMsre', 'goUpDown', 'changeTimesKeyb', 'changeOffset', 'removeRepeat']) {
         const start = core.indexOf('Wijzer$$module$synpdf.prototype.' + name + ' =');
         vm.runInContext(core.slice(start, core.indexOf('\n};', start) + 3), c);
     }
     const start = core.indexOf('function keyDown$$module$synpdf(');
     vm.runInContext(core.slice(start, core.indexOf('\n}', start) + 2), c);
     c.msc_wz$$module$synpdf = new c.Wijzer$$module$synpdf();
-    Object.assign(c.msc_wz$$module$synpdf, { paused, showSyncInfo() {}, time2x(time) {
+    Object.assign(c.msc_wz$$module$synpdf, { paused, showSyncInfo() {}, drawRepTokens() {}, time2x(time) {
         const index = c.deTijden$$module$synpdf.findLastIndex(point => point.t <= time);
         c.detix$$module$synpdf = index;
         c.demix$$module$synpdf = c.deTijden$$module$synpdf[index]?.mix ?? -1;
@@ -48,6 +48,28 @@ function setup({ superuser = false, sync = true, paused = false } = {}) {
     return { c, key, seeks, snapshot: () => clone({ times: c.deTijden$$module$synpdf,
         lastSynced: c.lastSynced$$module$synpdf, offset: c.offset$$module$synpdf }) };
 }
+
+test('Delete removes the selected jump pair and preserves timings and other pairs', () => {
+    const h = setup(), before = h.snapshot();
+    h.c.repMaten$$module$synpdf = [{ jmp: 2, dst: 0 }, { jmp: 3, dst: 1 }];
+    h.c.msc_wz$$module$synpdf.selectedRepeat = { index: 0, role: 'To' };
+    assert.equal(h.key('Delete').prevented, true);
+    assert.deepEqual(clone(h.c.repMaten$$module$synpdf), [{ jmp: 3, dst: 1 }]);
+    assert.equal(h.c.msc_wz$$module$synpdf.selectedRepeat, null);
+    h.key('Delete');
+    assert.equal(h.c.repMaten$$module$synpdf.length, 1);
+    assert.deepEqual(h.snapshot(), before);
+});
+
+test('Delete in a form field or with a browser modifier keeps the selected jump', () => {
+    for (const options of [{ target: { closest: () => ({}) } }, { ctrlKey: true }, { metaKey: true }, { altKey: true }]) {
+        const h = setup();
+        h.c.repMaten$$module$synpdf = [{ jmp: 2, dst: 0 }];
+        h.c.msc_wz$$module$synpdf.selectedRepeat = { index: 0, role: 'From' };
+        h.key('Delete', options);
+        assert.equal(h.c.repMaten$$module$synpdf.length, 1);
+    }
+});
 
 for (const paused of [false, true]) {
     for (const key of ['ArrowUp', 'Up', 'ArrowDown', 'Down', 'ArrowLeft', 'Left', 'ArrowRight', 'Right', 'PageUp', 'PageDown']) {

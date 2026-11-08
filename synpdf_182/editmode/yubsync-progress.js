@@ -29,7 +29,9 @@
             Number.isInteger(saved.detix) && saved.detix >= -1 && saved.detix < saved.times.length &&
             Number.isInteger(saved.demix) && saved.demix >= -1 && saved.demix < measureCount && Array.isArray(saved.repeats) &&
             saved.repeats.every(repeat => repeat && Number.isInteger(repeat.jmp) && repeat.jmp >= 0 && repeat.jmp < measureCount &&
-                (repeat.dst === undefined || (Number.isInteger(repeat.dst) && repeat.dst >= 0 && repeat.dst < measureCount))) &&
+                (repeat.dst === undefined || (Number.isInteger(repeat.dst) && repeat.dst >= 0 && repeat.dst < measureCount)) &&
+                (repeat.consumedAt === undefined || (Number.isInteger(repeat.consumedAt) && repeat.consumedAt >= 0 &&
+                    repeat.consumedAt < saved.times.length))) &&
             typeof saved.sync === 'boolean' && Number.isFinite(saved.scrollTop) && Number.isFinite(saved.scrollLeft) &&
             (!saved.editor || (validMetrics(saved.editor.baseline, identity.pages) &&
                 Array.isArray(saved.editor.lineage) && saved.editor.lineage.length === saved.metrics.length &&

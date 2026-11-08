@@ -479,16 +479,41 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     this.paused = !0
 }
 Wijzer$$module$synpdf.prototype.drawRepTokens = function () {
-    function a(a, b, c) {
+    var player = this;
+    function a(a, b, c, role, pairIndex) {
         var d = b[0],
-            f = b[1],
-            e = b[2],
-            n = b[3];
+            f = b[1];
         b = c[a] || 1;
         c[a] = b + 1;
         a = deMaten$$module$synpdf[a];
         d = a.x + d * a.w;
-        e = $('<div class="reptkn">' + e + n + "</div>");
+        var number = pairIndex + 1,
+            labelText = "Jump " + number + " - " + role,
+            selected = player.selectedRepeat && player.selectedRepeat.index === pairIndex && player.selectedRepeat.role === role,
+            e = $('<div class="reptkn"></div>'),
+            label = $('<button type="button" class="reptkn-label"></button>').text(labelText);
+        label.attr({ "aria-label": labelText, "aria-expanded": String(!!selected) });
+        label.on("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            player.selectedRepeat = selected ? null : { index: pairIndex, role: role };
+            player.drawRepTokens();
+            if (!selected && event.detail === 0) {
+                var removeButton = $("#notation .reptkn-selected .reptkn-delete").get(0);
+                removeButton && removeButton.focus();
+            }
+        });
+        e.append(label);
+        if (selected) {
+            e.addClass("reptkn-selected");
+            var remove = $('<button type="button" class="reptkn-delete" aria-label="Delete Jump ' + number + '">×</button>');
+            remove.on("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                player.removeRepeat(pairIndex);
+            });
+            e.append(remove);
+        }
         e.css({
             top: a.y - 25 * b,
             left: d,
@@ -500,16 +525,34 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function () {
     var b = [],
         c = [];
     $(".reptkn").remove();
-    repMaten$$module$synpdf.forEach(function (d) {
-        a(d.jmp, d.tkj, b);
-        void 0 != d.dst && a(d.dst, d.tkd, c)
+    $("#notation").off("mousedown.yubsync-jump").on("mousedown.yubsync-jump", function (event) {
+        if ($(event.target).closest(".reptkn").length || !player.selectedRepeat) return;
+        player.selectedRepeat = null;
+        player.drawRepTokens();
+    });
+    repMaten$$module$synpdf.forEach(function (d, i) {
+        a(d.jmp, d.tkj, b, "From", i);
+        void 0 != d.dst && a(d.dst, d.tkd, c, "To", i)
     });
     $(".reptkn").toggle(!!opt$$module$synpdf.synbox)
 };
+Wijzer$$module$synpdf.prototype.removeRepeat = function (index) {
+    if (!Number.isInteger(index) || index < 0 || index >= repMaten$$module$synpdf.length) return false;
+    repMaten$$module$synpdf.splice(index, 1);
+    if (this.selectedRepeat) {
+        if (this.selectedRepeat.index === index) this.selectedRepeat = null;
+        else if (this.selectedRepeat.index > index) this.selectedRepeat.index--;
+    }
+    this.drawRepTokens();
+    window.YubSyncProgress?.save();
+    return true;
+};
 Wijzer$$module$synpdf.prototype.setRepeat = function (a) {
     var b = repMaten$$module$synpdf[repMaten$$module$synpdf.length - 1];
-    b && void 0 == b.dst ? (b.dst = a, b.tkd = [0, "red", "Repeat_", repMaten$$module$synpdf.length]) : (b = {}, repMaten$$module$synpdf.push(b), b.jmp = a, b.tkj = [.75, "blue", "Jump_", repMaten$$module$synpdf.length]);
-    this.drawRepTokens()
+    b && void 0 == b.dst ? (b.dst = a, b.tkd = [0, "red", "Jump " + repMaten$$module$synpdf.length + " - To", repMaten$$module$synpdf.length]) : (b = {}, repMaten$$module$synpdf.push(b), b.jmp = a, b.tkj = [.75, "blue", "Jump " + repMaten$$module$synpdf.length + " - From", repMaten$$module$synpdf.length]);
+    this.selectedRepeat = null;
+    this.drawRepTokens();
+    window.YubSyncProgress?.save()
 };
 Wijzer$$module$synpdf.prototype.setOffsetX = function () {
     var a = this.xoffset || 0;
@@ -670,7 +713,11 @@ Wijzer$$module$synpdf.prototype.keySync = function (keyType) {
             }
         }
         0 == detix && (offset$$module$synpdf = currentTime, currentTime -= offset$$module$synpdf);
-        repMaten$$module$synpdf.length && repMaten$$module$synpdf[0].jmp == demix$$module$synpdf && (demix = repMaten$$module$synpdf.shift().dst, this.drawRepTokens());
+        var pendingRepeat = repMaten$$module$synpdf.find(function (repeat) {
+            return void 0 != repeat.dst && !Number.isInteger(repeat.consumedAt)
+        });
+        pendingRepeat && pendingRepeat.jmp == demix$$module$synpdf &&
+            (demix = pendingRepeat.dst, pendingRepeat.consumedAt = detix, this.drawRepTokens());
         deTijden$$module$synpdf[detix].t = currentTime;
         deTijden$$module$synpdf[detix].mix = demix;
         this.time2x(currentTime);
@@ -700,7 +747,10 @@ Wijzer$$module$synpdf.prototype.endSyncHere = function () {
     // Keep an explicit flag so rendering never fills the excluded measures.
     deTijden$$module$synpdf.push({ t: 9999, mix: deMaten$$module$synpdf.length - 1, end: true });
     lastSynced$$module$synpdf = deTijden$$module$synpdf.length - 1;
-    repMaten$$module$synpdf = [];
+    repMaten$$module$synpdf.forEach(function (repeat) {
+        if (Number.isInteger(repeat.consumedAt) && repeat.consumedAt > detix$$module$synpdf) delete repeat.consumedAt;
+    });
+    msc_wz$$module$synpdf.selectedRepeat = null;
     opt$$module$synpdf.synbox = 0;
     $("#synbox").prop("checked", false);
     syncChk$$module$synpdf();
@@ -775,6 +825,9 @@ Wijzer$$module$synpdf.prototype.startSync = function () {
     deTijden$$module$synpdf.splice(lastSynced$$module$synpdf + 1);
     if (deTijden$$module$synpdf.at(-1)?.end) deTijden$$module$synpdf.pop();
     lastSynced$$module$synpdf = deTijden$$module$synpdf.length - 1;
+    repMaten$$module$synpdf.forEach(function (repeat) {
+        if (Number.isInteger(repeat.consumedAt) && repeat.consumedAt > lastSynced$$module$synpdf) delete repeat.consumedAt;
+    });
     if (-1 == lastSynced$$module$synpdf) {
         $(".demaat").css({
             width: "0px",
@@ -2192,6 +2245,12 @@ function keyDown$$module$synpdf(a) {
     if (a.target?.closest?.('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]), textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
     var b = a.key,
         c = 1;
+    if (b === "Delete" && !a.altKey && !a.ctrlKey && !a.shiftKey && !a.metaKey &&
+        opt$$module$synpdf.synbox && msc_wz$$module$synpdf?.selectedRepeat) {
+        a.preventDefault && a.preventDefault();
+        msc_wz$$module$synpdf.removeRepeat(msc_wz$$module$synpdf.selectedRepeat.index);
+        return;
+    }
     // Handle timing modifiers before navigation and the superuser's Down shortcut.
     const direction = ['ArrowUp', 'Up', 'ArrowRight', 'Right'].includes(b) ? 1 :
         ['ArrowDown', 'Down', 'ArrowLeft', 'Left'].includes(b) ? -1 : 0;
@@ -2291,7 +2350,8 @@ function keyDown$$module$synpdf(a) {
                 resetTiming$$module$synpdf();
                 break;
             case "g":
-                repMaten$$module$synpdf.splice(-1), msc_wz$$module$synpdf.drawRepTokens()
+            case "G":
+                msc_wz$$module$synpdf.removeRepeat(repMaten$$module$synpdf.length - 1)
         }
         a.preventDefault();
         msc_wz$$module$synpdf.showSyncInfo()

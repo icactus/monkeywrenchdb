@@ -42,7 +42,7 @@
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=68"></script>
+    <script src="synpdf-full-yubsync2.js?v=71"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
     <?php endif; ?>
     <style>
@@ -413,6 +413,53 @@
             padding: 20px;
             font: 15px/1.5 system-ui, sans-serif;
             overflow-wrap: anywhere;
+        }
+
+        .yubsync-editor .reptkn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 5;
+            padding: 1px 2px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .yubsync-editor .reptkn-label {
+            appearance: none;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            font: 600 12px/1.2 system-ui, sans-serif;
+            cursor: pointer;
+        }
+
+        .yubsync-editor .reptkn-label:focus-visible {
+            outline: 2px solid currentColor;
+            outline-offset: 2px;
+        }
+
+        .yubsync-editor .reptkn-selected {
+            padding: 2px 4px;
+            background: #fffdf4;
+            box-shadow: 0 0 0 1px currentColor;
+        }
+
+        .yubsync-editor .reptkn-delete {
+            display: inline-grid;
+            place-items: center;
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            padding: 0;
+            border: 1px solid currentColor;
+            border-radius: 50%;
+            background: #fff;
+            color: #9b2c2c;
+            font: 700 15px/1 system-ui, sans-serif;
+            cursor: pointer;
         }
 
         #help h2 {
@@ -1083,16 +1130,22 @@
         <p>You can also move the 1st measure start with the <b>Earlier</b> and <b>Later</b> buttons beneath the video.
             Later measure timings stay unchanged.</p>
 
-        <h3>Repeats</h3>
-        <p><b>Shift-click</b> or <b>long-click</b> a measure to add a repeat mark.
-            Press <b>G</b> to remove the most recent pair of repeat marks.</p>
+        <h3>Jumps</h3>
+        <p><b>Shift-click</b> or press and hold to select the <b>From</b> measure first, then the <b>To</b> measure.
+            The jump goes from the end of the first selected measure to the start of the next selected measure.
+            Matching numbers pair the markers. For a first and second ending, mark the first ending From and the
+            second ending To.</p>
+        <p>Each jump pair is used once while syncing forward and stays marked afterward. <b>Backspace</b> keeps
+            the marks; rewinding before a jump makes it available again as you redo that section. To delete a jump,
+            press <b>G</b> to remove the most recently added pair, or click either mark and press <b>Delete</b>
+            or select the <b>×</b> that appears.</p>
         <button type="button" id="closehelp">Close Help</button>
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
     <script src="yubsync-tools.js?v=91"></script>
     <script src="yubsync-live-edit.js?v=10"></script>
-    <script src="yubsync-progress.js?v=2"></script>
+    <script src="yubsync-progress.js?v=3"></script>
     <?php endif; ?>
     <?php $siteInformationIncludeHelp = false; require $yubsyncSiteRoot . '/site-information.php'; ?>
     <button type="button" id="darkmode-fab" aria-label="Toggle dark mode" title="Toggle dark mode" aria-pressed="false">
