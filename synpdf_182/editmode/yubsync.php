@@ -442,6 +442,7 @@
         }
 
         .yubsync-editor .reptkn-selected {
+            z-index: 6;
             padding: 2px 4px;
             background: #fffdf4;
             box-shadow: 0 0 0 1px currentColor;
