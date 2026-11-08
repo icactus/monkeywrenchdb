@@ -16,3 +16,20 @@
 #pdf-queue-assignment::backdrop{background:#0006}#pdf-queue-assignment .pdf-assignment-row{border-top:1px solid #cedddd;padding:12px 0}
 #pdf-queue-assignment [hidden]{display:none!important}
 #pdf-queue-assignment select{display:block;width:100%;margin:6px 0;padding:8px;font-size:14px}
+#pdf-queue-assignment .pdf-assignment-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#pdf-queue-assignment .pdf-assignment-field{position:relative;min-width:0}
+#pdf-queue-assignment .pdf-assignment-field>span{display:block;font-size:12px;font-weight:600}
+#pdf-queue-assignment .pdf-assignment-picker{position:relative;margin-top:5px}
+#pdf-queue-assignment .pdf-assignment-picker-trigger{box-sizing:border-box;width:100%;min-height:38px;margin:0;padding:8px 30px 8px 10px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#fff;color:#243b40;border:1px solid #8babb0;border-radius:5px}
+#pdf-queue-assignment .pdf-assignment-picker-trigger::after{content:"▾";position:absolute;right:10px}
+#pdf-queue-assignment .pdf-assignment-picker-trigger:focus-visible,
+#pdf-queue-assignment .pdf-assignment-picker-search:focus-visible,
+#pdf-queue-assignment .pdf-assignment-picker-option:focus-visible{outline:2px solid #247c87;outline-offset:1px}
+#pdf-queue-assignment .pdf-assignment-picker-panel{position:static;margin-top:3px;padding:7px;background:#fff;border:1px solid #8babb0;border-radius:6px;box-shadow:0 4px 14px #0003}
+#pdf-queue-assignment .pdf-assignment-picker-search{box-sizing:border-box;width:100%;margin:0 0 6px;padding:8px;border:1px solid #b8caca;border-radius:4px;font-size:14px}
+#pdf-queue-assignment .pdf-assignment-picker-options{max-height:38vh;overflow:auto}
+#pdf-queue-assignment .pdf-assignment-picker-option{display:block;width:100%;margin:0;padding:7px 8px;text-align:left;color:#243b40;background:#fff;border:0;border-radius:3px;cursor:pointer}
+#pdf-queue-assignment .pdf-assignment-picker-option:hover,
+#pdf-queue-assignment .pdf-assignment-picker-option[aria-selected="true"]{background:#e6f2f1}
+#pdf-queue-assignment .pdf-assignment-picker-hint{margin:4px;padding:6px;color:#52676b;font-size:12px}
+@media(max-width:520px){#pdf-queue-assignment .pdf-assignment-fields{grid-template-columns:1fr}}

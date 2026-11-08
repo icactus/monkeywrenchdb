@@ -80,6 +80,91 @@
         return Array.from(pieceSelect.options).some(o => o.value === piece) && Array.from(partSelect.options).some(o => o.value === part)
             ? { piece_id: piece, instrument_id: part } : null;
     }
+    function makeAssignmentPicker(source, label, initialValue, onChange) {
+        const options = Array.from(source.options).filter(option => option.value);
+        const root = document.createElement('div'); root.className = 'pdf-assignment-picker';
+        const trigger = document.createElement('button'); trigger.type = 'button';
+        trigger.className = 'pdf-assignment-picker-trigger';
+        trigger.setAttribute('aria-haspopup', 'listbox'); trigger.setAttribute('aria-expanded', 'false');
+        trigger.setAttribute('aria-label', `${label}: ${options.find(option => option.value === initialValue)?.textContent || 'Select...'}`);
+        const current = options.find(option => option.value === initialValue);
+        let value = current?.value || '';
+        trigger.textContent = current?.textContent || 'Select...';
+
+        const panel = document.createElement('div'); panel.className = 'pdf-assignment-picker-panel'; panel.hidden = true;
+        const search = document.createElement('input'); search.type = 'search';
+        search.className = 'pdf-assignment-picker-search'; search.placeholder = `Search ${label.toLowerCase()}...`;
+        search.setAttribute('aria-label', `Search ${label.toLowerCase()}`); search.autocomplete = 'off';
+        const list = document.createElement('div'); list.className = 'pdf-assignment-picker-options';
+        list.setAttribute('role', 'listbox');
+        const listId = `pdf-assignment-options-${Math.random().toString(36).slice(2)}`;
+        list.id = listId; trigger.setAttribute('aria-controls', listId);
+        panel.append(search, list); root.append(trigger, panel);
+
+        const close = () => {
+            panel.hidden = true; root.classList.remove('is-open'); trigger.setAttribute('aria-expanded', 'false');
+        };
+        const choose = option => {
+            value = option.value; trigger.textContent = option.textContent;
+            trigger.setAttribute('aria-label', `${label}: ${option.textContent}`);
+            close(); onChange?.(value); trigger.focus();
+        };
+        const renderOptions = () => {
+            const query = search.value.trim().toLocaleLowerCase();
+            const matches = options.filter(option => option.textContent.toLocaleLowerCase().includes(query));
+            const shown = matches.slice(0, 100);
+            list.replaceChildren();
+            for (const option of shown) {
+                const item = document.createElement('button'); item.type = 'button';
+                item.className = 'pdf-assignment-picker-option'; item.setAttribute('role', 'option');
+                item.setAttribute('aria-selected', String(option.value === value)); item.textContent = option.textContent;
+                item.addEventListener('mousedown', event => event.preventDefault());
+                item.addEventListener('click', () => choose(option));
+                list.append(item);
+            }
+            if (matches.length > shown.length) {
+                const hint = document.createElement('p'); hint.className = 'pdf-assignment-picker-hint';
+                hint.textContent = `Showing the first ${shown.length} matches. Type to narrow the list.`; list.append(hint);
+            } else if (!shown.length) {
+                const hint = document.createElement('p'); hint.className = 'pdf-assignment-picker-hint';
+                hint.textContent = 'No matches.'; list.append(hint);
+            }
+        };
+        const open = () => {
+            document.querySelectorAll('#pdf-queue-assignment .pdf-assignment-picker.is-open').forEach(other => {
+                if (other !== root) {
+                    other.classList.remove('is-open');
+                    const otherPanel = other.querySelector('.pdf-assignment-picker-panel');
+                    const otherTrigger = other.querySelector('.pdf-assignment-picker-trigger');
+                    if (otherPanel) otherPanel.hidden = true;
+                    otherTrigger?.setAttribute('aria-expanded', 'false');
+                }
+            });
+            root.classList.add('is-open'); panel.hidden = false;
+            trigger.setAttribute('aria-expanded', 'true'); search.value = ''; renderOptions(); search.focus();
+        };
+        trigger.addEventListener('click', () => panel.hidden ? open() : close());
+        search.addEventListener('input', renderOptions);
+        search.addEventListener('keydown', event => {
+            if (event.key === 'Escape') { event.preventDefault(); close(); trigger.focus(); }
+            if (event.key === 'ArrowDown') {
+                const first = list.querySelector('.pdf-assignment-picker-option');
+                if (first) { event.preventDefault(); first.focus(); }
+            }
+            if (event.key === 'Enter') {
+                const matches = list.querySelectorAll('.pdf-assignment-picker-option');
+                if (matches.length === 1) { event.preventDefault(); matches[0].click(); }
+            }
+        });
+        list.addEventListener('keydown', event => {
+            const items = Array.from(list.querySelectorAll('.pdf-assignment-picker-option'));
+            const index = items.indexOf(event.target);
+            if (event.key === 'ArrowDown' && index < items.length - 1) { event.preventDefault(); items[index + 1].focus(); }
+            if (event.key === 'ArrowUp') { event.preventDefault(); index > 0 ? items[index - 1].focus() : search.focus(); }
+            if (event.key === 'Escape') { event.preventDefault(); close(); trigger.focus(); }
+        });
+        return { root, focus: () => trigger.focus(), get value() { return value; } };
+    }
     function chooseMissing(jobs) {
         const eligible = part => ['4', '5'].includes(String(part));
         const configurable = jobs.filter(job => !job.details || eligible(job.details.instrument_id));
@@ -91,10 +176,13 @@
             const controls = configurable.map(job => {
                 const row = document.createElement('div'); row.className = 'pdf-assignment-row';
                 const name = document.createElement('strong'); name.textContent = job.file.name; row.append(name);
-                const piece = pieceSelect.cloneNode(true), part = partSelect.cloneNode(true);
-                piece.removeAttribute('id'); part.removeAttribute('id');
-                piece.value = String(job.details?.piece_id || ''); part.value = String(job.details?.instrument_id || '');
-                piece.setAttribute('aria-label', `Piece for ${job.file.name}`); part.setAttribute('aria-label', `Part for ${job.file.name}`);
+                const fields = document.createElement('div'); fields.className = 'pdf-assignment-fields';
+                const pieceField = document.createElement('div'); pieceField.className = 'pdf-assignment-field';
+                const pieceLabel = document.createElement('span'); pieceLabel.textContent = 'Piece'; pieceField.append(pieceLabel);
+                const piece = makeAssignmentPicker(pieceSelect, `Piece for ${job.file.name}`, String(job.details?.piece_id || ''));
+                pieceField.append(piece.root);
+                const partField = document.createElement('div'); partField.className = 'pdf-assignment-field';
+                const partLabel = document.createElement('span'); partLabel.textContent = 'Part'; partField.append(partLabel);
                 const combinedLabel = document.createElement('label'), combined = document.createElement('input');
                 combined.type = 'checkbox'; combined.checked = !!job.combinedCelloBass;
                 combined.setAttribute('aria-label', `Combined cello/bass part for ${job.file.name}`);
@@ -104,8 +192,9 @@
                     combined.disabled = combinedLabel.hidden;
                     if (combined.disabled) combined.checked = false;
                 };
-                part.addEventListener('change', updateCombined); updateCombined();
-                row.append(piece, part, combinedLabel); dialog.append(row); return { job, piece, part, combined };
+                const part = makeAssignmentPicker(partSelect, `Part for ${job.file.name}`, String(job.details?.instrument_id || ''), updateCombined);
+                updateCombined(); partField.append(part.root); fields.append(pieceField, partField);
+                row.append(fields, combinedLabel); dialog.append(row); return { job, piece, part, combined };
             });
             const cancel = document.createElement('button'); cancel.textContent = 'Cancel'; cancel.type = 'button';
             const next = document.createElement('button'); next.textContent = 'Upload PDFs'; next.type = 'button';
