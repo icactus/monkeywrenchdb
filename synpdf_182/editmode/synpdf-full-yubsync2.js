@@ -479,10 +479,11 @@ function Wijzer$$module$synpdf(a, b, c, d) {
     this.paused = !0
 }
 Wijzer$$module$synpdf.prototype.drawRepTokens = function () {
-    var player = this;
+    var player = this,
+        colors = ["#1d4ed8", "#b91c1c", "#15803d", "#7e22ce", "#b45309"];
     function a(a, b, c, role, pairIndex) {
         var d = b[0],
-            f = b[1];
+            f = colors[pairIndex % colors.length];
         b = c[a] || 1;
         c[a] = b + 1;
         a = deMaten$$module$synpdf[a];
