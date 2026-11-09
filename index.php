@@ -1,4 +1,11 @@
 <?php
+$requestHost = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+if ($requestHost === 'www.monkeywrenchdb.org') {
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+    header('Location: https://monkeywrenchdb.org' . $requestUri, true, 301);
+    exit;
+}
+
 if (file_exists(__DIR__ . '/session_config.php')) {
     require_once __DIR__ . '/session_config.php';
 } else {
