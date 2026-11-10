@@ -795,9 +795,9 @@ Wijzer$$module$synpdf.prototype.goUpDown = function (a, b, c) {
 Wijzer$$module$synpdf.prototype.showSyncInfo = function () {
     const point = deTijden$$module$synpdf[detix$$module$synpdf];
     const next = deTijden$$module$synpdf[detix$$module$synpdf + 1];
-    const duration = point && next ? next.t - point.t : 0;
-    this.sinfo.html("measure: " + (point ? point.mix + 1 : 'Ready') + "<br>" +
-        (next?.end ? 'Final synced measure' : "duration: " + duration.toFixed(3) + " sec."));
+    const duration = point && next ? `${(next.t - point.t).toFixed(3)} s` : '—';
+    this.sinfo.html((point ? `Measure ${point.mix + 1}` : 'Ready') + '<br>' +
+        (next?.end ? 'Final measure' : `<span title="Measure duration">${duration}</span>`));
     window.YubSyncGuidance?.update();
 };
 Wijzer$$module$synpdf.prototype.changeTimesKeyb = function (a) {
@@ -2233,7 +2233,7 @@ function sendMsg$$module$synpdf(a) {
 }
 
 function setPauseState$$module$synpdf(a) {
-    msc_wz$$module$synpdf && (msc_wz$$module$synpdf.paused = a, $("#knop").val(a ? "Play" : "Pause"), $("#sync_out").toggleClass("is-playing", !a), $("#vidyub, #vid").blur(), sendMsg$$module$synpdf(a ? "paused" : "playing"))
+    msc_wz$$module$synpdf && (msc_wz$$module$synpdf.paused = a, $("#knop").val(a ? "Play" : "Pause"), $("#yubsync-timing-strip").toggleClass("is-playing", !a), $("#vidyub, #vid").blur(), sendMsg$$module$synpdf(a ? "paused" : "playing"))
 }
 
 function pauseer$$module$synpdf() {
@@ -2254,9 +2254,9 @@ function keyDown$$module$synpdf(a) {
         msc_wz$$module$synpdf.removeRepeat(msc_wz$$module$synpdf.selectedRepeat.index);
         return;
     }
-    // Handle timing modifiers before navigation and the superuser's Down shortcut.
-    const direction = ['ArrowUp', 'Up', 'ArrowRight', 'Right'].includes(b) ? 1 :
-        ['ArrowDown', 'Down', 'ArrowLeft', 'Left'].includes(b) ? -1 : 0;
+    // Modified Left and Right adjust timing. Unmodified arrows handle navigation.
+    const direction = ['ArrowRight', 'Right'].includes(b) ? 1 :
+        ['ArrowLeft', 'Left'].includes(b) ? -1 : 0;
     if (direction && (a.ctrlKey || a.shiftKey) && !a.altKey && !a.metaKey) {
         a.preventDefault && a.preventDefault();
         if (!msc_wz$$module$synpdf) return;

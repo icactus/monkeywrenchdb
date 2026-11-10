@@ -722,11 +722,11 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
     const byId = id => document.getElementById(id);
     const get = name => window[name + '$$module$synpdf'];
     const offset = byId('yubsync-offset-control');
+    const timingStrip = byId('yubsync-timing-strip');
     const guide = byId('yubsync-guide');
     const completion = byId('yubsync-completion');
     const form = byId('addnewrecordingform');
     if (!offset || !guide || !completion || !form) return;
-    const earlier = byId('yubsync-offset-earlier'), later = byId('yubsync-offset-later');
     const endHere = byId('yubsync-end-here');
     const showDetails = byId('yubsync-show-details');
     const submit = form.querySelector('[type="submit"]');
@@ -770,17 +770,13 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
             endHere.hidden = !s.canEndHere;
             endHere.disabled = !s.canEndHere || !!window.YubSyncLiveEdit?.busy;
         }
+        timingStrip.hidden = !s.scoreReady && !window.yubsyncLoadedVideoId;
         offset.hidden = !s.scoreReady;
-        earlier.disabled = later.disabled = !s.recorded || !!window.YubSyncLiveEdit?.busy;
-        offset.classList.toggle('is-first-measure', s.recorded && s.last === 0);
         const seconds = Math.round((get('offset') || 0) * 10) / 10;
         const absolute = Math.abs(seconds);
         const timestamp = (seconds < 0 ? '−' : '') + Math.floor(absolute / 60) + ':' +
             (absolute % 60).toFixed(1).padStart(4, '0');
         text('yubsync-offset-value', s.recorded ? timestamp : '—');
-        text('yubsync-offset-hint', !s.recorded ? "Press B to set the first measure's start." :
-            s.last === 0 ? 'Need to adjust the beginning? Use Earlier or Later.' :
-            'Adjust the beginning. Later measure timings stay unchanged.');
 
         const stage = !s.scoreReady || s.complete ? '' : !s.videoReady ? 'video' : !s.recorded ? 'ready' : s.finishing ? 'finish' : '';
         guide.hidden = !stage || dismissedGuideStages.has(stage);
@@ -804,14 +800,6 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
             'Fill in the recording information and submit. Leave unknown details blank.');
         window.YubSyncTutorial?.update(s);
     }
-    function adjust(amount) {
-        if (!state().recorded || window.YubSyncLiveEdit?.busy) return;
-        get('msc_wz').changeOffset(amount);
-        get('msc_wz').showSyncInfo();
-        update();
-    }
-    earlier.addEventListener('click', () => adjust(-0.1));
-    later.addEventListener('click', () => adjust(0.1));
     byId('yubsync-guide-close')?.addEventListener('click', () => {
         dismissedGuideStages.add(guide.dataset.stage);
         update();

@@ -49,7 +49,7 @@ if ($yubsyncTutorial) {
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=73"></script>
+    <script src="synpdf-full-yubsync2.js?v=74"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
     <?php endif; ?>
     <style>
@@ -791,7 +791,7 @@ if ($yubsyncTutorial) {
             gap: 10px;
         }
     </style>
-    <link rel="stylesheet" href="yubsync-live-edit.css?v=15" />
+    <link rel="stylesheet" href="yubsync-live-edit.css?v=16" />
     <?php if ($yubsyncTutorial): ?>
     <link rel="stylesheet" href="yubsync-tutorial.css?v=1" />
     <?php endif; ?>
@@ -819,23 +819,19 @@ if ($yubsyncTutorial) {
     <section1 id="yubsync-sidebar" aria-label="Sync setup and controls">
         <div id="player-wrapper">
             <div id="vidyub"> </div>
-            <form id="spdlbl">speed:
+        </div>
+        <div id="yubsync-timing-strip" role="group" aria-label="Playback and timing" hidden>
+            <form id="spdlbl">
+                <label for="speed">Speed</label>
                 <input id="speed" type="number" min="0.1" step="0.05" max="2.0"
                     title="0.1 <= float <= 2.0">
             </form>
+            <div id="sync_info"></div>
+            <div id="yubsync-offset-control" hidden>
+                <span id="yubsync-offset-label">First measure start</span>
+                <output id="yubsync-offset-value" aria-labelledby="yubsync-offset-label">—</output>
+            </div>
         </div>
-        <aside id="yubsync-offset-control" aria-labelledby="yubsync-offset-label" hidden>
-            <div class="yubsync-offset-heading">
-                <h2 id="yubsync-offset-label">First measure start</h2>
-                <output id="yubsync-offset-value" aria-label="First measure start in the video" aria-live="polite">—</output>
-            </div>
-            <div class="yubsync-offset-buttons" role="group" aria-label="Adjust first measure start">
-                <button type="button" id="yubsync-offset-earlier" disabled>Earlier <small>0.1s</small></button>
-                <button type="button" id="yubsync-offset-later" disabled>Later <small>0.1s</small></button>
-            </div>
-            <p id="yubsync-offset-hint">Press B to set the first measure's start.</p>
-            <p class="yubsync-offset-shortcuts"><kbd>Ctrl</kbd> + <kbd>↑</kbd> / <kbd>→</kbd> later; <kbd>Ctrl</kbd> + <kbd>↓</kbd> / <kbd>←</kbd> earlier.</p>
-        </aside>
         <div id="sync">
             <div id="mbar">
             </div>
@@ -879,7 +875,6 @@ if ($yubsyncTutorial) {
                 <label class="mexp" id="lc"><span>pdf data:</span> <input id="wpdf" type="checkbox"></label>
             </form>
             <div id="sync_out">
-                <div id="sync_info"></div>
                 <button type="button" id="yubsync-end-here" hidden disabled title="Make the highlighted measure the final synced measure">End sync here</button>
                 <div id="yubsync-progress-status" role="status" aria-live="polite"></div>
                 <label hidden><span><button id="reset">Backspace</button></span> one measure</label>
@@ -894,7 +889,7 @@ if ($yubsyncTutorial) {
             <p id="tutorial-copy" role="status" aria-live="polite">Preparing the score and recording.</p>
             <div class="tutorial-actions">
                 <button type="button" id="tutorial-replay" disabled>Replay the start</button>
-                <button type="button" id="tutorial-continue" disabled>Continue</button>
+                <button type="button" id="tutorial-continue" hidden disabled>Resume at the repeat</button>
                 <button type="button" id="tutorial-restart" disabled>Start over</button>
             </div>
             <p id="tutorial-progress" aria-live="polite"></p>
@@ -1096,8 +1091,8 @@ if ($yubsyncTutorial) {
 
         <?php if ($yubsyncTutorial): ?>
         <ol>
-            <li><b>Adjust the start.</b> The first marker is already recorded, one second early.
-                Listen, then use <b>Ctrl + Left / Right</b> to adjust it. Replay to check, then choose <b>Start syncing</b>.</li>
+            <li><b>Listen to the start.</b> The first marker is already recorded, one second early.
+                Use <b>Ctrl + Left / Right</b> to adjust it anytime. Press <b>B</b> at the next measure to start syncing.</li>
             <li><b>Follow the measures.</b> Press <b>B</b> on the first beat of each next measure.
                 Use <b>Space</b> to pause and <b>Backspace</b> to redo a timing.</li>
             <li><b>Mark the repeat.</b> The tutorial pauses with instructions. Shift-click the <b>From</b>
@@ -1153,30 +1148,28 @@ if ($yubsyncTutorial) {
         </table>
 
         <h3>Fine-tune timing</h3>
-        <p>Pause playback while syncing to make precise adjustments. The current measure's duration is shown in the
-            sync controls. The <b>First measure start</b> control beneath the video shows the start time in the recording.</p>
+        <p>Pause playback to make precise adjustments. The strip beneath the video shows the current measure,
+            its duration, and the first measure’s start time in the recording.</p>
         <table class="helptbl">
             <tr>
-                <td><b>Shift + ↑</b> / <b>Shift + →</b></td>
+                <td><b>Shift + →</b></td>
                 <td>Lengthen the current highlighted measure by 0.1 seconds.</td>
             </tr>
             <tr>
-                <td><b>Shift + ↓</b> / <b>Shift + ←</b></td>
+                <td><b>Shift + ←</b></td>
                 <td>Shorten the current highlighted measure by 0.1 seconds.</td>
             </tr>
             <tr>
-                <td><b>Ctrl + ↑</b> / <b>Ctrl + →</b></td>
+                <td><b>Ctrl + →</b></td>
                 <td>Move 1st measure start later by 0.1 seconds.</td>
             </tr>
             <tr>
-                <td><b>Ctrl + ↓</b> / <b>Ctrl + ←</b></td>
+                <td><b>Ctrl + ←</b></td>
                 <td>Move 1st measure start earlier by 0.1 seconds.</td>
             </tr>
         </table>
-        <p>Use <b>Shift + Arrow</b> after the following measure's timing has been recorded.
-            These adjustments are useful between movements; use <b>Backspace</b> to redo a mistimed press.</p>
-        <p>You can also move the 1st measure start with the <b>Earlier</b> and <b>Later</b> buttons beneath the video.
-            Later measure timings stay unchanged.</p>
+        <p>Use <b>Shift + Left / Right</b> after recording the next measure’s start.
+            Use <b>Backspace</b> to redo a mistimed press.</p>
 
         <h3>Jumps</h3>
         <p><b>Shift-click</b> or press and hold to select the <b>From</b> measure first, then the <b>To</b> measure.
@@ -1191,8 +1184,8 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=1"></script><?php endif; ?>
-    <script src="yubsync-tools.js?v=93"></script>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=2"></script><?php endif; ?>
+    <script src="yubsync-tools.js?v=94"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=10"></script>
     <script src="yubsync-progress.js?v=3"></script>

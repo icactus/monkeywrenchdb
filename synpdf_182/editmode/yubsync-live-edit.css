@@ -85,7 +85,7 @@ body > section2 { flex: 1; min-height: 60vh; height: auto; }
 /* Guidance sits outside the PDF canvases, so score clicks and zoom stay intact. */
 .yubsync-editor #yubsync-workspace { background: var(--home-surface); }
 #yubsync-score-stage { position: relative; flex: 1; min-height: 0; display: flex; }
-#yubsync-offset-control[hidden], #yubsync-guide[hidden], #yubsync-completion[hidden], #addnewrecordingform[hidden], #yubsync-show-details[hidden] { display: none !important; }
+#yubsync-timing-strip[hidden], #yubsync-offset-control[hidden], #yubsync-guide[hidden], #yubsync-completion[hidden], #addnewrecordingform[hidden], #yubsync-show-details[hidden] { display: none !important; }
 .yubsync-overlay-close {
     position: absolute; top: 10px; right: 10px; display: grid; place-items: center;
     width: 30px; height: 30px; padding: 0; border: 1px solid var(--home-strong-line); border-radius: 5px;
@@ -94,29 +94,21 @@ body > section2 { flex: 1; min-height: 60vh; height: auto; }
 }
 .yubsync-overlay-close:focus-visible { outline: 2px solid var(--home-teal); outline-offset: 2px; }
 #yubsync-guide h2, #yubsync-completion-title { padding-right: 30px; }
-#yubsync-offset-control {
-    flex: 0 0 auto; margin: 8px 12px 0; padding: 12px;
-    border: 1px solid var(--home-line); border-radius: 8px; background: var(--home-surface);
-    color: var(--home-ink); font: 13px/1.4 system-ui, sans-serif; overflow-wrap: anywhere;
+#yubsync-timing-strip {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+    flex: 0 0 auto; margin: 6px 12px 0; padding: 6px 10px;
+    border: 1px solid var(--home-line); border-radius: 6px; background: var(--home-surface);
+    color: var(--home-ink); font-size: 12px; line-height: 1.35;
 }
-.yubsync-offset-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-#yubsync-offset-label { margin: 0; font-size: 14px; font-weight: 650; }
-#yubsync-offset-value { font: 600 19px/1.2 ui-monospace, monospace; font-variant-numeric: tabular-nums; }
-.yubsync-offset-buttons { display: flex; gap: 8px; margin-top: 12px; }
-.yubsync-offset-buttons button {
-    display: flex; flex: 1; align-items: center; justify-content: center; gap: 6px;
-    min-width: 0; min-height: 38px; padding: 6px; background: var(--home-soft); color: var(--home-ink);
-    border: 1px solid var(--home-strong-line); font: inherit;
-}
-.yubsync-offset-buttons button:disabled { opacity: .45; cursor: default; }
-.yubsync-offset-buttons small { font-size: 11px; }
-#yubsync-offset-control kbd, #yubsync-guide kbd {
+#yubsync-timing-strip #speed { box-sizing: border-box; width: 4.5em; padding: 2px 4px; font-size: 12px; }
+#yubsync-timing-strip #sync_info { text-align: left; line-height: inherit; }
+#yubsync-offset-control { text-align: right; }
+#yubsync-offset-value { display: block; font: 600 14px/1.35 ui-monospace, monospace; }
+#yubsync-sidebar #sync:not(:has(#yubsync-end-here:not([hidden]), #yubsync-progress-status:not(:empty))) { display: none; }
+#yubsync-guide kbd {
     display: inline-block; padding: 1px 4px; border: 1px solid var(--home-strong-line); border-radius: 4px;
     font: inherit; font-size: .9em;
 }
-#yubsync-offset-hint { margin: 10px 0 0; }
-#yubsync-offset-control .yubsync-offset-shortcuts { margin: 6px 0 0; font-size: 11px; color: var(--home-muted); }
-#yubsync-offset-control.is-first-measure { border-color: var(--home-teal); background: var(--home-teal-soft); }
 #yubsync-guide {
     position: absolute; z-index: 3; right: 18px; bottom: 18px; box-sizing: border-box;
     width: min(380px, calc(100% - 36px)); padding: 20px; border: 1px solid var(--home-strong-line);
@@ -159,7 +151,6 @@ body > section2 { flex: 1; min-height: 60vh; height: auto; }
     #yubsync-sidebar #player-wrapper { position: static; }
     #yubsync-sidebar #player-wrapper:not(:has(iframe)) { display: none; }
     #yubsync-sidebar #vidyub { display: block; width: 100% !important; height: 200px; }
-    #yubsync-sidebar #spdlbl { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px; }
     #yubsync-sidebar #sync { position: static; display: flex; align-items: center; gap: 8px; padding: 8px 12px; overflow: visible; max-height: none; }
     #yubsync-sidebar #sync_out { flex: 1; min-width: 0; }
     #yubsync-sidebar #mbar { display: none; }
@@ -221,13 +212,6 @@ body > section2 { flex: 1; min-height: 60vh; height: auto; }
         width: 100% !important;
         height: 200px;
     }
-    #yubsync-sidebar #spdlbl {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 8px;
-        padding: 6px;
-    }
     #yubsync-sidebar #sync {
         position: static;
         display: flex;
@@ -247,10 +231,6 @@ body > section2 { flex: 1; min-height: 60vh; height: auto; }
         background: var(--home-soft);
         border: 1px solid var(--home-strong-line);
         border-radius: 4px;
-    }
-    #yubsync-sidebar #sync_info {
-        text-align: left;
-        font: 13px/1.5 sans-serif;
     }
     #yubsync-sidebar #database-menus-wrapper {
         flex: 1;
@@ -337,7 +317,7 @@ html.inverted #darkmode-fab .darkmode-icon-sun { display: block; }
 html.inverted #yubsync-site-header { background: linear-gradient(#14252b99, #14252b99), linear-gradient(110deg, #f5d366, #9dbba3 57%, #397780); border-bottom-color: #91bca838; color: #edf4ee; }
 html.inverted .yubsync-brand-tagline { color: #d5e5dc; }
 html.inverted .yubsync-header-nav > :is(a, button), html.inverted .yubsync-header-nav .nav-user-trigger, html.inverted #mobile-header-burger { color: #edf4ee; background: #142c2bc9; border-color: #c1dbce40; }
-body.yubsync-editor #sync_out.is-playing { background: var(--home-teal-soft); border-color: var(--home-teal); }
+body.yubsync-editor #yubsync-timing-strip.is-playing { background: var(--home-teal-soft); border-color: var(--home-teal); }
 body.yubsync-locked { display: block; min-height: 100dvh; height: auto; overflow: auto; }
 .yubsync-access-panel { box-sizing: border-box; max-width: 600px; margin: 48px auto; padding: 28px; background: var(--home-surface); border: 1px solid var(--home-line); border-radius: 12px; }
 .yubsync-access-panel h1 { margin-top: 0; font-size: 26px; }

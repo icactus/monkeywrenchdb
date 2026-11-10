@@ -120,11 +120,10 @@ test('C and correction-mode keys cannot record or alter timestamps', () => {
 });
 
 const arrows = [
-    ['ArrowUp', 0.1], ['Up', 0.1], ['ArrowRight', 0.1], ['Right', 0.1],
-    ['ArrowDown', -0.1], ['Down', -0.1], ['ArrowLeft', -0.1], ['Left', -0.1]
+    ['ArrowRight', 0.1], ['Right', 0.1], ['ArrowLeft', -0.1], ['Left', -0.1]
 ];
 
-test('Shift with any arrow adjusts only measure length without navigating or stamping', () => {
+test('Shift with Left or Right adjusts only measure length without navigating or stamping', () => {
     for (const superuser of [false, true]) for (const paused of [false, true]) {
         for (const [key, change] of arrows) {
             const h = setup({ superuser, paused }), before = h.snapshot();
@@ -141,7 +140,7 @@ test('Shift with any arrow adjusts only measure length without navigating or sta
     }
 });
 
-test('Ctrl with any arrow adjusts the offset, preserving later absolute timings and cursor', () => {
+test('Ctrl with Left or Right adjusts the offset, preserving later absolute timings and cursor', () => {
     for (const superuser of [false, true]) for (const [key, change] of arrows) {
         for (const shiftKey of [false, true]) {
             const h = setup({ superuser }), before = h.snapshot();
@@ -160,6 +159,16 @@ test('Ctrl with any arrow adjusts the offset, preserving later absolute timings 
     }
 });
 
+test('modified Up and Down leave timings and the cursor alone, even for a superuser', () => {
+    const h = setup({ superuser: true }), before = h.snapshot();
+    for (const key of ['ArrowUp', 'Up', 'ArrowDown', 'Down']) {
+        h.key(key, { ctrlKey: true });
+        h.key(key, { shiftKey: true });
+    }
+    assert.deepEqual(h.snapshot(), before);
+    assert.equal(h.seeks.length, 0);
+});
+
 test('punctuation keys no longer change timings or offsets', () => {
     const h = setup(), before = h.snapshot();
     for (const key of [',', '.', '<', '>']) {
@@ -174,13 +183,13 @@ test('measure adjustments require a current measure and a recorded following tim
         h.c.detix$$module$synpdf = detix;
         h.c.lastSynced$$module$synpdf = lastSynced;
         const before = h.snapshot();
-        assert.doesNotThrow(() => h.key('ArrowUp', { shiftKey: true }));
+        assert.doesNotThrow(() => h.key('ArrowRight', { shiftKey: true }));
         assert.deepEqual(h.snapshot(), before);
     }
     const h = setup();
     h.c.deTijden$$module$synpdf[2] = { t: 9999, mix: 4, end: true };
     const before = h.snapshot();
-    h.key('ArrowDown', { shiftKey: true });
+    h.key('ArrowLeft', { shiftKey: true });
     assert.deepEqual(h.snapshot(), before, 'the concluding 9999 marker stays fixed');
 });
 

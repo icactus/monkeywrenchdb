@@ -372,13 +372,13 @@ test('sync information shows the current measure and duration, including before 
     };
     c.detix$$module$synpdf = -1;
     c.msc_wz$$module$synpdf.showSyncInfo();
-    assert.match(information, /measure: Ready/);
+    assert.match(information, /^Ready/);
     c.deTijden$$module$synpdf = [{ t: 0, mix: 0 }, { t: 2.5, mix: 1 }];
     c.detix$$module$synpdf = 0;
     c.offset$$module$synpdf = 4.8;
     c.msc_wz$$module$synpdf.showSyncInfo();
-    assert.match(information, /measure: 1/);
-    assert.match(information, /duration: 2\.500 sec/);
+    assert.match(information, /Measure 1/);
+    assert.match(information, /2\.500 s/);
     assert.doesNotMatch(information, /overall.*offset/);
 });
 
