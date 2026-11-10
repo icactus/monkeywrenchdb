@@ -831,7 +831,6 @@ Wijzer$$module$synpdf.prototype.startSync = function () {
         if (Number.isInteger(repeat.consumedAt) && repeat.consumedAt > lastSynced$$module$synpdf) delete repeat.consumedAt;
     });
     if (-1 == lastSynced$$module$synpdf) {
-        if (window.YubSyncTutorial?.seedStart()) return;
         $(".demaat").css({
             width: "0px",
             x: "0px"
@@ -844,7 +843,7 @@ Wijzer$$module$synpdf.prototype.startSync = function () {
         this.cursorTime = 0;
         ycurprev$$module$synpdf = -1;
         offset$$module$synpdf = 0;
-        playPause2$$module$synpdf(!1, 0);
+        if (!window.YubSyncTutorial?.resetStart()) playPause2$$module$synpdf(!1, 0);
         doeRol$$module$synpdf(Math.max(0, deMaten$$module$synpdf[0].y - this.tmargin), 1);
     } else {
         var a = deTijden$$module$synpdf[lastSynced$$module$synpdf];

@@ -49,7 +49,7 @@ if ($yubsyncTutorial) {
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=74"></script>
+    <script src="synpdf-full-yubsync2.js?v=75"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
     <?php endif; ?>
     <style>
@@ -888,7 +888,7 @@ if ($yubsyncTutorial) {
             <p class="tutorial-piece">Bach · Cello Suite No. 3 · Gigue<br>Janos Starker (1988)</p>
             <p id="tutorial-copy" role="status" aria-live="polite">Preparing the score and recording.</p>
             <div class="tutorial-actions">
-                <button type="button" id="tutorial-replay" disabled>Replay the start</button>
+                <button type="button" id="tutorial-replay" disabled>Play from the start</button>
                 <button type="button" id="tutorial-continue" hidden disabled>Resume at the repeat</button>
                 <button type="button" id="tutorial-restart" disabled>Start over</button>
             </div>
@@ -1091,8 +1091,8 @@ if ($yubsyncTutorial) {
 
         <?php if ($yubsyncTutorial): ?>
         <ol>
-            <li><b>Listen to the start.</b> The first marker is already recorded, one second early.
-                Use <b>Ctrl + Left / Right</b> to adjust it anytime. Press <b>B</b> at the next measure to start syncing.</li>
+            <li><b>Mark the first measure.</b> Play the recording and press <b>B</b> when the first measure begins.
+                Use <b>Ctrl + Left / Right</b> to adjust its start anytime after marking it.</li>
             <li><b>Follow the measures.</b> Press <b>B</b> on the first beat of each next measure.
                 Use <b>Space</b> to pause and <b>Backspace</b> to redo a timing.</li>
             <li><b>Mark the repeat.</b> The tutorial pauses with instructions. Shift-click the <b>From</b>
@@ -1184,7 +1184,7 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=2"></script><?php endif; ?>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=3"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=94"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=10"></script>

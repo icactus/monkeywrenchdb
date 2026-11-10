@@ -24,10 +24,11 @@ used to create this exercise. The source references are recorded in the JSON.
 The excerpt starts at source score index 280. Subtract 280 from each source
 `mix`, and subtract the first source `t` (939.480) from all timing events. Add
 the recording's original offset (24.900) to that first time to obtain the
-absolute video start, 964.380 seconds. Only the working first marker is seeded,
-at 963.380 seconds, one second early; official timings never populate the
-learner's sync array. The video is initially cued and paused at that early time.
-Backspace at the first marker and Start over both reseed the tutorial start.
+absolute video start, 964.380 seconds. The video is initially cued and paused
+one second early, at 963.380 seconds. The score starts with an empty timing
+array and no highlighted measure. The first B press marks measure one and
+sets its start offset. Backspace at the first marker and Start over both
+clear the highlight and cue the video at the same starting position.
 
 There are 110 score measures, 159 performed measure starts, and a final closing
 event. The repeat occurs at local timing index 49 (source 477), jumping from

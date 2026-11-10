@@ -34,7 +34,7 @@
     const set = (name, value) => { window[name + '$$module$synpdf'] = value; };
     let exercise, stage = 'loading', repeatDone = false, result = null, submitting = false;
     let videoRequested = false;
-    let previousLast = 0;
+    let previousLast = -1;
     const title = byId('tutorial-title'), copy = byId('tutorial-copy');
     const next = byId('tutorial-continue'), replay = byId('tutorial-replay');
     const restart = byId('tutorial-restart');
@@ -80,17 +80,11 @@
         const jump = exercise.repeats[0], pairs = get('repMaten');
         return pairs.length === 1 && pairs[0].jmp === jump.from && pairs[0].dst === jump.to;
     }
-    function seedStart() {
-        if (!exercise || !get('deMaten').length) return false;
-        set('deTijden', [{ t: 0, mix: 0 }]);
-        set('offset', exercise.cueSeconds);
-        set('lastSynced', 0);
-        set('detix', 0); set('demix', 0);
+    function resetStart() {
+        if (!exercise) return false;
         stage = 'start'; repeatDone = false; result = null;
         window.YubSyncTutorial.lastResult = null;
-        previousLast = 0;
-        get('msc_wz').cursorTime = 0;
-        get('msc_wz').time2x(0);
+        previousLast = -1;
         seek(exercise.cueSeconds);
         return true;
     }
@@ -125,7 +119,7 @@
         }
 
         const jump = exercise.repeats[0];
-        if (stage === 'start' && s.last > 0) stage = 'follow';
+        if (stage === 'start' && s.recorded) stage = 'follow';
         if (s.last < jump.at - 1 && previousLast >= jump.at - 1) {
             repeatDone = false;
             if (stage === 'repeat') stage = 'follow';
@@ -146,16 +140,16 @@
         next.disabled = !s.videoReady || !correctRepeat();
         byId('tutorial-step').textContent = stage === 'start' ? '1 / 3 · FIND THE START'
             : stage === 'repeat' ? '2 / 3 · MARK THE REPEAT' : s.complete ? '3 / 3 · COMPARE YOUR TIMINGS' : 'FOLLOW THE SCORE';
-        title.textContent = stage === 'start' ? 'Adjust the starting point' : stage === 'repeat' ? 'The music repeats here'
+        title.textContent = stage === 'start' ? 'Mark the first measure' : stage === 'repeat' ? 'The music repeats here'
             : s.complete ? 'Ready to compare' : 'Mark each measure';
         copy.textContent = stage === 'start'
-            ? 'The first marker is set one second early. Listen and use Ctrl + Left or Right to adjust it by 0.1 seconds. Press B at the next measure to start syncing. You can adjust the first marker anytime.'
+            ? 'Play the recording and press B when the first measure begins. After marking it, use Ctrl + Left or Right anytime to adjust its start by 0.1 seconds.'
             : stage === 'repeat'
                 ? 'Playback is paused at measure 49. Shift-click the highlighted From measure (49), then Shift-click the To measure (1) at the top of the page. Matching Jump 1 markers should appear. If you mark the wrong place, press G to remove the pair and try again. Then resume; press B when the music returns to measure 1. Keep recording through the repeat—each pass gets its own timings.'
                 : s.complete ? 'Choose Submit tutorial to see how closely your timings match. Choose Start over to practice again.'
                     : s.finishing ? 'Let the last measure finish, then press B a few seconds after the final cutoff to finish the exercise.'
                         : 'Press B at the start of each next measure. To adjust a duration, pause and use Shift + Left or Right once the following measure is marked.';
-        replay.textContent = stage === 'repeat' ? 'Listen to the repeat' : 'Replay the start';
+        replay.textContent = stage === 'repeat' ? 'Listen to the repeat' : 'Play from the start';
         byId('tutorial-progress').textContent = `${Math.min(s.last + 1, exercise.official.length - 1)} / ${exercise.official.length - 1} measure starts marked`;
         if (stage === 'repeat') showTargets(); else clearTargets();
     }
@@ -170,8 +164,9 @@
         byId('synbox').checked = true;
         byId('tutorial-results').replaceChildren();
         byId('yubsync-submit-status').textContent = '';
-        seedStart();
-        window.YubSyncGuidance.update();
+        set('lastSynced', -1);
+        get('msc_wz').startSync();
+        get('msc_wz').showSyncInfo();
         byId('yubsync-zoom-in').focus();
     }
     async function submit() {
@@ -250,7 +245,7 @@
         if (stage === 'repeat') {
             const point = get('deTijden')[get('lastSynced')];
             seek(Math.max(exercise.cueSeconds, point.t + get('offset') - 0.35), true);
-        } else seek(Math.max(0, get('offset') - 0.5), true);
+        } else seek(exercise.cueSeconds, true);
         byId('yubsync-zoom-in').focus();
     });
     restart.addEventListener('click', startOver);
@@ -263,6 +258,6 @@
             event.stopImmediatePropagation();
         }
     }, true);
-    window.YubSyncTutorial = { update, seedStart, beforeStamp, submit, evaluate, lastResult: null };
+    window.YubSyncTutorial = { update, resetStart, beforeStamp, submit, evaluate, lastResult: null };
     $(document).ready(boot);
 })();
