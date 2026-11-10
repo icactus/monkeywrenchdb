@@ -347,6 +347,17 @@ test('the End sync here button enables submission for a selected section', () =>
     assert.equal(element('submit').disabled, false);
     assert.equal(element('yubsync-completion-eyebrow').textContent, 'SELECTED SECTION SYNCED');
     assert.match(element('yubsync-completion-copy').textContent, /ends at measure 7.*Later measures are excluded/);
+    element('conductor_name').value = 'Practice performer';
+    element('yubsync-completion-close').listeners.click();
+    c.YubSyncGuidance.update();
+    c.YubSyncGuidance.update();
+    assert.equal(element('yubsync-completion').hidden, true, 'polling preserves dismissal');
+    assert.equal(element('yubsync-show-details').hidden, false);
+    assert.equal(c.YubSyncGuidance.canSubmit(), true, 'closing does not change completion');
+    element('yubsync-show-details').listeners.click();
+    assert.equal(element('yubsync-completion').hidden, false);
+    assert.equal(element('yubsync-show-details').hidden, true);
+    assert.equal(element('conductor_name').value, 'Practice performer');
 });
 
 test('sync information shows the current measure and duration, including before the first barline', () => {

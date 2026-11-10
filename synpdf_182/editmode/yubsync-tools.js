@@ -723,8 +723,11 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
     if (!offset || !guide || !completion || !form) return;
     const earlier = byId('yubsync-offset-earlier'), later = byId('yubsync-offset-later');
     const endHere = byId('yubsync-end-here');
+    const showDetails = byId('yubsync-show-details');
     const submit = form.querySelector('[type="submit"]');
     let loadingScore = false, loadingVideo = false, submitted = false;
+    const dismissedGuideStages = new Set();
+    let completionDismissed = false;
     let context = null, video = null;
 
     function state() {
@@ -753,6 +756,8 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
         if (context !== window.yubsyncMetricContext || video !== window.yubsyncLoadedVideoId) {
             context = window.yubsyncMetricContext; video = window.yubsyncLoadedVideoId;
             submitted = false;
+            dismissedGuideStages.clear();
+            completionDismissed = false;
             byId('yubsync-submit-status').textContent = '';
         }
         const s = state();
@@ -773,7 +778,7 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
             'Adjust the beginning. Later measure timings stay unchanged.');
 
         const stage = !s.scoreReady || s.complete ? '' : !s.videoReady ? 'video' : !s.recorded ? 'ready' : s.finishing ? 'finish' : '';
-        guide.hidden = !stage;
+        guide.hidden = !stage || dismissedGuideStages.has(stage);
         guide.dataset.stage = stage;
         text('yubsync-guide-eyebrow', stage === 'finish' ? 'LAST MEASURE' : 'GET STARTED');
         text('yubsync-guide-title', stage === 'video' ? 'Score loaded' : stage === 'finish' ? 'Almost finished' : 'Ready to sync');
@@ -782,7 +787,9 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
             'Start the video. Press B a little before the movement begins, then on the first beat of each remaining measure.');
         byId('yubsync-guide-keys').hidden = stage !== 'ready';
 
-        completion.hidden = !s.complete;
+        if (!s.complete) completionDismissed = false;
+        completion.hidden = !s.complete || completionDismissed;
+        if (showDetails) showDetails.hidden = !s.complete || !completionDismissed || submitted;
         form.hidden = !s.complete || submitted;
         submit.disabled = !s.complete || submitted || form.getAttribute('aria-busy') === 'true';
         text('yubsync-completion-title', submitted ? 'Recording submitted' : 'Sync complete');
@@ -799,6 +806,21 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
     }
     earlier.addEventListener('click', () => adjust(-0.1));
     later.addEventListener('click', () => adjust(0.1));
+    byId('yubsync-guide-close')?.addEventListener('click', () => {
+        dismissedGuideStages.add(guide.dataset.stage);
+        update();
+        byId('yubsync-zoom-in')?.focus?.();
+    });
+    byId('yubsync-completion-close')?.addEventListener('click', () => {
+        completionDismissed = true;
+        update();
+        (showDetails && !showDetails.hidden ? showDetails : byId('yubsync-zoom-in'))?.focus?.();
+    });
+    showDetails?.addEventListener('click', () => {
+        completionDismissed = false;
+        update();
+        byId('yubsync-completion-close')?.focus?.();
+    });
     endHere?.addEventListener('click', () => {
         if (state().canEndHere) get('msc_wz').endSyncHere();
     });
@@ -808,7 +830,7 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
         // Let automatic progress recovery restore or reset the timeline first.
         setTimeout(() => { loadingVideo = false; update(); }, 0);
     });
-    window.addEventListener('yubsync:submitted', () => { submitted = true; update(); });
+    window.addEventListener('yubsync:submitted', () => { submitted = true; completionDismissed = false; update(); });
     window.YubSyncGuidance = { update, state, isComplete: () => state().complete, canSubmit,
         scoreReady() { loadingScore = false; update(); } };
     // Also catches render completion, restored drafts, and geometry updates.

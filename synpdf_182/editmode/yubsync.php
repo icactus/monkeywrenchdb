@@ -784,7 +784,7 @@
             gap: 10px;
         }
     </style>
-    <link rel="stylesheet" href="yubsync-live-edit.css?v=14" />
+    <link rel="stylesheet" href="yubsync-live-edit.css?v=15" />
 </head>
 
 <body class="yubsync-editor<?= $canSync ? '' : ' yubsync-locked' ?>">
@@ -984,10 +984,12 @@
             <button type="button" id="yubsync-zoom-in" aria-label="Zoom in" title="Zoom in">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M15 15l6 6M6 10h8M10 6v8"/></svg>
             </button>
+            <button type="button" id="yubsync-show-details" class="yubsync-overlay-open" hidden>Recording details</button>
         </div>
         <div id="yubsync-score-stage">
             <div id="notation"> </div>
             <aside id="yubsync-guide" role="status" aria-live="polite" hidden>
+                <button type="button" id="yubsync-guide-close" class="yubsync-overlay-close" aria-label="Close syncing tip" title="Close syncing tip">×</button>
                 <span id="yubsync-guide-eyebrow">GET STARTED</span>
                 <h2 id="yubsync-guide-title">Ready to sync</h2>
                 <p id="yubsync-guide-copy"></p>
@@ -995,6 +997,7 @@
             </aside>
             <div id="yubsync-completion" role="region" aria-labelledby="yubsync-completion-title" hidden>
                 <div class="yubsync-completion-card">
+                    <button type="button" id="yubsync-completion-close" class="yubsync-overlay-close" aria-label="Close recording details" title="Close recording details">×</button>
                     <span id="yubsync-completion-eyebrow" class="yubsync-completion-eyebrow">ALL MEASURES SYNCED</span>
                     <h2 id="yubsync-completion-title">Sync complete</h2>
                     <p id="yubsync-completion-copy">Fill in the recording information and submit. Leave unknown details blank.</p>
@@ -1144,7 +1147,7 @@
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <script src="yubsync-tools.js?v=91"></script>
+    <script src="yubsync-tools.js?v=92"></script>
     <script src="yubsync-live-edit.js?v=10"></script>
     <script src="yubsync-progress.js?v=3"></script>
     <?php endif; ?>
