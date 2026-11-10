@@ -540,6 +540,11 @@ document.addEventListener('DOMContentLoaded', function() {
     let submitting = false;
     form.addEventListener('submit', async function(event) {
         event.preventDefault();
+        // The standalone tutorial never enters the recording/geometry save path.
+        if (window.YubSyncTutorial) {
+            await window.YubSyncTutorial.submit();
+            return;
+        }
         if (submitting) return;
         submitting = true;
         submitButton.disabled = true;
@@ -797,6 +802,7 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
         text('yubsync-completion-copy', submitted ? 'Your recording has been saved. Choose another piece or recording to sync next.' :
             (s.endedHere ? `Sync ends at measure ${get('deTijden')[s.last - 1].mix + 1}. Later measures are excluded. ` : '') +
             'Fill in the recording information and submit. Leave unknown details blank.');
+        window.YubSyncTutorial?.update(s);
     }
     function adjust(amount) {
         if (!state().recorded || window.YubSyncLiveEdit?.busy) return;

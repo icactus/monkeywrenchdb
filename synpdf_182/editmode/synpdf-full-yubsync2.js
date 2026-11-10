@@ -686,6 +686,7 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, isNavigation) {
 };
 Wijzer$$module$synpdf.prototype.keySync = function (keyType) {
     if (window.YubSyncLiveEdit?.busy) return;
+    if (window.YubSyncTutorial?.beforeStamp() === false) return;
     if (opt$$module$synpdf.synbox) {
         this.paused && keyDown$$module$synpdf({
             key: " "
@@ -830,6 +831,7 @@ Wijzer$$module$synpdf.prototype.startSync = function () {
         if (Number.isInteger(repeat.consumedAt) && repeat.consumedAt > lastSynced$$module$synpdf) delete repeat.consumedAt;
     });
     if (-1 == lastSynced$$module$synpdf) {
+        if (window.YubSyncTutorial?.seedStart()) return;
         $(".demaat").css({
             width: "0px",
             x: "0px"

@@ -1,0 +1,32 @@
+.yubsync-tutorial #database-menus-wrapper,
+.yubsync-tutorial .yubsync-recording-fields,
+.yubsync-tutorial #yubsync-end-here,
+.yubsync-tutorial #yubsync-guide { display: none !important; }
+#tutorial-lesson {
+    margin: 12px; padding: 18px; border: 1px solid var(--home-strong-line);
+    border-radius: 10px; background: var(--home-surface); color: var(--home-ink);
+    overflow-y: auto; min-height: 180px;
+}
+#tutorial-step { font-size: 11px; font-weight: 650; letter-spacing: .08em; color: var(--home-teal); }
+#tutorial-title { margin: 8px 0; font-size: 21px; line-height: 1.25; }
+.tutorial-piece, .tutorial-shortcuts { color: var(--home-muted); font-size: 12px; }
+#tutorial-copy { font-size: 14px; }
+.tutorial-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.tutorial-actions button { min-height: 40px; }
+#tutorial-continue { background: var(--home-teal); color: var(--home-on-teal); }
+.tutorial-actions button:disabled { opacity: .45; cursor: default; }
+#tutorial-progress { font-size: 12px; color: var(--home-teal); }
+.tutorial-target {
+    position: absolute; box-sizing: border-box; border: 3px solid #bd7110;
+    background: #ffda5b26; color: #704000; font: bold 14px/1.3 system-ui, sans-serif;
+    pointer-events: none; z-index: 2;
+}
+.tutorial-target::before {
+    content: attr(data-label); position: absolute; bottom: 100%; left: -3px;
+    white-space: nowrap; padding: 2px 5px; border-radius: 3px; background: #ffe7a6;
+}
+.tutorial-score { display: block; font-size: 64px; color: var(--home-teal); }
+#tutorial-results p { color: var(--home-muted); font-size: 14px; }
+#tutorial-try-again { min-height: 44px; }
+.yubsync-tutorial [hidden] { display: none !important; }
+.tutorial-loading #notation { pointer-events: none; }

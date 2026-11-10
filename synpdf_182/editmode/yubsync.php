@@ -1,3 +1,28 @@
+<?php
+$yubsyncTutorial = defined('YUBSYNC_TUTORIAL') && YUBSYNC_TUTORIAL === true;
+if (file_exists('session_config.php')) {
+    require_once 'session_config.php';
+} elseif (file_exists('../session_config.php')) {
+    require_once '../session_config.php';
+} elseif (file_exists('../../session_config.php')) {
+    require_once '../../session_config.php';
+} else {
+    session_start();
+}
+
+$yubsyncSiteRoot = is_file(__DIR__ . '/../../site-navigation.php') ? dirname(__DIR__, 2) : dirname(__DIR__);
+// ADMIN CHECK
+$isSyncAdmin = (int) ($_SESSION['user_id'] ?? 0) > 0 && ($_SESSION['user_role'] ?? '') === 'admin';
+$canSync = $isSyncAdmin;
+$canStampWithDownArrow = !$yubsyncTutorial && $canSync && (int) ($_SESSION['user_id'] ?? 0)
+    === (defined('MW_SUPER_ADMIN_USER_ID') ? MW_SUPER_ADMIN_USER_ID : 1);
+$canEditSyncScore = $canStampWithDownArrow;
+if ($yubsyncTutorial) {
+    header('X-Robots-Tag: noindex, nofollow, noarchive');
+    header('Cache-Control: private, no-store');
+    if (!$canSync) http_response_code(403);
+}
+?>
 <!DOCTYPE html>
 <html>
 
@@ -7,7 +32,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <title>Sync a recording | Monkey Wrench Database</title>
+    <title><?= $yubsyncTutorial ? 'Syncing tutorial' : 'Sync a recording' ?> | Monkey Wrench Database</title>
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicon-32x32.png">
     <link rel="stylesheet" href="/assets/css/fonts.css?v=34">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,31 +43,13 @@
     <script>try { if (localStorage.getItem('darkMode') === '1') document.documentElement.classList.add('inverted'); } catch (e) {}</script>
     <script src="/js/yubsync-page.js?v=1" defer></script>
     <script src="/js/contact-email.js?v=2" defer></script>
-    <?php
-    if (file_exists('session_config.php')) {
-        require_once 'session_config.php';
-    } elseif (file_exists('../session_config.php')) {
-        require_once '../session_config.php';
-    } elseif (file_exists('../../session_config.php')) {
-        require_once '../../session_config.php';
-    } else {
-        session_start();
-    }
-
-    $yubsyncSiteRoot = is_file(__DIR__ . '/../../site-navigation.php') ? dirname(__DIR__, 2) : dirname(__DIR__);
-    // ADMIN CHECK
-    $canSync = (int) ($_SESSION['user_id'] ?? 0) > 0 && ($_SESSION['user_role'] ?? '') === 'admin';
-    $canStampWithDownArrow = $canSync && (int) ($_SESSION['user_id'] ?? 0)
-        === (defined('MW_SUPER_ADMIN_USER_ID') ? MW_SUPER_ADMIN_USER_ID : 1);
-    $canEditSyncScore = $canStampWithDownArrow;
-    ?>
     <?php if ($canSync): ?>
     <script>window.yubsyncCanStampWithDownArrow = <?= json_encode($canStampWithDownArrow) ?>;
         window.yubsyncCanEditScore = <?= json_encode($canEditSyncScore) ?>;</script>
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=72"></script>
+    <script src="synpdf-full-yubsync2.js?v=73"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
     <?php endif; ?>
     <style>
@@ -785,9 +792,12 @@
         }
     </style>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=15" />
+    <?php if ($yubsyncTutorial): ?>
+    <link rel="stylesheet" href="yubsync-tutorial.css?v=1" />
+    <?php endif; ?>
 </head>
 
-<body class="yubsync-editor<?= $canSync ? '' : ' yubsync-locked' ?>">
+<body class="yubsync-editor<?= $canSync ? '' : ' yubsync-locked' ?><?= $yubsyncTutorial ? ' yubsync-tutorial' : '' ?>">
     <header id="yubsync-site-header">
         <a class="yubsync-brand" href="/" aria-label="Monkey Wrench Database home">
             <img id="monkey-logo" src="/assets/img/monkeywrench-monkey100x100.png" width="46" height="46" alt="">
@@ -797,14 +807,15 @@
             </span>
         </a>
         <nav class="yubsync-header-nav" aria-label="Site navigation">
-            <span class="yubsync-page-label">Sync a recording</span>
+            <span class="yubsync-page-label"><?= $yubsyncTutorial ? 'Syncing tutorial' : 'Sync a recording' ?></span>
+            <?php if (!$yubsyncTutorial && $canSync): ?><a href="yubsync-tutorial.php">Try the tutorial</a><?php endif; ?>
             <button type="button" id="helpm" aria-controls="help" title="Help (H)">Help</button>
             <a href="/">Library <span aria-hidden="true">↗</span></a>
-            <?php $standaloneNavigation = true; $navigationSyncPage = true; $isAdmin = $canSync; require $yubsyncSiteRoot . '/site-navigation.php'; ?>
+            <?php $standaloneNavigation = true; $navigationSyncPage = true; $isAdmin = $isSyncAdmin; require $yubsyncSiteRoot . '/site-navigation.php'; ?>
         </nav>
     </header>
     <?php if ($canSync): ?>
-    <?php include "../../phpfiles/get_pieces_and_composers.php"; ?>
+    <?php $piecesArray = []; if (!$yubsyncTutorial) include "../../phpfiles/get_pieces_and_composers.php"; ?>
     <section1 id="yubsync-sidebar" aria-label="Sync setup and controls">
         <div id="player-wrapper">
             <div id="vidyub"> </div>
@@ -875,7 +886,22 @@
             </div>
         </div>
         <input id="knop" type="button" value="play" style="display: none;">
-        <div id="database-menus-wrapper">
+        <?php if ($yubsyncTutorial): ?>
+        <aside id="tutorial-lesson" aria-labelledby="tutorial-title">
+            <span id="tutorial-step">SYNCING TUTORIAL</span>
+            <h1 id="tutorial-title">Loading your exercise…</h1>
+            <p class="tutorial-piece">Bach · Cello Suite No. 3 · Gigue<br>Janos Starker (1988)</p>
+            <p id="tutorial-copy" role="status" aria-live="polite">Preparing the score and recording.</p>
+            <div class="tutorial-actions">
+                <button type="button" id="tutorial-replay" disabled>Replay the start</button>
+                <button type="button" id="tutorial-continue" disabled>Continue</button>
+                <button type="button" id="tutorial-restart" disabled>Start over</button>
+            </div>
+            <p id="tutorial-progress" aria-live="polite"></p>
+            <p class="tutorial-shortcuts"><kbd>Space</kbd> Pause / resume<br><kbd>B</kbd> Mark the next measure<br><kbd>Backspace</kbd> Redo a measure<br>Use speakers or wired headphones for accurate timing.</p>
+        </aside>
+        <?php endif; ?>
+        <div id="database-menus-wrapper"<?= $yubsyncTutorial ? ' hidden' : '' ?>>
             <div id="database-menus">
                 <!-- Superuser correction shortcuts work without displaying a toolbar. -->
                 <p id="yubsync-edit-status" role="status" aria-live="polite" hidden></p>
@@ -1023,6 +1049,10 @@
                         <input type="submit" value="Submit recording" disabled />
                         <div id="yubsync-submit-status" role="status" aria-live="polite"></div>
                     </form>
+                    <?php if ($yubsyncTutorial): ?>
+                    <div id="tutorial-results" hidden aria-live="polite"></div>
+                    <button type="button" id="tutorial-try-again" hidden>Try again</button>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -1055,7 +1085,7 @@
         <h1>Sync a recording</h1>
         <p><?= isset($_SESSION['user_id']) ? 'An administrator account is required to sync recordings.' : 'Sign in with your administrator account to sync a recording.' ?></p>
         <?php if (!isset($_SESSION['user_id'])): ?>
-            <a class="yubsync-sign-in" href="/auth_login.php?provider=google&amp;return_to=editmode%2Fyubsync.php">Sign in with Google</a>
+            <a class="yubsync-sign-in" href="/auth_login.php?provider=google&amp;return_to=editmode%2F<?= $yubsyncTutorial ? 'yubsync-tutorial.php' : 'yubsync.php' ?>">Sign in with Google</a>
         <?php endif; ?>
     </main>
     <?php endif; ?>
@@ -1064,6 +1094,19 @@
         <p>Match the score to the recording by pressing <b>B</b> as you follow the music.</p>
         <p>Use speakers or wired headphones. Wireless headphones can add a delay and affect your timings.</p>
 
+        <?php if ($yubsyncTutorial): ?>
+        <ol>
+            <li><b>Adjust the start.</b> The first marker is already recorded, one second early.
+                Listen, then use <b>Ctrl + Left / Right</b> to adjust it. Replay to check, then choose <b>Start syncing</b>.</li>
+            <li><b>Follow the measures.</b> Press <b>B</b> on the first beat of each next measure.
+                Use <b>Space</b> to pause and <b>Backspace</b> to redo a timing.</li>
+            <li><b>Mark the repeat.</b> The tutorial pauses with instructions. Shift-click the <b>From</b>
+                measure, then the <b>To</b> measure, and resume. Continue pressing B on the repeated passage.</li>
+            <li><b>Finish and compare.</b> Press B a few seconds after the final cutoff, then choose
+                <b>Submit tutorial</b>. Your timings are compared with the official sync; nothing is uploaded.
+                Refreshing this page starts a new attempt.</li>
+        </ol>
+        <?php else: ?>
         <ol>
             <li><b>Load the score.</b> In Step 1, choose the piece and part, then click <b>Load</b>.
                 A full score or piano score usually works best.</li>
@@ -1079,6 +1122,7 @@
             <li><b>Fill in the information and submit.</b> After the final B press, fill in the recording information
                 that appears over the score and click <b>Submit recording</b>. Leave any unknown details blank.</li>
         </ol>
+        <?php endif; ?>
 
         <h3>Essential controls</h3>
         <table class="helptbl">
@@ -1147,9 +1191,12 @@
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <script src="yubsync-tools.js?v=92"></script>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=1"></script><?php endif; ?>
+    <script src="yubsync-tools.js?v=93"></script>
+    <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=10"></script>
     <script src="yubsync-progress.js?v=3"></script>
+    <?php endif; ?>
     <?php endif; ?>
     <?php $siteInformationIncludeHelp = false; require $yubsyncSiteRoot . '/site-information.php'; ?>
     <button type="button" id="darkmode-fab" aria-label="Toggle dark mode" title="Toggle dark mode" aria-pressed="false">

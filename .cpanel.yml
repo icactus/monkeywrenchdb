@@ -89,6 +89,7 @@ deployment:
     - /bin/cp synpdf_182/editmode/load_file.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/get_recordings_already_synced.php $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/yubsync.php $DEPLOYPATH3
+    - /bin/cp synpdf_182/editmode/yubsync-tutorial.php synpdf_182/editmode/yubsync-tutorial.js synpdf_182/editmode/yubsync-tutorial.css $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/yubsync-tools.js $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/yubsync-live-edit.js $DEPLOYPATH3
     - /bin/cp synpdf_182/editmode/yubsync-live-edit.css $DEPLOYPATH3

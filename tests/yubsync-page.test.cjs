@@ -125,8 +125,8 @@ test('login and callback only return to supported local destinations', () => {
     const callback = fs.readFileSync(path.join(root, 'auth_callback.php'), 'utf8');
     const loginCode = login.slice(login.indexOf('    $returnTo = $_GET'), login.indexOf("    $authUrl ="));
     const callbackCode = callback.slice(callback.indexOf("        $returnTo = $_SESSION['oauth_return_to']"), callback.indexOf("        unset($_SESSION['oauth_return_to'])"));
-    for (const destination of ['requests.php', 'editmode/yubsync.php', 'https://evil.test', '//evil.test', '../private.php', '']) {
-        const expected = ['requests.php', 'editmode/yubsync.php'].includes(destination) ? destination : 'index.php';
+    for (const destination of ['requests.php', 'editmode/yubsync.php', 'editmode/yubsync-tutorial.php', 'https://evil.test', '//evil.test', '../private.php', '']) {
+        const expected = ['requests.php', 'editmode/yubsync.php', 'editmode/yubsync-tutorial.php'].includes(destination) ? destination : 'index.php';
         const output = execFileSync('php', ['-r', '$_GET["return_to"] = $argv[1];' + loginCode + callbackCode + 'echo $returnTo;', destination], { encoding: 'utf8' });
         assert.equal(output, expected);
     }

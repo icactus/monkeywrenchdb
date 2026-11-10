@@ -151,7 +151,7 @@ if ($provider === 'google') {
         $_SESSION['user_picture'] = $picture;
 
         $returnTo = $_SESSION['oauth_return_to'] ?? '';
-        $returnTo = in_array($returnTo, ['requests.php', 'editmode/yubsync.php'], true) ? $returnTo : 'index.php';
+        $returnTo = in_array($returnTo, ['requests.php', 'editmode/yubsync.php', 'editmode/yubsync-tutorial.php'], true) ? $returnTo : 'index.php';
         unset($_SESSION['oauth_return_to']);
         header('Location: ' . $returnTo);
         exit;
