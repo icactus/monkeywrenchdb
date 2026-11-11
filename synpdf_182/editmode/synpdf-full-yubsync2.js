@@ -489,11 +489,11 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function () {
         a = deMaten$$module$synpdf[a];
         d = a.x + d * a.w;
         var number = pairIndex + 1,
-            labelText = "Jump " + number + " - " + role,
+            labelText = "Jump " + number + "\n" + role + " here",
             selected = player.selectedRepeat && player.selectedRepeat.index === pairIndex && player.selectedRepeat.role === role,
             e = $('<div class="reptkn"></div>'),
             label = $('<button type="button" class="reptkn-label"></button>').text(labelText);
-        label.attr({ "aria-label": labelText, "aria-expanded": String(!!selected) });
+        label.attr({ "aria-label": "Jump " + number + ", " + role.toLowerCase() + " here", "aria-expanded": String(!!selected) });
         label.on("click", function (event) {
             event.preventDefault();
             event.stopPropagation();
@@ -516,8 +516,9 @@ Wijzer$$module$synpdf.prototype.drawRepTokens = function () {
             e.append(remove);
         }
         e.css({
-            top: a.y - 25 * b,
+            top: a.y - 40 * b,
             left: d,
+            transform: 'translateX(-50%)',
             position: "absolute",
             color: f
         });
@@ -761,8 +762,12 @@ Wijzer$$module$synpdf.prototype.endSyncHere = function () {
     window.YubSyncGuidance?.update();
     return true;
 };
-Wijzer$$module$synpdf.prototype.goMsre = function (a, b) {
-    0 == deTijden$$module$synpdf.length || b.altKey || b.ctrlKey || b.shiftKey || b.metaKey || (b.preventDefault && b.preventDefault(), detix$$module$synpdf += a ? 1 : -1, 0 > detix$$module$synpdf && (detix$$module$synpdf = deTijden$$module$synpdf.length - 1), detix$$module$synpdf >= deTijden$$module$synpdf.length && (detix$$module$synpdf = 0), playPause2$$module$synpdf(!1, deTijden$$module$synpdf[detix$$module$synpdf].t + TOFF$$module$synpdf + offset$$module$synpdf))
+Wijzer$$module$synpdf.prototype.goMsre = function (forward, event) {
+    if (!deTijden$$module$synpdf.length || event.altKey || event.ctrlKey || event.shiftKey || event.metaKey) return;
+    event.preventDefault && event.preventDefault();
+    detix$$module$synpdf = Math.max(0, detix$$module$synpdf + (forward ? 1 : -1));
+    if (detix$$module$synpdf >= deTijden$$module$synpdf.length) detix$$module$synpdf = 0;
+    playPause2$$module$synpdf(!1, deTijden$$module$synpdf[detix$$module$synpdf].t + TOFF$$module$synpdf + offset$$module$synpdf);
 };
 Wijzer$$module$synpdf.prototype.goUpDown = function (a, b, c) {
     if (b && opt$$module$synpdf.advncd) c = 1 * opt$$module$synpdf.pagenum, opt$$module$synpdf.pagenum = a ? c + 1 : c - 1, setPagenum$$module$synpdf(c);

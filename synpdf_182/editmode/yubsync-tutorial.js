@@ -132,6 +132,8 @@
         if (!s.complete && result) { result = null; stage = 'follow'; }
         if (s.complete) stage = 'complete';
         else if (stage === 'complete') stage = 'follow';
+        byId('tutorial-start-help').hidden = !s.recorded || s.last < 2 || s.complete || stage === 'repeat';
+        byId('tutorial-correction-help').hidden = !s.recorded || s.complete || stage === 'repeat';
 
         restart.disabled = submitting || !s.videoReady;
         replay.disabled = !s.videoReady || submitting || s.complete;
@@ -143,12 +145,13 @@
         title.textContent = stage === 'start' ? 'Mark the first measure' : stage === 'repeat' ? 'The music repeats here'
             : s.complete ? 'Ready to compare' : 'Mark each measure';
         copy.textContent = stage === 'start'
-            ? 'Play the recording and press B when the first measure begins. After marking it, use Ctrl + Left or Right anytime to adjust its start by 0.1 seconds.'
+            ? 'Play the recording. Press the first B about a second before the first note, then press B on the first beat of each next measure. You can listen back and fine-tune the start afterward.'
             : stage === 'repeat'
                 ? 'Playback is paused at measure 49. Shift-click the highlighted From measure (49), then Shift-click the To measure (1) at the top of the page. Matching Jump 1 markers should appear. If you mark the wrong place, press G to remove the pair and try again. Then resume; press B when the music returns to measure 1. Keep recording through the repeat—each pass gets its own timings.'
                 : s.complete ? 'Choose Submit tutorial to see how closely your timings match. Choose Start over to practice again.'
                     : s.finishing ? 'Let the last measure finish, then press B a few seconds after the final cutoff to finish the exercise.'
-                        : 'Press B at the start of each next measure. To adjust a duration, pause and use Shift + Left or Right once the following measure is marked.';
+                        : s.last < 2 ? 'Keep pressing B on the first beat of each next measure. After a few measures, listen back to check the beginning.'
+                            : 'Use Left / Right to listen through marked measures. Resume pressing B at the next unmarked measure. Shift + Left / Right adjusts a measure’s duration after the following measure has been marked.';
         replay.textContent = stage === 'repeat' ? 'Listen to the repeat' : 'Play from the start';
         byId('tutorial-progress').textContent = `${Math.min(s.last + 1, exercise.official.length - 1)} / ${exercise.official.length - 1} measure starts marked`;
         if (stage === 'repeat') showTargets(); else clearTargets();

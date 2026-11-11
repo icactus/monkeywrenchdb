@@ -49,6 +49,25 @@ function setup({ superuser = false, sync = true, paused = false } = {}) {
         lastSynced: c.lastSynced$$module$synpdf, offset: c.offset$$module$synpdf }) };
 }
 
+test('Left at the first measure replays its adjusted start while preserving the recorded passage', () => {
+    for (const paused of [false, true]) {
+        const h = setup({ paused });
+        h.c.detix$$module$synpdf = h.c.demix$$module$synpdf = 0;
+        const before = h.snapshot();
+        h.key('ArrowLeft');
+        h.key('ArrowLeft');
+        assert.equal(h.c.detix$$module$synpdf, 0);
+        assert.equal(h.c.demix$$module$synpdf, 0);
+        assert.deepEqual(h.snapshot(), before);
+        assert.deepEqual(h.seeks, [{ play: false, time: 1.01 }, { play: false, time: 1.01 }]);
+        h.key('ArrowRight', { ctrlKey: true });
+        h.key('ArrowLeft');
+        assert.equal(h.c.detix$$module$synpdf, 0);
+        assert.equal(h.seeks.at(-1).time, 1.11);
+        assert.equal(h.c.msc_wz$$module$synpdf.paused, paused);
+    }
+});
+
 test('Delete removes the selected jump pair and preserves timings and other pairs', () => {
     const h = setup(), before = h.snapshot();
     h.c.repMaten$$module$synpdf = [{ jmp: 2, dst: 0 }, { jmp: 3, dst: 1 }];

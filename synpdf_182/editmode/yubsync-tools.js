@@ -785,7 +785,7 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
         text('yubsync-guide-title', stage === 'video' ? 'Score loaded' : stage === 'finish' ? 'Almost finished' : 'Ready to sync');
         text('yubsync-guide-copy', stage === 'video' ? 'Load a YouTube recording in Step 2 to start syncing.' :
             stage === 'finish' ? 'Let the final measure finish. Press B a few seconds after the final cutoff to complete the sync.' :
-            'Start the video. Press B a little before the movement begins, then on the first beat of each remaining measure.');
+            'Start the video. Press the first B about a second before the first note, then press B on the first beat of each next measure.');
         byId('yubsync-guide-keys').hidden = stage !== 'ready';
 
         if (!s.complete) completionDismissed = false;

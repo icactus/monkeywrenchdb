@@ -26,8 +26,10 @@ The excerpt starts at source score index 280. Subtract 280 from each source
 the recording's original offset (24.900) to that first time to obtain the
 absolute video start, 964.380 seconds. The video is initially cued and paused
 one second early, at 963.380 seconds. The score starts with an empty timing
-array and no highlighted measure. The first B press marks measure one and
-sets its start offset. Backspace at the first marker and Start over both
+array and no highlighted measure. The learner presses the first B about a second
+before the first note, then on the first beat of each next measure. The existing
+0.2-second keypress compensation applies to the recorded timings.
+Backspace at the first marker and Start over both
 clear the highlight and cue the video at the same starting position.
 
 There are 110 score measures, 159 performed measure starts, and a final closing

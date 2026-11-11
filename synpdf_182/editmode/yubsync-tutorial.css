@@ -11,6 +11,9 @@
 #tutorial-title { margin: 8px 0; font-size: 21px; line-height: 1.25; }
 .tutorial-piece, .tutorial-shortcuts { color: var(--home-muted); font-size: 12px; }
 #tutorial-copy { font-size: 14px; }
+#tutorial-lesson details { margin: 12px 0; padding-top: 10px; border-top: 1px solid var(--home-line); font-size: 13px; }
+#tutorial-lesson summary { cursor: pointer; font-weight: 600; color: var(--home-teal); }
+#tutorial-lesson kbd { font: inherit; font-weight: 600; }
 .tutorial-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .tutorial-actions button { min-height: 40px; }
 #tutorial-continue { background: var(--home-teal); color: var(--home-on-teal); }

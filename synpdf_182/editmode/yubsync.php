@@ -49,7 +49,7 @@ if ($yubsyncTutorial) {
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=75"></script>
+    <script src="synpdf-full-yubsync2.js?v=78"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
     <?php endif; ?>
     <style>
@@ -440,6 +440,8 @@ if ($yubsyncTutorial) {
             background: transparent;
             color: inherit;
             font: 600 12px/1.2 system-ui, sans-serif;
+            white-space: pre-line;
+            text-align: center;
             cursor: pointer;
         }
 
@@ -793,7 +795,7 @@ if ($yubsyncTutorial) {
     </style>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=16" />
     <?php if ($yubsyncTutorial): ?>
-    <link rel="stylesheet" href="yubsync-tutorial.css?v=1" />
+    <link rel="stylesheet" href="yubsync-tutorial.css?v=3" />
     <?php endif; ?>
 </head>
 
@@ -887,6 +889,30 @@ if ($yubsyncTutorial) {
             <h1 id="tutorial-title">Loading your exercise…</h1>
             <p class="tutorial-piece">Bach · Cello Suite No. 3 · Gigue<br>Janos Starker (1988)</p>
             <p id="tutorial-copy" role="status" aria-live="polite">Preparing the score and recording.</p>
+            <details id="tutorial-start-help" open hidden>
+                <summary>Check the first measure’s start</summary>
+                <p>Set the first measure about a second before the first note.
+                    You can listen back and fine-tune that starting position.</p>
+                <p>After marking a few measures, press <kbd>Left</kbd> to return to measure one.
+                    Press <kbd>Left</kbd> again to hear exactly where its marker starts.
+                    Press <kbd>Space</kbd> to play if paused.</p>
+                <p>Use <kbd>Ctrl</kbd> + <kbd>Left</kbd> for 0.1 seconds earlier or
+                    <kbd>Ctrl</kbd> + <kbd>Right</kbd> for 0.1 seconds later.
+                    Press <kbd>Left</kbd> again after each adjustment to listen.
+                    Choose the start that sounds right to you.</p>
+                <p>Let the marked measures play, then press <kbd>B</kbd> at the next unmarked measure.</p>
+            </details>
+            <details id="tutorial-correction-help" hidden>
+                <summary>Redo a timing and pick up the rhythm</summary>
+                <p>Pause with <kbd>Space</kbd>. Use <kbd>Left</kbd> / <kbd>Right</kbd> to find the
+                    measure you want to redo, then press <kbd>Backspace</kbd>.
+                    This erases that measure’s timing and all following timings.</p>
+                <p>Press <kbd>Left</kbd> a couple more times to return to an earlier marked measure.
+                    Press <kbd>Space</kbd> if paused. Listen through those measures to pick up the rhythm,
+                    then resume pressing <kbd>B</kbd> at the first measure that needs a new timing.</p>
+                <p><kbd>Left</kbd> / <kbd>Right</kbd> lets you listen back while keeping your timings.
+                    <kbd>Backspace</kbd> clears timings so you can record them again.</p>
+            </details>
             <div class="tutorial-actions">
                 <button type="button" id="tutorial-replay" disabled>Play from the start</button>
                 <button type="button" id="tutorial-continue" hidden disabled>Resume at the repeat</button>
@@ -1091,10 +1117,15 @@ if ($yubsyncTutorial) {
 
         <?php if ($yubsyncTutorial): ?>
         <ol>
-            <li><b>Mark the first measure.</b> Play the recording and press <b>B</b> when the first measure begins.
-                Use <b>Ctrl + Left / Right</b> to adjust its start anytime after marking it.</li>
+            <li><b>Mark a few measures.</b> Play the recording and press the first <b>B</b> about a second
+                before the first note. Then press <b>B</b> on the first beat of each next measure.</li>
+            <li><b>Listen back to the start.</b> Use <b>Left</b> to return to measure one. Press <b>Left</b>
+                again to hear its starting position. Use <b>Ctrl + Left / Right</b> to adjust it by 0.1 seconds,
+                then press <b>Left</b> again to listen. Press <b>Space</b> if paused.</li>
             <li><b>Follow the measures.</b> Press <b>B</b> on the first beat of each next measure.
-                Use <b>Space</b> to pause and <b>Backspace</b> to redo a timing.</li>
+                To redo a timing, pause, find the measure with <b>Left / Right</b>, then press <b>Backspace</b>.
+                Go a couple more measures back with <b>Left</b> and play them to pick up the rhythm.
+                Resume pressing <b>B</b> at the first measure that needs a new timing.</li>
             <li><b>Mark the repeat.</b> The tutorial pauses with instructions. Shift-click the <b>From</b>
                 measure, then the <b>To</b> measure, and resume. Continue pressing B on the repeated passage.</li>
             <li><b>Finish and compare.</b> Press B a few seconds after the final cutoff, then choose
@@ -1107,8 +1138,8 @@ if ($yubsyncTutorial) {
                 A full score or piano score usually works best.</li>
             <li><b>Load the recording.</b> In Step 2, enter the YouTube video ID, click <b>Load</b>,
                 then click the video to start playback. Syncing is ready automatically after the score loads.</li>
-            <li><b>Follow the measures.</b> Press <b>B</b> a little before the first beat of each movement.
-                For the remaining measures, press <b>B</b> on the first beat of each measure.
+            <li><b>Follow the measures.</b> Press the first <b>B</b> about a second before the first note.
+                Then press <b>B</b> on the first beat of each next measure.
                 Each press records a timing and advances the highlight.</li>
             <li><b>Redo a mistake.</b> Press <b>Backspace</b> to go back one measure and erase its timing
                 and any following timings. Continue with <b>B</b> to record them again.</li>
@@ -1135,7 +1166,8 @@ if ($yubsyncTutorial) {
             </tr>
             <tr>
                 <td><b>Left / Right Arrow</b></td>
-                <td>Go to the previous or next recorded measure.</td>
+                <td>Listen from the previous or next recorded measure. Left at measure one replays its start.
+                    If paused, press Space to play.</td>
             </tr>
             <tr>
                 <td><b>+</b> / <b>&minus;</b></td>
@@ -1184,8 +1216,8 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=3"></script><?php endif; ?>
-    <script src="yubsync-tools.js?v=94"></script>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=7"></script><?php endif; ?>
+    <script src="yubsync-tools.js?v=96"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=10"></script>
     <script src="yubsync-progress.js?v=3"></script>
