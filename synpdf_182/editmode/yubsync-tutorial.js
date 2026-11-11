@@ -35,6 +35,9 @@
     let exercise, stage = 'loading', repeatDone = false, result = null, submitting = false;
     let videoRequested = false;
     let previousLast = -1;
+    let playbackStarted = false, infoStep = 'loading';
+    const dismissedSteps = new Set();
+    const lesson = byId('tutorial-lesson'), scoreStage = byId('yubsync-score-stage');
     const title = byId('tutorial-title'), copy = byId('tutorial-copy');
     const next = byId('tutorial-continue'), replay = byId('tutorial-replay');
     const restart = byId('tutorial-restart');
@@ -66,12 +69,16 @@
     function showTargets() {
         clearTargets();
         const jump = exercise.repeats[0];
-        for (const [index, label] of [[jump.from, 'From · 49'], [jump.to, 'To · 1']]) {
+        const current = get('deTijden')?.[get('detix')]?.mix ?? 0;
+        const targets = stage === 'repeat' ? [[jump.from, 'From · 49'], [jump.to, 'To · 1']]
+            : [[stage === 'start' ? 0 : current, stage === 'start' ? 'Start · 1' : `Measure · ${current + 1}`]];
+        for (const [index, label] of targets) {
             const box = get('deMaten')[index];
             if (!box) continue;
             const target = document.createElement('div');
             target.className = 'tutorial-target';
             target.dataset.label = label;
+            target.dataset.measure = index;
             Object.assign(target.style, { left: box.x + 'px', top: box.y + 'px', width: box.w + 'px', height: box.h + 'px' });
             byId('notation').append(target);
         }
@@ -80,9 +87,73 @@
         const jump = exercise.repeats[0], pairs = get('repMaten');
         return pairs.length === 1 && pairs[0].jmp === jump.from && pairs[0].dst === jump.to;
     }
+    function positionInfo() {
+        scoreStage.classList.remove('tutorial-docked');
+        if (lesson.hidden) return;
+        lesson.classList.add('tutorial-floating');
+        const notation = byId('notation'), bounds = notation.getBoundingClientRect();
+        const gap = 12;
+        const area = { left: Math.max(gap, bounds.left + gap), top: Math.max(gap, bounds.top + gap),
+            right: Math.min(window.innerWidth - gap, bounds.right - gap),
+            bottom: Math.min(window.innerHeight - gap, bounds.bottom - gap) };
+        const targets = [...document.querySelectorAll('.tutorial-target')];
+        const jump = exercise?.repeats[0];
+        const pending = stage === 'repeat' && get('repMaten').some(pair => pair.jmp === jump.from && pair.dst === undefined);
+        const target = stage === 'repeat'
+            ? targets.find(node => Number(node.dataset.measure) === (pending ? jump.to : jump.from)) : targets[0];
+        const rect = target?.getBoundingClientRect();
+        const visible = rect && rect.bottom >= area.top && rect.top <= area.bottom && rect.right >= area.left && rect.left <= area.right;
+        const width = Math.min(340, area.right - area.left);
+        lesson.style.maxHeight = Math.max(100, area.bottom - area.top) + 'px';
+        const candidates = visible && infoStep !== 'play' ? [
+            { left: rect.right + gap, top: rect.top, width: Math.min(width, area.right - rect.right - gap) },
+            { left: Math.max(area.left, rect.left - gap - width), top: rect.top,
+                width: Math.min(width, rect.left - gap - area.left) },
+            { left: Math.max(area.left, Math.min(rect.left, area.right - width)), top: rect.bottom + gap, width },
+            { left: Math.max(area.left, Math.min(rect.left, area.right - width)), bottom: rect.top - gap - 40, width }
+        ] : [];
+        candidates.push(
+            { left: area.right - width, top: area.top, width },
+            { left: area.left, top: area.top, width },
+            { left: area.right - width, bottom: area.bottom, width },
+            { left: area.left, bottom: area.bottom, width }
+        );
+        const protectedRects = targets.map(node => node.getBoundingClientRect());
+        for (const candidate of candidates) {
+            if (candidate.width < 220) continue;
+            lesson.style.width = candidate.width + 'px';
+            const height = lesson.getBoundingClientRect().height;
+            const top = candidate.bottom !== undefined ? candidate.bottom - height
+                : Math.max(area.top, Math.min(candidate.top, area.bottom - height));
+            const right = candidate.left + candidate.width, bottom = top + height;
+            if (candidate.left < area.left || right > area.right || top < area.top || bottom > area.bottom) continue;
+            // Leave room for both measures and their From / To labels.
+            if (protectedRects.some(box => candidate.left < box.right + gap && right > box.left - gap &&
+                top < box.bottom + gap && bottom > box.top - 40 - gap)) continue;
+            lesson.style.left = candidate.left + 'px';
+            lesson.style.top = top + 'px';
+            return;
+        }
+        // A small score pane gets a dedicated row, keeping its active measure clear.
+        lesson.classList.remove('tutorial-floating');
+        for (const property of ['left', 'top', 'width']) lesson.style.removeProperty(property);
+        lesson.style.maxHeight = Math.max(100, scoreStage.clientHeight * 0.45) + 'px';
+        scoreStage.style.setProperty('--tutorial-info-height', lesson.getBoundingClientRect().height + gap * 2 + 'px');
+        scoreStage.classList.add('tutorial-docked');
+    }
+    function setInfoStep(step) {
+        infoStep = step;
+        lesson.dataset.step = step;
+        lesson.hidden = stage === 'complete' || dismissedSteps.has(step);
+    }
+    function playbackChanged() {
+        window.YubSyncGuidance?.update();
+    }
     function resetStart() {
         if (!exercise) return false;
         stage = 'start'; repeatDone = false; result = null;
+        playbackStarted = false;
+        dismissedSteps.clear();
         window.YubSyncTutorial.lastResult = null;
         previousLast = -1;
         seek(exercise.cueSeconds);
@@ -108,7 +179,7 @@
         byId('addnewrecordingform').hidden = !s.complete || !!result;
         byId('tutorial-results').hidden = !result;
         byId('tutorial-try-again').hidden = !result;
-        if (!exercise || !s.scoreReady) return;
+        if (!exercise || !s.scoreReady) { positionInfo(); return; }
         // Finish PDF initialization on the dummy player before loading YouTube.
         // Otherwise a fast PDF can finish while the iframe API is still loading.
         if (!videoRequested) {
@@ -132,29 +203,42 @@
         if (!s.complete && result) { result = null; stage = 'follow'; }
         if (s.complete) stage = 'complete';
         else if (stage === 'complete') stage = 'follow';
-        byId('tutorial-start-help').hidden = !s.recorded || s.last < 2 || s.complete || stage === 'repeat';
-        byId('tutorial-correction-help').hidden = !s.recorded || s.complete || stage === 'repeat';
+        const player = get('elmed');
+        const playing = s.videoReady && (typeof player?.getPlayerState === 'function'
+            ? player.getPlayerState() === 1 : player?.paused === false);
+        playbackStarted ||= playing;
+        const step = stage === 'start' ? (s.videoReady ? (playbackStarted ? 'mark-start' : 'play') : 'loading')
+            : stage === 'repeat' ? 'repeat' : s.complete ? 'complete' : s.finishing ? 'finish'
+                : s.last < 2 ? 'follow' : 'check-start';
+        setInfoStep(step);
+        byId('tutorial-start-help').hidden = step !== 'check-start';
+        byId('tutorial-correction-help').hidden = step !== 'check-start';
 
         restart.disabled = submitting || !s.videoReady;
         replay.disabled = !s.videoReady || submitting || s.complete;
-        replay.hidden = !['start', 'repeat'].includes(stage);
+        replay.hidden = !['start', 'repeat'].includes(stage) || (stage === 'start' && !playbackStarted);
         next.hidden = stage !== 'repeat';
         next.disabled = !s.videoReady || !correctRepeat();
         byId('tutorial-step').textContent = stage === 'start' ? '1 / 3 · FIND THE START'
             : stage === 'repeat' ? '2 / 3 · MARK THE REPEAT' : s.complete ? '3 / 3 · COMPARE YOUR TIMINGS' : 'FOLLOW THE SCORE';
-        title.textContent = stage === 'start' ? 'Mark the first measure' : stage === 'repeat' ? 'The music repeats here'
-            : s.complete ? 'Ready to compare' : 'Mark each measure';
-        copy.textContent = stage === 'start'
-            ? 'Play the recording. Press the first B about a second before the first note, then press B on the first beat of each next measure. You can listen back and fine-tune the start afterward.'
+        title.textContent = step === 'loading' ? 'Preparing the recording…' : step === 'play' ? 'Start the recording'
+            : step === 'mark-start' ? 'Mark the start' : stage === 'repeat' ? 'The music repeats here'
+                : s.complete ? 'Ready to compare' : s.finishing ? 'Mark the end'
+                    : step === 'check-start' ? 'Listen back when you’re ready' : 'Mark each measure';
+        const instruction = step === 'loading' ? 'The score and player will be ready shortly.'
+            : step === 'play' ? 'Press Play on the player to start.'
+            : step === 'mark-start' ? 'Press B about a second before the first note to mark the start of syncing.'
             : stage === 'repeat'
-                ? 'Playback is paused at measure 49. Shift-click the highlighted From measure (49), then Shift-click the To measure (1) at the top of the page. Matching Jump 1 markers should appear. If you mark the wrong place, press G to remove the pair and try again. Then resume; press B when the music returns to measure 1. Keep recording through the repeat—each pass gets its own timings.'
+                ? 'To add a repeat, shift click the measure with the repeat and then shift click the destination measure. You can also use this method to jump forward in the case of 2nd endings or cuts.'
                 : s.complete ? 'Choose Submit tutorial to see how closely your timings match. Choose Start over to practice again.'
                     : s.finishing ? 'Let the last measure finish, then press B a few seconds after the final cutoff to finish the exercise.'
-                        : s.last < 2 ? 'Keep pressing B on the first beat of each next measure. After a few measures, listen back to check the beginning.'
-                            : 'Use Left / Right to listen through marked measures. Resume pressing B at the next unmarked measure. Shift + Left / Right adjusts a measure’s duration after the following measure has been marked.';
+                        : s.last < 2 ? 'Press B on the first beat of each next measure.'
+                            : 'Use Left / Right to listen back. Ctrl + Left / Right adjusts the first measure’s start. Then keep pressing B at each new measure.';
+        if (copy.textContent !== instruction) copy.textContent = instruction;
         replay.textContent = stage === 'repeat' ? 'Listen to the repeat' : 'Play from the start';
         byId('tutorial-progress').textContent = `${Math.min(s.last + 1, exercise.official.length - 1)} / ${exercise.official.length - 1} measure starts marked`;
-        if (stage === 'repeat') showTargets(); else clearTargets();
+        if (!lesson.hidden && s.videoReady && !s.complete) showTargets(); else clearTargets();
+        positionInfo();
     }
     function startOver() {
         if (submitting) return;
@@ -205,8 +289,12 @@
     }
     async function boot() {
         stage = 'loading';
+        playbackStarted = false;
+        dismissedSteps.clear();
+        setInfoStep('loading');
         title.textContent = 'Loading your exercise…';
         copy.textContent = 'Preparing the score and recording.';
+        positionInfo();
         restart.disabled = true;
         restart.textContent = 'Start over';
         try {
@@ -230,10 +318,12 @@
             get('msc_check_preload')();
         } catch (error) {
             stage = 'error';
+            setInfoStep('error');
             title.textContent = 'Could not load the tutorial';
             copy.textContent = error.message;
             restart.disabled = false;
             restart.textContent = 'Retry';
+            positionInfo();
         }
     }
     next.addEventListener('click', () => {
@@ -253,6 +343,18 @@
     });
     restart.addEventListener('click', startOver);
     byId('tutorial-try-again').addEventListener('click', startOver);
+    byId('tutorial-close').addEventListener('click', () => {
+        dismissedSteps.add(infoStep);
+        lesson.hidden = true;
+        clearTargets();
+        positionInfo();
+        byId('yubsync-zoom-in').focus();
+    });
+    document.addEventListener('scroll', event => {
+        if (!lesson.contains(event.target)) positionInfo();
+    }, true);
+    lesson.addEventListener('toggle', positionInfo, true);
+    window.addEventListener('resize', positionInfo);
     document.addEventListener('keydown', event => {
         if (window.YubSyncGuidance?.state().videoReady) return;
         if ([' ', 'Spacebar', 'b', 'B', 'Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
@@ -261,6 +363,6 @@
             event.stopImmediatePropagation();
         }
     }, true);
-    window.YubSyncTutorial = { update, resetStart, beforeStamp, submit, evaluate, lastResult: null };
+    window.YubSyncTutorial = { update, resetStart, beforeStamp, playbackChanged, submit, evaluate, lastResult: null };
     $(document).ready(boot);
 })();

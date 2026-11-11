@@ -765,8 +765,13 @@ Wijzer$$module$synpdf.prototype.endSyncHere = function () {
 Wijzer$$module$synpdf.prototype.goMsre = function (forward, event) {
     if (!deTijden$$module$synpdf.length || event.altKey || event.ctrlKey || event.shiftKey || event.metaKey) return;
     event.preventDefault && event.preventDefault();
+    let last = deTijden$$module$synpdf.length - 1;
+    if (Number.isInteger(lastSynced$$module$synpdf) && lastSynced$$module$synpdf >= 0) {
+        last = Math.min(last, lastSynced$$module$synpdf);
+    }
+    if (deTijden$$module$synpdf[last].end || deTijden$$module$synpdf[last].mix === deMaten$$module$synpdf.length - 1) last--;
+    if (forward && detix$$module$synpdf >= last) return;
     detix$$module$synpdf = Math.max(0, detix$$module$synpdf + (forward ? 1 : -1));
-    if (detix$$module$synpdf >= deTijden$$module$synpdf.length) detix$$module$synpdf = 0;
     playPause2$$module$synpdf(!1, deTijden$$module$synpdf[detix$$module$synpdf].t + TOFF$$module$synpdf + offset$$module$synpdf);
 };
 Wijzer$$module$synpdf.prototype.goUpDown = function (a, b, c) {
@@ -1995,7 +2000,8 @@ function yubApiReady$$module$synpdf() {
             onStateChange: function (a) {
                 if (!yubchk$$module$synpdf || !opt$$module$synpdf.yubvid) return;
                 a.data == YT.PlayerState.PLAYING ? (dummyPlayer$$module$synpdf.setKlok(tick$$module$synpdf, 100), setSpeed$$module$synpdf(0), setPauseState$$module$synpdf(!1)) : (dummyPlayer$$module$synpdf.clearKlok(), setPauseState$$module$synpdf(!0));
-                a.data == YT.PlayerState.CUED && setNotationHeight$$module$synpdf()
+                a.data == YT.PlayerState.CUED && setNotationHeight$$module$synpdf();
+                window.YubSyncTutorial?.playbackChanged();
             }
         }
     })

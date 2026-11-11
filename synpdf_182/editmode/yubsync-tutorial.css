@@ -3,14 +3,19 @@
 .yubsync-tutorial #yubsync-end-here,
 .yubsync-tutorial #yubsync-guide { display: none !important; }
 #tutorial-lesson {
-    margin: 12px; padding: 18px; border: 1px solid var(--home-strong-line);
+    position: absolute; z-index: 3; top: 12px; right: 12px;
+    box-sizing: border-box; width: min(340px, calc(100% - 24px));
+    margin: 0; padding: 16px; border: 1px solid var(--home-strong-line);
     border-radius: 10px; background: var(--home-surface); color: var(--home-ink);
-    overflow-y: auto; min-height: 180px;
+    overflow-y: auto; box-shadow: 0 4px 16px #0002; line-height: 1.5;
 }
+#tutorial-lesson.tutorial-floating { position: fixed; }
+#yubsync-score-stage.tutorial-docked { padding-top: var(--tutorial-info-height); box-sizing: border-box; }
+#tutorial-close { top: 6px; right: 6px; }
 #tutorial-step { font-size: 11px; font-weight: 650; letter-spacing: .08em; color: var(--home-teal); }
-#tutorial-title { margin: 8px 0; font-size: 21px; line-height: 1.25; }
-.tutorial-piece, .tutorial-shortcuts { color: var(--home-muted); font-size: 12px; }
-#tutorial-copy { font-size: 14px; }
+#tutorial-step, #tutorial-title { padding-right: 28px; }
+#tutorial-title { margin: 8px 0; font-size: 20px; line-height: 1.25; }
+#tutorial-copy { margin: 0; font-size: 14px; overflow-wrap: break-word; }
 #tutorial-lesson details { margin: 12px 0; padding-top: 10px; border-top: 1px solid var(--home-line); font-size: 13px; }
 #tutorial-lesson summary { cursor: pointer; font-weight: 600; color: var(--home-teal); }
 #tutorial-lesson kbd { font: inherit; font-weight: 600; }
@@ -18,7 +23,8 @@
 .tutorial-actions button { min-height: 40px; }
 #tutorial-continue { background: var(--home-teal); color: var(--home-on-teal); }
 .tutorial-actions button:disabled { opacity: .45; cursor: default; }
-#tutorial-progress { font-size: 12px; color: var(--home-teal); }
+#tutorial-progress { margin: 0; font-size: 12px; color: var(--home-teal); }
+.yubsync-tutorial #yubsync-zoom-toolbar { flex-wrap: wrap; }
 .tutorial-target {
     position: absolute; box-sizing: border-box; border: 3px solid #bd7110;
     background: #ffda5b26; color: #704000; font: bold 14px/1.3 system-ui, sans-serif;

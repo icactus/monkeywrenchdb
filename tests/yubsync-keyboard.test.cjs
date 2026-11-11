@@ -68,6 +68,37 @@ test('Left at the first measure replays its adjusted start while preserving the 
     }
 });
 
+test('Right at the latest synced measure does nothing while paused or playing', () => {
+    for (const paused of [false, true]) for (const sync of [false, true]) {
+        for (const key of ['ArrowRight', 'Right']) {
+            const h = setup({ paused, sync });
+            h.c.detix$$module$synpdf = h.c.demix$$module$synpdf = 2;
+            const before = h.snapshot();
+            assert.equal(h.key(key).prevented, true);
+            h.key(key);
+            assert.equal(h.c.detix$$module$synpdf, 2);
+            assert.equal(h.c.demix$$module$synpdf, 2);
+            assert.equal(h.c.msc_wz$$module$synpdf.paused, paused);
+            assert.equal(h.seeks.length, 0);
+            assert.deepEqual(h.snapshot(), before);
+        }
+    }
+});
+
+test('Right stops at recorded timings, skipping placeholders and closing markers', () => {
+    for (const extra of [{ t: 6, mix: 3 }, { t: 9999, mix: 4, end: true }, { t: 6, mix: 4 }]) {
+        const h = setup();
+        h.c.deTijden$$module$synpdf.push(extra);
+        if (extra.end || extra.mix === 4) h.c.lastSynced$$module$synpdf = 3;
+        h.key('ArrowRight');
+        assert.equal(h.c.detix$$module$synpdf, 2);
+        assert.equal(h.seeks.length, 1);
+        h.key('ArrowRight');
+        assert.equal(h.c.detix$$module$synpdf, 2);
+        assert.equal(h.seeks.length, 1);
+    }
+});
+
 test('Delete removes the selected jump pair and preserves timings and other pairs', () => {
     const h = setup(), before = h.snapshot();
     h.c.repMaten$$module$synpdf = [{ jmp: 2, dst: 0 }, { jmp: 3, dst: 1 }];

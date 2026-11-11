@@ -49,7 +49,7 @@ if ($yubsyncTutorial) {
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=78"></script>
+    <script src="synpdf-full-yubsync2.js?v=79"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
     <?php endif; ?>
     <style>
@@ -795,7 +795,7 @@ if ($yubsyncTutorial) {
     </style>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=16" />
     <?php if ($yubsyncTutorial): ?>
-    <link rel="stylesheet" href="yubsync-tutorial.css?v=3" />
+    <link rel="stylesheet" href="yubsync-tutorial.css?v=4" />
     <?php endif; ?>
 </head>
 
@@ -883,45 +883,6 @@ if ($yubsyncTutorial) {
             </div>
         </div>
         <input id="knop" type="button" value="play" style="display: none;">
-        <?php if ($yubsyncTutorial): ?>
-        <aside id="tutorial-lesson" aria-labelledby="tutorial-title">
-            <span id="tutorial-step">SYNCING TUTORIAL</span>
-            <h1 id="tutorial-title">Loading your exercise…</h1>
-            <p class="tutorial-piece">Bach · Cello Suite No. 3 · Gigue<br>Janos Starker (1988)</p>
-            <p id="tutorial-copy" role="status" aria-live="polite">Preparing the score and recording.</p>
-            <details id="tutorial-start-help" open hidden>
-                <summary>Check the first measure’s start</summary>
-                <p>Set the first measure about a second before the first note.
-                    You can listen back and fine-tune that starting position.</p>
-                <p>After marking a few measures, press <kbd>Left</kbd> to return to measure one.
-                    Press <kbd>Left</kbd> again to hear exactly where its marker starts.
-                    Press <kbd>Space</kbd> to play if paused.</p>
-                <p>Use <kbd>Ctrl</kbd> + <kbd>Left</kbd> for 0.1 seconds earlier or
-                    <kbd>Ctrl</kbd> + <kbd>Right</kbd> for 0.1 seconds later.
-                    Press <kbd>Left</kbd> again after each adjustment to listen.
-                    Choose the start that sounds right to you.</p>
-                <p>Let the marked measures play, then press <kbd>B</kbd> at the next unmarked measure.</p>
-            </details>
-            <details id="tutorial-correction-help" hidden>
-                <summary>Redo a timing and pick up the rhythm</summary>
-                <p>Pause with <kbd>Space</kbd>. Use <kbd>Left</kbd> / <kbd>Right</kbd> to find the
-                    measure you want to redo, then press <kbd>Backspace</kbd>.
-                    This erases that measure’s timing and all following timings.</p>
-                <p>Press <kbd>Left</kbd> a couple more times to return to an earlier marked measure.
-                    Press <kbd>Space</kbd> if paused. Listen through those measures to pick up the rhythm,
-                    then resume pressing <kbd>B</kbd> at the first measure that needs a new timing.</p>
-                <p><kbd>Left</kbd> / <kbd>Right</kbd> lets you listen back while keeping your timings.
-                    <kbd>Backspace</kbd> clears timings so you can record them again.</p>
-            </details>
-            <div class="tutorial-actions">
-                <button type="button" id="tutorial-replay" disabled>Play from the start</button>
-                <button type="button" id="tutorial-continue" hidden disabled>Resume at the repeat</button>
-                <button type="button" id="tutorial-restart" disabled>Start over</button>
-            </div>
-            <p id="tutorial-progress" aria-live="polite"></p>
-            <p class="tutorial-shortcuts"><kbd>Space</kbd> Pause / resume<br><kbd>B</kbd> Mark the next measure<br><kbd>Backspace</kbd> Redo a measure<br>Use speakers or wired headphones for accurate timing.</p>
-        </aside>
-        <?php endif; ?>
         <div id="database-menus-wrapper"<?= $yubsyncTutorial ? ' hidden' : '' ?>>
             <div id="database-menus">
                 <!-- Superuser correction shortcuts work without displaying a toolbar. -->
@@ -1031,9 +992,49 @@ if ($yubsyncTutorial) {
             <button type="button" id="yubsync-zoom-in" aria-label="Zoom in" title="Zoom in">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M15 15l6 6M6 10h8M10 6v8"/></svg>
             </button>
+            <?php if ($yubsyncTutorial): ?>
+            <div class="tutorial-actions">
+                <button type="button" id="tutorial-replay" disabled>Play from the start</button>
+                <button type="button" id="tutorial-continue" hidden disabled>Resume at the repeat</button>
+                <button type="button" id="tutorial-restart" disabled>Start over</button>
+            </div>
+            <p id="tutorial-progress" aria-live="polite"></p>
+            <?php endif; ?>
             <button type="button" id="yubsync-show-details" class="yubsync-overlay-open" hidden>Recording details</button>
         </div>
         <div id="yubsync-score-stage">
+        <?php if ($yubsyncTutorial): ?>
+        <aside id="tutorial-lesson" aria-labelledby="tutorial-title">
+            <button type="button" id="tutorial-close" class="yubsync-overlay-close" aria-label="Close tutorial step" title="Close tutorial step">×</button>
+            <span id="tutorial-step">SYNCING TUTORIAL</span>
+            <h2 id="tutorial-title">Loading your exercise…</h2>
+            <p id="tutorial-copy" role="status" aria-live="polite">Preparing the score and recording.</p>
+            <details id="tutorial-start-help" hidden>
+                <summary>Check the first measure’s start</summary>
+                <p>Set the first measure about a second before the first note.
+                    You can listen back and fine-tune that starting position.</p>
+                <p>After marking a few measures, press <kbd>Left</kbd> to return to measure one.
+                    Press <kbd>Left</kbd> again to hear exactly where its marker starts.
+                    Press <kbd>Space</kbd> to play if paused.</p>
+                <p>Use <kbd>Ctrl</kbd> + <kbd>Left</kbd> for 0.1 seconds earlier or
+                    <kbd>Ctrl</kbd> + <kbd>Right</kbd> for 0.1 seconds later.
+                    Press <kbd>Left</kbd> again after each adjustment to listen.
+                    Choose the start that sounds right to you.</p>
+                <p>Let the marked measures play, then press <kbd>B</kbd> at the next unmarked measure.</p>
+            </details>
+            <details id="tutorial-correction-help" hidden>
+                <summary>Redo a timing and pick up the rhythm</summary>
+                <p>Pause with <kbd>Space</kbd>. Use <kbd>Left</kbd> / <kbd>Right</kbd> to find the
+                    measure you want to redo, then press <kbd>Backspace</kbd>.
+                    This erases that measure’s timing and all following timings.</p>
+                <p>Press <kbd>Left</kbd> a couple more times to return to an earlier marked measure.
+                    Press <kbd>Space</kbd> if paused. Listen through those measures to pick up the rhythm,
+                    then resume pressing <kbd>B</kbd> at the first measure that needs a new timing.</p>
+                <p><kbd>Left</kbd> / <kbd>Right</kbd> lets you listen back while keeping your timings.
+                    <kbd>Backspace</kbd> clears timings so you can record them again.</p>
+            </details>
+        </aside>
+        <?php endif; ?>
             <div id="notation"> </div>
             <aside id="yubsync-guide" role="status" aria-live="polite" hidden>
                 <button type="button" id="yubsync-guide-close" class="yubsync-overlay-close" aria-label="Close syncing tip" title="Close syncing tip">×</button>
@@ -1216,7 +1217,7 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=7"></script><?php endif; ?>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=8"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=96"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=10"></script>
