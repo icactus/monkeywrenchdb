@@ -4,9 +4,10 @@
  * from MySQL to static JSON files.
  *
  * Usage:
- *   php export_static_json.php
- *   php export_static_json.php --recording-id=661
- *   php export_static_json.php --piece-id=169
+ *   php scripts/export_static_json.php
+ *   php scripts/export_static_json.php --recording-id=661
+ *   php scripts/export_static_json.php --piece-id=169
+ *   php scripts/export_static_json.php --config=/path/to/config.php --webroot=/path/to/public_html
  *
  * Creates:
  *   /data/metrics/{metric_arr_id}.json   — one per metric_arr row
@@ -14,40 +15,52 @@
  *   /data/recordings/by-piece/{piece_id}.json — recording metadata for a piece
  */
 
+// Reject HTTP requests before loading configuration, connecting, or writing files.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
+$root = dirname(__DIR__);
+$options = getopt('', ['config:', 'webroot:', 'recording-id:', 'piece-id:', 'help']);
+if (isset($options['help'])) {
+    echo "Usage: php scripts/export_static_json.php [--config=PATH] [--webroot=PATH] [--recording-id=ID] [--piece-id=ID]\n";
+    echo "Rebuild static JSON from MySQL. Output defaults to the repository's data/ directory.\n";
+    exit;
+}
+
+$webroot = realpath($options['webroot'] ?? $root);
+if ($webroot === false || !is_dir($webroot)) {
+    fwrite(STDERR, "The web root must be an existing directory.\n");
+    exit(1);
+}
+
 // --- DB config ---
-if (file_exists(__DIR__ . '/../phpfiles/config.php')) {
-    require_once __DIR__ . '/../phpfiles/config.php';
+if (isset($options['config'])) {
+    require_once $options['config'];
+} elseif (file_exists($root . '/phpfiles/config.php')) {
+    require_once $root . '/phpfiles/config.php';
 } else {
-    require_once __DIR__ . '/phpfiles/config.php';
+    require_once dirname($root) . '/phpfiles/config.php';
 }
-if (file_exists(__DIR__ . '/../phpfiles/static_recordings.php')) {
-    require_once __DIR__ . '/../phpfiles/static_recordings.php';
-} else {
-    require_once __DIR__ . '/phpfiles/static_recordings.php';
+if (isset($options['config']) && !defined('MW_LIBRARY_CACHE_DIR')) {
+    define('MW_LIBRARY_CACHE_DIR', dirname(realpath($options['config'])) . '/cache/library');
 }
+require_once $root . '/phpfiles/static_recordings.php';
 
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error . "\n");
 }
-mysqli_set_charset($conn, 'utf8');
+mysqli_set_charset($conn, 'utf8mb4');
 
-$recordingIdFilter = null;
-$pieceIdFilter = null;
-if (PHP_SAPI === 'cli' && !empty($argv)) {
-    foreach ($argv as $arg) {
-        if (strpos($arg, '--recording-id=') === 0) {
-            $recordingIdFilter = (int) substr($arg, strlen('--recording-id='));
-        } elseif (strpos($arg, '--piece-id=') === 0) {
-            $pieceIdFilter = (int) substr($arg, strlen('--piece-id='));
-        }
-    }
-}
+$recordingIdFilter = isset($options['recording-id']) ? (int) $options['recording-id'] : null;
+$pieceIdFilter = isset($options['piece-id']) ? (int) $options['piece-id'] : null;
 
 // --- Ensure directories exist ---
-$metricsDir = __DIR__ . '/data/metrics';
-$timesDir = __DIR__ . '/data/times';
-$recordingsDir = __DIR__ . '/data/recordings/by-piece';
+$metricsDir = $webroot . '/data/metrics';
+$timesDir = $webroot . '/data/times';
+$recordingsDir = $webroot . '/data/recordings/by-piece';
 
 if (!is_dir($metricsDir))
     mkdir($metricsDir, 0755, true);
@@ -180,7 +193,7 @@ if ($pieceIdFilter > 0) {
 $countRecordings = 0;
 $errorsRecordings = 0;
 foreach ($pieceIds as $pieceId) {
-    $path = writePieceRecordingsJson($conn, $pieceId, __DIR__);
+    $path = writePieceRecordingsJson($conn, $pieceId, $webroot, false);
     if ($path === null) {
         echo "  ERROR writing recordings JSON for piece_id {$pieceId}\n";
         $errorsRecordings++;
@@ -190,6 +203,7 @@ foreach ($pieceIds as $pieceId) {
 }
 echo "  Done: $countRecordings files written, $errorsRecordings errors.\n\n";
 
+mwLibraryRefresh($conn, null, $webroot);
 $conn->close();
 echo "Export complete.\n";
 echo "Metrics: $metricsDir/ ($countMetrics files)\n";

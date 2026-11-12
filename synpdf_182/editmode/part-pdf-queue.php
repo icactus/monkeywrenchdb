@@ -111,6 +111,10 @@ try {
         });
     }
     if (in_array($action, ['finish', 'retry'], true)) mwPdfQueueKick($root);
+    if ($action === 'publish') {
+        require_once $private . '/library_cache.php';
+        mwLibraryRefresh($db, (int) $result['piece_id'], rtrim($_SERVER['DOCUMENT_ROOT'], '/'));
+    }
     if ($action === 'publish' && is_file($private . '/cloudflare_purge.php')) {
         try {
         require_once $private . '/cloudflare_purge.php';

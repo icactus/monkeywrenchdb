@@ -722,7 +722,7 @@ $('#pieces-container').on('click', '.pieces-link', function (event) {
     recordingsList.html('<p>No parts found for this selection.</p>');
 });
 
-async function generateInstrumentsDropdown(recordingId) {
+async function generateInstrumentsDropdown(recordingId, piece = null) {
     const seq = ++__mwPartsDropdownSeq;
     const dropdown = document.getElementById('instruments-dropdown');
     const defaultOption = document.createElement('option');
@@ -732,12 +732,8 @@ async function generateInstrumentsDropdown(recordingId) {
     defaultOption.selected = true;
     dropdown.replaceChildren(defaultOption);
 
-    // POST bypasses the CDN's forced GET caching, even if a purge fails.
-    // This endpoint only reads metadata; it does not change the part.
-    const data = await fetchPlayerJson(
-        'get_recording_instruments.php?recordingId=' + encodeURIComponent(recordingId) + '&v=parts-2',
-        { method: 'POST', cache: 'no-store' }
-    );
+    const snapshot = piece || await window.MWLibrary.piece({ recordingId });
+    const data = snapshot.parts;
     if (seq !== __mwPartsDropdownSeq) return;
     if (!Array.isArray(data)) throw new Error('Invalid part list');
 
@@ -753,26 +749,17 @@ async function generateInstrumentsDropdown(recordingId) {
 }
 
 function loadPieceRecordings(pieceId) {
-    if (!pieceId) {
-        return null;
-    }
-
-    if (!window.pieceRecordingsCache[pieceId]) {
-        window.pieceRecordingsCache[pieceId] = $.ajax({
-            url: `data/recordings/by-piece/${pieceId}.json`,
-            method: 'GET',
-            dataType: 'json',
-            cache: true
-        });
-    }
-
-    return window.pieceRecordingsCache[pieceId];
+    if (!pieceId) return null;
+    // Bridge to the legacy jQuery caller while sharing the revision-aware loader.
+    return $.Deferred(function (request) {
+        window.MWLibrary.piece({ pieceId }).then(data => request.resolve(data), error => request.reject(error));
+    }).promise();
 }
 
 
 function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
     return new Promise(function (resolve, reject) {
-        const loadFromSqlFallback = function () {
+        const loadMetadataFallback = function () {
             const requestData = pieceId ? { pieceId: pieceId } : { metricArrId: metricArrId };
             return $.ajax({
                 url: 'fetchrecordings_data.php',
@@ -784,9 +771,9 @@ function fetchRecordings(metricArrId, pieceId, partContext, renderTarget) {
         const request = pieceId
             ? loadPieceRecordings(pieceId).catch(function () {
                 delete window.pieceRecordingsCache[pieceId];
-                return loadFromSqlFallback();
+                return loadMetadataFallback();
             })
-            : loadFromSqlFallback();
+            : loadMetadataFallback();
         const loadingTimer = setTimeout(function () {
             const container = renderTarget ? $(renderTarget) : $('#recordings-container');
             if (!container.children().length) {
@@ -962,7 +949,7 @@ if (typeof headerTitleQuery.addEventListener === 'function') {
     headerTitleQuery.addListener(updateHeaderTitle);
 }
 
-async function loadRecording(recordingFullData, partSeq = null) {
+async function loadRecording(recordingFullData, partSeq = null, prepared = null) {
     // Remember the exact numbered part/edition, including changes made in the player.
     try {
         localStorage.setItem('mw-home-part-' + recordingFullData.piece_id, JSON.stringify(Number(recordingFullData.metric_arr_id)));
@@ -994,22 +981,9 @@ async function loadRecording(recordingFullData, partSeq = null) {
     window.MW.player.recordingData = recordingFullData;
     let storedId = metricId + '-' + recordingId;
 
-    // Check if the data is already stored in the cache
-    let storedData = recordingCache[storedId];
-    // If data exists in cache, refresh its pdf path to match current mode
-    if (storedData) {
-        storedData.pdf_file_name = `${getPdfBaseDir()}${buildPdfFilename(storedData.piece_id, storedData.instrument_id, storedData.edition_label)}`;
-        await sendVarToSynpdf(storedData, partSeq);
-    } else {
-        // If data does not exist in cache, create it with the correct base dir
-        console.log('Building PDF filename:', { piece: recordingFullData.piece_id, inst: recordingFullData.instrument_id, edition: recordingFullData.edition_label });
-        const pdfFileName = `${getPdfBaseDir()}${buildPdfFilename(recordingFullData.piece_id, recordingFullData.instrument_id, recordingFullData.edition_label)}`;
-        console.log('Result PDF filename:', pdfFileName);
-        recordingFullData.pdf_file_name = pdfFileName;
-        recordingFullData.timestamp = Date.now();
-        recordingCache[storedId] = recordingFullData;
-        await sendVarToSynpdf(recordingFullData, partSeq);
-    }
+    recordingFullData.pdf_file_name = `${getPdfBaseDir()}${buildPdfFilename(recordingFullData.piece_id, recordingFullData.instrument_id, recordingFullData.edition_label)}`;
+    recordingCache[storedId] = recordingFullData;
+    const assets = await sendVarToSynpdf(recordingFullData, partSeq, prepared);
 
     // Send a page view event to Google Analytics with the updated title
     gtag('event', 'page_view', {
@@ -1018,41 +992,26 @@ async function loadRecording(recordingFullData, partSeq = null) {
     });
 
     capturePosthogPieceLoad(recordingFullData, newTitle);
+    return assets;
 }
 
 
 // Fetch metric_arr and times_arr from static JSON files in parallel
-async function sendVarToSynpdf(recordingFullData, partSeq = null) {
+async function sendVarToSynpdf(recordingFullData, partSeq = null, prepared = null) {
     const recordingSeq = window.MW.player.switchSeq;
-    pdf_file$$module$synpdf = recordingFullData.pdf_file_name;
-    offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
-    opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
-
-    const metricId = recordingFullData.metric_arr_id;
-    const recordingId = recordingFullData.recording_id;
-    // The CDN can override origin revalidation headers. A fresh URL also works
-    // when its purge credential is unavailable, including after another user saves.
-    const metricUrl = `data/metrics/${metricId}.json?v=2&_fresh=${Date.now()}`;
-    const metricPromise = fetchPlayerJson(metricUrl, { cache: 'no-cache' });
-    const timesPromise = recordingFullData.times_arr_data
-        ? Promise.resolve(
-            typeof recordingFullData.times_arr_data === 'string'
-                ? JSON.parse(recordingFullData.times_arr_data)
-                : recordingFullData.times_arr_data
-        )
-        : fetchPlayerJson(`data/times/${recordingId}.json`);
-
-    const [metricData, timesData] = await Promise.all([
-        metricPromise,
-        timesPromise
-    ]);
-
-    if (partSeq !== null && partSeq !== __mwPartSwitchSeq) return;
-    deMetriek$$module$synpdf = metric_arr$$module$synpdf = metricData;
+    const assets = prepared || await window.MWLibrary.prepare(recordingFullData);
+    if (partSeq !== null && partSeq !== __mwPartSwitchSeq) return assets;
+    const current = assets.recordingData;
+    pdf_file$$module$synpdf = `${getPdfBaseDir()}${buildPdfFilename(current.piece_id, current.instrument_id, current.edition_label)}`;
+    deMetriek$$module$synpdf = metric_arr$$module$synpdf = assets.metricData;
     // A recording switch may finish while the part's metrics are downloading.
     if (recordingSeq === window.MW.player.switchSeq) {
-        deTijden$$module$synpdf = times_arr$$module$synpdf = timesData;
+        offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(current.offset_js);
+        opt$$module$synpdf = { yubvid: current.youtube_id };
+        window.MW.player.recordingData = current;
+        deTijden$$module$synpdf = times_arr$$module$synpdf = assets.timesData;
     }
+    return assets;
 }
 
 
@@ -1069,10 +1028,6 @@ function addInvertButtonListener() {
     } else {
         console.error('Invert button not found in the DOM.');
     }
-}
-
-function fetchNewInstrument(metricArrId) {
-    return fetchPlayerJson('get_new_instrument_data.php?metricId=' + metricArrId);
 }
 
 $('#instruments-dropdown').change(function () {
@@ -1092,7 +1047,7 @@ $('#instruments-dropdown').change(function () {
     document.getElementById("notation-scroll").innerHTML = "";  // Clear notation section
 
     // Read the recording after metadata arrives, since it may change in the meantime.
-    fetchNewInstrument(instrumentData.metric_arr_id)
+    Promise.resolve(instrumentData)
         .then(partData => {
             if (seq !== __mwPartSwitchSeq) return;
             const recordingFullData = $('#recordings-dropdown').find('option:selected').data('recordingFullData') || {};
@@ -1148,9 +1103,9 @@ $('#recordings-dropdown').change(async function () {
     window.MW.player.switching = true;
 
     // Fetch times_arr from static file
-    let timesData;
+    let selected;
     try {
-        timesData = await fetchPlayerJson(`data/times/${recordingFullData.recording_id}.json`);
+        selected = await window.MWLibrary.recording(recordingFullData);
     } catch (error) {
         if (seq !== window.MW.player.switchSeq) return;
         window.MW.player.bypassTick = 0;
@@ -1161,7 +1116,8 @@ $('#recordings-dropdown').change(async function () {
         return;
     }
     if (seq !== window.MW.player.switchSeq) return;
-    deTijden$$module$synpdf = times_arr$$module$synpdf = timesData;
+    Object.assign(recordingFullData, selected.recordingData);
+    deTijden$$module$synpdf = times_arr$$module$synpdf = selected.timesData;
     offset$$module$synpdf = offset_js$$module$synpdf = parseFloat(recordingFullData.offset_js);
     opt$$module$synpdf = { yubvid: recordingFullData.youtube_id };
     window.MW.player.recordingData = { ...window.MW.player.recordingData,
@@ -1243,7 +1199,7 @@ function displayMultiplePartLinks(data, clickedLink) {
     clickedLink.after(linksContainer);
 }
 // FOR LOADING VIA CLICK IN RECORDINGS MENU OR FROM URL
-function handleRecordingSelection(recordingFullData) {
+function handleRecordingSelection(recordingFullData, prepared = null) {
     let sidecontentbar = document.querySelector('sidecontentbar'); // Size sidecontentbar for mobile
     let section2 = document.querySelector('section2'); // same as above
     sidecontentbar.classList.add('sidecontentbar-min-height');
@@ -1268,15 +1224,15 @@ function handleRecordingSelection(recordingFullData) {
         window.checkIfFavorited(recordingFullData.piece_id);
     }
 
-    loadRecording(recordingFullData)
-        .then(function () {
+    return loadRecording(recordingFullData, null, prepared)
+        .then(function (assets) {
             //Creating history so back button goes back to homepage
             history.pushState({ page: 'recording' }, '', window.location.pathname);
             // Set a global flag to indicate we’re in the recording state
             window.isRecordingState = true;
             msc_check_preload$$module$synpdf();
             $("#sidecontent").show();
-            generateInstrumentsDropdown(recordingId)
+            return generateInstrumentsDropdown(recordingId, assets.piece)
                 .then(function () {
                     $('#recordings-dropdown').val(window.MW.player.recordingId);
                     window.recordingFullyLoaded = true;

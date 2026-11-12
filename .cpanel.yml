@@ -12,7 +12,7 @@ deployment:
     - /bin/cp site-information.php $DEPLOYPATH
     - /bin/cp index.php $DEPLOYPATH
     - /bin/cp homepage.php $DEPLOYPATH
-    - /bin/cp fetch_catalog.php $DEPLOYPATH
+    - /bin/cp fetch_catalog.php library-manifest.php $DEPLOYPATH
     - /bin/cp homepage-mockup.html $DEPLOYPATH
     - /bin/cp stripped-synpdf-extras.js $DEPLOYPATH
     - /bin/cp stripped-synpdf.js $DEPLOYPATH
@@ -39,7 +39,7 @@ deployment:
     - /bin/cp sw.js $DEPLOYPATH
 
     - /bin/cp annotations_api.php $DEPLOYPATH
-    - /bin/cp export_static_json.php $DEPLOYPATH
+    - /bin/rm -f ${DEPLOYPATH}export_static_json.php
     - /bin/cp -R assets $DEPLOYPATH
     - /bin/cp -R js $DEPLOYPATH
     - /bin/mkdir -p ${DEPLOYPATH}tools/vendor
@@ -64,7 +64,7 @@ deployment:
     - /bin/cp phpfiles/recording_sync_contributions.php $DEPLOYPATH2
     - /bin/cp phpfiles/leaderboard_cache.php $DEPLOYPATH2
     - /bin/cp phpfiles/update_recording_sync.php $DEPLOYPATH2
-    - /bin/cp phpfiles/static_recordings.php $DEPLOYPATH2
+    - /bin/cp phpfiles/static_recordings.php phpfiles/library_cache.php $DEPLOYPATH2
     - /bin/cp phpfiles/music_requests.php $DEPLOYPATH2
     - /bin/cp phpfiles/auth_config.example.php $DEPLOYPATH2
     - /bin/cp phpfiles/cloudflare_purge.php $DEPLOYPATH2
@@ -101,3 +101,4 @@ deployment:
     - /bin/cp synpdf_182/editmode/.htaccess ${DEPLOYPATH3}.htaccess
     - /bin/cp -R synpdf_182/editmode/vendor $DEPLOYPATH3
     - /usr/local/bin/php scripts/rebuild-leaderboard-cache.php --config=/home/monkcdmb/phpfiles/config.php
+    - /usr/local/bin/php scripts/rebuild-library-cache.php --config=/home/monkcdmb/phpfiles/config.php --webroot=/home/monkcdmb/public_html

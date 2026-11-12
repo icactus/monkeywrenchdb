@@ -1,3 +1,4 @@
+const { fixtureUrl, fixtureFetch } = require('./library-fixture.cjs');
 // Shared harness: stub DOM + fixture catalog driving the REAL js/homepage.js.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -121,6 +122,10 @@ function buildContext(sourceOverride, options = {}) {
 
     const store = { ...options.storage };
     const catalog = { pieces: options.pieces || FIXTURE_PIECES, instruments: ['Cello', 'Piano', 'Violin'] };
+    const libraryFetch = fixtureFetch({ catalog, pieces: catalog.pieces.map(piece => ({ ...piece,
+        parts: piece.parts.map(part => ({ ...part, metric_url: fixtureUrl('metrics', part.metric_arr_id) })),
+        recordings: (FIXTURE_RECORDINGS[piece.piece_id] || []).map(recording => ({ ...recording, times_url: fixtureUrl('times', recording.recording_id) }))
+    })) });
 
     ctx = {
         console,
@@ -150,7 +155,8 @@ function buildContext(sourceOverride, options = {}) {
             setItem: (k, v) => { store[k] = String(v); },
             removeItem: k => { delete store[k]; },
         },
-        fetch: async url => {
+        fetch: async (url, options) => {
+            if (String(url).includes('library-manifest.php') || String(url).includes('data/library/')) return libraryFetch(url, options);
             if (String(url).includes('fetch_catalog.php')) {
                 return { ok: true, json: async () => JSON.parse(JSON.stringify(catalog)) };
             }
@@ -172,12 +178,13 @@ function buildContext(sourceOverride, options = {}) {
     ctx.window.decodeHtmlEntities = v => (v === null || v === undefined ? '' : String(v));
     ctx.window.loadPieceRecordings = async id => JSON.parse(JSON.stringify(FIXTURE_RECORDINGS[id] || []));
     ctx.window.jQuery = () => ({ data() {} });
-    ctx.window.handleRecordingSelection = full => { launched.push(full); };
+    ctx.window.handleRecordingSelection = (full, prepared) => { launched.push(full); ctx.lastPrepared = prepared; };
     ctx.window.scrollTo = () => {};
     ctx.window.scrollY = 0;
     ctx.window.addEventListener = () => {};
     ctx.window.dispatchEvent = () => {};
     vm.createContext(ctx);
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/library-data.js'), 'utf8'), ctx);
     vm.runInContext(toastSource, ctx);
     vm.runInContext(sourceOverride || SOURCE, ctx);
 }

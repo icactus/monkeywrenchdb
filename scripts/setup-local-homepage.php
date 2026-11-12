@@ -30,7 +30,9 @@ require $root . '/phpfiles/static_recordings.php';
 $count = 0;
 foreach ($db->query('SELECT DISTINCT piece_id FROM recordings')->fetch_all(MYSQLI_ASSOC) as $row) {
     if (file_exists($root . '/data/recordings/by-piece/' . $row['piece_id'] . '.json')) continue;
-    if (!writePieceRecordingsJson($db, (int) $row['piece_id'], $root)) throw new RuntimeException('Could not export recording metadata.');
+    if (!writePieceRecordingsJson($db, (int) $row['piece_id'], $root, false)) throw new RuntimeException('Could not export recording metadata.');
     $count++;
 }
 echo "Exported $count missing recording lists.\n";
+mwLibraryRefresh($db, null, $root);
+echo "Library snapshots ready.\n";

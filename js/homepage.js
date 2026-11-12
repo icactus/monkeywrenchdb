@@ -131,13 +131,11 @@
                 window.jQuery(option).data('recordingFullData', fullRecording(piece, part, r)); dropdown.append(option);
             });
             // Verify required local sync assets before the player removes the homepage DOM.
-            const response = await Promise.all([fetch('data/metrics/' + part.metric_arr_id + '.json?v=2&_fresh=' + Date.now(), { cache: 'no-cache' }), fetch('data/times/' + recording.recording_id + '.json')]);
-            if (response.some(r => !r.ok)) throw new Error('This score or recording is missing its sync data. Please choose another recording or run the local data setup.');
-            await Promise.all(response.map(r => r.json()));
+            const prepared = await window.MWLibrary.prepare(fullRecording(piece, part, recording));
             write('part-' + piece.piece_id, part.metric_arr_id);
             write('recording-' + piece.piece_id, recording.recording_id);
             persist();
-            window.handleRecordingSelection(fullRecording(piece, part, recording));
+            window.handleRecordingSelection(prepared.recordingData, prepared);
             launching = false;
         } catch (error) {
             message(error.message); launching = false; if (trigger) trigger.disabled = false;
@@ -405,8 +403,7 @@
         if (catalogRequest) return catalogRequest;
         catalogRequest = (async () => {
             try {
-                // Match the player's fresh part reads, even when CDN rules cache GET responses.
-                const data = await json('fetch_catalog.php', { method: 'POST', cache: 'no-store' });
+                const data = await window.MWLibrary.catalog();
                 pieces = data.pieces.map(p => {
                     const piece = { ...p, piece_name: decode(p.piece_name), composer_last: decode(p.composer_last), composer_first: decode(p.composer_first), category_name: decode(p.category_name), parts: p.parts.map(part => ({ ...part, instrument_name: decode(part.instrument_name), part_number: decode(part.part_number), instrument_key: decode(part.instrument_key), edition_label: decode(part.edition_label) })) };
                     piece.composer = [piece.composer_first, piece.composer_last].filter(Boolean).join(' ');

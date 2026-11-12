@@ -1,11 +1,13 @@
 <?php
+require_once __DIR__ . '/library_cache.php';
 
 function findPieceRecordingsExportDir(?string $preferredRoot = null): ?string
 {
     $candidates = [];
 
     if ($preferredRoot) {
-        $candidates[] = rtrim($preferredRoot, '/') . '/data/recordings/by-piece';
+        $dir = rtrim($preferredRoot, '/') . '/data/recordings/by-piece';
+        return is_dir($dir) || @mkdir($dir, 0755, true) ? $dir : null;
     }
 
     if (!empty($_SERVER['DOCUMENT_ROOT'])) {
@@ -81,7 +83,7 @@ function buildPieceRecordingsPayload(mysqli $mysqli, int $pieceId): ?array
     return $payload;
 }
 
-function writePieceRecordingsJson(mysqli $mysqli, int $pieceId, ?string $preferredRoot = null): ?string
+function writePieceRecordingsJson(mysqli $mysqli, int $pieceId, ?string $preferredRoot = null, bool $refreshLibrary = true): ?string
 {
     $dir = findPieceRecordingsExportDir($preferredRoot);
     if (!$dir) {
@@ -99,9 +101,8 @@ function writePieceRecordingsJson(mysqli $mysqli, int $pieceId, ?string $preferr
     }
 
     $path = rtrim($dir, '/') . '/' . $pieceId . '.json';
-    if (file_put_contents($path, $json) === false) {
-        return null;
-    }
+    mwLibraryAtomicWrite($path, $json);
+    if ($refreshLibrary) mwLibraryRefresh($mysqli, $pieceId, dirname($dir, 3));
 
     return $path;
 }

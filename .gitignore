@@ -68,3 +68,6 @@ __pycache__/
 
 # Generated private leaderboard snapshot
 /phpfiles/cache/
+
+# Immutable generated library assets and metadata
+/data/library/

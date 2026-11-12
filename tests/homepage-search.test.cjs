@@ -142,9 +142,19 @@ test('homepage checks current barlines before launching a recording', async () =
     };
     await h.fire(h.titleButton('Nocturne'), 'click');
     await h.fire(h.findByClass(h.els()['study-results'], 'study-recording')[0], 'click');
-    const metricRequest = requests.find(r => r.url.includes('data/metrics/'));
-    assert.match(metricRequest.url, /^data\/metrics\/41\.json\?v=2&_fresh=\d+$/);
-    assert.equal(metricRequest.options.cache, 'no-cache');
+    const metricRequest = requests.find(r => r.url.includes('data/library/metrics/'));
+    assert.match(metricRequest.url, /^data\/library\/metrics\/[a-f0-9]{64}\.json$/);
+    assert.ok(h.ctx().lastPrepared.metricData, 'validated arrays are passed into the player');
+    const fs = require('node:fs'), vm = require('node:vm');
+    const source = fs.readFileSync(require('node:path').join(__dirname, '../stripped-synpdf-extras.js'), 'utf8');
+    const context = h.ctx();
+    context.MW = { player: { switchSeq: 0 } };
+    context.getPdfBaseDir = () => '/pdfs/';
+    context.buildPdfFilename = () => 'fixture.pdf';
+    vm.runInContext(source.slice(source.indexOf('async function sendVarToSynpdf'), source.indexOf('function addInvertButtonListener')), context);
+    await context.sendVarToSynpdf(context.lastPrepared.recordingData, null, context.lastPrepared);
+    assert.equal(requests.filter(r => r.url.includes('data/library/metrics/')).length, 1);
+    assert.equal(requests.filter(r => r.url.includes('data/library/times/')).length, 1);
     assert.equal(h.launched().length, 1);
 });
 

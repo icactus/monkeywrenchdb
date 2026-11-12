@@ -1,12 +1,13 @@
 <?php
 require_once 'config.php';
 require_once 'cloudflare_purge.php';
+require_once __DIR__ . '/library_cache.php';
 
 require_once __DIR__ . '/metric-arr-functions.php';
 
 // Establish the database connection
 $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-mysqli_set_charset($mysqli, 'utf8');
+mysqli_set_charset($mysqli, 'utf8mb4');
 if ($mysqli->connect_error) {
     die("Connection failed: " . $mysqli->connect_error);
 }
@@ -112,7 +113,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $staticDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/data/metrics';
             if (!is_dir($staticDir))
                 mkdir($staticDir, 0755, true);
-            file_put_contents("$staticDir/$existingMetricArrId.json", $metric_arr_data_processed);
+            mwLibraryAtomicWrite("$staticDir/$existingMetricArrId.json", $metric_arr_data_processed);
+            mwLibraryRefresh($mysqli, $piece_id, rtrim($_SERVER['DOCUMENT_ROOT'], '/'));
 
             // Purge Cloudflare cache for this metric_arr
             $purgeResult = purgeMetricArrCache($existingMetricArrId, $piece_id, $instrument_id, $recordingIds);
@@ -179,7 +181,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $staticDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/data/metrics';
                     if (!is_dir($staticDir))
                         mkdir($staticDir, 0755, true);
-                    file_put_contents("$staticDir/$newMetricArrId.json", $metric_arr_data_processed);
+                    mwLibraryAtomicWrite("$staticDir/$newMetricArrId.json", $metric_arr_data_processed);
+                    mwLibraryRefresh($mysqli, $piece_id, $webroot);
 
                     // Purge Cloudflare cache for related endpoints
                     $purgeResult = purgeMetricArrCache($newMetricArrId, $piece_id, $instrument_id, $recordingIds);

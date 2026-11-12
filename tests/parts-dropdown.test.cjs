@@ -16,7 +16,7 @@ function setup(fetch, metricArrId = 819) {
     };
     const context = vm.createContext({ fetch,
         document: { getElementById: () => dropdown, createElement: () => ({ dataset: {} }) },
-        window: { MW: { player: { metricArrId } } }, decodeHtmlEntities: text => text
+        window: { MW: { player: { metricArrId } }, MWLibrary: { piece: async ({recordingId}) => ({ parts: await (await fetch('piece:' + recordingId, { method: 'POST', cache: 'no-store' })).json() }) } }, decodeHtmlEntities: text => text
     });
     vm.runInContext(source.slice(source.indexOf('async function fetchPlayerJson'), source.indexOf('// --- Hi-Res PDFs toggle')), context);
     vm.runInContext('let __mwPartsDropdownSeq = 0;\n' + source.slice(source.indexOf('async function generateInstrumentsDropdown'), source.indexOf('function loadPieceRecordings')), context);
@@ -61,7 +61,7 @@ test('editions of one instrument select the exact loaded part', async () => {
 test('a late part list cannot overwrite the next piece dropdown', async () => {
     let finishOldRequest;
     const pending = new Promise(resolve => { finishOldRequest = resolve; });
-    const h = setup(url => url.includes('recordingId=201&') ? pending : Promise.resolve(response([secondViolin])));
+    const h = setup(url => url === 'piece:201' ? pending : Promise.resolve(response([secondViolin])));
     const oldLoad = h.load(201);
     await h.load(202);
     finishOldRequest(response([firstViolin]));

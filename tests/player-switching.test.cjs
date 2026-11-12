@@ -1,3 +1,4 @@
+const { fixtureUrl, fixtureFetch } = require('./library-fixture.cjs');
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -21,12 +22,15 @@ function setup() {
     elements.set('notation', notation); elements.set('notation-scroll', scroller);
     let part = { metric_arr_id: 42, instrument_id: 2, displayText: 'Violin 2' };
     let recording = { piece_id: 1, recording_id: 91, offset_js: 0, youtube_id: 'old' };
-    const context = { console: { log() {}, error() {} },
+    const piece = { piece_id: 1, composer_last: 'Example', piece_name: 'Work',
+        parts: [41, 42, 43].map(id => ({ metric_arr_id: id, instrument_id: id === 43 ? 3 : 2, metric_url: fixtureUrl('metrics', id) })),
+        recordings: [91, 92].map(id => ({ recording_id: id, youtube_id: id === 92 ? 'new' : 'old', offset_js: 0, times_url: fixtureUrl('times', id) })) };
+    const context = { URLSearchParams, structuredClone, console: { log() {}, error() {} },
         document: { getElementById: id => elements.get(id), createElement: element },
         $: id => ({ change: fn => { handlers[id] = fn; },
             find: () => ({ data: key => key === 'instrumentData' ? part : recording }),
             trigger: () => handlers[id].call(id) }),
-        fetch: async url => response(url.includes('get_new') ? { metric_arr_id: part.metric_arr_id } : [{ url }]),
+        fetch: fixtureFetch({ pieces: [piece] }),
         currentPdfLoadingTask$$module$synpdf: null, renderedCanvasesQueue: new Set(), renderingTasks: [], renderingQueue: { clear() {} },
         readPdf$$module$synpdf: url => { pdfs.push(url); scroller.innerHTML = 'new score'; },
         getPdfBaseDir: () => '/pdfs/', buildPdfFilename: (piece, inst) => `${piece}-${inst}.pdf`,
@@ -36,26 +40,27 @@ function setup() {
         YT: { PlayerState: { PLAYING: 1 } }, findCurrentMeasureTime: async () => {}, TOFF$$module$synpdf: 0 };
     context.window = context;
     vm.createContext(context);
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/library-data.js'), 'utf8'), context);
     vm.runInContext(source.slice(source.indexOf('var currentInstrumentGlobal'), source.indexOf('// --- Hi-Res PDFs toggle')), context);
     vm.runInContext(source.slice(source.indexOf('async function sendVarToSynpdf'), source.indexOf('function addInvertButtonListener')), context);
     context.loadRecording = async (data, seq) => { context.MW.player.recordingData = data; await context.sendVarToSynpdf(data, seq); };
     context.MW.player.recordingData = { ...recording, metric_arr_id: 41 };
-    vm.runInContext(source.slice(source.indexOf('function fetchNewInstrument'), source.indexOf('function displayMultiplePartLinks')), context);
-    return { context, elements, pdfs, videos, scroller,
+    vm.runInContext(source.slice(source.indexOf("$('#instruments-dropdown').change"), source.indexOf('function displayMultiplePartLinks')), context);
+    return { context, elements, pdfs, videos, scroller, piece,
         part: data => { part = { ...part, ...data }; handlers['#instruments-dropdown'].call('#instruments-dropdown'); },
         recording: data => { recording = { ...recording, ...data }; return handlers['#recordings-dropdown'].call('#recordings-dropdown'); } };
 }
 
 test('recording changes do not cancel a pending part or leave blank notation', async () => {
     const h = setup(), metadata = deferred(), fetch = h.context.fetch;
-    h.context.fetch = url => url.includes('get_new') ? metadata.promise : fetch(url);
+    h.context.fetch = url => url.includes('/metrics/') ? metadata.promise : fetch(url);
     h.part({});
     assert.equal(h.scroller.innerHTML, '', 'part changes clear immediately');
     await h.recording({ recording_id: 92, youtube_id: 'new' });
     metadata.resolve(response({ metric_arr_id: 42 })); await flush();
     assert.equal(h.pdfs.length, 1);
     assert.equal(h.videos[0].videoId, 'new');
-    assert.equal(h.context.times_arr$$module$synpdf[0].url, 'data/times/92.json');
+    assert.equal(h.context.times_arr$$module$synpdf[0].url, fixtureUrl('times', 92));
 });
 
 test('late part sync data cannot replace a newer recording timeline', async () => {
@@ -65,16 +70,16 @@ test('late part sync data cannot replace a newer recording timeline', async () =
     await h.recording({ recording_id: 92, youtube_id: 'new' });
     metrics.resolve(response(['new part metrics'])); await flush();
     assert.equal(h.pdfs.length, 1);
-    assert.equal(h.context.times_arr$$module$synpdf[0].url, 'data/times/92.json');
+    assert.equal(h.context.times_arr$$module$synpdf[0].url, fixtureUrl('times', 92));
 });
 
 test('late metrics from an obsolete part cannot overwrite the selected part', async () => {
     const h = setup(), metrics = deferred(), fetch = h.context.fetch;
-    h.context.fetch = url => url.includes('metrics/42.') ? metrics.promise : fetch(url);
+    h.context.fetch = url => url === fixtureUrl('metrics', 42) ? metrics.promise : fetch(url);
     h.part({}); await flush();
     h.part({ metric_arr_id: 43, instrument_id: 3 }); await flush();
     metrics.resolve(response(['obsolete metrics'])); await flush();
-    assert.match(h.context.metric_arr$$module$synpdf[0].url, /^data\/metrics\/43\.json\?v=2&_fresh=\d+$/);
+    assert.equal(h.context.metric_arr$$module$synpdf[0].url, fixtureUrl('metrics', 43));
     assert.deepEqual(h.pdfs, ['/pdfs/1-3.pdf']);
 });
 
@@ -84,6 +89,7 @@ test('refreshing after another editor saves revalidates cached barlines', async 
     let savedBarlines = ['first saved barlines'];
     const openPart = async () => {
         const h = setup(), fetch = h.context.fetch;
+        h.piece.parts.find(p => p.metric_arr_id === 42).metric_url = fixtureUrl('metrics', JSON.stringify(savedBarlines));
         h.context.fetch = async (url, options) => {
             if (!url.includes('metrics/')) return fetch(url, options);
             if (!cache.has(url) || options?.cache === 'no-cache') cache.set(url, savedBarlines);
@@ -111,6 +117,7 @@ test('barlines refresh even when CDN caching overrides revalidation and purges f
     h.part({}); await flush();
     assert.deepEqual(h.context.metric_arr$$module$synpdf, ['original barlines']);
     savedBarlines = ['corrected barlines']; now++;
+    h.piece.parts.find(p => p.metric_arr_id === 42).metric_url = fixtureUrl('metrics', 'corrected');
     h.part({}); await flush();
     assert.deepEqual(h.context.metric_arr$$module$synpdf, savedBarlines);
 });

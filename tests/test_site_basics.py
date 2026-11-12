@@ -188,13 +188,13 @@ class CatalogHttpHeadersTests(unittest.TestCase):
         cls.server.terminate()
         cls.server.wait(timeout=10)
 
-    def test_catalog_serves_json_with_private_cache(self):
+    def test_catalog_serves_json_with_revalidation(self):
         with urllib.request.urlopen(
                 "http://127.0.0.1:%d/fetch_catalog.php" % self.port, timeout=60) as res:
             self.assertIn("application/json", res.headers.get("Content-Type", ""))
             cache = res.headers.get("Cache-Control", "")
-            self.assertIn("private", cache)
-            self.assertIn("max-age=300", cache)
+            self.assertIn("no-cache", cache)
+            self.assertIn("must-revalidate", cache)
             body = json.load(res)
         self.assertIn("pieces", body)
 
@@ -217,7 +217,8 @@ class HomepageWiringTests(unittest.TestCase):
         self.assertIn("homepage.php", index)
         self.assertIn("js/homepage.js", index)
         self.assertIn("assets/css/homepage.css", index)
-        self.assertIn("fetch_catalog.php", self.src("js/homepage.js"))
+        self.assertIn("MWLibrary.catalog()", self.src("js/homepage.js"))
+        self.assertIn("js/library-data.js", index)
 
 
 if __name__ == "__main__":

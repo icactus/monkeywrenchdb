@@ -37,6 +37,9 @@ if (file_exists('phpfiles/config.php')) {
     exit;
 }
 
+require_once is_file(__DIR__ . '/phpfiles/library_cache.php')
+    ? __DIR__ . '/phpfiles/library_cache.php' : __DIR__ . '/../phpfiles/library_cache.php';
+
 mysqli_report(MYSQLI_REPORT_OFF);
 
 function normalizeMetricDataForStorage($jsonData)
@@ -161,7 +164,18 @@ try {
                     mkdir($staticDir, 0755, true);
                 }
                 $staticFile = "$staticDir/$metricArrId.json";
-                $writeOk = file_put_contents($staticFile, $metricArrDataProcessed);
+                $writeOk = false;
+                try {
+                    mwLibraryAtomicWrite($staticFile, $metricArrDataProcessed);
+                    $pieceStmt = $conn->prepare('SELECT piece_id FROM metric_arr WHERE metric_arr_id = ?');
+                    $pieceStmt->bind_param('i', $metricArrId); $pieceStmt->execute();
+                    $piece = $pieceStmt->get_result()->fetch_assoc(); $pieceStmt->close();
+                    if (!$piece) throw new RuntimeException('Part no longer exists.');
+                    mwLibraryRefresh($conn, (int) $piece['piece_id'], dirname($staticDir, 2));
+                    $writeOk = true;
+                } catch (Throwable $publishError) {
+                    error_log('Metric snapshot publication failed: ' . $publishError->getMessage());
+                }
 
                 if ($writeOk === false) {
                     http_response_code(500);

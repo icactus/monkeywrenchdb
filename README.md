@@ -45,3 +45,44 @@ npm run test:pdf
 
 Other JavaScript tests can be run with `node --test tests/<name>.test.cjs`.
 The generated `node_modules/` directory is ignored and should not be committed.
+
+### Static JSON maintenance
+
+Normal recording and measure saves update the affected static JSON automatically.
+To rebuild the files after initial setup, recovery, or direct database changes,
+run the CLI-only exporter from the repository:
+
+```sh
+php scripts/export_static_json.php
+```
+
+By default it uses the repository's database configuration and writes to `data/`.
+For a separate database configuration and deployed site directory, specify both:
+
+```sh
+php scripts/export_static_json.php --config=/path/to/config.php --webroot=/path/to/public_html
+```
+
+The exporter is kept out of the deployed web root. Deployment removes the old
+public `export_static_json.php` copy. Use `--help` to see all options.
+
+The player uses immutable assets under `data/library/` and shared catalog/part
+snapshots. `library-manifest.php` reads a small file-backed pointer; normal page
+loads do not rebuild snapshots or query MySQL for this data. The player checks
+that pointer using POST to bypass CDN rules that force caching of GET responses.
+GET requests also support ETag revalidation.
+
+Deployment builds these snapshots once. After direct database edits, rebuild them
+from the repository (normal recording saves, part saves, and live corrections do
+this automatically):
+
+```sh
+php scripts/rebuild-library-cache.php
+# Separate production configuration and site directory:
+php scripts/rebuild-library-cache.php --config=/path/to/config.php --webroot=/path/to/public_html
+```
+
+Old content hashes remain available so in-flight readers can finish using a
+consistent revision. Keep `data/library/` and `phpfiles/cache/library/` writable by
+the PHP user. Any CDN rule for `/data/library/` should allow caching JSON and
+respect the immutable paths; the manifest freshness check must reach PHP.

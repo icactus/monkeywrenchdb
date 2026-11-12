@@ -58,6 +58,7 @@ try {
     $text='<?php ';foreach($config as $key=>$value)$text.='define('.var_export($key,true).','.var_export($value,true).');';
     file_put_contents($fixture.'/phpfiles/config.php',$text);chmod($fixture.'/phpfiles/config.php',0600);file_put_contents($fixture.'/phpfiles/read_only_user_config.php',$text);
     foreach(['part_pdf_queue.php','metric-arr-functions.php','get_pieces_and_composers.php'] as $file)copy($root.'/phpfiles/'.$file,$fixture.'/phpfiles/'.$file);
+    file_put_contents($fixture.'/phpfiles/library_cache.php', '<?php function mwLibraryRefresh($db, $piece, $root) { file_put_contents('.var_export($fixture.'/snapshots.jsonl',true).',json_encode([$piece,$root])."\n",FILE_APPEND); return []; }');
     file_put_contents($fixture.'/phpfiles/cloudflare_purge.php','<?php function purgeMetricArrCache($metric,$piece,$instrument,$recordings=[]) { file_put_contents('.var_export($fixture.'/purges.jsonl',true).',json_encode([$metric,$piece,$instrument])."\n",FILE_APPEND); return ["success"=>true]; }');
     copy($root.'/session_config.php',$fixture.'/public/session_config.php');
     foreach(['part-pdf-queue.php','synpdf-edit-mode.php','get_parts.php','get_metric_arr.php'] as $file)copy($root.'/synpdf_182/editmode/'.$file,$fixture.'/public/editmode/'.$file);
@@ -113,6 +114,7 @@ try {
     qcheck(file_get_contents($fixture.'/public/pdfs/71-39.pdf')==='existing'&&(int)$db->query('SELECT COUNT(*) FROM metric_arr')->fetch_row()[0]===0,'Conflict preserves files and rolls back database changes.');unlink($fixture.'/public/pdfs/71-39.pdf');
     [$code,$published]=qhttp($port,'publish',$sessions['admin'],$id,$save);qcheck($code===200&&$published['item']['status']==='completed','Submit Part publishes directly without a review checkbox.');
     qcheck(hash_file('sha256',$source)===hash_file('sha256',$fixture.'/public/hd-pdfs/71-39.pdf'),'Published HD source is exact.');
+    qcheck(is_file($fixture.'/snapshots.jsonl') && json_decode(file($fixture.'/snapshots.jsonl')[0],true)[0]===71,'Published parts refresh the shared library snapshot.');
     qcheck(json_decode(file_get_contents($fixture.'/public/data/metrics/'.$published['item']['metric_arr_id'].'.json'),true)===$metrics,'Static metrics are normalized and published.');
     qcheck(qhttp($port,'publish',$sessions['admin'],$id,$save)[0]===200&&(int)$db->query('SELECT COUNT(*) FROM metric_arr')->fetch_row()[0]===1,'Publication retry is idempotent.');
     // Duplicate uploads require explicit confirmation and retain the old work
