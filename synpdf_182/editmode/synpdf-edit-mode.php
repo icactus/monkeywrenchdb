@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="stylesheet" href="part-pdf-queue.css?v=7">
-    <script src="part-pdf-queue.js?v=16" defer></script>
+    <script src="part-pdf-queue.js?v=17" defer></script>
     <script src="auto-barline-detection.js?v=5" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
@@ -956,7 +956,7 @@
                 <h2 id="pdf-queue-title">Parts waiting for barline work</h2>
                 <div id="pdf-queue-upload-controls" hidden>
                     <input id="pdf-queue-files" type="file" accept="application/pdf,.pdf" multiple aria-label="HD PDFs to prepare">
-                    <label><input id="pdf-queue-fix-skew" type="checkbox"> Fix skew</label>
+                    <label title="Automatically correct rotation and keystone (perspective) skew before preparing the PDFs"><input id="pdf-queue-fix-skew" type="checkbox"> Straighten pages</label>
                     <button id="pdf-queue-upload" type="button">Upload PDFs</button>
                     <ul id="pdf-queue-uploads" aria-label="PDF uploads"></ul>
                     <button id="pdf-queue-clear-finished" type="button" hidden>Clear finished</button>

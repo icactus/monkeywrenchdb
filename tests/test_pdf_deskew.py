@@ -11,6 +11,8 @@ import unittest
 from unittest import mock
 
 import fitz
+import cv2
+import numpy as np
 from PIL import Image, ImageChops
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +47,26 @@ def score_fixture(path, angles=(1.7, -1.3, 0)):
         output.save(path)
 
 
+def perspective_fixture(path):
+    with fitz.open() as score, fitz.open() as output:
+        page = score.new_page(width=600, height=800)
+        for top in range(100, 701, 60):
+            for line in range(5):
+                page.draw_line((65, top + line * 6), (535, top + line * 6), width=.6)
+            for x in range(85, 530, 45):
+                page.draw_circle((x, top + x % 5 * 6), 2, color=(0, 0, 0), fill=(0, 0, 0))
+        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), colorspace=fitz.csGRAY)
+        image = np.frombuffer(pix.samples, np.uint8).reshape(pix.height, pix.width)
+        for direction in (1, -1):
+            correction = np.array([[1, 0, 0], [-.025 * direction, 1, 0], [-.000032 * direction, 0, 1]], dtype=float)
+            warped = cv2.warpPerspective(image, np.linalg.inv(correction), (pix.width, pix.height), flags=cv2.INTER_CUBIC, borderValue=255)
+            ok, png = cv2.imencode('.png', warped)
+            assert ok
+            target = output.new_page(width=600, height=800)
+            target.insert_image(target.rect, stream=png.tobytes())
+        output.save(path)
+
+
 class DeskewTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory(prefix='mw-deskew-test-')
@@ -64,6 +86,8 @@ class DeskewTests(unittest.TestCase):
         original = self.source.read_bytes()
         result = self.convert()
         self.assertEqual(result['corrected_pages'], 2)
+        self.assertEqual(result['rotation_pages'], 2)
+        self.assertEqual(result['perspective_pages'], 0)
         self.assertEqual([row['page'] for row in result['corrections']], [1, 2])
         self.assertEqual(original, self.source.read_bytes())
         with fitz.open(self.source) as source, fitz.open(self.output) as output:
@@ -108,6 +132,79 @@ class DeskewTests(unittest.TestCase):
         self.assertEqual(result['corrected_pages'], 0)
         self.assertEqual((self.root / 'straight.pdf').read_bytes(), self.output.read_bytes())
 
+    def test_auto_selection_handles_mixed_rotation_perspective_straight_and_blank_pages(self):
+        perspective_fixture(self.root / 'perspective.pdf')
+        with fitz.open(self.source) as rotation, fitz.open(self.root / 'perspective.pdf') as perspective, fitz.open() as mixed:
+            mixed.insert_pdf(rotation, from_page=0, to_page=0)
+            mixed.insert_pdf(perspective)
+            mixed.insert_pdf(rotation, from_page=2, to_page=2)
+            mixed.new_page(width=600, height=800)
+            mixed.save(self.root / 'mixed.pdf')
+        result = self.convert(self.root / 'mixed.pdf')
+        self.assertEqual(result['rotation_pages'], 1)
+        self.assertEqual(result['perspective_pages'], 2)
+        self.assertEqual(result['review_pages'], [])
+        self.assertEqual([row['method'] for row in result['corrections']], ['rotation', 'perspective', 'perspective'])
+        with fitz.open(self.root / 'mixed.pdf') as before, fitz.open(self.output) as after:
+            self.assertEqual(len(after), 5)
+            for i in range(5):
+                self.assertEqual(before[i].rect, after[i].rect)
+            for i in (1, 2):
+                profile = DESKEW.staff_profile(DESKEW.analysis_image(after[i]))
+                self.assertLess(DESKEW.profile_error(profile), .15)
+                original_image = before[i].get_images()[0]
+                prepared_image = after[i].get_images()[0]
+                self.assertGreaterEqual(prepared_image[2], original_image[2] * .95)
+                self.assertGreaterEqual(prepared_image[3], original_image[3] * .95)
+                rect = after[i].get_image_rects(prepared_image[0])[0]
+                self.assertGreaterEqual(rect.x0, -.01)
+                self.assertGreaterEqual(rect.y0, -.01)
+                self.assertLessEqual(rect.x1, after[i].rect.width + .01)
+                self.assertLessEqual(rect.y1, after[i].rect.height + .01)
+            for i in (3, 4):
+                self.assertEqual(before[i].get_pixmap().samples, after[i].get_pixmap().samples)
+
+    def test_inconsistent_staff_angles_are_preserved_and_flagged_for_review(self):
+        straight = self.root / 'straight.pdf'
+        score_fixture(straight, angles=(0,))
+        with fitz.open(straight) as doc:
+            pix = doc[0].get_pixmap(matrix=fitz.Matrix(2, 2), colorspace=fitz.csGRAY)
+            image = Image.frombytes('L', [pix.width, pix.height], pix.samples)
+        for top, angle in zip((120, 300, 480, 660), (1.4, -1.4, 1.4, -1.4)):
+            box = (0, (top - 40) * 2, 1200, (top + 70) * 2)
+            band = image.crop(box).rotate(-angle, resample=Image.Resampling.BICUBIC, fillcolor=255)
+            image.paste(band, box)
+        data = io.BytesIO()
+        image.save(data, format='PNG')
+        with fitz.open() as doc:
+            page = doc.new_page(width=600, height=800)
+            page.insert_image(page.rect, stream=data.getvalue())
+            doc.save(self.root / 'inconsistent.pdf')
+        result = self.convert(self.root / 'inconsistent.pdf')
+        self.assertEqual(result['corrected_pages'], 0)
+        self.assertEqual([row['page'] for row in result['review_pages']], [1])
+        self.assertEqual((self.root / 'inconsistent.pdf').read_bytes(), self.output.read_bytes())
+        queue = self.root / 'queue'
+        job = queue / ('a' * 32)
+        job.mkdir(parents=True)
+        (job / 'hd.pdf').write_bytes((self.root / 'inconsistent.pdf').read_bytes())
+        (job / 'item.json').write_text(json.dumps({'status': 'queued', 'created_at': '', 'fix_skew': True}))
+        subprocess.run([sys.executable, str(ROOT / 'scripts/process-pdf-queue.py'), str(queue)], check=True, timeout=30)
+        item = json.loads((job / 'item.json').read_text())
+        self.assertEqual(item['status'], 'ready', item.get('error'))
+        self.assertEqual(item['skew_corrected_pages'], 0)
+        self.assertEqual(item['straightening_review_pages'], result['review_pages'])
+        self.assertEqual((job / 'deskewed.pdf').read_bytes(), (job / 'hd.pdf').read_bytes())
+
+    def test_perspective_canvas_keeps_all_transformed_source_corners(self):
+        for direction in (1, -1):
+            matrix = np.array([[1, 0, 0], [-.03 * direction, 1, 0], [-.00003 * direction, 0, 1]], dtype=float)
+            warp, (width, height) = DESKEW.perspective_canvas(matrix, 1200, 1600)
+            points = cv2.perspectiveTransform(np.array([[[0., 0.], [1199., 0.], [1199., 1599.], [0., 1599.]]]), warp)[0]
+            self.assertTrue(np.all(points >= 0))
+            self.assertTrue(np.all(points[:, 0] < width))
+            self.assertTrue(np.all(points[:, 1] < height))
+
     def test_failures_never_overwrite_or_publish_partial_files(self):
         self.output.write_bytes(b'keep existing output')
         with self.assertRaises(FileExistsError):
@@ -138,6 +235,43 @@ class DeskewTests(unittest.TestCase):
         completed = json.loads(result.stdout.splitlines()[-1])
         self.assertEqual(completed['corrected_pages'], 2)
         self.assertLess(completed['peak_rss_kb'], 200 * 1024)
+
+    def test_perspective_cli_runs_with_shared_host_address_space_reservations(self):
+        perspective_fixture(self.root / 'perspective.pdf')
+        wrapper = ('import mmap,runpy,sys; reservation=mmap.mmap(-1,220*1024*1024); '
+                   'sys.argv=sys.argv[1:]; runpy.run_path(sys.argv[0],run_name="__main__")')
+        result = subprocess.run([sys.executable, '-c', wrapper, str(ROOT / 'scripts/deskew-pdf.py'),
+                                 str(self.root / 'perspective.pdf'), str(self.output)],
+                                capture_output=True, text=True, check=True, timeout=45)
+        completed = json.loads(result.stdout.splitlines()[-1])
+        self.assertEqual(completed['perspective_pages'], 2)
+        self.assertLess(completed['peak_rss_kb'], 250 * 1024)
+
+    def test_queue_generates_matching_qualities_after_automatic_perspective_correction(self):
+        perspective_fixture(self.root / 'perspective.pdf')
+        raw = (self.root / 'perspective.pdf').read_bytes()
+        queue = self.root / 'queue'
+        job = queue / ('a' * 32)
+        job.mkdir(parents=True)
+        (job / 'hd.pdf').write_bytes(raw)
+        (job / 'item.json').write_text(json.dumps({'status': 'queued', 'created_at': '',
+                                                  'fix_skew': True, 'combined_cello_bass': True}))
+        subprocess.run([sys.executable, str(ROOT / 'scripts/process-pdf-queue.py'), str(queue)], check=True, timeout=45)
+        item = json.loads((job / 'item.json').read_text())
+        self.assertEqual(item['status'], 'ready', item.get('error'))
+        self.assertEqual(item['perspective_corrected_pages'], 2)
+        self.assertEqual(item['rotation_corrected_pages'], 0)
+        self.assertEqual(item['straightening_review_pages'], [])
+        self.assertTrue(item['combined_cello_bass'])
+        self.assertEqual((job / 'hd.pdf').read_bytes(), raw)
+        self.assertEqual(item['original_sha256'], hashlib.sha256((job / 'deskewed.pdf').read_bytes()).hexdigest())
+        with fitz.open(job / 'deskewed.pdf') as master, fitz.open(job / 'optimized.pdf') as optimized:
+            for hd, compressed in zip(master, optimized):
+                self.assertEqual(hd.rect, compressed.rect)
+                pix = hd.get_pixmap(matrix=fitz.Matrix(2000 / hd.rect.width, 2000 / hd.rect.width), colorspace=fitz.csGRAY)
+                expected = Image.frombytes('L', [pix.width, pix.height], pix.samples).convert('1', dither=Image.Dither.NONE)
+                actual = Image.open(io.BytesIO(optimized.extract_image(compressed.get_images()[0][0])['image'])).convert('1')
+                self.assertIsNone(ImageChops.difference(expected, actual).getbbox())
 
     def test_queue_compresses_corrected_master_and_retries_from_the_upload(self):
         queue = self.root / 'queue'

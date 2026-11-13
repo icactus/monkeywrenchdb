@@ -192,7 +192,10 @@ def run(root, scan_barlines=False, webroot=None):
                         if skew is not None:
                             item.update(original_sha256=skew['sha256'], hd_bytes=skew['bytes'],
                                         skew_corrected_pages=skew['corrected_pages'],
-                                        skew_corrections=skew['corrections'], deskew_seconds=skew['seconds'])
+                                        skew_corrections=skew['corrections'], deskew_seconds=skew['seconds'],
+                                        rotation_corrected_pages=skew.get('rotation_pages', skew['corrected_pages']),
+                                        perspective_corrected_pages=skew.get('perspective_pages', 0),
+                                        straightening_review_pages=skew.get('review_pages', []))
                         write_json(folder / 'item.json', item)
                 if item.get('scan_only') or (scan_barlines and not item.get('skip_barline_detection') and
                                             item.get('instrument_id') not in (39, 48, 50, 81, 82, 83, 84, 85, 88, 89, 90, 91)):

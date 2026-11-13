@@ -402,7 +402,7 @@
                 const name = document.createElement('div'); name.className = 'pdf-queue-name'; name.textContent = item.name;
                 const detail = document.createElement('div'); detail.className = 'pdf-queue-detail';
                 const state = item.status === 'processing'
-                    ? `${item.stage === 'barlines' ? (item.staff_progress?.phase === 'geometry' ? 'Fitting staff lines' : 'Scanning barlines') : item.stage === 'deskew' ? 'Fixing skew' : 'Compressing'}${item.pages ? ` (${item.progress || 0}/${item.pages})` : ''}`
+                    ? `${item.stage === 'barlines' ? (item.staff_progress?.phase === 'geometry' ? 'Fitting staff lines' : 'Scanning barlines') : item.stage === 'deskew' ? 'Straightening pages' : 'Compressing'}${item.pages ? ` (${item.progress || 0}/${item.pages})` : ''}`
                     : ({ queued: 'Submitted', ready: 'Ready', uploading: 'Upload incomplete', error: 'Failed' }[item.status] || item.status);
                 detail.textContent = `${label(pieceSelect, item.piece_id)} · ${label(partSelect, item.instrument_id)} · ${state}`;
                 if (item.stage === 'barlines' && item.status === 'processing' && item.staff_progress) {
@@ -415,7 +415,12 @@
                 size.textContent = item.pages ? `${item.pages} pages` : bytes(item.original_bytes);
                 if (item.stage === 'barlines' && item.status === 'processing') size.textContent += ' · Scanning continues when you leave this page';
                 if (item.fix_skew) size.textContent += item.status === 'ready'
-                    ? ` · Skew fixed on ${item.skew_corrected_pages || 0} pages` : ' · Fix skew enabled';
+                    ? ` · ${item.skew_corrected_pages || 0} pages straightened` : ' · Straighten pages enabled';
+                if (item.status === 'ready' && item.straightening_review_pages?.length) {
+                    const pages = item.straightening_review_pages.map(review => review.page);
+                    size.textContent += ` · Review pages: ${pages.slice(0, 10).join(', ')}${pages.length > 10 ? '…' : ''}`;
+                    size.title = item.straightening_review_pages.map(review => `Page ${review.page}: ${review.reason}`).join('\n');
+                }
                 row.append(name, detail, size);
                 const button = (text, callback) => { const element = document.createElement('button'); element.type = 'button'; element.textContent = text; element.onclick = async () => { element.disabled = true; try { await callback(); } catch (error) { notify(error.message); } finally { element.disabled = false; refresh(); } }; row.append(element); };
                 if (item.error) { const error = document.createElement('div'); error.textContent = item.error; row.append(error); }

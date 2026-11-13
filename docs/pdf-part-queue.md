@@ -19,7 +19,7 @@ Submit Part assignment show that both instruments will be saved. Clicking
 **Submit Part** creates separate entries for instrument IDs 4 and 5, each with
 its own HD PDF, compressed PDF, database record and static geometry JSON. Both
 copies share the same reviewed barline data, measures version and edition label.
-If **Fix skew** is selected, both copies use the same corrected master. The
+If **Straighten pages** is selected, both copies use the same corrected master. The
 primary selected instrument remains the viewer's part after submission.
 
 Both destinations are checked and locked before publication. A conflict in
@@ -30,20 +30,37 @@ the records. Both instruments' metadata caches are purged after publication;
 temporary queue PDFs are released after the pair is saved. No duplication occurs
 when the checkbox was left unchecked.
 
-Select **Fix skew** before clicking **Upload PDFs** to straighten tilted scans.
+Select **Straighten pages** before clicking **Upload PDFs** to straighten tilted scans.
 The choice applies to the selected batch and stays with each upload through
 resume, retry and overwrite confirmation. It is off by default. The server first
 creates a corrected HD master, then generates the compressed PDF from that same
 master. This happens before the PDF is opened for barline work, so both qualities
-and the reviewed coordinates line up. The queue shows **Fixing skew**, followed
+and the reviewed coordinates line up. The queue shows **Straightening pages**, followed
 by **Compressing**, with page progress and a corrected-page count when ready.
 
-Correction measures staff-line angles in small grayscale previews. Only confident
-tilts between 0.1 and 4.5 degrees are corrected. Blank pages, covers without a
-reliable staff pattern, ambiguous scans and pages with interactive annotations,
-widgets or links are preserved. The original PDF content is rotated and fitted
-inside the original page dimensions; embedded scans are not resampled. Small
-printed curves in a scan are not dewarped. If no pages need correction, the HD
+The same checkbox automatically chooses rotation or perspective correction for
+each page. Staff lines with a common tilt use rotation; a consistent change in
+angle down the page uses one projective transform. The detector locates staff
+groups throughout the page and ignores titles without requiring page-specific
+settings. Perspective is chosen only when it clearly explains the measurements
+better than rotation. A low-resolution candidate must improve alignment, and
+the full-resolution result is verified again before acceptance.
+
+Rotation preserves the original PDF content and embedded scan data. Perspective
+correction resamples once at the visible scan's native sampling density; vector
+pages use 300 DPI. The full transformed page is fitted inside the original page
+dimensions, retaining the page order and all corners. Native rasters and their
+corrected outputs are limited to 50 megapixels, matching the downstream compressor.
+No extra Python dependencies are required beyond the installed OpenCV and NumPy.
+The private job metadata retains per-page correction methods and counts.
+
+Confident rotation tilts between 0.1 and 4.5 degrees are corrected; perspective
+requires several staff groups spanning the page and a meaningful angle trend.
+Blank pages and covers without reliable staff lines remain intact. Inconsistent
+measurements, failed verification, oversized perspective rasters and pages with
+annotations, links or form fields remain unchanged and are listed under
+**Review pages** in the ready queue entry; hover for the reasons. Small printed
+curves are not dewarped. If no pages need correction, the HD
 master remains byte-for-byte identical to the upload. The raw upload stays private
 for retries, which always restart from it rather than rotating an already
 corrected PDF. Temporary copies are removed on publication or queue removal.
@@ -125,7 +142,7 @@ the queued PDF restores that work. Stale tabs cannot overwrite a newer saved
 queue draft. Page-close saving uses a beacon when supported; for very large
 scores, wait for **Edits saved to the queue** before closing.
 
-Use **Submit Part** to publish the HD master (corrected when **Fix skew** was selected), the prepared PDF, normalized
+Use **Submit Part** to publish the HD master (corrected when **Straighten pages** was selected), the prepared PDF, normalized
 reviewed geometry, and static metric JSON. Existing parts or filenames are never
 overwritten: choose another edition if necessary. A successful save removes the
 part from the pending queue and releases its temporary PDF copies. Ordinary
@@ -157,8 +174,9 @@ virtual address space and 180 CPU seconds, with one OpenCV/BLAS thread. The shar
 host's Python and OpenCV library mappings alone reserve about 500 MB of address
 space while using under 100 MB of resident RAM; the larger cap permits those
 mappings and page analysis. The compression child retains its 384 MB cap.
-Uploads without **Fix skew** do not
-import or run the skew detector. A failed skew stage stops the job before
+Uploads without **Straighten pages** do not import or run the correction stage.
+The API retains its existing `fix_skew` option for compatibility with saved uploads.
+A failed correction stage stops the job before
 compression and offers **Retry processing**.
 
 Optional constants in the private `phpfiles/config.php`:
