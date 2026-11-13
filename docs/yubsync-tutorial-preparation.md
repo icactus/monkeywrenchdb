@@ -21,7 +21,9 @@ maps, public piece landing pages, and the sitemap, including after barlines or
 recordings are saved. Admin dropdowns continue to include it. This controls
 library visibility; the normal PDF and static data paths are still used.
 
-After the administrator finishes the standalone recording, rebuild the frozen
-practice exercise from this new metric/recording pair. Do not use the full-suite
-recording’s excerpt as the final reference. Publishing the preparation workflow
-does not replace the current practice exercise or its official timestamps.
+The administrator’s completed sync (recording 677) and reviewed barlines
+(metric 854) now supply the frozen tutorial reference. The YouTube recording is
+`zrlH9uT_lPg`. The original database submission is backed up privately and removed
+from the normal recordings table and contribution leaderboard after the frozen
+reference is published. The private piece and metric stay available for further
+barline work. See `docs/yubsync-tutorial.md` for the current exercise snapshot.

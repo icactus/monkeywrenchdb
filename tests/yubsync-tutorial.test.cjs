@@ -7,39 +7,53 @@ const root = path.join(__dirname, '..');
 const { evaluate } = require('../synpdf_182/editmode/yubsync-tutorial.js');
 const exercise = JSON.parse(fs.readFileSync(path.join(root, 'assets/tutorials/yubsync-bach/exercise.json'), 'utf8'));
 
-test('the standalone package starts at detix 428 and keeps repeated occurrences with local measure indices', () => {
-    assert.equal(exercise.source.metricArrId, 137);
-    assert.equal(exercise.source.recordingId, 284);
-    assert.equal(exercise.source.startDetix, 428);
-    assert.equal(exercise.source.startMix, 280);
-    assert.equal(exercise.startSeconds, 964.38);
-    assert.equal(exercise.cueSeconds, 963.38);
+test('the standalone package uses the standalone reference sync and keeps repeated occurrences with local measure indices', () => {
+    assert.equal(exercise.source.metricArrId, 854);
+    assert.equal(exercise.source.recordingId, 677);
+    assert.equal(exercise.source.startDetix, 0);
+    assert.equal(exercise.source.startMix, 0);
+    assert.equal(exercise.startSeconds, -0.2);
+    assert.equal(exercise.cueSeconds, 0);
     assert.equal(exercise.metrics.length, 2);
-    assert.equal(exercise.official.length, 160);
-    assert.deepEqual(exercise.repeats, [{ at: 49, from: 48, to: 0 }]);
+    assert.equal(exercise.official.length, 73);
+    assert.deepEqual(exercise.repeats, [{ at: 13, from: 12, to: 0 }, { at: 49, from: 35, to: 13 }]);
     assert.deepEqual(exercise.official[0], { t: 0, mix: 0 });
-    assert.equal(exercise.official.at(-1).mix, 110);
-    assert.equal(exercise.metrics[1].bxs.reduce((n, xs) => n + xs.length - 1, 0), 110);
+    assert.equal(exercise.official.at(-1).mix, 36);
+    assert.equal(exercise.metrics[1].bxs.reduce((n, xs) => n + xs.length - 1, 0), 36);
 });
 
 test('scoring compares absolute video positions including the adjusted first marker', () => {
     const rows = exercise.official;
     assert.equal(evaluate(rows, rows, exercise.startSeconds, exercise.startSeconds).percentage, 100);
-    assert.equal(evaluate(rows, rows, exercise.startSeconds, exercise.startSeconds - 1).percentage, 0);
-    assert.equal(evaluate(rows, rows, exercise.startSeconds, exercise.startSeconds + .25).percentage, 75);
+    assert.equal(evaluate(rows, rows, exercise.startSeconds, exercise.startSeconds - 1).percentage, 25);
+    assert.equal(evaluate(rows, rows, exercise.startSeconds, exercise.startSeconds + .25).percentage, 100);
     const shifted = rows.map(p => ({ ...p, t: p.t + 10 }));
     assert.equal(evaluate(rows, shifted, exercise.startSeconds, exercise.startSeconds - 10).percentage, 100);
 });
 
+test('normal tapping variation earns full credit and larger errors lose credit gradually', () => {
+    const rows = exercise.official;
+    const tapped = rows.map((point, i) => ({ ...point, t: point.t + (i % 2 ? .24 : -.24) }));
+    assert.equal(evaluate(rows, tapped, 0, 0).percentage, 100);
+    for (const direction of [-1, 1]) {
+        assert.equal(evaluate(rows, rows, 0, direction * .25).percentage, 100);
+        assert.equal(evaluate(rows, rows, 0, direction * .75).percentage, 50);
+        assert.equal(evaluate(rows, rows, 0, direction * 1.25).percentage, 0);
+        assert.equal(evaluate(rows, rows, 0, direction * 2).percentage, 0);
+    }
+});
+
 test('the repeated passage is compared by occurrence and wrong or missing markers reduce the score', () => {
     const rows = structuredClone(exercise.official);
-    rows[49].mix = 49;
+    const jump = exercise.repeats[0];
+    rows[jump.at].mix = jump.from + 1;
     const result = evaluate(exercise.official, rows, exercise.startSeconds, exercise.startSeconds);
-    assert.equal(result.matched, 158);
-    assert.equal(result.errors[49], null);
-    const skipped = [...exercise.official.slice(0, 49), ...exercise.official.slice(98)];
+    assert.equal(result.matched, exercise.official.length - 2);
+    assert.equal(result.errors[jump.at], null);
+    const repeatedLength = jump.from - jump.to + 1;
+    const skipped = [...exercise.official.slice(0, jump.at), ...exercise.official.slice(jump.at + repeatedLength)];
     const shorter = evaluate(exercise.official, skipped, exercise.startSeconds, exercise.startSeconds);
-    assert.equal(shorter.matched, 49);
+    assert.equal(shorter.matched, jump.at);
     assert(shorter.percentage < 50);
 });
 
@@ -47,7 +61,7 @@ test('the final cutoff does not influence the percentage and extra markers canno
     const rows = structuredClone(exercise.official);
     rows.at(-1).t += 7;
     assert.equal(evaluate(exercise.official, rows, 0, 0).percentage, 100);
-    rows.splice(-1, 0, { t: 120, mix: 109 });
+    rows.splice(-1, 0, { t: 120, mix: exercise.official.at(-2).mix });
     assert(evaluate(exercise.official, rows, 0, 0).percentage < 100);
     assert.equal(evaluate(exercise.official, [], 0, 0).percentage, 0);
 });

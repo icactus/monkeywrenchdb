@@ -1009,7 +1009,7 @@ if ($yubsyncTutorial) {
             <p id="tutorial-copy" role="status" aria-live="polite">Preparing the score and recording.</p>
             <details id="tutorial-start-help" hidden>
                 <summary>Check the first measure’s start</summary>
-                <p>Set the first measure about a second before the first note.
+                <p>Allow about a second before the first note when the recording has room.
                     You can listen back and fine-tune that starting position.</p>
                 <p>After marking a few measures, press <kbd>Left</kbd> to return to measure one.
                     Press <kbd>Left</kbd> again to hear exactly where its marker starts.
@@ -1215,7 +1215,7 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=10"></script><?php endif; ?>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=13"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=96"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=10"></script>

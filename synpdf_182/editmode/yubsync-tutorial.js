@@ -2,10 +2,10 @@
 (() => {
     'use strict';
 
-    // Provisional scoring: each matching occurrence earns up to one point,
-    // falling linearly to zero at one second of error. Missing/wrong events earn
+    // Provisional scoring: matching occurrences earn full credit within 0.25s,
+    // then fall linearly to zero over the next second. Missing/wrong events earn
     // zero. The closing marker is intentionally excluded from the percentage.
-    function evaluate(official, actual, officialOffset, actualOffset, tolerance = 1) {
+    function evaluate(official, actual, officialOffset, actualOffset, tolerance = 0.25) {
         const expected = official.slice(0, -1);
         const attempts = actual.slice(0, -1);
         const errors = expected.map((point, i) => {
@@ -15,7 +15,7 @@
         });
         const matched = errors.filter(error => error !== null);
         const extra = Math.max(0, attempts.length - expected.length);
-        const points = errors.reduce((sum, error) => sum + (error === null ? 0 : Math.max(0, 1 - error / tolerance)), 0);
+        const points = errors.reduce((sum, error) => sum + (error === null ? 0 : Math.max(0, 1 - Math.max(0, error - tolerance))), 0);
         return {
             percentage: Math.round(100 * points / (expected.length + extra || 1)),
             matched: matched.length, expected: expected.length,
@@ -33,7 +33,7 @@
     const get = name => window[name + '$$module$synpdf'];
     const set = (name, value) => { window[name + '$$module$synpdf'] = value; };
     let exercise, stage = 'loading', result = null, submitting = false;
-    let videoRequested = false;
+    let videoRequested = false, activeRepeat = null;
     let playbackStarted = false, infoStep = 'loading';
     const dismissedSteps = new Set();
     const lesson = byId('tutorial-lesson'), scoreStage = byId('yubsync-score-stage');
@@ -66,9 +66,9 @@
     }
     function showTargets() {
         clearTargets();
-        const jump = exercise.repeats[0];
+        const jump = activeRepeat;
         const current = get('deTijden')?.[get('detix')]?.mix ?? 0;
-        const targets = stage === 'repeat' ? [[jump.from, 'From · 49'], [jump.to, 'To · 1']]
+        const targets = stage === 'repeat' ? [[jump.from, `From · ${jump.from + 1}`], [jump.to, `To · ${jump.to + 1}`]]
             : [[stage === 'start' ? 0 : current, stage === 'start' ? 'Start · 1' : `Measure · ${current + 1}`]];
         for (const [index, label] of targets) {
             const box = get('deMaten')[index];
@@ -89,16 +89,16 @@
             : lesson.getBoundingClientRect().height + 24 + 'px');
     }
     function setInfoStep(step) {
-        infoStep = step;
+        infoStep = step === 'repeat' ? `repeat-${activeRepeat.at}` : step;
         lesson.dataset.step = step;
-        lesson.hidden = stage === 'complete' || dismissedSteps.has(step);
+        lesson.hidden = stage === 'complete' || dismissedSteps.has(infoStep);
     }
     function playbackChanged() {
         window.YubSyncGuidance?.update();
     }
     function resetStart() {
         if (!exercise) return false;
-        stage = 'start'; result = null;
+        stage = 'start'; result = null; activeRepeat = null;
         playbackStarted = false;
         dismissedSteps.clear();
         window.YubSyncTutorial.lastResult = null;
@@ -135,10 +135,10 @@
             get('setPlayer')('', '');
         }
 
-        const jump = exercise.repeats[0];
+        activeRepeat = exercise.repeats.find(jump => s.last === jump.at - 1) || null;
         // Select the help text without pausing, seeking, or blocking B.
         stage = s.complete ? 'complete' : !s.recorded ? 'start'
-            : s.last === jump.at - 1 ? 'repeat' : 'follow';
+            : activeRepeat ? 'repeat' : 'follow';
         if (!s.complete && result) result = null;
         const player = get('elmed');
         const playing = s.videoReady && (typeof player?.getPlayerState === 'function'
@@ -153,16 +153,18 @@
 
         restart.disabled = submitting || !s.videoReady;
         byId('tutorial-step').textContent = stage === 'start' ? '1 / 3 · FIND THE START'
-            : stage === 'repeat' ? '2 / 3 · MARK THE REPEAT' : s.complete ? '3 / 3 · COMPARE YOUR TIMINGS' : 'FOLLOW THE SCORE';
+            : stage === 'repeat' ? `REPEAT ${exercise.repeats.indexOf(activeRepeat) + 1} / ${exercise.repeats.length}` : s.complete ? '3 / 3 · COMPARE YOUR TIMINGS' : 'FOLLOW THE SCORE';
         title.textContent = step === 'loading' ? 'Preparing the recording…' : step === 'play' ? 'Start the recording'
             : step === 'mark-start' ? 'Mark the start' : stage === 'repeat' ? 'The music repeats here'
                 : s.complete ? 'Ready to compare' : s.finishing ? 'Mark the end'
                     : step === 'check-start' ? 'Listen back when you’re ready' : 'Mark each measure';
         const instruction = step === 'loading' ? 'The score and player will be ready shortly.'
             : step === 'play' ? 'Press Play on the player to start.'
-            : step === 'mark-start' ? 'Press B about a second before the first note to mark the start of syncing.'
+            : step === 'mark-start' ? (exercise.startSeconds <= 0
+                ? 'This recording starts immediately. Press B as it begins to mark the start; you can adjust it later.'
+                : 'Press B about a second before the first note to mark the start of syncing.')
             : stage === 'repeat'
-                ? 'To add a repeat, shift click the measure with the repeat and then shift click the destination measure. Keep pressing B as the music continues; after marking the jump, B advances to its destination. You can also use this method to jump forward in the case of 2nd endings or cuts.'
+                ? `To add this repeat, shift click measure ${activeRepeat.from + 1} and then shift click measure ${activeRepeat.to + 1}. Keep pressing B as the music continues; after marking the jump, B advances to its destination. You can also use this method for 2nd endings or cuts.`
                 : s.complete ? 'Choose Submit tutorial to see how closely your timings match. Choose Start over to practice again.'
                     : s.finishing ? 'Let the last measure finish, then press B a few seconds after the final cutoff to finish the exercise.'
                         : s.last < 2 ? 'Press B on the first beat of each next measure.'
@@ -208,7 +210,7 @@
                 (result.meanError === null ? '' : ` Average timing difference: ${result.meanError.toFixed(2)} seconds.`) +
                 (result.missingOrWrong || result.extra ? ' Check your repeat markers and the number of B presses.' : '');
             const explanation = document.createElement('p');
-            explanation.textContent = 'Practice score: full credit for an exact match, decreasing to zero at one second of difference per marker. Missing or wrong markers receive zero. The closing marker is excluded. We may adjust this scoring.';
+            explanation.textContent = 'Practice score: full credit within 0.25 seconds per marker, decreasing gradually to zero at 1.25 seconds of difference. Missing or wrong markers receive zero. The closing marker is excluded. We may adjust this scoring.';
             output.append(score, detail, explanation);
             // Raw errors stay available for refining the scoring later.
             window.YubSyncTutorial.lastResult = result;
@@ -230,7 +232,7 @@
         restart.disabled = true;
         restart.textContent = 'Start over';
         try {
-            const response = await fetch('/assets/tutorials/yubsync-bach/exercise.json?v=1');
+            const response = await fetch('/assets/tutorials/yubsync-bach/exercise.json?v=3');
             if (!response.ok) throw new Error('The tutorial data could not be loaded.');
             exercise = await response.json();
             videoRequested = false;

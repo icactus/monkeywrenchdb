@@ -15,31 +15,33 @@ created.
 
 ## Exercise snapshot
 
-`assets/tutorials/yubsync-bach/score.pdf` is page 6 of `pdfs/34-4.pdf`.
-`exercise.json` contains the final page of `data/metrics/137.json`, recording
-284's metadata from `data/recordings/by-piece/34.json`, and the events starting
-at index 428 of `data/times/284.json`. Those are the local official snapshots
-used to create this exercise. The source references are recorded in the JSON.
+`assets/tutorials/yubsync-bach/score.pdf` is the single standalone Gigue page
+submitted for `bachsuite1-tutorial` (private piece 304), using the administrator’s
+reviewed metric array 854. The frozen comparison timings are the administrator’s
+recording 677, labeled `bachsuite1-tutorial`, YouTube ID `zrlH9uT_lPg`. This replaces
+the earlier full-suite excerpt and its recording. The source IDs and hashes in
+`exercise.json` record provenance; playback and scoring read this exercise file,
+not live database rows.
 
-The excerpt starts at source score index 280. Subtract 280 from each source
-`mix`, and subtract the first source `t` (939.480) from all timing events. Add
-the recording's original offset (24.900) to that first time to obtain the
-absolute video start, 964.380 seconds. The video is initially cued and paused
-one second early, at 963.380 seconds. The score starts with an empty timing
-array and no highlighted measure. The learner presses the first B about a second
-before the first note, then on the first beat of each next measure. The existing
-0.2-second keypress compensation applies to the recorded timings.
-Backspace at the first marker and Start over both
-clear the highlight and cue the video at the same starting position.
+The source recording is archived privately outside the normal recordings table
+after publication. Its regular recording listing and contribution credit are
+removed. The private preparation piece and reviewed metric remain available for
+future barline work. A new reference sync requires deliberately rebuilding this
+frozen exercise; ordinary database edits cannot silently change its scoring.
 
-There are 110 score measures, 159 performed measure starts, and a final closing
-event. The repeat occurs at local timing index 49 (source 477), jumping from
-local score index 48 to 0. This is detected from a decreasing `mix`, while the
-timing event index continues increasing. The repeat lesson is help only: it
-explains the usual Shift-click markers while playback and B remain available.
-There is no automatic pause, forced seek, required marker pair, or separate
-listen/resume action. B follows the jump markers the learner has placed using
-the normal sync engine. Dismissing a lesson only hides its help box.
+The timing array already starts at local measure 0 and timestamp 0. Its saved
+offset is -0.200 seconds, reflecting the sync engine’s existing keypress
+compensation. Preserve that offset for comparison, but clamp the player cue to
+zero. The recording starts immediately, so the starting help explains pressing B
+as it begins and adjusting afterward. No extra second is subtracted from any
+recorded marker. The score starts with empty timings and no blue highlight.
+
+There are 36 score measures, 72 performed measure starts, and a closing marker.
+Both repeats are preserved: timing index 13 jumps from score index 12 to 0;
+timing index 49 jumps from score index 35 to 13. Each repeat has separately
+dismissible help with its own From/To measure numbers. Lessons never pause,
+seek, require markers, or block B; the normal engine follows the learner’s jump
+markers. Start over returns to the beginning of this standalone recording.
 
 The lesson stays in the PDF pane’s bottom right corner. Extra scroll space
 below the page lets the final systems scroll above the lesson.
@@ -48,8 +50,10 @@ below the page lets the final systems scroll above the lesson.
 
 `evaluate()` is a separate pure function in `yubsync-tutorial.js`. It compares
 absolute timestamps (`t + offset`) in performed occurrence order, including the
-adjusted first marker. Each correct measure occurrence scores `max(0, 1 -
-absoluteErrorSeconds)`; missing/wrong occurrences score zero and extra events
+adjusted first marker. Each correct measure occurrence earns full credit within
+0.25 seconds, then decreases linearly to zero at 1.25 seconds of error
+(`max(0, 1 - max(0, absoluteErrorSeconds - 0.25))`). Missing/wrong occurrences
+score zero and extra events
 increase the denominator. The percentage is the rounded average times 100.
 The closing event is excluded because the normal workflow allows a few seconds
 after the final cutoff. Raw errors remain available as
