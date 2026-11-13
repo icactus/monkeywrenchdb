@@ -795,7 +795,7 @@ if ($yubsyncTutorial) {
     </style>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=16" />
     <?php if ($yubsyncTutorial): ?>
-    <link rel="stylesheet" href="yubsync-tutorial.css?v=4" />
+    <link rel="stylesheet" href="yubsync-tutorial.css?v=5" />
     <?php endif; ?>
 </head>
 
@@ -994,8 +994,6 @@ if ($yubsyncTutorial) {
             </button>
             <?php if ($yubsyncTutorial): ?>
             <div class="tutorial-actions">
-                <button type="button" id="tutorial-replay" disabled>Play from the start</button>
-                <button type="button" id="tutorial-continue" hidden disabled>Resume at the repeat</button>
                 <button type="button" id="tutorial-restart" disabled>Start over</button>
             </div>
             <p id="tutorial-progress" aria-live="polite"></p>
@@ -1217,7 +1215,7 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=8"></script><?php endif; ?>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=10"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=96"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=10"></script>

@@ -35,10 +35,14 @@ clear the highlight and cue the video at the same starting position.
 There are 110 score measures, 159 performed measure starts, and a final closing
 event. The repeat occurs at local timing index 49 (source 477), jumping from
 local score index 48 to 0. This is detected from a decreasing `mix`, while the
-timing event index continues increasing. The lesson pauses after marking the
-From measure, asks the learner to place the usual Shift-click markers, and
-resumes only when the correct pair exists. Rewinding before that measure makes
-the repeat lesson available again.
+timing event index continues increasing. The repeat lesson is help only: it
+explains the usual Shift-click markers while playback and B remain available.
+There is no automatic pause, forced seek, required marker pair, or separate
+listen/resume action. B follows the jump markers the learner has placed using
+the normal sync engine. Dismissing a lesson only hides its help box.
+
+The lesson stays in the PDF pane’s bottom right corner. Extra scroll space
+below the page lets the final systems scroll above the lesson.
 
 ## Provisional percentage
 
