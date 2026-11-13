@@ -34,7 +34,7 @@ try {
         }
         usort($items, fn($a, $b) => strcmp($a['created_at'], $b['created_at']));
         if ($canUpload && array_filter($items, fn($i) => in_array($i['status'], ['queued', 'processing'], true) || ($i['status'] === 'ready' && !empty($i['replaces']) && empty($i['replaces_applied'])))) mwPdfQueueKick($root);
-        echo json_encode(['items' => $items, 'can_upload' => $canUpload, 'csrf' => $csrf]); exit;
+        echo json_encode(['items' => $items, 'can_upload' => $canUpload, 'background_barlines' => mwPdfQueueCanScan(), 'csrf' => $csrf]); exit;
     }
     if ($method === 'GET' && $action === 'get') {
         $result = mwPdfQueueLocked($root, $id, function($item, $folder) {
@@ -78,7 +78,11 @@ try {
                 $item['status'] = 'queued';
             } elseif ($action === 'retry') {
                 if ($item['status'] !== 'error') throw new InvalidArgumentException('This PDF is not waiting for a retry.');
+                $item['scan_only'] = ($item['stage'] ?? '') === 'barlines' && is_file($folder . '/optimized.pdf');
                 $item['status'] = 'queued'; $item['error'] = null;
+            } elseif ($action === 'prepare') {
+                $item = array_replace($item, mwPdfQueueDetails($db, $item));
+                return mwPdfQueueRequestScan($item, $folder, $_POST);
             } elseif ($action === 'discard') {
                 if ($item['status'] === 'processing') throw new InvalidArgumentException('Wait for processing to finish before removing this PDF.');
                 if ($item['status'] === 'completed') throw new InvalidArgumentException('This part has already been saved to the library.');
@@ -113,7 +117,7 @@ try {
             return $item;
         });
     }
-    if (in_array($action, ['finish', 'retry'], true)) mwPdfQueueKick($root);
+    if (in_array($action, ['finish', 'retry', 'prepare'], true)) mwPdfQueueKick($root);
     if ($action === 'publish') {
         require_once $private . '/library_cache.php';
         mwLibraryRefresh($db, (int) $result['piece_id'], rtrim($_SERVER['DOCUMENT_ROOT'], '/'));

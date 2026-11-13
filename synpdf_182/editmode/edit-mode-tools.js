@@ -1178,6 +1178,33 @@ function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf,
 var barlineModelPreparation = null;
 var barlineModelPrepared = false;
 
+// Paint progress in visible tabs, but never make scanning wait for a hidden
+// tab's animation frames. A posted task also avoids per-staff timer throttling.
+function yieldBarlineDetection() {
+    return new Promise(function (resolve) {
+        var resumed = false, frame;
+        function resume() {
+            if (resumed) return;
+            resumed = true;
+            document.removeEventListener?.('visibilitychange', visibilityChanged);
+            if (frame !== undefined && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame);
+            if (typeof MessageChannel === 'function') {
+                var channel = new MessageChannel();
+                channel.port1.onmessage = function () {
+                    channel.port1.close(); channel.port2.close();
+                    resolve();
+                };
+                channel.port2.postMessage(null);
+            } else setTimeout(resolve, 0);
+        }
+        function visibilityChanged() { if (document.hidden) resume(); }
+        document.addEventListener?.('visibilitychange', visibilityChanged);
+        if (document.hidden || typeof requestAnimationFrame !== 'function') resume();
+        else frame = requestAnimationFrame(resume);
+    });
+}
+
+
 async function prepareBarlineDetectionModel() {
     if (barlineModelPrepared || typeof BarlinePatchCNN === 'undefined' || typeof BarlinePatchCNN.loadAsync !== 'function') return;
     if (typeof BarlinePatchCNN.isOnnxConfigured === 'function' && !BarlinePatchCNN.isOnnxConfigured()) return;
@@ -1186,9 +1213,7 @@ async function prepareBarlineDetectionModel() {
     try {
         if (!barlineModelPreparation) {
             // Paint the model-loading message before downloading and initializing.
-            barlineModelPreparation = new Promise(function (resolve) {
-                requestAnimationFrame(function () { setTimeout(resolve, 0); });
-            }).then(function () { return BarlinePatchCNN.loadAsync(); }).then(function () {
+            barlineModelPreparation = yieldBarlineDetection().then(function () { return BarlinePatchCNN.loadAsync(); }).then(function () {
                 barlineModelPrepared = true;
             });
         }
@@ -1225,10 +1250,7 @@ async function updateBarlineDetectionProgress(pageNumber, completedSystems, tota
     if (status) status.textContent = 'Page ' + pageNumber + ' · ' +
         (totalSystems ? 'Staff ' + completedSystems + ' of ' + totalSystems : 'Finding staves…') +
         ' · ' + percent + '%';
-    // A frame followed by a new task lets the browser paint before CPU-heavy work.
-    await new Promise(function (resolve) {
-        requestAnimationFrame(function () { setTimeout(resolve, 0); });
-    });
+    await yieldBarlineDetection();
 }
 
 function finishBarlineDetectionProgress(error) {

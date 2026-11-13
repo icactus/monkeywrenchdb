@@ -305,3 +305,54 @@ test('a CNN initialization error clears its loading stage and permits retry', as
     await h.c.prepareBarlineDetectionModel();
     assert.equal(h.c.barlineModelPrepared, true);
 });
+
+for (const startsHidden of [false, true]) {
+    test(`CNN preparation continues when ${startsHidden ? 'already hidden' : 'the tab hides before its queued frame'}`, { timeout: 2000 }, async () => {
+        const h = modelHarness();
+        h.c.MessageChannel = require('node:worker_threads').MessageChannel;
+        h.c.document.removeEventListener = name => { delete h.listeners[name]; };
+        h.c.document.hidden = startsHidden;
+        let queuedFrame, calls = 0, cancelled;
+        h.c.requestAnimationFrame = fn => { queuedFrame = fn; return 17; };
+        h.c.cancelAnimationFrame = id => { cancelled = id; };
+        h.c.BarlinePatchCNN = { loadAsync: async () => { calls++; } };
+        const pending = h.c.prepareBarlineDetectionModel();
+        if (startsHidden) assert.equal(queuedFrame, undefined);
+        else {
+            assert.equal(calls, 0);
+            h.c.document.hidden = true;
+            h.listeners.visibilitychange();
+        }
+        await pending;
+        assert.equal(calls, 1);
+        assert.equal(h.c.barlineModelPrepared, true);
+        assert.equal(h.listeners.visibilitychange, undefined);
+        if (!startsHidden) {
+            assert.equal(cancelled, 17);
+            queuedFrame();
+            assert.equal(calls, 1, 'a late frame must not resume work twice');
+        }
+    });
+}
+
+test('staff progress continues through a hidden tab without animation frames or throttled timers', { timeout: 2000 }, async () => {
+    const h = modelHarness();
+    h.c.document.hidden = true;
+    h.c.document.removeEventListener = name => { delete h.listeners[name]; };
+    h.c.MessageChannel = require('node:worker_threads').MessageChannel;
+    h.c.requestAnimationFrame = () => assert.fail('hidden scanning must not wait for painting');
+    h.c.setTimeout = () => assert.fail('hidden staff yields should use posted tasks');
+    vm.runInContext(tools.slice(tools.indexOf('async function updateBarlineDetectionProgress('), tools.indexOf('function finishBarlineDetectionProgress(')), h.c);
+    h.c.barlineDetectionProgress = { totalPages: 1, completedPages: 0 };
+    for (let staff = 0; staff <= 20; staff++) await h.c.updateBarlineDetectionProgress(1, staff, 20);
+    assert.equal(h.listeners.visibilitychange, undefined);
+});
+
+test('rerunning a queued PDF delegates to its persistent job without starting browser detection', async () => {
+    const h = harness(); let requested = 0;
+    h.c.SynpdfPdfQueue = { canBackgroundScan: true, rerunBarlines: async () => { requested++; } };
+    h.rerun.click(); await Promise.resolve();
+    assert.equal(requested, 1);
+    assert.equal(h.calls.length, 0);
+    assert.equal(h.c.SynpdfAutoBarlines.running, false);
+});

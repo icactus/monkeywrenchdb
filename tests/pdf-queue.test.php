@@ -34,8 +34,8 @@ function qhttp($port, $action, $session, $id='', $data=null, $csrf=true) {
     $raw=curl_exec($ch);if($raw===false)throw new RuntimeException(curl_error($ch));$code=curl_getinfo($ch,CURLINFO_RESPONSE_CODE);curl_close($ch);
     $result=json_decode($raw,true);if(!is_array($result))throw new RuntimeException('Invalid queue response: '.substr($raw,0,1000));return [$code,$result];
 }
-function qterminal($port, $session, $id, $replaced=false) {
-    for($i=0;$i<100;$i++) {
+function qterminal($port, $session, $id, $replaced=false, $attempts=100) {
+    for($i=0;$i<$attempts;$i++) {
         usleep(150000); $item=qhttp($port,'get',$session,$id)[1]['item'];
         if($item['status']==='error'||($item['status']==='ready'&&(!$replaced||!empty($item['replaces_applied']))))return $item;
     }
@@ -53,8 +53,10 @@ try {
     $db->query('CREATE TABLE metric_arr(metric_arr_id INT AUTO_INCREMENT PRIMARY KEY,piece_id INT,instrument_id INT,measures_version INT,metric_arr_data LONGTEXT,edition_label VARCHAR(100)) ENGINE=InnoDB');
     $db->query('CREATE TABLE recordings(recording_id INT PRIMARY KEY,piece_id INT)');
     mkdir($fixture,0700);mkdir($fixture.'/public/editmode',0700,true);mkdir($fixture.'/public/sessions',0700);mkdir($fixture.'/phpfiles',0700);mkdir($fixture.'/queue',0700);
-    $python=trim(shell_exec('command -v python3'));
-    $config=['DB_HOST'=>DB_HOST,'DB_USER'=>DB_USER,'DB_PASSWORD'=>DB_PASSWORD,'DB_NAME'=>$database,'MW_PDF_QUEUE_DIRECTORY'=>$fixture.'/queue','MW_PDF_QUEUE_PYTHON'=>$python,'MW_PDF_QUEUE_WORKER'=>$root.'/scripts/process-pdf-queue.py'];
+    mkdir($fixture.'/tools',0700);
+    foreach(['process-pdf-queue.py','compress-pdf-low-memory.py','deskew-pdf.py','scan-pdf-barlines.py','barline-worker-runner.js'] as $tool) symlink($root.'/scripts/'.$tool,$fixture.'/tools/'.$tool);
+    $python=getenv('MW_BARLINE_TEST_PYTHON') ?: trim(shell_exec('command -v python3'));
+    $config=['DB_HOST'=>DB_HOST,'DB_USER'=>DB_USER,'DB_PASSWORD'=>DB_PASSWORD,'DB_NAME'=>$database,'MW_PDF_QUEUE_DIRECTORY'=>$fixture.'/queue','MW_PDF_QUEUE_PYTHON'=>$python,'MW_PDF_QUEUE_WORKER'=>$fixture.'/tools/process-pdf-queue.py'];
     $text='<?php ';foreach($config as $key=>$value)$text.='define('.var_export($key,true).','.var_export($value,true).');';
     file_put_contents($fixture.'/phpfiles/config.php',$text);chmod($fixture.'/phpfiles/config.php',0600);file_put_contents($fixture.'/phpfiles/read_only_user_config.php',$text);
     foreach(['part_pdf_queue.php','metric-arr-functions.php','get_pieces_and_composers.php'] as $file)copy($root.'/phpfiles/'.$file,$fixture.'/phpfiles/'.$file);
@@ -63,7 +65,7 @@ try {
     copy($root.'/session_config.php',$fixture.'/public/session_config.php');
     foreach(['part-pdf-queue.php','synpdf-edit-mode.php','get_parts.php','get_metric_arr.php'] as $file)copy($root.'/synpdf_182/editmode/'.$file,$fixture.'/public/editmode/'.$file);
     foreach(glob($root.'/synpdf_182/editmode/*') as $path)if(is_file($path)&&preg_match('/\.(js|css)$/',$path))symlink($path,$fixture.'/public/editmode/'.basename($path));
-    symlink($root.'/synpdf_182/editmode/vendor',$fixture.'/public/editmode/vendor');symlink($root.'/synpdf_182/models',$fixture.'/public/models');symlink($root.'/assets',$fixture.'/public/assets');
+    symlink($root.'/synpdf_182/editmode/vendor',$fixture.'/public/editmode/vendor');symlink($root.'/synpdf_182/models',$fixture.'/public/models');symlink($root.'/assets',$fixture.'/public/assets');symlink($root.'/js',$fixture.'/public/js');
     $sessions=[];foreach(['owner'=>1,'admin'=>2,'user'=>3,'guest'=>0] as $role=>$id){$s=bin2hex(random_bytes(16));$sessions[$role]=$s;file_put_contents($fixture.'/public/sessions/sess_'.$s,'pdf_queue_csrf|s:64:"'.str_repeat('a',64).'";user_id|i:'.$id.';user_role|s:5:"admin";');}
     $socket=stream_socket_server('tcp://127.0.0.1:0');$port=(int)substr(strrchr(stream_socket_get_name($socket,false),':'),1);fclose($socket);
     $server=proc_open([PHP_BINARY,'-S','127.0.0.1:'.$port,'-t',$fixture.'/public'],[0=>['file','/dev/null','r'],1=>['file',$fixture.'/web.log','a'],2=>['file',$fixture.'/web.log','a']],$pipes);
@@ -264,6 +266,45 @@ try {
     [$code,$privateResult]=qhttp($port,'publish',$sessions['owner'],$privateId,$privateSave);
     qcheck($code===200&&!empty($privateResult['item']['private_tutorial'])&&$privateResult['item']['status']==='completed','Private tutorial barlines can be saved normally for YubSync.');
     qcheck((int)$db->query('SELECT COUNT(*) FROM metric_arr WHERE piece_id=73')->fetch_row()[0]===1&&is_file($fixture.'/public/pdfs/73-4.pdf'),'Private preparation retains normal piece and part IDs and PDF loading.');
+    // The API schedules persistent scans without depending on an editor tab.
+    define('MW_PDF_QUEUE_SCAN_ENABLED', true);
+    $scanFolder=$fixture.'/queue/'.str_repeat('f',32);mkdir($scanFolder);
+    copy($source,$scanFolder.'/optimized.pdf');
+    $scanItem=['id'=>str_repeat('f',32),'name'=>'scan-settings-fixture.pdf','created_at'=>'2026-11-13T00:00:00Z','edition_label'=>null,'original_bytes'=>filesize($source),'status'=>'ready','piece_id'=>73,'instrument_id'=>4,'pages'=>2,'draft_revision'=>5];
+    file_put_contents($scanFolder.'/item.json',json_encode($scanItem));
+    try { mwPdfQueueRequestScan($scanItem,$scanFolder,['revision'=>4]); qcheck(false,'Stale scan request must be rejected.'); }
+    catch (InvalidArgumentException $e) { qcheck(true,'Stale scan requests cannot replace newer work.'); }
+    $settings=mwPdfQueueScanSettings(['settings'=>'{"width":1500,"drmpl":0.6,"eerst":1}']);
+    qcheck($settings['width']===1500&&$settings['drmpl']===0.6&&$settings['eerst']===1,'Reruns preserve selected width and staff settings.');
+    try { mwPdfQueueScanSettings(['settings'=>'{"width":999999}']); qcheck(false,'Invalid widths must be rejected.'); }
+    catch (InvalidArgumentException $e) { qcheck(true,'Background settings keep render sizes bounded.'); }
+    $scanStarted=mwPdfQueueRequestScan($scanItem,$scanFolder,['revision'=>5]);
+    qcheck($scanStarted['status']==='queued'&&$scanStarted['scan_only']===true,'Background requests save a durable queue entry.');
+    qcheck(mwPdfQueueRequestScan($scanStarted,$scanFolder,['revision'=>5])===$scanStarted,'Retrying the same scan request is idempotent.');
+    file_put_contents($scanFolder.'/draft.json',json_encode(['metrics'=>$metrics,'barline_preparation'=>'complete']));
+    qcheck(mwPdfQueueRequestScan($scanItem,$scanFolder,['revision'=>5])===$scanItem,'Reviewed barlines are restored without another scan.');
+    qcheck(mwPdfQueueRequestScan($scanItem,$scanFolder,['revision'=>5,'force'=>1])['scan_only'],'Explicit reruns can replace a prepared scan.');
+    file_put_contents($scanFolder.'/draft.json',json_encode(['metrics'=>$metrics,'barline_preparation'=>'failed']));
+    qcheck(mwPdfQueueRequestScan($scanItem,$scanFolder,['revision'=>5])['scan_only'],'An incomplete scan can restart as a background job.');
+    qcheck(mwPdfQueueRequestScan(array_replace($scanItem,['skip_barline_detection'=>true]),$scanFolder,['revision'=>5])['status']==='ready','Excluded piano and score PDFs are not scanned.');
+    file_put_contents($scanFolder.'/item.json',json_encode(array_replace($scanItem,['status'=>'discarded'])));
+    if(in_array('--background',$argv,true)) {
+        touch($fixture.'/tools/.barline-worker-enabled');
+        $capability=qhttp($port,'list',$sessions['owner']);
+        qcheck(($capability[1]['background_barlines']??false)===true,'The queue reports persistent scanning capability: '.json_encode($capability));
+        $backgroundSource=$root.'/assets/tutorials/yubsync-bach/score.pdf';
+        $backgroundInput=['name'=>'background-tutorial.pdf','size'=>filesize($backgroundSource),'piece_id'=>73,'instrument_id'=>4];
+        $backgroundId=qhttp($port,'create',$sessions['owner'],'',$backgroundInput)[1]['item']['id'];
+        qhttp($port,'chunk',$sessions['owner'],$backgroundId,['offset'=>0,'chunk'=>new CURLFile($backgroundSource)]);
+        qhttp($port,'finish',$sessions['owner'],$backgroundId,[]);
+        // No editor, canvas or browser detector is opened. PHP releases the
+        // request while the private worker prepares and saves the PDF.
+        $prepared=qterminal($port,$sessions['owner'],$backgroundId,false,1200);
+        qcheck($prepared['status']==='ready','The detached worker finishes after the initiating request ends: '.json_encode($prepared));
+        $restored=qhttp($port,'get',$sessions['owner'],$backgroundId)[1];
+        qcheck($restored['draft']['barline_preparation']==='complete'&&count($restored['draft']['metrics'][1]['cxs'])===8,'Returning to the queue restores fitted systems and completed detection.');
+        qcheck(qhttp($port,'draft',$sessions['owner'],$backgroundId,array_replace($privateSave,['revision'=>0]))[0]===400,'An old editor tab cannot overwrite the completed server scan.');
+    }
     if(in_array('--browser',$argv,true)){echo json_encode(['fixture'=>$fixture,'port'=>$port,'sessions'=>$sessions])."\nBrowser fixture ready. Press Enter.\n";fgets(STDIN);}
     echo "Passed $checks PDF queue checks.\n";
 } finally { if(is_resource($server)){proc_terminate($server);proc_close($server);} $connection->query("DROP DATABASE IF EXISTS `$database`");if(is_dir($fixture))qremove($fixture); }

@@ -139,13 +139,17 @@
         setTimeout(ready, 0);
     }
     window.SynpdfAutoBarlines = {
-        opened, exclusion,
+        opened, exclusion, needsPreparation,
         setQueueDraft(draft) { nextQueueDraft = draft; },
         get running() { return running; },
         get preparation() { return preparation; },
         get prepared() { return preparation === 'complete' || preparation === 'excluded'; }
     };
-    rerun?.addEventListener('click', () => opened({ rerun: true }));
+    rerun?.addEventListener('click', () => {
+        if (window.SynpdfPdfQueue?.canBackgroundScan) {
+            window.SynpdfPdfQueue.rerunBarlines().catch(error => report('Could not start background scanning: ' + error.message));
+        } else opened({ rerun: true });
+    });
     document.addEventListener('synpdf:part-submitted', () => report(''));
 
     const editingKeys = new Set(['q', 'w', 'e', 'r', 'y', 's', 'd', 'o', 'j', 'PageDown', 'PageUp', '+', '=', '-', '_', '.', '/']);

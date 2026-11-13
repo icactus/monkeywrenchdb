@@ -14,7 +14,7 @@
     const status = document.getElementById('pdf-queue-status'), list = document.getElementById('pdf-queue-items');
     const activePanel = document.getElementById('pdf-queue-active');
     const draftStatus = document.getElementById('pdf-queue-draft-status');
-    let csrf = '', canUpload = false, active = null, activeUrl = '', loading = false, busy = false, lastDraft = '', saving = null, editorSession = '', sequence = 0;
+    let csrf = '', canUpload = false, backgroundBarlines = false, active = null, activeUrl = '', loading = false, busy = false, lastDraft = '', saving = null, editorSession = '', sequence = 0;
     let uploadTask = Promise.resolve(), uploadWork = 0, refreshing = false, publishing = false;
     const notify = text => { status.textContent = text; };
     const bytes = number => `${(number / 1024 / 1024).toFixed(2)} MB`;
@@ -394,6 +394,7 @@
         refreshing = true;
         try {
             const result = await api('list'); csrf = result.csrf; canUpload = result.can_upload;
+            backgroundBarlines = result.background_barlines === true;
             document.getElementById('pdf-queue-upload-controls').hidden = !canUpload;
             list.replaceChildren();
             for (const item of result.items) {
@@ -401,13 +402,18 @@
                 const name = document.createElement('div'); name.className = 'pdf-queue-name'; name.textContent = item.name;
                 const detail = document.createElement('div'); detail.className = 'pdf-queue-detail';
                 const state = item.status === 'processing'
-                    ? `${item.stage === 'deskew' ? 'Fixing skew' : 'Compressing'}${item.pages ? ` (${item.progress || 0}/${item.pages})` : ''}`
+                    ? `${item.stage === 'barlines' ? (item.staff_progress?.phase === 'geometry' ? 'Fitting staff lines' : 'Scanning barlines') : item.stage === 'deskew' ? 'Fixing skew' : 'Compressing'}${item.pages ? ` (${item.progress || 0}/${item.pages})` : ''}`
                     : ({ queued: 'Submitted', ready: 'Ready', uploading: 'Upload incomplete', error: 'Failed' }[item.status] || item.status);
                 detail.textContent = `${label(pieceSelect, item.piece_id)} · ${label(partSelect, item.instrument_id)} · ${state}`;
+                if (item.stage === 'barlines' && item.status === 'processing' && item.staff_progress) {
+                    const p = item.staff_progress;
+                    detail.textContent += ` · Page ${p.page}, staff ${p.done}/${p.total}`;
+                }
                 if (item.private_tutorial) detail.textContent += ' · Private tutorial';
                 if (item.combined_cello_bass) detail.textContent += ' · Combined cello/bass part';
                 const size = document.createElement('div'); size.className = 'pdf-queue-detail';
                 size.textContent = item.pages ? `${item.pages} pages` : bytes(item.original_bytes);
+                if (item.stage === 'barlines' && item.status === 'processing') size.textContent += ' · Scanning continues when you leave this page';
                 if (item.fix_skew) size.textContent += item.status === 'ready'
                     ? ` · Skew fixed on ${item.skew_corrected_pages || 0} pages` : ' · Fix skew enabled';
                 row.append(name, detail, size);
@@ -463,6 +469,16 @@
         if (window.pdfDoc$$module$synpdf?.numPages && !active && !confirm('Open this queued PDF? Save any changes to your current PDF first.')) return;
         const result = await api('get', null, item.id);
         if (result.item.status !== 'ready') throw new Error('This PDF is not ready for editing.');
+        if (backgroundBarlines && !result.item.skip_barline_detection &&
+            (!result.draft || window.SynpdfAutoBarlines?.needsPreparation(result.draft))) {
+            const prepared = await api('prepare', { revision: result.item.draft_revision || 0 }, item.id);
+            if (prepared.item.status !== 'ready') {
+                notify('Scanning barlines in the background. You can leave this page and open Edit barlines when it is ready.');
+                refresh();
+                return;
+            }
+            result.item = prepared.item;
+        }
         loading = true;
         try {
             active = result.item; editorSession = crypto.randomUUID(); sequence = 0; activeUrl = String(endpoint('file', item.id)); lastDraft = '';
@@ -480,6 +496,10 @@
             window.deMetriek$$module$synpdf = result.draft?.metrics || [window.opt$$module$synpdf.pagewd];
             window.times_arr$$module$synpdf = undefined; window.adv_settings$$module$synpdf = {};
             window.opt$$module$synpdf.onestf = 0; window.annots$$module$synpdf = [];
+            if (active.scan_settings) {
+                Object.assign(window.opt$$module$synpdf, active.scan_settings);
+                window.opt$$module$synpdf.fixwd = active.scan_settings.width;
+            }
             window.SynpdfAutoBarlines?.setQueueDraft(result.draft);
             window.msc_check_preload$$module$synpdf();
             activePanel.hidden = false; setQueuedSaveState(true);
@@ -489,6 +509,22 @@
             notify('');
         } finally { loading = false; }
     }
+    window.SynpdfPdfQueue = {
+        get canBackgroundScan() { return backgroundBarlines && !!active && !active.skip_barline_detection; },
+        async rerunBarlines() {
+            if (!active || loading || busy || publishing) return;
+            busy = true;
+            try {
+                await saveDraft();
+                const options = window.opt$$module$synpdf;
+                const settings = { width: Number(options.fixwd) || 2000 };
+                for (const key of ['drmpl','drmpl2','eerst','skipn','seln','sysprf','zwgrens','voorna','mtdrmpl','dx']) settings[key] = Number(options[key]) || 0;
+                await api('prepare', { revision: active.draft_revision || 0, force: 1, settings: JSON.stringify(settings) }, active.id);
+                clearActive();
+                notify('Scanning barlines in the background. You can leave this page and open Edit barlines when it is ready.');
+            } finally { busy = false; refresh(); }
+        }
+    };
     document.addEventListener('submit', async event => {
         if (event.target !== form) return;
         event.preventDefault(); event.stopImmediatePropagation();
@@ -532,5 +568,6 @@
         body.set('csrf', csrf); navigator.sendBeacon(endpoint('draft', active.id), body);
     });
     setInterval(() => { if (!document.hidden) { refresh(); saveDraft().catch(() => {}); } }, 5000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
     refresh();
 })();

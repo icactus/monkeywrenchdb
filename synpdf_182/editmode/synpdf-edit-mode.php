@@ -9,8 +9,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="stylesheet" href="part-pdf-queue.css?v=7">
-    <script src="part-pdf-queue.js?v=15" defer></script>
-    <script src="auto-barline-detection.js?v=4" defer></script>
+    <script src="part-pdf-queue.js?v=16" defer></script>
+    <script src="auto-barline-detection.js?v=5" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
     if (file_exists('session_config.php')) {
@@ -77,7 +77,7 @@
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
     <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-edit-mode.js?v=106"></script>
+    <script src="synpdf-edit-mode.js?v=107"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="part-jump-editor.js?v=1" defer></script>
     <script src="part-count-check.js?v=5" defer></script>

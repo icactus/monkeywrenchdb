@@ -21,8 +21,8 @@ function mwPdfQueueHdName(array $item): string {
     return !empty($item['fix_skew']) ? 'deskewed.pdf' : 'hd.pdf';
 }
 function mwPdfQueueCleanupFiles(string $folder): void {
-    $paths = array_map(fn($file) => $folder . '/' . $file, ['hd.pdf', 'deskewed.pdf', 'optimized.pdf', 'draft.json']);
-    foreach (['.mw-deskew-*.pdf', '.mw-pdf-*.pdf'] as $pattern) $paths = array_merge($paths, glob($folder . '/' . $pattern));
+    $paths = array_map(fn($file) => $folder . '/' . $file, ['hd.pdf', 'deskewed.pdf', 'optimized.pdf', 'draft.json', 'barline-result.json', 'barline-checkpoint.json']);
+    foreach (['.mw-deskew-*.pdf', '.mw-pdf-*.pdf', '.barlines-*', 'draft.before-scan-*.json'] as $pattern) $paths = array_merge($paths, glob($folder . '/' . $pattern));
     foreach ($paths as $path) if (is_file($path)) unlink($path);
 }
 function mwPdfQueueFolder(string $root, string $id): string {
@@ -49,20 +49,22 @@ function mwPdfQueueLocked(string $root, string $id, callable $action) {
 function mwPdfQueueDetails(mysqli $db, array $input): array {
     $piece = filter_var($input['piece_id'] ?? '', FILTER_VALIDATE_INT);
     $part = filter_var($input['instrument_id'] ?? '', FILTER_VALIDATE_INT);
-    $privateTutorial = false;
+    $privateTutorial = false; $skipBarlines = false;
     foreach ([['pieces', 'piece_id', $piece], ['instruments', 'instrument_id', $part]] as [$table, $column, $id]) {
         if (!$id || $id < 1) throw new InvalidArgumentException('Choose a piece and instrument.');
-        $select = $table === 'pieces' ? "$column, piece_name" : $column;
+        $select = $table === 'pieces' ? "$column, piece_name" : "$column, instrument_name";
         $stmt = $db->prepare("SELECT $select FROM $table WHERE $column = ?");
         $stmt->bind_param('i', $id); $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
         if (!$row) throw new InvalidArgumentException('The selected piece or instrument does not exist.');
         if ($table === 'pieces') $privateTutorial = strcasecmp($row['piece_name'], 'bachsuite1-tutorial') === 0;
+        else $skipBarlines = in_array($part, [39,48,50,81,82,83,84,85,88,89,90,91], true) || preg_match('/piano|score|opera/i', $row['instrument_name']);
     }
     $edition = trim((string) ($input['edition_label'] ?? ''));
     if (mb_strlen($edition) > 100) throw new InvalidArgumentException('Edition must be 100 characters or fewer.');
     $details = ['piece_id' => $piece, 'instrument_id' => $part, 'edition_label' => $edition ?: null];
     if ($privateTutorial) $details['private_tutorial'] = true;
+    $details['skip_barline_detection'] = (bool)$skipBarlines;
     return $details;
 }
 function mwPdfQueueValidateCombined(bool $combined, array $details): void {
@@ -142,16 +144,63 @@ function mwPdfQueueChunk(array $item, string $folder, int $offset, string $chunk
     mwPdfQueueWrite($folder . '/item.json', $item);
     return $item;
 }
+function mwPdfQueueWorkerPath(): string {
+    $local = dirname(__DIR__) . '/scripts/process-pdf-queue.py';
+    return defined('MW_PDF_QUEUE_WORKER') ? MW_PDF_QUEUE_WORKER : (is_file($local) ? $local : dirname(__DIR__) . '/pdf-queue-tools/process-pdf-queue.py');
+}
+function mwPdfQueueCanScan(): bool {
+    $directory = dirname(mwPdfQueueWorkerPath());
+    $enabled = defined('MW_PDF_QUEUE_SCAN_ENABLED') ? MW_PDF_QUEUE_SCAN_ENABLED : is_file($directory . '/.barline-worker-enabled');
+    return $enabled && is_file($directory . '/scan-pdf-barlines.py') && is_file($directory . '/barline-worker-runner.js');
+}
+function mwPdfQueueScanSettings(array $input, array $current = []): array {
+    $provided = isset($input['settings']) ? json_decode($input['settings'], true, 16, JSON_THROW_ON_ERROR) : [];
+    if (!is_array($provided)) throw new InvalidArgumentException('Invalid detection settings.');
+    $settings = array_replace(['width'=>2000,'drmpl'=>0.4,'drmpl2'=>0.1,'eerst'=>0,'skipn'=>0,'seln'=>0,'sysprf'=>0,
+                              'zwgrens'=>0.7,'voorna'=>0.9,'mtdrmpl'=>0.8,'dx'=>5], $current, $provided);
+    $bounds = ['width'=>[500,3000], 'drmpl'=>[0.1,1], 'drmpl2'=>[0,4], 'eerst'=>[0,1], 'skipn'=>[0,500], 'seln'=>[0,1000], 'sysprf'=>[0,1],
+               'zwgrens'=>[0,1], 'voorna'=>[0,1], 'mtdrmpl'=>[0,1], 'dx'=>[1,30]];
+    foreach ($settings as $key => &$value) {
+        if (!isset($bounds[$key]) || !is_numeric($value) || !is_finite((float)$value) || $value < $bounds[$key][0] || $value > $bounds[$key][1]) throw new InvalidArgumentException('Invalid detection setting: ' . $key);
+        $fractional = in_array($key, ['drmpl','drmpl2','zwgrens','voorna','mtdrmpl'], true);
+        if (!$fractional && (float)$value !== (float)(int)$value) throw new InvalidArgumentException('Invalid detection setting: ' . $key);
+        $value = $fractional ? (float)$value : (int)$value;
+    }
+    return $settings;
+}
+function mwPdfQueueRequestScan(array $item, string $folder, array $input): array {
+    if (!mwPdfQueueCanScan()) throw new InvalidArgumentException('Background scanning is not available yet.');
+    if (in_array($item['status'], ['queued','processing'], true) && !empty($item['scan_only'])) return $item;
+    if ($item['status'] !== 'ready') throw new InvalidArgumentException('Wait for PDF preparation to finish.');
+    if ((int)($input['revision'] ?? 0) !== ($item['draft_revision'] ?? 0)) throw new InvalidArgumentException('Reload the saved queue work before starting another scan.');
+    if (!empty($item['skip_barline_detection']) || in_array((int)$item['instrument_id'], [39,48,50,81,82,83,84,85,88,89,90,91], true)) return $item;
+    $draft = is_file($folder . '/draft.json') ? json_decode(file_get_contents($folder . '/draft.json'), true) : null;
+    if (empty($input['force']) && $draft) {
+        $preparation = $draft['barline_preparation'] ?? '';
+        if (in_array($preparation, ['complete','excluded'], true)) return $item;
+        if (!in_array($preparation, ['pending','failed'], true)) {
+            foreach (array_slice($draft['metrics'] ?? [], 1) as $page) foreach ($page['cxs'] ?? [] as $system) {
+                if (count($system['csl'] ?? []) >= 2 && count($system['csr'] ?? []) >= 2) return $item;
+            }
+        }
+    }
+    if (!is_file($folder . '/optimized.pdf')) throw new InvalidArgumentException('The prepared PDF is missing. Retry its upload.');
+    $settings = mwPdfQueueScanSettings($input, $item['scan_settings'] ?? []);
+    $item = array_replace($item, ['status'=>'queued', 'stage'=>'barlines', 'scan_only'=>true, 'progress'=>0, 'error'=>null, 'scan_settings'=>$settings]);
+    mwPdfQueueWrite($folder . '/item.json', $item);
+    return $item;
+}
 function mwPdfQueueKick(string $root): void {
     $lock = fopen($root . '/.processor.lock', 'c');
     if (!$lock) return;
     if (!flock($lock, LOCK_EX | LOCK_NB)) { fclose($lock); return; }
     flock($lock, LOCK_UN); fclose($lock);
     $python = defined('MW_PDF_QUEUE_PYTHON') ? MW_PDF_QUEUE_PYTHON : dirname(__DIR__) . '/.local/share/mw-pdf-compressor/venv/bin/python';
-    $localWorker = dirname(__DIR__) . '/scripts/process-pdf-queue.py';
-    $worker = defined('MW_PDF_QUEUE_WORKER') ? MW_PDF_QUEUE_WORKER : (is_file($localWorker) ? $localWorker : dirname(__DIR__) . '/pdf-queue-tools/process-pdf-queue.py');
+    $worker = mwPdfQueueWorkerPath();
     if (!is_executable($python) || !is_file($worker)) throw new RuntimeException('The PDF compressor needs its server setup completed.');
-    $command = 'nohup nice -n 10 ' . escapeshellarg($python) . ' ' . escapeshellarg($worker) . ' ' . escapeshellarg($root) . ' >> ' . escapeshellarg($root . '/processor.log') . ' 2>&1 < /dev/null &';
+    $scan = ' --webroot ' . escapeshellarg(rtrim($_SERVER['DOCUMENT_ROOT'], '/'));
+    if (mwPdfQueueCanScan()) $scan .= ' --scan-barlines';
+    $command = 'nohup nice -n 10 ' . escapeshellarg($python) . ' ' . escapeshellarg($worker) . ' ' . escapeshellarg($root) . $scan . ' >> ' . escapeshellarg($root . '/processor.log') . ' 2>&1 < /dev/null &';
     exec($command);
 }
 function mwPdfQueueMetrics(array $metrics, int $pages, bool $complete = true): string {

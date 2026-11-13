@@ -27,10 +27,13 @@ def clean_conversion_temps(folder):
             path.unlink()
 
 
-def process_stage(folder, stage, source, output):
+def process_stage(folder, stage, source, output, webroot=None, settings=None):
     """Run each bounded child to completion before starting the next stage."""
-    script = 'deskew-pdf.py' if stage == 'deskew' else 'compress-pdf-low-memory.py'
+    script = {'deskew': 'deskew-pdf.py', 'compress': 'compress-pdf-low-memory.py',
+              'barlines': 'scan-pdf-barlines.py'}[stage]
     command = [sys.executable, str(Path(__file__).with_name(script)), str(source), str(output)]
+    if stage == 'barlines':
+        command.extend(['--webroot', str(webroot), '--settings', json.dumps(settings or {}), '--seed', str(folder / 'draft.json')])
     with (folder / '.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         item = json.loads((folder / 'item.json').read_text())
@@ -57,6 +60,10 @@ def process_stage(folder, stage, source, output):
                         item['pages'] = event['pages']
                     elif event['type'] == 'page':
                         item.update(progress=event['done'], pages=event['pages'])
+                        item.pop('staff_progress', None)
+                    elif event['type'] == 'staff':
+                        item['staff_progress'] = {key: event[key] for key in ('page', 'done', 'total')}
+                        item['staff_progress']['phase'] = event.get('phase', 'detection')
                     write_json(folder / 'item.json', item)
             code = process.wait()
         finally:
@@ -97,7 +104,40 @@ def apply_replacements(root, folder):
             write_json(folder / 'item.json', replacement)
 
 
-def run(root):
+def prepare_barlines(folder, webroot):
+    output = folder / 'barline-result.json'
+    with (folder / '.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        item = json.loads((folder / 'item.json').read_text())
+        item['scan_only'] = True  # A restart must retain this PDF and its page checkpoints.
+        write_json(folder / 'item.json', item)
+    last = process_stage(folder, 'barlines', folder / 'optimized.pdf', output, webroot, item.get('scan_settings'))
+    metrics = json.loads(output.read_text())
+    with (folder / '.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        item = json.loads((folder / 'item.json').read_text())
+        if len(metrics) != item['pages'] + 1:
+            raise ValueError('The barline scan did not return every PDF page.')
+        draft = folder / 'draft.json'
+        if draft.is_file():
+            backup = folder / f"draft.before-scan-{item.get('draft_revision', 0)}.json"
+            if not backup.exists():
+                with backup.open('x') as stream:
+                    stream.write(draft.read_text())
+                os.chmod(backup, 0o600)
+        details = {key: item[key] for key in ('piece_id', 'instrument_id', 'edition_label')}
+        if item.get('private_tutorial'):
+            details['private_tutorial'] = True
+        write_json(draft, {'metrics': metrics, 'details': details, 'barline_preparation': 'complete',
+                          'saved_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())})
+        item.update(draft_revision=item.get('draft_revision', 0) + 1, editor_session=None,
+                    draft_sequence=0, barline_preparation='complete',
+                    barline_seconds=last['seconds'], barline_peak_rss_kb=last['peak_rss_kb'])
+        item.pop('staff_progress', None)
+        write_json(folder / 'item.json', item)
+
+
+def run(root, scan_barlines=False, webroot=None):
     root = Path(root)
     with (root / '.processor.lock').open('a') as global_lock:
         try:
@@ -132,32 +172,52 @@ def run(root):
             corrected = folder / 'deskewed.pdf'
             try:
                 clean_conversion_temps(folder)
-                # Retries always start with the immutable upload, never a PDF
+                # Compression retries start with the immutable upload, never a PDF
                 # that may already have been rotated by an interrupted attempt.
-                for path in (output, corrected):
-                    if path.exists():
-                        path.unlink()
-                skew = None
-                if item.get('fix_skew'):
-                    skew = process_stage(folder, 'deskew', master, corrected)
-                    master = corrected
-                last = process_stage(folder, 'compress', master, output)
+                if not item.get('scan_only'):
+                    for path in (output, corrected):
+                        if path.exists():
+                            path.unlink()
+                    skew = None
+                    if item.get('fix_skew'):
+                        skew = process_stage(folder, 'deskew', master, corrected)
+                        master = corrected
+                    last = process_stage(folder, 'compress', master, output)
+                    with (folder / '.lock').open('a') as lock:
+                        fcntl.flock(lock, fcntl.LOCK_EX)
+                        item = json.loads((folder / 'item.json').read_text())
+                        item.update(pages=last['pages'], optimized_bytes=last['bytes'],
+                                    compression_seconds=last['seconds'], peak_rss_kb=last['peak_rss_kb'],
+                                    optimized_sha256=last['sha256'])
+                        if skew is not None:
+                            item.update(original_sha256=skew['sha256'], hd_bytes=skew['bytes'],
+                                        skew_corrected_pages=skew['corrected_pages'],
+                                        skew_corrections=skew['corrections'], deskew_seconds=skew['seconds'])
+                        write_json(folder / 'item.json', item)
+                if item.get('scan_only') or (scan_barlines and not item.get('skip_barline_detection') and
+                                            item.get('instrument_id') not in (39, 48, 50, 81, 82, 83, 84, 85, 88, 89, 90, 91)):
+                    prepare_barlines(folder, webroot)
                 with (folder / '.lock').open('a') as lock:
                     fcntl.flock(lock, fcntl.LOCK_EX)
                     item = json.loads((folder / 'item.json').read_text())
-                    item.update(status='ready', pages=last['pages'], optimized_bytes=last['bytes'],
-                                compression_seconds=last['seconds'], peak_rss_kb=last['peak_rss_kb'],
-                                optimized_sha256=last['sha256'], error=None)
-                    if skew is not None:
-                        item.update(original_sha256=skew['sha256'], hd_bytes=skew['bytes'],
-                                    skew_corrected_pages=skew['corrected_pages'],
-                                    skew_corrections=skew['corrections'], deskew_seconds=skew['seconds'])
+                    item.update(status='ready', progress=item['pages'], error=None, scan_only=False)
                     write_json(folder / 'item.json', item)
             except Exception as error:
                 with (folder / '.lock').open('a') as lock:
                     fcntl.flock(lock, fcntl.LOCK_EX)
                     item = json.loads((folder / 'item.json').read_text())
-                    item.update(status='error', error=str(error)[:500])
+                    draft = None
+                    if item.get('scan_only') and (folder / 'draft.json').is_file():
+                        try:
+                            draft = json.loads((folder / 'draft.json').read_text())
+                        except (OSError, ValueError):
+                            pass
+                    retained = isinstance(draft, dict) and draft.get('barline_preparation') in ('complete', 'excluded')
+                    if retained:
+                        item.update(status='ready', scan_only=False,
+                                    error='Background scan failed; your saved barlines are still available. ' + str(error)[:350])
+                    else:
+                        item.update(status='error', error=str(error)[:500])
                     write_json(folder / 'item.json', item)
             finally:
                 clean_conversion_temps(folder)
@@ -166,4 +226,9 @@ def run(root):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('root', type=Path)
-    run(parser.parse_args().root)
+    parser.add_argument('--scan-barlines', action='store_true')
+    parser.add_argument('--webroot', type=Path)
+    args = parser.parse_args()
+    if args.scan_barlines and not args.webroot:
+        parser.error('--scan-barlines requires --webroot')
+    run(args.root, args.scan_barlines, args.webroot)

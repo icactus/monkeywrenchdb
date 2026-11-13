@@ -1,0 +1,3 @@
+-r pdf-compressor-requirements.txt
+quickjs==1.19.4
+onnxruntime==1.23.2

@@ -47,6 +47,7 @@ function renderHarness(failure) {
     for (const name of ['html', 'text', 'css', 'toggle']) chain[name] = (...args) => { events.push([name, ...args]); return chain; };
     const page = {
         _pageInfo: { view: [0, 0, 1000, 1400] },
+        getAnnotations: async () => [],
         getViewport: () => ({ width: 1000, height: 1400 }),
         render: () => ({ promise: failure === 'raster' ? Promise.reject(new Error('raster failed')) : Promise.resolve() })
     };
@@ -68,6 +69,7 @@ function renderHarness(failure) {
         setTimeout: callback => timers.push(callback),
         console: { error: (...args) => events.push(['error', ...args]) }
     });
+    vm.runInContext(definition('renderMetricPage$$module$synpdf'), c);
     vm.runInContext(definition('goPage$$module$synpdf'), c);
     return { c, page, events, timers };
 }
@@ -239,4 +241,17 @@ test('grouped discovery retries the other quarter only after an empty scan and r
     c.countPix$$module$synpdf = () => { calls.push(1); return detected; };
     assert.equal(c.scanPageMetrics$$module$synpdf({}, 0), detected);
     assert.equal(calls.length, 1);
+});
+
+test('foreground page navigation uses rendering that can finish without animation frames', async () => {
+    const h = renderHarness();
+    let intent;
+    h.page.render = options => {
+        intent = options.intent;
+        return { promise: options.intent === 'print' ? Promise.resolve() : new Promise(() => {}) };
+    };
+    await h.c.goPage$$module$synpdf(41, 0);
+    assert.equal(intent, 'print');
+    assert(h.events.some(event => event[0] === 'compose'));
+    assert.equal(h.c.rendering$$module$synpdf, 0);
 });

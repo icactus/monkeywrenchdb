@@ -1047,11 +1047,10 @@ async function goPage$$module$synpdf(pageNumber, pageOffset, renderToken) {
         var page = await sourceDoc.getPage(pageNumber);
         if (!isCurrent()) return;
         $("#render").html("rendering page: " + pageNumber + "/" + sourceDoc.numPages);
-        var viewport = page.getViewport({ scale: deMetriek$$module$synpdf[0] / page._pageInfo.view[2] });
         var canvas = document.createElement("canvas");
-        canvas.height = Math.round(viewport.height);
-        canvas.width = Math.round(viewport.width);
-        await page.render({ canvasContext: canvas.getContext("2d"), viewport: viewport }).promise;
+        // Batch detection navigates through this same renderer. Reuse the
+        // annotation-aware analysis path so plain score pages render in hidden tabs.
+        await renderMetricPage$$module$synpdf(page, canvas, deMetriek$$module$synpdf[0]);
         if (!isCurrent()) return;
         // D may select another page while the preceding page is still rendering.
         if (opt$$module$synpdf.advncd && Number(opt$$module$synpdf.pagenum) !== pageNumber) {
