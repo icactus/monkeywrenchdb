@@ -23,6 +23,8 @@ $composersArray = [];
 
 // Loop ONCE to build both arrays
 foreach ($allData as $row) {
+    if (strcasecmp($row['piece_name'], 'bachsuite1-tutorial') === 0
+        && ($_SESSION['user_role'] ?? '') !== 'admin') continue;
     // Populate the pieces array
     $piecesArray[$row["piece_id"]] = $row["composer_last"] . ", " . $row["composer_first"] . " - " . $row["piece_name"] . " - (id# " . $row["piece_id"] . ")";
 

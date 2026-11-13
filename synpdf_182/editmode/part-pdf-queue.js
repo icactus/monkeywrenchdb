@@ -404,6 +404,7 @@
                     ? `${item.stage === 'deskew' ? 'Fixing skew' : 'Compressing'}${item.pages ? ` (${item.progress || 0}/${item.pages})` : ''}`
                     : ({ queued: 'Submitted', ready: 'Ready', uploading: 'Upload incomplete', error: 'Failed' }[item.status] || item.status);
                 detail.textContent = `${label(pieceSelect, item.piece_id)} · ${label(partSelect, item.instrument_id)} · ${state}`;
+                if (item.private_tutorial) detail.textContent += ' · Private tutorial';
                 if (item.combined_cello_bass) detail.textContent += ' · Combined cello/bass part';
                 const size = document.createElement('div'); size.className = 'pdf-queue-detail';
                 size.textContent = item.pages ? `${item.pages} pages` : bytes(item.original_bytes);
@@ -502,7 +503,7 @@
             const result = await api('publish', { ...data, revision: active.draft_revision || 0, measures_version: form.querySelector('[name=measures_version]').value }, active.id);
             active = result.item;
             setQueuedSaveState(false);
-            draftStatus.textContent = 'Submitted to the library.';
+            draftStatus.textContent = active.private_tutorial ? 'Saved privately. Open bachsuite1-tutorial in YubSync to sync its recording.' : 'Submitted to the library.';
             notify(`Submitted ${active.published_parts?.map(part => part.pdf_file).join(' and ') || active.pdf_file}.`);
             document.dispatchEvent(new CustomEvent('synpdf:part-submitted', { detail: active }));
         } catch (error) { notify(error.message + ' The queued PDF and edits are preserved.'); }

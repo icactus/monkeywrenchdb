@@ -43,7 +43,17 @@ try {
         "INSERT INTO metric_arr (metric_arr_id, piece_id, instrument_id, edition_label, metric_arr_data) VALUES (42, 1, 2, NULL, '[1000,{\"x\":1}]')",
         "INSERT INTO recordings VALUES (91, 1, 'abcdefghijk', 0, 2000, 'Example', 'Orchestra', '[{\"t\":0,\"mix\":0}]')"
     ] as $sql) $db->query($sql);
+    $db->query("INSERT INTO pieces VALUES (3, 'bachsuite1-tutorial', 1, 1, 2)");
+    $db->query("INSERT INTO metric_arr (metric_arr_id,piece_id,instrument_id,metric_arr_data) VALUES (44,3,2,'[1000,{}]')");
+    $db->query("INSERT INTO recordings VALUES (92,3,'zyxwvutsrqp',0,2026,'Tutor','','[{\"t\":0,\"mix\":0}]')");
     $first = mwLibraryRefresh($db, null, $fixture);
+    checkLibrary(!isset($first['pieces'][3]) && !isset($first['metrics'][44]) && !isset($first['recordings'][92]), 'Tutorial preparation never appears in public ID maps.');
+    $publicCatalog = mwLibraryReadSnapshot($first['catalog'], $fixture);
+    checkLibrary(!in_array(3, array_column($publicCatalog['pieces'], 'piece_id'), true), 'Tutorial preparation is absent from the library catalog.');
+    checkLibrary(mwLibraryBuildPiece($db, 3, $fixture) === null, 'Direct publication cannot create a public tutorial snapshot.');
+    checkLibrary(mwLibraryRefresh($db, 3, $fixture) === $first, 'Saving tutorial recordings or barlines keeps the public index unchanged.');
+    require_once $root . '/piece_landing_helpers.php';
+    checkLibrary(!in_array(3, array_column(mwGetPieceLandingCandidates($db), 'piece_id'), true), 'Tutorial preparation has no public landing page or sitemap entry.');
     $piece = mwLibraryReadSnapshot($first['pieces'][1], $fixture);
     checkLibrary($piece['composer_last'] === 'Dvořák', 'Preserve international metadata.');
     checkLibrary($piece['parts'][0]['displayText'] === 'Violin 2', 'Preserve numbered part labels.');

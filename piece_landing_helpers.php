@@ -73,7 +73,8 @@ function mwGetPieceLandingCandidates(mysqli $conn): array
             c.composer_last
         FROM pieces p
         JOIN composers c ON c.composer_id = p.composer_id
-        WHERE EXISTS (
+        WHERE p.piece_name <> 'bachsuite1-tutorial'
+        AND EXISTS (
             SELECT 1 FROM metric_arr m WHERE m.piece_id = p.piece_id
         )
         AND EXISTS (

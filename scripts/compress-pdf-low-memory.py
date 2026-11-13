@@ -154,7 +154,9 @@ def main():
     parser.add_argument('source', type=Path)
     parser.add_argument('destination', type=Path)
     parser.add_argument('--width', type=int, default=2000, choices=range(500, 3001), metavar='500..3000')
-    parser.add_argument('--memory-mb', type=int, default=384)
+    # The hosting runtime reserves about 312 MiB before rendering. Leave room
+    # for ordinary scans and transparency masks within the existing 512 MiB cap.
+    parser.add_argument('--memory-mb', type=int, default=512)
     options = parser.parse_args()
     if not 128 <= options.memory_mb <= 512:
         parser.error('--memory-mb must be between 128 and 512')

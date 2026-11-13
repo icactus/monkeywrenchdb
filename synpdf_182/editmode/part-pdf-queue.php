@@ -97,6 +97,9 @@ try {
                 $metrics = json_decode($_POST['metrics'] ?? '', true, 512, JSON_THROW_ON_ERROR);
                 mwPdfQueueMetrics($metrics, $item['pages'], false);
                 $details = mwPdfQueueDetails($db, $_POST);
+                if (!empty($item['private_tutorial']) && empty($details['private_tutorial'])) {
+                    throw new InvalidArgumentException('Keep this PDF assigned to bachsuite1-tutorial so it stays outside the library.');
+                }
                 mwPdfQueueValidateCombined(!empty($item['combined_cello_bass']), $details);
                 $preparation = (string) ($_POST['barline_preparation'] ?? 'unverified');
                 if (!in_array($preparation, ['complete', 'excluded', 'unverified'], true)) throw new InvalidArgumentException('Wait for barline detection to finish before saving the queue draft.');

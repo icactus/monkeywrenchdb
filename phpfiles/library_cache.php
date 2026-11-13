@@ -93,6 +93,7 @@ function mwLibraryBuildCatalog(mysqli $db): array
         JOIN instruments i ON i.instrument_id = m.instrument_id
         LEFT JOIN instrument_group g ON g.instrument_group_id = i.instrument_group_id
         LEFT JOIN (SELECT piece_id, COUNT(*) recording_count FROM recordings GROUP BY piece_id) rc ON rc.piece_id = p.piece_id
+        WHERE p.piece_name <> 'bachsuite1-tutorial'
         ORDER BY c.composer_last, p.piece_name, i.instrument_id, m.metric_arr_id");
     $pieces = [];
     $instruments = [];
@@ -124,7 +125,8 @@ function mwLibraryBuildPiece(mysqli $db, int $pieceId, string $root): ?array
     $stmt = $db->prepare('SELECT p.piece_id, p.piece_name, c.composer_last FROM pieces p JOIN composers c ON c.composer_id = p.composer_id WHERE p.piece_id = ?');
     $stmt->bind_param('i', $pieceId); $stmt->execute();
     $piece = $stmt->get_result()->fetch_assoc(); $stmt->close();
-    if (!$piece) return null;
+    // This reserved preparation entry is available in admin editors only.
+    if (!$piece || strcasecmp($piece['piece_name'], 'bachsuite1-tutorial') === 0) return null;
     $piece['piece_id'] = (int) $piece['piece_id'];
     $piece['parts'] = []; $piece['recordings'] = [];
     $stmt = $db->prepare('SELECT m.metric_arr_id, m.edition_label, m.metric_arr_data,

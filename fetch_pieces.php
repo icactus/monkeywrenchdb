@@ -69,6 +69,7 @@ try {
         GROUP BY piece_id
     ) rc ON rc.piece_id = p.piece_id
     WHERE i.instrument_id IN ($placeholders)
+      AND p.piece_name <> 'bachsuite1-tutorial'
     ORDER BY c.composer_last, p.piece_name, i.instrument_name, i.part_number
     ";
 

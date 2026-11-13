@@ -249,6 +249,21 @@ try {
     $singleSave=array_replace($save,['piece_id'=>72,'instrument_id'=>4,'edition_label'=>'Cello only','revision'=>0,'combined_cello_bass'=>'1']);
     [$code,$singleResult]=qhttp($port,'publish',$sessions['admin'],$singleId,$singleSave);
     qcheck($code===200&&count($singleResult['item']['published_parts'])===1&&(int)$db->query("SELECT COUNT(*) FROM metric_arr WHERE edition_label='Cello only'")->fetch_row()[0]===1&&!is_file($fixture.'/public/pdfs/72-5-cello_only.pdf'),'An unchecked upload remains cello-only, even if a later request attempts to enable duplication.');
+    // A private tutorial still uses the normal barline and recording workflow.
+    $db->query("INSERT INTO pieces VALUES (73,'bachsuite1-tutorial',1)");
+    $privateInput=['name'=>'bachsuite1-tutorial.pdf','size'=>filesize($source),'piece_id'=>73,'instrument_id'=>4];
+    $privateItem=qhttp($port,'create',$sessions['owner'],'',$privateInput)[1]['item'];
+    $privateId=$privateItem['id'];
+    qcheck(!empty($privateItem['private_tutorial']),'Private tutorial status comes from the assigned piece.');
+    qhttp($port,'chunk',$sessions['owner'],$privateId,['offset'=>0,'chunk'=>new CURLFile($source)]);
+    qhttp($port,'finish',$sessions['owner'],$privateId,[]);
+    qcheck(qterminal($port,$sessions['owner'],$privateId)['status']==='ready','Private tutorial is available for barline work.');
+    $privateSave=array_replace($save,['piece_id'=>73,'instrument_id'=>4,'edition_label'=>'','revision'=>0]);
+    qcheck(qhttp($port,'draft',$sessions['owner'],$privateId,array_replace($privateSave,['piece_id'=>71]))[0]===400,'Private queue drafts cannot accidentally be moved into a public piece.');
+    qcheck(qhttp($port,'publish',$sessions['owner'],$privateId,array_replace($privateSave,['piece_id'=>71]))[0]===400,'Private queue publication cannot silently switch to a public piece.');
+    [$code,$privateResult]=qhttp($port,'publish',$sessions['owner'],$privateId,$privateSave);
+    qcheck($code===200&&!empty($privateResult['item']['private_tutorial'])&&$privateResult['item']['status']==='completed','Private tutorial barlines can be saved normally for YubSync.');
+    qcheck((int)$db->query('SELECT COUNT(*) FROM metric_arr WHERE piece_id=73')->fetch_row()[0]===1&&is_file($fixture.'/public/pdfs/73-4.pdf'),'Private preparation retains normal piece and part IDs and PDF loading.');
     if(in_array('--browser',$argv,true)){echo json_encode(['fixture'=>$fixture,'port'=>$port,'sessions'=>$sessions])."\nBrowser fixture ready. Press Enter.\n";fgets(STDIN);}
     echo "Passed $checks PDF queue checks.\n";
 } finally { if(is_resource($server)){proc_terminate($server);proc_close($server);} $connection->query("DROP DATABASE IF EXISTS `$database`");if(is_dir($fixture))qremove($fixture); }

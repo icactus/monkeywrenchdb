@@ -49,15 +49,21 @@ function mwPdfQueueLocked(string $root, string $id, callable $action) {
 function mwPdfQueueDetails(mysqli $db, array $input): array {
     $piece = filter_var($input['piece_id'] ?? '', FILTER_VALIDATE_INT);
     $part = filter_var($input['instrument_id'] ?? '', FILTER_VALIDATE_INT);
+    $privateTutorial = false;
     foreach ([['pieces', 'piece_id', $piece], ['instruments', 'instrument_id', $part]] as [$table, $column, $id]) {
         if (!$id || $id < 1) throw new InvalidArgumentException('Choose a piece and instrument.');
-        $stmt = $db->prepare("SELECT $column FROM $table WHERE $column = ?");
+        $select = $table === 'pieces' ? "$column, piece_name" : $column;
+        $stmt = $db->prepare("SELECT $select FROM $table WHERE $column = ?");
         $stmt->bind_param('i', $id); $stmt->execute();
-        if (!$stmt->get_result()->fetch_row()) throw new InvalidArgumentException('The selected piece or instrument does not exist.');
+        $row = $stmt->get_result()->fetch_assoc();
+        if (!$row) throw new InvalidArgumentException('The selected piece or instrument does not exist.');
+        if ($table === 'pieces') $privateTutorial = strcasecmp($row['piece_name'], 'bachsuite1-tutorial') === 0;
     }
     $edition = trim((string) ($input['edition_label'] ?? ''));
     if (mb_strlen($edition) > 100) throw new InvalidArgumentException('Edition must be 100 characters or fewer.');
-    return ['piece_id' => $piece, 'instrument_id' => $part, 'edition_label' => $edition ?: null];
+    $details = ['piece_id' => $piece, 'instrument_id' => $part, 'edition_label' => $edition ?: null];
+    if ($privateTutorial) $details['private_tutorial'] = true;
+    return $details;
 }
 function mwPdfQueueValidateCombined(bool $combined, array $details): void {
     if ($combined && !in_array($details['instrument_id'], [4, 5], true)) {
@@ -182,6 +188,9 @@ function mwPdfQueuePublish(array $item, string $folder, mysqli $db, string $webr
     if ($item['status'] !== 'ready') throw new InvalidArgumentException('This PDF is not ready to submit.');
     if ((int) ($input['revision'] ?? 0) !== ($item['draft_revision'] ?? 0)) throw new InvalidArgumentException('This draft changed in another tab. Reload saved work before publishing.');
     $details = mwPdfQueueDetails($db, $input);
+    if (!empty($item['private_tutorial']) && empty($details['private_tutorial'])) {
+        throw new InvalidArgumentException('Keep this PDF assigned to bachsuite1-tutorial so it stays outside the library.');
+    }
     mwPdfQueueValidateCombined(!empty($item['combined_cello_bass']), $details);
     $metrics = json_decode($input['metrics'] ?? '', true, 512, JSON_THROW_ON_ERROR);
     if (!is_array($metrics)) throw new InvalidArgumentException('Missing reviewed page geometry.');
