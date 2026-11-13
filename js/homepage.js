@@ -430,7 +430,9 @@
                     .concat([...new Map(pieces.map(p => [p.composer, { value: p.composerLabel, alias: p.composer, type: 'Composer' }])).values()], ['Concerto', 'Symphony', 'Sonata', 'Suite'].map(value => ({ value, type: 'Keyword' })), categories.map(value => ({ value, type: 'Category' })), pieces.map(p => ({ value: p.piece_name, type: 'Work' })));
                 const requestedPiece = pieces.find(p => p.piece_id === Number(new URLSearchParams(location.search).get('pieceId')));
                 if (requestedPiece) { state.query = requestedPiece.piece_name; search.value = state.query; state.instrument = ''; instrument.value = ''; state.category = ''; state.view = 'library'; }
-                catalogLoaded = true; renderLibrary(); showView(state.view); await loadAccount().catch(error => message(error.message));
+                catalogLoaded = true; renderLibrary(); showView(state.view);
+                window.schedulePDFjsWarmup?.();
+                await loadAccount().catch(error => message(error.message));
                 if (requestedPiece) {
                     const url = new URL(location.href);
                     url.searchParams.delete('pieceId');
@@ -438,7 +440,10 @@
                     await openPiece(requestedPiece, preferredPart(requestedPiece));
                 }
                 if (Number.isFinite(saved.scroll)) requestAnimationFrame(() => window.scrollTo(0, saved.scroll));
-            } catch (error) { empty($('results'), error.message, loadCatalog); }
+            } catch (error) {
+                empty($('results'), error.message, loadCatalog);
+                window.schedulePDFjsWarmup?.();
+            }
             finally { catalogRequest = null; }
         })(); return catalogRequest;
     }

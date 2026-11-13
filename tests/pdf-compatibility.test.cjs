@@ -8,12 +8,13 @@ const source = fs.readFileSync(path.join(__dirname, '../stripped-synpdf.js'), 'u
 const reader = source.slice(source.indexOf('function readPdfdoc$$module$synpdf'), source.indexOf('let renderedPages = 1;'));
 
 for (const entry of ['/', '/preview-editor.php', '/piece/mahler-symphony-no-2-resurrection', '/piece/mahler-symphony-no-2-resurrection/']) {
-    test(`PDF.js worker loads from the asset directory when entering at ${entry}`, async () => {
+    test(`PDF.js and worker use the pinned legacy CDN build when entering at ${entry}`, async () => {
         const library = { GlobalWorkerOptions: {} };
         const scriptUrl = 'https://www.monkeywrenchdb.org/stripped-synpdf.js?v=340';
         let importedUrl;
         const context = vm.createContext({
             URL, console,
+            document: { readyState: 'complete', getElementById: () => ({}) },
             window: { location: { href: `https://www.monkeywrenchdb.org${entry}` } },
             importPDFjs(specifier) {
                 importedUrl = new URL(specifier, scriptUrl);
@@ -26,7 +27,7 @@ for (const entry of ['/', '/preview-editor.php', '/piece/mahler-symphony-no-2-re
         await context.initializePDFjs();
         assert.equal(library.GlobalWorkerOptions.workerSrc,
             new URL('pdf.worker.min.mjs', importedUrl).href);
-        assert.ok(fs.existsSync(path.join(__dirname, '..', new URL(library.GlobalWorkerOptions.workerSrc).pathname)));
+        assert.equal(importedUrl.href, 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.9.155/legacy/build/pdf.min.mjs');
         assert.equal(context.window.pdfjsLib, library);
     });
 }

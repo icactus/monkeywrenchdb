@@ -12,16 +12,14 @@
 //  can be found at https://wim.vree.org/js2/index.html.
 
 // The legacy build includes the polyfills needed by Safari on iPadOS 16.
-// Keep the library and worker on the same version and serve both locally.
+// Keep the library and worker on the same pinned legacy CDN build.
 let pdfjsReady$$module$synpdf = null;
+const pdfjsBaseUrl$$module$synpdf = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.9.155/legacy/build/';
 function initializePDFjs() {
     if (!pdfjsReady$$module$synpdf) {
-        pdfjsReady$$module$synpdf = import('./assets/vendor/pdfjs/4.9.155/pdf.min.mjs')
+        pdfjsReady$$module$synpdf = import(pdfjsBaseUrl$$module$synpdf + 'pdf.min.mjs')
             .then(function (pdfjsLib) {
-                // Piece landing pages live under /piece/; the worker lives at the site root.
-                pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-                    '/assets/vendor/pdfjs/4.9.155/pdf.worker.min.mjs', window.location.href
-                ).href;
+                pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsBaseUrl$$module$synpdf + 'pdf.worker.min.mjs';
                 window.pdfjsLib = pdfjsLib;
                 return pdfjsLib;
             })
@@ -32,9 +30,37 @@ function initializePDFjs() {
     }
     return pdfjsReady$$module$synpdf;
 }
-initializePDFjs().catch(function (error) {
-    console.error('Failed to load PDF.js:', error);
-});
+let pdfjsWarmupScheduled$$module$synpdf = false;
+function schedulePDFjsWarmup() {
+    if (pdfjsReady$$module$synpdf || pdfjsWarmupScheduled$$module$synpdf) return;
+    pdfjsWarmupScheduled$$module$synpdf = true;
+    const warmup = function () {
+        // A score opened before this background task may already be loading it.
+        if (pdfjsReady$$module$synpdf) return;
+        initializePDFjs().catch(function (error) {
+            console.error('Failed to preload PDF.js:', error);
+        });
+    };
+    // Give the rendered navigation/catalog a paint opportunity before importing.
+    requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+            if (typeof window.requestIdleCallback === 'function') {
+                window.requestIdleCallback(warmup, { timeout: 1000 });
+            } else {
+                setTimeout(warmup, 0);
+            }
+        });
+    });
+}
+function schedulePDFjsForPage() {
+    // The homepage schedules after its asynchronous catalog has rendered.
+    if (!document.getElementById('study-home')) schedulePDFjsWarmup();
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', schedulePDFjsForPage, { once: true });
+} else {
+    schedulePDFjsForPage();
+}
 
 // History Logic
 function toggleHistoryMenu() {

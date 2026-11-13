@@ -589,11 +589,11 @@ if ($hasInitialRecordingTarget) {
     <script src="js/favorites-manager.js?v=3"></script>
     <script src="js/contact-email.js?v=2" defer></script>
     <script src="js/part-jumps.js?v=3"></script>
-    <script src="stripped-synpdf.js?v=347"></script>
+    <script src="stripped-synpdf.js?v=348"></script>
     <script src="js/library-data.js?v=1"></script>
     <script src="stripped-synpdf-extras.js?v=291"></script>
     <script src="js/player-page-scroll.js?v=1"></script>
-    <script src="js/homepage.js?v=24"></script>
+    <script src="js/homepage.js?v=25"></script>
     <script src="js/player-pane.js?v=2"></script>
     <script>
         // Dark Mode: mobile menu toggle + desktop floating button, persisted in localStorage
