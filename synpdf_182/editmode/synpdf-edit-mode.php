@@ -80,7 +80,7 @@
     <script src="synpdf-edit-mode.js?v=107"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="part-jump-editor.js?v=1" defer></script>
-    <script src="part-count-check.js?v=5" defer></script>
+    <script src="part-count-check.js?v=6" defer></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
     <?php if ($pianoBarlineCnnBrowserJsVer > 0) { ?>

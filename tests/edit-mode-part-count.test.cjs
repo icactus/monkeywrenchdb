@@ -90,15 +90,24 @@ test('automatic matching and geometry corrections reuse one database reference',
     assert.equal(calls.length,2);
 });
 
-test('tiny saved measures are reported even when there is no saved reference part', async () => {
+test('narrow measures do not block matching or differing reference counts', async () => {
+    const h = harness(async url => jsonResponse(url.includes('get_parts') ? partList : {metric_arr: metrics, pdf_file: '108-1.pdf'}));
+    h.c.deMetriek$$module$synpdf[1].bxs[0] = [50,300,949,950];
+    await h.settle();
+    assert.equal(h.nodes['part-count-check'].dataset.state, 'match');
+    assert.match(h.nodes['part-count-status'].textContent, /Counts match: 7 detix values.*108-1.pdf/);
+    h.c.deMetriek$$module$synpdf[1].bxs[0].splice(1, 0, 200);
+    h.notify(); await h.settle();
+    assert.equal(h.nodes['part-count-check'].dataset.state, 'mismatch');
+    assert.match(h.nodes['part-count-status'].textContent, /Current: 8.*saved: 7.*1 more.*108-1.pdf/);
+});
+
+test('narrow measures do not replace the missing-reference status with an alert', async () => {
     const h = harness(async () => ({ok: false,status: 404}));
     h.c.deMetriek$$module$synpdf[1].bxs[0] = [50,300,949,950];
     await h.settle();
-    assert.equal(h.nodes['part-count-check'].dataset.state, 'error');
-    assert.match(h.nodes['part-count-status'].textContent, /1 very narrow measure.*red markers.*Page: 1/);
-    h.c.deMetriek$$module$synpdf[1].bxs[0] = [50,300,950];
-    h.notify(); await h.settle();
     assert.equal(h.nodes['part-count-check'].dataset.state, 'unavailable');
+    assert.match(h.nodes['part-count-status'].textContent, /No saved part found for piece 108/);
 });
 
 test('rendering and incomplete scans cannot show matching counts', async () => {

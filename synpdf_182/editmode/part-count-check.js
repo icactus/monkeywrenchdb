@@ -104,14 +104,6 @@
             show('idle', 'Load a PDF named piece-part.pdf (for example 108-1.pdf) to compare its detix count.');
             return;
         }
-        if (!window.rendering$$module$synpdf && !window.metricPrecomputeInProgress$$module$synpdf && !window.SynpdfAutoBarlines?.running) {
-            const narrow = findNarrowMeasures(window.deMetriek$$module$synpdf);
-            if (narrow.length) {
-                const pages = [...new Set(narrow.map(measure => measure.page))].join(', ');
-                show('error', `${narrow.length} very narrow measure${narrow.length === 1 ? '' : 's'}. Check the red markers. Page${pages.includes(',') ? 's' : ''}: ${pages}.`);
-                return;
-            }
-        }
         if (!reference || reference.pieceId !== identity.pieceId || reference.partId !== identity.partId) fetchReference(identity);
         if (recheck) recheck.disabled = !!reference.pending;
         if (reference.pending) {
