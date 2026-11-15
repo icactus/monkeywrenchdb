@@ -169,10 +169,35 @@ function mwRequestNotifyAdmin(int $requestId, array $data, array $user, ?string 
     if ($message !== null) $body .= "\nReply:\n" . $message . "\n";
     $body .= "\nView the request queue (administrator sign-in required):\n"
         . 'https://monkeywrenchdb.org/requests.php?view=admin&status=all#request-' . $requestId . "\n";
+    mwRequestSendEmail('monkeywrenchdb@gmail.com', 'MonkeyWrenchDB: ' . $subject . ' #' . $requestId, $body, $kind, $requestId);
+}
+
+function mwRequestNotifyRequester(int $requestId, array $data, ?array $user, string $status, string $message): void
+{
+    $recipient = $user['email'] ?? '';
+    if (!filter_var($recipient, FILTER_VALIDATE_EMAIL) || preg_match('/[\r\n]/', $recipient)) {
+        error_log('Music requests: admin-reply email skipped for request #' . $requestId . ': requester has no valid email address');
+        return;
+    }
+    $body = "Monkey Wrench Database has replied to your request.\n\nRequest: #$requestId\n"
+        . 'Composer: ' . $data['composer_name'] . "\n"
+        . 'Piece: ' . $data['piece_name'] . "\n"
+        . 'Part: ' . $data['part_name'] . "\n"
+        . 'Status: ' . MW_REQUEST_STATUSES[$status] . "\n";
+    if ($data['youtube_url'] !== null) $body .= 'Recording: ' . $data['youtube_url'] . "\n";
+    $body .= "\nReply:\n" . $message . "\n"
+        . "\nView the conversation and send a reply (sign in with the account you used to request):\n"
+        . 'https://monkeywrenchdb.org/requests.php?status=all#request-' . $requestId . "\n"
+        . "\nPlease reply on the website to keep the conversation with your request.\n";
+    mwRequestSendEmail($recipient, 'MonkeyWrenchDB: Reply to your request #' . $requestId, $body, 'admin-reply', $requestId);
+}
+
+function mwRequestSendEmail(string $recipient, string $subject, string $body, string $kind, int $requestId): void
+{
     try {
         $sent = mail(
-            'monkeywrenchdb@gmail.com',
-            'MonkeyWrenchDB: ' . $subject . ' #' . $requestId,
+            $recipient,
+            $subject,
             chunk_split(base64_encode($body)),
             "From: MonkeyWrenchDB <requests@monkeywrenchdb.org>\r\n"
                 . "MIME-Version: 1.0\r\n"
@@ -221,7 +246,7 @@ function mwRequestRespond(mysqli $db, int $adminId, int $requestId, string $stat
     if ($message !== null) $message = mwRequestText($message, 'reply', 5000);
     $db->begin_transaction();
     try {
-        $stmt = $db->prepare('SELECT id, status FROM music_requests WHERE id = ? AND deleted_at IS NULL FOR UPDATE');
+        $stmt = $db->prepare('SELECT * FROM music_requests WHERE id = ? AND deleted_at IS NULL FOR UPDATE');
         $stmt->bind_param('i', $requestId);
         $stmt->execute();
         $previous = $stmt->get_result()->fetch_assoc();
@@ -232,17 +257,20 @@ function mwRequestRespond(mysqli $db, int $adminId, int $requestId, string $stat
         $stmt->execute();
         $replyId = null;
         if ($message !== null) {
+            $user = mwRequestUser($db, (int) $previous['user_id']);
             $stmt = $db->prepare('INSERT INTO music_request_replies (request_id, admin_user_id, message, created_at) VALUES (?, ?, ?, UTC_TIMESTAMP())');
             $stmt->bind_param('iis', $requestId, $adminId, $message);
             $stmt->execute();
             $replyId = (int) $db->insert_id;
         }
         $db->commit();
-        return $replyId;
     } catch (Throwable $e) {
         $db->rollback();
         throw $e;
     }
+    // Send only for a committed reply; mail failure must not invite resubmission.
+    if ($message !== null) mwRequestNotifyRequester($requestId, $previous, $user, $status, $message);
+    return $replyId;
 }
 
 function mwRequestReply(mysqli $db, int $userId, int $requestId, string $message): int

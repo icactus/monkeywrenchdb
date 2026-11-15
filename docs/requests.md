@@ -23,11 +23,12 @@ filter to see completed requests or all requests. The page checks the current
 database role, rather than relying on the role cached at login.
 
 Choose a reply preset, edit the text, and choose the status. **Save reply &
-notify** saves the message to the requester's history and creates an unread update.
+notify** saves the message to the requester's history, creates an unread update,
+and emails the reply to the requester's account email address.
 **Save status only** also creates an update when the status actually changes.
 Saving the same status without a reply does not create a notification. Added and
 unable to add count as finished. Administrator replies and status changes notify
-the requester on-site.
+the requester on-site. Status-only saves do not send email.
 
 Any administrator can press **Reset 7-day limit** on a request card to clear that
 requester's seven-day submission cooldown, for example when a request cannot be
@@ -75,6 +76,13 @@ as the sender. Rejected or
 duplicate submissions do not send email. A mail failure is logged without
 interrupting the saved request or its on-site notification.
 
+Each saved administrator reply also emails the requester using the same transport
+and sender. It includes the reply, composer, piece, part, current status, optional
+recording, and a link to My requests where they can sign in and respond. Email is
+attempted only after the reply transaction commits. Rejected replies do not send
+email. Failed delivery or a missing/invalid account email is logged while the
+reply and on-site update remain available.
+
 ## Setup and release
 
 Before publishing the page, create the request and notification InnoDB tables:
@@ -102,8 +110,8 @@ Run this migration before deploying the new PHP files. It preserves existing
 administrator replies and read receipts.
 `.cpanel.yml` copies the PHP page, private storage helper, and existing asset
 directories. The server must provide a working PHP `mail()` transport for incoming
-request emails; no additional Google scopes are needed. Follow the normal
-deployment workflow after running the migration.
+request and administrator reply emails; no additional Google scopes are needed.
+Follow the normal deployment workflow after running the migration.
 
 ## Verification
 

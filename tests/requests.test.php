@@ -207,21 +207,34 @@ try {
     $second = mwRequestSubmit($db, 2, array_merge($input, ['part_name' => 'Oboe']));
     $db->query("UPDATE music_requests SET created_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 8 DAY) WHERE id = $second");
     rejects(fn() => mwRequestSubmit($db, 2, $input), 'Two unfinished requests block another even after cooldown.');
+    $emailCount = count(capturedEmails());
     rejects(fn() => mwRequestRespond($db, 2, $id, 'added', 'Not an admin'), 'Requester cannot use admin replies or change status.');
     rejects(fn() => mwRequestRespond($db, 1, $id, 'unknown', 'Invalid status'), 'Unknown statuses are rejected.');
+    rejects(fn() => mwRequestRespond($db, 1, $id, 'added', '  '), 'Blank administrator replies are rejected.');
+    check(count(capturedEmails()) === $emailCount, 'Rejected administrator replies do not send email.');
     $replyId = mwRequestRespond($db, 1, $id, 'unable_to_add', 'Unable to add this edition because of copyright restrictions.');
     check($replyId > 0, 'Admin reply is saved.');
+    $replyEmails = array_values(array_filter(capturedEmails(), fn($email) => str_contains($email, 'Subject: MonkeyWrenchDB: Reply to your request #' . $id)));
+    check(count(capturedEmails()) === $emailCount + 1 && count($replyEmails) === 1, 'A saved administrator reply sends exactly one email.');
+    check(str_contains($replyEmails[0], 'To: requester@example.test') && str_contains($replyEmails[0], 'From: MonkeyWrenchDB <requests@monkeywrenchdb.org>') && !str_contains($replyEmails[0], 'admin@example.test'), 'Administrator reply email goes only to the request owner using the site sender.');
+    $body = emailBody($replyEmails[0]);
+    check(str_contains($body, 'Composer: Antonín Dvořák') && str_contains($body, 'Piece: Symphony No. 9') && str_contains($body, 'Part: Cello') && str_contains($body, 'Status: Unable to add') && str_contains($body, 'Unable to add this edition because of copyright restrictions.'), 'Administrator reply email includes the reply, Unicode request details, and saved status.');
+    check(str_contains($body, 'https://monkeywrenchdb.org/requests.php?status=all#request-' . $id) && !str_contains($body, 'view=admin') && !str_contains($body, 'Recording:'), 'Administrator reply links to My requests and omits an absent recording.');
     check(count(mwRequestReplies($db, 2, false, [$id])[$id]) === 1, 'Requester sees their reply.');
     check(mwRequestReplies($db, 3, false, [$id]) === [], 'Another user cannot read reply history.');
     check(mwRequestQuota($db, 2)['can_submit'], 'Closing an older request frees an unfinished slot.');
     check(mwRequestUnreadCount($db, 2) === 1, 'Unread status is stored for the requester, not the admin.');
     $third = mwRequestSubmit($db, 2, array_merge($input, ['part_name' => 'Bassoon']));
+    $emailCount = count(capturedEmails());
     mwRequestRespond($db, 1, $third, 'added', null);
+    mwRequestRespond($db, 1, $third, 'added', null);
+    check(count(capturedEmails()) === $emailCount, 'Changed and unchanged status-only saves do not email the requester.');
     check(mwRequestUnreadCount($db, 2) === 2, 'Status-only completion also creates an update.');
     rejects(fn() => mwRequestSubmit($db, 2, $input), 'Completing a new request does not bypass its weekly cooldown.');
     $before = $db->query('SELECT COUNT(*) FROM music_request_replies')->fetch_row()[0];
     rejects(fn() => mwRequestRespond($db, 1, 999999, 'added', 'Missing'), 'Reply to a nonexistent request fails.');
     check($before === $db->query('SELECT COUNT(*) FROM music_request_replies')->fetch_row()[0], 'Failed response leaves no orphan reply.');
+    check(count(capturedEmails()) === $emailCount, 'A failed administrator response does not send email.');
 
     $emailCount = count(capturedEmails());
     rejects(fn() => mwRequestReply($db, 3, $id, 'Wrong owner'), 'Another requester cannot reply to this request.');
@@ -426,11 +439,14 @@ try {
     check(httpRequest($port, 'requests.php?view=admin', $sessions['user'], $ackPost)['status'] === 403, 'A regular user cannot submit an acknowledgment.');
     check(httpRequest($port, 'requests.php?view=admin', $sessions['admin'], array_diff_key($ackPost, ['csrf' => true]))['status'] === 403, 'Explicit acknowledgment requires CSRF.');
     check(httpRequest($port, 'requests.php?view=admin', $sessions['admin'], $ackPost)['status'] === 303 && mwRequestAdminNewCount($db, 1) === 0 && mwRequestAdminNewCount($db, 6) === 0, 'The acknowledgment button clears the shared admin reminder.');
-    $replyPost = httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reply', 'csrf' => str_repeat('a', 64), 'request_id' => $webId, 'status' => 'in_progress', 'message' => 'I expect to finish this next week.']);
-    check($replyPost['status'] === 303 && !str_contains($replyPost['headers'], 'compose='), 'Admin reply saves without preparing email.');
+    $emailCount = count(capturedEmails());
+    $replyPost = httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reply', 'csrf' => str_repeat('a', 64), 'request_id' => $webId, 'status' => 'in_progress', 'message' => 'I expect to finish this next week.', 'email' => 'other@example.test']);
+    check($replyPost['status'] === 303 && !str_contains($replyPost['headers'], 'compose=') && count(capturedEmails()) === $emailCount + 1, 'Admin reply automatically emails the requester without opening a composer.');
+    $webReplyEmails = array_values(array_filter(capturedEmails(), fn($email) => str_contains($email, 'Subject: MonkeyWrenchDB: Reply to your request #' . $webId)));
+    check(count($webReplyEmails) === 1 && str_contains($webReplyEmails[0], 'To: web@example.test') && str_contains(emailBody($webReplyEmails[0]), 'Recording: https://www.youtube.com/watch?v=dQw4w9WgXcQ'), 'HTTP reply uses the owner account email despite a forged recipient and includes the recording.');
     preg_match('/Location: ([^\r\n]+)/', $replyPost['headers'], $location);
     $replyPage = httpRequest($port, $location[1], $sessions['admin']);
-    check(str_contains($replyPage['body'], 'requester will see a notification') && !str_contains($replyPage['body'], 'mail.google.com'), 'Saved reply confirms an on-site notification without email.');
+    check(str_contains($replyPage['body'], 'Replies are emailed to the requester') && !str_contains($replyPage['body'], 'mail.google.com'), 'Saved reply explains automatic email and on-site history.');
     $notifications = httpRequest($port, 'request-notifications.php', $sessions['user']);
     check($notifications['status'] === 200 && json_decode($notifications['body'], true)['count'] === 1, 'Reply creates one unread request indicator.');
     check(str_contains($notifications['headers'], 'no-store'), 'Notification count is private and uncached.');
@@ -458,9 +474,11 @@ try {
     check(str_contains($userPage['body'], 'I expect to finish this next week.') && str_contains($userPage['body'], 'In progress'), 'Requester sees admin status and reply history.');
     $userWithCompose = httpRequest($port, 'requests.php?compose=' . $replyId, $sessions['user']);
     check(!str_contains($userWithCompose['body'], 'requester@example.test') && !str_contains($userWithCompose['body'], 'mail.google.com'), 'Legacy compose parameters cannot expose requester email.');
+    $emailCount = count(capturedEmails());
     $unfilled = httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reply', 'csrf' => str_repeat('a', 64), 'request_id' => $webId, 'status' => 'requested', 'message' => 'In about [timeframe].']);
     check(str_contains($unfilled['body'], 'Replace the preset'), 'Unedited preset placeholders cannot be published.');
     check(count(mwRequestReplies($db, 5, false, [$webId])[$webId]) === 1, 'Invalid reply does not add a message.');
+    check(count(capturedEmails()) === $emailCount, 'Unedited reply presets do not send email.');
 
     $webReplyId = (int) mwRequestReplies($db, 5, false, [$webId])[$webId][0]['id'];
     check(str_contains($userPage['body'], 'Reply to Monkey Wrench Database') && str_contains($userPage['body'], 'Send reply'), 'My requests includes a requester reply form.');
@@ -490,8 +508,10 @@ try {
     httpRequest($port, 'request-notifications.php', $sessions['admin'], array_replace($adminSeen, ['version' => 2]));
     check(mwRequestAdminNewCount($db, 1) === 1, 'Viewing the latest reply leaves the admin bell active until a response.');
     $emailCount = count(capturedEmails());
-    $followupPost = httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reply', 'csrf' => str_repeat('a', 64), 'request_id' => $webId, 'status' => 'in_progress', 'message' => 'Thanks, I have the edition now.']);
-    check($followupPost['status'] === 303 && count(mwRequestReplies($db, 5, false, [$webId])[$webId]) === 3 && count(capturedEmails()) === $emailCount, 'Admin and requester can continue a shared conversation; admin replies remain on-site.');
+    $followupPost = httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reply', 'csrf' => str_repeat('a', 64), 'request_id' => $webId, 'status' => 'in_progress', 'message' => "Thanks, I have the Dvořák edition now.\nIt will be ready soon."]);
+    check($followupPost['status'] === 303 && count(mwRequestReplies($db, 5, false, [$webId])[$webId]) === 3 && count(capturedEmails()) === $emailCount + 1, 'Admin follow-up replies email the requester even when status is unchanged.');
+    $followupEmails = array_filter(capturedEmails(), fn($email) => str_contains($email, 'To: web@example.test') && str_contains(emailBody($email), "Thanks, I have the Dvořák edition now.\nIt will be ready soon."));
+    check(count($followupEmails) === 1, 'Administrator follow-up email preserves Unicode and multiline replies.');
     check(mwRequestAdminNewCount($db, 1) === 0 && mwRequestAdminNewCount($db, 6) === 0, 'An admin response clears the current reminder for the request.');
     check(str_contains($userPage['body'], 'Delete request'), 'Owner sees a delete button.');
     $deleteMissingCsrf = httpRequest($port, 'requests.php', $sessions['user'], ['action' => 'delete', 'request_id' => $webId]);
@@ -531,6 +551,17 @@ try {
         $failedReplyPost = httpRequest($port, 'requests.php', $sessions['user'], array_replace($requesterPost, ['request_id' => $failureId]));
         check($failedReplyPost['status'] === 303 && count(mwRequestReplies($db, 5, false, [$failureId])[$failureId]) === 1 && count(capturedEmails()) === $emailCount + 2, 'Email transport failure preserves a successful requester reply.');
         check(str_contains(file_get_contents($fixture . '/server.log'), 'requester-reply email failed for request #'), 'Requester reply email failures are logged.');
+        $failedAdminReply = httpRequest($port, 'requests.php?view=admin', $sessions['admin'], ['action' => 'reply', 'csrf' => str_repeat('a', 64), 'request_id' => $failureId, 'status' => 'in_progress', 'message' => 'Your request is in progress.']);
+        check($failedAdminReply['status'] === 303 && count(mwRequestReplies($db, 5, false, [$failureId])[$failureId]) === 2 && count(capturedEmails()) === $emailCount + 3, 'Failed administrator email is attempted once and preserves the saved reply.');
+        check(mwRequestUnreadCount($db, 5) === 1 && str_contains(file_get_contents($fixture . '/server.log'), 'admin-reply email failed for request #'), 'Administrator email failure is logged while the on-site update remains unread.');
+        try {
+            foreach ([null, "web@example.test\r\nBcc: other@example.test"] as $invalidEmail) {
+                $stmt = $db->prepare('UPDATE users SET email = ? WHERE id = 5');
+                $stmt->bind_param('s', $invalidEmail);
+                $stmt->execute();
+                check(mwRequestRespond($db, 1, $failureId, 'in_progress', 'Your reply is still saved.') > 0 && count(capturedEmails()) === $emailCount + 3, 'Missing or unsafe account email skips delivery while preserving the administrator reply.');
+            }
+        } finally { $db->query("UPDATE users SET email = 'web@example.test' WHERE id = 5"); }
         mwRequestDelete($db, 5, (int) mwRequestList($db, 5, false)[0]['id']);
     } finally { unlink($mailDirectory . '/fail'); }
     $staleDraft = httpRequest($port, 'requests.php?view=admin&compose=' . $webReplyId, $sessions['admin']);

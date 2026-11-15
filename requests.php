@@ -129,7 +129,7 @@ try {
             $replyId = mwRequestRespond($db, $userId, $postedRequestId, requestScalar($_POST, 'status'), $action === 'reply' ? $replyDraft : null);
             $url = $listUrl . '#request-' . $postedRequestId;
             requestRedirect($url, $replyId
-                ? 'Reply saved. The requester will see a notification when they next visit.'
+                ? 'Reply saved. Replies are emailed to the requester and also appear under My requests.'
                 : 'Request status updated.');
         } else {
             throw new InvalidArgumentException('Unknown request action.');
@@ -289,7 +289,7 @@ $presets = [
                                 <?php foreach ($presets as $label => [$status, $message]): ?><option data-status="<?= requestEscape($status) ?>" value="<?= requestEscape(str_replace('\\n', "\n", $message)) ?>"><?= requestEscape($label) ?></option><?php endforeach; ?>
                             </select></label>
                             <label>Your reply<textarea name="message" rows="5" maxlength="5000" placeholder="Write a message to the requester…" required><?= $postedRequestId === $id ? requestEscape($replyDraft) : '' ?></textarea></label>
-                            <p class="hint">Presets are editable. Saving publishes your reply under My requests and notifies the requester on their next visit.</p>
+                            <p class="hint">Presets are editable. Saving emails your reply to the requester and publishes it under My requests with an on-site notification.</p>
                             <button class="primary" name="action" value="reply" type="submit">Save reply &amp; notify</button>
                         </form>
                         <form method="post" action="<?= requestEscape($listUrl) ?>#request-<?= $id ?>" class="admin-reset" data-requester-name="<?= requestEscape($request['user_name'] ?? 'Deleted account') ?>">
