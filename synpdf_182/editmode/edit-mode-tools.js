@@ -4999,7 +4999,7 @@ async function splitAutoDivisiSystem(pageNumber, systemIndex, image) {
         var bars = [], diagnostics = [];
         for (var index = 0; index < staves.length; index++) {
             await updateBarlineDetectionProgress(pageNumber, index, staves.length);
-            var opts = { classifierMode: 'cnn_only', allowV1Fallback: false, cnnThreshold: 0.62, diagnostics: [], perfStats: {} };
+            var opts = { classifierMode: 'cnn_only', allowV1Fallback: false, cnnThreshold: 0.394, diagnostics: [], perfStats: {} };
             var detected = await BarlineDetectV2.findBarLinesV2(staves[index], image.stride, image.pixelData, image.width, opts);
             if (!Array.isArray(detected) || detected.length < 2 || !detected.every(Number.isFinite)) throw new Error('Could not detect barlines for each single staff.');
             bars.push(normalizeDetectedSystemBarlines(staves[index], detected, []));
@@ -5825,7 +5825,7 @@ $(document).ready(function () {
             classifierMode: runMode === 'cnn_only' ? 'cnn_only' : 'rf'
         };
         if (runMode === 'cnn_only') {
-            detectionOpts.cnnThreshold = 0.62;
+            detectionOpts.cnnThreshold = 0.394;
         }
         const systemDiagnostics = [];
         const systemRenderGeometry = [];

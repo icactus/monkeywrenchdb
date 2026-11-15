@@ -1584,7 +1584,7 @@ var BarlineDetectV2 = (function () {
         }
 
         var mlCandidates = [];
-        var threshold = opts.cnnThreshold !== undefined ? opts.cnnThreshold : 0.50;
+        var threshold = opts.cnnThreshold !== undefined ? opts.cnnThreshold : 0.394;
         for (var candIdx = 0; candIdx < candidateSpecs.length; candIdx++) {
             var candidate = candidateSpecs[candIdx];
             var score = scores[candIdx];
@@ -2414,7 +2414,7 @@ var BarlineDetectV2 = (function () {
                 }
 
                 var cnnOnlyFinalScore = cnnOnlyScore !== null ? cnnOnlyScore : 0;
-                var cnnOnlyValid = cnnOnlyScore !== null && cnnOnlyScore >= (opts.cnnThreshold !== undefined ? opts.cnnThreshold : 0.50);
+                var cnnOnlyValid = cnnOnlyScore !== null && cnnOnlyScore >= (opts.cnnThreshold !== undefined ? opts.cnnThreshold : 0.394);
                 var cnnOnlyVetoReason = cnnOnlyScore === null ? "cnn_unavailable" : (cnnOnlyValid ? "accepted_cnn_only" : "cnn_low_score");
 
                 if (opts.diagnostics) {
@@ -2820,7 +2820,7 @@ var BarlineDetectV2 = (function () {
                 if (cnnScore === null) {
                     vetoReason = "cnn_unavailable";
                     isValid = false;
-                } else if (cnnScore >= (opts.cnnThreshold !== undefined ? opts.cnnThreshold : 0.50)) {
+                } else if (cnnScore >= (opts.cnnThreshold !== undefined ? opts.cnnThreshold : 0.394)) {
                     isValid = true;
                     vetoReason = "accepted_cnn_only";
                 } else {

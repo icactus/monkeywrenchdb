@@ -37,7 +37,7 @@ async function scanServerPage(width, height, grayHex) {
         var job = jobs[index];
         var detected = job.legacyBarlines || await BarlineDetectV2.findBarLinesV2(
             job.system, width * 4, pixels, width,
-            { allowV1Fallback: false, classifierMode: 'cnn_only', cnnThreshold: .62 });
+            { allowV1Fallback: false, classifierMode: 'cnn_only', cnnThreshold: .394 });
         page.bxs.push(normalizeDetectedSystemBarlines(job.system, detected, job.bxs));
     }
     for (var index = 0; index < page.cxs.length; index++) {

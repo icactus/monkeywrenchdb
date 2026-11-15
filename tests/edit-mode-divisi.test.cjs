@@ -98,7 +98,7 @@ test('connected staves are grouped before CNN classification and use the origina
     assert(page.bxs[0].some(x => Math.abs(x-300)<=1));
     assert.equal(h.calls.length,1);
     assert.equal(h.calls[0].system.cs[0],400);
-    assert.equal(h.calls[0].opts.cnnThreshold,.62);
+    assert.equal(h.calls[0].opts.cnnThreshold,.394);
     assert.equal(h.baselines[0][2].length,2);
     assert.deepEqual(h.baselines[0][2][0],[]);
     assert.equal(h.c.witArr$$module$synpdf,white);
