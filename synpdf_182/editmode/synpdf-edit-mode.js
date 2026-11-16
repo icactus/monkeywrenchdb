@@ -1994,6 +1994,83 @@ function countPixMultiBands$$module$synpdf(image, sliceIndex) {
     return merged;
 }
 
+// Grouped detections may contain a second reading inside an existing system.
+// Resolve the complete connected component, including nested/chain overlaps,
+// before it can become another editable system. Keep the largest reading's bars.
+function mergeOverlappingStaffSystems$$module$synpdf(pageData) {
+    function edges(system, side) {
+        var lines = side === 'left' ? system.csl : system.csr;
+        return Array.isArray(lines) && lines.length === system.cs.length ? lines : system.cs;
+    }
+    function lineAt(system, index, x) {
+        var xs = system.xs;
+        var t = Math.max(0, Math.min(1, (x - xs.x1) / (xs.x2 - xs.x1 || 1)));
+        var left = edges(system, 'left'), right = edges(system, 'right');
+        return left[index] + t * (right[index] - left[index]);
+    }
+    function overlaps(a, b) {
+        var left = Math.max(a.xs.x1, b.xs.x1), right = Math.min(a.xs.x2, b.xs.x2);
+        if (right <= left) return false;
+        return [left, right].some(function (x) {
+            return Math.min(lineAt(a, a.cs.length - 1, x), lineAt(b, b.cs.length - 1, x)) >
+                Math.max(lineAt(a, 0, x), lineAt(b, 0, x));
+        });
+    }
+    function height(system) {
+        return Math.max.apply(null, edges(system, 'left').concat(edges(system, 'right'))) -
+            Math.min.apply(null, edges(system, 'left').concat(edges(system, 'right')));
+    }
+    var entries = pageData.cxs.map(function (system, index) {
+        return { system: system, bars: pageData.bxs && pageData.bxs[index], sourceHeight: height(system) };
+    });
+    var changed = false;
+    for (var i = 0; i < entries.length; i++) {
+        for (var j = i + 1; j < entries.length; j++) {
+            var current = entries[i], next = entries[j];
+            if (!overlaps(current.system, next.system)) continue;
+            var xs = { x1: Math.min(current.system.xs.x1, next.system.xs.x1),
+                x2: Math.max(current.system.xs.x2, next.system.xs.x2) };
+            var rows = [];
+            [current.system, next.system].forEach(function (system) {
+                system.cs.forEach(function (_, index) {
+                    var left = lineAt(system, index, xs.x1), right = lineAt(system, index, xs.x2);
+                    rows.push({ mid: (left + right) / 2, left: left, right: right });
+                });
+            });
+            rows.sort(function (a, b) { return a.mid - b.mid; });
+            rows = rows.filter(function (row, index) {
+                return !index || row.mid !== rows[index - 1].mid || row.left !== rows[index - 1].left || row.right !== rows[index - 1].right;
+            });
+            // Crossing/sloping readings still need the union at both edges.
+            rows[0] = { left: Math.min.apply(null, rows.map(function (row) { return row.left; })),
+                right: Math.min.apply(null, rows.map(function (row) { return row.right; })) };
+            rows[rows.length - 1] = { left: Math.max.apply(null, rows.map(function (row) { return row.left; })),
+                right: Math.max.apply(null, rows.map(function (row) { return row.right; })) };
+            [rows[0], rows[rows.length - 1]].forEach(function (row) { row.mid = (row.left + row.right) / 2; });
+            if (current.system.cs.length === 2 && next.system.cs.length === 2) {
+                rows = [rows[0], rows[rows.length - 1]];
+            }
+            var source = current.sourceHeight >= next.sourceHeight ? current : next;
+            current.system = Object.assign({}, source.system, { xs: xs,
+                cs: rows.map(function (row) { return row.mid; }),
+                csl: rows.map(function (row) { return row.left; }),
+                csr: rows.map(function (row) { return row.right; }) });
+            current.bars = source.bars;
+            current.sourceHeight = source.sourceHeight;
+            entries.splice(j, 1);
+            // The expanded envelope can overlap an earlier entry too.
+            i = -1;
+            changed = true;
+            break;
+        }
+    }
+    if (!changed) return false;
+    entries.sort(function (a, b) { return a.system.cs[0] - b.system.cs[0]; });
+    pageData.cxs = entries.map(function (entry) { return entry.system; });
+    if (pageData.bxs) pageData.bxs = entries.map(function (entry) { return entry.bars; });
+    return true;
+}
+
 function countVsys$$module$synpdf(a, b, c, analysis) {
     var rgbSums = analysis && analysis.rgbSums;
     if (!Number.isFinite(b) || b <= 0 || b % 4 !== 0 || !Array.isArray(a)) return [];
@@ -2006,6 +2083,11 @@ function countVsys$$module$synpdf(a, b, c, analysis) {
                 (index === 0 || y > lines[index - 1]);
         }) && Math.round(lines[lines.length - 1]) > Math.round(lines[0]);
     });
+    if (!opt$$module$synpdf.onestf) {
+        var grouped = { cxs: a.map(function (lines) { return { cs: lines, xs: { x1: 0, x2: b / 4 } }; }) };
+        mergeOverlappingStaffSystems$$module$synpdf(grouped);
+        a = grouped.cxs.map(function (system) { return system.cs; });
+    }
     witArr$$module$synpdf = [];
     var d, e, f, g = [],
         p = [],

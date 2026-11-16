@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, '../synpdf_182/editmode/synpdf-edit-mode.js'), 'utf8');
-const boundaryScanner = source.slice(source.indexOf('function countVsys$$module$synpdf('),
+const boundaryScanner = source.slice(source.indexOf('function mergeOverlappingStaffSystems$$module$synpdf('),
     source.indexOf('function findBarLines$$module$synpdf('));
 const plain = value => JSON.parse(JSON.stringify(value));
 
@@ -65,6 +65,18 @@ test('a featureless scan with no boundary runs returns an empty array instead of
         const h = setup();
         h.pixels.fill(color);
         assert.deepEqual(h.scan([valid]), []);
+    }
+});
+
+test('grouped scanning merges overlapping candidates before measuring gaps; single-staff scanning retains them', () => {
+    for (const optimized of [false, true]) {
+        const h = setup(optimized);
+        const overlapping = [[10,18,26,34,42], [30,38,46,54,62]];
+        h.context.opt$$module$synpdf.drmpl2 = .1;
+        assert.equal(h.scan(overlapping).length, 1);
+        assert.deepEqual(h.scan(overlapping)[0].cs, [10,18,26,30,34,38,42,46,54,62]);
+        h.context.opt$$module$synpdf.onestf = 1;
+        assert.deepEqual(h.scan(overlapping).map(system => system.cs), overlapping);
     }
 });
 

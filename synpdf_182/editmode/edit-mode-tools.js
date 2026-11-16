@@ -1659,6 +1659,18 @@ function applyRenderGeometryToSystem(system, renderGeometry, options) {
 
 function systemSupportsRenderGeometryFit(system) {
     if (!system) return false;
+    // The pixel fitter searches for one five-line staff. A score envelope is
+    // not a sparse staff seed, and fitting it can move its edges into a neighbor.
+    if (Array.isArray(system.cs)) {
+        var lines = system.cs.slice().sort(function (a, b) { return a - b; });
+        if (lines.length === 2 && lines[1] - lines[0] > 160) return false;
+        if (lines.length > 5) {
+            var gaps = lines.slice(1).map(function (y, i) { return y - lines[i]; });
+            var sortedGaps = gaps.slice().sort(function (a, b) { return a - b; });
+            var spacing = sortedGaps[Math.floor(sortedGaps.length / 2)];
+            if (gaps.some(function (gap) { return gap > spacing * 2; })) return false;
+        }
+    }
     if (Array.isArray(system.cs) && system.cs.length >= 2) return true;
     if (Array.isArray(system.csl) && Array.isArray(system.csr) &&
         system.csl.length >= 2 && system.csl.length === system.csr.length) {
@@ -4380,7 +4392,7 @@ function buildFullScoreGroupsFromLeftMarkers(pageImageData, items, debugInfo) {
 
     for (var start = 0; start < items.length;) {
         var best = null;
-        for (var end = start; end < items.length && end < start + 8; end++) {
+        for (var end = start; end < items.length; end++) {
             var selection = items.slice(start, end + 1);
             var marker = findLeftSystemMarkerForSelection(pageImageData, selection);
             var selectionScore = marker ? marker.score + Math.min(0.12, 0.03 * (selection.length - 1)) : -Infinity;
@@ -4397,7 +4409,9 @@ function buildFullScoreGroupsFromLeftMarkers(pageImageData, items, debugInfo) {
                 continue;
             }
 
-            if (!best || selectionScore > best.selectionScore) {
+            // A continuous left system marker defines the complete system.
+            // Small score fluctuations must not prefer a shorter strip.
+            if (!best || end > best.end) {
                 best = {
                     items: selection,
                     end: end,
@@ -4747,6 +4761,11 @@ function normalizePageToFullScoreSystems(pageData, pageImageData, debugInfo) {
     if (!normalizedCxs.length) {
         return false;
     }
+
+    var normalizedPage = { cxs: normalizedCxs, bxs: normalizedBxs };
+    mergeOverlappingStaffSystems$$module$synpdf(normalizedPage);
+    normalizedCxs = normalizedPage.cxs;
+    normalizedBxs = normalizedPage.bxs;
 
     if (debugInfo) {
         debugInfo.groups = groups.map(function (groupInfo) {

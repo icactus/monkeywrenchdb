@@ -49,6 +49,7 @@ for (const cached of [false, true]) {
         });
         const sums = Uint16Array.from({ length: width * height }, (_, i) => pixels[i*4] + pixels[i*4+1] + pixels[i*4+2]);
         const context = vm.createContext({ opt$$module$synpdf: { eerst: 1, zwgrens: .7, drmpl2: .1, onestf: 0 }, $: () => ({ prop: () => false }) });
+        vm.runInContext(definition(core, 'mergeOverlappingStaffSystems$$module$synpdf'), context);
         vm.runInContext(definition(core, 'countVsys$$module$synpdf'), context);
         const scan = () => context.countVsys$$module$synpdf(staves, width*4, pixels, cached ? { rgbSums: sums } : undefined);
         assert.deepEqual(clone(scan().map(system => [system.cs[0], system.cs.at(-1)])), [[30, 190], [240, 400], [450, 610]]);
