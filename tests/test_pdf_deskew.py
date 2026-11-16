@@ -132,6 +132,45 @@ class DeskewTests(unittest.TestCase):
         self.assertEqual(result['corrected_pages'], 0)
         self.assertEqual((self.root / 'straight.pdf').read_bytes(), self.output.read_bytes())
 
+    def test_rejected_rotation_preserves_the_page_and_processes_remaining_pages(self):
+        verify = DESKEW.improved_profile
+        calls = 0
+        def reject_first(before, after):
+            nonlocal calls
+            calls += 1
+            return False if calls == 1 else verify(before, after)
+        with mock.patch.object(DESKEW, 'improved_profile', side_effect=reject_first):
+            result = self.convert()
+        self.assertEqual([row['page'] for row in result['corrections']], [2])
+        self.assertEqual(result['review_pages'], [
+            {'page': 1, 'reason': 'Rotation correction could not be verified.'}])
+        with fitz.open(self.source) as before, fitz.open(self.output) as after:
+            self.assertEqual(len(after), len(before))
+            for number in (0, 2):
+                self.assertEqual(before[number].rect, after[number].rect)
+                self.assertEqual(before[number].get_pixmap().samples, after[number].get_pixmap().samples)
+            self.assertAlmostEqual(DESKEW.staff_angle(after[1]), 0, delta=.15)
+
+    def test_rejected_native_perspective_preserves_the_page_and_continues(self):
+        source = self.root / 'perspective.pdf'
+        perspective_fixture(source)
+        verify = DESKEW.improved_profile
+        calls = 0
+        def reject_first_native(before, after):
+            nonlocal calls
+            calls += 1
+            return False if calls == 2 else verify(before, after)
+        with mock.patch.object(DESKEW, 'improved_profile', side_effect=reject_first_native):
+            result = self.convert(source)
+        self.assertEqual([row['page'] for row in result['corrections']], [2])
+        self.assertEqual(result['review_pages'], [
+            {'page': 1, 'reason': 'Perspective correction could not be verified at scan resolution.'}])
+        with fitz.open(source) as before, fitz.open(self.output) as after:
+            self.assertEqual(len(after), len(before))
+            self.assertEqual(before[0].rect, after[0].rect)
+            self.assertEqual(before[0].get_pixmap().samples, after[0].get_pixmap().samples)
+            self.assertLess(DESKEW.profile_error(DESKEW.staff_profile(DESKEW.analysis_image(after[1]))), .15)
+
     def test_auto_selection_handles_mixed_rotation_perspective_straight_and_blank_pages(self):
         perspective_fixture(self.root / 'perspective.pdf')
         with fitz.open(self.source) as rotation, fitz.open(self.root / 'perspective.pdf') as perspective, fitz.open() as mixed:

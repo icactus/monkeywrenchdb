@@ -282,15 +282,18 @@ def deskew(source, destination, max_pages=500):
                                                         borderMode=cv2.BORDER_CONSTANT, borderValue=255)
                         verified = improved_profile(profile, staff_profile(candidate))
                         del candidate
-                        if verified and add_perspective_page(output, page, model, analysis.shape):
-                            after = staff_profile(analysis_image(output[-1]))
-                            if improved_profile(profile, after):
-                                corrected, method = True, 'perspective'
-                                corrections.append({'page': number + 1, 'method': method,
-                                                    'before_error': round(profile_error(profile), 4),
-                                                    'after_error': round(profile_error(after), 4)})
-                            else:
-                                output.delete_page(-1)
+                        if verified:
+                            # Verify trial pages separately: deleting a rejected
+                            # page can fail in MuPDF after rendering/inspection.
+                            with fitz.open() as candidate_document:
+                                if add_perspective_page(candidate_document, page, model, analysis.shape):
+                                    after = staff_profile(analysis_image(candidate_document[0]))
+                                    if improved_profile(profile, after):
+                                        output.insert_pdf(candidate_document)
+                                        corrected, method = True, 'perspective'
+                                        corrections.append({'page': number + 1, 'method': method,
+                                                            'before_error': round(profile_error(profile), 4),
+                                                            'after_error': round(profile_error(after), 4)})
                         if not corrected:
                             review = 'Perspective correction could not be verified at scan resolution.'
                     else:
@@ -300,17 +303,18 @@ def deskew(source, destination, max_pages=500):
                         if angle is None and not mixed and len(angles) >= 3:
                             angle = float(np.median(angles))
                         if angle is not None and abs(angle) >= .1:
-                            target = output.new_page(width=bounds.width, height=bounds.height)
-                            target.show_pdf_page(target.rect, document, number, rotate=angle, keep_proportion=True)
-                            residual = staff_angle(target)
-                            after = staff_profile(analysis_image(target))
-                            if (residual is not None and abs(residual) <= .2
-                                    and (len(profile) < 3 or improved_profile(profile, after))):
-                                corrected, method = True, 'rotation'
-                                corrections.append({'page': number + 1, 'method': method, 'angle': round(angle, 4)})
-                            else:
-                                output.delete_page(-1)
-                                review = 'Rotation correction could not be verified.'
+                            with fitz.open() as candidate_document:
+                                target = candidate_document.new_page(width=bounds.width, height=bounds.height)
+                                target.show_pdf_page(target.rect, document, number, rotate=angle, keep_proportion=True)
+                                residual = staff_angle(target)
+                                after = staff_profile(analysis_image(target))
+                                if (residual is not None and abs(residual) <= .2
+                                        and (len(profile) < 3 or improved_profile(profile, after))):
+                                    output.insert_pdf(candidate_document)
+                                    corrected, method = True, 'rotation'
+                                    corrections.append({'page': number + 1, 'method': method, 'angle': round(angle, 4)})
+                                else:
+                                    review = 'Rotation correction could not be verified.'
                         elif mixed or (angle is None and len(profile) >= 2):
                             review = 'Staff-line angles are inconsistent; please review this page.'
                     del analysis
