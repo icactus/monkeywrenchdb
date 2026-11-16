@@ -689,9 +689,6 @@ Wijzer$$module$synpdf.prototype.keySync = function (keyType) {
     if (window.YubSyncLiveEdit?.busy) return;
     if (window.YubSyncTutorial?.beforeStamp() === false) return;
     if (opt$$module$synpdf.synbox) {
-        this.paused && keyDown$$module$synpdf({
-            key: " "
-        });
         let currentTime = (yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime) - offset$$module$synpdf - .2;
         currentTime = Math.round(1E3 * currentTime) / 1E3;
         var detix = detix$$module$synpdf + 1;
@@ -721,11 +718,21 @@ Wijzer$$module$synpdf.prototype.keySync = function (keyType) {
         });
         pendingRepeat && pendingRepeat.jmp == demix$$module$synpdf &&
             (demix = pendingRepeat.dst, pendingRepeat.consumedAt = detix, this.drawRepTokens());
+        const complete = demix === deMaten$$module$synpdf.length - 1;
+        if (this.paused && !complete) keyDown$$module$synpdf({ key: " " });
         deTijden$$module$synpdf[detix].t = currentTime;
         deTijden$$module$synpdf[detix].mix = demix;
         this.time2x(currentTime);
-        demix ==
-            deMaten$$module$synpdf.length - 1 && (opt$$module$synpdf.synbox = 0, syncChk$$module$synpdf(), $("#synbox").prop("checked", !1), pauseer$$module$synpdf(), playPause2$$module$synpdf(!1, TOFF$$module$synpdf + offset$$module$synpdf))
+        if (complete) {
+            opt$$module$synpdf.synbox = 0;
+            syncChk$$module$synpdf();
+            $("#synbox").prop("checked", false);
+            playPause2$$module$synpdf(false, TOFF$$module$synpdf + offset$$module$synpdf);
+            // Pause after seeking, even if YouTube still reports ended or buffering.
+            if (yubchk$$module$synpdf) elmed$$module$synpdf.pauseVideo();
+            else pauseer$$module$synpdf();
+            setPauseState$$module$synpdf(true);
+        }
         // Save synchronously after every timestamp, including clicks and the
         // superuser Down Arrow shortcut; keyup/unload may never arrive.
         window.YubSyncProgress?.save();

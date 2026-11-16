@@ -32,6 +32,7 @@ function setup({ sync = true, pending = false, confirm = true } = {}) {
         opt_url$$module$synpdf: {}, ybplayer$$module$synpdf: null,
         dummyPlayer$$module$synpdf: { currentTime: 0, pause() {} },
         pauseer$$module$synpdf() { calls.push(['pause']); },
+        setPauseState$$module$synpdf(paused) { c.msc_wz$$module$synpdf.paused = paused; },
         doeRol$$module$synpdf(top, immediate) { calls.push(['scroll', top, immediate]); },
         playPause2$$module$synpdf(play, time) {
             calls.push(['seek', play, time]);
@@ -222,7 +223,48 @@ test('a new sync starts and finishes without changing a checkbox, leaving its in
     assert.deepEqual(calls.filter(call => call[0] === 'toggle' && call[1] === '#sync_out').at(-1),
         ['toggle', '#sync_out', true]);
     assert(calls.some(call => call[0] === 'checked' && call[1] === false));
+    assert.equal(c.msc_wz$$module$synpdf.paused, true);
 });
+
+for (const state of [0, 1, 2, 3]) {
+    test(`the final B rewinds and pauses YouTube from player state ${state}`, () => {
+        const { c, calls } = setup();
+        renderPage(c); c.addDummySys$$module$synpdf();
+        c.deTijden$$module$synpdf = [{ t: 0, mix: 0 }, { t: 2, mix: 1 }];
+        c.detix$$module$synpdf = c.demix$$module$synpdf = c.lastSynced$$module$synpdf = 1;
+        c.offset$$module$synpdf = 4.8;
+        c.msc_wz$$module$synpdf.paused = state !== 1;
+        c.yubchk$$module$synpdf = true;
+        c.sok$$module$synpdf = null;
+        let playerState = state, time = 10;
+        c.elmed$$module$synpdf = {
+            getCurrentTime() { return time; },
+            getPlayerState() { return playerState; },
+            seekTo(target) {
+                calls.push(['seek-video', target]);
+                time = target;
+                // Model a seek restarting an ended video while state updates lag.
+                if (playerState === 0) playerState = 3;
+            },
+            playVideo() { assert.fail('Completing a sync must never request playback'); },
+            pauseVideo() { calls.push(['pause-video']); playerState = 2; }
+        };
+        for (const name of ['playPause', 'playPause2', 'pauseer', 'keyDown']) {
+            vm.runInContext(definition(name + '$$module$synpdf'), c);
+        }
+        let saved;
+        c.window.YubSyncProgress = { save() { saved = clone(c.deTijden$$module$synpdf); } };
+        c.keyDown$$module$synpdf({ key: 'B', preventDefault() {} });
+        assert.equal(c.opt$$module$synpdf.synbox, 0);
+        assert.deepEqual(saved.at(-1), { t: 5, mix: 2 });
+        assert.equal(c.demix$$module$synpdf, 0, 'return to the first measure');
+        assert.equal(time, 4.81, 'rewind to the recording start');
+        assert.equal(playerState, 2);
+        assert.equal(c.msc_wz$$module$synpdf.paused, true);
+        assert.deepEqual(calls.filter(call => ['seek-video', 'pause-video'].includes(call[0])),
+            [['seek-video', 4.81], ['pause-video']]);
+    });
+}
 
 function earlyEndingFixture(options) {
     const h = setup(options), { c } = h;
