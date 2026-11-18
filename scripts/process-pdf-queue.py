@@ -41,8 +41,13 @@ def process_stage(folder, stage, source, output, webroot=None, settings=None):
         write_json(folder / 'item.json', item)
     last = None
     failure = None
+    env = None
+    if stage == 'compress':
+        # Keep large JPEG 2000 decoder allocations out of the glibc heap so
+        # freeing them releases their mappings before the next page renders.
+        env = dict(os.environ, MALLOC_MMAP_THRESHOLD_='131072')
     with tempfile.TemporaryFile(mode='w+t') as error_log:
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=error_log, text=True)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=error_log, text=True, env=env)
         try:
             for line in process.stdout:
                 try:
