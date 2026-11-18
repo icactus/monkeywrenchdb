@@ -874,8 +874,8 @@ $onnxWasmThreads = 1;
                 <div id="credits"></div>
                 <div id="credits2"></div>
                 <p><!-- page coordinate editing section info -->Coordinate logging: <span id="indicator"
-                        class="inactive-indicator">OFF</span> Q toggles barline editing; Q and E corrections are cached automatically
-                    (shift-click to split multimeasure rests),<br> W draws a new staff (click top-left then
+                        class="inactive-indicator">OFF</span> Q edits score barlines. Shift-click in Q mode to split multimeasure rests.
+                    E records corrections for CNN training.<br> W draws a new staff (click top-left then
                     bottom-right; shift-click for auto-snap to lines), Y refits staves, splits automatic divisi, or merges staves</p>
             </div>
         </div>

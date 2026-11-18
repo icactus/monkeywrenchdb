@@ -1104,8 +1104,7 @@
                             <button id="run-fullscore-all-btn" type="button"
                                 data-idle-label="Regroup full score + heuristic barlines (all pages)">Regroup full score + heuristic barlines (all pages)</button>
                         </div>
-                        <p>Model training: Q and E barline edits are cached automatically. Split-measure actions are excluded.
-                            Saving a part stores its geometry separately.</p>
+                        <p>Use E to record barline corrections for CNN training.</p>
                         <button id="export-td-btn" type="button">Export training data JSON (expert)</button>
                         <div style="margin-top: 8px; min-width: 260px;">
                             <label style="display:flex;align-items:center;gap:6px;">
@@ -1213,7 +1212,7 @@
             <p>Instrument parts prepare their barlines automatically. Piano parts and scores open without automatic detection.
                 Saved parts and queue drafts keep their existing barlines.</p>
             <table class="helptbl">
-                <tr><th scope="row">Q</th><td>Toggle barline editing. Click to add or remove a barline; corrections are cached automatically.</td></tr>
+                <tr><th scope="row">Q</th><td>Click to add or remove barlines on the score.</td></tr>
                 <tr><th scope="row">Alt-click in Q mode</th><td>Link a measure across two lines. Alt-click the barline at the end of the first line. Alt-click it again to undo.</td></tr>
                 <tr><th scope="row">Shift-click in Q mode / S</th><td>Split a multimeasure rest.</td></tr>
                 <tr><th scope="row">W</th><td>Draw a missing staff by clicking its top-left and bottom-right corners.</td></tr>
@@ -1224,7 +1223,7 @@
                 <tr><th scope="row">+ / −</th><td>Zoom the view without changing detection width.</td></tr>
                 <tr><th scope="row">. / /</th><td>Include weaker barlines / keep stronger barlines on the current page.</td></tr>
                 <tr><th scope="row">O</th><td>Refresh the current page.</td></tr>
-                <tr><th scope="row">E</th><td>Alternative barline correction mode; corrections are cached automatically.</td></tr>
+                <tr><th scope="row">E</th><td>Edit barlines and log the corrections for CNN training.</td></tr>
                 <tr><th scope="row">H / Escape</th><td>Open / close this help window.</td></tr>
             </table>
             <p>Press the active editing key again to leave that mode. Check staff boundaries, divisi, barlines and multimeasure rests before saving.</p>

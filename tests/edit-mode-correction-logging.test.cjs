@@ -20,7 +20,7 @@ function harness(stored = new Map()) {
     const page = {cxs: [system], bxs: [[50, 300, 950]]};
     const c = vm.createContext({
         console, Blob, scoreFnm$$module$synpdf: '298-4',
-        deMetriek$$module$synpdf: [1000, clone(page)],
+        deMetriek$$module$synpdf: stored.has('jsonString') ? undefined : [1000, clone(page)],
         QisActive: true, NisActive: false, SisActive: false, divisiSplitInProgress: false, DeleteStaffModeActive: false,
         suppressNextSplitClick: false, cancelPendingSplitInput() {},
         SplitgenerateCoordinates() { splits++; },
@@ -41,37 +41,48 @@ function harness(stored = new Map()) {
     vm.runInContext('var click = ' + tools.slice(start, tools.indexOf('\n        });', start)) + '\n};', c);
     return {c, stored, page, status, splits: () => splits};
 }
-test('ordinary Q corrections persist, retain geometry without a detector baseline, and survive reopening', () => {
+test('Q saves barline edits and staff geometry across reopening without creating training entries', () => {
     const h = harness();
     assert.equal(h.c.MetricStore.getCorrectionLog().length, 0, 'opening a saved part generates no labels');
     h.c.click({clientX: 300, clientY: 116});
+    const edited = {cxs: h.page.cxs, bxs: [[50, 950]]};
+    assert.deepEqual(clone(h.c.MetricStore.getMetricData()[1]), edited);
+    assert.equal(h.c.MetricStore.getCorrectionLog().length, 0);
+    const reopened = harness(h.stored);
+    assert.deepEqual(clone(reopened.c.MetricStore.getMetricData()[1]), edited);
+    reopened.c.click({clientX: 500, clientY: 116});
+    assert.deepEqual(clone(reopened.c.MetricStore.getMetricData()[1]), {cxs: h.page.cxs, bxs: [[50, 500, 950]]});
+    assert.equal(reopened.c.MetricStore.getCorrectionLog().length, 0);
+});
+test('E logs each detector correction once, and Q leaves that log intact even with candidate history', () => {
+    const h = harness();
+    h.c.QisActive = false;
+    h.c.NisActive = true;
+    h.c.SynpdfCorrectionTools.snapshotV2BaselineForPage(1, h.page, [[{x: 300, score: .9}, {x: 500, score: .2}]], []);
+
+    h.c.click({clientX: 500, clientY: 116});
     let log = clone(h.c.MetricStore.getCorrectionLog());
     assert.equal(log.length, 1);
-    assert.equal(log[0].sourcePdf, '298-4');
-    assert.equal(log[0].action, 'delete');
-    assert.equal(log[0].cnnTarget.label, 0);
-    assert.deepEqual(log[0].systemCs, h.page.cxs[0].cs);
-    assert.deepEqual(log[0].systemXs, h.page.cxs[0].xs);
-    assert.equal(h.c.MetricStore.getMetricData()[1].bxs[0].includes(300), false);
-    const reopened = harness(h.stored);
-    assert.deepEqual(clone(reopened.c.MetricStore.getCorrectionLog()), log);
-    reopened.c.click({clientX: 500, clientY: 116});
-    log = clone(reopened.c.MetricStore.getCorrectionLog());
+    assert.equal(log[0].action, 'add');
+    assert.equal(log[0].cnnTarget.label, 1);
+    assert.equal(log[0].cnnTarget.candidateX, 500);
+
+    h.c.click({clientX: 300, clientY: 116});
+    log = clone(h.c.MetricStore.getCorrectionLog());
     assert.equal(log.length, 2);
-    assert.equal(log[1].action, 'add');
-    assert.equal(log[1].cnnTarget, null, 'a click without a matching proposal invents no CNN target');
-});
-test('Q and E corrections use detector candidates; each click is logged once', () => {
-    for (const mode of ['Q', 'E']) {
-        const h = harness();
-        h.c.QisActive = mode === 'Q'; h.c.NisActive = mode === 'E';
-        h.c.SynpdfCorrectionTools.snapshotV2BaselineForPage(1, h.page, [[{x: 500, score: .2}]], []);
-        h.c.click({clientX: 500, clientY: 116});
-        const log = clone(h.c.MetricStore.getCorrectionLog());
-        assert.equal(log.length, 1);
-        assert.equal(log[0].cnnTarget.label, 1);
-        assert.equal(log[0].cnnTarget.candidateX, 500);
-    }
+    assert.equal(log[1].action, 'delete');
+    assert.equal(log[1].cnnTarget.label, 0);
+    assert.equal(log[1].cnnTarget.candidateX, 300);
+    assert.deepEqual(log[1].systemCs, h.page.cxs[0].cs);
+    assert.deepEqual(log[1].systemXs, h.page.cxs[0].xs);
+
+    h.c.NisActive = false;
+    h.c.QisActive = true;
+    h.c.click({clientX: 500, clientY: 116});
+    h.c.click({clientX: 300, clientY: 116});
+    assert.deepEqual(clone(h.c.MetricStore.getMetricData()[1]), h.page);
+    assert.deepEqual(clone(h.c.MetricStore.getCorrectionLog()), log);
+    assert.deepEqual(clone(harness(h.stored).c.MetricStore.getCorrectionLog()), log);
 });
 test('Shift-Q, S, and Alt-Q split-measure actions never produce correction labels', () => {
     for (const mode of ['shift', 'S', 'alt', 'off']) {

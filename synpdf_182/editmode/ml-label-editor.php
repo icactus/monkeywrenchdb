@@ -902,7 +902,7 @@
                                 <span id="correction-log-status" style="font-size:11px;color:#666;"></span>
                             </div>
                             <textarea id="correction-log-output" readonly
-                                placeholder="Manual barline corrections for the current PDF will appear here after you run detection and use Q mode."></textarea>
+                                placeholder="Barline corrections made in E mode appear here."></textarea>
                         </div>
                         <div style="margin-top: 8px;">
                             <div id="detix-box" style="font-size: 11px; color: #666;"></div>
