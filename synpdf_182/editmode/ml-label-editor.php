@@ -50,7 +50,7 @@
     $onnxWasmThreads = $isLocalHost ? 1 : 4;
     ?>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=23"></script>
+    <script src="correction-log-tools.js?v=24"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,

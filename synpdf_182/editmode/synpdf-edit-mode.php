@@ -57,7 +57,7 @@
     $onnxWasmThreads = $isLocalHost ? 1 : 4;
     ?>
     <script src="metric-store.js?v=2"></script>
-    <script src="correction-log-tools.js?v=23"></script>
+    <script src="correction-log-tools.js?v=24"></script>
     <script>
         window.BarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $barlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
@@ -1155,6 +1155,8 @@
                 <span class="toolbar-divider" aria-hidden="true"></span>
                 <button type="button" data-edit-mode="q" aria-pressed="false" title="Edit barlines (Q)" data-tooltip="Edit barlines · Q">Barlines</button>
                 <button type="button" data-edit-mode="w" aria-pressed="false" title="Draw a staff with automatic line fitting (W)" data-tooltip="Draw staff · W">Draw staff</button>
+                <button type="button" data-edit-mode="$" aria-pressed="false" data-tooltip="Click inside a staff to add or refit it · $">Add / refit staff</button>
+                <button type="button" data-edit-mode="x" aria-pressed="false" data-tooltip="Click inside a detected staff to remove it · X">Remove staff</button>
                 <button type="button" data-edit-mode="y" aria-pressed="false" title="Y: click automatic divisi to restore single staves; drag to merge systems using the starting system’s barlines; Ctrl-click a system to merge the whole page" data-tooltip="Y: click divisi to split · drag to merge · Ctrl-click: merge whole page">Refit / merge</button>
                 <button type="button" data-edit-mode="s" aria-pressed="false" title="Split a multimeasure rest (S)" data-tooltip="Split rest · S, or Shift-click in barline mode">Split rest</button>
                 <span class="toolbar-divider" aria-hidden="true"></span>
@@ -1212,8 +1214,11 @@
                 Saved parts and queue drafts keep their existing barlines.</p>
             <table class="helptbl">
                 <tr><th scope="row">Q</th><td>Toggle barline editing. Click to add or remove a barline; corrections are cached automatically.</td></tr>
+                <tr><th scope="row">Alt-click in Q mode</th><td>Link a measure across two lines. Alt-click the barline at the end of the first line. Alt-click it again to undo.</td></tr>
                 <tr><th scope="row">Shift-click in Q mode / S</th><td>Split a multimeasure rest.</td></tr>
                 <tr><th scope="row">W</th><td>Draw a missing staff by clicking its top-left and bottom-right corners.</td></tr>
+                <tr><th scope="row">$</th><td>Click anywhere within the five printed lines to add a missed staff or refit a detected staff.</td></tr>
+                <tr><th scope="row">X</th><td>Click inside a detected staff to remove it and its barlines.</td></tr>
                 <tr><th scope="row">Y</th><td>Refit staff geometry. Drag across staves or systems to merge them using the starting system’s barlines. Ctrl-click a system to merge the whole page.</td></tr>
                 <tr><th scope="row">D / Shift+D</th><td>Next / previous page. Page Down / Page Up also work.</td></tr>
                 <tr><th scope="row">+ / −</th><td>Zoom the view without changing detection width.</td></tr>

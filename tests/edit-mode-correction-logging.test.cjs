@@ -21,7 +21,7 @@ function harness(stored = new Map()) {
     const c = vm.createContext({
         console, Blob, scoreFnm$$module$synpdf: '298-4',
         deMetriek$$module$synpdf: [1000, clone(page)],
-        QisActive: true, NisActive: false, SisActive: false, divisiSplitInProgress: false,
+        QisActive: true, NisActive: false, SisActive: false, divisiSplitInProgress: false, DeleteStaffModeActive: false,
         suppressNextSplitClick: false, cancelPendingSplitInput() {},
         SplitgenerateCoordinates() { splits++; },
         handleSplitMark() { splits++; },

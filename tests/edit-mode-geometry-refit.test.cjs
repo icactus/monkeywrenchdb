@@ -11,7 +11,7 @@ function setup() {
     const context = vm.createContext({});
     for (const name of ['getNotationPoint', 'cloneSystemForGeometrySeed', 'getSystemBoundaryXs', 'applyExistingBoundaryXs',
         'applyRenderGeometryToSystem', 'shiftSystemSeedToTopLine', 'getSystemEnvelopeLines',
-        'getSystemTopBottomAtX', 'findNearestSystemIndexForPoint', 'handleSCxs']) {
+        'getSystemTopBottomAtX', 'findNearestSystemIndexForPoint', 'findStaffAtPoint', 'handleSCxs']) {
         const start = source.indexOf('function ' + name + '(');
         assert(start >= 0, name);
         vm.runInContext(source.slice(start, source.indexOf('\n}', start) + 2), context);
@@ -97,9 +97,10 @@ test('geometry hit testing uses the current staff envelope after previous edits'
 
 test('$ mode includes horizontal scrolling when anchoring its click and retains signed barlines', () => {
     const c = setup(), bars = [-50,300,-500,750], writes = [];
+    c.getSystemTopBottomAtX = () => ({ top: 110, bottom: 142 });
     let metrics = [800, { cxs: [{ cs: lines.slice(), csl: lines.slice(), csr: lines.map(y => y + 20), xs }], bxs: [bars.slice()] }];
     Object.assign(c, {
-        GeometryModeActive: true, BarlineDetectV2: {
+        GeometryModeActive: true, staffAddInProgress: false, BarlineDetectV2: {
             buildRenderGeometry(seed) { return { left: { lines: seed.csl }, right: { lines: seed.csr } }; }
         },
         MetricStore: { getMetricData: () => clone(metrics), setMetricData: value => { metrics = clone(value); writes.push(metrics); } },
@@ -120,7 +121,7 @@ test('$ mode includes horizontal scrolling when anchoring its click and retains 
 });
 
 function detectionSetup() {
-    const c = setup(), events = [], writes = [], baselines = [], refreshes = [], navigation = [];
+    const c = setup(), events = [], writes = [], baselines = [], baselineDiagnostics = [], refreshes = [], navigation = [];
     let page = 1;
     Object.assign(c, {
         batchDetectionInProgress: false, divisiSplitInProgress: false,
@@ -154,9 +155,10 @@ function detectionSetup() {
         setBatchButtonState() {}, setSingleStaffMode() {},
         getDisplayedPageNumber: () => page,
         goToRenderedPage: async next => { page = next; navigation.push(next); },
-        SynpdfCorrectionTools: { snapshotV2BaselineForPage: (_page, data) => {
+        SynpdfCorrectionTools: { snapshotV2BaselineForPage: (_page, data, diagnostics) => {
             events.push('baseline:' + page);
             baselines.push(clone(data));
+            baselineDiagnostics.push(clone(diagnostics));
         } },
         persistMetricData: () => {
             events.push('save:' + page);
@@ -167,14 +169,15 @@ function detectionSetup() {
         performance: { now: () => 0 },
         console: { log() {}, error() {} }, alert: message => assert.fail(message)
     });
-    for (const name of ['normalizeDetectedSystemBarlines', 'systemSupportsRenderGeometryFit', 'fitPageSystemsWithStandardGeometry']) {
+    for (const name of ['normalizeDetectedSystemBarlines', 'systemSupportsRenderGeometryFit',
+        'fitPageSystemsWithStandardGeometry', 'removeDuplicateFittedStaves']) {
         const start = source.indexOf('function ' + name + '(');
         vm.runInContext(source.slice(start, source.indexOf('\n}', start) + 2), c);
     }
     vm.runInContext(source.slice(source.indexOf('var barlineModelPreparation ='), source.indexOf('var barlineDetectionProgress =')), c);
     vm.runInContext(source.slice(source.indexOf('    async function runPageBarlineDetection('),
         source.indexOf('    function runCurrentPagePianoNormalize(')), c);
-    return { c, events, writes, baselines, refreshes, navigation };
+    return { c, events, writes, baselines, baselineDiagnostics, refreshes, navigation };
 }
 
 for (const allPages of [false, true]) {
@@ -199,3 +202,46 @@ for (const allPages of [false, true]) {
         assert.deepEqual(h.navigation, allPages ? [2, 3, 1] : []);
     });
 }
+
+test('CNN saves one staff when two nearby scan candidates fit the same five lines', async () => {
+    const h = detectionSetup();
+    h.c.rebuildCurrentPageMetricData = () => ({
+        cxs: [0, 8, 60].map(offset => ({ cs: lines.map(y => y + offset), xs })),
+        bxs: [[50, 750], [-50, 750], [50, -750]],
+        quarterSources: ['last_quarter', 'last_quarter', 'first_quarter']
+    });
+    h.c.BarlineDetectV2.findBarLinesV2 = async (system, _stride, _pixels, _width, options) => {
+        const bar = system.cs[0];
+        options.diagnostics.push({ x: bar });
+        return [bar];
+    };
+    h.c.BarlineDetectV2.buildRenderGeometry = system => {
+        const offset = system.cs[0] < 120 ? 8 : 60;
+        return { left: { lines: lines.map(y => y + offset) }, right: { lines: lines.map(y => y + offset + 1) } };
+    };
+
+    assert.equal(await h.c.runPageBarlineDetection('cnn_only'), true);
+    assert.equal(h.writes[0].cxs.length, 2);
+    assert.deepEqual(h.writes[0].bxs, [[-50, 108, 750], [50, 160, -750]]);
+    assert.deepEqual(h.writes[0].quarterSources, ['last_quarter', 'first_quarter']);
+    assert.deepEqual(h.baselines, h.writes);
+    assert.deepEqual(h.baselineDiagnostics[0], [[{ x: 108 }], [{ x: 160 }]]);
+});
+
+test('deduplication retains distinct staves, divisi, and horizontally separate music', () => {
+    const { c } = detectionSetup();
+    const staff = (offset, span = xs) => ({
+        cs: lines.map(y => y + offset),
+        csl: lines.map(y => y + offset),
+        csr: lines.map(y => y + offset + 1),
+        xs: span
+    });
+    const left = { x1: 50, x2: 350 }, right = { x1: 400, x2: 750 };
+    const systems = [staff(0), staff(8), staff(0), staff(0, left), staff(0, right),
+        { ...staff(0), autoDivisi: { staves: [staff(0), staff(50)] } }];
+    const seeds = [staff(0), staff(8), staff(48), staff(0, left), staff(0, right), systems[5]];
+    const page = { cxs: systems, bxs: systems.map(s => [s.xs.x1, s.xs.x2]) };
+    c.removeDuplicateFittedStaves(page, seeds);
+    assert.equal(page.cxs, systems);
+    assert.equal(page.bxs.length, systems.length);
+});

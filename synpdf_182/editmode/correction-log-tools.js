@@ -828,9 +828,8 @@ var SynpdfCorrectionTools = (function () {
         updateCorrectionLogUI();
     }
 
-    // A local divisi split changes system indices. Retain every unaffected
-    // candidate/crop and insert only the new single-staff CNN baselines.
-    function replaceSystemBaselinesForPage(pagenum, pageData, replacedIndex, diagnostics) {
+    // Structural staff edits shift indices. Retain every unaffected candidate/crop.
+    function replaceSystemBaselinesForPage(pagenum, pageData, replacedIndex, diagnostics, removedCount = 1) {
         var previous = baselinesByPage[pagenum];
         var oldSystems = previous && previous.sourcePdf === getCurrentPdfName() ? previous.systems : [];
         var allDiagnostics = [], renderGeometry = [];
@@ -839,7 +838,7 @@ var SynpdfCorrectionTools = (function () {
                 allDiagnostics.push(diagnostics[index - replacedIndex]);
                 renderGeometry.push(null);
             } else {
-                var oldIndex = index < replacedIndex ? index : index - diagnostics.length + 1;
+                var oldIndex = index < replacedIndex ? index : index - diagnostics.length + removedCount;
                 var old = oldSystems[oldIndex];
                 allDiagnostics.push(old && old.candidates ? old.candidates : []);
                 renderGeometry.push(old ? old.renderGeometry : null);

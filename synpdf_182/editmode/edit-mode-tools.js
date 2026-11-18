@@ -7,6 +7,8 @@ var NisActive = false;
 var SisActive = false;
 var YisActive = false;
 var GeometryModeActive = false;
+var DeleteStaffModeActive = false;
+var staffAddInProgress = false;
 var WisActive = false;
 var splitInputPopup = null;
 var splitInputState = null;
@@ -28,6 +30,7 @@ function getActiveModeTooltipLabel() {
     if (SisActive) return 'S';
     if (YisActive) return 'Y';
     if (GeometryModeActive) return '$';
+    if (DeleteStaffModeActive) return 'X';
     return '';
 }
 
@@ -59,6 +62,7 @@ function clearExclusiveModeState() {
     SisActive = false;
     YisActive = false;
     GeometryModeActive = false;
+    DeleteStaffModeActive = false;
     WisActive = false;
     exactBoundariesMode = false;
     hideSplitSelectionBox();
@@ -218,6 +222,9 @@ function activateExclusiveMode(mode) {
         case '$':
             GeometryModeActive = true;
             break;
+        case 'x':
+            DeleteStaffModeActive = true;
+            break;
         case 'w':
             WisActive = true;
             exactBoundariesMode = false;
@@ -259,6 +266,9 @@ function toggleExclusiveMode(mode) {
             break;
         case '$':
             isActive = GeometryModeActive;
+            break;
+        case 'x':
+            isActive = DeleteStaffModeActive;
             break;
         case 'w':
         case 'W':
@@ -387,6 +397,10 @@ document.addEventListener("DOMContentLoaded", function () {
             if (handleSplit(event)) return;
             if (handleWCxs(event)) return;
             if (handleYCxs(event)) return;
+            if (DeleteStaffModeActive) {
+                handleDeleteStaffClick(event);
+                return;
+            }
             if (handleSCxs(event)) return;
             else if (!QisActive && !NisActive) return;
             if (addRemoveBxs$$module$synpdf(event, { logForCnn: NisActive })) return;
@@ -1382,6 +1396,53 @@ function fitPageSystemsWithStandardGeometry(pageData, pageImageData) {
     return pageData;
 }
 
+function removeDuplicateFittedStaves(pageData, seeds, diagnostics) {
+    function sameStaff(a, b, seedA, seedB) {
+        if (a.autoDivisi || b.autoDivisi || !a.xs || !b.xs ||
+            ![a.csl, a.csr, b.csl, b.csr].every(lines => Array.isArray(lines) && lines.length === 5)) return false;
+
+        const left = Math.max(a.xs.x1, b.xs.x1), right = Math.min(a.xs.x2, b.xs.x2);
+        const span = Math.max(a.xs.x2, b.xs.x2) - Math.min(a.xs.x1, b.xs.x1);
+        if (right <= left || right - left < 0.9 * span) return false;
+
+        const spacing = Math.min(a.cs[4] - a.cs[0], b.cs[4] - b.cs[0]) / 4;
+        // Keep distinct staff seeds even if the fitter snaps them to the same ink.
+        if (!(spacing > 0) || Math.abs(center(seedA) - center(seedB)) > 2 * spacing) return false;
+        return [left, right].every(x => a.csl.every((_, line) =>
+            Math.abs(lineAt(a, line, x) - lineAt(b, line, x)) <= spacing / 4));
+    }
+    function center(system) {
+        return (system.cs[0] + system.cs[system.cs.length - 1]) / 2;
+    }
+    function lineAt(system, line, x) {
+        const fraction = (x - system.xs.x1) / (system.xs.x2 - system.xs.x1);
+        return system.csl[line] + fraction * (system.csr[line] - system.csl[line]);
+    }
+
+    const systems = pageData.cxs;
+    const kept = [];
+    systems.forEach(function (system, index) {
+        const match = kept.findIndex(other => sameStaff(system, systems[other], seeds[index], seeds[other]));
+        if (match < 0) {
+            kept.push(index);
+        } else {
+            // Keep the barlines from the candidate whose seed needed less correction.
+            const other = kept[match];
+            if (Math.abs(center(system) - center(seeds[index])) < Math.abs(center(systems[other]) - center(seeds[other]))) {
+                kept[match] = index;
+            }
+        }
+    });
+    if (kept.length === systems.length) return;
+    const select = values => kept.map(index => values[index]);
+    pageData.cxs = select(systems);
+    pageData.bxs = select(pageData.bxs);
+    if (pageData.quarterSources && pageData.quarterSources.length === systems.length) {
+        pageData.quarterSources = select(pageData.quarterSources);
+    }
+    if (diagnostics) diagnostics.splice(0, diagnostics.length, ...select(diagnostics));
+}
+
 function runPagePianoGeometryOnly(options) {
     options = options || {};
 
@@ -1835,6 +1896,10 @@ document.addEventListener('keydown', function (event) {
             break;
         case '$':
             toggleGeometryModeActivity();
+            break;
+        case 'x':
+        case 'X':
+            toggleExclusiveMode('x');
             break;
         case 'S':
             saveTiming$$module$synpdf();
@@ -5275,10 +5340,192 @@ function handleYCxs(event) {
     return true;
 }
 
+function findStaffAtPoint(systems, x, y, maxDistance = 0) {
+    let found = -1;
+    let closestCenter = Infinity;
+    systems.forEach(function (system, index) {
+        if (!system.xs || x < system.xs.x1 || x > system.xs.x2) return;
+        const bounds = getSystemTopBottomAtX(system, x);
+        if (y < bounds.top - maxDistance || y > bounds.bottom + maxDistance) return;
+        const distance = Math.abs(y - (bounds.top + bounds.bottom) / 2);
+        if (distance < closestCenter) {
+            closestCenter = distance;
+            found = index;
+        }
+    });
+    return found;
+}
+
+function findClickedStaffGeometry(image, x, y, nearbyStaff) {
+    const { pixelData, stride, width } = image;
+    const height = Math.floor(pixelData.length / stride);
+    if (x < 0 || x >= width || y < 0 || y >= height) return null;
+    const spacings = [nearbyStaff ? getSystemEstimatedSpatium(nearbyStaff) : width / 120, 4, 6, 9, 13, 18, 25, 34];
+    for (const spacing of spacings) {
+        const lines = detectStaffBundleAroundPoint(pixelData, stride, width, x, y, spacing);
+        if (!lines) continue;
+        const spatium = (lines[4] - lines[0]) / 4;
+        const edgeTolerance = Math.max(1, 0.16 * spatium);
+        if (y < lines[0] - edgeTolerance || y > lines[4] + edgeTolerance) continue;
+        function countLinesAt(col, offset) {
+            return lines.filter(function (line) {
+                const row = line + offset;
+                return [-1, 0, 1].some(function (delta) {
+                    const sample = row + delta;
+                    const i = sample * stride + col * 4;
+                    return sample >= 0 && sample < height && pixelData[i] + pixelData[i + 1] + pixelData[i + 2] < 648;
+                });
+            }).length;
+        }
+        function findEdge(direction) {
+            let edge = x;
+            let offset = 0;
+            // Follow tilted lines from the click and bridge short breaks in ink.
+            for (let col = x; col >= 0 && col < width && Math.abs(col - edge) <= 2 * spatium; col += direction) {
+                let bestOffset = offset;
+                let strongest = 3;
+                for (const delta of [0, -1, 1, -2, 2]) {
+                    const supported = countLinesAt(col, offset + delta);
+                    if (supported <= strongest) continue;
+                    strongest = supported;
+                    bestOffset = offset + delta;
+                    if (supported === 5) break;
+                }
+                if (strongest >= 4) {
+                    edge = col;
+                    offset = bestOffset;
+                }
+            }
+            return edge;
+        }
+        const xs = { x1: findEdge(-1), x2: findEdge(1) };
+        if (xs.x2 - xs.x1 < 8 * spatium) continue;
+        const seed = { cs: lines, xs };
+        const fit = BarlineDetectV2.buildRenderGeometry(seed, pixelData, stride, width, { anchor: { x, lines } });
+        if (fit) return applyRenderGeometryToSystem(seed, fit, { fixedXs: xs });
+    }
+    return null;
+}
+
+function staffEditNeighborBars(metrics, pageNumber, index, direction) {
+    while (pageNumber > 0 && pageNumber < metrics.length) {
+        const systems = metrics[pageNumber]?.bxs || [];
+        const bars = systems[index === null ? (direction < 0 ? systems.length - 1 : 0) : index];
+        if (bars?.length) return bars;
+        pageNumber += direction;
+        index = null;
+    }
+    return null;
+}
+
+function saveStaffEdit(metrics, pageNumber, index, removeCount, system, bars, diagnostics = null) {
+    const page = metrics[pageNumber];
+    const before = metrics[1]?.partJumps && typeof SynpdfPartJumps !== 'undefined' ? MetricStore.getMetricData() : null;
+    if (!system || !removeCount) {
+        const removed = removeCount ? page.bxs[index] : null;
+        const previous = staffEditNeighborBars(metrics, pageNumber, index - 1, -1);
+        const following = staffEditNeighborBars(metrics, pageNumber, index + removeCount, 1);
+        // Removing or inserting a staff must not link the wrong split measure.
+        const interruptedSplit = !removed && previous?.at(-1) < 0 && following?.[0] < 0;
+        if (interruptedSplit || (previous?.at(-1) < 0 && removed?.[0] < 0)) {
+            previous[previous.length - 1] = Math.abs(previous.at(-1));
+        }
+        if (interruptedSplit || (following?.[0] < 0 && removed?.at(-1) < 0)) {
+            following[0] = Math.abs(following[0]);
+        }
+    }
+    page.cxs.splice(index, removeCount, ...(system ? [system] : []));
+    page.bxs.splice(index, removeCount, ...(system ? [bars] : []));
+    if (page.quarterSources?.length === page.cxs.length + removeCount - (system ? 1 : 0)) {
+        page.quarterSources.splice(index, removeCount, ...(system ? ['manual'] : []));
+    }
+    if (before) {
+        try {
+            SynpdfPartJumps.rebase(before, metrics);
+        } catch (error) {
+            alert(error.message);
+            return;
+        }
+    }
+    if (!MetricStore.setMetricData(metrics, { clone: false })) return;
+    window.SynpdfCorrectionTools?.replaceSystemBaselinesForPage?.(pageNumber, page, index, system ? [diagnostics] : [], removeCount);
+    requestRefresh({ preferLiveData: true });
+}
+
+async function insertClickedStaff(metrics, pageNumber, system, image) {
+    const canvas = getCurrentPageCanvas();
+    const originalPage = JSON.stringify(metrics[pageNumber]);
+    const useCnn = typeof BarlinePatchCNN !== 'undefined' &&
+        typeof BarlinePatchCNN.predictBatchCandidatesAsync === 'function';
+    const diagnostics = useCnn ? [] : null;
+    staffAddInProgress = true;
+    try {
+        let bars;
+        if (useCnn) {
+            await prepareBarlineDetectionModel();
+            const detected = await BarlineDetectV2.findBarLinesV2(system, image.stride, image.pixelData, image.width,
+                { classifierMode: 'cnn_only', cnnThreshold: 0.394, allowV1Fallback: false, diagnostics });
+            bars = normalizeDetectedSystemBarlines(system, detected);
+        } else {
+            bars = detectMergedSystemBarlines(image, system, getSystemEstimatedSpatium(system));
+        }
+        const live = MetricStore.getMetricData();
+        const page = live?.[pageNumber];
+        // The CNN can finish after navigation or a separate edit to this page.
+        if (getDisplayedPageNumber() !== pageNumber || getCurrentPageCanvas() !== canvas ||
+            JSON.stringify(page) !== originalPage) return;
+        const top = getSystemSortTop(system);
+        const next = page.cxs.findIndex(staff => getSystemSortTop(staff) > top);
+        saveStaffEdit(live, pageNumber, next < 0 ? page.cxs.length : next, 0, system, bars, diagnostics);
+    } catch (error) {
+        console.error('Could not add the detected staff:', error);
+        if (getDisplayedPageNumber() === pageNumber && getCurrentPageCanvas() === canvas) {
+            alert('Could not detect barlines for that staff. Click it again to retry.');
+        }
+    } finally {
+        staffAddInProgress = false;
+    }
+}
+
+function handleDeleteStaffClick(event) {
+    const metrics = MetricStore.getMetricData();
+    const pageNumber = getDisplayedPageNumber();
+    const page = metrics?.[pageNumber];
+    if (!page?.cxs?.length || !Array.isArray(page.bxs)) return;
+    const { x, y } = getNotationPoint(event);
+    const index = findStaffAtPoint(page.cxs, x, y);
+    if (index < 0) return;
+
+    const system = page.cxs[index];
+    if (!system.autoDivisi) {
+        saveStaffEdit(metrics, pageNumber, index, 1);
+        return;
+    }
+    const members = getDivisiSingleStaves(system, metrics[0]);
+    const memberIndex = findStaffAtPoint(members, x, y);
+    if (memberIndex < 0) return;
+    members.splice(memberIndex, 1);
+    const bars = page.bxs[index];
+    if (members.length === 1) {
+        applyExistingBoundaryXs(members[0], bars);
+        saveStaffEdit(metrics, pageNumber, index, 1, members[0], bars);
+        return;
+    }
+    system.autoDivisi.staves = members;
+    system.autoDivisi.width = metrics[0];
+    for (const side of ['csl', 'csr']) {
+        system[side] = [Math.min(...members.map(staff => (staff[side] || staff.cs)[0])),
+            Math.max(...members.map(staff => (staff[side] || staff.cs).at(-1)))];
+    }
+    system.cs = system.csl.map((line, i) => (line + system.csr[i]) / 2);
+    saveStaffEdit(metrics, pageNumber, index, 1, system, bars);
+}
+
 function handleSCxs(event) {
     if (!GeometryModeActive) {
         return false;
     }
+    if (staffAddInProgress) return true;
     if (typeof BarlineDetectV2 === 'undefined') {
         alert("V2 Detection module is not loaded.");
         return true;
@@ -5286,7 +5533,8 @@ function handleSCxs(event) {
 
     let pageData = MetricStore.getMetricData();
     let pagenum = parseInt(document.getElementById('pagenum').value);
-    if (!pageData || pagenum < 1 || pagenum >= pageData.length || !pageData[pagenum] || !Array.isArray(pageData[pagenum].cxs)) {
+    const page = pageData?.[pagenum];
+    if (!page || !Array.isArray(page.cxs) || !Array.isArray(page.bxs)) {
         return true;
     }
 
@@ -5299,19 +5547,40 @@ function handleSCxs(event) {
     var point = getNotationPoint(event);
     var x = Math.round(point.x);
     var y = Math.round(point.y);
-    var systemIndex = findNearestSystemIndexForPoint(pageData[pagenum], pagenum, x, y);
-    if (systemIndex < 0) {
-        return true;
+    let systemIndex = findStaffAtPoint(page.cxs, x, y);
+    let fitted = null;
+    if (systemIndex >= 0) {
+        fitted = refitSystemAtPoint(page.cxs[systemIndex], page.bxs[systemIndex], x, y, pageImageData);
+    } else {
+        const nearby = findStaffAtPoint(page.cxs, x, y, pageImageData.width / 12);
+        const existing = page.cxs[nearby];
+        const printed = findClickedStaffGeometry(pageImageData, x, y, existing);
+        if (printed) {
+            const spacing = getSystemEstimatedSpatium(printed);
+            if (existing && !existing.autoDivisi) {
+                const bounds = getSystemTopBottomAtX(existing, x);
+                const center = Math.round((bounds.top + bounds.bottom) / 2);
+                const printedBounds = getSystemTopBottomAtX(printed, x);
+                const distance = Math.abs(center - (printedBounds.top + printedBounds.bottom) / 2);
+                // The old refit can recover a misplaced seed. Keep a nearby
+                // detected staff intact if its own location has printed lines.
+                if (distance <= 2 * spacing || (distance <= 6 * spacing &&
+                    !refitSystemAtPoint(existing, page.bxs[nearby], x, center, pageImageData))) {
+                    fitted = refitSystemAtPoint(existing, page.bxs[nearby], x, y, pageImageData);
+                    systemIndex = nearby;
+                }
+            }
+            if (systemIndex < 0) {
+                return insertClickedStaff(pageData, pagenum, printed, pageImageData);
+            }
+        }
     }
 
-    var system = pageData[pagenum].cxs[systemIndex];
-    var existingBarlines = pageData[pagenum].bxs && pageData[pagenum].bxs[systemIndex];
-    const fitted = refitSystemAtPoint(system, existingBarlines, x, y, pageImageData);
     if (!fitted) {
         alert("Could not fit that staff. Click within its printed five lines, away from dense notes.");
         return true;
     }
-    pageData[pagenum].cxs[systemIndex] = fitted;
+    page.cxs[systemIndex] = fitted;
 
     MetricStore.setMetricData(pageData, { clone: false });
     requestRefresh({ preferLiveData: true });
@@ -5888,6 +6157,7 @@ $(document).ready(function () {
             if (runMode === 'cnn_only') {
                 // Refit after detection, just like the staff geometry button.
                 pageData = fitPageSystemsWithStandardGeometry(pageData, pageImageData);
+                removeDuplicateFittedStaves(pageData, systemsForDetection, systemDiagnostics);
             }
             deMetriek$$module$synpdf[pagenum] = pageData;
             SynpdfCorrectionTools.snapshotV2BaselineForPage(

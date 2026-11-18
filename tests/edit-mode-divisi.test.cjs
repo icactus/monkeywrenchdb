@@ -68,7 +68,7 @@ function setup(options) {
     for (const name of ['getNotationPoint', 'getSystemEnvelopeLines','estimateSpatiumFromEnvelopeLines','getSystemEstimatedSpatium',
         'getSystemTopBottomAtX','getSystemVerticalEnvelope','getSystemSortTop','getSystemBoundaryXs','applyExistingBoundaryXs',
         'cloneSystemForGeometrySeed','getRepresentativeSystemLines','buildMergedSystemFromSelection',
-        'fitPageSystemsWithStandardGeometry','systemSupportsRenderGeometryFit','applyRenderGeometryToSystem',
+        'fitPageSystemsWithStandardGeometry','removeDuplicateFittedStaves','systemSupportsRenderGeometryFit','applyRenderGeometryToSystem',
         'scanDivisiGroupCandidates','normalizeDivisiStaff','divisiStaffSpacing','divisiProposalPairs',
         'findDivisiBridges','divisiGroupingSuppressed','detectDivisiBarlines','buildDivisiDetectionJobs',
         'getDivisiSingleStaves','splitAutoDivisiSystem','normalizeDetectedSystemBarlines','findNearestSystemIndexForPoint','handleYCxs']) {

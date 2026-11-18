@@ -46,6 +46,7 @@ async function scanServerPage(width, height, grayHex) {
             { cxs: [page.cxs[index]], bxs: [page.bxs[index]] }, image).cxs[0];
     }
     _progress(page.cxs.length, page.cxs.length, 'geometry');
+    removeDuplicateFittedStaves(page, jobs.map(job => job.system));
     return page;
 }
 function startServerPage(width, height, grayHex) {
