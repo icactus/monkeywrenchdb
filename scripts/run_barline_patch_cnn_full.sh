@@ -23,6 +23,7 @@ RENDER_THREADS=2
 EPOCHS=12
 BATCH_SIZE=64
 HARDCASE_WEIGHT=2.0
+IMPORT_LIBRARY=1
 ONNX_SITE_PACKAGES="${ROOT_DIR}/.venv-onnx/lib/python3.11/site-packages"
 ONNX_OUT=""
 
@@ -41,6 +42,7 @@ Options:
   --epochs N            Training epochs (default: ${EPOCHS})
   --batch-size N        Training batch size (default: ${BATCH_SIZE})
   --hardcase-weight N   Weight multiplier for hardcase samples (default: ${HARDCASE_WEIGHT})
+  --no-library          Use the existing corpus without syncing new reviewed library parts
   --jobs N              Parallel extraction jobs for base patch shards (default: ${JOBS})
   --render-threads N    PDF render threads per extraction job (default: ${RENDER_THREADS})
   --dpi N               PDF render DPI for patch extraction (default: ${DPI})
@@ -65,6 +67,7 @@ while [[ $# -gt 0 ]]; do
     --epochs) EPOCHS="$2"; shift 2 ;;
     --batch-size) BATCH_SIZE="$2"; shift 2 ;;
     --hardcase-weight) HARDCASE_WEIGHT="$2"; shift 2 ;;
+    --no-library) IMPORT_LIBRARY=0; shift ;;
     --jobs) JOBS="$2"; shift 2 ;;
     --render-threads) RENDER_THREADS="$2"; shift 2 ;;
     --dpi) DPI="$2"; shift 2 ;;
@@ -109,6 +112,12 @@ echo "Epochs:         $EPOCHS"
 echo "Batch size:     $BATCH_SIZE"
 echo "Hardcase wt:    $HARDCASE_WEIGHT"
 echo
+
+if [[ "$IMPORT_LIBRARY" -eq 1 && "$PATCH_WIDTH" == 32 && "$PATCH_HEIGHT" == 64 &&
+      "$X_SPATIUMS" == 1.5 && ( "$Y_SPATIUMS" == 1.0 || "$Y_SPATIUMS" == 1 ) ]]; then
+  echo "==> Sync reviewed library parts"
+  python3 -u scripts/import_reviewed_barline_parts.py --patch-dir "$PATCH_DIR"
+fi
 
 echo "==> Step 1: Extract CNN patch shards"
 mkdir -p "$PATCH_DIR"

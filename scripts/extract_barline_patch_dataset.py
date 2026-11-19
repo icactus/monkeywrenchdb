@@ -132,6 +132,8 @@ def build_examples_for_page(source_id, page_index, page_data, crop_binary_img, c
     for system_index, system in enumerate(cxs):
         if system_index >= len(bxs):
             break
+        if system.get("autoDivisi") or system.get("trainingDivisi"):
+            continue
 
         raw_cs = get_system_seed_lines(system)
         xs = system.get("xs", {})
@@ -139,8 +141,9 @@ def build_examples_for_page(source_id, page_index, page_data, crop_binary_img, c
             continue
 
         candidates, _ = generate_candidates_and_features(system, stride, pixel_data, image_width)
-        # Exclude both system boundary anchors (xs.x1 / xs.x2) from patch labels.
-        gt_barlines = bxs[system_index][1:-1] if len(bxs[system_index]) > 2 else []
+        # System anchors and generated multimeasure rest divisions are timing boundaries.
+        rest_splits = set(system.get("restSplitXs", []))
+        gt_barlines = [abs(x) for x in bxs[system_index][1:-1] if abs(x) not in rest_splits]
 
         actual_positives = set()
         for gt in gt_barlines:

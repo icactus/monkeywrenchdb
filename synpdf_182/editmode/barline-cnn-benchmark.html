@@ -60,10 +60,10 @@
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js"></script>
     <script src="barline-patch-cnn-runtime.js"></script>
-    <script src="synpdf-edit-mode.js?v=108"></script>
+    <script src="synpdf-edit-mode.js?v=109"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js"></script>
     <script src="barline-detect-v2.js?v=40"></script>
-    <script src="barline-cnn-benchmark-exclusions.js?v=1"></script>
+    <script src="barline-cnn-benchmark-exclusions.js?v=2"></script>
     <script>
     (function () {
         'use strict';
@@ -92,6 +92,12 @@
                 return {
                     pdf: '../test-page.pdf',
                     truth: 'test-page-ground-truth-barlines.json'
+                };
+            }
+            if (/^metric-[1-9]\d*$/.test(sourceId)) {
+                return {
+                    pdf: '../../pdfs/' + sourceId + '.pdf',
+                    truth: '../../data/metrics/cnn-training/' + sourceId + '.json'
                 };
             }
             if (!/^\d+-\d+$/.test(sourceId)) {
@@ -218,11 +224,7 @@
             return stage;
         }
 
-        function internalTruthXs(pageTruth, systemIndex) {
-            var xs = pageTruth.bxs && pageTruth.bxs[systemIndex];
-            if (!Array.isArray(xs) || xs.length <= 2) return [];
-            return xs.slice(1, -1).map(function (x) { return Math.abs(Number(x)); }).filter(Number.isFinite);
-        }
+        var internalTruthXs = BarlineBenchmarkExclusions.internalTruthXs;
 
         function applyTruthBoundaries(system, existingBarlines) {
             var cloned = JSON.parse(JSON.stringify(system));
@@ -294,6 +296,80 @@
             return { page: page, context: context };
         }
 
+        async function scanSystem(system, stride, pixels, contextLabel) {
+            var diagnostics = [], perfStats = {}, specs = [];
+            var originalPredictBatch = BarlinePatchCNN.predictBatchCandidatesAsync;
+            BarlinePatchCNN.predictBatchCandidatesAsync = function (pixelData, candidateStride, width, candidates) {
+                specs = candidates.map(({ xCol, staffTop, staffBot, spatium }) => ({
+                    xCol: Number(xCol), staffTop: Number(staffTop), staffBot: Number(staffBot), spatium: Number(spatium)
+                }));
+                return originalPredictBatch.apply(this, arguments);
+            };
+            var detected;
+            try {
+                detected = await BarlineDetectV2.findBarLinesV2(system, stride, pixels, canvas.width, {
+                    allowV1Fallback: false, classifierMode: 'cnn_only', cnnThreshold: threshold,
+                    diagnostics: diagnostics, perfStats: perfStats
+                });
+            } finally {
+                BarlinePatchCNN.predictBatchCandidatesAsync = originalPredictBatch;
+            }
+            if (specs.length !== diagnostics.length) {
+                throw new Error(contextLabel + ': captured ' + specs.length + ' crop specs for ' + diagnostics.length + ' diagnostics');
+            }
+            return { detected, diagnostics, perfStats, specs };
+        }
+
+        function encodeCandidatePatch(spec, stride, pixels, metadata) {
+            var inputShape = metadata.input_shape || [64, 32, 1];
+            var config = metadata.crop_config || {};
+            var patch = BarlinePatchCNN.cropCandidatePatch(pixels, stride, canvas.width,
+                spec.xCol, spec.staffTop, spec.staffBot, spec.spatium,
+                config.x_spatiums ?? 1.5, config.y_spatiums ?? 1.0, inputShape[1], inputShape[0]);
+            if (!patch) throw new Error('Could not reproduce candidate patch at x=' + spec.xCol);
+            return patchToBase64(patch);
+        }
+
+        async function reviewedTrainingCandidates(page, truthIndex, pageNumber, stride, pixels, metadata) {
+            var truthXs = internalTruthXs(page, truthIndex);
+            var boundaries = page.bxs[truthIndex];
+            var system = applyTruthBoundaries(page.cxs[truthIndex], boundaries);
+            var scan = await scanSystem(system, stride, pixels, 'Reviewed page ' + pageNumber + ', staff ' + truthIndex);
+            var proposals = scan.diagnostics.map((entry, index) => ({ entry, spec: scan.specs[index] }))
+                .filter(row => !isStructuralEndpointCandidate(row.spec, system, boundaries));
+            var match = matchXs(truthXs, proposals.map(row => Number(row.entry.x)), tolerance);
+            var accepted = matchXs(truthXs, proposals.filter(row => Number.isFinite(row.entry.cnnScore) && row.entry.cnnScore >= threshold)
+                .map(row => Number(row.entry.x)), tolerance);
+            var final = finalInternalXs(scan.detected, system, boundaries);
+            var matchedByProposal = new Map(match.matches.map(value => [value.predictedIndex, value]));
+            var candidates = [];
+            proposals.forEach(function (row, index) {
+                var x = Number(row.entry.x);
+                var matched = matchedByProposal.get(index);
+                if (!matched && truthXs.some(truthX => Math.abs(x - truthX) <= tolerance)) return;
+                var hardcase = matched ? !accepted.usedTruth.has(matched.truthIndex) : final.some(bar => Math.abs(x - bar) < 0.5);
+                candidates.push({ x, crop: row.spec, trainingLabel: matched ? 1 : 0, trainingKind: hardcase ? 'hardcase' : 'candidate',
+                    patchBase64: encodeCandidatePatch(row.spec, stride, pixels, metadata) });
+            });
+            return { truthIndex, candidates, unproposedTruth: truthXs.filter((x, index) => !match.usedTruth.has(index)) };
+        }
+
+        function scaleTrainingTruth(truth, width) {
+            var scale = width / truth[0];
+            if (scale === 1) return;
+            truth[0] = width;
+            truth.slice(1).forEach(function (page) {
+                page.cxs.forEach(function (staff) {
+                    ['cs', 'csl', 'csr', 'restSplitXs'].forEach(function (key) {
+                        if (Array.isArray(staff[key])) staff[key] = staff[key].map(value => value * scale);
+                    });
+                    staff.xs.x1 *= scale;
+                    staff.xs.x2 *= scale;
+                });
+                page.bxs = page.bxs.map(bars => bars.map(x => x * scale));
+            });
+        }
+
         async function benchmarkSource(sourceId, totals, runtimeMetadata) {
             var paths = sourcePaths(sourceId);
             setStatus('Loading ' + sourceId + '…');
@@ -311,9 +387,18 @@
             if (!Number.isFinite(renderWidth) || renderWidth <= 0) {
                 throw new Error(sourceId + ' has an invalid metric width');
             }
+            var libraryPart = sourceId.startsWith('metric-');
+            var reviewWidth = Number(truth[1]?.cnnTraining?.renderWidth);
+            if (libraryPart && reviewWidth >= 500 && reviewWidth <= 3000) {
+                scaleTrainingTruth(truth, reviewWidth);
+                renderWidth = reviewWidth;
+            }
 
             var loadingTask = pdfjsLib.getDocument(paths.pdf);
             var pdfDocument = await loadingTask.promise;
+            if (libraryPart && (!truth[1]?.cnnTraining || pdfDocument.numPages !== truth.length - 1)) {
+                throw new Error(sourceId + ': expected reviewed annotations for every page of the published PDF');
+            }
             var sourceResult = {
                 source: sourceId,
                 pdfPages: pdfDocument.numPages,
@@ -428,46 +513,9 @@
                     // detection, then uses that same V1 result for the structural endpoints.
                     var boundarySeed = livePage.bxs[liveIndex];
                     var system = applyTruthBoundaries(liveSystems[liveIndex], boundarySeed);
-                    var diagnostics = [];
-                    var perfStats = {};
-                    var capturedCandidateSpecs = [];
-                    var originalPredictBatch = BarlinePatchCNN.predictBatchCandidatesAsync;
-                    BarlinePatchCNN.predictBatchCandidatesAsync = function (pixelData, candidateStride, width, candidates) {
-                        capturedCandidateSpecs = candidates.map(function (candidate) {
-                            return {
-                                xCol: Number(candidate.xCol),
-                                staffTop: Number(candidate.staffTop),
-                                staffBot: Number(candidate.staffBot),
-                                spatium: Number(candidate.spatium)
-                            };
-                        });
-                        return originalPredictBatch.apply(BarlinePatchCNN, arguments);
-                    };
-                    var detected;
-                    try {
-                        detected = await Promise.resolve(BarlineDetectV2.findBarLinesV2(
-                            system,
-                            stride,
-                            pixels,
-                            canvas.width,
-                            {
-                                allowV1Fallback: false,
-                                classifierMode: 'cnn_only',
-                                cnnThreshold: threshold,
-                                diagnostics: diagnostics,
-                                perfStats: perfStats
-                            }
-                        ));
-                    } finally {
-                        BarlinePatchCNN.predictBatchCandidatesAsync = originalPredictBatch;
-                    }
-                    if (capturedCandidateSpecs.length !== diagnostics.length) {
-                        throw new Error(
-                            sourceId + ' page ' + pageNumber + ' system ' + liveIndex +
-                            ': captured ' + capturedCandidateSpecs.length + ' crop specs for ' +
-                            diagnostics.length + ' diagnostics'
-                        );
-                    }
+                    var scan = await scanSystem(system, stride, pixels, sourceId + ' page ' + pageNumber + ' system ' + liveIndex);
+                    var diagnostics = scan.diagnostics, capturedCandidateSpecs = scan.specs;
+                    var detected = scan.detected, perfStats = scan.perfStats;
                     sumPerf(totals.performance, perfStats);
 
                     var candidateRows = diagnostics.map(function (entry, candidateIndex) {
@@ -525,30 +573,14 @@
                             structuralEndpoint: row.structuralEndpoint,
                             crop: row.spec
                         };
-                        if (includePatches && !row.structuralEndpoint) {
+                        if (includePatches && !libraryPart && !row.structuralEndpoint) {
                             var isMatchedPositive = proposalMatch.usedPredicted.has(row.evaluationIndex);
                             var isNearTruthDuplicate = !isMatchedPositive && truthXs.some(function (truthX) {
                                 return Math.abs(Number(entry.x) - truthX) <= tolerance;
                             });
                             if (!isNearTruthDuplicate) {
-                                var inputShape = runtimeMetadata.input_shape || [64, 32, 1];
-                                var cropConfig = runtimeMetadata.crop_config || {};
-                                var patch = BarlinePatchCNN.cropCandidatePatch(
-                                    pixels,
-                                    stride,
-                                    canvas.width,
-                                    row.spec.xCol,
-                                    row.spec.staffTop,
-                                    row.spec.staffBot,
-                                    row.spec.spatium,
-                                    cropConfig.x_spatiums == null ? 1.5 : cropConfig.x_spatiums,
-                                    cropConfig.y_spatiums == null ? 1.0 : cropConfig.y_spatiums,
-                                    inputShape[1],
-                                    inputShape[0]
-                                );
-                                if (!patch) throw new Error('Could not reproduce candidate patch at x=' + entry.x);
                                 candidateResult.trainingLabel = isMatchedPositive ? 1 : 0;
-                                candidateResult.patchBase64 = patchToBase64(patch);
+                                candidateResult.patchBase64 = encodeCandidatePatch(row.spec, stride, pixels, runtimeMetadata);
                             }
                         }
                         return candidateResult;
@@ -576,6 +608,15 @@
                         candidates: serializedCandidates,
                         performance: perfStats
                     });
+                }
+
+                if (includePatches && libraryPart) {
+                    pageResult.reviewedCandidates = [];
+                    for (var truthIndex = 0; truthIndex < gtSystems.length; truthIndex++) {
+                        if (exclusions.truthIndices.has(truthIndex)) continue;
+                        pageResult.reviewedCandidates.push(await reviewedTrainingCandidates(
+                            pageTruth, truthIndex, pageNumber, stride, pixels, runtimeMetadata));
+                    }
                 }
 
                 gtSystems.forEach(function (_gtSystem, gtIndex) {

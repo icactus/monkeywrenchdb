@@ -302,7 +302,7 @@
     }
     async function createUpload(job, request) {
         const data = { name: job.file.name, size: job.file.size, ...job.details, upload_token: job.token,
-            fix_skew: job.fixSkew ? '1' : '0', combined_cello_bass: job.combinedCelloBass ? '1' : '0' };
+            fix_skew: job.fixSkew ? '1' : '0', combined_cello_bass: job.combinedCelloBass ? '1' : '0', cnn_training_annotations: '1' };
         try {
             return await api('create', data, undefined, request);
         } catch (error) {
@@ -545,6 +545,7 @@
             active = result.item;
             setQueuedSaveState(false);
             draftStatus.textContent = active.private_tutorial ? 'Saved privately. Open bachsuite1-tutorial in YubSync to sync its recording.' : 'Submitted to the library.';
+            if (active.cnn_training_available) draftStatus.textContent += ' Available for CNN training.';
             notify(`Submitted ${active.published_parts?.map(part => part.pdf_file).join(' and ') || active.pdf_file}.`);
             document.dispatchEvent(new CustomEvent('synpdf:part-submitted', { detail: active }));
         } catch (error) { notify(error.message + ' The queued PDF and edits are preserved.'); }

@@ -2753,6 +2753,7 @@ function schaalMetriek$$module$synpdf() {
             });
             if (Array.isArray(a.csl)) a.csl = a.csl.map(function (y) { return y * b; });
             if (Array.isArray(a.csr)) a.csr = a.csr.map(function (y) { return y * b; });
+            if (Array.isArray(a.restSplitXs)) a.restSplitXs = a.restSplitXs.map(function (x) { return x * b; });
             a.xs.x1 *= b;
             a.xs.x2 *= b
         }), a.bxs.forEach(function (a) {

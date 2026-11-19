@@ -70,7 +70,8 @@ try {
     checkLibrary(file_get_contents($fixture . '/' . $oldTimes) === $oldBytes, 'Old revision bytes remain immutable.');
     checkLibrary($changed['recordings'][0]['offset_js'] === '4.00', 'Metadata and timings publish in the same snapshot.');
     $db->query("UPDATE metric_arr SET metric_arr_data = '[1000,{\"x\":2}]' WHERE metric_arr_id = 42");
-    $db->query("INSERT INTO metric_arr (metric_arr_id, piece_id, instrument_id, edition_label, metric_arr_data) VALUES (43, 1, 3, 'Edition', '[1000,{}]')");
+    $pdfHash = hash('sha256', 'reviewed compressed PDF');
+    $db->query("INSERT INTO metric_arr (metric_arr_id, piece_id, instrument_id, edition_label, metric_arr_data) VALUES (43, 1, 3, 'Edition', '[1000,{\"cnnTraining\":{\"pdfSha256\":\"$pdfHash\",\"renderWidth\":2000}}]')");
     $third = mwLibraryRefresh($db, 1, $fixture);
     $latest = mwLibraryReadSnapshot($third['pieces'][1], $fixture);
     checkLibrary($latest['parts'][0]['metric_url'] !== $oldMetrics, 'Measure edits change the URL.');
@@ -78,6 +79,9 @@ try {
     checkLibrary(mwLibraryManifest(['metricArrId' => 43]) === mwLibraryManifest(['recordingId' => 91]), 'Deep links resolve through file-backed ID maps.');
     $catalog = mwLibraryReadSnapshot($third['catalog'], $fixture);
     checkLibrary(count($catalog['pieces'][0]['parts']) === 2 && $catalog['pieces'][0]['recording_count'] === 1, 'Catalog publishes changed parts and recording counts.');
+    checkLibrary(!isset($catalog['pieces'][0]['parts'][0]['cnn_training']) &&
+        $catalog['pieces'][0]['parts'][1]['cnn_training'] === ['pdf_file' => '1-3-edition.pdf', 'pdf_sha256' => $pdfHash],
+        'CNN discovery identifies the exact reviewed edition and leaves legacy rows out.');
     // A failed rebuild must never move the current pointer to incomplete assets.
     $db->query("UPDATE metric_arr SET metric_arr_data = 'invalid JSON' WHERE metric_arr_id = 42");
     try { mwLibraryRefresh($db, 1, $fixture); throw new RuntimeException('Invalid JSON was accepted.'); }
@@ -102,6 +106,7 @@ try {
     checkLibrary(libraryRequest($port, 'library-manifest.php?pieceId=999')[0] === 404, 'Unknown IDs do not trigger a database fallback.');
     proc_terminate($server); proc_close($server); $server = null;
     copy($root . '/update_monkeywrench_metric_arr.php', $fixture . '/update_monkeywrench_metric_arr.php');
+    copy($root . '/phpfiles/metric-arr-functions.php', $fixture . '/phpfiles/metric-arr-functions.php');
     file_put_contents($fixture . '/session_config.php', '<?php $_SESSION = ["user_id" => 1, "user_role" => "admin"];');
     $config = '<?php ';
     foreach (['DB_HOST' => DB_HOST, 'DB_USER' => DB_USER, 'DB_PASSWORD' => DB_PASSWORD, 'DB_NAME' => $database] as $key => $value) $config .= 'define(' . var_export($key, true) . ',' . var_export($value, true) . ');';

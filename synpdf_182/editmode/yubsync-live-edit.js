@@ -36,6 +36,9 @@
         const csl = [Math.min(...left.map(b => b.top)), Math.max(...left.map(b => b.bottom))];
         const csr = [Math.min(...right.map(b => b.top)), Math.max(...right.map(b => b.bottom))];
         const system = { cs: csl.map((y, i) => (y + csr[i]) / 2), csl, csr, xs };
+        const source = page.cxs[sourceIndex];
+        if (source.restSplitXs) system.restSplitXs = source.restSplitXs.slice();
+        if (selection.some(i => page.cxs[i].trainingDivisi || page.cxs[i].autoDivisi)) system.trainingDivisi = true;
         const lineage = [...new Set(selection.flatMap(i => owners[i]))];
         selection.slice().sort((a, b) => b - a).forEach(i => { page.cxs.splice(i, 1); page.bxs.splice(i, 1); owners.splice(i, 1); });
         page.cxs.push(system); page.bxs.push(bars); owners.push(lineage);
@@ -170,8 +173,10 @@
         commit(selection.page, () => {
             const { left, end, right, index } = selection;
             if ((end - left) / count < 1) throw new Error('Too many divisions for this rest’s width.');
-            draft[selection.page].bxs[index].splice(right, 0,
-                ...Array.from({ length: count - 1 }, (_, i) => left + (i + 1) * (end - left) / count));
+            const page = draft[selection.page];
+            const points = Array.from({ length: count - 1 }, (_, i) => left + (i + 1) * (end - left) / count);
+            page.bxs[index].splice(right, 0, ...points);
+            (page.cxs[index].restSplitXs ||= []).push(...points);
             return true;
         });
     }
@@ -375,7 +380,9 @@
                 const near = bars.findIndex(x => Math.abs(Math.abs(x) - ctx.x) <= 5);
                 if (near >= 0) {
                     if (bars.length <= 2) throw new Error('Keep at least the two system boundaries.');
-                    bars.splice(near, 1);
+                    const [removed] = bars.splice(near, 1);
+                    const staff = page.cxs[index];
+                    if (staff.restSplitXs) staff.restSplitXs = staff.restSplitXs.filter(x => x !== Math.abs(removed));
                 } else bars.push(ctx.x);
                 bars.sort((a, b) => Math.abs(a) - Math.abs(b));
                 page.cxs[index].xs = { x1: Math.abs(bars[0]), x2: Math.abs(bars.at(-1)) };

@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="stylesheet" href="part-pdf-queue.css?v=7">
-    <script src="part-pdf-queue.js?v=17" defer></script>
+    <script src="part-pdf-queue.js?v=18" defer></script>
     <script src="auto-barline-detection.js?v=5" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
@@ -77,7 +77,7 @@
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
     <script src="/js/part-jumps.js?v=4"></script>
-    <script src="synpdf-edit-mode.js?v=108"></script>
+    <script src="synpdf-edit-mode.js?v=109"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="part-jump-editor.js?v=1" defer></script>
     <script src="part-count-check.js?v=6" defer></script>
@@ -1104,7 +1104,7 @@
                             <button id="run-fullscore-all-btn" type="button"
                                 data-idle-label="Regroup full score + heuristic barlines (all pages)">Regroup full score + heuristic barlines (all pages)</button>
                         </div>
-                        <p>Use E to record barline corrections for CNN training.</p>
+                        <p>Reviewed parts enter CNN training on submission. Use E to record a separate correction log.</p>
                         <button id="export-td-btn" type="button">Export training data JSON (expert)</button>
                         <div style="margin-top: 8px; min-width: 260px;">
                             <label style="display:flex;align-items:center;gap:6px;">
@@ -1158,6 +1158,8 @@
                 <button type="button" data-edit-mode="x" aria-pressed="false" data-tooltip="Click inside a detected staff to remove it · X">Remove staff</button>
                 <button type="button" data-edit-mode="y" aria-pressed="false" title="Y: click automatic divisi to restore single staves; drag to merge systems using the starting system’s barlines; Ctrl-click a system to merge the whole page" data-tooltip="Y: click divisi to split · drag to merge · Ctrl-click: merge whole page">Refit / merge</button>
                 <button type="button" data-edit-mode="s" aria-pressed="false" title="Split a multimeasure rest (S)" data-tooltip="Split rest · S, or Shift-click in barline mode">Split rest</button>
+                <button type="button" data-edit-mode="divisi" aria-pressed="false" data-tooltip="Click each ungrouped divisi staff to toggle its CNN training exclusion">Mark divisi</button>
+                <output id="training-divisi-status" aria-live="polite" hidden></output>
                 <span class="toolbar-divider" aria-hidden="true"></span>
                 <label for="pdf-width-value">Detection width</label>
                 <button type="button" id="pdf-width-decrease" aria-label="Decrease detection width" data-tooltip="Decrease detection width by 20 px">−</button>
@@ -1223,7 +1225,7 @@
                 <tr><th scope="row">+ / −</th><td>Zoom the view without changing detection width.</td></tr>
                 <tr><th scope="row">. / /</th><td>Include weaker barlines / keep stronger barlines on the current page.</td></tr>
                 <tr><th scope="row">O</th><td>Refresh the current page.</td></tr>
-                <tr><th scope="row">E</th><td>Edit barlines and log the corrections for CNN training.</td></tr>
+                <tr><th scope="row">E</th><td>Edit barlines and record a separate CNN correction log.</td></tr>
                 <tr><th scope="row">H / Escape</th><td>Open / close this help window.</td></tr>
             </table>
             <p>Press the active editing key again to leave that mode. Check staff boundaries, divisi, barlines and multimeasure rests before saving.</p>

@@ -116,7 +116,8 @@ function mwPdfQueueCreate(string $root, array $user, array $input, mysqli $db): 
         if (!mkdir($folder, 0700)) throw new RuntimeException('Could not create the queued PDF.');
         $item = $details + ['id' => $id, 'name' => $name, 'original_bytes' => $size, 'received' => 0,
             'owner_id' => (int) $user['id'], 'created_at' => gmdate('c'), 'status' => 'uploading', 'fix_skew' => $fixSkew,
-            'combined_cello_bass' => $combined];
+            'combined_cello_bass' => $combined,
+            'cnn_training_annotations' => ($input['cnn_training_annotations'] ?? null) === '1'];
         if ($duplicates) $item['replaces'] = array_column($duplicates, 'id');
         mwPdfQueueWrite($folder . '/item.json', $item);
         return $item;
@@ -243,6 +244,16 @@ function mwPdfQueuePublish(array $item, string $folder, mysqli $db, string $webr
     mwPdfQueueValidateCombined(!empty($item['combined_cello_bass']), $details);
     $metrics = json_decode($input['metrics'] ?? '', true, 512, JSON_THROW_ON_ERROR);
     if (!is_array($metrics)) throw new InvalidArgumentException('Missing reviewed page geometry.');
+    if (is_array($metrics[1] ?? null)) {
+        unset($metrics[1]['cnnTraining']);
+        // Older drafts may already contain unmarked rest splits. A newly
+        // uploaded part enters the corpus only when its final review is submitted.
+        if (!empty($item['cnn_training_annotations']) && empty($details['skip_barline_detection']) &&
+            empty($details['private_tutorial']) && ($input['barline_preparation'] ?? null) === 'complete' &&
+            preg_match('/^[a-f0-9]{64}$/D', $item['optimized_sha256'] ?? '')) {
+            $metrics[1]['cnnTraining'] = ['pdfSha256' => $item['optimized_sha256'], 'renderWidth' => (int) ($metrics[0] ?? 0)];
+        }
+    }
     $normalized = mwPdfQueueMetrics($metrics, $item['pages']);
     // A stable order lets combined saves share locks with ordinary single-part
     // saves without two simultaneous combined submissions locking each other.
@@ -307,7 +318,8 @@ function mwPdfQueuePublish(array $item, string $folder, mysqli $db, string $webr
         }
         unset($target);
         $db->commit(); $committed = true;
-        $item = array_replace($item, $details, $primary, ['status' => 'completed', 'published_parts' => $targets]);
+        $item = array_replace($item, $details, $primary, ['status' => 'completed', 'published_parts' => $targets,
+            'cnn_training_available' => isset($metrics[1]['cnnTraining'])]);
         mwPdfQueueWrite($folder . '/item.json', $item);
         // Canonical library copies are complete; release temporary queue storage.
         mwPdfQueueCleanupFiles($folder);

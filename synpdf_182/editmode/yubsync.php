@@ -49,7 +49,7 @@ if ($yubsyncTutorial) {
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
     <script src="/js/part-jumps.js?v=4"></script>
-    <script src="synpdf-full-yubsync2.js?v=81"></script>
+    <script src="synpdf-full-yubsync2.js?v=82"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
     <?php endif; ?>
     <style>
@@ -1218,8 +1218,8 @@ if ($yubsyncTutorial) {
     <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=13"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=96"></script>
     <?php if (!$yubsyncTutorial): ?>
-    <script src="yubsync-live-edit.js?v=11"></script>
-    <script src="yubsync-progress.js?v=3"></script>
+    <script src="yubsync-live-edit.js?v=12"></script>
+    <script src="yubsync-progress.js?v=4"></script>
     <?php endif; ?>
     <?php endif; ?>
     <?php $siteInformationIncludeHelp = false; require $yubsyncSiteRoot . '/site-information.php'; ?>

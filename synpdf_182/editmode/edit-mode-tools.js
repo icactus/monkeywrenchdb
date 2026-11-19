@@ -19,6 +19,7 @@ var ySelectionBox = null;
 var yDragState = null;
 var suppressNextYClick = false;
 var divisiSplitInProgress = false;
+var MarkDivisiModeActive = false;
 
 let indicatorElement;
 let notation;
@@ -31,6 +32,7 @@ function getActiveModeTooltipLabel() {
     if (YisActive) return 'Y';
     if (GeometryModeActive) return '$';
     if (DeleteStaffModeActive) return 'X';
+    if (MarkDivisiModeActive) return 'DIVISI';
     return '';
 }
 
@@ -63,6 +65,9 @@ function clearExclusiveModeState() {
     YisActive = false;
     GeometryModeActive = false;
     DeleteStaffModeActive = false;
+    MarkDivisiModeActive = false;
+    const divisiStatus = document.getElementById('training-divisi-status');
+    if (divisiStatus) divisiStatus.hidden = true;
     WisActive = false;
     exactBoundariesMode = false;
     hideSplitSelectionBox();
@@ -225,6 +230,9 @@ function activateExclusiveMode(mode) {
         case 'x':
             DeleteStaffModeActive = true;
             break;
+        case 'divisi':
+            MarkDivisiModeActive = true;
+            break;
         case 'w':
             WisActive = true;
             exactBoundariesMode = false;
@@ -269,6 +277,9 @@ function toggleExclusiveMode(mode) {
             break;
         case 'x':
             isActive = DeleteStaffModeActive;
+            break;
+        case 'divisi':
+            isActive = MarkDivisiModeActive;
             break;
         case 'w':
         case 'W':
@@ -389,6 +400,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         notation.addEventListener('click', function handleClick(event) {
             if (divisiSplitInProgress) return;
+            if (MarkDivisiModeActive) {
+                markStaffDivisiForTraining(event);
+                return;
+            }
             // Alt+Click: Mark/unmark barline as split continuation
             if (event.altKey && QisActive) {
                 handleSplitMark(event);
@@ -791,6 +806,10 @@ function removeBarlinesInSplitDrag(event) {
             }
             return true;
         });
+        const staff = cxsBxsData[pagenum].cxs[j];
+        if (staff.restSplitXs) {
+            staff.restSplitXs = staff.restSplitXs.filter(x => cxsBxsData[pagenum].bxs[j].some(bar => Math.abs(bar) === x));
+        }
     }
 
     if (removedAny) {
@@ -852,7 +871,9 @@ function applySplitCount(splitState, measureCount) {
         return false;
     }
 
-    let bxs_group = cxsBxsData[splitState.pageNumber].bxs[splitState.systemIndex];
+    const page = cxsBxsData[splitState.pageNumber];
+    let bxs_group = page.bxs[splitState.systemIndex];
+    const staff = page.cxs[splitState.systemIndex];
     const startPoint = splitState.startPoint;
     const endPoint = splitState.endPoint;
     let count = measureCount + 1;
@@ -861,8 +882,9 @@ function applySplitCount(splitState, measureCount) {
     for (let i = 1; i < count - 1; i++) {
         let coordinate = startPoint + i * step;
         coordinate = Math.round(coordinate * 10) / 10;
-        if (!bxs_group.includes(coordinate)) {
+        if (!bxs_group.some(bar => Math.abs(bar) === Math.abs(coordinate))) {
             bxs_group.push(coordinate);
+            (staff.restSplitXs ||= []).push(Math.abs(coordinate));
         }
     }
 
@@ -907,10 +929,11 @@ function SplitgenerateCoordinates(clickCoords, clickEvent) {
             let closestRight = null;
 
             for (let i = 0; i < bxs_group.length; i++) {
-                if (bxs_group[i] < x) {
-                    closestLeft = bxs_group[i];
-                } else if (bxs_group[i] > x) {
-                    closestRight = bxs_group[i];
+                const boundary = Math.abs(bxs_group[i]);
+                if (boundary < x) {
+                    closestLeft = boundary;
+                } else if (boundary > x) {
+                    closestRight = boundary;
                     break;
                 }
             }
@@ -2078,7 +2101,10 @@ function addRemoveBxs$$module$synpdf(event, options) {
                     });
                 }
             } else {
-                if (shouldLogForCnn) {
+                const staff = cxsBxsData[pagenum].cxs[j];
+                const wasRestSplit = staff.restSplitXs?.includes(removedX);
+                if (wasRestSplit) staff.restSplitXs = staff.restSplitXs.filter(x => x !== removedX);
+                if (shouldLogForCnn && !wasRestSplit) {
                     SynpdfCorrectionTools.recordBarlineCorrection({
                         pageNumber: pagenum,
                         systemIndex: j,
@@ -5156,15 +5182,34 @@ function buildYMergeFromSelection(selected, startX, startY) {
         rightBottom = Math.max(rightBottom, right.bottom);
     });
     if (![leftTop, leftBottom, rightTop, rightBottom].every(Number.isFinite)) return null;
-    return {
-        system: {
-            cs: [(leftTop + rightTop) / 2, (leftBottom + rightBottom) / 2],
-            csl: [leftTop, leftBottom],
-            csr: [rightTop, rightBottom],
-            xs: xs
-        },
-        bxs: source.bxs.slice()
+    var system = {
+        cs: [(leftTop + rightTop) / 2, (leftBottom + rightBottom) / 2],
+        csl: [leftTop, leftBottom],
+        csr: [rightTop, rightBottom],
+        xs: xs
     };
+    if (source.system.restSplitXs) system.restSplitXs = source.system.restSplitXs.slice();
+    if (selected.some(item => item.system.trainingDivisi || item.system.autoDivisi)) system.trainingDivisi = true;
+    return { system: system, bxs: source.bxs.slice() };
+}
+
+function markStaffDivisiForTraining(event) {
+    const metrics = MetricStore.getMetricData();
+    const page = metrics?.[Number(document.getElementById('pagenum').value)];
+    if (!page) return;
+    const { x, y } = getNotationPoint(event);
+    const staff = page.cxs[findStaffAtPoint(page.cxs, x, y)];
+    const status = document.getElementById('training-divisi-status');
+    if (!staff) {
+        status.textContent = 'Click within the staff lines.';
+    } else if (staff.autoDivisi) {
+        status.textContent = 'This divisi is already excluded from CNN training.';
+    } else {
+        staff.trainingDivisi = !staff.trainingDivisi;
+        MetricStore.setMetricData(metrics, { clone: false });
+        status.textContent = staff.trainingDivisi ? 'Staff excluded from CNN training.' : 'Staff included in CNN training.';
+    }
+    status.hidden = false;
 }
 
 function mergeSystemsInYDrag(event) {
@@ -5508,6 +5553,7 @@ function handleDeleteStaffClick(event) {
     const bars = page.bxs[index];
     if (members.length === 1) {
         applyExistingBoundaryXs(members[0], bars);
+        if (system.restSplitXs) members[0].restSplitXs = system.restSplitXs.slice();
         saveStaffEdit(metrics, pageNumber, index, 1, members[0], bars);
         return;
     }
@@ -6152,6 +6198,7 @@ $(document).ready(function () {
                 });
             }
             pageData.bxs = v2Barlines.map(function (detectedBarlines, index) {
+                delete pageData.cxs[index].restSplitXs;
                 return normalizeDetectedSystemBarlines(pageData.cxs[index], detectedBarlines, detectionJobs[index].bxs);
             });
             if (runMode === 'cnn_only') {

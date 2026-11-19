@@ -22,7 +22,7 @@ from urllib.parse import quote
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SOURCE_RE = re.compile(r"^(?:test-page|\d+-\d+)$")
+SOURCE_RE = re.compile(r"^(?:test-page|\d+-\d+|metric-[1-9]\d*)$")
 
 
 class BenchmarkState:
@@ -69,6 +69,8 @@ def make_handler(state: BenchmarkState):
 def source_truth_path(source: str) -> Path:
     if source == "test-page":
         return REPO_ROOT / "synpdf_182" / "editmode" / "test-page-ground-truth-barlines.json"
+    if source.startswith("metric-"):
+        return REPO_ROOT / "data" / "metrics" / "cnn-training" / f"{source}.json"
     folder = REPO_ROOT / "synpdf_182" / "editmode" / "training-folder"
     pending = folder / f"{source}-td.json"
     return pending if pending.is_file() else folder / "processed" / f"{source}-td.json"
@@ -143,6 +145,8 @@ def extraction_fingerprint(
         REPO_ROOT / "synpdf_182" / "models" / "barline-patch-cnn-3x6.onnx.json",
     ]
     source_paths: list[Path] = []
+    if any(source.startswith("metric-") for source in sources):
+        shared_paths.append(REPO_ROOT / "synpdf_182" / "models" / "barline-patch-cnn-3x6.onnx")
     for source in sources:
         if source == "test-page":
             source_paths.extend([
@@ -189,7 +193,7 @@ def write_patch_shard(result: dict, output_path: Path, fingerprint: str) -> int:
         source_id = str(source.get("source") or "")
         for page in source.get("pages", []):
             page_index = int(page.get("page", 1)) - 1
-            for system in page.get("systems", []):
+            for system in page.get("reviewedCandidates", page.get("systems", [])):
                 live_system_index = int(system.get("liveIndex", -1))
                 truth_index_raw = system.get("truthIndex")
                 truth_system_index = int(truth_index_raw) if truth_index_raw is not None else -1
@@ -217,7 +221,7 @@ def write_patch_shard(result: dict, output_path: Path, fingerprint: str) -> int:
                         "spatium": float(crop["spatium"]),
                         "staff_top": int(round(float(crop["staffTop"]))),
                         "staff_bot": int(round(float(crop["staffBot"]))),
-                        "source_kind": "candidate",
+                        "source_kind": candidate.get("trainingKind", "candidate"),
                     })
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -437,6 +441,11 @@ def main() -> int:
         patch_count = write_patch_shard(result, patch_output, fingerprint)
         result["runner"]["patchOut"] = str(patch_output)
         result["runner"]["patchCount"] = patch_count
+        for source in result.get("sources", []):
+            for page in source.get("pages", []):
+                for system in page.get("reviewedCandidates", []):
+                    for candidate in system.get("candidates", []):
+                        candidate.pop("patchBase64", None)
     serialized = json.dumps(result, indent=2, sort_keys=False) + "\n"
     if args.out:
         output_path = args.out.resolve()

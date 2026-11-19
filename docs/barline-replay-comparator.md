@@ -73,6 +73,20 @@ These artifacts are outside the training shard directories. New mixed documents 
 
 The full `75-5` verification recovered all 128 eligible systems, excluded all 62 live staves belonging to the 31 paired systems, and wrote 5,840 eligible patches. The production model produced 1,217 correct internal boundaries, 27 extras, and 1 miss over the retained 1,218 ground-truth boundaries. These are baseline measurements on the new document, not a trained-model comparison.
 
+## Reviewed parts from Submit Part
+
+For a new single-staff upload, review the part in Edit Mode and use **Submit Part**. **Split rest** records its generated positions alongside the staff. **Mark divisi** lets you click each staff in ungrouped divisi to exclude it. Automatically grouped divisi is excluded already. These annotations leave the timing boundaries in the saved part and exclude the virtual rest divisions from printed-barline labels.
+
+The normal full retrain imports new or changed reviewed parts before extraction. Legacy submissions, scores, and the editor's piano and specialist exclusions stay outside this automatic import. `--no-library` skips the sync.
+
+To check one newly submitted part and produce a patch shard without fitting a model, use its published metric row ID:
+
+```bash
+python scripts/import_reviewed_barline_parts.py --metric-id 1234
+```
+
+The importer verifies the exact published PDF and its immutable metric snapshot. It reuses current inputs and patches on repeat runs. The report in `data/metrics/cnn-training/metric-1234-report.json` records live staff-detection errors and unproposed barlines. A separate crop pass uses the reviewed staff geometry, so a manually added staff can contribute patches even when the detector misses it. The importer marks classifier errors as hard cases and skips duplicate PDF-and-annotation pairs on a full sync.
+
 ## Checks
 
 ```bash

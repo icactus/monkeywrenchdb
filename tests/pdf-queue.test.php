@@ -74,7 +74,7 @@ try {
     [$code,$admin]=qhttp($port,'list',$sessions['admin']);qcheck($code===200&&!$admin['can_upload'],'Other admins can review but cannot upload.');
     qcheck(qhttp($port,'list',$sessions['user'])[0]===403,'Stale forged admin role cannot access the queue.');qcheck(qhttp($port,'list',$sessions['guest'])[0]===403,'Guest cannot access the queue.');
     $source=$fixture.'/source.pdf'; qfixturePdf($source);
-    $input=['name'=>'71-39.pdf','size'=>filesize($source),'piece_id'=>71,'instrument_id'=>39];
+    $input=['name'=>'71-39.pdf','size'=>filesize($source),'piece_id'=>71,'instrument_id'=>39,'cnn_training_annotations'=>'1'];
     qcheck(qhttp($port,'create',$sessions['admin'],'',$input)[0]===403,'Non-owner admin cannot upload via direct API.');
     qcheck(qhttp($port,'create',$sessions['owner'],'',$input,false)[0]===403,'Upload requires CSRF.');
     qcheck(qhttp($port,'create',$sessions['owner'],'',array_replace($input,['piece_id'=>99999]))[0]===400,'Unknown piece ID is rejected.');
@@ -115,6 +115,7 @@ try {
     qcheck(qhttp($port,'publish',$sessions['admin'],$id,$save)[0]===403,'Publication never overwrites an existing PDF.');
     qcheck(file_get_contents($fixture.'/public/pdfs/71-39.pdf')==='existing'&&(int)$db->query('SELECT COUNT(*) FROM metric_arr')->fetch_row()[0]===0,'Conflict preserves files and rolls back database changes.');unlink($fixture.'/public/pdfs/71-39.pdf');
     [$code,$published]=qhttp($port,'publish',$sessions['admin'],$id,$save);qcheck($code===200&&$published['item']['status']==='completed','Submit Part publishes directly without a review checkbox.');
+    qcheck(!$published['item']['cnn_training_available'],'A full score stays outside single-staff CNN training.');
     qcheck(hash_file('sha256',$source)===hash_file('sha256',$fixture.'/public/hd-pdfs/71-39.pdf'),'Published HD source is exact.');
     qcheck(is_file($fixture.'/snapshots.jsonl') && json_decode(file($fixture.'/snapshots.jsonl')[0],true)[0]===71,'Published parts refresh the shared library snapshot.');
     qcheck(json_decode(file_get_contents($fixture.'/public/data/metrics/'.$published['item']['metric_arr_id'].'.json'),true)===$metrics,'Static metrics are normalized and published.');
@@ -194,7 +195,8 @@ try {
     foreach ([4,5] as $selectedPart) {
         $edition='Combined from'.$selectedPart;
         $combinedInput=['name'=>'combined-'.$selectedPart.'.pdf','size'=>filesize($selectedPart===4?$tilted:$source),'piece_id'=>72,'instrument_id'=>$selectedPart,
-            'edition_label'=>$edition,'combined_cello_bass'=>'1','fix_skew'=>$selectedPart===4?'1':'0','upload_token'=>bin2hex(random_bytes(16))];
+            'edition_label'=>$edition,'combined_cello_bass'=>'1','fix_skew'=>$selectedPart===4?'1':'0','upload_token'=>bin2hex(random_bytes(16)),
+            'cnn_training_annotations'=>$selectedPart===4?'1':'0'];
         [$code,$combinedUpload]=qhttp($port,'create',$sessions['owner'],'',$combinedInput);$combinedId=$combinedUpload['item']['id'];
         qcheck($code===200&&$combinedUpload['item']['combined_cello_bass']===true,'Combined option is stored when instrument '.$selectedPart.' is selected.');
         qcheck(qhttp($port,'create',$sessions['owner'],'',$combinedInput)[1]['item']['id']===$combinedId,'Repeated creation preserves the combined upload.');
@@ -205,6 +207,14 @@ try {
         $combinedFolder=$fixture.'/queue/'.$combinedId;
         qcheck(!is_file($fixture.'/public/pdfs/'.buildPdfFilename(72,4,$edition))&&!is_file($fixture.'/public/pdfs/'.buildPdfFilename(72,5,$edition)),'Combined parts are not published until barline work is submitted.');
         $combinedSave=array_replace($save,['piece_id'=>72,'instrument_id'=>$selectedPart,'edition_label'=>$edition,'revision'=>0,'measures_version'=>3]);
+        $expectedMetrics = $metrics;
+        if ($selectedPart === 4) {
+            $combinedSave['metrics'] = json_encode([2000, ['cxs' => [['cs' => [200,320], 'xs' => ['x1' => 100, 'x2' => 1900],
+                'restSplitXs' => [700], 'trainingDivisi' => true]], 'bxs' => [[100,700,1300,1900]]], $metrics[2]]);
+            $expectedMetrics[1]['cxs'][0]['restSplitXs'] = [350];
+            $expectedMetrics[1]['cxs'][0]['trainingDivisi'] = true;
+            $expectedMetrics[1]['cnnTraining'] = ['pdfSha256' => $combinedReady['optimized_sha256'], 'renderWidth' => 2000];
+        }
         qcheck(qhttp($port,'draft',$sessions['admin'],$combinedId,array_replace($combinedSave,['instrument_id'=>6]))[0]===400,'A combined draft cannot be changed to Solo Cello.');
         qcheck(qhttp($port,'draft',$sessions['admin'],$combinedId,$combinedSave)[0]===200,'Combined barline data autosaves once.');
         qcheck(qhttp($port,'get',$sessions['admin'],$combinedId)[1]['item']['combined_cello_bass']===true,'The combined choice survives autosave and reload.');
@@ -213,13 +223,14 @@ try {
         [$code,$combinedPublished]=qhttp($port,'publish',$sessions['admin'],$combinedId,$combinedSave);
         qcheck($code===200&&count($combinedPublished['item']['published_parts'])===2,'One submission publishes both cello and bass: '.json_encode($combinedPublished).($code!==200?' Log: '.substr(file_get_contents($fixture.'/web.log'),-2000):''));
         qcheck($combinedPublished['item']['instrument_id']===$selectedPart,'Publication retains the selected instrument as the primary part.');
+        qcheck($combinedPublished['item']['cnn_training_available'] === ($selectedPart === 4),'Only newly annotated single-staff uploads enter CNN training.');
         $rows=$db->query("SELECT instrument_id,metric_arr_id,metric_arr_data,measures_version,edition_label FROM metric_arr WHERE piece_id=72 AND edition_label='$edition' ORDER BY instrument_id")->fetch_all(MYSQLI_ASSOC);
         qcheck(array_map(fn($r)=>(int)$r['instrument_id'],$rows)===[4,5],'Exactly instrument IDs 4 and 5 receive records.');
         foreach($rows as $row) {
-            qcheck(json_decode($row['metric_arr_data'],true)===$metrics&&(int)$row['measures_version']===3&&$row['edition_label']===$edition,'Each part receives identical reviewed barlines, version and edition.');
+            qcheck(json_decode($row['metric_arr_data'],true)===$expectedMetrics&&(int)$row['measures_version']===3&&$row['edition_label']===$edition,'Each part receives the same reviewed annotations, version and edition.');
             $filename=buildPdfFilename(72,$row['instrument_id'],$edition);
             qcheck(hash_file('sha256',$fixture.'/public/hd-pdfs/'.$filename)===$combinedReady['original_sha256']&&hash_file('sha256',$fixture.'/public/pdfs/'.$filename)===$combinedReady['optimized_sha256'],'Each part receives the same prepared HD and compressed PDFs.');
-            qcheck(json_decode(file_get_contents($fixture.'/public/data/metrics/'.$row['metric_arr_id'].'.json'),true)===$metrics,'Each part has its own static geometry JSON.');
+            qcheck(json_decode(file_get_contents($fixture.'/public/data/metrics/'.$row['metric_arr_id'].'.json'),true)===$expectedMetrics,'Each part has its own static geometry JSON.');
         }
         if($selectedPart===4)qcheck($combinedReady['skew_corrected_pages']===2,'The corrected master is shared by both parts after skew correction.');
         $purges=array_map(fn($line)=>json_decode($line,true),file($fixture.'/purges.jsonl',FILE_IGNORE_NEW_LINES));

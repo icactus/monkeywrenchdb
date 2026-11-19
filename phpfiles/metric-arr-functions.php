@@ -92,7 +92,7 @@ function scaleValues($item, $scaleFactor)
         }
         foreach ($item as $key => $value) {
             // Part reading-order indices and schema version are not coordinates.
-            if ($key === 'partJumps') {
+            if ($key === 'partJumps' || $key === 'cnnTraining') {
                 continue;
             }
             $item->$key = scaleValues($value, $scaleFactor);

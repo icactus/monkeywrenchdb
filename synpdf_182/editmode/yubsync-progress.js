@@ -44,7 +44,7 @@
         result[0] = width;
         result.slice(1).forEach(page => {
             page.cxs.forEach(system => {
-                for (const name of ['cs', 'csl', 'csr']) {
+                for (const name of ['cs', 'csl', 'csr', 'restSplitXs']) {
                     if (Array.isArray(system[name])) system[name] = system[name].map(y => y * scale);
                 }
                 system.xs.x1 *= scale; system.xs.x2 *= scale;

@@ -1099,8 +1099,10 @@ function compPage$$module$synpdf(a, b, c) {
     var d = deMetriek$$module$synpdf[b];
     if (!d || opt$$module$synpdf.advncd && !pageNumChanged$$module$synpdf) {
         var savedPartJumps = d && d.partJumps;
+        var cnnTraining = d && d.cnnTraining;
         d = scanPageMetrics$$module$synpdf(a, parseInt(opt$$module$synpdf.seln));
         if (savedPartJumps) d.partJumps = savedPartJumps;
+        if (cnnTraining) d.cnnTraining = cnnTraining;
         deMetriek$$module$synpdf[b] = d
     }
     pageNumChanged$$module$synpdf = 0;
@@ -3300,7 +3302,7 @@ function schaalMetriek$$module$synpdf() {
     deMetriek$$module$synpdf[0] = a;
     1 != b && deMetriek$$module$synpdf.forEach(function (a, d) {
         0 != d && a && (a.cxs.forEach(function (a) {
-            ['cs', 'csl', 'csr'].forEach(function (key) {
+            ['cs', 'csl', 'csr', 'restSplitXs'].forEach(function (key) {
                 if (Array.isArray(a[key])) a[key] = a[key].map(function (value) { return value * b; });
             });
             a.xs.x1 *= b;

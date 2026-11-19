@@ -229,9 +229,11 @@ test('S shows its count box by the measure and a digit immediately splits the pl
     assert.equal(h.c.deMaten$$module$synpdf.length, 6);
     assert.equal(h.c.msc_wz$$module$synpdf.maatloper.box.width, 112.5);
     assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].bxs[0]), [50, 162.5, 275, 387.5, 500, 950]);
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].cxs[0].restSplitXs), [162.5, 275, 387.5]);
     assert.deepEqual(h.snapshot(), before);
     h.key('z', { ctrlKey: true });
     assert.equal(h.c.msc_wz$$module$synpdf.maatloper.box.width, 450);
+    assert.equal(h.c.deMetriek$$module$synpdf[1].cxs[0].restSplitXs, undefined);
 });
 
 test('S supports Shift-held multiple digits and applies them on Shift release', () => {

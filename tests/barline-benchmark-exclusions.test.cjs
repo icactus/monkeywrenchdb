@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
-const { validatePlan, pageMask } = require('../synpdf_182/editmode/barline-cnn-benchmark-exclusions.js');
+const { validatePlan, pageMask, internalTruthXs } = require('../synpdf_182/editmode/barline-cnn-benchmark-exclusions.js');
 
 test('exclude both split staves before matching; retain adjacent single staff', () => {
     const page = { cxs: [{cs: [10, 38]}, {cs: [100, 205]}, {cs: [280, 308]}],
@@ -39,4 +39,20 @@ test('75-5 manifest matches current annotations, including the misleading five-l
     const entries = validatePlan(truth, plan);
     assert.equal(entries.length, 31);
     assert(entries.some(e => e.page === 6 && e.systemIndex === 5));
+});
+
+test('saved divisi excludes its member staves and rest splits stay out of printed truth', () => {
+    const xs = { x1: 10, x2: 100 }, otherColumn = { x1: 110, x2: 200 };
+    const regular = { cs: [10, 40], xs, restSplitXs: [30, 50] };
+    const paired = { cs: [60, 135], xs, autoDivisi: {} };
+    const manuallyMarked = { cs: [150, 180], xs, trainingDivisi: true };
+    const sideBySide = { cs: [60, 90], xs: otherColumn };
+    const page = { cxs: [regular, paired, manuallyMarked, sideBySide], bxs: [
+        [10, 20, 30, -50, 80, 100], [10, 40, 100], [10, 60, 100], [110, 140, 200]
+    ] };
+    assert.deepEqual(internalTruthXs(page, 0), [20, 80]);
+    const mask = pageMask(page, [regular, { cs: [60, 90], xs }, { cs: [100, 135], xs }, manuallyMarked, sideBySide], []);
+    assert.deepEqual([...mask.truthIndices], [1, 2]);
+    assert.deepEqual([...mask.liveIndices], [1, 2, 3]);
+    assert.equal(mask.summary.truthInternal, 2);
 });

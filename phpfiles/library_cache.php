@@ -81,10 +81,13 @@ function mwLibraryReadSnapshot(string $url, ?string $root = null): array
 
 function mwLibraryBuildCatalog(mysqli $db): array
 {
+    require_once __DIR__ . '/metric-arr-functions.php';
     $rows = $db->query("SELECT p.piece_id, p.piece_name, p.solo_instrument_id,
         c.composer_first, c.composer_last, pc.category_name,
         m.metric_arr_id, m.edition_label, i.instrument_id, i.instrument_name,
         i.part_number, i.instrument_key, g.instrument_group_name,
+        CASE WHEN JSON_VALID(m.metric_arr_data) THEN
+            JSON_UNQUOTE(JSON_EXTRACT(m.metric_arr_data, '$[1].cnnTraining.pdfSha256')) END AS cnn_pdf_sha256,
         COALESCE(rc.recording_count, 0) AS recording_count
         FROM pieces p
         JOIN composers c ON c.composer_id = p.composer_id
@@ -108,11 +111,18 @@ function mwLibraryBuildCatalog(mysqli $db): array
             ];
         }
         $isScore = $r['instrument_group_name'] === 'Scores' || stripos($r['instrument_name'], 'score') !== false;
-        $pieces[$id]['parts'][] = [
+        $part = [
             'metric_arr_id' => (int) $r['metric_arr_id'], 'instrument_id' => (int) $r['instrument_id'],
             'instrument_name' => $r['instrument_name'], 'part_number' => $r['part_number'],
             'instrument_key' => $r['instrument_key'], 'edition_label' => $r['edition_label'], 'is_score' => $isScore
         ];
+        if (!$isScore && preg_match('/^[a-f0-9]{64}$/D', $r['cnn_pdf_sha256'] ?? '')) {
+            $part['cnn_training'] = [
+                'pdf_file' => buildPdfFilename($id, $part['instrument_id'], $r['edition_label']),
+                'pdf_sha256' => $r['cnn_pdf_sha256'],
+            ];
+        }
+        $pieces[$id]['parts'][] = $part;
         if (!$isScore) $instruments[$r['instrument_name']] = true;
     }
     $names = array_keys($instruments);

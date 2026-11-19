@@ -15,28 +15,29 @@ function definition(name) {
 }
 function harness(stored = new Map()) {
     let splits = 0;
-    const status = {textContent: ''};
+    const status = {textContent: ''}, divisiStatus = {hidden: true};
     const system = {cs: [100, 108, 116, 124, 132], csl: [100,108,116,124,132], csr: [101,109,117,125,133], xs: {x1: 50, x2: 950}};
     const page = {cxs: [system], bxs: [[50, 300, 950]]};
     const c = vm.createContext({
         console, Blob, scoreFnm$$module$synpdf: '298-4',
         deMetriek$$module$synpdf: stored.has('jsonString') ? undefined : [1000, clone(page)],
-        QisActive: true, NisActive: false, SisActive: false, divisiSplitInProgress: false, DeleteStaffModeActive: false,
+        QisActive: true, NisActive: false, SisActive: false, divisiSplitInProgress: false, DeleteStaffModeActive: false, MarkDivisiModeActive: false,
         suppressNextSplitClick: false, cancelPendingSplitInput() {},
         SplitgenerateCoordinates() { splits++; },
         handleSplitMark() { splits++; },
         handleWCxs: () => false, handleYCxs: () => false, handleSCxs: () => false,
+        findStaffAtPoint: (systems, x, y) => systems.findIndex(staff => x >= staff.xs.x1 && x <= staff.xs.x2 && y >= staff.cs[0] && y <= staff.cs.at(-1)),
         getNotationPoint: event => ({x: event.clientX, y: event.clientY}),
         getSystemHitBounds: () => ({top: 100, bottom: 132}),
         requestRefresh() {}, setTimeout: () => 1, clearTimeout() {},
-        document: {getElementById: id => id === 'pagenum' ? {value: '1', addEventListener() {}} : id === 'correction-log-status' ? status : null},
+        document: {getElementById: id => ({ pagenum: {value: '1', addEventListener() {}}, 'correction-log-status': status, 'training-divisi-status': divisiStatus })[id] ?? null},
         localStorage: {getItem: key => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value)}
     });
     c.window = c;
     vm.runInContext(store, c);
     vm.runInContext(logger, c);
     c.SynpdfCorrectionTools.init();
-    for (const name of ['handleSplit', 'addRemoveBxs$$module$synpdf']) vm.runInContext(definition(name), c);
+    for (const name of ['handleSplit', 'applySplitCount', 'addRemoveBxs$$module$synpdf', 'markStaffDivisiForTraining']) vm.runInContext(definition(name), c);
     const start = tools.indexOf('function handleClick(event) {');
     vm.runInContext('var click = ' + tools.slice(start, tools.indexOf('\n        });', start)) + '\n};', c);
     return {c, stored, page, status, splits: () => splits};
@@ -53,6 +54,33 @@ test('Q saves barline edits and staff geometry across reopening without creating
     reopened.c.click({clientX: 500, clientY: 116});
     assert.deepEqual(clone(reopened.c.MetricStore.getMetricData()[1]), {cxs: h.page.cxs, bxs: [[50, 500, 950]]});
     assert.equal(reopened.c.MetricStore.getCorrectionLog().length, 0);
+});
+
+test('rest divisions persist with the staff, and removing one creates no CNN correction', () => {
+    const h = harness();
+    h.c.applySplitCount({ pageNumber: 1, systemIndex: 0, startPoint: 300, endPoint: 950 }, 2);
+    const restored = harness(h.stored);
+    const page = restored.c.MetricStore.getMetricData()[1];
+    assert.deepEqual(clone(page.bxs[0]), [50, 300, 625, 950]);
+    assert.deepEqual(clone(page.cxs[0].restSplitXs), [625]);
+    restored.c.NisActive = true;
+    restored.c.QisActive = false;
+    restored.c.click({ clientX: 625, clientY: 116 });
+    assert.equal(restored.c.MetricStore.getCorrectionLog().length, 0);
+    assert.deepEqual(clone(restored.c.MetricStore.getMetricData()[1].cxs[0].restSplitXs), []);
+});
+
+test('marking divisi affects the staff training annotation and leaves playback barlines intact', () => {
+    const h = harness();
+    h.c.MarkDivisiModeActive = true;
+    h.c.click({ clientX: 300, clientY: 116 });
+    const reopened = harness(h.stored);
+    const page = reopened.c.MetricStore.getMetricData()[1];
+    assert.equal(page.cxs[0].trainingDivisi, true);
+    assert.deepEqual(clone(page.bxs), h.page.bxs);
+    reopened.c.MarkDivisiModeActive = true;
+    reopened.c.click({ clientX: 300, clientY: 116 });
+    assert.equal(reopened.c.MetricStore.getMetricData()[1].cxs[0].trainingDivisi, false);
 });
 test('E logs each detector correction once, and Q leaves that log intact even with candidate history', () => {
     const h = harness();
