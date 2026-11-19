@@ -49,6 +49,14 @@ function setup({ superuser = false, sync = true, paused = false } = {}) {
         lastSynced: c.lastSynced$$module$synpdf, offset: c.offset$$module$synpdf }) };
 }
 
+test('clicking a wrapped continuation seeks to the measure that owns its timing', () => {
+    const h = setup({ paused: true });
+    h.c.deMaten$$module$synpdf[1].linkedBoxes = [{ x: 100, y: 500, w: 250, h: 80 }];
+    h.c.msc_wz$$module$synpdf.x2time(200, 535, false);
+    assert.equal(h.c.demix$$module$synpdf, 1);
+    assert.deepEqual(h.seeks, [{ play: false, time: 3.01 }]);
+});
+
 test('Left at the first measure replays its adjusted start while preserving the recorded passage', () => {
     for (const paused of [false, true]) {
         const h = setup({ paused });

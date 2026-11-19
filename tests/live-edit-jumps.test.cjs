@@ -129,3 +129,22 @@ test('an already-open viewer with the previous helper can also replace invalid m
     assert.equal(jumps.inspect(h.metrics).added,6);
     assert.deepEqual(h.alerts,[]);
 });
+
+test('Alt-click in Live Edit links the final barline across a page break and can undo it', async () => {
+    const h = setup(1.5);
+    const alt = { altKey: true };
+    h.down(1, 800, 120, false, alt);
+    h.down(2, 1000, 120, false, alt);
+    assert.equal(h.refreshes(), 0);
+    h.down(1, 1000, 120, false, alt);
+    assert.equal(h.metrics[1].bxs[0].at(-1), -1000);
+    assert.equal(h.metrics[2].bxs[0][0], -0.1);
+    assert.equal(jumps.layout(h.metrics).measures.length, 9);
+    await h.save();
+    const saved = JSON.parse(h.requests[0].fields.metric_arr_data);
+    assert.equal(saved[2].bxs[0][0], -0.1);
+    h.down(1, 1000, 120, false, alt);
+    assert.equal(h.metrics[1].bxs[0].at(-1), 1000);
+    assert.equal(h.metrics[2].bxs[0][0], 0);
+    assert.equal(jumps.layout(h.metrics).measures.length, 10);
+});

@@ -48,8 +48,8 @@ if ($yubsyncTutorial) {
         window.yubsyncCanEditScore = <?= json_encode($canEditSyncScore) ?>;</script>
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
-    <script src="/js/part-jumps.js?v=3"></script>
-    <script src="synpdf-full-yubsync2.js?v=80"></script>
+    <script src="/js/part-jumps.js?v=4"></script>
+    <script src="synpdf-full-yubsync2.js?v=81"></script>
     <script src="barline-detect-v2.js?v=<?php echo filemtime(__DIR__ . '/barline-detect-v2.js'); ?>"></script>
     <?php endif; ?>
     <style>
@@ -889,7 +889,7 @@ if ($yubsyncTutorial) {
                 <p id="yubsync-edit-status" role="status" aria-live="polite" hidden></p>
                 <div id="yubsync-edit-toolbar" role="toolbar" aria-label="Score corrections" hidden>
                     <span>Score corrections</span>
-                    <button type="button" data-yub-edit="q" title="Add or remove a barline (Q)" aria-pressed="false">Barlines <kbd>Q</kbd></button>
+                    <button type="button" data-yub-edit="q" title="Q: edit barlines. Alt-click the last barline to link a wrapped measure." aria-pressed="false">Barlines <kbd>Q</kbd></button>
                     <button type="button" data-yub-edit="w" title="Draw a staff: click two opposite corners (W)" aria-pressed="false">Draw staff <kbd>W</kbd></button>
                     <button type="button" data-yub-edit="s" title="Split a multimeasure rest (S)" aria-pressed="false">Split rest <kbd>S</kbd></button>
                     <button type="button" data-yub-edit="y" title="Refit a staff, drag to merge systems, or Ctrl-click to merge the page (Y)" aria-pressed="false">Refit / merge <kbd>Y</kbd></button>
@@ -1218,7 +1218,7 @@ if ($yubsyncTutorial) {
     <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=13"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=96"></script>
     <?php if (!$yubsyncTutorial): ?>
-    <script src="yubsync-live-edit.js?v=10"></script>
+    <script src="yubsync-live-edit.js?v=11"></script>
     <script src="yubsync-progress.js?v=3"></script>
     <?php endif; ?>
     <?php endif; ?>

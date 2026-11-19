@@ -200,7 +200,7 @@ if ($navigationIsAdmin && !$standaloneNavigation) {
                     }
                     var script = document.createElement('script');
                     script.id = 'admin-live-edit-script';
-                    script.src = 'admin-live-edit.js?v=6-' + new Date().getTime();
+                    script.src = 'admin-live-edit.js?v=7-' + new Date().getTime();
                     document.body.appendChild(script);
                 }
             </script>

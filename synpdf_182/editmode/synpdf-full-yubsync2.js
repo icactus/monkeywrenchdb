@@ -650,9 +650,17 @@ Wijzer$$module$synpdf.prototype.doLoopTag = function (a, b, c, d, e, f) {
     }
 };
 Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, isNavigation) {
-    var d;
-    for (d = 0; d < deMaten$$module$synpdf.length; ++d) {
-        var e = deMaten$$module$synpdf[d];
+    let continuation, wrappedIndex = -1;
+    if (!isNavigation) {
+        // A continuation can sit below the box that owns its timing.
+        wrappedIndex = deMaten$$module$synpdf.findIndex(measure => {
+            continuation = measure.linkedBoxes?.find(box =>
+                a >= box.x && a <= box.x + box.w && b >= box.y && b <= box.y + box.h);
+            return !!continuation;
+        });
+    }
+    for (var d = Math.max(0, wrappedIndex); d < deMaten$$module$synpdf.length; ++d) {
+        var e = continuation || deMaten$$module$synpdf[d];
         if (!(b > e.y + e.h || a > e.x + e.w)) {
             if (a < e.x) {
                 keyDown$$module$synpdf({

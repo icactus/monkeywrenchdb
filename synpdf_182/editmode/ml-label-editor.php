@@ -62,7 +62,7 @@
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
-    <script src="/js/part-jumps.js?v=3"></script>
+    <script src="/js/part-jumps.js?v=4"></script>
     <script src="synpdf-edit-mode.js?v=108"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="part-jump-editor.js?v=1" defer></script>

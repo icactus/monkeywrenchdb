@@ -56,7 +56,7 @@
         if (result.length) result.push({ end: true });
         return result;
     }
-    function remapSession(metrics, draft, lineage, state, beforeLineage) {
+    function remapSession(metrics, draft, lineage, state, beforeLineage, wrappedEdit = false) {
         let before = measures(metrics, beforeLineage), after;
         if (typeof SynpdfPartJumps !== 'undefined' && SynpdfPartJumps.metadata(metrics)) {
             const previous = SynpdfPartJumps.inspect(metrics);
@@ -95,8 +95,10 @@
         const recorded = state.times.slice(0, Math.max(0, state.lastSynced + 1));
         let times = recorded.map((point, i) => {
             const mix = required(point.mix);
+            // Unlinking restores a boundary with no timestamp of its own.
+            // Keep the later timestamps tied to their existing printed anchors.
             if ((i === 0 && point.mix === 0 && mix !== 0) ||
-                (i > 0 && point.mix === recorded[i - 1].mix + 1 && mix !== required(recorded[i - 1].mix) + 1) ||
+                (!wrappedEdit && i > 0 && point.mix === recorded[i - 1].mix + 1 && mix !== required(recorded[i - 1].mix) + 1) ||
                 (seen.has(mix) && seen.get(mix) !== point.mix))
                 conflict = true;
             seen.set(mix, point.mix);
@@ -143,7 +145,7 @@
     let session = null, mode = '', first = null, gesture = null, busy = false, savePromise = null;
     let draft, lineage, splitInput = null, history = [];
     const hints = {
-        q: 'Q: click a barline to remove it, or click inside a system to add one.',
+        q: 'Q: click to add or remove a barline. Alt-click the last barline on a line to link or unlink a wrapped measure.',
         w: 'W: click the top-left and bottom-right corners of a staff. Lines fit automatically.',
         s: 'S: click a multimeasure rest, then press its measure count. Hold Shift for multiple digits.',
         y: 'Y: click to refit a staff, drag to combine systems using the starting system’s bars, or Ctrl-click to combine the page.'
@@ -309,21 +311,29 @@
         system.cs = system.csl.map((y, i) => (y + system.csr[i]) / 2);
         return image;
     }
-    function commit(pageNumber, action) {
+    function commit(pageNumber, action, wrap = null) {
         if (busy || session?.saved) return;
-        // Undo retains only the changed page, even for a long full score.
-        const backup = { page: pageNumber, data: copy(draft[pageNumber]), lineage: copy(lineage[pageNumber]),
-            jumps: copy(draft[1].partJumps || null) };
+        // Keep snapshots only for pages the edit can change.
+        const backup = { pages: [...new Set([pageNumber, wrap?.nextPage ?? pageNumber])].map(number =>
+            ({ number, data: copy(draft[number]), lineage: copy(lineage[number]) })),
+            jumps: copy(draft[1].partJumps || null), wrappedEdit: !!wrap };
         const before = draft.slice(), beforeLineage = lineage.slice(), state = captureState();
-        before[pageNumber] = backup.data; beforeLineage[pageNumber] = backup.lineage;
+        for (const page of backup.pages) {
+            before[page.number] = page.data;
+            beforeLineage[page.number] = page.lineage;
+        }
         try {
             if (!action()) return;
-            const mapped = remapSession(before, draft, lineage, state, beforeLineage);
+            const mapped = remapSession(before, draft, lineage, state, beforeLineage, backup.wrappedEdit);
             restore(mapped, draft);
             history.push(backup); first = null; paint(pageNumber); update();
-            message(`Measure geometry updated. ${hints[mode]} Unsaved corrections: ${history.length}.`);
+            const success = wrap ? (wrap.marked ? 'Measure unlinked.' : 'Measure linked across lines.') : 'Measure geometry updated.';
+            message(`${success} ${hints[mode]} Unsaved corrections: ${history.length}.`);
         } catch (error) {
-            draft[pageNumber] = backup.data; lineage[pageNumber] = backup.lineage;
+            for (const page of backup.pages) {
+                draft[page.number] = page.data;
+                lineage[page.number] = page.lineage;
+            }
             if (backup.jumps) draft[1].partJumps = backup.jumps;
             else delete draft[1].partJumps;
             restore(state, draft);
@@ -351,6 +361,15 @@
                 sortPage(page, owners); return true;
             });
         } else if (index >= 0 && mode === 'q') {
+            if (event.altKey) {
+                const edit = window.SynpdfPartJumps?.wrappedMeasureLink?.(draft, ctx.page, index, ctx.x);
+                if (!edit) {
+                    message('Alt-click the last barline on a line with a following staff.');
+                    return;
+                }
+                commit(ctx.page, edit.toggle, edit);
+                return;
+            }
             commit(ctx.page, () => {
                 const bars = page.bxs[index];
                 const near = bars.findIndex(x => Math.abs(Math.abs(x) - ctx.x) <= 5);
@@ -472,9 +491,12 @@
         if (!canEdit() || busy || session?.saved || !history.length || history.at(-1).restored) return;
         cancelSplit();
         const prior = history.at(-1), target = draft.slice(), owners = lineage.slice();
-        target[prior.page] = copy(prior.data); owners[prior.page] = copy(prior.lineage);
+        for (const page of prior.pages) {
+            target[page.number] = copy(page.data);
+            owners[page.number] = copy(page.lineage);
+        }
         try {
-            const mapped = remapSession(draft, target, owners, captureState(), lineage);
+            const mapped = remapSession(draft, target, owners, captureState(), lineage, prior.wrappedEdit);
             restore(mapped, target); draft = target; lineage = owners; history.pop();
             first = gesture = null; paint(); update(); message('Last correction undone.');
         } catch (error) { message(error.message); }
@@ -483,7 +505,8 @@
         if (!canEdit() || !session || busy || session.saved) return;
         try {
             const metrics = copy(session.metrics);
-            const mapped = remapSession(draft, metrics, session.lineage, captureState(), lineage);
+            const mapped = remapSession(draft, metrics, session.lineage, captureState(), lineage,
+                history.every(edit => edit.wrappedEdit));
             restore(mapped, metrics); finish(); message('Corrections cancelled. Continue syncing.');
         } catch (error) { message(error.message); }
     });

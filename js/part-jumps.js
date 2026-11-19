@@ -120,5 +120,39 @@
         if (first === second) return true;
         return boxes[first]?.printedMeasure !== undefined && boxes[first].printedMeasure === boxes[second]?.printedMeasure;
     }
-    return { layout, metadata, inspect, save, expandBoxes, samePrintedMeasure, rebase, forEditing };
+
+    function wrappedMeasureLink(metrics, pageNumber, systemIndex, x) {
+        const current = metrics?.[pageNumber]?.bxs?.[systemIndex];
+        const end = current?.at(-1);
+        const distance = Math.abs(x - Math.abs(end));
+        if (!(current?.length >= 2 && distance <= 10 && distance <= Math.abs(x - Math.abs(current.at(-2))))) return null;
+
+        for (let page = pageNumber; page < metrics.length; page++) {
+            const systems = metrics[page]?.bxs;
+            if (!Array.isArray(systems)) return null;
+            const index = page === pageNumber ? systemIndex + 1 : 0;
+            if (index >= systems.length) continue;
+            const next = systems[index], start = next?.[0];
+            if (!(next?.length >= 2 && Number.isFinite(start))) return null;
+
+            const marked = end < 0 && start < 0;
+            // Negative zero loses its sign in JSON. A tenth of a pixel at
+            // the saved metric width survives normalization and round trips.
+            const minX = metrics[0] / 10000;
+            const startX = Math.abs(start);
+            const zeroStart = metrics[page].cxs?.[index]?.xs?.x1 === 0 && startX <= minX;
+            return {
+                nextPage: page,
+                marked,
+                toggle() {
+                    current[current.length - 1] = marked ? Math.abs(end) : -Math.abs(end);
+                    next[0] = marked ? (zeroStart ? 0 : startX) : -Math.max(startX, minX);
+                    return true;
+                }
+            };
+        }
+        return null;
+    }
+
+    return { layout, metadata, inspect, save, expandBoxes, samePrintedMeasure, rebase, forEditing, wrappedMeasureLink };
 });

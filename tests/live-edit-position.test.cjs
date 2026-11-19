@@ -57,6 +57,7 @@ function setup({ paused = true, twoUp = false, scale = 1 } = {}) {
             addEventListener(type, handler) { listeners[type] = handler; }
         },
         Wijzer$$module$synpdf: function () {},
+        SynpdfPartJumps: require('../js/part-jumps.js'),
         deMetriek$$module$synpdf: metric,
         deMaten$$module$synpdf: [], Cs$$module$synpdf: [], pageStfIx$$module$synpdf: [],
         deTijden$$module$synpdf: timings,

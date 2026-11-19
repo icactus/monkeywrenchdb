@@ -8,7 +8,7 @@ const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'synpdf_182/editmode/yubsync-live-edit.js'), 'utf8');
 const clone = value => JSON.parse(JSON.stringify(value));
 
-function setup({ allowed = true, failSave = false } = {}) {
+function setup({ allowed = true, failSave = false, pageCount = 1 } = {}) {
     const keys = {}, pointer = {}, requests = [], buttons = {}, overlays = [];
     const node = () => ({ disabled: false, hidden: true, listeners: {}, attributes: {}, style: {}, children: [], classList: { toggle() {} },
         setAttribute(key, value) { this.attributes[key] = value; }, appendChild(child) { this.children.push(child); },
@@ -16,23 +16,28 @@ function setup({ allowed = true, failSave = false } = {}) {
         click() { if (!this.disabled) return this.listeners.click?.(); } });
     const modes = ['q', 'w', 's', 'y'].map(mode => ({ ...node(), dataset: { yubEdit: mode } }));
     const toolbar = { ...node(), hidden: true, querySelectorAll: () => modes, contains: () => false };
-    const canvas = { width: 1000, height: 600, dataset: { pdfPage: '1' },
-        getBoundingClientRect: () => ({ left: 0, top: 0, right: 1000, bottom: 600, width: 1000, height: 600 }),
-        getContext: () => ({ getImageData: () => ({ data: new Uint8ClampedArray(0) }) }) };
+    const canvases = Array.from({ length: pageCount }, (_, i) => ({
+        width: 1000, height: 600, dataset: { pdfPage: String(i + 1), pageOffset: String(i * 600) },
+        getBoundingClientRect: () => ({ left: 0, top: i * 600, right: 1000, bottom: (i + 1) * 600, width: 1000, height: 600 }),
+        getContext: () => ({ getImageData: () => ({ data: new Uint8ClampedArray(0) }) })
+    }));
+    const canvas = canvases[0];
     const notation = { ...node(), scrollTop: 130, scrollLeft: 15,
-        querySelectorAll: selector => selector.startsWith('canvas') ? [canvas] : overlays.slice(), setPointerCapture() {},
+        querySelectorAll: selector => selector.startsWith('canvas') ? canvases : overlays.slice(), setPointerCapture() {},
         appendChild(child) { overlays.push(child); child.remove = () => overlays.splice(overlays.indexOf(child), 1); },
         addEventListener(type, handler) { pointer[type] = handler; } };
     for (const id of ['yubsync-edit-status', 'yubsync-edit-save', 'yubsync-edit-cancel', 'yubsync-edit-undo', 'yubsync-split-popup', 'synbox']) buttons[id] = node();
-    const metrics = [1000, { cxs: [{ cs: [100, 140], xs: { x1: 50, x2: 950 } }], bxs: [[50, 500, 950]] }];
+    const metrics = [1000, ...canvases.map(() => ({
+        cxs: [{ cs: [100, 140], xs: { x1: 50, x2: 950 } }], bxs: [[50, 500, 950]]
+    }))];
     const c = vm.createContext({
         yubsyncCanEditScore: allowed,
         document: { activeElement: { blur() {} },
-            createElementNS: () => node(), querySelectorAll: () => [canvas],
+            createElementNS: () => node(), querySelectorAll: () => canvases,
             getElementById: id => id === 'yubsync-edit-toolbar' ? toolbar : id === 'notation' ? notation : buttons[id],
             addEventListener(type, handler) { keys[type] = handler; } },
         addEventListener() {}, cancelAnimationFrame() {}, scrollTo() {}, scrollX: 0, scrollY: 0, innerWidth: 1000, innerHeight: 600,
-        rendering$$module$synpdf: 0, pdfDoc$$module$synpdf: { numPages: 1 },
+        rendering$$module$synpdf: 0, pdfDoc$$module$synpdf: { numPages: pageCount },
         yubsyncMetricContext: { metricArrId: 819, metrics }, deMetriek$$module$synpdf: metrics,
         opt$$module$synpdf: { synbox: 1 }, elmed$$module$synpdf: { currentTime: 9.75 }, yubchk$$module$synpdf: false,
         deTijden$$module$synpdf: [{ t: 0, mix: 0 }], offset$$module$synpdf: 7.25, lastSynced$$module$synpdf: 0,
@@ -49,6 +54,7 @@ function setup({ allowed = true, failSave = false } = {}) {
             requests.push({ url, values: options.body.values });
             return { ok: !failSave, json: async () => ({ success: !failSave, message: 'Save failed' }) };
         },
+        SynpdfPartJumps: require(path.join(root, 'js/part-jumps.js')),
         console: { error() {} }, prompt: () => assert.fail('S mode must use the on-page count box')
     });
     c.window = c;
@@ -58,8 +64,8 @@ function setup({ allowed = true, failSave = false } = {}) {
             preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...options };
         keys[type](event); return event;
     }
-    function click(x, y, touch = false) {
-        const event = { clientX: x, clientY: y, button: 0, pointerId: 1, preventDefault() {}, stopImmediatePropagation() {} };
+    function click(x, y, touch = false, modifiers = {}) {
+        const event = { clientX: x, clientY: y, button: 0, pointerId: 1, preventDefault() {}, stopImmediatePropagation() {}, ...modifiers };
         pointer.pointerdown(event);
         if (touch) pointer.touchstart({ ...event, touches: [{ clientX: x, clientY: y }] });
         else pointer.mousedown(event);
@@ -128,6 +134,45 @@ test('Q maps clicks into logical metric coordinates rather than the canvas pixel
     h.key('q'); h.click(300, 120);
     assert.deepEqual(clone(h.c.deMetriek$$module$synpdf[1].bxs[0]), [50, 300, 500, 950]);
     assert.equal(h.c.msc_wz$$module$synpdf.maatloper.box.width, 250);
+});
+
+test('Alt-click in Q links and unlinks across lines and leaves interior barlines alone', () => {
+    const h = setup(); usePlayerGeometry(h);
+    const page = h.c.deMetriek$$module$synpdf[1];
+    page.cxs.push({ cs: [220, 260], xs: { x1: 50, x2: 950 } });
+    page.bxs.push([50, 500, 950]);
+    h.key('q');
+    h.click(500, 120, false, { altKey: true });
+    assert.deepEqual(clone(page.bxs), [[50, 500, 950], [50, 500, 950]]);
+    h.click(950, 240, false, { altKey: true });
+    assert.equal(h.c.YubSyncLiveEdit.exportProgress(), null);
+    h.click(950, 120, false, { altKey: true });
+    assert.deepEqual(clone(page.bxs), [[50, 500, -950], [-50, 500, 950]]);
+    assert.equal(h.c.deMaten$$module$synpdf.length, 4);
+    assert.equal(h.c.deMaten$$module$synpdf[1].linkedBoxes[0].y, 220);
+    assert.match(h.buttons['yubsync-edit-status'].textContent, /Measure linked across lines/);
+    h.click(950, 120, false, { altKey: true });
+    assert.deepEqual(clone(page.bxs), [[50, 500, 950], [50, 500, 950]]);
+    assert.equal(h.c.deMaten$$module$synpdf.length, 5);
+});
+
+test('cross-page Alt-click saves both endpoints and maps the sync or undo as one edit', async () => {
+    const h = setup({ pageCount: 3 }); usePlayerGeometry(h);
+    h.c.deMetriek$$module$synpdf[2] = { cxs: [], bxs: [] };
+    h.c.deTijden$$module$synpdf.push({ t: 2, mix: 1 }, { t: 6, mix: 3 });
+    h.c.lastSynced$$module$synpdf = 2;
+    const before = h.snapshot();
+    const original = clone(h.c.deMetriek$$module$synpdf);
+    h.key('q');
+    h.click(950, 120, false, { altKey: true });
+    assert.deepEqual(clone(h.c.deTijden$$module$synpdf), [{ t: 0, mix: 0 }, { t: 2, mix: 1 }, { t: 6, mix: 2 }]);
+    h.key('z', { ctrlKey: true });
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf), original);
+    assert.deepEqual(h.snapshot(), before);
+    h.click(950, 120, false, { altKey: true });
+    assert.equal(await h.c.YubSyncLiveEdit.prepareSubmission(), true);
+    const saved = JSON.parse(h.requests[0].values.metric_arr_data);
+    assert.deepEqual(saved.slice(1).map(page => page.bxs), [[[50, 500, -950]], [], [[-50, 500, 950]]]);
 });
 
 test('Q adds and removes boundaries inside already recorded measures without rolling the edit back', () => {

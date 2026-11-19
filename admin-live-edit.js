@@ -42,7 +42,7 @@
         '<li><b>W</b>: click two corners to draw a system.</li>' +
         '<li><b>Shift + W</b>: draw exact system boundaries.</li>' +
         '<li><b>Shift-click</b>: split a measure in barline mode.</li>' +
-        '<li><b>Alt-click</b>: mark a wrapped measure in barline mode.</li>' +
+        '<li><b>Alt-click in Q mode</b>: click the last barline on a line to link the measure to the next line. Repeat to unlink it.</li>' +
         '<li><b>Long click</b>: mark Jump, then long click the earlier Repeat measure (Q mode).</li>' +
         '<li><b>G</b>: remove a pair of repeat marks, or the pending Jump.</li></ul>' +
         '<p style="margin: 0;">Press the current mode key again to stop editing. Use Save Changes to save your edits.</p>';
@@ -389,12 +389,14 @@
     }
 
     function refreshPlayer() {
+        let applied = true;
         if (savedMetricArr) {
             try {
                 window.SynpdfPartJumps.rebase(savedMetricArr, window.deMetriek$$module$synpdf || window.metric_arr$$module$synpdf);
             } catch (error) {
                 window.deMetriek$$module$synpdf = window.metric_arr$$module$synpdf = savedMetricArr;
                 alert(error.message);
+                applied = false;
             }
             savedMetricArr = null;
         }
@@ -405,6 +407,7 @@
             console.error("refreshMetricGeometry not found!");
         }
         drawRepeatMarks();
+        return applied;
     }
 
     function handleBarline(event) {
@@ -522,56 +525,26 @@
         const ctx = getEventContext(event);
         if (!ctx) return;
         const { x, y, pageIdx } = ctx;
-
         const metricArr = window.deMetriek$$module$synpdf || window.metric_arr$$module$synpdf;
         const pageData = metricArr?.[pageIdx];
-        if (!pageData || !Array.isArray(pageData.cxs) || !Array.isArray(pageData.bxs)) {
+        if (!pageData?.cxs) return;
+        const link = window.SynpdfPartJumps?.wrappedMeasureLink;
+        if (!link) {
+            jumpStatus.textContent = 'Reload the page to link a wrapped measure.';
             return;
         }
-
-        for (let j = 0; j < pageData.cxs.length; j++) {
-            const csGroup = pageData.cxs[j]?.cs;
-            if (!Array.isArray(csGroup) || !csGroup.length) continue;
-
-            const bounds = getSystemHitBounds(pageData.cxs[j], x);
-            if (!bounds) continue;
-
-            if (y >= bounds.top && y <= bounds.bottom) {
-                const bxsGroup = pageData.bxs[j];
-                if (!Array.isArray(bxsGroup)) return;
-
-                for (let i = 0; i < bxsGroup.length; i++) {
-                    const barlineX = Math.abs(bxsGroup[i]);
-
-                    if (Math.abs(x - barlineX) <= 10) {
-                        const isMarking = bxsGroup[i] >= 0;
-                        bxsGroup[i] = isMarking ? -barlineX : barlineX;
-
-                        const nextStaffIndex = j + 1;
-                        if (nextStaffIndex < pageData.bxs.length) {
-                            const nextBxs = pageData.bxs[nextStaffIndex];
-                            if (Array.isArray(nextBxs) && nextBxs.length > 0) {
-                                nextBxs[0] = isMarking ? -Math.abs(nextBxs[0]) : Math.abs(nextBxs[0]);
-                                nextBxs.sort((a, b) => Math.abs(a) - Math.abs(b));
-                            }
-                        } else if (pageIdx + 1 < metricArr.length) {
-                            const nextPageBxs = metricArr[pageIdx + 1]?.bxs;
-                            if (Array.isArray(nextPageBxs) && nextPageBxs.length > 0 && Array.isArray(nextPageBxs[0]) && nextPageBxs[0].length > 0) {
-                                nextPageBxs[0][0] = isMarking ? -Math.abs(nextPageBxs[0][0]) : Math.abs(nextPageBxs[0][0]);
-                                nextPageBxs[0].sort((a, b) => Math.abs(a) - Math.abs(b));
-                            }
-                        }
-
-                        bxsGroup.sort((a, b) => Math.abs(a) - Math.abs(b));
-                        refreshPlayer();
-                        return;
-                    }
-                }
-
-                console.log('No barline found within 10px of click for wrapped measure mark.');
-                return;
+        for (let index = 0; index < pageData.cxs.length; index++) {
+            const bounds = getSystemHitBounds(pageData.cxs[index], x);
+            if (!bounds || y < bounds.top || y > bounds.bottom) continue;
+            const edit = link(metricArr, pageIdx, index, x);
+            if (!edit) continue;
+            edit.toggle();
+            if (refreshPlayer() !== false) {
+                jumpStatus.textContent = edit.marked ? 'Measure unlinked.' : 'Measure linked across lines.';
             }
+            return;
         }
+        jumpStatus.textContent = 'Alt-click the last barline on a line with a following staff.';
     }
 
     function getSystemSortTop(system) {
