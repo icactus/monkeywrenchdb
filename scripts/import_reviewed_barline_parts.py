@@ -26,8 +26,9 @@ class Library:
         self.base_url = base_url.rstrip('/')
 
     def open(self, url, method='GET'):
-        return urlopen(Request(f'{self.base_url}/{url}', method=method,
-                               headers={'Referer': self.base_url + '/'}), timeout=45)
+        headers = {'Referer': self.base_url + '/',
+                   'User-Agent': 'MonkeyWrenchDB-Training/1.0 (+https://monkeywrenchdb.org)'}
+        return urlopen(Request(f'{self.base_url}/{url}', method=method, headers=headers), timeout=45)
 
     def snapshot(self, kind, **selector):
         query = '?' + urlencode(selector) if selector else ''
