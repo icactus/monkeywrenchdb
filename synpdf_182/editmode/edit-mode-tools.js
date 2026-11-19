@@ -340,14 +340,6 @@ function bindPdfEditToolbar() {
                 case 'barline-threshold-increase':
                     changeBarlineThreshold(button.id === 'barline-threshold-increase' ? 1 : -1);
                     break;
-                case 'toolbar-add-part': {
-                    const form = document.getElementById('addnewmetricform');
-                    if (form.hidden) return;
-                    $('#database-menus').show();
-                    form.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                    form.querySelector('[name="edition_label"]').focus({ preventScroll: true });
-                    break;
-                }
             }
         }
     });

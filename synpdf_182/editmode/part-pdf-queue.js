@@ -508,6 +508,7 @@
             window.SynpdfAutoBarlines?.setQueueDraft(result.draft);
             window.msc_check_preload$$module$synpdf();
             activePanel.hidden = false; setQueuedSaveState(true);
+            document.getElementById('database-menus-wrapper').scrollTop = 0;
             document.getElementById('pdf-queue-active-name').textContent = active.name;
             draftStatus.textContent = window.SynpdfAutoBarlines?.prepared
                 ? (result.draft ? 'Edits restored.' : '') : '';

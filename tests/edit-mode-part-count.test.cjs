@@ -53,13 +53,13 @@ test('any existing part can be used, with its latest row and no list mutation', 
 });
 
 function harness(fetcher, withoutRecheck = false) {
-    const nodes = Object.fromEntries(['part-count-check','part-count-status','part-count-recheck','notation','wait','render','fknp','barline-detection-progress']
+    const nodes = Object.fromEntries(['part-count-check','part-count-status','part-count-recheck','notation','wait','render','fknp','barline-detection-progress','pdf-workspace']
         .map(id => [id,{ dataset:{}, textContent:'', listeners:{}, addEventListener(type,fn){this.listeners[type]=fn;} }]));
     if (withoutRecheck) delete nodes['part-count-recheck'];
-    const timers = new Map(), retries = [], listeners = {}; let timerId=0, observer;
+    const timers = new Map(), retries = [], listeners = {}, observed = new Map(); let timerId=0, observer;
     const c = vm.createContext({
         document:{getElementById:id=>nodes[id],addEventListener:(type,fn)=>{listeners[type]=fn;}},
-        MutationObserver:class { constructor(fn){observer=fn;} observe(){} },
+        MutationObserver:class { constructor(fn){observer=fn;} observe(node,options){observed.set(node,options);} },
         setTimeout:(fn,delay)=>{ if (delay >= 10000) retries.push(fn); else timers.set(++timerId,fn); return timerId; }, clearTimeout:id=>timers.delete(id),
         fetch:fetcher,
         scoreFnm$$module$synpdf:'108-3', pdfDoc$$module$synpdf:{numPages:2}, deMetriek$$module$synpdf:structuredClone(metrics),
@@ -67,7 +67,7 @@ function harness(fetcher, withoutRecheck = false) {
     });
     c.window=c;
     vm.runInContext(fs.readFileSync(file,'utf8'),c);
-    return {c,nodes,listeners,notify:()=>observer(),retry:()=>retries.shift()?.(),async settle(){
+    return {c,nodes,listeners,observed,notify:()=>observer(),retry:()=>retries.shift()?.(),async settle(){
         for(let i=0;i<40;i++) {
             for(const [id,fn] of [...timers]){timers.delete(id);fn();}
             await Promise.resolve();
@@ -108,6 +108,40 @@ test('narrow measures do not replace the missing-reference status with an alert'
     await h.settle();
     assert.equal(h.nodes['part-count-check'].dataset.state, 'unavailable');
     assert.match(h.nodes['part-count-status'].textContent, /No saved part found for piece 108/);
+});
+
+test('the current total is visible while looking up a reference and without a saved part', async () => {
+    let resolveReference;
+    const h = harness(() => new Promise(resolve => { resolveReference = resolve; }));
+    await h.settle();
+    assert.equal(h.nodes['part-count-check'].dataset.state, 'loading');
+    assert.match(h.nodes['part-count-status'].textContent, /Current: 7 detix values.*Looking up a saved part/);
+    resolveReference({ok: false, status: 404});
+    await h.settle();
+    assert.equal(h.nodes['part-count-check'].dataset.state, 'unavailable');
+    assert.match(h.nodes['part-count-status'].textContent, /Current: 7 detix values.*No saved part found/);
+});
+
+test('a local PDF with an unrecognized filename still shows its current total', async () => {
+    let lookups = 0;
+    const h = harness(async () => { lookups++; return {ok: false, status: 404}; });
+    h.c.scoreFnm$$module$synpdf = 'Horn 2 Solo';
+    await h.settle();
+    assert.equal(h.nodes['part-count-check'].dataset.state, 'unavailable');
+    assert.match(h.nodes['part-count-status'].textContent, /Current: 7 detix values.*filename/);
+    assert.equal(lookups, 0);
+});
+
+test('the count refreshes when the PDF workspace finishes detection', async () => {
+    const h = harness(async url => jsonResponse(url.includes('get_parts') ? partList : {metric_arr: metrics, pdf_file: '108-1.pdf'}));
+    h.c.SynpdfPdfLoading = {active: true};
+    await h.settle();
+    assert.equal(h.nodes['part-count-check'].dataset.state, 'loading');
+    assert(h.observed.get(h.nodes['pdf-workspace']).attributeFilter.includes('aria-busy'));
+    h.c.SynpdfPdfLoading.active = false;
+    h.notify();
+    await h.settle();
+    assert.match(h.nodes['part-count-status'].textContent, /Counts match: 7 detix values/);
 });
 
 test('rendering and incomplete scans cannot show matching counts', async () => {

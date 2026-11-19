@@ -98,35 +98,49 @@
         }
     }
     function refresh() {
-        const identity = identityFromFilename(window.scoreFnm$$module$synpdf || window.pdfFnm$$module$synpdf);
-        if (!identity) {
-            reference = null; if (recheck) recheck.disabled = true;
-            show('idle', 'Load a PDF named piece-part.pdf (for example 108-1.pdf) to compare its detix count.');
+        const filename = window.scoreFnm$$module$synpdf || window.pdfFnm$$module$synpdf;
+        const identity = identityFromFilename(filename);
+        const pages = window.pdfDoc$$module$synpdf?.numPages;
+        if (!identity) reference = null;
+        else if (!reference || reference.pieceId !== identity.pieceId || reference.partId !== identity.partId) fetchReference(identity);
+        if (recheck) recheck.disabled = !identity || !!reference.pending;
+        if (!filename && !pages) {
+            show('idle', 'Open a PDF to see its total.');
             return;
         }
-        if (!reference || reference.pieceId !== identity.pieceId || reference.partId !== identity.partId) fetchReference(identity);
-        if (recheck) recheck.disabled = !!reference.pending;
-        if (reference.pending) {
-            show('loading', `Looking up a saved part for piece ${identity.pieceId}…`); return;
-        }
-        if (reference.error) { show('error', `${reference.error} Retrying automatically…`); return; }
-        if (reference.missing) { show('unavailable', `No saved part found for piece ${identity.pieceId} yet.`); return; }
         const metrics = window.deMetriek$$module$synpdf;
-        if (jumpsApi && jumpsApi.metadata(metrics) && !window.rendering$$module$synpdf && !window.metricPrecomputeInProgress$$module$synpdf) {
-            try { jumpsApi.inspect(metrics); }
-            catch (error) { show('error', error.message); return; }
+        const ready = pages && metrics?.length === pages + 1 && !window.rendering$$module$synpdf &&
+            !window.metricPrecomputeInProgress$$module$synpdf && !window.barlineDetectionProgress &&
+            !window.SynpdfPdfLoading?.active && !window.SynpdfAutoBarlines?.running;
+        let count = null, jumpInfo = null;
+        if (ready) {
+            if (jumpsApi?.metadata(metrics)) {
+                try { jumpInfo = jumpsApi.inspect(metrics); }
+                catch (error) { show('error', error.message); return; }
+                count = jumpInfo.order.length ? jumpInfo.order.length + 1 : 0;
+            } else {
+                count = countDetixValues(metrics);
+            }
         }
-        const pages = window.pdfDoc$$module$synpdf?.numPages;
-        if (!pages || window.rendering$$module$synpdf || window.metricPrecomputeInProgress$$module$synpdf ||
-            window.barlineDetectionProgress || window.SynpdfAutoBarlines?.running || !metrics || metrics.length !== pages + 1 ||
-            countDetixValues(metrics) === null) {
+        const current = count === null ? '' : `Current: ${count} detix values. `;
+        if (!identity && count !== null) {
+            show('unavailable', `${current}A filename like 108-1.pdf is needed to find a saved part.`); return;
+        }
+        if (!identity) {
             show('loading', 'Waiting for the current part’s page metrics to finish…'); return;
         }
-        const count = countDetixValues(metrics), saved = reference.data;
+        if (reference.pending) {
+            show('loading', `${current}Looking up a saved part for piece ${identity.pieceId}…`); return;
+        }
+        if (reference.error) { show('error', `${current}${reference.error} Retrying automatically…`); return; }
+        if (reference.missing) { show('unavailable', `${current}No saved part found for piece ${identity.pieceId} yet.`); return; }
+        if (count === null) {
+            show('loading', 'Waiting for the current part’s page metrics to finish…'); return;
+        }
+        const saved = reference.data;
         if (!count) { show('unavailable', 'No measures found in the current part yet.'); return; }
         const difference = count - saved.count;
         const ref = `${saved.label || 'Saved part'} (${saved.filename})`;
-        const jumpInfo = jumpsApi && jumpsApi.metadata(metrics) ? jumpsApi.inspect(metrics) : null;
         const jumpText = jumpInfo ? ` ${jumpInfo.printed} printed + ${jumpInfo.added} repeated = ${jumpInfo.order.length} measures.` : '';
         show(difference ? 'mismatch' : 'match', (difference
             ? `Current: ${count} detix values · saved: ${saved.count} · ${Math.abs(difference)} ${difference > 0 ? 'more' : 'fewer'}. Reference: ${ref}.`
@@ -142,6 +156,8 @@
     const observer = new MutationObserver(schedule);
     const notation = document.getElementById('notation');
     if (notation) observer.observe(notation, { childList: true });
+    const workspace = document.getElementById('pdf-workspace');
+    if (workspace) observer.observe(workspace, { attributes: true, attributeFilter: ['aria-busy'] });
     for (const id of ['wait', 'render', 'barline-detection-progress']) {
         const element = document.getElementById(id);
         if (element) observer.observe(element, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'aria-busy'] });

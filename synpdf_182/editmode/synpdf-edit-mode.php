@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="stylesheet" href="part-pdf-queue.css?v=7">
-    <script src="part-pdf-queue.js?v=18" defer></script>
+    <script src="part-pdf-queue.js?v=19" defer></script>
     <script src="auto-barline-detection.js?v=5" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
@@ -80,7 +80,7 @@
     <script src="synpdf-edit-mode.js?v=109"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="part-jump-editor.js?v=1" defer></script>
-    <script src="part-count-check.js?v=6" defer></script>
+    <script src="part-count-check.js?v=7" defer></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
     <?php if ($pianoBarlineCnnBrowserJsVer > 0) { ?>
@@ -614,7 +614,7 @@
             flex-direction: column;
             gap: 16px;
         }
-        #database-menus [hidden], #database-menu-top[hidden] { display: none !important; }
+        #database-menus [hidden], #database-menu-top[hidden], #addnewmetricform[hidden], #addnewmetricform [hidden] { display: none !important; }
 
         /* Form cards */
         .inputform {
@@ -780,9 +780,10 @@
 
         /* Shared code still reads these controls; this page has no media header or menu. */
         #buttons, #sync, #spdlbl, #fknp { display: none !important; }
-        #part-count-check[data-state="idle"], #part-count-check[data-state="loading"] { display: none; }
         #editor-sidebar-tools button { padding: 7px 12px; border: 1px solid #aaa; border-radius: 5px; background: white; cursor: pointer; }
         #part-count-check { border-left: 3px solid #94a3b8; padding: 6px 10px; margin-top: 10px; }
+        #part-count-check h3 { font-size: 14px; margin: 0; }
+        #part-count-status { margin: 4px 0 0; }
         #part-count-check[data-state="match"] { border-color: #16a34a; }
         #part-count-check[data-state="mismatch"], #part-count-check[data-state="error"] { border-color: #d97706; }
         #part-count-check button { margin: 4px 0; }
@@ -952,6 +953,50 @@
                 <button id="editor-help-button" type="button" aria-haspopup="dialog">Help</button>
                 <input type="file" id="fknp" name="file" accept=".pdf,.js,.jpg" hidden />
             </div>
+            <div id="editor-status">
+                <div id="pdf-queue-active" hidden>
+                    <strong id="pdf-queue-active-name"></strong>
+                    <p id="pdf-queue-draft-status" role="status" aria-live="polite"></p>
+                </div>
+                <p id="auto-barline-status" role="status" aria-live="polite" hidden></p>
+                <button id="rerun-barline-detection" type="button" hidden title="Rebuild barlines and staff geometry on every page, replacing current barline edits">Rerun detection</button>
+                <div id="part-count-check" data-state="idle">
+                    <h3>Barline comparison</h3>
+                    <p id="part-count-status" role="status" aria-live="polite">Open a PDF to see its total.</p>
+                </div>
+            </div>
+            <div id="database-menu-top" hidden>
+                <h3>Submit Part</h3>
+            </div>
+            <form class="inputform" id="addnewmetricform" method="POST" hidden>
+                <div hidden>
+                    <div>
+                        <label for="piece_id">Piece</label>
+                        <select class="dropdown-menu" name="piece_id">
+                            <option value="">Select piece...</option>
+                            <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
+                                <option value="<?php echo htmlspecialchars((string) $pieceId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $pieceName, ENT_QUOTES, 'UTF-8'); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <select name="instrument_id">
+                        <option value="">Select an instrument...</option>
+                        <?php foreach ($instrumentsArray as $instrumentId => $instrumentName): ?>
+                            <option value="<?php echo htmlspecialchars((string) $instrumentId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $instrumentName, ENT_QUOTES, 'UTF-8'); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <p id="pdf-queue-part-assignment"></p>
+                <div>
+                    <div>
+                        <label for="edition_label">Edition/Manuscript (optional):</label>
+                        <input type="text" id="edition_label" name="edition_label"
+                            placeholder="e.g., Anna Magdalena Bach" />
+                    </div>
+                    <input type="hidden" name="measures_version" value="1" />
+                    <input type="submit" name="save" value="Submit Part" />
+                </div>
+            </form>
             <section id="part-pdf-queue" aria-labelledby="pdf-queue-title">
                 <h2 id="pdf-queue-title">Parts waiting for barline work</h2>
                 <div id="pdf-queue-upload-controls" hidden>
@@ -963,52 +1008,8 @@
                 </div>
                 <p id="pdf-queue-status" role="status" aria-live="polite"></p>
                 <ul id="pdf-queue-items"></ul>
-                <div id="pdf-queue-active" hidden>
-                    <strong id="pdf-queue-active-name"></strong>
-                    <p id="pdf-queue-draft-status" role="status" aria-live="polite"></p>
-                </div>
             </section>
-            <div id="editor-status">
-                <p id="auto-barline-status" role="status" aria-live="polite" hidden></p>
-                <button id="rerun-barline-detection" type="button" hidden title="Rebuild barlines and staff geometry on every page, replacing current barline edits">Rerun detection</button>
-                <div id="part-count-check" data-state="idle">
-                    <p id="part-count-status" role="status" aria-live="polite"></p>
-                </div>
-            </div>
-            <div id="database-menu-top" hidden>
-                <h3>Submit Part</h3>
-            </div>
             <div id="database-menus">
-                <!-- add metric_arr -->
-                <form class="inputform" id="addnewmetricform" method="POST" hidden>
-                    <div hidden>
-                        <div>
-                            <label for="piece_id">Piece</label>
-                            <select class="dropdown-menu" name="piece_id">
-                                <option value="">Select piece...</option>
-                                <?php foreach ($piecesArray as $pieceId => $pieceName): ?>
-                                    <option value="<?php echo htmlspecialchars((string) $pieceId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $pieceName, ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <select name="instrument_id">
-                            <option value="">Select an instrument...</option>
-                            <?php foreach ($instrumentsArray as $instrumentId => $instrumentName): ?>
-                                <option value="<?php echo htmlspecialchars((string) $instrumentId, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $instrumentName, ENT_QUOTES, 'UTF-8'); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <p id="pdf-queue-part-assignment"></p>
-                    <div>
-                        <div>
-                            <label for="edition_label">Edition/Manuscript (optional):</label>
-                            <input type="text" id="edition_label" name="edition_label"
-                                placeholder="e.g., Anna Magdalena Bach" />
-                        </div>
-                        <input type="hidden" name="measures_version" value="1" />
-                        <input type="submit" name="save" value="Submit Part" />
-                    </div>
-                </form>
                 <details id="catalog-tools">
                     <summary>Create a composer or piece (admin)</summary>
                 <!-- inputs for adding piece data -->
@@ -1176,7 +1177,6 @@
                 <button type="button" id="barline-threshold-decrease" aria-label="Decrease barline threshold" title="Decrease image-based barline threshold (.) — include weaker lines" data-tooltip="More barlines · . · Replaces this page’s barlines">−</button>
                 <output id="barline-threshold-value" aria-labelledby="barline-threshold-label">0.80</output>
                 <button type="button" id="barline-threshold-increase" aria-label="Increase barline threshold" title="Increase image-based barline threshold (/) — keep stronger lines" data-tooltip="Fewer barlines · / · Replaces this page’s barlines">+</button>
-                <button type="button" id="toolbar-add-part" title="Submit this part" data-tooltip="Submit Part">Submit Part</button>
             </div>
         <div id="notation">
         </div>
