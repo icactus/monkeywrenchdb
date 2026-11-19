@@ -1218,7 +1218,7 @@ if ($yubsyncTutorial) {
     <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=13"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=96"></script>
     <?php if (!$yubsyncTutorial): ?>
-    <script src="yubsync-live-edit.js?v=12"></script>
+    <script src="yubsync-live-edit.js?v=13"></script>
     <script src="yubsync-progress.js?v=4"></script>
     <?php endif; ?>
     <?php endif; ?>

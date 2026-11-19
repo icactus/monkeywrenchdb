@@ -5186,10 +5186,10 @@ function buildYMergeFromSelection(selected, startX, startY) {
         cs: [(leftTop + rightTop) / 2, (leftBottom + rightBottom) / 2],
         csl: [leftTop, leftBottom],
         csr: [rightTop, rightBottom],
-        xs: xs
+        xs: xs,
+        trainingDivisi: true
     };
     if (source.system.restSplitXs) system.restSplitXs = source.system.restSplitXs.slice();
-    if (selected.some(item => item.system.trainingDivisi || item.system.autoDivisi)) system.trainingDivisi = true;
     return { system: system, bxs: source.bxs.slice() };
 }
 

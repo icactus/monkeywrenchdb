@@ -137,3 +137,15 @@ test('E reports an actual proposal miss separately from missing candidate histor
         assert.match(h.status.textContent, scanned ? /1 missed before CNN/ : /1 without candidate history/);
     }
 });
+
+test('E edits on a system excluded by a Y merge produce no training target', () => {
+    const h = harness();
+    h.c.deMetriek$$module$synpdf[1].cxs[0].trainingDivisi = true;
+    h.c.QisActive = false;
+    h.c.NisActive = true;
+    h.c.SynpdfCorrectionTools.snapshotV2BaselineForPage(1, h.page, [[{x: 300, score: .9}]], []);
+    h.c.click({clientX: 300, clientY: 116});
+    const [entry] = h.c.MetricStore.getCorrectionLog();
+    assert.equal(entry.cnnTarget, null);
+    assert.equal(entry.cnnExclusionReason, 'legacy_divisi');
+});

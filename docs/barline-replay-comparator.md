@@ -75,7 +75,7 @@ The full `75-5` verification recovered all 128 eligible systems, excluded all 62
 
 ## Reviewed parts from Submit Part
 
-For a new single-staff upload, review the part in Edit Mode and use **Submit Part**. **Split rest** records its generated positions alongside the staff. **Mark divisi** lets you click each staff in ungrouped divisi to exclude it. Automatically grouped divisi is excluded already. These annotations leave the timing boundaries in the saved part and exclude the virtual rest divisions from printed-barline labels.
+For a new single-staff upload, review the part in Edit Mode and use **Submit Part**. **Split rest** records its generated positions alongside the staff. Every **Y** merge and every automatically grouped divisi system is excluded from single-staff training. **Mark divisi** is available for staves you leave unmerged. The saved timing boundaries include the virtual rest divisions, and printed-barline labels omit them.
 
 The normal full retrain imports new or changed reviewed parts before extraction. Legacy submissions, scores, and the editor's piano and specialist exclusions stay outside this automatic import. `--no-library` skips the sync.
 

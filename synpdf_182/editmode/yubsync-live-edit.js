@@ -35,10 +35,9 @@
         const right = selection.map(i => bounds(page.cxs[i], xs.x2));
         const csl = [Math.min(...left.map(b => b.top)), Math.max(...left.map(b => b.bottom))];
         const csr = [Math.min(...right.map(b => b.top)), Math.max(...right.map(b => b.bottom))];
-        const system = { cs: csl.map((y, i) => (y + csr[i]) / 2), csl, csr, xs };
+        const system = { cs: csl.map((y, i) => (y + csr[i]) / 2), csl, csr, xs, trainingDivisi: true };
         const source = page.cxs[sourceIndex];
         if (source.restSplitXs) system.restSplitXs = source.restSplitXs.slice();
-        if (selection.some(i => page.cxs[i].trainingDivisi || page.cxs[i].autoDivisi)) system.trainingDivisi = true;
         const lineage = [...new Set(selection.flatMap(i => owners[i]))];
         selection.slice().sort((a, b) => b - a).forEach(i => { page.cxs.splice(i, 1); page.bxs.splice(i, 1); owners.splice(i, 1); });
         page.cxs.push(system); page.bxs.push(bars); owners.push(lineage);

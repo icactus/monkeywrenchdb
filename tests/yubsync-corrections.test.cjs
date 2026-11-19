@@ -280,6 +280,18 @@ test('pending S input must be finished or cancelled before submission and does n
     assert.equal(h.requests.length, 1);
 });
 
+test('Y merges save the training exclusion and leave the chosen barlines intact', async () => {
+    const h = setup();
+    const page = h.c.deMetriek$$module$synpdf[1];
+    page.cxs.push({ cs: [180, 220], xs: { x1: 50, x2: 950 } });
+    page.bxs.push([50, 300, 950]);
+    h.key('y'); h.click(300, 120, false, { ctrlKey: true });
+    assert.equal(await h.c.YubSyncLiveEdit.prepareSubmission(), true);
+    const saved = JSON.parse(h.requests[0].values.metric_arr_data)[1];
+    assert.deepEqual(saved.bxs, [[50, 500, 950]]);
+    assert.equal(saved.cxs[0].trainingDivisi, true);
+});
+
 for (const mode of ['q', 'w', 's', 'y']) {
     test(`the superuser can use ${mode.toUpperCase()} with a hidden toolbar and preserve the sync`, async () => {
         const h = setup(), before = h.snapshot();
@@ -287,6 +299,7 @@ for (const mode of ['q', 'w', 's', 'y']) {
         assert.equal(h.c.YubSyncLiveEdit.active, true);
         if (mode === 'w') { h.click(50, 280); h.click(950, 320); }
         else h.click(700, 120);
+        if (mode === 'y') assert.equal(h.c.deMetriek$$module$synpdf[1].cxs[0].trainingDivisi, undefined);
         if (mode === 's') h.key('3');
         assert(h.c.YubSyncLiveEdit.exportProgress(), h.buttons['yubsync-edit-status'].textContent);
         assert.deepEqual(h.snapshot(), before);

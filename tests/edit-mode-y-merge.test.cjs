@@ -55,7 +55,7 @@ test('merging multiple full-score fragments preserves their entire envelopes and
     assert.equal(h.merge(), true);
     assert.equal(h.writes.length, 1);
     assert.deepEqual(h.writes[0][1], {
-        cxs: [{ cs: [101, 622], csl: [100, 620], csr: [102, 624], xs: { x1: 50, x2: 950 } }, other],
+        cxs: [{ cs: [101, 622], csl: [100, 620], csr: [102, 624], xs: { x1: 50, x2: 950 }, trainingDivisi: true }, other],
         bxs: [upperBars, otherBars]
     });
     assert.deepEqual(h.writes[0][2], h.input[2], 'other pages are unchanged');
@@ -76,7 +76,7 @@ test('source barlines define horizontal boundaries while selected systems retain
         [[-75, 390.5, -925], [10, 500, 990]], 140, 600);
     assert.equal(h.merge(), true);
     assert.deepEqual(h.writes[0][1], {
-        cxs: [{ cs: [100, 680], csl: [100, 680], csr: [100, 680], xs: { x1: 75, x2: 925 } }],
+        cxs: [{ cs: [100, 680], csl: [100, 680], csr: [100, 680], xs: { x1: 75, x2: 925 }, trainingDivisi: true }],
         bxs: [[-75, 390.5, -925]]
     });
 });
@@ -95,6 +95,7 @@ test('single-staff merges use the same source-barline rule', () => {
     assert.equal(h.merge(), true);
     assert.deepEqual(h.writes[0][1].bxs, [upperBars]);
     assert.deepEqual(h.writes[0][1].cxs[0].cs, [100, 212]);
+    assert.equal(h.writes[0][1].cxs[0].trainingDivisi, true);
 });
 
 test('missing source barlines or a selection of only one system cannot overwrite metrics', () => {
@@ -180,4 +181,5 @@ test('Ctrl-click chooses the system under the pointer when systems share the sam
     h.context.handleYCxs({ ...h.event, clientX: 700 + 100 - 30, ctrlKey: true });
     assert.deepEqual(h.writes[0][1].bxs, [bars]);
     assert.deepEqual(h.writes[0][1].cxs[0].xs, { x1: 550, x2: 950 });
+    assert.equal(h.writes[0][1].cxs[0].trainingDivisi, true);
 });

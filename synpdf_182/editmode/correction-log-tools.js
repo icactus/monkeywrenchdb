@@ -1133,7 +1133,8 @@ var SynpdfCorrectionTools = (function () {
         var pageData = metricData && metricData[eventData.pageNumber];
         var currentSystem = pageData && Array.isArray(pageData.cxs) ? pageData.cxs[eventData.systemIndex] : null;
         var fallbackCs = currentSystem && Array.isArray(currentSystem.cs) ? currentSystem.cs : null;
-        var nearestInfo = currentSystem && currentSystem.autoDivisi ? null :
+        var excludedSystem = currentSystem && (currentSystem.autoDivisi || currentSystem.trainingDivisi);
+        var nearestInfo = excludedSystem ? null :
             getNearestBaselineCandidate(eventData.pageNumber, eventData.systemIndex, eventData.xJson, eventData.yJson, fallbackCs);
         var baseline = baselinesByPage[eventData.pageNumber];
         var baselineSystemIndex = nearestInfo && typeof nearestInfo.baselineSystemIndex === 'number'
@@ -1169,7 +1170,7 @@ var SynpdfCorrectionTools = (function () {
             acceptedNearby: nearestInfo ? nearestInfo.acceptedNearby : false,
             acceptedMatchX: nearestInfo ? nearestInfo.acceptedMatchX : null,
             acceptedMatchDistance: nearestInfo ? nearestInfo.acceptedMatchDistance : null,
-            detectorMode: currentSystem && currentSystem.autoDivisi ? 'legacy_divisi' :
+            detectorMode: excludedSystem ? 'legacy_divisi' :
                 (baseline && baseline.detectorMode ? baseline.detectorMode : null),
             generatedBy: eventData.generatedBy || null,
             reason: '',
