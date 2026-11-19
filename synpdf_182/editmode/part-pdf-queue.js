@@ -442,8 +442,9 @@
     }
     function matches() { return active && window.pdfFnm$$module$synpdf === activeUrl; }
     function setQueuedSaveState(editing) {
-        form.hidden = !editing;
-        document.getElementById('database-menu-top').hidden = !editing;
+        document.getElementById('pdf-queue-submit-controls').disabled = !editing;
+        document.getElementById('pdf-queue-submit-details').hidden = !editing;
+        document.getElementById('pdf-queue-submit-hint').hidden = editing || active?.status === 'completed';
     }
     function clearActive() {
         active = null; activeUrl = ''; lastDraft = ''; activePanel.hidden = true;

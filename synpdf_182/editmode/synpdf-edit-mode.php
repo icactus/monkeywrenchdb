@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="stylesheet" href="part-pdf-queue.css?v=7">
-    <script src="part-pdf-queue.js?v=19" defer></script>
+    <script src="part-pdf-queue.js?v=20" defer></script>
     <script src="auto-barline-detection.js?v=5" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
@@ -592,29 +592,18 @@
             z-index: 100;
         }
 
-        #database-menu-top {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        #database-menu-top>h3 {
-            margin: 0;
-            font-size: 16px;
-            color: #333;
-            font-weight: 600;
-        }
-
         #database-menus {
             display: flex;
             flex-direction: column;
             gap: 16px;
         }
-        #database-menus [hidden], #database-menu-top[hidden], #addnewmetricform[hidden], #addnewmetricform [hidden] { display: none !important; }
+        #database-menus [hidden], #addnewmetricform [hidden] { display: none !important; }
+        #addnewmetricform { margin: 12px 0; }
+        #pdf-queue-submit-controls { padding: 0; margin: 0; border: 0; min-width: 0; }
+        #pdf-queue-submit-details { margin-bottom: 10px; }
+        #pdf-queue-part-assignment { margin: 0 0 8px; }
+        #pdf-queue-submit-hint { margin: 8px 0 0; font-size: 13px; }
+        #pdf-queue-submit-controls input[type="submit"]:disabled { background: #686e77; cursor: default; }
 
         /* Form cards */
         .inputform {
@@ -948,8 +937,7 @@
         <input id="knop" type="button" value="play">
 
         <div id="database-menus-wrapper">
-            <div id="editor-sidebar-tools" style="display:flex; gap:8px; margin-bottom:12px;">
-                <button id="sidebar-open-pdf" type="button" onclick="document.getElementById('fknp').click()">Open PDF</button>
+            <div id="editor-sidebar-tools" style="margin-bottom:12px;">
                 <button id="editor-help-button" type="button" aria-haspopup="dialog">Help</button>
                 <input type="file" id="fknp" name="file" accept=".pdf,.js,.jpg" hidden />
             </div>
@@ -965,10 +953,7 @@
                     <p id="part-count-status" role="status" aria-live="polite">Open a PDF to see its total.</p>
                 </div>
             </div>
-            <div id="database-menu-top" hidden>
-                <h3>Submit Part</h3>
-            </div>
-            <form class="inputform" id="addnewmetricform" method="POST" hidden>
+            <form class="inputform" id="addnewmetricform" method="POST">
                 <div hidden>
                     <div>
                         <label for="piece_id">Piece</label>
@@ -986,16 +971,17 @@
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <p id="pdf-queue-part-assignment"></p>
-                <div>
-                    <div>
+                <fieldset id="pdf-queue-submit-controls" disabled>
+                    <div id="pdf-queue-submit-details" hidden>
+                        <p id="pdf-queue-part-assignment"></p>
                         <label for="edition_label">Edition/Manuscript (optional):</label>
                         <input type="text" id="edition_label" name="edition_label"
                             placeholder="e.g., Anna Magdalena Bach" />
                     </div>
                     <input type="hidden" name="measures_version" value="1" />
-                    <input type="submit" name="save" value="Submit Part" />
-                </div>
+                    <input type="submit" name="save" value="Submit Part" aria-describedby="pdf-queue-submit-hint" />
+                </fieldset>
+                <p id="pdf-queue-submit-hint">Open a queued PDF with Edit barlines to submit it.</p>
             </form>
             <section id="part-pdf-queue" aria-labelledby="pdf-queue-title">
                 <h2 id="pdf-queue-title">Parts waiting for barline work</h2>

@@ -9,7 +9,8 @@ function harness({ fail = false, hold = false, combined = false } = {}) {
     const calls = [], events = [], notices = [], listeners = {};
     const fields = {piece_id: {value: '299'}, instrument_id: {value: '39'}, edition_label: {value: 'Test edition'}, measures_version: {value: '1'}};
     const button = {disabled: false}, form = {hidden: false, querySelector: selector => selector === '[type=submit]' ? button : fields[selector.match(/name=(\w+)/)[1]]};
-    const nodes = {'database-menu-top': {hidden: false}, 'pdf-queue-part-assignment': {textContent: ''}};
+    const nodes = {'pdf-queue-submit-controls': {disabled: false}, 'pdf-queue-submit-details': {hidden: false},
+        'pdf-queue-submit-hint': {hidden: true}, 'pdf-queue-part-assignment': {textContent: ''}};
     const metrics = [1000, {cxs: [], bxs: []}, {cxs: [], bxs: []}];
     let resolvePublish;
     const c = vm.createContext({
@@ -51,8 +52,10 @@ test('publication keeps the current PDF, page and geometry while completing the 
     assert.equal(h.c.pdfDoc$$module$synpdf, doc);
     assert.equal(h.c.opt$$module$synpdf.pagenum, 2);
     assert.equal(h.c.MetricStore.getMetricData(), h.metrics);
-    assert.equal(h.form.hidden, true);
-    assert.equal(h.nodes['database-menu-top'].hidden, true);
+    assert.equal(h.form.hidden, false);
+    assert.equal(h.nodes['pdf-queue-submit-controls'].disabled, true);
+    assert.equal(h.nodes['pdf-queue-submit-details'].hidden, true);
+    assert.equal(h.nodes['pdf-queue-submit-hint'].hidden, true);
     assert.equal(h.c.draftStatus.textContent, 'Submitted to the library.');
     assert.equal(h.notices.at(-1), 'Submitted 299-39-test_edition.pdf.');
     assert.equal(h.events[0].type, 'synpdf:part-submitted');
@@ -68,6 +71,7 @@ test('failed publication keeps the form and draft available for retry', async ()
     const h = harness({fail: true}); await h.submit();
     assert.equal(h.c.active.status, 'ready');
     assert.equal(h.form.hidden, false);
+    assert.equal(h.nodes['pdf-queue-submit-controls'].disabled, false);
     assert.equal(h.fields.edition_label.value, 'Test edition');
     assert.equal(h.events.length, 0);
     assert.match(h.notices.at(-1), /Server unavailable.*preserved/);
@@ -92,6 +96,20 @@ test('submission without a queued part never falls through to the legacy upload 
     assert(h.event.prevented && h.event.stopped);
     assert.equal(h.calls.length, 0);
     assert.match(h.notices.at(-1), /Open a PDF from the waiting list/);
+});
+
+test('the sidebar submit control remains visible and explains how to open a queued part', () => {
+    const h = harness();
+    h.c.clearActive();
+    assert.equal(h.form.hidden, false);
+    assert.equal(h.nodes['pdf-queue-submit-controls'].disabled, true);
+    assert.equal(h.nodes['pdf-queue-submit-details'].hidden, true);
+    assert.equal(h.nodes['pdf-queue-submit-hint'].hidden, false);
+    h.c.setQueuedSaveState(true);
+    assert.equal(h.form.hidden, false);
+    assert.equal(h.nodes['pdf-queue-submit-controls'].disabled, false);
+    assert.equal(h.nodes['pdf-queue-submit-details'].hidden, false);
+    assert.equal(h.nodes['pdf-queue-submit-hint'].hidden, true);
 });
 
 test('one combined submission reports both saved files without reopening or rescanning the PDF', async () => {
