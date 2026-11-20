@@ -38,6 +38,7 @@
     const dismissedSteps = new Set();
     const lesson = byId('tutorial-lesson'), scoreStage = byId('yubsync-score-stage');
     const playerPrompt = byId('tutorial-player-prompt');
+    const followPrompt = byId('tutorial-follow-prompt');
     const narrowLayout = window.matchMedia('(max-width: 767px)');
     const title = byId('tutorial-title'), copy = byId('tutorial-copy');
     const restart = byId('tutorial-restart');
@@ -86,12 +87,13 @@
     function positionInfo() {
         const notation = byId('notation');
         const opening = lesson.classList.contains('tutorial-opening');
-        const parent = opening && narrowLayout.matches ? playerPrompt : scoreStage;
+        const parent = lesson.dataset.step === 'follow' ? followPrompt
+            : opening && narrowLayout.matches ? playerPrompt : scoreStage;
         if (lesson.parentElement !== parent) parent.prepend(lesson);
         lesson.style.maxHeight = opening || copy.hidden
             ? '' : Math.max(80, scoreStage.clientHeight * 0.45) + 'px';
         // Let the final systems scroll above the box, just like earlier systems.
-        notation.style.setProperty('--tutorial-scroll-space', !opening && !lesson.hidden
+        notation.style.setProperty('--tutorial-scroll-space', parent === scoreStage && !opening && !lesson.hidden
             ? lesson.getBoundingClientRect().height + 24 + 'px' : '0px');
     }
     function setInfoStep(step) {
