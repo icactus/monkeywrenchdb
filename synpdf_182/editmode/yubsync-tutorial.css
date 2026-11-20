@@ -33,13 +33,11 @@
 #tutorial-step, #tutorial-title { padding-right: 28px; }
 #tutorial-title { margin: 8px 0; font-size: 20px; line-height: 1.25; }
 #tutorial-copy { margin: 0; font-size: 14px; overflow-wrap: break-word; }
-#tutorial-lesson[data-step="check-first"] { max-height: calc(100% - 24px); }
-#tutorial-mark-help { font-size: 15px; }
-#tutorial-mark-help ul { margin: 0; padding-inline-start: 18px; }
-#tutorial-mark-help li + li { margin-top: 6px; }
+#tutorial-lesson:is([data-step="check-first"], [data-step="follow"]) { max-height: calc(100% - 24px); }
+#tutorial-mark-help, .tutorial-instructions { font-size: 15px; }
+.tutorial-instructions { margin: 0; padding-inline-start: 18px; }
+.tutorial-instructions li + li { margin-top: 6px; }
 #tutorial-mark-help p { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--home-line); }
-#tutorial-lesson details { margin: 12px 0; padding-top: 10px; border-top: 1px solid var(--home-line); font-size: 13px; }
-#tutorial-lesson summary { cursor: pointer; font-weight: 600; color: var(--home-teal); }
 #tutorial-lesson kbd { font: inherit; font-weight: 600; }
 .tutorial-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .tutorial-actions button { min-height: 40px; }

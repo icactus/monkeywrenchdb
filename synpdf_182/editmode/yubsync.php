@@ -795,7 +795,7 @@ if ($yubsyncTutorial) {
     </style>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=16" />
     <?php if ($yubsyncTutorial): ?>
-    <link rel="stylesheet" href="yubsync-tutorial.css?v=8" />
+    <link rel="stylesheet" href="yubsync-tutorial.css?v=9" />
     <?php endif; ?>
 </head>
 
@@ -1010,38 +1010,20 @@ if ($yubsyncTutorial) {
             <div role="status">
                 <p id="tutorial-copy">Preparing the score and recording.</p>
                 <div id="tutorial-mark-help" hidden>
-                    <ul>
+                    <ul class="tutorial-instructions">
                         <li>Use <kbd>Ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> to move the start to about a second before the music.</li>
                         <li>Press <kbd>Left Arrow</kbd> to listen from the marker.</li>
                         <li>Press <kbd>Spacebar</kbd> to pause or resume.</li>
                     </ul>
                     <p>When you’re ready to continue, press <kbd>B</kbd> at the start of each measure.</p>
                 </div>
+                <ul id="tutorial-follow-help" class="tutorial-instructions" hidden>
+                    <li>Keep pressing <kbd>B</kbd> at the start of each measure.</li>
+                    <li>If you make a mistake, press <kbd>Backspace</kbd> to clear the highlighted marker and any after it.</li>
+                    <li>To pick up the tempo, press <kbd>Left Arrow</kbd> to go back a few marked measures.
+                        Press <kbd>Spacebar</kbd> if paused. Listen through those measures, then press <kbd>B</kbd> at the next unmarked one.</li>
+                </ul>
             </div>
-            <details id="tutorial-start-help" hidden>
-                <summary>Check the first measure’s start</summary>
-                <p>Allow about a second before the first note when the recording has room.
-                    You can listen back and fine-tune that starting position.</p>
-                <p>After marking a few measures, press <kbd>Left</kbd> to return to measure one.
-                    Press <kbd>Left</kbd> again to hear exactly where its marker starts.
-                    Press <kbd>Space</kbd> to play if paused.</p>
-                <p>Use <kbd>Ctrl</kbd> + <kbd>Left</kbd> for 0.1 seconds earlier or
-                    <kbd>Ctrl</kbd> + <kbd>Right</kbd> for 0.1 seconds later.
-                    Press <kbd>Left</kbd> again after each adjustment to listen.
-                    Choose the start that sounds right to you.</p>
-                <p>Let the marked measures play, then press <kbd>B</kbd> at the next unmarked measure.</p>
-            </details>
-            <details id="tutorial-correction-help" hidden>
-                <summary>Redo a timing and pick up the rhythm</summary>
-                <p>Pause with <kbd>Space</kbd>. Use <kbd>Left</kbd> / <kbd>Right</kbd> to find the
-                    measure you want to redo, then press <kbd>Backspace</kbd>.
-                    This erases that measure’s timing and all following timings.</p>
-                <p>Press <kbd>Left</kbd> a couple more times to return to an earlier marked measure.
-                    Press <kbd>Space</kbd> if paused. Listen through those measures to pick up the rhythm,
-                    then resume pressing <kbd>B</kbd> at the first measure that needs a new timing.</p>
-                <p><kbd>Left</kbd> / <kbd>Right</kbd> lets you listen back while keeping your timings.
-                    <kbd>Backspace</kbd> clears timings so you can record them again.</p>
-            </details>
         </aside>
         <?php endif; ?>
             <div id="notation"> </div>
@@ -1226,7 +1208,7 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=18"></script><?php endif; ?>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=19"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=97"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=14"></script>

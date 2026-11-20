@@ -88,7 +88,7 @@
         const opening = lesson.classList.contains('tutorial-opening');
         const parent = opening && narrowLayout.matches ? playerPrompt : scoreStage;
         if (lesson.parentElement !== parent) parent.prepend(lesson);
-        lesson.style.maxHeight = opening || lesson.dataset.step === 'check-first'
+        lesson.style.maxHeight = opening || copy.hidden
             ? '' : Math.max(80, scoreStage.clientHeight * 0.45) + 'px';
         // Let the final systems scroll above the box, just like earlier systems.
         notation.style.setProperty('--tutorial-scroll-space', !opening && !lesson.hidden
@@ -100,8 +100,10 @@
         lesson.hidden = stage === 'complete' || dismissedSteps.has(infoStep);
         lesson.classList.toggle('tutorial-opening', step === 'play' || step === 'mark-start');
         const checkingFirst = step === 'check-first';
-        copy.hidden = checkingFirst;
+        const following = step === 'follow';
+        copy.hidden = checkingFirst || following;
         byId('tutorial-mark-help').hidden = !checkingFirst;
+        byId('tutorial-follow-help').hidden = !following;
     }
     function playbackChanged() {
         window.YubSyncGuidance?.update();
@@ -156,29 +158,23 @@
         playbackStarted ||= playing;
         const step = stage === 'start' ? (s.videoReady ? (playbackStarted ? 'mark-start' : 'play') : 'loading')
             : stage === 'repeat' ? 'repeat' : s.complete ? 'complete' : s.finishing ? 'finish'
-                : s.last === 0 ? 'check-first' : s.last === 1 ? 'follow' : 'check-start';
+                : s.last === 0 ? 'check-first' : 'follow';
         setInfoStep(step);
-        byId('tutorial-start-help').hidden = step !== 'check-start';
-        byId('tutorial-correction-help').hidden = step !== 'check-start';
 
         restart.disabled = submitting || !s.videoReady;
-        byId('tutorial-step').textContent = stage === 'start' ? '1 / 3 · FIND THE START'
-            : stage === 'repeat' ? `REPEAT ${exercise.repeats.indexOf(activeRepeat) + 1} / ${exercise.repeats.length}` : s.complete ? '3 / 3 · COMPARE YOUR TIMINGS' : 'FOLLOW THE SCORE';
+        byId('tutorial-step').textContent = stage === 'start' || step === 'check-first' ? '1 / 3 · FIND THE START'
+            : stage === 'repeat' ? `REPEAT ${exercise.repeats.indexOf(activeRepeat) + 1} / ${exercise.repeats.length}` : s.complete ? '3 / 3 · COMPARE YOUR TIMINGS' : '2 / 3 · SYNC THE RECORDING';
         title.textContent = step === 'loading' ? 'Preparing the recording…' : step === 'play' ? 'Start the recording'
             : step === 'mark-start' ? 'Mark the start' : stage === 'repeat' ? 'The music repeats here'
                 : s.complete ? 'Ready to compare' : s.finishing ? 'Mark the end'
-                    : step === 'check-first' ? 'Check the starting point'
-                        : step === 'check-start' ? 'Listen back when you’re ready' : 'Mark each measure';
+                    : step === 'check-first' ? 'Check the starting point' : 'Mark each measure';
         const instruction = step === 'loading' ? 'The score and player will be ready shortly.'
             : step === 'play' ? 'Click Play on the player to start.'
             : step === 'mark-start' ? 'Press B when you hear the music start.'
-            : step === 'check-first' ? ''
             : stage === 'repeat'
                 ? `To add this repeat, shift click measure ${activeRepeat.from + 1} and then shift click measure ${activeRepeat.to + 1}. Keep pressing B as the music continues; after marking the jump, B advances to its destination. You can also use this method for 2nd endings or cuts.`
                 : s.complete ? 'Choose Submit tutorial to see how closely your timings match. Choose Start over to practice again.'
-                    : s.finishing ? 'Let the last measure finish, then press B a few seconds after the final cutoff to finish the exercise.'
-                        : step === 'follow' ? 'Press B on the first beat of each next measure.'
-                            : 'Use Left / Right to listen back. Ctrl + Left / Right adjusts the first measure’s start. Then keep pressing B at each new measure.';
+                    : s.finishing ? 'Let the last measure finish, then press B a few seconds after the final cutoff to finish the exercise.' : '';
         if (copy.textContent !== instruction) copy.textContent = instruction;
         byId('tutorial-progress').textContent = `${Math.min(s.last + 1, exercise.official.length - 1)} / ${exercise.official.length - 1} measure starts marked`;
         if (!lesson.hidden && s.recorded && !s.complete) showTargets(); else clearTargets();
