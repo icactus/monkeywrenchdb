@@ -795,7 +795,7 @@ if ($yubsyncTutorial) {
     </style>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=16" />
     <?php if ($yubsyncTutorial): ?>
-    <link rel="stylesheet" href="yubsync-tutorial.css?v=6" />
+    <link rel="stylesheet" href="yubsync-tutorial.css?v=7" />
     <?php endif; ?>
 </head>
 
@@ -1009,9 +1009,12 @@ if ($yubsyncTutorial) {
             <h2 id="tutorial-title">Loading your exercise…</h2>
             <div role="status">
                 <p id="tutorial-copy">Preparing the score and recording.</p>
-                <p id="tutorial-mark-help" hidden>Press the <kbd>left arrow</kbd> to return to the marker and hear how it sounds.
-                    Use the <kbd>spacebar</kbd> to pause or resume playback.
-                    When you’re ready, press <kbd>B</kbd> at the start of each measure.</p>
+                <ul id="tutorial-mark-help" hidden>
+                    <li>Use <kbd>Ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> to move the start to about a second before the music.</li>
+                    <li>Press <kbd>Left Arrow</kbd> to listen from the marker.</li>
+                    <li>Press <kbd>Spacebar</kbd> to pause or resume.</li>
+                    <li>Press <kbd>B</kbd> at the start of each measure.</li>
+                </ul>
             </div>
             <details id="tutorial-start-help" hidden>
                 <summary>Check the first measure’s start</summary>
@@ -1221,7 +1224,7 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=17"></script><?php endif; ?>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=18"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=97"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=14"></script>

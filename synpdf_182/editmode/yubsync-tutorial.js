@@ -88,7 +88,8 @@
         const opening = lesson.classList.contains('tutorial-opening');
         const parent = opening && narrowLayout.matches ? playerPrompt : scoreStage;
         if (lesson.parentElement !== parent) parent.prepend(lesson);
-        lesson.style.maxHeight = opening ? '' : Math.max(80, scoreStage.clientHeight * 0.45) + 'px';
+        lesson.style.maxHeight = opening || lesson.dataset.step === 'check-first'
+            ? '' : Math.max(80, scoreStage.clientHeight * 0.45) + 'px';
         // Let the final systems scroll above the box, just like earlier systems.
         notation.style.setProperty('--tutorial-scroll-space', !opening && !lesson.hidden
             ? lesson.getBoundingClientRect().height + 24 + 'px' : '0px');
@@ -98,7 +99,9 @@
         lesson.dataset.step = step;
         lesson.hidden = stage === 'complete' || dismissedSteps.has(infoStep);
         lesson.classList.toggle('tutorial-opening', step === 'play' || step === 'mark-start');
-        byId('tutorial-mark-help').hidden = step !== 'check-first';
+        const checkingFirst = step === 'check-first';
+        copy.hidden = checkingFirst;
+        byId('tutorial-mark-help').hidden = !checkingFirst;
     }
     function playbackChanged() {
         window.YubSyncGuidance?.update();
@@ -169,7 +172,7 @@
         const instruction = step === 'loading' ? 'The score and player will be ready shortly.'
             : step === 'play' ? 'Click Play on the player to start.'
             : step === 'mark-start' ? 'Press B when you hear the music start.'
-            : step === 'check-first' ? 'Use Ctrl + ← / → to move the starting point to about a second before the music.'
+            : step === 'check-first' ? ''
             : stage === 'repeat'
                 ? `To add this repeat, shift click measure ${activeRepeat.from + 1} and then shift click measure ${activeRepeat.to + 1}. Keep pressing B as the music continues; after marking the jump, B advances to its destination. You can also use this method for 2nd endings or cuts.`
                 : s.complete ? 'Choose Submit tutorial to see how closely your timings match. Choose Start over to practice again.'
