@@ -98,7 +98,7 @@
         lesson.dataset.step = step;
         lesson.hidden = stage === 'complete' || dismissedSteps.has(infoStep);
         lesson.classList.toggle('tutorial-opening', step === 'play' || step === 'mark-start');
-        byId('tutorial-mark-help').hidden = step !== 'mark-start';
+        byId('tutorial-mark-help').hidden = step !== 'check-first';
     }
     function playbackChanged() {
         window.YubSyncGuidance?.update();
@@ -169,7 +169,7 @@
         const instruction = step === 'loading' ? 'The score and player will be ready shortly.'
             : step === 'play' ? 'Click Play on the player to start.'
             : step === 'mark-start' ? 'Press B when you hear the music start.'
-            : step === 'check-first' ? 'You can check your starting point by pressing the left arrow. Then continue pressing B to mark the start of every measure.'
+            : step === 'check-first' ? 'Use Ctrl + ← / → to move the starting point to about a second before the music.'
             : stage === 'repeat'
                 ? `To add this repeat, shift click measure ${activeRepeat.from + 1} and then shift click measure ${activeRepeat.to + 1}. Keep pressing B as the music continues; after marking the jump, B advances to its destination. You can also use this method for 2nd endings or cuts.`
                 : s.complete ? 'Choose Submit tutorial to see how closely your timings match. Choose Start over to practice again.'
