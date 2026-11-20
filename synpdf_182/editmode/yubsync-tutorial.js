@@ -127,14 +127,13 @@
         byId('yubsync-guide').hidden = true;
         byId('yubsync-end-here').hidden = true;
         byId('yubsync-end-here').disabled = true;
-        byId('yubsync-show-details').textContent = 'Tutorial results';
+        byId('yubsync-show-details').textContent = 'Results';
         submitButton.value = submitting ? 'Submitting…' : 'Submit tutorial';
         submitButton.disabled = !s.complete || submitting || !!result;
-        byId('yubsync-completion-title').textContent = result ? 'Tutorial results' : 'Tutorial complete';
+        byId('yubsync-completion-title').textContent = result ? 'Results' : 'Tutorial complete';
         byId('yubsync-completion-copy').textContent = result
             ? 'Your timings have been compared with the official sync.'
             : 'Submit to compare your timings with the official sync. This practice attempt stays in your browser.';
-        byId('yubsync-completion-eyebrow').textContent = 'SYNCING TUTORIAL';
         byId('addnewrecordingform').hidden = !s.complete || !!result;
         byId('tutorial-results').hidden = !result;
         byId('tutorial-try-again').hidden = !result;
@@ -163,8 +162,6 @@
         setInfoStep(step);
 
         restart.disabled = submitting || !s.videoReady;
-        byId('tutorial-step').textContent = stage === 'start' || step === 'check-first' ? '1 / 3 · FIND THE START'
-            : stage === 'repeat' ? `REPEAT ${exercise.repeats.indexOf(activeRepeat) + 1} / ${exercise.repeats.length}` : s.complete ? '3 / 3 · COMPARE YOUR TIMINGS' : '2 / 3 · SYNC THE RECORDING';
         title.textContent = step === 'loading' ? 'Preparing the recording…' : step === 'play' ? 'Start the recording'
             : step === 'mark-start' ? 'Mark the start' : stage === 'repeat' ? 'The music repeats here'
                 : s.complete ? 'Ready to compare' : s.finishing ? 'Mark the end'
@@ -214,11 +211,8 @@
             score.className = 'tutorial-score'; score.textContent = `${result.percentage}%`;
             const detail = document.createElement('p');
             detail.textContent = `${result.matched} of ${result.expected} measure starts matched in sequence.` +
-                (result.meanError === null ? '' : ` Average timing difference: ${result.meanError.toFixed(2)} seconds.`) +
-                (result.missingOrWrong || result.extra ? ' Check your repeat markers and the number of B presses.' : '');
-            const explanation = document.createElement('p');
-            explanation.textContent = 'Practice score: full credit within 0.25 seconds per marker, decreasing gradually to zero at 1.25 seconds of difference. Missing or wrong markers receive zero. The closing marker is excluded. We may adjust this scoring.';
-            output.append(score, detail, explanation);
+                (result.meanError === null ? '' : ` Average timing difference: ${result.meanError.toFixed(2)} seconds.`);
+            output.append(score, detail);
             // Raw errors stay available for refining the scoring later.
             window.YubSyncTutorial.lastResult = result;
         } finally {

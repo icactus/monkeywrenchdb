@@ -7,7 +7,7 @@
     box-sizing: border-box; width: min(340px, calc(100% - 24px));
     margin: 0; padding: 16px; border: 1px solid var(--home-strong-line);
     border-radius: 10px; background: var(--home-surface); color: var(--home-ink);
-    overflow-y: auto; box-shadow: 0 4px 16px #0002; line-height: 1.5;
+    overflow-y: auto; box-shadow: 0 4px 16px #0002; font-size: 15px; line-height: 1.5;
 }
 #tutorial-lesson.tutorial-opening {
     overflow: visible; border-color: var(--home-teal); box-shadow: 0 6px 20px #0003;
@@ -23,19 +23,19 @@
 }
 @media (min-width: 768px) {
     #yubsync-sidebar:has(#tutorial-follow-prompt > #tutorial-lesson:not([hidden])) { overflow-y: auto; }
-    #tutorial-lesson.tutorial-opening { top: clamp(0px, 100% - 260px, 64px); right: 0; bottom: auto; }
+    #tutorial-lesson.tutorial-opening { top: clamp(0px, 100% - 260px, 96px); right: 0; bottom: auto; }
     #tutorial-lesson.tutorial-opening::before {
         top: 16px; left: auto; right: -7px; transform: rotate(135deg);
     }
 }
 .yubsync-tutorial #notation::after { content: ""; display: block; height: var(--tutorial-scroll-space, 0px); }
 #tutorial-close { top: 6px; right: 6px; }
-#tutorial-step { font-size: 11px; font-weight: 650; letter-spacing: .08em; color: var(--home-teal); }
-#tutorial-step, #tutorial-title { padding-right: 28px; }
-#tutorial-title { margin: 8px 0; font-size: 20px; line-height: 1.25; }
-#tutorial-copy { margin: 0; font-size: 14px; overflow-wrap: break-word; }
+#tutorial-title, .yubsync-tutorial #yubsync-completion-title {
+    margin: 0 0 8px; padding-right: 28px;
+    font-family: inherit; font-size: 20px; font-weight: 700; line-height: 1.25;
+}
+#tutorial-copy { margin: 0; overflow-wrap: break-word; }
 #tutorial-lesson[data-step="check-first"] { max-height: calc(100% - 24px); }
-#tutorial-mark-help, .tutorial-instructions { font-size: 15px; }
 .tutorial-instructions { margin: 0; padding-inline-start: 18px; }
 .tutorial-instructions li + li { margin-top: 6px; }
 #tutorial-mark-help p { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--home-line); }
@@ -55,7 +55,9 @@
     white-space: nowrap; padding: 2px 5px; border-radius: 3px; background: #ffe7a6;
 }
 .tutorial-score { display: block; font-size: 64px; color: var(--home-teal); }
-#tutorial-results p { color: var(--home-muted); font-size: 14px; }
+.yubsync-tutorial #yubsync-completion { font: inherit; }
+.yubsync-tutorial #yubsync-completion-copy { margin: 0 0 16px; color: inherit; }
+.yubsync-tutorial #addnewrecordingform input[type="submit"] { margin-top: 0; }
 #tutorial-try-again { min-height: 44px; }
 .yubsync-tutorial [hidden] { display: none !important; }
 .tutorial-loading #notation { pointer-events: none; }

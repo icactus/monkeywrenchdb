@@ -795,7 +795,7 @@ if ($yubsyncTutorial) {
     </style>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=16" />
     <?php if ($yubsyncTutorial): ?>
-    <link rel="stylesheet" href="yubsync-tutorial.css?v=10" />
+    <link rel="stylesheet" href="yubsync-tutorial.css?v=11" />
     <?php endif; ?>
 </head>
 
@@ -1006,7 +1006,6 @@ if ($yubsyncTutorial) {
         <?php if ($yubsyncTutorial): ?>
         <aside id="tutorial-lesson" aria-labelledby="tutorial-title">
             <button type="button" id="tutorial-close" class="yubsync-overlay-close" aria-label="Close tutorial step" title="Close tutorial step">×</button>
-            <span id="tutorial-step">SYNCING TUTORIAL</span>
             <h2 id="tutorial-title">Loading your exercise…</h2>
             <div role="status">
                 <p id="tutorial-copy">Preparing the score and recording.</p>
@@ -1038,7 +1037,7 @@ if ($yubsyncTutorial) {
             <div id="yubsync-completion" role="region" aria-labelledby="yubsync-completion-title" hidden>
                 <div class="yubsync-completion-card">
                     <button type="button" id="yubsync-completion-close" class="yubsync-overlay-close" aria-label="Close recording details" title="Close recording details">×</button>
-                    <span id="yubsync-completion-eyebrow" class="yubsync-completion-eyebrow">ALL MEASURES SYNCED</span>
+                    <span id="yubsync-completion-eyebrow" class="yubsync-completion-eyebrow"<?= $yubsyncTutorial ? ' hidden' : '' ?>>ALL MEASURES SYNCED</span>
                     <h2 id="yubsync-completion-title">Sync complete</h2>
                     <p id="yubsync-completion-copy">Fill in the recording information and submit. Leave unknown details blank.</p>
                     <form id="addnewrecordingform" method="POST" hidden>
@@ -1209,7 +1208,7 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=21"></script><?php endif; ?>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=22"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=97"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=14"></script>
