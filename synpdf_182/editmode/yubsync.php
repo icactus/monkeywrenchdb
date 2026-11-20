@@ -1011,9 +1011,9 @@ if ($yubsyncTutorial) {
                 <p id="tutorial-copy">Preparing the score and recording.</p>
                 <div id="tutorial-mark-help" hidden>
                     <ul class="tutorial-instructions">
+                        <li>Use <kbd>Spacebar</kbd> to pause or resume.</li>
+                        <li>Unpause and press <kbd>Left Arrow</kbd> to check the starting point.</li>
                         <li>Use <kbd>Ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> to move the start to about a second before the music.</li>
-                        <li>Press <kbd>Left Arrow</kbd> to listen from the marker.</li>
-                        <li>Press <kbd>Spacebar</kbd> to pause or resume.</li>
                     </ul>
                     <p>When you’re ready to continue, press <kbd>B</kbd> at the start of each measure.</p>
                 </div>
