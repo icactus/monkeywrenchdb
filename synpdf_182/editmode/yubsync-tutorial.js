@@ -67,13 +67,10 @@
     function clearTargets() {
         document.querySelectorAll('.tutorial-target').forEach(node => node.remove());
     }
-    function showTargets() {
+    function showRepeatTargets() {
         clearTargets();
         const jump = activeRepeat;
-        const current = get('deTijden')?.[get('detix')]?.mix ?? 0;
-        if (stage !== 'repeat' && current === 0) return;
-        const targets = stage === 'repeat' ? [[jump.from, `From · ${jump.from + 1}`], [jump.to, `To · ${jump.to + 1}`]]
-            : [[current, `Measure · ${current + 1}`]];
+        const targets = [[jump.from, `From · ${jump.from + 1}`], [jump.to, `To · ${jump.to + 1}`]];
         for (const [index, label] of targets) {
             const box = get('deMaten')[index];
             if (!box) continue;
@@ -176,7 +173,7 @@
                     : s.finishing ? 'Let the last measure finish, then press B a few seconds after the final cutoff to finish the exercise.' : '';
         if (copy.textContent !== instruction) copy.textContent = instruction;
         byId('tutorial-progress').textContent = `${Math.min(s.last + 1, exercise.official.length - 1)} / ${exercise.official.length - 1} measure starts marked`;
-        if (!lesson.hidden && s.recorded && !s.complete) showTargets(); else clearTargets();
+        if (!lesson.hidden && step === 'repeat') showRepeatTargets(); else clearTargets();
         positionInfo();
     }
     function startOver() {

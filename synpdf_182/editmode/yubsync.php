@@ -1013,7 +1013,8 @@ if ($yubsyncTutorial) {
                     <ul class="tutorial-instructions">
                         <li>Use <kbd>Spacebar</kbd> to pause or resume.</li>
                         <li>Unpause and press <kbd>Left Arrow</kbd> to check the starting point.</li>
-                        <li>Use <kbd>Ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> to move the start to about a second before the music.</li>
+                        <li>Use <kbd>Ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> to move the start to about a second before the music starts.
+                            Since this video starts right away, just set it to <strong>0:00.0</strong>.</li>
                     </ul>
                     <p>When you’re ready to continue, press <kbd>B</kbd> at the start of each measure.</p>
                 </div>
@@ -1208,7 +1209,7 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=23"></script><?php endif; ?>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=24"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=97"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=14"></script>
