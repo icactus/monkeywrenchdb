@@ -36,6 +36,9 @@
 }
 #tutorial-copy { margin: 0; overflow-wrap: break-word; }
 #tutorial-lesson[data-step="check-first"] { max-height: calc(100% - 24px); }
+.yubsync-tutorial:has(#tutorial-lesson[data-step="check-first"]:not([hidden])) #yubsync-offset-control {
+    border-radius: 4px; outline: 2px solid var(--home-focus); outline-offset: 3px;
+}
 .tutorial-instructions { margin: 0; padding-inline-start: 18px; }
 .tutorial-instructions li + li { margin-top: 6px; }
 #tutorial-mark-help p { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--home-line); }

@@ -795,7 +795,7 @@ if ($yubsyncTutorial) {
     </style>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=16" />
     <?php if ($yubsyncTutorial): ?>
-    <link rel="stylesheet" href="yubsync-tutorial.css?v=11" />
+    <link rel="stylesheet" href="yubsync-tutorial.css?v=12" />
     <?php endif; ?>
 </head>
 
