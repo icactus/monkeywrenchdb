@@ -71,6 +71,7 @@
         clearTargets();
         const jump = activeRepeat;
         const current = get('deTijden')?.[get('detix')]?.mix ?? 0;
+        if (stage !== 'repeat' && current === 0) return;
         const targets = stage === 'repeat' ? [[jump.from, `From · ${jump.from + 1}`], [jump.to, `To · ${jump.to + 1}`]]
             : [[current, `Measure · ${current + 1}`]];
         for (const [index, label] of targets) {
