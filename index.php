@@ -589,7 +589,7 @@ if ($hasInitialRecordingTarget) {
     <script src="js/favorites-manager.js?v=3"></script>
     <script src="js/contact-email.js?v=2" defer></script>
     <script src="js/part-jumps.js?v=4"></script>
-    <script src="stripped-synpdf.js?v=348"></script>
+    <script src="stripped-synpdf.js?v=350"></script>
     <script src="js/library-data.js?v=1"></script>
     <script src="stripped-synpdf-extras.js?v=291"></script>
     <script src="js/player-page-scroll.js?v=1"></script>

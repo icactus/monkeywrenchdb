@@ -3,8 +3,10 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { execFileSync } = require('node:child_process');
 const source = fs.readFileSync(path.join(__dirname, '../admin-live-edit.js'), 'utf8');
 const jumps = require('../js/part-jumps.js');
+const { internalTruthXs } = require('../synpdf_182/editmode/barline-cnn-benchmark-exclusions.js');
 
 async function save(result, ok = true, metrics = [1000, { bxs: [[10, 20]] }], checkRequest, expectRequest = true) {
     const elements = new Map(), alerts = [], requests = [];
@@ -60,6 +62,35 @@ test('live save submits the original Jump / Repeat metadata at viewer width', as
         assert.equal(fields.metric_arr_id,819);
         assert.equal(JSON.stringify(JSON.parse(fields.metric_arr_data)[1].partJumps),original);
     });
+});
+
+test('viewing and saving a reviewed part at different widths preserves its CNN training labels', async () => {
+    const player = fs.readFileSync(path.join(__dirname, '../stripped-synpdf.js'), 'utf8');
+    const scaleStart = player.indexOf('function schaalMetriek$$module$synpdf()');
+    const scale = player.slice(scaleStart, player.indexOf('function doResize$$module$synpdf()', scaleStart));
+    const php = fs.readFileSync(path.join(__dirname, '../update_monkeywrench_metric_arr.php'), 'utf8');
+    const normalize = php.slice(php.indexOf('function normalizeMetricDataForStorage('), php.indexOf('\ntry {'));
+    const training = { pdfSha256: 'abcdef0123456789'.repeat(4), renderWidth: 2000 };
+    const page = {
+        cxs: [{ cs: [100, 140], xs: { x1: 50, x2: 950 }, restSplitXs: [300] }],
+        bxs: [[50, 300, 600, 950]], cnnTraining: training
+    };
+    const metrics = [1000, structuredClone(page)];
+    const options = { pagewd: 1500 };
+    const context = vm.createContext({ deMetriek$$module$synpdf: metrics, opt$$module$synpdf: options });
+    vm.runInContext(scale, context);
+
+    for (const width of [1500, 731]) {
+        options.pagewd = width;
+        context.schaalMetriek$$module$synpdf();
+        assert.equal(metrics[1].cxs[0].restSplitXs[0], metrics[1].bxs[0][1]);
+        let payload;
+        await save({ success: true }, true, metrics, fields => { payload = fields.metric_arr_data; });
+        const saved = JSON.parse(execFileSync('php', ['-r', normalize + '\necho normalizeMetricDataForStorage(stream_get_contents(STDIN));'],
+            { input: payload, encoding: 'utf8' }));
+        assert.deepEqual(saved, [1000, page]);
+        assert.deepEqual(internalTruthXs(saved[1], 0), [600]);
+    }
 });
 
 test('live saving sets aside invalid old jumps without blocking the part', async () => {

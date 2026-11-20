@@ -175,6 +175,36 @@ test('cross-page Alt-click saves both endpoints and maps the sync or undo as one
     assert.deepEqual(saved.slice(1).map(page => page.bxs), [[[50, 500, -950]], [], [[-50, 500, 950]]]);
 });
 
+test('linking a timed continuation keeps the geometry and every timestamp intact', () => {
+    const h = setup({ pageCount: 2 }); usePlayerGeometry(h);
+    h.c.deTijden$$module$synpdf.push({ t: 2, mix: 1 }, { t: 4, mix: 2 }, { t: 6, mix: 3 });
+    h.c.lastSynced$$module$synpdf = 3;
+    const before = h.snapshot();
+    const original = clone(h.c.deMetriek$$module$synpdf);
+    h.key('q'); h.click(950, 120, false, { altKey: true });
+    assert.deepEqual(clone(h.c.deMetriek$$module$synpdf), original);
+    assert.deepEqual(h.snapshot(), before);
+    assert.equal(h.c.YubSyncLiveEdit.exportProgress(), null);
+    assert.match(h.buttons['yubsync-edit-status'].textContent, /Measure 3 on page 2.*Backspace/);
+});
+
+test('undo or cancel keeps a timestamp recorded after unlinking the continuation', () => {
+    const h = setup({ pageCount: 2 }); usePlayerGeometry(h);
+    h.c.deMetriek$$module$synpdf[1].bxs[0][2] = -950;
+    h.c.deMetriek$$module$synpdf[2].bxs[0][0] = -50;
+    h.key('q'); h.click(950, 120, false, { altKey: true });
+    assert.equal(h.c.deMetriek$$module$synpdf[2].bxs[0][0], 50);
+    h.c.deTijden$$module$synpdf.push({ t: 2, mix: 1 }, { t: 4, mix: 2 });
+    h.c.lastSynced$$module$synpdf = 2;
+    const before = h.snapshot();
+    h.key('z', { ctrlKey: true });
+    h.buttons['yubsync-edit-cancel'].click();
+    assert.equal(h.c.deMetriek$$module$synpdf[2].bxs[0][0], 50);
+    assert.deepEqual(h.snapshot(), before);
+    assert(h.c.YubSyncLiveEdit.active);
+    assert.match(h.buttons['yubsync-edit-status'].textContent, /Measure 3 on page 2.*Backspace/);
+});
+
 test('Q adds and removes boundaries inside already recorded measures without rolling the edit back', () => {
     const h = setup(); usePlayerGeometry(h);
     h.c.deTijden$$module$synpdf.push({ t: 2, mix: 1 });

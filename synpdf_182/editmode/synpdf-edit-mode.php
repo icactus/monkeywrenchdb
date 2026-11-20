@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Edit Mode</title>
     <link rel="stylesheet" href="part-pdf-queue.css?v=7">
-    <script src="part-pdf-queue.js?v=20" defer></script>
+    <script src="part-pdf-queue.js?v=21" defer></script>
     <script src="auto-barline-detection.js?v=5" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
     <?php
@@ -79,7 +79,7 @@
     <script src="/js/part-jumps.js?v=4"></script>
     <script src="synpdf-edit-mode.js?v=109"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
-    <script src="part-jump-editor.js?v=1" defer></script>
+    <script src="part-jump-editor.js?v=2" defer></script>
     <script src="part-count-check.js?v=7" defer></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
@@ -602,7 +602,9 @@
         #pdf-queue-submit-controls { padding: 0; margin: 0; border: 0; min-width: 0; }
         #pdf-queue-submit-details { margin-bottom: 10px; }
         #pdf-queue-part-assignment { margin: 0 0 8px; }
-        #pdf-queue-submit-hint { margin: 8px 0 0; font-size: 13px; }
+        #pdf-queue-submit-hint, #pdf-queue-submit-error { margin: 8px 0 0; font-size: 13px; }
+        #pdf-queue-submit-error { color: #9b1c1c; }
+        #pdf-queue-submit-error:empty { margin: 0; }
         #pdf-queue-submit-controls input[type="submit"]:disabled { background: #686e77; cursor: default; }
 
         /* Form cards */
@@ -979,8 +981,9 @@
                             placeholder="e.g., Anna Magdalena Bach" />
                     </div>
                     <input type="hidden" name="measures_version" value="1" />
-                    <input type="submit" name="save" value="Submit Part" aria-describedby="pdf-queue-submit-hint" />
+                    <input type="submit" name="save" value="Submit Part" aria-describedby="pdf-queue-submit-hint pdf-queue-submit-error" />
                 </fieldset>
+                <p id="pdf-queue-submit-error" role="alert"></p>
                 <p id="pdf-queue-submit-hint">Open a queued PDF with Edit barlines to submit it.</p>
             </form>
             <section id="part-pdf-queue" aria-labelledby="pdf-queue-title">

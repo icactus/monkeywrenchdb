@@ -61,7 +61,7 @@ $onnxWasmThreads = 1;
     <script src="/js/part-jumps.js?v=4"></script>
     <script src="synpdf-edit-mode.js?v=109"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
-    <script src="part-jump-editor.js?v=1" defer></script>
+    <script src="part-jump-editor.js?v=2" defer></script>
     <script src="../models/ml-barline-model.js?v=26"></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
     <?php if ($pianoBarlineCnnBrowserJsVer > 0) { ?>

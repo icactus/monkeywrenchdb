@@ -4,7 +4,7 @@
     let pending = null, suppressClick = false, signature = '', status, undo, notation, queued = false;
     const api = window.SynpdfPartJumps;
     const metrics = () => window.deMetriek$$module$synpdf;
-    const documentKey = () => window.scoreFnm$$module$synpdf || window.pdfFnm$$module$synpdf || '';
+    const documentKey = () => window.pdfFnm$$module$synpdf || window.scoreFnm$$module$synpdf || '';
     function changed() {
         MetricStore.setMetricData(metrics(), { clone: false });
         signature = '';
@@ -85,7 +85,11 @@
         } catch (error) { if (status) status.textContent = error.message; }
         return true;
     }
-    window.SynpdfPartJumpEditor = { handleLongClick, refresh };
+    function validateSubmission() {
+        if (pending?.document === documentKey()) throw Error('Add the Repeat mark or remove the pending Jump before submitting the part.');
+        if (api.metadata(metrics())) api.inspect(metrics());
+    }
+    window.SynpdfPartJumpEditor = { handleLongClick, refresh, validateSubmission };
     document.addEventListener('DOMContentLoaded', function () {
         notation = document.getElementById('notation');
         if (!notation) return;
@@ -113,10 +117,8 @@
         });
         document.addEventListener('submit', event => {
             if (event.target.id !== 'addnewmetricform') return;
-            try {
-                if (pending) throw Error('Add the Repeat mark or remove the pending Jump before saving the part.');
-                if (api.metadata(metrics())) api.inspect(metrics());
-            } catch (error) { event.preventDefault(); event.stopImmediatePropagation(); status.textContent = error.message; }
+            try { validateSubmission(); }
+            catch (error) { event.preventDefault(); event.stopImmediatePropagation(); status.textContent = error.message; }
         }, true);
         const observer = new MutationObserver(() => {
             if (queued) return;

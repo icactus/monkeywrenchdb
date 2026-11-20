@@ -14,8 +14,8 @@
     const status = document.getElementById('pdf-queue-status'), list = document.getElementById('pdf-queue-items');
     const activePanel = document.getElementById('pdf-queue-active');
     const draftStatus = document.getElementById('pdf-queue-draft-status');
-    let csrf = '', canUpload = false, backgroundBarlines = false, active = null, activeUrl = '', loading = false, busy = false, lastDraft = '', saving = null, editorSession = '', sequence = 0;
-    let uploadTask = Promise.resolve(), uploadWork = 0, refreshing = false, publishing = false;
+    let csrf = '', canUpload = false, backgroundBarlines = false, active = null, activeUrl = '', editorBusy = false, lastDraft = '', saving = null, editorSession = '', sequence = 0;
+    let uploadTask = Promise.resolve(), uploadWork = 0, busy = false, refreshing = false, publishing = false;
     const notify = text => { status.textContent = text; };
     const bytes = number => `${(number / 1024 / 1024).toFixed(2)} MB`;
     function endpoint(action, id) { const url = new URL(apiUrl); url.searchParams.set('action', action); if (id) url.searchParams.set('id', id); return url; }
@@ -431,7 +431,7 @@
                     const input = document.createElement('input'); input.type = 'file'; input.accept = '.pdf';
                     input.onchange = () => { if (input.files[0]) enqueueUploads([{ file: input.files[0], item }]).catch(error => notify(error.message)); }; input.click();
                 });
-                if (canUpload && item.status !== 'processing') button('Remove', async () => { if (confirm(`Remove ${item.name} and its queued edits?`)) { await api('discard', {}, item.id); if (active?.id === item.id) clearActive(); } });
+                if (canUpload && item.status !== 'processing') button('Remove', () => discardItem(item));
                 list.append(row);
             }
             if (!result.items.length) { const empty = document.createElement('li'); empty.textContent = 'No PDFs waiting for barline work.'; list.append(empty); }
@@ -441,17 +441,34 @@
         finally { refreshing = false; }
     }
     function matches() { return active && window.pdfFnm$$module$synpdf === activeUrl; }
-    function setQueuedSaveState(editing) {
-        document.getElementById('pdf-queue-submit-controls').disabled = !editing;
+    function setQueuedSaveState() {
+        const editing = active?.status === 'ready';
+        document.getElementById('pdf-queue-submit-controls').disabled = !editing || editorBusy;
         document.getElementById('pdf-queue-submit-details').hidden = !editing;
         document.getElementById('pdf-queue-submit-hint').hidden = editing || active?.status === 'completed';
     }
+    function setEditorBusy(value) {
+        editorBusy = value;
+        setQueuedSaveState();
+    }
+    function submitError(message) {
+        document.getElementById('pdf-queue-submit-error').textContent = message;
+    }
     function clearActive() {
         active = null; activeUrl = ''; lastDraft = ''; activePanel.hidden = true;
-        setQueuedSaveState(false);
+        submitError('');
+        setQueuedSaveState();
+    }
+    async function discardItem(item) {
+        if (editorBusy || !confirm(`Remove ${item.name} and its queued edits?`)) return;
+        setEditorBusy(true);
+        try {
+            await api('discard', {}, item.id);
+            if (active?.id === item.id) clearActive();
+        } finally { setEditorBusy(false); }
     }
     function snapshot() {
-        if (active?.status !== 'ready' || !matches() || loading || window.rendering$$module$synpdf || !window.SynpdfAutoBarlines?.prepared) return null;
+        if (active?.status !== 'ready' || !matches() || window.rendering$$module$synpdf || !window.SynpdfAutoBarlines?.prepared) return null;
         const metrics = window.MetricStore?.getMetricData();
         if (!metrics || metrics.length < 2 || metrics.length > active.pages + 1) return null;
         return { metrics: JSON.stringify(metrics), piece_id: pieceSelect.value, instrument_id: partSelect.value,
@@ -470,23 +487,23 @@
         await saving;
     }
     async function openItem(item) {
-        if (loading || publishing) return;
-        await saveDraft();
-        if (window.pdfDoc$$module$synpdf?.numPages && !active && !confirm('Open this queued PDF? Save any changes to your current PDF first.')) return;
-        const result = await api('get', null, item.id);
-        if (result.item.status !== 'ready') throw new Error('This PDF is not ready for editing.');
-        if (backgroundBarlines && !result.item.skip_barline_detection &&
-            (!result.draft || window.SynpdfAutoBarlines?.needsPreparation(result.draft))) {
-            const prepared = await api('prepare', { revision: result.item.draft_revision || 0 }, item.id);
-            if (prepared.item.status !== 'ready') {
-                notify('Scanning barlines in the background. You can leave this page and open Edit barlines when it is ready.');
-                refresh();
-                return;
-            }
-            result.item = prepared.item;
-        }
-        loading = true;
+        if (editorBusy) return;
+        setEditorBusy(true);
         try {
+            await saveDraft();
+            if (window.pdfDoc$$module$synpdf?.numPages && !active && !confirm('Open this queued PDF? Save any changes to your current PDF first.')) return;
+            const result = await api('get', null, item.id);
+            if (result.item.status !== 'ready') throw new Error('This PDF is not ready for editing.');
+            if (backgroundBarlines && !result.item.skip_barline_detection &&
+                (!result.draft || window.SynpdfAutoBarlines?.needsPreparation(result.draft))) {
+                const prepared = await api('prepare', { revision: result.item.draft_revision || 0 }, item.id);
+                if (prepared.item.status !== 'ready') {
+                    notify('Scanning barlines in the background. You can leave this page and open Edit barlines when it is ready.');
+                    refresh();
+                    return;
+                }
+                result.item = prepared.item;
+            }
             active = result.item; editorSession = crypto.randomUUID(); sequence = 0; activeUrl = String(endpoint('file', item.id)); lastDraft = '';
             const details = result.draft?.details || active;
             pieceSelect.value = String(details.piece_id); partSelect.value = String(details.instrument_id);
@@ -508,19 +525,20 @@
             }
             window.SynpdfAutoBarlines?.setQueueDraft(result.draft);
             window.msc_check_preload$$module$synpdf();
-            activePanel.hidden = false; setQueuedSaveState(true);
+            activePanel.hidden = false;
+            submitError('');
             document.getElementById('database-menus-wrapper').scrollTop = 0;
             document.getElementById('pdf-queue-active-name').textContent = active.name;
             draftStatus.textContent = window.SynpdfAutoBarlines?.prepared
                 ? (result.draft ? 'Edits restored.' : '') : '';
             notify('');
-        } finally { loading = false; }
+        } finally { setEditorBusy(false); }
     }
     window.SynpdfPdfQueue = {
         get canBackgroundScan() { return backgroundBarlines && !!active && !active.skip_barline_detection; },
         async rerunBarlines() {
-            if (!active || loading || busy || publishing) return;
-            busy = true;
+            if (!active || editorBusy) return;
+            setEditorBusy(true);
             try {
                 await saveDraft();
                 const options = window.opt$$module$synpdf;
@@ -529,44 +547,51 @@
                 await api('prepare', { revision: active.draft_revision || 0, force: 1, settings: JSON.stringify(settings) }, active.id);
                 clearActive();
                 notify('Scanning barlines in the background. You can leave this page and open Edit barlines when it is ready.');
-            } finally { busy = false; refresh(); }
+            } finally { setEditorBusy(false); refresh(); }
         }
     };
     document.addEventListener('submit', async event => {
         if (event.target !== form) return;
         event.preventDefault(); event.stopImmediatePropagation();
-        if (!active) { notify('Open a PDF from the waiting list to submit its part.'); return; }
+        if (editorBusy) return;
+        if (!active) { submitError('Open a PDF from the waiting list to submit its part.'); return; }
         if (active.status === 'completed') return;
-        if (loading || busy) return;
-        if (!matches()) { notify('The loaded PDF changed. Reopen the queued PDF before saving it.'); return; }
-        busy = true; const button = form.querySelector('[type=submit]'); button.disabled = true;
+        if (!matches()) { submitError('The loaded PDF changed. Reopen the queued PDF before saving it.'); return; }
+        setEditorBusy(true);
+        submitError('');
         try {
             await saveDraft(); const data = snapshot(); if (!data) throw new Error('Wait for every PDF page to finish loading.');
+            window.SynpdfPartJumpEditor?.validateSubmission();
             publishing = true;
             const result = await api('publish', { ...data, revision: active.draft_revision || 0, measures_version: form.querySelector('[name=measures_version]').value }, active.id);
             active = result.item;
-            setQueuedSaveState(false);
             draftStatus.textContent = active.private_tutorial ? 'Saved privately. Open bachsuite1-tutorial in YubSync to sync its recording.' : 'Submitted to the library.';
             if (active.cnn_training_available) draftStatus.textContent += ' Available for CNN training.';
             notify(`Submitted ${active.published_parts?.map(part => part.pdf_file).join(' and ') || active.pdf_file}.`);
             document.dispatchEvent(new CustomEvent('synpdf:part-submitted', { detail: active }));
-        } catch (error) { notify(error.message + ' The queued PDF and edits are preserved.'); }
-        finally { publishing = false; busy = false; button.disabled = false; refresh(); }
+        } catch (error) { submitError(error.message); }
+        finally { publishing = false; setEditorBusy(false); refresh(); }
     }, true);
     document.addEventListener('change', async event => {
-        if (event.target.id !== 'fknp' || !active) return;
+        if (event.target.id !== 'fknp' || (!active && !editorBusy)) return;
         event.stopImmediatePropagation();
-        if (publishing) { event.target.value = ''; notify('Wait for this part to finish submitting.'); return; }
-        try { await saveDraft(); clearActive(); event.target.dispatchEvent(new Event('change', { bubbles: true })); }
-        catch (error) { notify(error.message + ' Save or reload your queue work before changing PDFs.'); }
+        if (editorBusy) { event.target.value = ''; notify('Wait for the current PDF operation to finish.'); return; }
+        setEditorBusy(true);
+        try { await saveDraft(); clearActive(); }
+        catch (error) { notify(error.message + ' Save or reload your queue work before changing PDFs.'); return; }
+        finally { setEditorBusy(false); }
+        event.target.dispatchEvent(new Event('change', { bubbles: true }));
     }, true);
     document.getElementById('loadSavedMetricBtn')?.addEventListener('click', async event => {
-        if (!active) return;
+        if (!active && !editorBusy) return;
         event.preventDefault(); event.stopImmediatePropagation();
-        if (publishing) { notify('Wait for this part to finish submitting.'); return; }
+        if (editorBusy) { notify('Wait for the current PDF operation to finish.'); return; }
         const button = event.currentTarget;
-        try { await saveDraft(); clearActive(); button.click(); }
-        catch (error) { notify(error.message + ' Save or reload your queue work before changing PDFs.'); }
+        setEditorBusy(true);
+        try { await saveDraft(); clearActive(); }
+        catch (error) { notify(error.message + ' Save or reload your queue work before changing PDFs.'); return; }
+        finally { setEditorBusy(false); }
+        button.click();
     }, true);
     window.addEventListener('pagehide', () => {
         if (publishing) return;

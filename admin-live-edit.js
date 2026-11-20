@@ -445,7 +445,10 @@
                 // Check for removal (threshold 5px)
                 for (let i = 0; i < bxs_group.length; i++) {
                     if (Math.abs(x - Math.abs(bxs_group[i])) <= 5) {
-                        bxs_group.splice(i, 1);
+                        const [removed] = bxs_group.splice(i, 1);
+                        if (Array.isArray(system.restSplitXs)) {
+                            system.restSplitXs = system.restSplitXs.filter(split => split !== Math.abs(removed));
+                        }
                         isValueRemoved = true;
                         break;
                     }
@@ -476,7 +479,8 @@
         const pageData = metricArr[pageIdx];
 
         for (let j = 0; j < pageData.cxs.length; j++) {
-            let cs_group = pageData.cxs[j].cs;
+            const system = pageData.cxs[j];
+            const cs_group = system.cs;
             if (y >= Math.min(...cs_group) - 10 && y <= Math.max(...cs_group) + 10) {
                 let bxs_group = pageData.bxs[j];
 
@@ -511,6 +515,7 @@
                     // Avoid duplicates if they somehow exist, though unlikely with math
                     if (!bxs_group.some(existingX => Math.abs(existingX - newX) < 0.001)) {
                         bxs_group.push(newX);
+                        (system.restSplitXs ||= []).push(newX);
                     }
                 }
 

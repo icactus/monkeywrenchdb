@@ -165,8 +165,20 @@ test('split edits preserve the paused cursor and zoomed page offsets', () => {
     const h = setup({ scale: 1.5 });
     h.mode('s'); h.click(700, 140);
     assert.deepEqual(clone(h.metric[3].bxs[0]), [50, 500, 725, 950]);
+    assert.deepEqual(clone(h.metric[3].cxs[0].restSplitXs), [725]);
     assert.equal(h.highlight.style.width, '337.5px');
     h.preserved();
+});
+
+test('replacing a generated rest split with a printed barline clears its training exclusion', () => {
+    const h = setup();
+    h.metric[3].cxs[0].restSplitXs = [500];
+    h.mode('q'); h.click(500, 140);
+    assert.deepEqual(clone(h.metric[3].bxs[0]), [50, 950]);
+    assert.deepEqual(clone(h.metric[3].cxs[0].restSplitXs), []);
+    h.click(500, 140);
+    assert.deepEqual(clone(h.metric[3].bxs[0]), [50, 500, 950]);
+    assert.deepEqual(clone(h.metric[3].cxs[0].restSplitXs), []);
 });
 
 test('wrapped-measure edits keep the current highlight and viewport', () => {

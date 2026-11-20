@@ -87,8 +87,8 @@ function normalizeMetricNodeForStorage($node, $scaleFactor)
         }
 
         foreach ($node as $key => $value) {
-            // Jump indices and the schema version are not PDF coordinates.
-            if ($key === 'partJumps') {
+            // Reading order and CNN metadata are independent of the geometry width.
+            if ($key === 'partJumps' || $key === 'cnnTraining') {
                 continue;
             }
             if ($key === 'cs' && is_array($value)) {

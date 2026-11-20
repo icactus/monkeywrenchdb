@@ -81,7 +81,9 @@
             if (old.end) return after.length - 1;
             const matches = new Set(old.owners.flatMap(owner => byOwner.get(`${old.page}/${owner}`) || [])
                 .filter(next => Math.abs(old.x - next.x) < 0.75).map(next => next.index));
-            return matches.size === 1 ? [...matches][0] : -1;
+            // Distinguish a removed anchor from an ambiguous match across repeats.
+            if (!matches.size) return -1;
+            if (matches.size === 1) return matches.values().next().value;
         });
         let conflict = false;
         function required(index) {
@@ -110,6 +112,14 @@
             ...(repeat.dst === undefined ? {} : { dst: required(repeat.dst) }) }));
         const current = mapping[state.demix];
         const preview = !state.sync && state.lastSynced < 0;
+        if (wrappedEdit && conflict) {
+            const removed = recorded.find(point => mapping[point.mix] === -1);
+            if (removed) {
+                const measure = `Measure ${removed.mix + 1} on page ${before[removed.mix].page}`;
+                throw new Error(`${measure} already has a timestamp. Select it and use Backspace to clear timing from there before changing the score.`);
+            }
+            throw new Error('This score correction would move an existing timestamp or repeat mark. Clear the affected timing or repeat first.');
+        }
         if (conflict && !preview) {
             // Like live edit, a geometry correction must not be rolled back just
             // because these measure numbers already have timestamps. Retain
@@ -512,7 +522,7 @@
         try {
             const metrics = copy(session.metrics);
             const mapped = remapSession(draft, metrics, session.lineage, captureState(), lineage,
-                history.every(edit => edit.wrappedEdit));
+                history.some(edit => edit.wrappedEdit || edit.restored));
             restore(mapped, metrics); finish(); message('Corrections cancelled. Continue syncing.');
         } catch (error) { message(error.message); }
     });

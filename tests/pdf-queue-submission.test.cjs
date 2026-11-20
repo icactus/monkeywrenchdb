@@ -4,24 +4,39 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../synpdf_182/editmode/part-pdf-queue.js'), 'utf8');
+const jumpEditor = fs.readFileSync(path.join(__dirname, '../synpdf_182/editmode/part-jump-editor.js'), 'utf8');
+const partJumps = require('../js/part-jumps.js');
 
-function harness({ fail = false, hold = false, combined = false } = {}) {
+function harness({ fail = false, hold = false, holdDraft = false, holdOpen = false, combined = false } = {}) {
     const calls = [], events = [], notices = [], listeners = {};
     const fields = {piece_id: {value: '299'}, instrument_id: {value: '39'}, edition_label: {value: 'Test edition'}, measures_version: {value: '1'}};
-    const button = {disabled: false}, form = {hidden: false, querySelector: selector => selector === '[type=submit]' ? button : fields[selector.match(/name=(\w+)/)[1]]};
+    const form = {hidden: false, querySelector: selector => fields[selector.match(/name=(\w+)/)[1]]};
     const nodes = {'pdf-queue-submit-controls': {disabled: false}, 'pdf-queue-submit-details': {hidden: false},
-        'pdf-queue-submit-hint': {hidden: true}, 'pdf-queue-part-assignment': {textContent: ''}};
+        'pdf-queue-submit-hint': {hidden: true}, 'pdf-queue-submit-error': {textContent: ''}, 'pdf-queue-part-assignment': {textContent: ''},
+        'database-menus-wrapper': {scrollTop: 15}, 'pdf-queue-active-name': {textContent: ''}};
     const metrics = [1000, {cxs: [], bxs: []}, {cxs: [], bxs: []}];
-    let resolvePublish;
+    let resolvePublish, resolveDraft, resolveOpen, signalOpen;
+    const openRequested = new Promise(resolve => {signalOpen = resolve;});
     const c = vm.createContext({
-        form, pieceSelect: fields.piece_id, partSelect: fields.instrument_id, button,
-        active: {id: 'queued-part', status: 'ready', pages: 2, draft_revision: 0}, activeUrl: 'queue-file', loading: false, busy: false, publishing: false,
+        form, pieceSelect: fields.piece_id, partSelect: fields.instrument_id,
+        active: {id: 'queued-part', status: 'ready', pages: 2, draft_revision: 0}, activeUrl: 'queue-file', editorBusy: false, publishing: false,
         saving: null, lastDraft: '', editorSession: 'session', sequence: 0, activePanel: {hidden: false}, draftStatus: {textContent: ''},
         document: {getElementById: id => nodes[id], addEventListener: (type, fn) => {listeners[type] = fn;}, dispatchEvent: event => {events.push(event);}},
+        backgroundBarlines: false, crypto: {randomUUID: () => 'new-session'}, endpoint: (_action, id) => `file-${id}`, label: (_select, value) => value,
         CustomEvent: class {constructor(type, options) {this.type = type; this.detail = options.detail;}},
         api: async (action, data, id) => {
             calls.push({action, data, id});
-            if (action === 'draft') return {item: {draft_revision: 1}};
+            if (action === 'draft') {
+                const result = {item: {draft_revision: 1}};
+                if (holdDraft) return new Promise(resolve => {resolveDraft = () => resolve(result);});
+                return result;
+            }
+            if (action === 'get' && holdOpen) {
+                return new Promise(resolve => {
+                    resolveOpen = () => resolve({item: {id, status: 'ready', pages: 2, piece_id: 1, instrument_id: 2}, draft: {metrics}});
+                    signalOpen();
+                });
+            }
             assert.equal(action, 'publish');
             if (fail) throw new Error('Server unavailable');
             const result = {item: {id, status: 'completed', piece_id: 299, instrument_id: 39, pdf_file: '299-39-test_edition.pdf'}};
@@ -31,15 +46,21 @@ function harness({ fail = false, hold = false, combined = false } = {}) {
             return result;
         },
         notify: text => notices.push(text), refresh: () => calls.push({action: 'refresh'}),
-        MetricStore: {getMetricData: () => metrics}, SynpdfAutoBarlines: {prepared: true, preparation: 'excluded'},
-        pdfFnm$$module$synpdf: 'queue-file', pdfDoc$$module$synpdf: {numPages: 2}, opt$$module$synpdf: {pagenum: 2},
-        bootEditModeFromDb: () => assert.fail('Submission must not reload the viewer'),
-        msc_check_preload$$module$synpdf: () => assert.fail('Submission must not reopen the PDF')
+        MetricStore: {getMetricData: () => metrics, setMetricData() {}, clearGroundTruthMetricData() {}},
+        SynpdfAutoBarlines: {prepared: true, preparation: 'excluded', setQueueDraft() {}},
+        SynpdfPartJumps: partJumps, getSystemHitBounds: () => ({top: 100, bottom: 150}),
+        deMetriek$$module$synpdf: metrics, pdfFnm$$module$synpdf: 'queue-file', pdfDoc$$module$synpdf: {numPages: 2}, opt$$module$synpdf: {pagenum: 2},
+        msc_check_preload$$module$synpdf: () => {
+            assert(holdOpen, 'Submission must not reopen the PDF');
+            c.pdfFnm$$module$synpdf = c.pdf_file$$module$synpdf;
+        }
     });
     c.window = c;
     vm.runInContext(source.slice(source.indexOf('    function matches()'), source.indexOf("    document.addEventListener('change'")), c);
+    vm.runInContext(jumpEditor, c);
     const event = {target: form, preventDefault() {this.prevented = true;}, stopImmediatePropagation() {this.stopped = true;}};
-    return {c, calls, events, notices, fields, button, form, nodes, event, metrics, submit: () => listeners.submit(event), finish: () => resolvePublish()};
+    return {c, calls, events, notices, fields, form, nodes, event, metrics, openRequested, submit: () => listeners.submit(event),
+        finish: () => resolvePublish(), finishDraft: () => resolveDraft(), finishOpen: () => resolveOpen()};
 }
 
 test('publication keeps the current PDF, page and geometry while completing the queued part', async () => {
@@ -74,8 +95,8 @@ test('failed publication keeps the form and draft available for retry', async ()
     assert.equal(h.nodes['pdf-queue-submit-controls'].disabled, false);
     assert.equal(h.fields.edition_label.value, 'Test edition');
     assert.equal(h.events.length, 0);
-    assert.match(h.notices.at(-1), /Server unavailable.*preserved/);
-    assert.equal(h.button.disabled, false);
+    assert.equal(h.nodes['pdf-queue-submit-error'].textContent, 'Server unavailable');
+    assert.deepEqual(h.notices, []);
     assert.equal(h.c.publishing, false);
 });
 
@@ -90,22 +111,65 @@ test('autosave and opening another queue item wait for an in-flight publication'
     assert.equal(h.c.active.status, 'completed');
 });
 
+test('opening a queued PDF blocks submit and other opens from the first network wait', async () => {
+    const h = harness({holdOpen: true});
+    const opening = h.c.openItem({id: 'second'});
+    assert.equal(h.nodes['pdf-queue-submit-controls'].disabled, true);
+    await h.openRequested;
+    await h.submit();
+    await h.c.openItem({id: 'third'});
+    assert.deepEqual(h.calls.map(call => [call.action, call.id]), [['draft', 'queued-part'], ['get', 'second']]);
+    h.finishOpen();
+    await opening;
+    assert.equal(h.c.active.id, 'second');
+    assert.equal(h.c.pdfFnm$$module$synpdf, 'file-second');
+    assert.equal(h.nodes['pdf-queue-submit-controls'].disabled, false);
+});
+
+test('starting submit blocks other opens while its draft is still saving', async () => {
+    const h = harness({holdDraft: true});
+    const submitting = h.submit();
+    assert.equal(h.c.publishing, false);
+    assert.equal(h.nodes['pdf-queue-submit-controls'].disabled, true);
+    await h.c.openItem({id: 'second'});
+    assert.deepEqual(h.calls.map(call => call.action), ['draft']);
+    h.finishDraft();
+    await submitting;
+    assert.equal(h.c.active.id, 'queued-part');
+    assert.equal(h.c.active.status, 'completed');
+});
+
+test('the queue validates an unfinished Jump before publishing and accepts the completed pair', async () => {
+    const h = harness();
+    h.metrics[2] = {cxs: [{cs: [100, 150]}], bxs: [[10, 50, 100]]};
+    assert(h.c.SynpdfPartJumpEditor.handleLongClick({ xInNotation: 75, yInNotation: 120 }));
+    await h.submit();
+    assert.match(h.nodes['pdf-queue-submit-error'].textContent, /pending Jump/);
+    assert.equal(h.calls.some(call => call.action === 'publish'), false);
+    assert(h.c.SynpdfPartJumpEditor.handleLongClick({ xInNotation: 35, yInNotation: 120 }));
+    await h.submit();
+    assert.equal(h.nodes['pdf-queue-submit-error'].textContent, '');
+    const saved = JSON.parse(h.calls.find(call => call.action === 'publish').data.metrics);
+    assert.deepEqual(saved[1].partJumps.jumps, [{jmp: 1, dst: 0}]);
+});
+
 test('submission without a queued part never falls through to the legacy upload handler', async () => {
     const h = harness(); h.c.active = null;
     await h.submit();
     assert(h.event.prevented && h.event.stopped);
     assert.equal(h.calls.length, 0);
-    assert.match(h.notices.at(-1), /Open a PDF from the waiting list/);
+    assert.match(h.nodes['pdf-queue-submit-error'].textContent, /Open a PDF from the waiting list/);
 });
 
 test('the sidebar submit control remains visible and explains how to open a queued part', () => {
-    const h = harness();
+    const h = harness(), item = h.c.active;
     h.c.clearActive();
     assert.equal(h.form.hidden, false);
     assert.equal(h.nodes['pdf-queue-submit-controls'].disabled, true);
     assert.equal(h.nodes['pdf-queue-submit-details'].hidden, true);
     assert.equal(h.nodes['pdf-queue-submit-hint'].hidden, false);
-    h.c.setQueuedSaveState(true);
+    h.c.active = item;
+    h.c.setQueuedSaveState();
     assert.equal(h.form.hidden, false);
     assert.equal(h.nodes['pdf-queue-submit-controls'].disabled, false);
     assert.equal(h.nodes['pdf-queue-submit-details'].hidden, false);

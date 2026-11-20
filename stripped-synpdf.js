@@ -2974,6 +2974,9 @@ function schaalMetriek$$module$synpdf() {
             Array.isArray(staffSystem.csr) && staffSystem.csr.forEach(function (coordinate, coordinateIndex) {
                 return staffSystem.csr[coordinateIndex] = coordinate * scaleFactor
             });
+            if (Array.isArray(staffSystem.restSplitXs)) {
+                staffSystem.restSplitXs = staffSystem.restSplitXs.map(x => x * scaleFactor);
+            }
             staffSystem.xs.x1 *= scaleFactor;
             staffSystem.xs.x2 *= scaleFactor
         }), pageMetrics.bxs.forEach(function (barlines) {
