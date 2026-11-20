@@ -37,6 +37,8 @@
     let playbackStarted = false, infoStep = 'loading';
     const dismissedSteps = new Set();
     const lesson = byId('tutorial-lesson'), scoreStage = byId('yubsync-score-stage');
+    const playerPrompt = byId('tutorial-player-prompt');
+    const narrowLayout = window.matchMedia('(max-width: 767px)');
     const title = byId('tutorial-title'), copy = byId('tutorial-copy');
     const restart = byId('tutorial-restart');
     const submitButton = byId('addnewrecordingform').querySelector('[type="submit"]');
@@ -69,7 +71,7 @@
         const jump = activeRepeat;
         const current = get('deTijden')?.[get('detix')]?.mix ?? 0;
         const targets = stage === 'repeat' ? [[jump.from, `From · ${jump.from + 1}`], [jump.to, `To · ${jump.to + 1}`]]
-            : [[stage === 'start' ? 0 : current, stage === 'start' ? 'Start · 1' : `Measure · ${current + 1}`]];
+            : [[current, `Measure · ${current + 1}`]];
         for (const [index, label] of targets) {
             const box = get('deMaten')[index];
             if (!box) continue;
@@ -83,15 +85,20 @@
     }
     function positionInfo() {
         const notation = byId('notation');
-        lesson.style.maxHeight = Math.max(80, scoreStage.clientHeight * 0.45) + 'px';
+        const opening = lesson.classList.contains('tutorial-opening');
+        const parent = opening && narrowLayout.matches ? playerPrompt : scoreStage;
+        if (lesson.parentElement !== parent) parent.prepend(lesson);
+        lesson.style.maxHeight = opening ? '' : Math.max(80, scoreStage.clientHeight * 0.45) + 'px';
         // Let the final systems scroll above the box, just like earlier systems.
-        notation.style.setProperty('--tutorial-scroll-space', lesson.hidden ? '0px'
-            : lesson.getBoundingClientRect().height + 24 + 'px');
+        notation.style.setProperty('--tutorial-scroll-space', !opening && !lesson.hidden
+            ? lesson.getBoundingClientRect().height + 24 + 'px' : '0px');
     }
     function setInfoStep(step) {
         infoStep = step === 'repeat' ? `repeat-${activeRepeat.at}` : step;
         lesson.dataset.step = step;
         lesson.hidden = stage === 'complete' || dismissedSteps.has(infoStep);
+        lesson.classList.toggle('tutorial-opening', step === 'play' || step === 'mark-start');
+        byId('tutorial-mark-help').hidden = step !== 'mark-start';
     }
     function playbackChanged() {
         window.YubSyncGuidance?.update();
@@ -159,10 +166,9 @@
                 : s.complete ? 'Ready to compare' : s.finishing ? 'Mark the end'
                     : step === 'check-start' ? 'Listen back when you’re ready' : 'Mark each measure';
         const instruction = step === 'loading' ? 'The score and player will be ready shortly.'
-            : step === 'play' ? 'Press Play on the player to start.'
-            : step === 'mark-start' ? (exercise.startSeconds <= 0
-                ? 'This recording starts immediately. Press B as it begins to mark the start; you can adjust it later.'
-                : 'Press B about a second before the first note to mark the start of syncing.')
+            : step === 'play' ? 'Click Play on the player to start.'
+            : step === 'mark-start' ? 'Press B to set the start of the first measure about a second before the music starts.' +
+                (exercise.startSeconds <= 0 ? ' This recording has no lead-in, so press B as soon as you hear the music.' : '')
             : stage === 'repeat'
                 ? `To add this repeat, shift click measure ${activeRepeat.from + 1} and then shift click measure ${activeRepeat.to + 1}. Keep pressing B as the music continues; after marking the jump, B advances to its destination. You can also use this method for 2nd endings or cuts.`
                 : s.complete ? 'Choose Submit tutorial to see how closely your timings match. Choose Start over to practice again.'
@@ -171,7 +177,7 @@
                             : 'Use Left / Right to listen back. Ctrl + Left / Right adjusts the first measure’s start. Then keep pressing B at each new measure.';
         if (copy.textContent !== instruction) copy.textContent = instruction;
         byId('tutorial-progress').textContent = `${Math.min(s.last + 1, exercise.official.length - 1)} / ${exercise.official.length - 1} measure starts marked`;
-        if (!lesson.hidden && s.videoReady && !s.complete) showTargets(); else clearTargets();
+        if (!lesson.hidden && s.recorded && !s.complete) showTargets(); else clearTargets();
         positionInfo();
     }
     function startOver() {

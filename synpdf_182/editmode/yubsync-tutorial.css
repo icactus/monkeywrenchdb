@@ -9,12 +9,31 @@
     border-radius: 10px; background: var(--home-surface); color: var(--home-ink);
     overflow-y: auto; box-shadow: 0 4px 16px #0002; line-height: 1.5;
 }
+#tutorial-lesson.tutorial-opening {
+    overflow: visible; border-color: var(--home-teal); box-shadow: 0 6px 20px #0003;
+}
+#tutorial-player-prompt > #tutorial-lesson {
+    position: relative; inset: auto; width: auto; margin: 12px 12px 0;
+}
+#tutorial-lesson.tutorial-opening::before {
+    content: ""; position: absolute; top: -7px; left: calc(50% - 7px);
+    width: 12px; height: 12px; transform: rotate(45deg);
+    background: var(--home-surface); border: solid var(--home-teal);
+    border-width: 1px 0 0 1px; pointer-events: none;
+}
+@media (min-width: 768px) {
+    #tutorial-lesson.tutorial-opening { top: clamp(0px, 100% - 260px, 64px); right: 0; bottom: auto; }
+    #tutorial-lesson.tutorial-opening::before {
+        top: 16px; left: auto; right: -7px; transform: rotate(135deg);
+    }
+}
 .yubsync-tutorial #notation::after { content: ""; display: block; height: var(--tutorial-scroll-space, 0px); }
 #tutorial-close { top: 6px; right: 6px; }
 #tutorial-step { font-size: 11px; font-weight: 650; letter-spacing: .08em; color: var(--home-teal); }
 #tutorial-step, #tutorial-title { padding-right: 28px; }
 #tutorial-title { margin: 8px 0; font-size: 20px; line-height: 1.25; }
 #tutorial-copy { margin: 0; font-size: 14px; overflow-wrap: break-word; }
+#tutorial-mark-help { margin: 10px 0 0; font-size: 13px; color: var(--home-muted); }
 #tutorial-lesson details { margin: 12px 0; padding-top: 10px; border-top: 1px solid var(--home-line); font-size: 13px; }
 #tutorial-lesson summary { cursor: pointer; font-weight: 600; color: var(--home-teal); }
 #tutorial-lesson kbd { font: inherit; font-weight: 600; }
