@@ -101,9 +101,16 @@
         lesson.classList.toggle('tutorial-opening', step === 'play' || step === 'mark-start');
         const checkingFirst = step === 'check-first';
         const following = step === 'follow';
-        copy.hidden = checkingFirst || following;
+        const repeating = step === 'repeat';
+        copy.hidden = checkingFirst || following || repeating;
         byId('tutorial-mark-help').hidden = !checkingFirst;
         byId('tutorial-follow-help').hidden = !following;
+        byId('tutorial-repeat-help').hidden = !repeating;
+        if (repeating) {
+            const destination = byId('tutorial-repeat-destination');
+            const measure = String(activeRepeat.to + 1);
+            if (destination.textContent !== measure) destination.textContent = measure;
+        }
     }
     function playbackChanged() {
         window.YubSyncGuidance?.update();
@@ -167,10 +174,8 @@
         const instruction = step === 'loading' ? 'The score and player will be ready shortly.'
             : step === 'play' ? 'Click Play on the player to start.'
             : step === 'mark-start' ? 'Press B when you hear the music start.'
-            : stage === 'repeat'
-                ? `To add this repeat, shift click measure ${activeRepeat.from + 1} and then shift click measure ${activeRepeat.to + 1}. Keep pressing B as the music continues; after marking the jump, B advances to its destination. You can also use this method for 2nd endings or cuts.`
-                : s.complete ? 'Choose Submit tutorial to see how closely your timings match. Choose Start over to practice again.'
-                    : s.finishing ? 'Let the last measure finish, then press B a few seconds after the final cutoff to finish the exercise.' : '';
+            : s.complete ? 'Choose Submit tutorial to see how closely your timings match. Choose Start over to practice again.'
+            : step === 'finish' ? 'Let the last measure finish, then press B a few seconds after the final cutoff to finish the exercise.' : '';
         if (copy.textContent !== instruction) copy.textContent = instruction;
         byId('tutorial-progress').textContent = `${Math.min(s.last + 1, exercise.official.length - 1)} / ${exercise.official.length - 1} measure starts marked`;
         if (!lesson.hidden && step === 'repeat') showRepeatTargets(); else clearTargets();

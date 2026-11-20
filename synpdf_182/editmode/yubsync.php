@@ -795,7 +795,7 @@ if ($yubsyncTutorial) {
     </style>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=16" />
     <?php if ($yubsyncTutorial): ?>
-    <link rel="stylesheet" href="yubsync-tutorial.css?v=13" />
+    <link rel="stylesheet" href="yubsync-tutorial.css?v=14" />
     <?php endif; ?>
 </head>
 
@@ -1024,6 +1024,14 @@ if ($yubsyncTutorial) {
                     <li>To pick up the tempo, press <kbd>Left Arrow</kbd> to go back a few marked measures.
                         Press <kbd>Spacebar</kbd> if paused. Listen through those measures, then press <kbd>B</kbd> at the next unmarked one.</li>
                 </ul>
+                <ul id="tutorial-repeat-help" class="tutorial-instructions" hidden>
+                    <li>Press <kbd>Spacebar</kbd> to pause.</li>
+                    <li><kbd>Shift-click</kbd> this measure, then <kbd>Shift-click</kbd> measure <span id="tutorial-repeat-destination"></span> to add the repeat.</li>
+                    <li>Press <kbd>Left Arrow</kbd> a few times to go back, then press <kbd>Spacebar</kbd> to resume.
+                        Listen through the marked measures and press <kbd>B</kbd> when the music repeats.</li>
+                    <li>If the timing is off, press <kbd>Backspace</kbd> on the mistimed measure and try again.</li>
+                    <li>For cuts or second endings, use the same <kbd>Shift-click</kbd> steps and choose a later destination.</li>
+                </ul>
             </div>
         </aside>
         <?php endif; ?>
@@ -1209,7 +1217,7 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=24"></script><?php endif; ?>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=25"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=97"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=14"></script>
