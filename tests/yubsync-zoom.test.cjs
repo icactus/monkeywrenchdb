@@ -11,7 +11,7 @@ function definition(name) {
     assert(start >= 0, name);
     return core.slice(start, core.indexOf('\n}', start) + 2);
 }
-function setup() {
+function setup({ loaded = true } = {}) {
     const nodes = Object.fromEntries(['notation', 'yubsync-zoom-out', 'yubsync-zoom-in', 'yubsync-zoom-value'].map(id => [id, {
         listeners: {}, addEventListener(type, fn) {this.listeners[type] = fn;}, style: {setProperty(name, value) {this[name] = value;}}
     }]));
@@ -19,13 +19,36 @@ function setup() {
     Object.assign(notation, {scrollTop: 800, scrollLeft: 40, scrollTo({top, left}) {this.scrollTop = top; this.scrollLeft = left;}, getBoundingClientRect: () => ({left: 20, top: 60})});
     const state = {times: [{t: 0, mix: 0}, {t: 2, mix: 1}], metrics: [1000, {cxs: [], bxs: []}], offset: 7.25, detix: 1, lastSynced: 1};
     const c = vm.createContext({document: {getElementById: id => nodes[id]}, cancelAnimationFrame() {},
+        YubSyncGuidance: { state: () => ({scoreReady: loaded}) },
         msc_wz$$module$synpdf: {tmargin: 100, cursorTime: 2}, opt$$module$synpdf: {speed: 1, synbox: 1, pagewd: 1000},
         state, resizePdfSyn$$module$synpdf: () => assert.fail('Zoom must not render or recalculate pages')});
     c.window = c;
     vm.runInContext(tools.slice(tools.indexOf('(function bindSyncViewZoom()')), c);
     for (const name of ['getPdfViewScale$$module$synpdf', 'getNotationRelativeCoords', 'doeRol$$module$synpdf', 'keyDown$$module$synpdf']) vm.runInContext(definition(name), c);
-    return {c, nodes, notation, state, click: id => nodes[id].listeners.click()};
+    return {c, nodes, notation, state, click: id => nodes[id].listeners.click(),
+        setLoaded(value) { loaded = value; c.YubSyncViewZoom.update(); }};
 }
+test('zoom is disabled and cannot change the view until a PDF is ready', () => {
+    const h = setup({loaded: false});
+    assert.equal(h.nodes['yubsync-zoom-out'].disabled, true);
+    assert.equal(h.nodes['yubsync-zoom-in'].disabled, true);
+    h.click('yubsync-zoom-in');
+    h.c.YubSyncViewZoom.change(-1);
+    assert.equal(h.c.YubSyncViewZoom.scale, 1);
+    assert.equal(h.notation.scrollTop, 800);
+    assert.equal(h.notation.scrollLeft, 40);
+    assert.equal(h.c.msc_wz$$module$synpdf.tmargin, 100);
+    h.setLoaded(true);
+    assert.equal(h.nodes['yubsync-zoom-out'].disabled, false);
+    assert.equal(h.nodes['yubsync-zoom-in'].disabled, false);
+    h.click('yubsync-zoom-in');
+    assert.equal(h.c.YubSyncViewZoom.scale, 1.1);
+    h.setLoaded(false);
+    assert.equal(h.nodes['yubsync-zoom-out'].disabled, true);
+    assert.equal(h.nodes['yubsync-zoom-in'].disabled, true);
+    h.click('yubsync-zoom-in');
+    assert.equal(h.c.YubSyncViewZoom.scale, 1.1);
+});
 test('graphical zoom preserves sync data, geometry, speed and the current scrolled score location', () => {
     const h = setup(), before = JSON.stringify(h.state), cursor = h.c.msc_wz$$module$synpdf;
     h.click('yubsync-zoom-in');

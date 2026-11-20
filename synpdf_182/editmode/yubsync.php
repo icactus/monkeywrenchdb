@@ -986,11 +986,11 @@ if ($yubsyncTutorial) {
     <section2 id="yubsync-workspace">
       <div id="yubsync-score">
         <div id="yubsync-zoom-toolbar" role="group" aria-label="Score zoom">
-            <button type="button" id="yubsync-zoom-out" aria-label="Zoom out" title="Zoom out">
+            <button type="button" id="yubsync-zoom-out" aria-label="Zoom out" title="Zoom out" disabled>
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M15 15l6 6M6 10h8"/></svg>
             </button>
             <output id="yubsync-zoom-value" aria-live="polite" aria-label="Score zoom">100%</output>
-            <button type="button" id="yubsync-zoom-in" aria-label="Zoom in" title="Zoom in">
+            <button type="button" id="yubsync-zoom-in" aria-label="Zoom in" title="Zoom in" disabled>
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M15 15l6 6M6 10h8M10 6v8"/></svg>
             </button>
             <?php if ($yubsyncTutorial): ?>
@@ -1221,7 +1221,7 @@ if ($yubsyncTutorial) {
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
     <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=14"></script><?php endif; ?>
-    <script src="yubsync-tools.js?v=96"></script>
+    <script src="yubsync-tools.js?v=97"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=14"></script>
     <script src="yubsync-progress.js?v=4"></script>

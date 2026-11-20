@@ -695,7 +695,14 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
     const output = document.getElementById('yubsync-zoom-value');
     if (!notation || !decrease || !increase || !output) return;
     let scale = 1;
+    function ready() { return !!window.YubSyncGuidance?.state().scoreReady; }
+    function update() {
+        const loaded = ready();
+        decrease.disabled = !loaded || scale === 0.2;
+        increase.disabled = !loaded || scale === 2;
+    }
     function change(direction) {
+        if (!ready()) return;
         const next = Math.max(0.2, Math.min(2, Math.round((scale + direction * 0.1) * 100) / 100));
         if (next === scale) return;
         const ratio = next / scale;
@@ -709,12 +716,12 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
         notation.style.setProperty('--yubsync-view-scale', scale);
         notation.scrollTo({ top, left, behavior: 'instant' });
         output.textContent = Math.round(scale * 100) + '%';
-        decrease.disabled = scale === 0.2;
-        increase.disabled = scale === 2;
+        update();
     }
-    window.YubSyncViewZoom = { get scale() { return scale; }, change };
+    window.YubSyncViewZoom = { get scale() { return scale; }, change, update };
     decrease.addEventListener('click', () => change(-1));
     increase.addEventListener('click', () => change(1));
+    update();
 })();
 
 // Keep guidance tied to recorded timings, never to generated preview timestamps.
@@ -770,6 +777,7 @@ document.getElementById('notation').addEventListener('wheel', scrollSyncScore, {
             endHere.hidden = !s.canEndHere;
             endHere.disabled = !s.canEndHere || !!window.YubSyncLiveEdit?.busy;
         }
+        window.YubSyncViewZoom?.update();
         timingStrip.hidden = !s.scoreReady && !window.yubsyncLoadedVideoId;
         offset.hidden = !s.scoreReady;
         const seconds = Math.round((get('offset') || 0) * 10) / 10;
