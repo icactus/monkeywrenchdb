@@ -119,9 +119,8 @@
         seek(exercise.cueSeconds);
         return true;
     }
-    function beforeStamp() {
-        // Lessons only provide help; recording readiness is the only gate.
-        return !!exercise && get('yubchk') && window.yubsyncLoadedVideoId === exercise.youtubeId;
+    function beforeStamp(keyType) {
+        return keyType === 'b' && !!exercise && get('yubchk') && window.yubsyncLoadedVideoId === exercise.youtubeId;
     }
     function update(s) {
         document.body.classList.toggle('tutorial-loading', !s.videoReady);

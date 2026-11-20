@@ -57,6 +57,29 @@ test('clicking a wrapped continuation seeks to the measure that owns its timing'
     assert.deepEqual(h.seeks, [{ play: false, time: 3.01 }]);
 });
 
+test('only B records a tutorial marker while playing', () => {
+    const h = setup();
+    const { c } = h;
+    const tutorial = fs.readFileSync(path.join(folder, 'yubsync-tutorial.js'), 'utf8');
+    const start = tutorial.indexOf('function beforeStamp(');
+    c.exercise = { youtubeId: 'tutorial-video' };
+    c.get = name => c[name + '$$module$synpdf'];
+    c.window.yubsyncLoadedVideoId = c.exercise.youtubeId;
+    c.yubchk$$module$synpdf = true;
+    c.elmed$$module$synpdf.getCurrentTime = () => 10;
+    vm.runInContext(tutorial.slice(start, tutorial.indexOf('\n    }', start) + 6), c);
+    c.window.YubSyncTutorial = { beforeStamp: c.beforeStamp };
+    c.detix$$module$synpdf = c.demix$$module$synpdf = 2;
+
+    const before = h.snapshot();
+    c.msc_wz$$module$synpdf.x2time(200, 735, false);
+    assert.deepEqual(h.snapshot(), before);
+    assert.deepEqual(h.seeks, []);
+    h.key('b');
+    assert.equal(c.lastSynced$$module$synpdf, 3);
+    assert.equal(c.deTijden$$module$synpdf[3].mix, 3);
+});
+
 test('Left at the first measure replays its adjusted start while preserving the recorded passage', () => {
     for (const paused of [false, true]) {
         const h = setup({ paused });

@@ -695,7 +695,7 @@ Wijzer$$module$synpdf.prototype.x2time = function (a, b, c, isNavigation) {
 };
 Wijzer$$module$synpdf.prototype.keySync = function (keyType) {
     if (window.YubSyncLiveEdit?.busy) return;
-    if (window.YubSyncTutorial?.beforeStamp() === false) return;
+    if (window.YubSyncTutorial?.beforeStamp(keyType) === false) return;
     if (opt$$module$synpdf.synbox) {
         let currentTime = (yubchk$$module$synpdf ? elmed$$module$synpdf.getCurrentTime() : elmed$$module$synpdf.currentTime) - offset$$module$synpdf - .2;
         currentTime = Math.round(1E3 * currentTime) / 1E3;
