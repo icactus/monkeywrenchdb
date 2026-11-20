@@ -153,7 +153,7 @@
         playbackStarted ||= playing;
         const step = stage === 'start' ? (s.videoReady ? (playbackStarted ? 'mark-start' : 'play') : 'loading')
             : stage === 'repeat' ? 'repeat' : s.complete ? 'complete' : s.finishing ? 'finish'
-                : s.last < 2 ? 'follow' : 'check-start';
+                : s.last === 0 ? 'check-first' : s.last === 1 ? 'follow' : 'check-start';
         setInfoStep(step);
         byId('tutorial-start-help').hidden = step !== 'check-start';
         byId('tutorial-correction-help').hidden = step !== 'check-start';
@@ -164,16 +164,17 @@
         title.textContent = step === 'loading' ? 'Preparing the recording…' : step === 'play' ? 'Start the recording'
             : step === 'mark-start' ? 'Mark the start' : stage === 'repeat' ? 'The music repeats here'
                 : s.complete ? 'Ready to compare' : s.finishing ? 'Mark the end'
-                    : step === 'check-start' ? 'Listen back when you’re ready' : 'Mark each measure';
+                    : step === 'check-first' ? 'Check the starting point'
+                        : step === 'check-start' ? 'Listen back when you’re ready' : 'Mark each measure';
         const instruction = step === 'loading' ? 'The score and player will be ready shortly.'
             : step === 'play' ? 'Click Play on the player to start.'
-            : step === 'mark-start' ? 'Press B to set the start of the first measure about a second before the music starts.' +
-                (exercise.startSeconds <= 0 ? ' This recording has no lead-in, so press B as soon as you hear the music.' : '')
+            : step === 'mark-start' ? 'Press B when you hear the music start.'
+            : step === 'check-first' ? 'You can check your starting point by pressing the left arrow. Then continue pressing B to mark the start of every measure.'
             : stage === 'repeat'
                 ? `To add this repeat, shift click measure ${activeRepeat.from + 1} and then shift click measure ${activeRepeat.to + 1}. Keep pressing B as the music continues; after marking the jump, B advances to its destination. You can also use this method for 2nd endings or cuts.`
                 : s.complete ? 'Choose Submit tutorial to see how closely your timings match. Choose Start over to practice again.'
                     : s.finishing ? 'Let the last measure finish, then press B a few seconds after the final cutoff to finish the exercise.'
-                        : s.last < 2 ? 'Press B on the first beat of each next measure.'
+                        : step === 'follow' ? 'Press B on the first beat of each next measure.'
                             : 'Use Left / Right to listen back. Ctrl + Left / Right adjusts the first measure’s start. Then keep pressing B at each new measure.';
         if (copy.textContent !== instruction) copy.textContent = instruction;
         byId('tutorial-progress').textContent = `${Math.min(s.last + 1, exercise.official.length - 1)} / ${exercise.official.length - 1} measure starts marked`;

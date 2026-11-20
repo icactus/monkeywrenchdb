@@ -1009,8 +1009,8 @@ if ($yubsyncTutorial) {
             <h2 id="tutorial-title">Loading your exercise…</h2>
             <div role="status">
                 <p id="tutorial-copy">Preparing the score and recording.</p>
-                <p id="tutorial-mark-help" hidden>Don’t worry if the marker is too early or late.
-                    Use <kbd>Ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> to adjust it, then press the left arrow to test the placement.</p>
+                <p id="tutorial-mark-help" hidden>Then use <kbd>Ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd>
+                    to move the start point to about a second before the music.</p>
             </div>
             <details id="tutorial-start-help" hidden>
                 <summary>Check the first measure’s start</summary>
@@ -1220,7 +1220,7 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=14"></script><?php endif; ?>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=16"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=97"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=14"></script>
