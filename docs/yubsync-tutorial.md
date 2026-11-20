@@ -1,9 +1,11 @@
 # Standalone syncing tutorial
 
 Open `/editmode/yubsync-tutorial.php`, or choose **Try the tutorial** on YubSync.
-Both the tutorial and regular syncing page require an administrator login.
-The tutorial returns HTTP 403 to guests and non-admin users, uses private/no-store
-caching, and sends noindex directives in both HTML and HTTP headers. The existing
+The tutorial requires an administrator or tester login. Regular YubSync and Edit
+Mode require an administrator login. Apply `migrations/2026-11-yubsync-tester-role.sql`
+before assigning the `tester` role. The tutorial returns HTTP 403 to guests and
+other users, uses private/no-store caching, and sends noindex directives in both
+HTML and HTTP headers. The existing
 robots.txt excludes /editmode/; the tutorial is not added to a sitemap or catalog.
 
 The page reuses the YubSync PHP template, PDF/player engine, keyboard controls,

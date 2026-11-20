@@ -80,32 +80,49 @@ test('tutorial form submission bypasses every recording and score save operation
     assert.equal(comparisons, 1);
 });
 
-test('tutorial requires an administrator and sign-in returns to the tutorial', () => {
+test('administrators and testers can open the tutorial and tester access stops there', () => {
     const os = require('node:os');
     const { execFileSync } = require('node:child_process');
     const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'yubsync-tutorial-access-'));
     try {
-        for (const name of ['site-navigation.php', 'site-information.php', 'synpdf_182/editmode/yubsync.php', 'synpdf_182/editmode/yubsync-tutorial.php']) {
+        for (const name of ['site-navigation.php', 'site-information.php', 'synpdf_182/editmode/yubsync.php',
+            'synpdf_182/editmode/yubsync-tutorial.php', 'synpdf_182/editmode/synpdf-edit-mode.php']) {
             const target = path.join(fixture, name);
             fs.mkdirSync(path.dirname(target), { recursive: true });
             fs.copyFileSync(path.join(root, name), target);
         }
         fs.writeFileSync(path.join(fixture, 'session_config.php'), '<?php // Test provides the session.');
-        const render = session => JSON.parse(execFileSync('php', ['-r',
-            '$_SESSION=json_decode($argv[1],true); chdir($argv[2]); http_response_code(200); ob_start(); require "yubsync-tutorial.php"; $html=ob_get_clean(); echo json_encode(["status"=>http_response_code(),"html"=>$html]);',
-            JSON.stringify(session), path.join(fixture, 'synpdf_182/editmode')], { encoding: 'utf8' }));
-        for (const session of [{}, { user_id: 2, user_role: 'user' }, { user_id: 0, user_role: 'admin' }]) {
+        const render = (session, page = 'yubsync-tutorial.php') => JSON.parse(execFileSync('php', ['-r',
+            `$_SESSION = json_decode($argv[1], true); chdir($argv[2]); http_response_code(200); ob_start();
+            register_shutdown_function(function () {
+                echo json_encode(["status" => http_response_code(), "html" => ob_get_clean()]);
+            });
+            require $argv[3];`,
+            JSON.stringify(session), path.join(fixture, 'synpdf_182/editmode'), page], { encoding: 'utf8' }));
+        for (const session of [{}, { user_id: 2, user_role: 'user' }, { user_id: 0, user_role: 'admin' },
+            { user_id: 0, user_role: 'tester' }]) {
             const response = render(session);
             assert.equal(response.status, 403);
             assert.doesNotMatch(response.html, /id="tutorial-lesson"|src="yubsync-tutorial.js/);
             assert.match(response.html, /<meta name="robots" content="noindex">/);
             assert.doesNotMatch(response.html, /Try the tutorial/);
         }
-        assert.match(render({}).html, /return_to=editmode%2Fyubsync-tutorial.php/);
-        const admin = render({ user_id: 1, user_role: 'admin' });
-        assert.equal(admin.status, 200);
-        assert.match(admin.html, /id="tutorial-lesson"/);
-        assert.match(admin.html, /window.yubsyncCanEditScore = false/);
-        assert.doesNotMatch(admin.html, /src="yubsync-live-edit.js|src="yubsync-progress.js/);
+        const guest = render({});
+        assert.match(guest.html, /return_to=editmode%2Fyubsync-tutorial.php/);
+        assert.doesNotMatch(guest.html, /return_to=editmode%2Fyubsync\.php/);
+        for (const role of ['admin', 'tester']) {
+            const response = render({ user_id: 1, user_role: role });
+            assert.equal(response.status, 200);
+            assert.match(response.html, /id="tutorial-lesson"/);
+            assert.match(response.html, /window.yubsyncCanEditScore = false/);
+            assert.match(response.html, /window.yubsyncCanStampWithDownArrow = false/);
+            assert.doesNotMatch(response.html, /src="yubsync-live-edit.js|src="yubsync-progress.js/);
+            if (role === 'tester') assert.doesNotMatch(response.html, /href="\/requests.php\?view=admin"/);
+        }
+        const tester = { user_id: 1, user_role: 'tester' };
+        const regularSync = render(tester, 'yubsync.php');
+        assert.match(regularSync.html, /An administrator account is required to sync recordings/);
+        assert.doesNotMatch(regularSync.html, /id="yubsync-sidebar"|src="synpdf-full-yubsync2.js/);
+        assert.match(render(tester, 'synpdf-edit-mode.php').html, /Access Denied/);
     } finally { fs.rmSync(fixture, { recursive: true, force: true }); }
 });

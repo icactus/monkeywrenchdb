@@ -2,7 +2,8 @@
 // Shared navigation for the player/homepage and standalone account pages.
 $standaloneNavigation = $standaloneNavigation ?? false;
 $navigationSyncPage = $navigationSyncPage ?? false;
-$navigationReturnQuery = $navigationSyncPage ? '&amp;return_to=editmode%2Fyubsync.php' : ($standaloneNavigation ? '&amp;return_to=requests.php' : '');
+$navigationReturnTo = $navigationReturnTo ?? ($navigationSyncPage ? 'editmode/yubsync.php' : ($standaloneNavigation ? 'requests.php' : ''));
+$navigationReturnQuery = $navigationReturnTo === '' ? '' : '&amp;return_to=' . rawurlencode($navigationReturnTo);
 $navigationSignedIn = isset($_SESSION['user_id']);
 $navigationUserName = $user['name'] ?? $_SESSION['user_name'] ?? 'Account';
 $navigationIsAdmin = $standaloneNavigation ? $isAdmin : (($_SESSION['user_role'] ?? '') === 'admin');

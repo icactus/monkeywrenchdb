@@ -11,10 +11,13 @@ if (file_exists('session_config.php')) {
 }
 
 $yubsyncSiteRoot = is_file(__DIR__ . '/../../site-navigation.php') ? dirname(__DIR__, 2) : dirname(__DIR__);
+$syncReturnTo = $yubsyncTutorial ? 'editmode/yubsync-tutorial.php' : 'editmode/yubsync.php';
 // ADMIN CHECK
-$isSyncAdmin = (int) ($_SESSION['user_id'] ?? 0) > 0 && ($_SESSION['user_role'] ?? '') === 'admin';
-$canSync = $isSyncAdmin;
-$canStampWithDownArrow = !$yubsyncTutorial && $canSync && (int) ($_SESSION['user_id'] ?? 0)
+$syncUserId = (int) ($_SESSION['user_id'] ?? 0);
+$syncRole = $_SESSION['user_role'] ?? '';
+$isSyncAdmin = $syncUserId > 0 && $syncRole === 'admin';
+$canSync = $isSyncAdmin || ($yubsyncTutorial && $syncUserId > 0 && $syncRole === 'tester');
+$canStampWithDownArrow = !$yubsyncTutorial && $isSyncAdmin && $syncUserId
     === (defined('MW_SUPER_ADMIN_USER_ID') ? MW_SUPER_ADMIN_USER_ID : 1);
 $canEditSyncScore = $canStampWithDownArrow;
 if ($yubsyncTutorial) {
@@ -813,7 +816,13 @@ if ($yubsyncTutorial) {
             <?php if (!$yubsyncTutorial && $canSync): ?><a href="yubsync-tutorial.php">Try the tutorial</a><?php endif; ?>
             <button type="button" id="helpm" aria-controls="help" title="Help (H)">Help</button>
             <a href="/">Library <span aria-hidden="true">↗</span></a>
-            <?php $standaloneNavigation = true; $navigationSyncPage = true; $isAdmin = $isSyncAdmin; require $yubsyncSiteRoot . '/site-navigation.php'; ?>
+            <?php
+            $standaloneNavigation = true;
+            $navigationSyncPage = true;
+            $navigationReturnTo = $syncReturnTo;
+            $isAdmin = $isSyncAdmin;
+            require $yubsyncSiteRoot . '/site-navigation.php';
+            ?>
         </nav>
     </header>
     <?php if ($canSync): ?>
@@ -1104,10 +1113,15 @@ if ($yubsyncTutorial) {
     <div id="noklik"></div>
     <?php else: ?>
     <main class="yubsync-access-panel">
-        <h1>Sync a recording</h1>
-        <p><?= isset($_SESSION['user_id']) ? 'An administrator account is required to sync recordings.' : 'Sign in with your administrator account to sync a recording.' ?></p>
-        <?php if (!isset($_SESSION['user_id'])): ?>
-            <a class="yubsync-sign-in" href="/auth_login.php?provider=google&amp;return_to=editmode%2F<?= $yubsyncTutorial ? 'yubsync-tutorial.php' : 'yubsync.php' ?>">Sign in with Google</a>
+        <?php if ($yubsyncTutorial): ?>
+            <h1>Syncing tutorial</h1>
+            <p>Sign in with an administrator or tester account to open the tutorial.</p>
+        <?php else: ?>
+            <h1>Sync a recording</h1>
+            <p><?= $syncUserId > 0 ? 'An administrator account is required to sync recordings.' : 'Sign in with your administrator account to sync a recording.' ?></p>
+        <?php endif; ?>
+        <?php if ($syncUserId <= 0): ?>
+            <a class="yubsync-sign-in" href="/auth_login.php?provider=google&amp;return_to=<?= rawurlencode($syncReturnTo) ?>">Sign in with Google</a>
         <?php endif; ?>
     </main>
     <?php endif; ?>
