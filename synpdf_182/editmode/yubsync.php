@@ -1133,7 +1133,7 @@ if ($yubsyncTutorial) {
 
         <?php if ($yubsyncTutorial): ?>
         <p>Use <b>Speed</b> beneath the video or the <b>+</b> and <b>−</b> keys to change playback speed.
-            Try slowing down while you practice.</p>
+            At first it may be easier to sync at a slower speed. As you get better you can try syncing all the way up to 2x speed.</p>
         <ol>
             <li><b>Start the recording.</b> Click <b>Play</b>, then press <b>B</b> when you hear the music start.</li>
             <li><b>Check the starting point.</b> Use <b>Ctrl + Left / Right</b> to move the first marker a little before the music starts.
