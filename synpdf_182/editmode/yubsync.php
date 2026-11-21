@@ -1037,9 +1037,10 @@ if ($yubsyncTutorial) {
                     <li>Press <kbd>Spacebar</kbd> to pause.</li>
                     <li><kbd>Shift-click</kbd> this measure, then <kbd>Shift-click</kbd> measure <span id="tutorial-repeat-destination"></span> to add the repeat.</li>
                     <li>Press <kbd>Left Arrow</kbd> a few times to go back, then press <kbd>Spacebar</kbd> to resume.
-                        Listen through the marked measures and press <kbd>B</kbd> when the music repeats.</li>
+                        Listen through the marked measures. After marking the repeat, continue pressing <kbd>B</kbd>
+                        to take the repeat and continue marking measures.</li>
                     <li>If the timing is off, press <kbd>Backspace</kbd> on the mistimed measure and try again.</li>
-                    <li>For cuts or second endings, use the same <kbd>Shift-click</kbd> steps and choose a later destination.</li>
+                    <li>You can also use this <kbd>Shift-click</kbd> method to jump forward for cuts or second endings.</li>
                 </ul>
             </div>
         </aside>
