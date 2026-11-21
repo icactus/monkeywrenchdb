@@ -1226,10 +1226,7 @@ if ($yubsyncTutorial) {
             The jump goes from the end of the first selected measure to the start of the next selected measure.
             Matching numbers pair the markers. For a first and second ending, mark the first ending From and the
             second ending To.</p>
-        <p>Each jump pair is used once while syncing forward and stays marked afterward. <b>Backspace</b> keeps
-            the marks; rewinding before a jump makes it available again as you redo that section. To delete a jump,
-            press <b>G</b> to remove the most recently added pair, or click either mark and press <b>Delete</b>
-            or select the <b>×</b> that appears.</p>
+        <p>Each jump pair is used once. Press <b>G</b> to delete the most recently added Jump pair or click either jump mark and press/click delete.</p>
         <button type="button" id="closehelp">Close Help</button>
     </div>
     <?php if ($canSync): ?>
