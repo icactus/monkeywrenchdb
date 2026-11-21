@@ -1132,20 +1132,22 @@ if ($yubsyncTutorial) {
         <p>Use speakers or wired headphones. Wireless headphones can add a delay and affect your timings.</p>
 
         <?php if ($yubsyncTutorial): ?>
+        <p>Use <b>Speed</b> beneath the video or the <b>+</b> and <b>−</b> keys to change playback speed.
+            Try slowing down while you practice.</p>
         <ol>
-            <li><b>Mark a few measures.</b> Play the recording and press the first <b>B</b> about a second
-                before the first note. Then press <b>B</b> on the first beat of each next measure.</li>
-            <li><b>Listen back to the start.</b> Use <b>Left</b> to return to measure one. Press <b>Left</b>
-                again to hear its starting position. Use <b>Ctrl + Left / Right</b> to adjust it by 0.1 seconds,
-                then press <b>Left</b> again to listen. Press <b>Space</b> if paused.</li>
-            <li><b>Follow the measures.</b> Press <b>B</b> on the first beat of each next measure.
-                To redo a timing, pause, find the measure with <b>Left / Right</b>, then press <b>Backspace</b>.
-                Go a couple more measures back with <b>Left</b> and play them to pick up the rhythm.
-                Resume pressing <b>B</b> at the first measure that needs a new timing.</li>
-            <li><b>Mark the repeat.</b> The tutorial pauses with instructions. Shift-click the <b>From</b>
-                measure, then the <b>To</b> measure, and resume. Continue pressing B on the repeated passage.</li>
-            <li><b>Finish and compare.</b> Press B a few seconds after the final cutoff, then choose
-                <b>Submit tutorial</b>. Your timings are compared with the official sync; nothing is uploaded.
+            <li><b>Start the recording.</b> Click <b>Play</b>, then press <b>B</b> when you hear the music start.</li>
+            <li><b>Check the starting point.</b> Use <b>Spacebar</b> to pause or resume. While playing, press
+                <b>Left Arrow</b> to hear the starting point. Adjust it with <b>Ctrl + Left / Right</b>.
+                This video starts immediately, so set <b>First measure start</b> to <b>0:00.0</b>.</li>
+            <li><b>Mark each measure.</b> Press <b>B</b> at the start of each measure. To redo a timing,
+                find the measure with <b>Left / Right</b>, then press <b>Backspace</b> to clear its marker and any after it.
+                Go back a few marked measures and listen to pick up the tempo. Resume pressing <b>B</b> at the next unmarked measure.</li>
+            <li><b>Mark the repeat.</b> Press <b>Spacebar</b> to pause. <b>Shift-click</b> the <b>From</b> measure,
+                then <b>Shift-click</b> the <b>To</b> measure. Go back a few measures, resume playback, and keep pressing
+                <b>B</b> at the start of every measure on the second pass. Use the same <b>Shift-click</b> method for forward jumps
+                in cuts or second endings.</li>
+            <li><b>Finish and compare.</b> Press <b>B</b> a few seconds after the final cutoff, then choose
+                <b>Submit tutorial</b> to compare your timings with the official sync. Your practice attempt stays in your browser.
                 Refreshing this page starts a new attempt.</li>
         </ol>
         <?php else: ?>
