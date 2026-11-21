@@ -798,7 +798,7 @@ if ($yubsyncTutorial) {
     </style>
     <link rel="stylesheet" href="yubsync-live-edit.css?v=16" />
     <?php if ($yubsyncTutorial): ?>
-    <link rel="stylesheet" href="yubsync-tutorial.css?v=14" />
+    <link rel="stylesheet" href="yubsync-tutorial.css?v=15" />
     <?php endif; ?>
 </head>
 
@@ -844,7 +844,7 @@ if ($yubsyncTutorial) {
                 <output id="yubsync-offset-value" aria-labelledby="yubsync-offset-label">—</output>
             </div>
         </div>
-        <?php if ($yubsyncTutorial): ?><div id="tutorial-follow-prompt"></div><?php endif; ?>
+        <?php if ($yubsyncTutorial): ?><div id="tutorial-sidebar-prompt"></div><?php endif; ?>
         <div id="sync">
             <div id="mbar">
             </div>
@@ -1232,7 +1232,7 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=25"></script><?php endif; ?>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=26"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=97"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=14"></script>

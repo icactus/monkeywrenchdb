@@ -12,7 +12,7 @@
 #tutorial-lesson.tutorial-opening {
     overflow: visible; border-color: var(--home-teal); box-shadow: 0 6px 20px #0003;
 }
-:is(#tutorial-player-prompt, #tutorial-follow-prompt) > #tutorial-lesson {
+:is(#tutorial-player-prompt, #tutorial-sidebar-prompt) > #tutorial-lesson {
     position: relative; inset: auto; width: auto; margin: 12px 12px 0;
 }
 #tutorial-lesson.tutorial-opening::before {
@@ -22,7 +22,7 @@
     border-width: 1px 0 0 1px; pointer-events: none;
 }
 @media (min-width: 768px) {
-    #yubsync-sidebar:has(#tutorial-follow-prompt > #tutorial-lesson:not([hidden])) { overflow-y: auto; }
+    #yubsync-sidebar:has(#tutorial-sidebar-prompt > #tutorial-lesson:not([hidden])) { overflow-y: auto; }
     #tutorial-lesson.tutorial-opening { top: clamp(0px, 100% - 260px, 96px); right: 0; bottom: auto; }
     #tutorial-lesson.tutorial-opening::before {
         top: 16px; left: auto; right: -7px; transform: rotate(135deg);
@@ -35,7 +35,7 @@
     font-family: inherit; font-size: 20px; font-weight: 700; line-height: 1.25;
 }
 #tutorial-copy { margin: 0; overflow-wrap: break-word; }
-#tutorial-lesson:is([data-step="check-first"], [data-step="repeat"]) { max-height: calc(100% - 24px); }
+#tutorial-lesson[data-step="check-first"] { max-height: calc(100% - 24px); }
 .yubsync-tutorial:has(#tutorial-lesson[data-step="check-first"]:not([hidden])) #yubsync-offset-control {
     border-radius: 4px; outline: 4px solid var(--home-focus); outline-offset: 1px;
 }
