@@ -139,7 +139,7 @@
         byId('yubsync-completion-title').textContent = result ? 'Results' : 'Tutorial complete';
         byId('yubsync-completion-copy').textContent = result
             ? 'Your timings have been compared with the official sync.'
-            : 'Submit to compare your timings with the official sync. This practice attempt stays in your browser.';
+            : 'Submit to compare your timings with the official sync.';
         byId('addnewrecordingform').hidden = !s.complete || !!result;
         byId('tutorial-results').hidden = !result;
         byId('tutorial-try-again').hidden = !result;

@@ -1147,7 +1147,7 @@ if ($yubsyncTutorial) {
                 <b>B</b> at the start of every measure on the second pass. Use the same <b>Shift-click</b> method for forward jumps
                 in cuts or second endings.</li>
             <li><b>Finish and compare.</b> Press <b>B</b> a few seconds after the final cutoff, then choose
-                <b>Submit tutorial</b> to compare your timings with the official sync. Your practice attempt stays in your browser.
+                <b>Submit tutorial</b> to compare your timings with the official sync.
                 Refreshing this page starts a new attempt.</li>
         </ol>
         <?php else: ?>
@@ -1234,7 +1234,7 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=26"></script><?php endif; ?>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=27"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=97"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=14"></script>
