@@ -173,7 +173,7 @@
                 : s.complete ? 'Ready to compare' : s.finishing ? 'Mark the end'
                     : step === 'check-first' ? 'Check the starting point' : 'Mark each measure';
         const instruction = step === 'loading' ? 'The score and player will be ready shortly.'
-            : step === 'play' ? 'Click Play on the player to start.'
+            : step === 'play' ? 'Click Play on the player. Press B when you hear the music start.'
             : step === 'mark-start' ? 'Press B when you hear the music start.'
             : s.complete ? 'Choose Submit tutorial to see how closely your timings match. Choose Start over to practice again.'
             : step === 'finish' ? 'Let the last measure finish, then press B a few seconds after the final cutoff to finish the exercise.' : '';

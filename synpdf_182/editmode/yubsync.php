@@ -1020,12 +1020,12 @@ if ($yubsyncTutorial) {
                 <p id="tutorial-copy">Preparing the score and recording.</p>
                 <div id="tutorial-mark-help" hidden>
                     <ul class="tutorial-instructions">
-                        <li>Use <kbd>Spacebar</kbd> to pause or resume.</li>
-                        <li>Unpause and press <kbd>Left Arrow</kbd> to check the starting point.</li>
-                        <li>Use <kbd>Ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> to move the start to about a second before the music starts.
-                            Since this video starts right away, just set it to <strong>0:00.0</strong>.</li>
+                        <li>Use <kbd>Ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> to move the first marker a little before the music starts.
+                            For this video, set <strong>First measure start</strong> to <strong>0:00.0</strong>.</li>
+                        <li>Press <kbd>Left Arrow</kbd> to go back to the marker and listen. Use <kbd>Spacebar</kbd> to pause or resume.</li>
                     </ul>
-                    <p>When you’re ready to continue, press <kbd>B</kbd> at the start of each measure.</p>
+                    <p>If it’s easier, mark a few more measures with <kbd>B</kbd> first. Then use <kbd>Left Arrow</kbd>
+                        to return to measure 1 and adjust the start.</p>
                 </div>
                 <ul id="tutorial-follow-help" class="tutorial-instructions" hidden>
                     <li>Keep pressing <kbd>B</kbd> at the start of each measure.</li>
@@ -1136,9 +1136,9 @@ if ($yubsyncTutorial) {
             Try slowing down while you practice.</p>
         <ol>
             <li><b>Start the recording.</b> Click <b>Play</b>, then press <b>B</b> when you hear the music start.</li>
-            <li><b>Check the starting point.</b> Use <b>Spacebar</b> to pause or resume. While playing, press
-                <b>Left Arrow</b> to hear the starting point. Adjust it with <b>Ctrl + Left / Right</b>.
-                This video starts immediately, so set <b>First measure start</b> to <b>0:00.0</b>.</li>
+            <li><b>Check the starting point.</b> Use <b>Ctrl + Left / Right</b> to move the first marker a little before the music starts.
+                For this video, set <b>First measure start</b> to <b>0:00.0</b>. Press <b>Left Arrow</b> to go back and listen.
+                Use <b>Spacebar</b> to pause or resume. You can also mark a few more measures first, then return to measure 1 and adjust the start.</li>
             <li><b>Mark each measure.</b> Press <b>B</b> at the start of each measure. To redo a timing,
                 find the measure with <b>Left / Right</b>, then press <b>Backspace</b> to clear its marker and any after it.
                 Go back a few marked measures and listen to pick up the tempo. Resume pressing <b>B</b> at the next unmarked measure.</li>
@@ -1234,7 +1234,7 @@ if ($yubsyncTutorial) {
     </div>
     <?php if ($canSync): ?>
     <div id="yubsync-split-popup" role="status" aria-live="polite" hidden></div>
-    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=27"></script><?php endif; ?>
+    <?php if ($yubsyncTutorial): ?><script src="yubsync-tutorial.js?v=28"></script><?php endif; ?>
     <script src="yubsync-tools.js?v=97"></script>
     <?php if (!$yubsyncTutorial): ?>
     <script src="yubsync-live-edit.js?v=14"></script>
