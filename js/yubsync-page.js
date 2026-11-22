@@ -30,6 +30,9 @@
         document.getElementById('about')?.classList.remove('showabout');
         document.getElementById('about-backdrop')?.classList.remove('visible');
     }
+    function closeHelp() {
+        document.getElementById('help')?.classList.remove('showhlp');
+    }
     window.toggleHelpLinkMenu = () => {
         closeAbout();
         window.closeUserDropdown?.();
@@ -38,18 +41,19 @@
     window.toggleAboutLinkMenu = () => {
         const about = document.getElementById('about');
         const open = !about?.classList.contains('showabout');
-        document.getElementById('help')?.classList.remove('showhlp');
+        closeHelp();
         window.closeUserDropdown?.();
         about?.classList.toggle('showabout', open);
         document.getElementById('about-backdrop')?.classList.toggle('visible', open);
     };
     document.getElementById('helpm')?.addEventListener('click', window.toggleHelpLinkMenu);
-    document.getElementById('closehelp')?.addEventListener('click', () => document.getElementById('help')?.classList.remove('showhlp'));
+    document.getElementById('help-close')?.addEventListener('click', closeHelp);
+    document.getElementById('closehelp')?.addEventListener('click', closeHelp);
     document.getElementById('about-backdrop')?.addEventListener('click', closeAbout);
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape') {
             closeAbout();
-            document.getElementById('help')?.classList.remove('showhlp');
+            closeHelp();
             window.closeUserDropdown?.();
         }
     });

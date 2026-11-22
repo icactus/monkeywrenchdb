@@ -83,6 +83,16 @@ test('Help and About work on the signed-out screen and close with Escape', () =>
     assert.equal(h.element('about-backdrop').classList.contains('visible'), false);
 });
 
+test('both the Help corner button and the bottom button close Help', () => {
+    const h = setup();
+    for (const id of ['help-close', 'closehelp']) {
+        h.element('helpm').listeners.click();
+        assert.equal(h.element('help').classList.contains('showhlp'), true);
+        h.element(id).listeners.click();
+        assert.equal(h.element('help').classList.contains('showhlp'), false);
+    }
+});
+
 test('the branded account shell is public while sync controls remain restricted to administrators', () => {
     const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'yubsync-account-test-'));
     try {
@@ -112,6 +122,8 @@ test('the branded account shell is public while sync controls remain restricted 
         assert.match(admin, /src="synpdf-full-yubsync2.js/);
         assert.match(admin, /href="\/requests.php\?view=admin"/);
         assert.equal((admin.match(/id="help"/g) || []).length, 1);
+        assert.match(admin, /id="help-close"[^>]*aria-label="Close Help"[^>]*>×<\/button>/);
+        assert.match(admin, /id="closehelp">Close Help<\/button>/);
         assert.match(admin, /window.yubsyncCanEditScore = true/);
         assert.match(admin, /id="yubsync-edit-toolbar"[^>]*hidden/);
         const otherAdmin = render({ user_id: 2, user_role: 'admin', user_name: 'Bob' });

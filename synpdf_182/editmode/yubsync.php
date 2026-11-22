@@ -44,7 +44,7 @@ if ($yubsyncTutorial) {
     <link rel="stylesheet" href="/assets/css/request-notifications.css?v=2">
     <link rel="stylesheet" href="/assets/css/leaderboard.css?v=1">
     <script>try { if (localStorage.getItem('darkMode') === '1') document.documentElement.classList.add('inverted'); } catch (e) {}</script>
-    <script src="/js/yubsync-page.js?v=1" defer></script>
+    <script src="/js/yubsync-page.js?v=2" defer></script>
     <script src="/js/contact-email.js?v=2" defer></script>
     <?php if ($canSync): ?>
     <script>window.yubsyncCanStampWithDownArrow = <?= json_encode($canStampWithDownArrow) ?>;
@@ -477,6 +477,7 @@ if ($yubsyncTutorial) {
 
         #help h2 {
             margin: 0 0 8px;
+            padding-right: 32px;
         }
 
         #help h3 {
@@ -1127,6 +1128,7 @@ if ($yubsyncTutorial) {
     </main>
     <?php endif; ?>
     <div id="help">
+        <button type="button" id="help-close" class="yubsync-overlay-close" aria-label="Close Help" title="Close Help">×</button>
         <h2>How to sync a recording</h2>
         <p>Match the score to the recording by pressing <b>B</b> as you follow the music.</p>
         <p>Use speakers or wired headphones. Wireless headphones can add a delay and affect your timings.</p>
