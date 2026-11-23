@@ -220,11 +220,11 @@
             return webGpuScriptLoadPromise;
         }
 
-        function createWasmWorkerPool(config, modelBytes) {
+        async function createWasmWorkerPool(config, modelBytes) {
             if (typeof Worker !== 'function' || typeof Blob !== 'function' || typeof URL !== 'function' || typeof URL.createObjectURL !== 'function') {
-                return Promise.resolve(null);
+                return null;
             }
-            if (config.useWorkerPool === false) return Promise.resolve(null);
+            if (config.useWorkerPool === false) return null;
 
             var hc = (global.navigator && Number(global.navigator.hardwareConcurrency)) || 4;
             var requestedWorkers = Number(config.wasmWorkers);
@@ -240,7 +240,18 @@
 
             var ortUrl = resolveAbsoluteUrl(config.ortWasmScriptUrl || (config.wasmRoot ? config.wasmRoot + 'ort.wasm.min.js' : null));
             var wasmRootUrl = resolveAbsoluteUrl(config.wasmRoot || '');
-            if (!ortUrl || !wasmRootUrl) return Promise.resolve(null);
+            if (!ortUrl || !wasmRootUrl) return null;
+
+            // Fetch the WASM binary once on the main thread and transfer copies to each
+            // worker so N workers never race to download the 12 MB .wasm file concurrently.
+            var wasmBytes = null;
+            if (typeof fetch === 'function') {
+                try {
+                    var wasmUrl = wasmRootUrl + 'ort-wasm-simd-threaded.wasm';
+                    var wasmResp = await fetch(wasmUrl);
+                    if (wasmResp.ok) wasmBytes = await wasmResp.arrayBuffer();
+                } catch (_err) { /* Workers can fall back to fetching from wasmPaths. */ }
+            }
 
             var workerSource = [
                 'self.onmessage = async function (event) {',
@@ -251,6 +262,9 @@
                 '      if (self.ort && self.ort.env && self.ort.env.wasm) {',
                 '        self.ort.env.wasm.wasmPaths = msg.wasmRoot;',
                 '        self.ort.env.wasm.numThreads = msg.threads;',
+                '        if (msg.wasmBuffer) {',
+                '          self.ort.env.wasm.wasmBinary = new Uint8Array(msg.wasmBuffer);',
+                '        }',
                 '      }',
                 '      self._session = await self.ort.InferenceSession.create(new Uint8Array(msg.modelBuffer), {',
                 '        executionProviders: ["wasm"],',
@@ -361,13 +375,20 @@
                     };
 
                     var bytesCopy = modelBytes.slice(0);
+                    var transfers = [bytesCopy];
+                    var wasmCopy = null;
+                    if (wasmBytes) {
+                        wasmCopy = (w === workerCount - 1) ? wasmBytes : wasmBytes.slice(0);
+                        transfers.push(wasmCopy);
+                    }
                     worker.postMessage({
                         type: 'init',
                         ortUrl: ortUrl,
                         wasmRoot: wasmRootUrl,
                         threads: threadsPerWorker,
-                        modelBuffer: bytesCopy
-                    }, [bytesCopy]);
+                        modelBuffer: bytesCopy,
+                        wasmBuffer: wasmCopy
+                    }, transfers);
                 }));
             }
 
