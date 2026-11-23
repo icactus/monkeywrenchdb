@@ -92,6 +92,8 @@ test('administrators and testers can open the tutorial and tester access stops t
             fs.copyFileSync(path.join(root, name), target);
         }
         fs.writeFileSync(path.join(fixture, 'session_config.php'), '<?php // Test provides the session.');
+        fs.mkdirSync(path.join(fixture, 'phpfiles'));
+        fs.writeFileSync(path.join(fixture, 'phpfiles/yubsync_access.php'), '<?php function mwYubSyncTesterHasLiveAccess(int $userId): bool { return false; }');
         const render = (session, page = 'yubsync-tutorial.php') => JSON.parse(execFileSync('php', ['-r',
             `$_SESSION = json_decode($argv[1], true); chdir($argv[2]); http_response_code(200); ob_start();
             register_shutdown_function(function () {
@@ -121,7 +123,7 @@ test('administrators and testers can open the tutorial and tester access stops t
         }
         const tester = { user_id: 1, user_role: 'tester' };
         const regularSync = render(tester, 'yubsync.php');
-        assert.match(regularSync.html, /An administrator account is required to sync recordings/);
+        assert.match(regularSync.html, /Live syncing requires account approval/);
         assert.doesNotMatch(regularSync.html, /id="yubsync-sidebar"|src="synpdf-full-yubsync2.js/);
         assert.match(render(tester, 'synpdf-edit-mode.php').html, /Access Denied/);
     } finally { fs.rmSync(fixture, { recursive: true, force: true }); }

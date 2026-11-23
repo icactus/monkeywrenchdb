@@ -317,7 +317,8 @@ test('timestamps and timing adjustments save before keyup or a polling timer can
 });
 
 test('the page grants Down Arrow stamping and score corrections to the configured superuser alone', () => {
-    const gate = page.slice(page.indexOf('// ADMIN CHECK'), page.indexOf('\nif ($yubsyncTutorial)', page.indexOf('// ADMIN CHECK')));
+    const start = page.indexOf('$syncUserId =');
+    const gate = page.slice(start, page.indexOf('\nif ($yubsyncTutorial)', start));
     for (const [role, id, configuredId, expected] of [
         ['admin', 1, null, true], ['admin', 2, null, false], ['user', 1, null, false],
         ['admin', 0, null, false], ['admin', 7, 7, true], ['admin', 1, 7, false]

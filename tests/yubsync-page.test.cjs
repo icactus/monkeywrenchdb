@@ -93,10 +93,11 @@ test('both the Help corner button and the bottom button close Help', () => {
     }
 });
 
-test('the branded account shell is public while sync controls remain restricted to administrators', () => {
+test('live YuBSync grants allow testers to sync and submit recordings with their existing role', () => {
     const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'yubsync-account-test-'));
     try {
-        for (const name of ['site-navigation.php', 'site-information.php', 'synpdf_182/editmode/yubsync.php']) {
+        for (const name of ['site-navigation.php', 'site-information.php', 'synpdf_182/editmode/yubsync.php',
+            'synpdf_182/editmode/dispatcher.php']) {
             const target = path.join(fixture, name);
             fs.mkdirSync(path.dirname(target), { recursive: true });
             fs.copyFileSync(path.join(root, name), target);
@@ -105,9 +106,20 @@ test('the branded account shell is public while sync controls remain restricted 
         fs.writeFileSync(path.join(fixture, 'session_config.php'), '<?php // Session supplied by the test.');
         fs.writeFileSync(path.join(fixture, 'phpfiles/get_pieces_and_composers.php'), '<?php $piecesArray = []; $composersArray = [];');
         fs.writeFileSync(path.join(fixture, 'phpfiles/leaderboard_cache.php'), '<?php function mwSyncReadLeaderboardCache() { return ["entries" => []]; }');
+        fs.writeFileSync(path.join(fixture, 'phpfiles/yubsync_access.php'), '<?php function mwYubSyncTesterHasLiveAccess(int $userId): bool { return $userId === 3; }');
+        fs.writeFileSync(path.join(fixture, 'phpfiles/submit_recording.php'), '<?php echo "submit recording";');
+        fs.writeFileSync(path.join(fixture, 'phpfiles/update_recording_sync.php'), '<?php echo "update recording";');
+        const editmode = path.join(fixture, 'synpdf_182/editmode');
         function render(session) {
             return execFileSync('php', ['-r', '$_SESSION = json_decode($argv[1], true); chdir($argv[2]); require "yubsync.php";',
-                JSON.stringify(session), path.join(fixture, 'synpdf_182/editmode')], { encoding: 'utf8' });
+                JSON.stringify(session), editmode], { encoding: 'utf8' });
+        }
+        function dispatch(session, action) {
+            return execFileSync('php', ['-r',
+                `$_SESSION = json_decode($argv[1], true); chdir($argv[2]); $_POST["action"] = $argv[3];
+                 register_shutdown_function(fn() => print("\\n" . (http_response_code() ?: 200)));
+                 require "dispatcher.php";`,
+                JSON.stringify(session), editmode, action], { encoding: 'utf8' });
         }
         const guest = render({});
         assert.match(guest, /id="yubsync-site-header"/);
@@ -117,6 +129,21 @@ test('the branded account shell is public while sync controls remain restricted 
         assert.match(user, /class="nav-user-trigger"/);
         assert.match(user, /&lt;script&gt;/);
         assert.doesNotMatch(user, /id="yubsync-sidebar"|src="synpdf-full-yubsync2.js/);
+        const tester = { user_id: 2, user_role: 'tester' };
+        const approved = { user_id: 3, user_role: 'tester' };
+        assert.doesNotMatch(render(tester), /id="yubsync-sidebar"/);
+        const contributor = render(approved);
+        assert.match(contributor, /id="yubsync-sidebar"/);
+        assert.match(contributor, /window.yubsyncCanEditScore = false/);
+        assert.match(contributor, /window.yubsyncCanStampWithDownArrow = false/);
+        assert.doesNotMatch(contributor, /href="\/requests.php\?view=admin"/);
+        assert.equal(dispatch(tester, 'add_recording'), 'Access Denied\n403');
+        assert.equal(dispatch({ ...approved, user_role: 'user' }, 'add_recording'), 'Access Denied\n403');
+        assert.equal(dispatch(approved, 'add_recording'), 'submit recording\n200');
+        assert.equal(dispatch(approved, 'update_recording_sync'), 'Access Denied\n403');
+        assert.equal(dispatch(approved, 'delete_recording'), 'Access Denied\n403');
+        assert.equal(dispatch(approved, 'add_metric_arr'), 'Access Denied\n403');
+        assert.equal(dispatch({ user_id: 1, user_role: 'admin' }, 'update_recording_sync'), 'update recording\n200');
         const admin = render({ user_id: 1, user_role: 'admin', user_name: 'Alice' });
         assert.match(admin, /id="yubsync-sidebar"/);
         assert.match(admin, /src="synpdf-full-yubsync2.js/);

@@ -12,11 +12,18 @@ if (file_exists('session_config.php')) {
 
 $yubsyncSiteRoot = is_file(__DIR__ . '/../../site-navigation.php') ? dirname(__DIR__, 2) : dirname(__DIR__);
 $syncReturnTo = $yubsyncTutorial ? 'editmode/yubsync-tutorial.php' : 'editmode/yubsync.php';
-// ADMIN CHECK
 $syncUserId = (int) ($_SESSION['user_id'] ?? 0);
 $syncRole = $_SESSION['user_role'] ?? '';
 $isSyncAdmin = $syncUserId > 0 && $syncRole === 'admin';
-$canSync = $isSyncAdmin || ($yubsyncTutorial && $syncUserId > 0 && $syncRole === 'tester');
+$canSync = $isSyncAdmin;
+if ($syncUserId > 0 && $syncRole === 'tester') {
+    if ($yubsyncTutorial) {
+        $canSync = true;
+    } else {
+        require_once __DIR__ . '/../../phpfiles/yubsync_access.php';
+        $canSync = mwYubSyncTesterHasLiveAccess($syncUserId);
+    }
+}
 $canStampWithDownArrow = !$yubsyncTutorial && $isSyncAdmin && $syncUserId
     === (defined('MW_SUPER_ADMIN_USER_ID') ? MW_SUPER_ADMIN_USER_ID : 1);
 $canEditSyncScore = $canStampWithDownArrow;
@@ -1120,7 +1127,7 @@ if ($yubsyncTutorial) {
             <p>Sign in with an administrator or tester account to open the tutorial.</p>
         <?php else: ?>
             <h1>Sync a recording</h1>
-            <p><?= $syncUserId > 0 ? 'An administrator account is required to sync recordings.' : 'Sign in with your administrator account to sync a recording.' ?></p>
+            <p><?= $syncUserId > 0 ? 'Live syncing requires account approval.' : 'Sign in with an approved account to sync a recording.' ?></p>
         <?php endif; ?>
         <?php if ($syncUserId <= 0): ?>
             <a class="yubsync-sign-in" href="/auth_login.php?provider=google&amp;return_to=<?= rawurlencode($syncReturnTo) ?>">Sign in with Google</a>

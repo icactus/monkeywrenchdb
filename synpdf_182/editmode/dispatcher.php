@@ -15,9 +15,17 @@ if (file_exists('session_config.php')) {
     session_start();
 }
 
-if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
-    http_response_code(403);
-    die("Access Denied");
+$role = $_SESSION['user_role'] ?? '';
+if ($role !== 'admin') {
+    $canSubmitRecording = false;
+    if ($role === 'tester' && ($_POST['action'] ?? null) === 'add_recording') {
+        require_once __DIR__ . '/../../phpfiles/yubsync_access.php';
+        $canSubmitRecording = mwYubSyncTesterHasLiveAccess((int) ($_SESSION['user_id'] ?? 0));
+    }
+    if (!$canSubmitRecording) {
+        http_response_code(403);
+        die("Access Denied");
+    }
 }
 
 
