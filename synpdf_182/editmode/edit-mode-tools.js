@@ -1280,13 +1280,15 @@ async function updateBarlineDetectionProgress(pageNumber, completedSystems, tota
     if (!barlineDetectionProgress) return;
     const progress = barlineDetectionProgress;
     const fraction = totalSystems ? completedSystems / totalSystems : 0;
-    const percent = Math.floor(100 * (progress.completedPages + fraction) / progress.totalPages);
+    const percent = Math.min(100, Math.floor(100 * (progress.completedPages + fraction) / progress.totalPages));
     const status = document.getElementById('barline-detection-status');
     const meter = document.getElementById('barline-detection-meter');
     if (meter) meter.value = percent;
-    if (status) status.textContent = 'Page ' + pageNumber + ' · ' +
-        (totalSystems ? 'Staff ' + completedSystems + ' of ' + totalSystems : 'Finding staves…') +
-        ' · ' + percent + '%';
+    if (status) {
+        status.textContent = progress.totalPages > 1
+            ? 'Page ' + pageNumber + ' of ' + progress.totalPages + ' · ' + percent + '%'
+            : 'Page ' + pageNumber + ' · ' + percent + '%';
+    }
     await yieldBarlineDetection();
 }
 
@@ -6615,7 +6617,7 @@ $(document).ready(function () {
                         throw new Error('Detection failed on page ' + pNum);
                     }
                     barlineDetectionProgress.completedPages++;
-                    await updateBarlineDetectionProgress(pNum, 1, 1);
+                    await updateBarlineDetectionProgress(barlineDetectionProgress.completedPages, 0, 0);
                 }
             }
 

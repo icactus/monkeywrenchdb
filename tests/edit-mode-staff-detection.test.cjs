@@ -210,7 +210,7 @@ test('failed CNN page stops subsequent processing and restores buttons', async (
     assert.equal(h.elements.get('barline-detection-progress')['aria-busy'], 'false');
 });
 
-test('progress reports page and staff completion before yielding to the browser', async () => {
+test('progress reports page completion and percentage before yielding to the browser', async () => {
     const h = batchHarness();
     let painted;
     h.context.requestAnimationFrame = fn => {
@@ -222,7 +222,7 @@ test('progress reports page and staff completion before yielding to the browser'
     await h.context.updateBarlineDetectionProgress(2, 3, 6);
     assert.equal(h.elements.get('barline-detection-progress').hidden, false);
     assert.equal(h.elements.get('barline-detection-meter').value, 37);
-    assert.equal(painted, 'Page 2 · Staff 3 of 6 · 37%');
+    assert.equal(painted, 'Page 2 of 4 · 37%');
 });
 
 test('current-page failure clears busy state and allows retry', async () => {
