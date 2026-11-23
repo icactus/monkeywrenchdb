@@ -998,7 +998,7 @@ Wijzer$$module$synpdf.prototype.time2x = function (scoreTime, isPlaybackUpdate) 
         detix$$module$synpdf = timelineIndex;
 
         if (!opt$$module$synpdf.synbox && detix$$module$synpdf === deTijden$$module$synpdf.length - 1 && !m1_timer$$module$synpdf) {
-            msc_wz$$module$synpdf.goMsre(1, {});
+            msc_wz$$module$synpdf.goMsre(1);
             pauseer$$module$synpdf();
             return;
         }
@@ -1321,10 +1321,8 @@ function findCurrentMeasureTime() {
 
 
 // No wrap-around on measure navigation
-Wijzer$$module$synpdf.prototype.goMsre = function (next, keyEvent) {
+Wijzer$$module$synpdf.prototype.goMsre = function (next) {
     if (0 == deTijden$$module$synpdf.length) return;
-    if (keyEvent && (keyEvent.altKey || keyEvent.ctrlKey || keyEvent.shiftKey || keyEvent.metaKey)) return;
-    keyEvent && keyEvent.preventDefault && keyEvent.preventDefault();
 
     // normalize current index
     if (typeof detix$$module$synpdf !== "number" || isNaN(detix$$module$synpdf))
@@ -2860,7 +2858,7 @@ function keyDown$$module$synpdf(keyEvent) {
     // Homepage controls and native form/button actions own their keyboard events.
     if (!document.body.classList.contains('recording-loaded') || keyEvent.defaultPrevented || keyEvent.isDefaultPrevented?.()) return;
     var activeEl = document.activeElement;
-    if (activeEl && (activeEl.isContentEditable || activeEl.closest('input, textarea, select, button, a[href], [role="button"], [role="tab"]'))) {
+    if (activeEl && (activeEl.isContentEditable || activeEl.closest('input, textarea, select, button, a[href], [role="button"], [role="tab"], audio, video, iframe'))) {
         return;
     }
     var pressedKey = keyEvent.key,
@@ -2868,25 +2866,26 @@ function keyDown$$module$synpdf(keyEvent) {
     switch (pressedKey) {
         case "ArrowLeft":
         case "Left":
-            msc_wz$$module$synpdf.goMsre(0, keyEvent);
-            break;
         case "ArrowRight":
         case "Right":
-            msc_wz$$module$synpdf.goMsre(1, keyEvent);
+            if (keyEvent.altKey || keyEvent.ctrlKey || keyEvent.shiftKey || keyEvent.metaKey) break;
+            // The score owns these keys even while its measure cursor is being rebuilt.
+            keyEvent.preventDefault?.();
+            msc_wz$$module$synpdf?.goMsre(pressedKey === "ArrowRight" || pressedKey === "Right");
             break;
         case "ArrowUp":
         case "Up":
-            msc_wz$$module$synpdf.goUpDown(0, 0, keyEvent);
+            msc_wz$$module$synpdf?.goUpDown(0, 0, keyEvent);
             break;
         case "ArrowDown":
         case "Down":
-            msc_wz$$module$synpdf.goUpDown(1, 0, keyEvent);
+            msc_wz$$module$synpdf?.goUpDown(1, 0, keyEvent);
             break;
         case "PageUp":
-            msc_wz$$module$synpdf.goUpDown(0, 1, keyEvent);
+            msc_wz$$module$synpdf?.goUpDown(0, 1, keyEvent);
             break;
         case "PageDown":
-            msc_wz$$module$synpdf.goUpDown(1, 1, keyEvent);
+            msc_wz$$module$synpdf?.goUpDown(1, 1, keyEvent);
             break;
         case "Spacebar":
         case " ":

@@ -70,7 +70,11 @@ function setup({ twoUp = false, paused = false, measures } = {}) {
     vm.runInContext(section('function tick$$module$synpdf(', '//Long-click/touch handling'), context);
     const cursor = context.msc_wz$$module$synpdf = new context.Wijzer$$module$synpdf();
     Object.assign(cursor, { maatloper: [highlight], tmargin: 50, paused });
-    const key = key => context.keyDown$$module$synpdf({ key, preventDefault() {} });
+    const key = (key, modifiers) => {
+        let prevented = false;
+        context.keyDown$$module$synpdf({ key, ...modifiers, preventDefault() { prevented = true; } });
+        return prevented;
+    };
     const finish = () => {
         if (pending) { top = pending.top; left = pending.left; pending = undefined; }
     };
@@ -83,6 +87,28 @@ function setup({ twoUp = false, paused = false, measures } = {}) {
     };
     return { context, cursor, scroller, highlight, calls, key, finish, visible };
 }
+
+test('horizontal arrows are consumed during loading and navigate the current PDF once ready', () => {
+    const h = setup();
+    h.context.msc_wz$$module$synpdf = null;
+    assert.equal(h.key('ArrowLeft'), true);
+    assert.equal(h.key('ArrowRight'), true);
+    assert.equal(h.context.demix$$module$synpdf, 3);
+    h.context.msc_wz$$module$synpdf = h.cursor;
+    assert.equal(h.key('ArrowLeft'), true);
+    assert.equal(h.context.demix$$module$synpdf, 2);
+    assert.equal(h.key('ArrowRight'), true);
+    assert.equal(h.context.demix$$module$synpdf, 3);
+    assert.equal(h.key('ArrowLeft', { ctrlKey: true }), false);
+    assert.equal(h.context.demix$$module$synpdf, 3);
+});
+
+test('horizontal arrows respect explicit media focus', () => {
+    const h = setup();
+    h.context.document.activeElement = { closest: selector => selector.split(', ').includes('video') };
+    assert.equal(h.key('ArrowLeft'), false);
+    assert.equal(h.context.demix$$module$synpdf, 3);
+});
 
 for (const paused of [false, true]) {
     test(`Up from the rightmost measure keeps both axes in view while ${paused ? 'paused' : 'playing'}`, () => {

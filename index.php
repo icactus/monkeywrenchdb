@@ -325,7 +325,7 @@ if ($hasInitialRecordingTarget) {
         </div>
         <div class="notation" id="notation"><!--width needed for editmode pixel mapping -->
             <pre id="yubload" class="dlog">Youtube player loading, please wait ...</pre>
-            <div id="notation-scroll">
+            <div id="notation-scroll" tabindex="-1">
                 <?php require __DIR__ . '/homepage.php'; ?>
             </div>
         </div>
@@ -589,9 +589,9 @@ if ($hasInitialRecordingTarget) {
     <script src="js/favorites-manager.js?v=3"></script>
     <script src="js/contact-email.js?v=2" defer></script>
     <script src="js/part-jumps.js?v=4"></script>
-    <script src="stripped-synpdf.js?v=350"></script>
+    <script src="stripped-synpdf.js?v=351"></script>
     <script src="js/library-data.js?v=1"></script>
-    <script src="stripped-synpdf-extras.js?v=291"></script>
+    <script src="stripped-synpdf-extras.js?v=292"></script>
     <script src="js/player-page-scroll.js?v=1"></script>
     <script src="js/homepage.js?v=25"></script>
     <script src="js/player-pane.js?v=2"></script>

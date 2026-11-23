@@ -1044,7 +1044,10 @@ $('#instruments-dropdown').change(function () {
         currentPdfLoadingTask$$module$synpdf.destroy();
         currentPdfLoadingTask$$module$synpdf = null;
     }
-    document.getElementById("notation-scroll").innerHTML = "";  // Clear notation section
+    msc_wz$$module$synpdf = null;
+    const scroller = document.getElementById('notation-scroll');
+    scroller.innerHTML = '';
+    if (document.activeElement === this) scroller.focus({ preventScroll: true });
 
     // Read the recording after metadata arrives, since it may change in the meantime.
     Promise.resolve(instrumentData)
@@ -1070,7 +1073,6 @@ $('#instruments-dropdown').change(function () {
             return loadRecording(updatedRecordingFullData, seq)
                 .then(() => {
                     if (seq !== __mwPartSwitchSeq) return;
-                    msc_wz$$module$synpdf = null;
                     newInstrumentTime2xFlag = 1;
                     twoUpInitialScrollPending = window.twoUpMode ? true : false;
                     window.__twoUpPrevPage = undefined;
@@ -1095,6 +1097,7 @@ $('#recordings-dropdown').change(async function () {
     const selectedOption = $(this).find('option:selected');
     const recordingFullData = selectedOption.data('recordingFullData');
     if (!recordingFullData || !recordingFullData.recording_id) return;
+    if (document.activeElement === this) document.getElementById('notation-scroll').focus({ preventScroll: true });
     const seq = window.MW.player.nextSwitch();
     clearPlayerLoadError('recording');
     window.MW.player.recordingId = recordingFullData.recording_id;

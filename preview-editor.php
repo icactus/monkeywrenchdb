@@ -338,7 +338,7 @@ $is_share_link = isset($_GET['share']);
         </div>
         <div class="notation" id="notation"><!--width needed for editmode pixel mapping -->
             <pre id="yubload" class="dlog">Youtube player loading, please wait ...</pre>
-            <div id="notation-scroll">
+            <div id="notation-scroll" tabindex="-1">
                 <!-- STEPPER HEADERS -->
                 <div class="tabs">
                     <ul class="tab-header-row">
@@ -686,8 +686,8 @@ $is_share_link = isset($_GET['share']);
     <script src="js/favorites-manager.js?v=1"></script>
     <script src="js/contact-email.js?v=2" defer></script>
     <script src="js/part-jumps.js?v=4"></script>
-    <script src="stripped-synpdf.js?v=350"></script>
-    <script src="stripped-synpdf-extras.js?v=276"></script>
+    <script src="stripped-synpdf.js?v=351"></script>
+    <script src="stripped-synpdf-extras.js?v=292"></script>
     <script>
         window.setDarkMode = function (isDark) {
             document.documentElement.classList.toggle('inverted', isDark);

@@ -12,6 +12,8 @@ const response = data => ({ ok: true, json: async () => data });
 
 function setup() {
     const elements = new Map(), handlers = {}, pdfs = [], videos = [];
+    const partSelector = { id: 'instruments-dropdown' };
+    const recordingSelector = { id: 'recordings-dropdown' };
     function element() {
         return { children: [], innerHTML: '', setAttribute() {},
             append(...nodes) { nodes.forEach(n => { n.parent = this; this.children.push(n); if (n.id) elements.set(n.id, n); }); },
@@ -27,9 +29,9 @@ function setup() {
         recordings: [91, 92].map(id => ({ recording_id: id, youtube_id: id === 92 ? 'new' : 'old', offset_js: 0, times_url: fixtureUrl('times', id) })) };
     const context = { URLSearchParams, structuredClone, console: { log() {}, error() {} },
         document: { getElementById: id => elements.get(id), createElement: element },
-        $: id => ({ change: fn => { handlers[id] = fn; },
+        $: selector => ({ change: fn => { handlers[selector] = fn; },
             find: () => ({ data: key => key === 'instrumentData' ? part : recording }),
-            trigger: () => handlers[id].call(id) }),
+            trigger: () => handlers[selector].call(selector === '#instruments-dropdown' ? partSelector : recordingSelector) }),
         fetch: fixtureFetch({ pieces: [piece] }),
         currentPdfLoadingTask$$module$synpdf: null, renderedCanvasesQueue: new Set(), renderingTasks: [], renderingQueue: { clear() {} },
         readPdf$$module$synpdf: url => { pdfs.push(url); scroller.innerHTML = 'new score'; },
@@ -39,6 +41,7 @@ function setup() {
             cueVideoById: data => videos.push(data), loadVideoById: data => videos.push(data) },
         YT: { PlayerState: { PLAYING: 1 } }, findCurrentMeasureTime: async () => {}, TOFF$$module$synpdf: 0 };
     context.window = context;
+    scroller.focus = () => { context.document.activeElement = scroller; };
     vm.createContext(context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/library-data.js'), 'utf8'), context);
     vm.runInContext(source.slice(source.indexOf('var currentInstrumentGlobal'), source.indexOf('// --- Hi-Res PDFs toggle')), context);
@@ -46,17 +49,34 @@ function setup() {
     context.loadRecording = async (data, seq) => { context.MW.player.recordingData = data; await context.sendVarToSynpdf(data, seq); };
     context.MW.player.recordingData = { ...recording, metric_arr_id: 41 };
     vm.runInContext(source.slice(source.indexOf("$('#instruments-dropdown').change"), source.indexOf('function displayMultiplePartLinks')), context);
-    return { context, elements, pdfs, videos, scroller, piece,
-        part: data => { part = { ...part, ...data }; handlers['#instruments-dropdown'].call('#instruments-dropdown'); },
-        recording: data => { recording = { ...recording, ...data }; return handlers['#recordings-dropdown'].call('#recordings-dropdown'); } };
+    return { context, elements, pdfs, videos, scroller, piece, partSelector, recordingSelector,
+        part: data => { part = { ...part, ...data }; handlers['#instruments-dropdown'].call(partSelector); },
+        recording: data => { recording = { ...recording, ...data }; return handlers['#recordings-dropdown'].call(recordingSelector); } };
 }
+
+test('selecting a part immediately returns focus to the PDF while it loads', async () => {
+    const h = setup();
+    h.piece.parts.find(part => part.metric_arr_id === 42).instrument_id = 50;
+    h.context.document.activeElement = h.partSelector;
+    h.context.msc_wz$$module$synpdf = {};
+    h.part({ instrument_id: 50, displayText: 'Full Score' });
+    assert.equal(h.context.document.activeElement, h.scroller);
+    assert.equal(h.context.msc_wz$$module$synpdf, null, 'the old part no longer accepts navigation');
+    const video = { id: 'vidyub' };
+    h.context.document.activeElement = video;
+    await flush();
+    assert.deepEqual(h.pdfs, ['/pdfs/1-50.pdf']);
+    assert.equal(h.context.document.activeElement, video);
+});
 
 test('recording changes do not cancel a pending part or leave blank notation', async () => {
     const h = setup(), metadata = deferred(), fetch = h.context.fetch;
     h.context.fetch = url => url.includes('/metrics/') ? metadata.promise : fetch(url);
     h.part({});
     assert.equal(h.scroller.innerHTML, '', 'part changes clear immediately');
+    h.context.document.activeElement = h.recordingSelector;
     await h.recording({ recording_id: 92, youtube_id: 'new' });
+    assert.equal(h.context.document.activeElement, h.scroller);
     metadata.resolve(response({ metric_arr_id: 42 })); await flush();
     assert.equal(h.pdfs.length, 1);
     assert.equal(h.videos[0].videoId, 'new');
