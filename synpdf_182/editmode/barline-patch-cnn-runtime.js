@@ -116,7 +116,8 @@
     }
 
     function cropCandidatePatch(pixelData, stride, width, xCol, staffTop, staffBot, spatium, xSpatiums, ySpatiums, patchWidth, patchHeight) {
-        var height = Math.floor(pixelData.length / stride);
+        var pixelLen = pixelData.length;
+        var height = Math.floor(pixelLen / stride);
         var xMargin = Math.max(1, Math.round(xSpatiums * spatium));
         var yMargin = Math.max(1, Math.round(ySpatiums * spatium));
         var x0 = clamp(Math.round(xCol - xMargin), 0, width - 1);
@@ -133,13 +134,24 @@
         var patch = new Float32Array(patchWidth * patchHeight);
         var xOff = Math.floor((patchWidth - scaledW) / 2);
         var yOff = Math.floor((patchHeight - scaledH) / 2);
+        var srcXs = new Int32Array(scaledW);
+        for (var pxInit = 0; pxInit < scaledW; pxInit++) {
+            var sx = x0 + Math.min(srcW - 1, Math.floor(pxInit / scale));
+            srcXs[pxInit] = (sx >= 0 && sx < width) ? sx * 4 : -1;
+        }
 
         for (var py = 0; py < scaledH; py++) {
             var srcY = y0 + Math.min(srcH - 1, Math.floor(py / scale));
+            if (srcY < 0 || srcY >= height) continue;
+            var rowOffset = srcY * stride;
+            var dstRow = (py + yOff) * patchWidth + xOff;
             for (var px = 0; px < scaledW; px++) {
-                var srcX = x0 + Math.min(srcW - 1, Math.floor(px / scale));
-                var val = grayToBinary(pixelData, stride, width, srcX, srcY);
-                patch[(py + yOff) * patchWidth + (px + xOff)] = val;
+                var colByte = srcXs[px];
+                if (colByte < 0) continue;
+                var idx = rowOffset + colByte;
+                if (idx >= 0 && idx + 2 < pixelLen && (pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2] < 384)) {
+                    patch[dstRow + px] = 1;
+                }
             }
         }
         return patch;
@@ -171,9 +183,261 @@
             metadataPromise: null,
             session: null,
             sessionPromise: null,
+            workerPool: null,
+            backend: null,
             failed: false,
             threadFallbackAttempted: false
         };
+
+        var webGpuScriptLoadPromise = null;
+
+        function resolveAbsoluteUrl(url) {
+            if (!url) return url;
+            try {
+                if (global.location && global.location.href) {
+                    return new URL(url, global.location.href).href;
+                }
+            } catch (_err) { /* Keep raw URL if URL resolution is unavailable. */ }
+            return url;
+        }
+
+        function loadScriptOnce(url) {
+            if (webGpuScriptLoadPromise) return webGpuScriptLoadPromise;
+            if (typeof document === 'undefined' || !document.createElement) {
+                return Promise.reject(new Error('DOM script loader unavailable'));
+            }
+            webGpuScriptLoadPromise = new Promise(function (resolve, reject) {
+                var script = document.createElement('script');
+                script.src = url;
+                script.async = true;
+                script.onload = function () { resolve(); };
+                script.onerror = function () {
+                    webGpuScriptLoadPromise = null;
+                    reject(new Error('Failed to load script: ' + url));
+                };
+                (document.head || document.documentElement).appendChild(script);
+            });
+            return webGpuScriptLoadPromise;
+        }
+
+        function createWasmWorkerPool(config, modelBytes) {
+            if (typeof Worker !== 'function' || typeof Blob !== 'function' || typeof URL !== 'function' || typeof URL.createObjectURL !== 'function') {
+                return Promise.resolve(null);
+            }
+            if (config.useWorkerPool === false) return Promise.resolve(null);
+
+            var hc = (global.navigator && Number(global.navigator.hardwareConcurrency)) || 4;
+            var requestedWorkers = Number(config.wasmWorkers);
+            var workerCount = (isFinite(requestedWorkers) && requestedWorkers > 0)
+                ? Math.floor(requestedWorkers)
+                : Math.max(1, Math.min(Math.ceil(hc / 2), 8));
+            if (workerCount <= 1 && global.crossOriginIsolated === true && (!isFinite(requestedWorkers) || requestedWorkers <= 0)) {
+                workerCount = Math.max(1, Math.min(hc, 4));
+            }
+            var threadsPerWorker = workerCount > 1
+                ? 1
+                : (global.crossOriginIsolated === true ? Math.max(1, Math.min(hc, 4)) : 1);
+
+            var ortUrl = resolveAbsoluteUrl(config.ortWasmScriptUrl || (config.wasmRoot ? config.wasmRoot + 'ort.wasm.min.js' : null));
+            var wasmRootUrl = resolveAbsoluteUrl(config.wasmRoot || '');
+            if (!ortUrl || !wasmRootUrl) return Promise.resolve(null);
+
+            var workerSource = [
+                'self.onmessage = async function (event) {',
+                '  var msg = event.data;',
+                '  try {',
+                '    if (msg.type === "init") {',
+                '      importScripts(msg.ortUrl);',
+                '      if (self.ort && self.ort.env && self.ort.env.wasm) {',
+                '        self.ort.env.wasm.wasmPaths = msg.wasmRoot;',
+                '        self.ort.env.wasm.numThreads = msg.threads;',
+                '      }',
+                '      self._session = await self.ort.InferenceSession.create(new Uint8Array(msg.modelBuffer), {',
+                '        executionProviders: ["wasm"],',
+                '        graphOptimizationLevel: "all"',
+                '      });',
+                '      self._inputName = self._session.inputNames[0];',
+                '      self._outputName = self._session.outputNames[0];',
+                '      self.postMessage({ type: "ready" });',
+                '      return;',
+                '    }',
+                '    if (msg.type === "run") {',
+                '      var data = new Float32Array(msg.buffer);',
+                '      var tensor = new self.ort.Tensor("float32", data, [msg.batchSize, msg.patchHeight, msg.patchWidth, 1]);',
+                '      var feeds = {};',
+                '      feeds[self._inputName] = tensor;',
+                '      var outputs = await self._session.run(feeds, [self._outputName]);',
+                '      var outData = outputs[self._outputName].data;',
+                '      var result = new Float32Array(outData.length);',
+                '      result.set(outData);',
+                '      self.postMessage({ type: "result", id: msg.id, buffer: result.buffer }, [result.buffer]);',
+                '    }',
+                '  } catch (err) {',
+                '    self.postMessage({ type: "error", id: msg && msg.id, message: err && err.message ? err.message : String(err) });',
+                '  }',
+                '};'
+            ].join('\n');
+
+            var blobUrl = URL.createObjectURL(new Blob([workerSource], { type: 'text/javascript' }));
+            var workers = [];
+            var idleWorkers = [];
+            var queue = [];
+            var nextJobId = 1;
+            var destroyed = false;
+
+            function destroyAll() {
+                destroyed = true;
+                for (var i = 0; i < workers.length; i++) {
+                    try { workers[i].worker.terminate(); } catch (_err) { /* ignore */ }
+                }
+                workers = [];
+                idleWorkers = [];
+                try { URL.revokeObjectURL(blobUrl); } catch (_err) { /* ignore */ }
+            }
+
+            function pump() {
+                while (!destroyed && idleWorkers.length > 0 && queue.length > 0) {
+                    var slot = idleWorkers.shift();
+                    var job = queue.shift();
+                    slot.currentJob = job;
+                    slot.worker.postMessage({
+                        type: 'run',
+                        id: job.id,
+                        batchSize: job.batchSize,
+                        patchHeight: job.patchHeight,
+                        patchWidth: job.patchWidth,
+                        buffer: job.buffer
+                    }, [job.buffer]);
+                }
+            }
+
+            var initPromises = [];
+            for (var w = 0; w < workerCount; w++) {
+                initPromises.push(new Promise(function (resolve, reject) {
+                    var worker;
+                    try {
+                        worker = new Worker(blobUrl);
+                    } catch (err) {
+                        reject(err);
+                        return;
+                    }
+                    var slot = { worker: worker, currentJob: null };
+                    var initialized = false;
+                    workers.push(slot);
+
+                    worker.onerror = function (errEvent) {
+                        var err = new Error(errEvent && errEvent.message ? errEvent.message : 'Worker error');
+                        if (!initialized) {
+                            reject(err);
+                        } else if (slot.currentJob) {
+                            var failedJob = slot.currentJob;
+                            slot.currentJob = null;
+                            failedJob.reject(err);
+                        }
+                    };
+                    worker.onmessage = function (event) {
+                        var msg = event.data;
+                        if (!initialized) {
+                            if (msg && msg.type === 'ready') {
+                                initialized = true;
+                                idleWorkers.push(slot);
+                                resolve(slot);
+                            } else {
+                                reject(new Error(msg && msg.message ? msg.message : 'Worker init failed'));
+                            }
+                            return;
+                        }
+                        var job = slot.currentJob;
+                        slot.currentJob = null;
+                        if (!destroyed) idleWorkers.push(slot);
+                        if (job) {
+                            if (msg && msg.type === 'result') {
+                                job.resolve(new Float32Array(msg.buffer));
+                            } else {
+                                job.reject(new Error(msg && msg.message ? msg.message : 'Worker inference failed'));
+                            }
+                        }
+                        pump();
+                    };
+
+                    var bytesCopy = modelBytes.slice(0);
+                    worker.postMessage({
+                        type: 'init',
+                        ortUrl: ortUrl,
+                        wasmRoot: wasmRootUrl,
+                        threads: threadsPerWorker,
+                        modelBuffer: bytesCopy
+                    }, [bytesCopy]);
+                }));
+            }
+
+            return Promise.all(initPromises).then(function () {
+                return {
+                    workerCount: workerCount,
+                    threadsPerWorker: threadsPerWorker,
+                    runChunk: function (inputData, batchSize, patchHeight, patchWidth) {
+                        return new Promise(function (resolve, reject) {
+                            if (destroyed) {
+                                reject(new Error('Worker pool destroyed'));
+                                return;
+                            }
+                            queue.push({
+                                id: nextJobId++,
+                                batchSize: batchSize,
+                                patchHeight: patchHeight,
+                                patchWidth: patchWidth,
+                                buffer: inputData.buffer,
+                                resolve: resolve,
+                                reject: reject
+                            });
+                            pump();
+                        });
+                    },
+                    destroy: destroyAll
+                };
+            }).catch(function (err) {
+                destroyAll();
+                console.warn(logPrefix + ' WASM worker pool unavailable, falling back to single session:', err && err.message ? err.message : err);
+                return null;
+            });
+        }
+
+        async function tryCreateWebGpuSession(config, modelBytes, metadata) {
+            if (config.webGpuEnabled === false || !config.ortWebGpuScriptUrl) return null;
+            if (!global.navigator || !global.navigator.gpu || typeof global.navigator.gpu.requestAdapter !== 'function') {
+                return null;
+            }
+            try {
+                var adapter = await global.navigator.gpu.requestAdapter();
+                if (!adapter) return null;
+                await loadScriptOnce(resolveAbsoluteUrl(config.ortWebGpuScriptUrl));
+                if (!global.ort || !global.ort.InferenceSession) return null;
+                if (global.ort.env && global.ort.env.wasm && config.wasmRoot) {
+                    global.ort.env.wasm.wasmPaths = resolveAbsoluteUrl(config.wasmRoot);
+                }
+                var session = await global.ort.InferenceSession.create(new Uint8Array(modelBytes), {
+                    executionProviders: ['webgpu'],
+                    graphOptimizationLevel: 'all'
+                });
+                // Verify finite output on a tiny 1-patch warmup before committing to WebGPU.
+                var inputShape = (metadata && metadata.input_shape) || [64, 32, 1];
+                var h = inputShape[0];
+                var w = inputShape[1];
+                var dummy = new global.ort.Tensor('float32', new Float32Array(h * w), [1, h, w, 1]);
+                var feeds = {};
+                feeds[session.inputNames[0]] = dummy;
+                var out = await session.run(feeds, [session.outputNames[0]]);
+                var scores = flattenOutputScores(out[session.outputNames[0]]);
+                if (!scores || scores.length !== 1 || !isFinite(scores[0])) {
+                    if (typeof session.release === 'function') await session.release();
+                    return null;
+                }
+                return session;
+            } catch (err) {
+                console.warn(logPrefix + ' WebGPU init failed, using WASM workers:', err && err.message ? err.message : err);
+                return null;
+            }
+        }
 
         function getModelData() {
             return global[modelDataName] || null;
@@ -250,7 +514,7 @@
         }
 
         async function getOnnxSession() {
-            if (onnxState.session) return onnxState.session;
+            if (onnxState.workerPool || onnxState.session) return onnxState.workerPool || onnxState.session;
             if (onnxState.failed) return null;
             var config = getRuntimeConfig();
             if (!config || !config.enabled || !config.modelUrl || !global.ort || !global.ort.InferenceSession) {
@@ -258,23 +522,58 @@
             }
             if (!onnxState.sessionPromise) {
                 onnxState.sessionPromise = (async function () {
-                    var threadCounts = [];
-                    var requestedThreads = config.wasmThreads || 4;
-                    threadCounts.push(requestedThreads);
-                    if (requestedThreads !== 1) {
-                        threadCounts.push(1);
+                    var metadata = await getOnnxMetadata();
+                    var modelBytes = null;
+                    if (typeof fetch === 'function') {
+                        try {
+                            var resp = await fetch(config.modelUrl);
+                            if (resp.ok) modelBytes = await resp.arrayBuffer();
+                        } catch (_err) { /* Fall back to URL loading in ORT. */ }
                     }
+
+                    // 1. Prefer WebGPU when a real GPU adapter and full ORT bundle are available.
+                    if (modelBytes) {
+                        var gpuSession = await tryCreateWebGpuSession(config, modelBytes, metadata);
+                        if (gpuSession) {
+                            onnxState.session = gpuSession;
+                            onnxState.backend = 'webgpu';
+                            console.log(logPrefix + ' initialized backend: webgpu');
+                            return gpuSession;
+                        }
+                    }
+
+                    // 2. Otherwise use a parallel WASM Web Worker pool to utilize all CPU cores
+                    // without blocking the main UI thread (works with or without crossOriginIsolated).
+                    if (modelBytes) {
+                        var pool = await createWasmWorkerPool(config, modelBytes);
+                        if (pool) {
+                            onnxState.workerPool = pool;
+                            onnxState.backend = 'wasm-pool(' + pool.workerCount + 'w x ' + pool.threadsPerWorker + 't)';
+                            console.log(logPrefix + ' initialized backend: ' + onnxState.backend);
+                            return pool;
+                        }
+                    }
+
+                    // 3. Fallback: single main-thread ONNX Runtime WASM session.
+                    var threadCounts = [];
+                    var hc = (global.navigator && Number(global.navigator.hardwareConcurrency)) || 4;
+                    var requestedThreads = config.wasmThreads || Math.max(1, Math.min(hc, 8));
+                    if (global.crossOriginIsolated === true && requestedThreads > 1) {
+                        threadCounts.push(requestedThreads);
+                    }
+                    threadCounts.push(1);
 
                     for (var i = 0; i < threadCounts.length; i++) {
                         var threadCount = threadCounts[i];
                         try {
                             if (global.ort.env && global.ort.env.wasm) {
                                 if (config.wasmRoot) {
-                                    global.ort.env.wasm.wasmPaths = config.wasmRoot;
+                                    global.ort.env.wasm.wasmPaths = resolveAbsoluteUrl(config.wasmRoot);
                                 }
                                 global.ort.env.wasm.numThreads = threadCount;
                             }
-                            var session = await global.ort.InferenceSession.create(config.modelUrl, {
+                            var source = modelBytes ? new Uint8Array(modelBytes) : config.modelUrl;
+                            var session = await global.ort.InferenceSession.create(source, {
                                 executionProviders: ['wasm'],
                                 graphOptimizationLevel: 'all'
                             });
@@ -285,6 +584,8 @@
                                 onnxState.threadFallbackAttempted = true;
                             }
                             onnxState.session = session;
+                            onnxState.backend = 'wasm(' + threadCount + 't)';
+                            console.log(logPrefix + ' initialized backend: ' + onnxState.backend);
                             return session;
                         } catch (err) {
                             console.warn(logPrefix + " ONNX session init failed:", err && err.message ? err.message : err, {
@@ -308,7 +609,8 @@
             if (!results[0] || !results[1]) return null;
             return {
                 metadata: results[0],
-                session: results[1]
+                session: onnxState.session,
+                workerPool: onnxState.workerPool
             };
         }
 
@@ -316,15 +618,55 @@
             var resources = await getOnnxResources();
             if (!resources) return null;
 
-            var session = resources.session;
             var inputShape = metadata.input_shape || [64, 32, 1];
             var patchHeight = inputShape[0];
             var patchWidth = inputShape[1];
+            var patchArea = patchHeight * patchWidth;
             var batchSize = patches.length;
-            var inputData = new Float32Array(batchSize * patchHeight * patchWidth);
+
+            if (resources.workerPool) {
+                var pool = resources.workerPool;
+                var chunkCount = (pool.workerCount > 1 && batchSize >= 64)
+                    ? Math.min(pool.workerCount, Math.ceil(batchSize / 48))
+                    : 1;
+                if (chunkCount === 1) {
+                    var singleData = new Float32Array(batchSize * patchArea);
+                    for (var s = 0; s < batchSize; s++) {
+                        singleData.set(patches[s], s * patchArea);
+                    }
+                    var singleOut = await pool.runChunk(singleData, batchSize, patchHeight, patchWidth);
+                    return Array.prototype.slice.call(singleOut);
+                }
+                var chunkPromises = [];
+                var baseSize = Math.floor(batchSize / chunkCount);
+                var remainder = batchSize % chunkCount;
+                var offset = 0;
+                for (var c = 0; c < chunkCount; c++) {
+                    var len = baseSize + (c < remainder ? 1 : 0);
+                    var chunkData = new Float32Array(len * patchArea);
+                    for (var p = 0; p < len; p++) {
+                        chunkData.set(patches[offset + p], p * patchArea);
+                    }
+                    offset += len;
+                    chunkPromises.push(pool.runChunk(chunkData, len, patchHeight, patchWidth));
+                }
+                var chunkOutputs = await Promise.all(chunkPromises);
+                var merged = new Array(batchSize);
+                var writeIdx = 0;
+                for (var co = 0; co < chunkOutputs.length; co++) {
+                    var arr = chunkOutputs[co];
+                    for (var k = 0; k < arr.length; k++) {
+                        merged[writeIdx++] = arr[k];
+                    }
+                }
+                return merged;
+            }
+
+            var session = resources.session;
+            var inputData = new Float32Array(batchSize * patchArea);
 
             for (var i = 0; i < batchSize; i++) {
-                inputData.set(patches[i], i * patchHeight * patchWidth);
+                inputData.set(patches[i], i * patchArea);
             }
 
             var inputName = session.inputNames[0];
@@ -434,6 +776,9 @@
             },
             hasModelData: function () {
                 return !!getModelData();
+            },
+            getBackendInfo: function () {
+                return onnxState.backend || (onnxState.failed ? 'js-fallback' : 'uninitialized');
             }
         };
     }

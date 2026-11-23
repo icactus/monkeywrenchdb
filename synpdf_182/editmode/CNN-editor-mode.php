@@ -9,8 +9,12 @@
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
+header('Cross-Origin-Opener-Policy: same-origin');
+header('Cross-Origin-Embedder-Policy: require-corp');
+header('Cross-Origin-Resource-Policy: same-origin');
 
 $ortJsVer = file_exists('vendor/onnxruntime/ort.wasm.min.js') ? filemtime('vendor/onnxruntime/ort.wasm.min.js') : time();
+$ortFullJsVer = file_exists('vendor/onnxruntime/ort.min.js') ? filemtime('vendor/onnxruntime/ort.min.js') : 0;
 $barlineCnnRuntimeVer = file_exists('barline-patch-cnn-runtime.js') ? filemtime('barline-patch-cnn-runtime.js') : time();
 $editModeToolsVer = file_exists('edit-mode-tools.js') ? filemtime('edit-mode-tools.js') : time();
 $barlineDetectVer = file_exists('barline-detect-v2.js') ? filemtime('barline-detect-v2.js') : time();
@@ -23,7 +27,8 @@ $pianoBarlineCnnOnnxVer = file_exists('../models/piano-barline-patch-cnn.onnx') 
 $pianoBarlineCnnOnnxMetaVer = file_exists('../models/piano-barline-patch-cnn.onnx.json') ? filemtime('../models/piano-barline-patch-cnn.onnx.json') : 0;
 $pianoBarlineCnnOnnxEnabled = $pianoBarlineCnnOnnxVer > 0 && $pianoBarlineCnnOnnxMetaVer > 0;
 $onnxWasmRoot = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/synpdf_182/editmode/CNN-editor-mode.php'), '/\\') . '/vendor/onnxruntime/';
-$onnxWasmThreads = 1;
+$ortWasmScriptUrl = $onnxWasmRoot . 'ort.wasm.min.js?v=' . $ortJsVer;
+$ortWebGpuScriptUrl = $ortFullJsVer > 0 ? ($onnxWasmRoot . 'ort.min.js?v=' . $ortFullJsVer) : null;
 ?>
 <!DOCTYPE HTML>
 <html>
@@ -46,20 +51,22 @@ $onnxWasmThreads = 1;
             modelUrl: <?php echo json_encode('../models/barline-patch-cnn-3x6.onnx?v=' . ($barlineCnnOnnxVer ?: time())); ?>,
             metadataUrl: <?php echo json_encode('../models/barline-patch-cnn-3x6.onnx.json?v=' . ($barlineCnnOnnxMetaVer ?: time())); ?>,
             wasmRoot: <?php echo json_encode($onnxWasmRoot); ?>,
-            wasmThreads: <?php echo (int)$onnxWasmThreads; ?>
+            ortWasmScriptUrl: <?php echo json_encode($ortWasmScriptUrl); ?>,
+            ortWebGpuScriptUrl: <?php echo json_encode($ortWebGpuScriptUrl); ?>
         };
         window.PianoBarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $pianoBarlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
             modelUrl: <?php echo json_encode('../models/piano-barline-patch-cnn.onnx?v=' . ($pianoBarlineCnnOnnxVer ?: time())); ?>,
             metadataUrl: <?php echo json_encode('../models/piano-barline-patch-cnn.onnx.json?v=' . ($pianoBarlineCnnOnnxMetaVer ?: time())); ?>,
             wasmRoot: <?php echo json_encode($onnxWasmRoot); ?>,
-            wasmThreads: <?php echo (int)$onnxWasmThreads; ?>
+            ortWasmScriptUrl: <?php echo json_encode($ortWasmScriptUrl); ?>,
+            ortWebGpuScriptUrl: <?php echo json_encode($ortWebGpuScriptUrl); ?>
         };
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
     <script src="/js/part-jumps.js?v=4"></script>
-    <script src="synpdf-edit-mode.js?v=109"></script>
+    <script src="synpdf-edit-mode.js?v=110"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="part-jump-editor.js?v=2" defer></script>
     <script src="../models/ml-barline-model.js?v=26"></script>

@@ -417,6 +417,33 @@ var BarlineDetectV2 = (function () {
         return null;
     }
 
+    var renderGeometryCache = typeof WeakMap === 'function' ? new WeakMap() : null;
+
+    function cloneRenderGeometry(geometry) {
+        if (!geometry) return null;
+        return {
+            xs: { x1: geometry.xs.x1, x2: geometry.xs.x2 },
+            spatium: geometry.spatium,
+            normalizationReason: geometry.normalizationReason,
+            left: {
+                x: geometry.left.x,
+                lines: geometry.left.lines.slice(),
+                top: geometry.left.top,
+                bot: geometry.left.bot,
+                height: geometry.left.height,
+                usedTraceFallback: geometry.left.usedTraceFallback
+            },
+            right: {
+                x: geometry.right.x,
+                lines: geometry.right.lines.slice(),
+                top: geometry.right.top,
+                bot: geometry.right.bot,
+                height: geometry.right.height,
+                usedTraceFallback: geometry.right.usedTraceFallback
+            }
+        };
+    }
+
     function buildRenderGeometry(system, pixelData, stride, imageWidth, options) {
         options = options || {};
         var seedLines = getSystemSeedLines(system);
@@ -424,6 +451,20 @@ var BarlineDetectV2 = (function () {
 
         var xs = system.xs;
         var hasSparseBoundsSeed = Array.isArray(system.cs) && system.cs.length === 2;
+        var geomCacheMap = null;
+        var geomCacheKey = null;
+        if (renderGeometryCache && !options.anchor && pixelData && typeof pixelData === 'object') {
+            geomCacheMap = renderGeometryCache.get(pixelData);
+            if (!geomCacheMap) {
+                geomCacheMap = new Map();
+                renderGeometryCache.set(pixelData, geomCacheMap);
+            }
+            geomCacheKey = stride + '|' + imageWidth + '|' + (hasSparseBoundsSeed ? 's|' : 'f|') +
+                Math.round(xs.x1) + ',' + Math.round(xs.x2) + '|' + seedLines.join(',');
+            if (geomCacheMap.has(geomCacheKey)) {
+                return cloneRenderGeometry(geomCacheMap.get(geomCacheKey));
+            }
+        }
         var sparseTopBound = hasSparseBoundsSeed ? Math.min(system.cs[0], system.cs[1]) : null;
         var sparseBotBound = hasSparseBoundsSeed ? Math.max(system.cs[0], system.cs[1]) : null;
         var staffLines = seedLines;
@@ -821,30 +862,177 @@ var BarlineDetectV2 = (function () {
         var rightGeom = null;
         var bestPairScore = -Infinity;
 
+        var leftEntries = [];
         for (var lf = 0; lf < leftFit.candidateFits.length; lf++) {
             var leftLines = linesFromOffset(leftFit.candidateFits[lf].offset);
             if (!leftLines) continue;
-            var testLeftGeom = buildGeometryFromLines(leftFit.x, leftLines);
+            leftEntries.push({
+                score: leftFit.candidateFits[lf].score,
+                lines: leftLines
+            });
+        }
+        var rightEntries = [];
+        for (var rf = 0; rf < rightFit.candidateFits.length; rf++) {
+            var rightLines = linesFromOffset(rightFit.candidateFits[rf].offset);
+            if (!rightLines) continue;
+            rightEntries.push({
+                score: rightFit.candidateFits[rf].score,
+                lines: rightLines
+            });
+        }
 
-            for (var rf = 0; rf < rightFit.candidateFits.length; rf++) {
-                var rightLines = linesFromOffset(rightFit.candidateFits[rf].offset);
-                if (!rightLines) continue;
-                var testRightGeom = buildGeometryFromLines(rightFit.x, rightLines);
-                if (!matchesClickAnchor(testLeftGeom, testRightGeom)) continue;
-                var pairEdgeScore = scoreEndpointGeometry(testLeftGeom, testRightGeom);
-                if (!pairEdgeScore || !pairEdgeScore.isUsable) continue;
+        var leftAnchorX = Math.max(0, Math.min(imageWidth - 1, Math.round(leftFit.x)));
+        var rightAnchorX = Math.max(0, Math.min(imageWidth - 1, Math.round(rightFit.x)));
+        var pairStartX = Math.max(0, Math.round(Math.min(leftAnchorX, rightAnchorX)));
+        var pairEndX = Math.min(imageWidth - 1, Math.round(Math.max(leftAnchorX, rightAnchorX)));
 
-                var combinedScore = (
-                    pairEdgeScore.avgCoverage * 1000 +
-                    pairEdgeScore.minCoverage * 250 +
-                    leftFit.candidateFits[lf].score +
-                    rightFit.candidateFits[rf].score
-                );
-                if (combinedScore > bestPairScore) {
-                    bestPairScore = combinedScore;
-                    leftGeom = testLeftGeom;
-                    rightGeom = testRightGeom;
+        if (pairEndX > pairStartX && leftEntries.length > 0 && rightEntries.length > 0) {
+            var minY = Infinity;
+            var maxY = -Infinity;
+            for (var liMin = 0; liMin < leftEntries.length; liMin++) {
+                var lArr = leftEntries[liMin].lines;
+                if (lArr[0] < minY) minY = lArr[0];
+                if (lArr[4] > maxY) maxY = lArr[4];
+            }
+            for (var riMin = 0; riMin < rightEntries.length; riMin++) {
+                var rArr = rightEntries[riMin].lines;
+                if (rArr[0] < minY) minY = rArr[0];
+                if (rArr[4] > maxY) maxY = rArr[4];
+            }
+
+            var numX = Math.floor((pairEndX - pairStartX) / 6) + 1;
+            var ySpan = maxY - minY + 1;
+            var rawStartY = minY - 2;
+            var rawSpan = ySpan + 4;
+            var rawFlags = new Uint8Array(rawSpan * numX);
+            var pixelLen = pixelData.length;
+            var invSpanX = 1 / (pairEndX - pairStartX);
+            var tArr = new Float64Array(numX);
+            for (var xi = 0; xi < numX; xi++) {
+                tArr[xi] = (xi * 6) * invSpanX;
+            }
+
+            for (var ry = 0; ry < rawSpan; ry++) {
+                var sy = rawStartY + ry;
+                if (sy < 0) continue;
+                var rowByteOffset = sy * stride;
+                if (rowByteOffset >= pixelLen) continue;
+                var flagRowOffset = ry * numX;
+                for (var xj = 0; xj < numX; xj++) {
+                    var pxIdx = rowByteOffset + (pairStartX + xj * 6) * 4;
+                    if (pxIdx < 0 || pxIdx + 2 >= pixelLen) continue;
+                    var rgbSum = pixelData[pxIdx] + pixelData[pxIdx + 1] + pixelData[pxIdx + 2];
+                    if (rgbSum < 384) {
+                        rawFlags[flagRowOffset + xj] = 3;
+                    } else if (rgbSum < 648) {
+                        rawFlags[flagRowOffset + xj] = 2;
+                    }
                 }
+            }
+
+            // Fold dy = -2..2 vertical window into row-major flags: bit 0 = dark (<128), bit 1 = faint (<216).
+            var flags = new Uint8Array(ySpan * numX);
+            for (var fy = 0; fy < ySpan; fy++) {
+                var dstRow = fy * numX;
+                var r0 = fy * numX;
+                var r1 = (fy + 1) * numX;
+                var r2 = (fy + 2) * numX;
+                var r3 = (fy + 3) * numX;
+                var r4 = (fy + 4) * numX;
+                for (var fx = 0; fx < numX; fx++) {
+                    flags[dstRow + fx] = rawFlags[r0 + fx] | rawFlags[r1 + fx] | rawFlags[r2 + fx] | rawFlags[r3 + fx] | rawFlags[r4 + fx];
+                }
+            }
+
+            var deltaOffsetCache = Object.create(null);
+            function getDeltaRowOffsets(diff) {
+                var cached = deltaOffsetCache[diff];
+                if (cached) return cached;
+                var arr = new Int32Array(numX);
+                for (var k = 0; k < numX; k++) {
+                    arr[k] = Math.round(tArr[k] * diff) * numX + k;
+                }
+                deltaOffsetCache[diff] = arr;
+                return arr;
+            }
+
+            var hasAnchor = !!(options.anchor && Array.isArray(options.anchor.lines) && options.anchor.lines.length === 5);
+            var anchorT = 0;
+            var anchorTolerance = 0;
+            var anchorLines = null;
+            if (hasAnchor) {
+                anchorLines = options.anchor.lines;
+                anchorT = Math.max(0, Math.min(1, (options.anchor.x - leftAnchorX) / (rightAnchorX - leftAnchorX || 1)));
+                anchorTolerance = Math.max(1, (anchorLines[4] - anchorLines[0]) / 4 * 0.2);
+            }
+
+            var invNumX = 1 / numX;
+            var bestLeftLines = null;
+            var bestRightLines = null;
+
+            for (var li = 0; li < leftEntries.length; li++) {
+                var lEntry = leftEntries[li];
+                var lLines = lEntry.lines;
+                var lScore = lEntry.score;
+
+                for (var ri = 0; ri < rightEntries.length; ri++) {
+                    var rEntry = rightEntries[ri];
+                    var edgeSum = lScore + rEntry.score;
+                    if (edgeSum + 1250 <= bestPairScore) continue;
+
+                    var rLines = rEntry.lines;
+                    if (hasAnchor) {
+                        var anchorOk = true;
+                        for (var ai = 0; ai < 5; ai++) {
+                            if (Math.abs(lLines[ai] + (rLines[ai] - lLines[ai]) * anchorT - anchorLines[ai]) > anchorTolerance) {
+                                anchorOk = false;
+                                break;
+                            }
+                        }
+                        if (!anchorOk) continue;
+                    }
+
+                    var totalCov = 0;
+                    var minCov = Infinity;
+                    var usable = true;
+                    for (var lineIdx = 0; lineIdx < 5; lineIdx++) {
+                        var leftY = lLines[lineIdx];
+                        var diff = rLines[lineIdx] - leftY;
+                        var baseRow = (leftY - minY) * numX;
+                        var dOff = getDeltaRowOffsets(diff);
+                        var hits = 0;
+                        var faintHits = 0;
+                        for (var sx = 0; sx < numX; sx++) {
+                            var fl = flags[baseRow + dOff[sx]];
+                            hits += fl & 1;
+                            faintHits += fl >> 1;
+                        }
+                        var darkCov = hits * invNumX;
+                        var faintCov = faintHits * invNumX;
+                        var cov = darkCov < 0.22 && faintCov >= 0.6 ? faintCov : darkCov;
+                        if (cov < 0.22) {
+                            usable = false;
+                            break;
+                        }
+                        totalCov += cov;
+                        if (cov < minCov) minCov = cov;
+                    }
+                    if (!usable) continue;
+                    var avgCov = totalCov / 5;
+                    if (avgCov < 0.36) continue;
+
+                    var combinedScore = avgCov * 1000 + minCov * 250 + edgeSum;
+                    if (combinedScore > bestPairScore) {
+                        bestPairScore = combinedScore;
+                        bestLeftLines = lLines;
+                        bestRightLines = rLines;
+                    }
+                }
+            }
+
+            if (bestLeftLines && bestRightLines) {
+                leftGeom = buildGeometryFromLines(leftFit.x, bestLeftLines);
+                rightGeom = buildGeometryFromLines(rightFit.x, bestRightLines);
             }
         }
 
@@ -866,13 +1054,17 @@ var BarlineDetectV2 = (function () {
             if (!manualScore || !manualScore.isUsable || !matchesClickAnchor(leftGeom, rightGeom)) return null;
         }
 
-        return {
+        var finalGeometry = {
             xs: { x1: Math.round(leftGeom.x), x2: Math.round(rightGeom.x) },
             spatium: spatium,
             normalizationReason: normalizationReason,
             left: leftGeom,
             right: rightGeom
         };
+        if (geomCacheMap && geomCacheKey) {
+            geomCacheMap.set(geomCacheKey, cloneRenderGeometry(finalGeometry));
+        }
+        return finalGeometry;
     }
 
     function buildPianoGrandStaffGeometry(system, pixelData, stride, imageWidth) {
@@ -1244,14 +1436,12 @@ var BarlineDetectV2 = (function () {
      * - ROBUST BASELINE: Whiteness baseline uses median of top-N candidates
      *   instead of single max, more resistant to outliers
      */
-    async function findBarLinesCnnOnlyAsync(system, stride, pixelData, imageWidth, opts) {
+    function prepareCnnCandidatesForSystem(system, stride, pixelData, imageWidth, opts) {
         opts = opts || {};
         var perfStats = opts.perfStats || null;
         var perfStart = perfStats ? performance.now() : 0;
         var scanStart = perfStats ? performance.now() : 0;
         var candidateCount = 0;
-        var cnnCalls = 0;
-        var cnnTimeMs = 0;
         var mtdrmpl = 0.5;
         var voorna = 0.2;
         var dx = 3;
@@ -1264,16 +1454,18 @@ var BarlineDetectV2 = (function () {
         var xs = system.xs;
         var seenCols = new Set();
 
-        if (!staffLines || staffLines.length < 2) return [xs.x1];
+        if (!staffLines || staffLines.length < 2) {
+            return { earlyResult: [xs.x1] };
+        }
 
         var norm = normalizeStaffLines(staffLines, pixelData, stride, imageWidth, xs);
         if (!norm.isValid) {
-            var invalidNormFallback = findBarLinesV1Single(system, stride, pixelData, imageWidth, opts);
             if (allowV1Fallback) {
+                var invalidNormFallback = findBarLinesV1Single(system, stride, pixelData, imageWidth, opts);
                 pushFallbackDiagnostics(opts.diagnostics, invalidNormFallback, "fallback_v1_invalid_staff:" + (norm.reason || "invalid_staff"));
-                return invalidNormFallback.length > 0 ? invalidNormFallback : [xs.x1];
+                return { earlyResult: invalidNormFallback.length > 0 ? invalidNormFallback : [xs.x1] };
             }
-            return [xs.x1];
+            return { earlyResult: [xs.x1] };
         }
 
         var normLines = norm.lines || staffLines;
@@ -1289,57 +1481,70 @@ var BarlineDetectV2 = (function () {
         var fittedGeometry = buildRenderGeometry(system, pixelData, stride, imageWidth);
         var maxTraceDrift = Math.max(1, spatium * 0.35);
         var staffGeomCache = new Array(imageWidth);
+        var normRounded = normLines.map(function (y) { return Math.round(y); });
+        var maxLineOffset = Math.max(4, Math.round(1.15 * spatium));
+        var minStaffHeight = Math.max(4, Math.round(staffHeight * 0.82));
+        var maxStaffHeight = Math.max(minStaffHeight + 2, Math.round(staffHeight * 1.18));
+        var fitLeftX = fittedGeometry ? fittedGeometry.left.x : 0;
+        var fitInvDx = fittedGeometry ? (1 / (fittedGeometry.right.x - fittedGeometry.left.x || 1)) : 0;
+        var fitLeftLines = fittedGeometry ? fittedGeometry.left.lines : null;
+        var fitRightLines = fittedGeometry ? fittedGeometry.right.lines : null;
 
         function getStaffGeometry(col) {
-            if (staffGeomCache[col]) return staffGeomCache[col];
+            var cached = staffGeomCache[col];
+            if (cached) return cached;
 
             if (fittedGeometry) {
-                var left = fittedGeometry.left, right = fittedGeometry.right;
-                var t = Math.max(0, Math.min(1, (col - left.x) / (right.x - left.x || 1)));
-                var fittedLines = left.lines.map(function (y, index) {
-                    return Math.round(y + (right.lines[index] - y) * t);
-                });
-                var followsFit = tracedLines && fittedLines.every(function (y, index) {
-                    return Math.abs(Math.round(tracedLines[index][col]) - y) <= maxTraceDrift;
-                });
+                var t = (col - fitLeftX) * fitInvDx;
+                if (t < 0) t = 0;
+                else if (t > 1) t = 1;
+                var f0 = Math.round(fitLeftLines[0] + (fitRightLines[0] - fitLeftLines[0]) * t);
+                var f1 = Math.round(fitLeftLines[1] + (fitRightLines[1] - fitLeftLines[1]) * t);
+                var f2 = Math.round(fitLeftLines[2] + (fitRightLines[2] - fitLeftLines[2]) * t);
+                var f3 = Math.round(fitLeftLines[3] + (fitRightLines[3] - fitLeftLines[3]) * t);
+                var f4 = Math.round(fitLeftLines[4] + (fitRightLines[4] - fitLeftLines[4]) * t);
+                var followsFit = tracedLines &&
+                    Math.abs(Math.round(tracedLines[0][col]) - f0) <= maxTraceDrift &&
+                    Math.abs(Math.round(tracedLines[1][col]) - f1) <= maxTraceDrift &&
+                    Math.abs(Math.round(tracedLines[2][col]) - f2) <= maxTraceDrift &&
+                    Math.abs(Math.round(tracedLines[3][col]) - f3) <= maxTraceDrift &&
+                    Math.abs(Math.round(tracedLines[4][col]) - f4) <= maxTraceDrift;
                 if (!followsFit) {
-                    return staffGeomCache[col] = {
-                        lines: fittedLines,
-                        top: fittedLines[0],
-                        bot: fittedLines[4],
-                        height: fittedLines[4] - fittedLines[0],
+                    var fitGeom = {
+                        lines: [f0, f1, f2, f3, f4],
+                        top: f0,
+                        bot: f4,
+                        height: f4 - f0,
                         usedTraceFallback: false
                     };
+                    staffGeomCache[col] = fitGeom;
+                    return fitGeom;
                 }
             }
 
-            var effectiveLines = [];
+            var effectiveLines;
             var usedTraceFallback = false;
-            var maxLineOffset = Math.max(4, Math.round(1.15 * spatium));
-            var minStaffHeight = Math.max(4, Math.round(staffHeight * 0.82));
-            var maxStaffHeight = Math.max(minStaffHeight + 2, Math.round(staffHeight * 1.18));
 
             if (tracedLines) {
+                effectiveLines = new Array(5);
                 for (var lineIdx = 0; lineIdx < 5; lineIdx++) {
-                    var baseY = Math.round(normLines[lineIdx]);
+                    var baseY = normRounded[lineIdx];
                     var tracedY = Math.round(tracedLines[lineIdx][col]);
-                    effectiveLines.push(Math.max(baseY - maxLineOffset, Math.min(baseY + maxLineOffset, tracedY)));
-                }
-
-                for (var clampIdx = 1; clampIdx < effectiveLines.length; clampIdx++) {
-                    if (effectiveLines[clampIdx] <= effectiveLines[clampIdx - 1]) {
-                        effectiveLines[clampIdx] = effectiveLines[clampIdx - 1] + 1;
+                    var clampedY = tracedY < baseY - maxLineOffset ? baseY - maxLineOffset : (tracedY > baseY + maxLineOffset ? baseY + maxLineOffset : tracedY);
+                    if (lineIdx > 0 && clampedY <= effectiveLines[lineIdx - 1]) {
+                        clampedY = effectiveLines[lineIdx - 1] + 1;
                     }
+                    effectiveLines[lineIdx] = clampedY;
                 }
 
                 var tracedHeight = effectiveLines[4] - effectiveLines[0];
                 if (tracedHeight < minStaffHeight || tracedHeight > maxStaffHeight) {
                     usedTraceFallback = true;
-                    effectiveLines = normLines.map(function (y) { return Math.round(y); });
+                    effectiveLines = normRounded;
                 }
             } else {
                 usedTraceFallback = true;
-                effectiveLines = normLines.map(function (y) { return Math.round(y); });
+                effectiveLines = normRounded;
             }
 
             var localTop = effectiveLines[0];
@@ -1355,6 +1560,8 @@ var BarlineDetectV2 = (function () {
             return geom;
         }
 
+        var pixelLen = pixelData.length;
+        var imgHeight = Math.floor(pixelLen / stride);
         var maxWit = 0;
         for (var col = 0; col < imageWidth; col++) {
             var maxWitGeom = getStaffGeometry(col);
@@ -1362,9 +1569,11 @@ var BarlineDetectV2 = (function () {
             var maxWitBot = maxWitGeom.bot;
             var colSum = 0;
             var rowCount = 0;
-            for (var row = maxWitTop; row < maxWitBot; row++) {
+            var startRow = maxWitTop < 0 ? 0 : maxWitTop;
+            var endRow = maxWitBot > imgHeight ? imgHeight : maxWitBot;
+            for (var row = startRow; row < endRow; row++) {
                 var idx = row * stride + col * 4;
-                if (idx + 2 >= pixelData.length || idx < 0) continue;
+                if (idx + 2 >= pixelLen) continue;
                 colSum += pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2];
                 rowCount++;
             }
@@ -1386,40 +1595,39 @@ var BarlineDetectV2 = (function () {
             if (localHeight <= 0) continue;
 
             var extTop = Math.max(0, localTop - ext);
-            var extBot = Math.min(Math.floor(pixelData.length / stride) - 1, localBot + ext);
+            var extBot = Math.min(imgHeight - 1, localBot + ext);
 
             var brightnessSum = 0;
             var brightnessRows = 0;
             var blackCount = 0;
+            var colByteOffset = dataCol * 4;
 
             for (var extRow = extTop; extRow <= extBot; extRow++) {
                 var extRowOffset = extRow * stride;
-                if (extRowOffset < 0 || extRowOffset + (numCols * 4) > pixelData.length) continue;
+                if (extRowOffset < 0 || extRowOffset + (numCols * 4) > pixelLen) continue;
 
-                var extColIdx = extRowOffset + dataCol * 4;
-                if (extColIdx + 2 < pixelData.length && extColIdx >= 0) {
+                var extColIdx = extRowOffset + colByteOffset;
+                if (extColIdx + 2 < pixelLen && extColIdx >= 0) {
                     brightnessSum += pixelData[extColIdx] + pixelData[extColIdx + 1] + pixelData[extColIdx + 2];
                     brightnessRows++;
                 }
             }
 
+            var hasNextCol = dataCol + 1 < numCols;
             for (var staffRow = localTop; staffRow <= localBot; staffRow++) {
                 var staffRowOffset = staffRow * stride;
-                if (staffRowOffset < 0 || staffRowOffset + (numCols * 4) > pixelData.length) continue;
+                if (staffRowOffset < 0 || staffRowOffset + (numCols * 4) > pixelLen) continue;
 
-                var pIdx = staffRowOffset + dataCol * 4;
-                if (pIdx + 2 >= pixelData.length || pIdx < 0) continue;
+                var pIdx = staffRowOffset + colByteOffset;
+                if (pIdx + 2 >= pixelLen || pIdx < 0) continue;
                 var pxBrightness = pixelData[pIdx] + pixelData[pIdx + 1] + pixelData[pIdx + 2];
 
                 var adjBrightness = 765;
-                if (dataCol + 1 < numCols) {
-                    var adjIdx = staffRowOffset + (dataCol + 1) * 4;
-                    if (adjIdx + 2 < pixelData.length) {
-                        adjBrightness = pixelData[adjIdx] + pixelData[adjIdx + 1] + pixelData[adjIdx + 2];
-                    }
+                if (hasNextCol && pIdx + 6 < pixelLen) {
+                    adjBrightness = pixelData[pIdx + 4] + pixelData[pIdx + 5] + pixelData[pIdx + 6];
                 }
 
-                if (Math.min(pxBrightness, adjBrightness) < witThreshold) {
+                if ((pxBrightness < adjBrightness ? pxBrightness : adjBrightness) < witThreshold) {
                     blackCount++;
                 }
             }
@@ -1432,10 +1640,10 @@ var BarlineDetectV2 = (function () {
         var u = xs.x2 - 20;
         if (q >= u) { q = xs.x1; u = xs.x2; }
 
-        var sortedY = [];
-        for (var yCol = q; yCol < u; yCol++) sortedY.push(yArr[yCol]);
-        sortedY.sort(function (a, b) { return b - a; });
-        var maxBlackCount = sortedY[0] || 0;
+        var maxBlackCount = 0;
+        for (var yCol = q; yCol < u; yCol++) {
+            if (yArr[yCol] > maxBlackCount) maxBlackCount = yArr[yCol];
+        }
 
         var leftWhites = [];
         var rightWhites = [];
@@ -1468,16 +1676,15 @@ var BarlineDetectV2 = (function () {
 
             for (var row = localTop; row <= localBot; row++) {
                 var rowOffset = row * stride;
-                if (rowOffset < 0 || rowOffset + (numCols * 4) > pixelData.length) continue;
+                if (rowOffset < 0 || rowOffset + (numCols * 4) > pixelLen) continue;
 
                 var isDark = false;
                 for (var dxOff = -drift; dxOff <= drift; dxOff++) {
                     var cx = scanCol + dxOff;
                     if (cx < 0 || cx >= numCols) continue;
                     var rowIdx = rowOffset + cx * 4;
-                    if (rowIdx + 2 >= pixelData.length || rowIdx < 0) continue;
-                    var brightness = (pixelData[rowIdx] + pixelData[rowIdx + 1] + pixelData[rowIdx + 2]) / 3;
-                    if (brightness < 128) {
+                    if (rowIdx + 2 >= pixelLen || rowIdx < 0) continue;
+                    if (pixelData[rowIdx] + pixelData[rowIdx + 1] + pixelData[rowIdx + 2] < 384) {
                         isDark = true;
                         break;
                     }
@@ -1502,15 +1709,11 @@ var BarlineDetectV2 = (function () {
                 var tcConsec = 0;
                 for (var traceRow = localTop; traceRow <= localBot; traceRow++) {
                     var traceRowOffset = traceRow * stride;
-                    if (traceRowOffset < 0 || traceRowOffset + (numCols * 4) > pixelData.length) continue;
+                    if (traceRowOffset < 0 || traceRowOffset + (numCols * 4) > pixelLen) continue;
 
                     var traceIdx = traceRowOffset + tc * 4;
-                    var isDarkTc = false;
-                    if (traceIdx + 2 < pixelData.length && traceIdx >= 0) {
-                        if ((pixelData[traceIdx] + pixelData[traceIdx + 1] + pixelData[traceIdx + 2]) / 3 < 128) {
-                            isDarkTc = true;
-                        }
-                    }
+                    var isDarkTc = traceIdx + 2 < pixelLen && traceIdx >= 0 &&
+                        (pixelData[traceIdx] + pixelData[traceIdx + 1] + pixelData[traceIdx + 2] < 384);
 
                     if (isDarkTc) {
                         tcConsec++;
@@ -1556,31 +1759,28 @@ var BarlineDetectV2 = (function () {
             perfStats.candidateCount = candidateCount;
         }
 
-        var scores = [];
-        if (candidateSpecs.length > 0) {
-            var cnnStart = perfStats ? performance.now() : 0;
-            scores = await BarlinePatchCNN.predictBatchCandidatesAsync(
-                pixelData,
-                stride,
-                imageWidth,
-                candidateSpecs.map(function (candidate) {
-                    return {
-                        xCol: candidate.x,
-                        staffTop: candidate.localTop,
-                        staffBot: candidate.localBot,
-                        spatium: candidate.spatium
-                    };
-                })
-            );
-            cnnCalls = candidateSpecs.length;
-            if (perfStats) {
-                cnnTimeMs = performance.now() - cnnStart;
-                perfStats.cnnCalls = cnnCalls;
-                perfStats.cnnTimeMs = cnnTimeMs;
-            }
-        } else if (perfStats) {
-            perfStats.cnnCalls = 0;
-            perfStats.cnnTimeMs = 0;
+        return {
+            earlyResult: null,
+            perfStart: perfStart,
+            candidateSpecs: candidateSpecs,
+            xs: xs,
+            effectiveMinGap: effectiveMinGap,
+            allowV1Fallback: allowV1Fallback
+        };
+    }
+
+    function finalizeCnnCandidatesForSystem(prepared, scores, cnnTimeMs, system, stride, pixelData, imageWidth, opts) {
+        if (prepared.earlyResult) return prepared.earlyResult;
+        opts = opts || {};
+        var perfStats = opts.perfStats || null;
+        var candidateSpecs = prepared.candidateSpecs;
+        var xs = prepared.xs;
+        var effectiveMinGap = prepared.effectiveMinGap;
+        var allowV1Fallback = prepared.allowV1Fallback;
+
+        if (perfStats) {
+            perfStats.cnnCalls = candidateSpecs.length;
+            perfStats.cnnTimeMs = cnnTimeMs;
         }
 
         var mlCandidates = [];
@@ -1683,19 +1883,111 @@ var BarlineDetectV2 = (function () {
             barlines.push(acceptedObjects[acceptIdx].x);
         }
 
-        var fallbackV1 = findBarLinesV1Single(system, stride, pixelData, imageWidth, opts);
-        if (allowV1Fallback && fallbackV1.length > barlines.length && (barlines.length <= 1 || fallbackV1.length - barlines.length >= 2)) {
-            pushFallbackDiagnostics(opts.diagnostics, fallbackV1, "fallback_v1_system", barlines);
-            return fallbackV1;
+        if (allowV1Fallback) {
+            var fallbackV1 = findBarLinesV1Single(system, stride, pixelData, imageWidth, opts);
+            if (fallbackV1.length > barlines.length && (barlines.length <= 1 || fallbackV1.length - barlines.length >= 2)) {
+                pushFallbackDiagnostics(opts.diagnostics, fallbackV1, "fallback_v1_system", barlines);
+                return fallbackV1;
+            }
         }
 
         if (perfStats) {
             perfStats.nmsMs = performance.now() - nmsStart;
-            perfStats.totalMs = performance.now() - perfStart;
+            perfStats.totalMs = performance.now() - prepared.perfStart;
             perfStats.acceptedCount = barlines.length;
         }
 
         return barlines;
+    }
+
+    async function findBarLinesCnnOnlyAsync(system, stride, pixelData, imageWidth, opts) {
+        opts = opts || {};
+        var prepared = prepareCnnCandidatesForSystem(system, stride, pixelData, imageWidth, opts);
+        if (prepared.earlyResult) return prepared.earlyResult;
+
+        var scores = [];
+        var cnnTimeMs = 0;
+        if (prepared.candidateSpecs.length > 0) {
+            var cnnStart = opts.perfStats ? performance.now() : 0;
+            scores = await BarlinePatchCNN.predictBatchCandidatesAsync(
+                pixelData,
+                stride,
+                imageWidth,
+                prepared.candidateSpecs.map(function (candidate) {
+                    return {
+                        xCol: candidate.x,
+                        staffTop: candidate.localTop,
+                        staffBot: candidate.localBot,
+                        spatium: candidate.spatium
+                    };
+                })
+            );
+            if (opts.perfStats) cnnTimeMs = performance.now() - cnnStart;
+        }
+        return finalizeCnnCandidatesForSystem(prepared, scores, cnnTimeMs, system, stride, pixelData, imageWidth, opts);
+    }
+
+    async function findPageBarLinesCnnOnlyAsync(systems, stride, pixelData, imageWidth, optionsList) {
+        var count = systems.length;
+        var preparedList = new Array(count);
+        var flatCandidates = [];
+        var sliceStarts = new Array(count);
+        var sliceLengths = new Array(count);
+
+        for (var i = 0; i < count; i++) {
+            var opts = (optionsList && optionsList[i]) || {};
+            var prepared = prepareCnnCandidatesForSystem(systems[i], stride, pixelData, imageWidth, opts);
+            preparedList[i] = prepared;
+            sliceStarts[i] = flatCandidates.length;
+            if (!prepared.earlyResult && prepared.candidateSpecs.length > 0) {
+                var specs = prepared.candidateSpecs;
+                sliceLengths[i] = specs.length;
+                for (var j = 0; j < specs.length; j++) {
+                    var candidate = specs[j];
+                    flatCandidates.push({
+                        xCol: candidate.x,
+                        staffTop: candidate.localTop,
+                        staffBot: candidate.localBot,
+                        spatium: candidate.spatium
+                    });
+                }
+            } else {
+                sliceLengths[i] = 0;
+            }
+        }
+
+        var allScores = [];
+        var totalCnnMs = 0;
+        if (flatCandidates.length > 0) {
+            var cnnStart = performance.now();
+            allScores = await BarlinePatchCNN.predictBatchCandidatesAsync(
+                pixelData,
+                stride,
+                imageWidth,
+                flatCandidates
+            );
+            totalCnnMs = performance.now() - cnnStart;
+        }
+
+        var results = new Array(count);
+        var totalFlat = flatCandidates.length;
+        for (var k = 0; k < count; k++) {
+            var sysOpts = (optionsList && optionsList[k]) || {};
+            var len = sliceLengths[k];
+            var sysScores = len > 0 ? allScores.slice(sliceStarts[k], sliceStarts[k] + len) : [];
+            var sysCnnMs = totalFlat > 0 ? (totalCnnMs * len / totalFlat) : 0;
+            results[k] = finalizeCnnCandidatesForSystem(
+                preparedList[k],
+                sysScores,
+                sysCnnMs,
+                systems[k],
+                stride,
+                pixelData,
+                imageWidth,
+                sysOpts
+            );
+        }
+        return results;
     }
 
     function findBarLinesV2(system, stride, pixelData, imageWidth, opts) {
@@ -3309,6 +3601,7 @@ var BarlineDetectV2 = (function () {
         getSpatiumForY: getSpatiumForY,
         getDominantSpatium: getDominantSpatium,
         findBarLinesCnnOnlyAsync: findBarLinesCnnOnlyAsync,
+        findPageBarLinesCnnOnlyAsync: findPageBarLinesCnnOnlyAsync,
         findBarLinesV2: findBarLinesV2,
         findBarLinesAll: findBarLinesAll,
         getDiagnostics: getDiagnostics,

@@ -1084,7 +1084,9 @@ async function goPage$$module$synpdf(pageNumber, pageOffset, renderToken) {
             if (doresize$$module$synpdf) {
                 doresize$$module$synpdf = 0;
                 resizePdf$$module$synpdf();
-            } else if (succeeded && opt$$module$synpdf.advncd) {
+            } else if (succeeded && opt$$module$synpdf.advncd &&
+                !(typeof window !== "undefined" && window.SynpdfAutoBarlines && window.SynpdfAutoBarlines.running &&
+                    window.SynpdfBarlineDetection && window.SynpdfBarlineDetection.supportsDirectPdfRender)) {
                 setTimeout(precomputeAdvancedMetrics$$module$synpdf, 0);
             }
         }
@@ -1723,10 +1725,14 @@ function drawRes$$module$synpdf(colorIntensityArr, imgWidth, imgHeight, pixelDat
 
 // Loading, option changes, and CNN preparation use the same staff discovery.
 // Normal loading keeps systems grouped; single-staff discovery is explicitly enabled.
-function scanPageMetrics$$module$synpdf(image, sliceIndex) {
-    if (opt$$module$synpdf.onestf) return countPixMultiBands$$module$synpdf(image, sliceIndex);
+function scanPageMetrics$$module$synpdf(image, sliceIndex, scanOptions) {
+    if (opt$$module$synpdf.onestf) return countPixMultiBands$$module$synpdf(image, sliceIndex, scanOptions);
     var initialSkip = skipn$$module$synpdf;
-    var primary = countPix$$module$synpdf(image, sliceIndex);
+    var analysis = scanOptions && scanOptions.analysis ? scanOptions.analysis : undefined;
+    if (analysis && scanOptions.skipBarlines) {
+        analysis = Object.assign({}, analysis, { skipBarlines: true });
+    }
+    var primary = countPix$$module$synpdf(image, sliceIndex, analysis);
     if (primary.cxs.length || opt$$module$synpdf.staffScanBand) return primary;
     // A movement's final system can occupy only the left quarter of the page.
     // Keep the selected scan when it works; try the opposite quarter if empty.
@@ -1734,15 +1740,19 @@ function scanPageMetrics$$module$synpdf(image, sliceIndex) {
     try {
         opt$$module$synpdf.eerst = previousEerst ? 0 : 1;
         skipn$$module$synpdf = initialSkip;
-        return countPix$$module$synpdf(image, sliceIndex);
+        return countPix$$module$synpdf(image, sliceIndex, analysis);
     } finally {
         opt$$module$synpdf.eerst = previousEerst;
     }
 }
 
 function createPageAnalysis$$module$synpdf(image) {
-    var pixels = image.getContext("2d").getImageData(0, 0, image.width, image.height).data;
-    var rgbSums = new Uint16Array(image.width * image.height);
+    var pixels = image && image.pixelData
+        ? image.pixelData
+        : image.getContext("2d").getImageData(0, 0, image.width, image.height).data;
+    var width = image.width;
+    var height = image.height || (image.stride ? Math.floor(pixels.length / image.stride) : Math.floor(pixels.length / (width * 4)));
+    var rgbSums = new Uint16Array(width * height);
     for (var pixel = 0, offset = 0; pixel < rgbSums.length; pixel++, offset += 4) {
         rgbSums[pixel] = pixels[offset] + pixels[offset + 1] + pixels[offset + 2];
     }
@@ -1757,7 +1767,7 @@ function countPix$$module$synpdf(image, sliceIndex, analysis) {
     var pixelIndex, avgRowColor;  // Define the local variables
     var imageWidth = image.width;  // Get the width of the image
     var g = 4 * imageWidth;  // Multiply width by 4 for later calculations
-    var imageHeight = image.height;  // Get the height of the image
+    var imageHeight = image.height || (image.stride ? Math.floor(image.pixelData.length / image.stride) : 0);  // Get the height of the image
     analysis = analysis || createPageAnalysis$$module$synpdf(image);
     var imagePixelData = analysis.pixelData;
 
@@ -1783,18 +1793,29 @@ function countPix$$module$synpdf(image, sliceIndex, analysis) {
             loopEndOffset = 4 * Math.ceil(scanEnd * imageWidth);
         }
     }
+    var rgbSums = analysis.rgbSums;
+    var rowStartPix = loopStartOffset / 4;
+    var rowEndPix = loopEndOffset / 4;
+    var rowDenom = 3 * (loopEndOffset - loopStartOffset);
     for (currentRow = 0; currentRow < imageHeight; currentRow++) {  // Go through each row in the image
         var colorSum = 0;  // Initialize colorSum, which will contain sum of pixels' color
-        for (pixelIndex = (currentPixelOffset + loopStartOffset) / 4; pixelIndex < (currentPixelOffset + loopEndOffset) / 4; pixelIndex++)
-            colorSum += analysis.rgbSums[pixelIndex];
-        avgRowColor = colorSum / (3 * (loopEndOffset - loopStartOffset));  // Get an average color value
+        var basePix = currentRow * imageWidth;
+        for (pixelIndex = basePix + rowStartPix; pixelIndex < basePix + rowEndPix; pixelIndex++)
+            colorSum += rgbSums[pixelIndex];
+        avgRowColor = colorSum / rowDenom;  // Get an average color value
         colorIntensityArray.push(avgRowColor);  // Add this value into colorIntensityArray
         currentPixelOffset += g  // Increase currentPixelOffset for the next iteration
     }
     let drawResResult = drawRes$$module$synpdf(colorIntensityArray, imageWidth, imageHeight, imagePixelData, analysis);
     for (drawResResult = countVsys$$module$synpdf(drawResResult, g, imagePixelData, analysis); drawResResult.length && skipn$$module$synpdf;) drawResResult.shift(), --skipn$$module$synpdf;  // Further process the image data
     sliceIndex && (drawResResult = drawResResult.slice(sliceIndex - 1, sliceIndex));  // Slice the results based on parameter 'b'
-    sliceIndex = findBarLines$$module$synpdf(drawResResult, g, imagePixelData, analysis);  // Find bar lines
+    if (analysis.skipBarlines) {
+        sliceIndex = drawResResult.map(function (system) {
+            return system && system.xs ? [system.xs.x1, system.xs.x2] : [];
+        });
+    } else {
+        sliceIndex = findBarLines$$module$synpdf(drawResResult, g, imagePixelData, analysis);  // Find bar lines
+    }
     return {
         cxs: drawResResult,  // Return the results
         bxs: sliceIndex
@@ -1955,8 +1976,11 @@ function countPixFourQuarters$$module$synpdf(image, sliceIndex) {
     return merged;
 }
 
-function countPixMultiBands$$module$synpdf(image, sliceIndex) {
-    var analysis = createPageAnalysis$$module$synpdf(image);
+function countPixMultiBands$$module$synpdf(image, sliceIndex, scanOptions) {
+    var analysis = (scanOptions && scanOptions.analysis) || createPageAnalysis$$module$synpdf(image);
+    if (scanOptions && scanOptions.skipBarlines) {
+        analysis = Object.assign({}, analysis, { skipBarlines: true });
+    }
     var previousEerst = opt$$module$synpdf.eerst;
     var previousBand = opt$$module$synpdf.staffScanBand;
     var previousSkipn = skipn$$module$synpdf;
@@ -2094,19 +2118,29 @@ function countVsys$$module$synpdf(a, b, c, analysis) {
     var d, e, f, g = [],
         p = [],
         m = [];
+    var imgW = b / 4;
+    var colSums = new Uint32Array(imgW);
     for (f = 0; f < a.length; ++f) {
         var n = Math.round(a[f][0]);
         var l = Math.round(a[f][a[f].length - 1]);
-        var h = [];
-        for (d = 0; d < b; d += 4) {
-            var k = 0;
-            if (rgbSums) {
-                for (e = n * (b / 4) + d / 4; e < l * (b / 4) + d / 4; e += b / 4) k += rgbSums[e];
-            } else {
-                for (e = n * b + d; e < l * b + d; e += b) k += c[e], k += c[e + 1], k += c[e + 2];
+        var h = new Array(imgW);
+        colSums.fill(0);
+        if (rgbSums) {
+            for (var rowY = n; rowY < l; ++rowY) {
+                var rowOff = rowY * imgW;
+                for (var colX = 0; colX < imgW; ++colX) colSums[colX] += rgbSums[rowOff + colX];
             }
-            h.push(k / (3 * (l - n)))
+        } else {
+            for (var rowY = n; rowY < l; ++rowY) {
+                var byteRowOff = rowY * b;
+                for (var colX = 0, byteX = 0; colX < imgW; ++colX, byteX += 4) {
+                    var pxOff = byteRowOff + byteX;
+                    colSums[colX] += c[pxOff] + c[pxOff + 1] + c[pxOff + 2];
+                }
+            }
         }
+        var denomH = 3 * (l - n);
+        for (var colX = 0; colX < imgW; ++colX) h[colX] = colSums[colX] / denomH;
         for (d = k = 0; d < h.length; ++d) h[d] > k && (k = h[d]);
         d = Math.floor(h.length / 2);
         e = d + d / 2;
@@ -2138,19 +2172,34 @@ function countVsys$$module$synpdf(a, b, c, analysis) {
     a = g;
     g = [];
     if (0 == a.length) return a;
+    if (opt$$module$synpdf.onestf && 0 != opt$$module$synpdf.drmpl2) {
+        for (f = 0; f < a.length; ++f) g.push({
+            cs: a[f],
+            xs: m[f]
+        });
+        return g;
+    }
     for (f = 0; f < a.length - 1; ++f) {
         l = Math.round(a[f][a[f].length - 1]);
         n = Math.round(a[f + 1][0]);
-        h = [];
-        for (d = 0; d < b; d += 4) {
-            k = 0;
-            if (rgbSums) {
-                for (e = l * (b / 4) + d / 4; e < n * (b / 4) + d / 4; e += b / 4) k += rgbSums[e];
-            } else {
-                for (e = l * b + d; e < n * b + d; e += b) k += c[e], k += c[e + 1], k += c[e + 2];
+        h = new Array(imgW);
+        colSums.fill(0);
+        if (rgbSums) {
+            for (var gapRow = l; gapRow < n; ++gapRow) {
+                var gapRowOff = gapRow * imgW;
+                for (var gapCol = 0; gapCol < imgW; ++gapCol) colSums[gapCol] += rgbSums[gapRowOff + gapCol];
             }
-            h.push(k / (3 * (n - l)))
+        } else {
+            for (var gapRow = l; gapRow < n; ++gapRow) {
+                var gapByteOff = gapRow * b;
+                for (var gapCol = 0, gapByteX = 0; gapCol < imgW; ++gapCol, gapByteX += 4) {
+                    var gapPxOff = gapByteOff + gapByteX;
+                    colSums[gapCol] += c[gapPxOff] + c[gapPxOff + 1] + c[gapPxOff + 2];
+                }
+            }
         }
+        var gapDenom = 3 * (n - l);
+        for (var gapCol = 0; gapCol < imgW; ++gapCol) h[gapCol] = colSums[gapCol] / gapDenom;
         e = h[0];
         for (d = k = 0; d < h.length; d++) l = h[d], e = Math.abs(l - e), 10 < e && e > k && (k = e), e = l;
 

@@ -1157,9 +1157,10 @@ function getCurrentPageCanvas() {
     return canvases.length ? canvases[canvases.length - 1] : null;
 }
 
-function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf, useMultiBandStaffScan) {
-    var canvas = getCurrentPageCanvas();
-    if (!canvas || typeof countPix$$module$synpdf !== 'function') {
+function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf, useMultiBandStaffScan, scanOptions) {
+    scanOptions = scanOptions || {};
+    var imageSource = scanOptions.pageImageData || getCurrentPageCanvas();
+    if (!imageSource || typeof countPix$$module$synpdf !== 'function') {
         return null;
     }
 
@@ -1172,7 +1173,12 @@ function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf,
         var scanFunction = useMultiBandStaffScan && typeof scanPageMetrics$$module$synpdf === 'function'
             ? scanPageMetrics$$module$synpdf
             : countPix$$module$synpdf;
-        var pageData = scanFunction(canvas, parseInt(opt$$module$synpdf.seln));
+        var pageData = scanFunction === scanPageMetrics$$module$synpdf
+            ? scanFunction(imageSource, parseInt(opt$$module$synpdf.seln), {
+                analysis: scanOptions.pageAnalysis || imageSource.analysis,
+                skipBarlines: !!scanOptions.skipBarlines
+            })
+            : scanFunction(imageSource, parseInt(opt$$module$synpdf.seln));
         if (!pageData || !pageData.cxs) {
             return null;
         }
@@ -1190,9 +1196,11 @@ function rebuildCurrentPageMetricData(pagenum, forceSingleStaves, restoreOnestf,
         const savedPartJumps = deMetriek$$module$synpdf[pagenum]?.partJumps;
         deMetriek$$module$synpdf[pagenum] = pageData.cxs.length ? pageData : { cxs: [], bxs: [] };
         if (savedPartJumps) deMetriek$$module$synpdf[pagenum].partJumps = savedPartJumps;
-        MetricStore.setMetricData(deMetriek$$module$synpdf, { clone: false });
+        if (!scanOptions.skipPersist) {
+            MetricStore.setMetricData(deMetriek$$module$synpdf, { clone: false });
+        }
 
-        if (typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.snapshotV2BaselineForPage) {
+        if (!scanOptions.skipBaseline && typeof SynpdfCorrectionTools !== 'undefined' && SynpdfCorrectionTools.snapshotV2BaselineForPage) {
             SynpdfCorrectionTools.snapshotV2BaselineForPage(pagenum, deMetriek$$module$synpdf[pagenum], [], []);
         }
 
@@ -4898,7 +4906,9 @@ function scanDivisiGroupCandidates(image) {
         opt$$module$synpdf.onestf = 0;
         delete opt$$module$synpdf.staffScanBand;
         skipn$$module$synpdf = 0;
-        return countPix$$module$synpdf(canvas, 0).cxs || [];
+        var baseAnalysis = image.analysis || createPageAnalysis$$module$synpdf(canvas);
+        var scanAnalysis = baseAnalysis ? Object.assign({}, baseAnalysis, { skipBarlines: true }) : undefined;
+        return countPix$$module$synpdf(canvas, 0, scanAnalysis).cxs || [];
     } finally {
         opt$$module$synpdf.onestf = previous.onestf;
         opt$$module$synpdf.staffScanBand = previous.band;
@@ -4958,27 +4968,54 @@ function findDivisiBridges(upper, lower, image, minimumBridges) {
     var a = getSystemTopBottomAtX(upper, mid), b = getSystemTopBottomAtX(lower, mid);
     var gap = (b.top - a.bottom) / sp;
     if (gap < 1 || gap > 12 || (a.bottom - a.top) / sp > 5.5 || (b.bottom - b.top) / sp > 5.5) return [];
-    var height = Math.floor(image.pixelData.length / image.stride);
+    var pixelData = image.pixelData;
+    var stride = image.stride;
+    var imgWidth = image.width;
+    var height = Math.floor(pixelData.length / stride);
+    var rgbSums = image.analysis && image.analysis.rgbSums ? image.analysis.rgbSums : null;
     var step = Math.max(3, Math.round(sp * 0.6));
-    function dark(x, y) {
-        if (x < 0 || x >= image.width || y < 0 || y >= height) return 0;
-        var offset = y * image.stride + x * 4;
-        return image.pixelData[offset] + image.pixelData[offset + 1] + image.pixelData[offset + 2] < 450 ? 1 : 0;
-    }
     var bridges = [], bridgeScores = [];
     // Ignore brackets/clefs and structural endpoints: require multiple interior bridges.
-    for (var x = Math.ceil(Math.max(upper.xs.x1, lower.xs.x1) + 3 * sp);
-        x < Math.min(upper.xs.x2, lower.xs.x2, image.width - step) - 3 * sp; x++) {
+    var startX = Math.ceil(Math.max(upper.xs.x1, lower.xs.x1) + 3 * sp);
+    var endX = Math.min(upper.xs.x2, lower.xs.x2, imgWidth - step) - 3 * sp;
+    for (var x = startX; x < endX; x++) {
         var top = getSystemTopBottomAtX(upper, x), bottom = getSystemTopBottomAtX(lower, x);
         var y1 = Math.max(0, Math.round(top.top)), y2 = Math.min(height - 1, Math.round(bottom.bottom));
         var gapTop = Math.round(top.bottom) + 1, gapBottom = Math.round(bottom.top) - 1;
         var covered = 0, gapCovered = 0, sides = 0, centerCovered = 0;
-        for (var y = y1; y <= y2; y++) {
-            var ink = Math.max(dark(x - 1, y), dark(x, y), dark(x + 1, y));
-            covered += ink;
-            centerCovered += dark(x, y);
-            if (y >= gapTop && y <= gapBottom) gapCovered += ink;
-            sides += (dark(x - step, y) + dark(x + step, y)) / 2;
+        var hasLeft1 = x - 1 >= 0 && x - 1 < imgWidth;
+        var hasMid = x >= 0 && x < imgWidth;
+        var hasRight1 = x + 1 >= 0 && x + 1 < imgWidth;
+        var hasLeftStep = x - step >= 0 && x - step < imgWidth;
+        var hasRightStep = x + step >= 0 && x + step < imgWidth;
+        if (rgbSums) {
+            for (var y = y1; y <= y2; y++) {
+                var rowBase = y * imgWidth;
+                var dMid = hasMid && rgbSums[rowBase + x] < 450 ? 1 : 0;
+                var ink = dMid || (hasLeft1 && rgbSums[rowBase + x - 1] < 450) || (hasRight1 && rgbSums[rowBase + x + 1] < 450) ? 1 : 0;
+                covered += ink;
+                centerCovered += dMid;
+                if (y >= gapTop && y <= gapBottom) gapCovered += ink;
+                var dLS = hasLeftStep && rgbSums[rowBase + x - step] < 450 ? 1 : 0;
+                var dRS = hasRightStep && rgbSums[rowBase + x + step] < 450 ? 1 : 0;
+                sides += (dLS + dRS) * 0.5;
+            }
+        } else {
+            var xByte = x * 4, xm1Byte = (x - 1) * 4, xp1Byte = (x + 1) * 4;
+            var xlsByte = (x - step) * 4, xrsByte = (x + step) * 4;
+            for (var y = y1; y <= y2; y++) {
+                var rowOff = y * stride;
+                var dMid = hasMid && (pixelData[rowOff + xByte] + pixelData[rowOff + xByte + 1] + pixelData[rowOff + xByte + 2] < 450) ? 1 : 0;
+                var ink = dMid ||
+                    (hasLeft1 && (pixelData[rowOff + xm1Byte] + pixelData[rowOff + xm1Byte + 1] + pixelData[rowOff + xm1Byte + 2] < 450)) ||
+                    (hasRight1 && (pixelData[rowOff + xp1Byte] + pixelData[rowOff + xp1Byte + 1] + pixelData[rowOff + xp1Byte + 2] < 450)) ? 1 : 0;
+                covered += ink;
+                centerCovered += dMid;
+                if (y >= gapTop && y <= gapBottom) gapCovered += ink;
+                var dLS = hasLeftStep && (pixelData[rowOff + xlsByte] + pixelData[rowOff + xlsByte + 1] + pixelData[rowOff + xlsByte + 2] < 450) ? 1 : 0;
+                var dRS = hasRightStep && (pixelData[rowOff + xrsByte] + pixelData[rowOff + xrsByte + 1] + pixelData[rowOff + xrsByte + 2] < 450) ? 1 : 0;
+                sides += (dLS + dRS) * 0.5;
+            }
         }
         var span = y2 - y1 + 1;
         if (span > 0 && covered / span >= 0.85 && gapCovered / Math.max(1, gapBottom - gapTop + 1) >= 0.9 &&
@@ -6080,7 +6117,7 @@ $(document).ready(function () {
             return false;
         }
 
-        const pageImageData = getCurrentPageImageData();
+        const pageImageData = options.pageImageData || getCurrentPageImageData();
         if (!pageImageData) {
             alert("No page pixel data available from the current canvas. Please reload the page.");
             return false;
@@ -6088,19 +6125,31 @@ $(document).ready(function () {
 
         // Validate the page number
         let pagenumElement = document.getElementById('pagenum');
-        let pagenum = pagenumElement ? parseInt(pagenumElement.value) : opt$$module$synpdf.pagenum;
+        let pagenum = options.pageNum !== undefined ? options.pageNum : (pagenumElement ? parseInt(pagenumElement.value) : opt$$module$synpdf.pagenum);
 
         if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || pagenum < 0 || pagenum >= deMetriek$$module$synpdf.length) {
             alert('Invalid page number or deMetriek data missing.');
             return false;
         }
 
+        if (runMode === 'cnn_only' && !pageImageData.analysis && typeof createPageAnalysis$$module$synpdf === 'function') {
+            pageImageData.analysis = options.pageAnalysis || createPageAnalysis$$module$synpdf(pageImageData);
+        }
+
         let pageData = deMetriek$$module$synpdf[pagenum];
         if (runMode === 'cnn_only') {
             const divisiSingles = pageData && pageData.divisiSingles;
-            await updateBarlineDetectionProgress(pagenum, 0, 0);
+            if (!options.skipProgressYield) {
+                await updateBarlineDetectionProgress(pagenum, 0, 0);
+            }
             if (options.isCurrent && !options.isCurrent()) return false;
-            pageData = rebuildCurrentPageMetricData(pagenum, true, undefined, true) || pageData;
+            pageData = rebuildCurrentPageMetricData(pagenum, true, undefined, true, {
+                pageImageData: pageImageData,
+                pageAnalysis: pageImageData.analysis,
+                skipBarlines: true,
+                skipPersist: !!options.skipPersist,
+                skipBaseline: true
+            }) || pageData;
             if (divisiSingles) pageData.divisiSingles = JSON.parse(JSON.stringify(divisiSingles));
         }
         if (!pageData || !pageData.cxs || pageData.cxs.length === 0) {
@@ -6157,25 +6206,63 @@ $(document).ready(function () {
         const systemRenderGeometry = [];
         const systemPerf = [];
         let v2Barlines = [];
-        for (let index = 0; index < systemsForDetection.length; index++) {
-            if (runMode === 'cnn_only') {
-                await updateBarlineDetectionProgress(pagenum, index, systemsForDetection.length);
+        if (runMode === 'cnn_only' && typeof BarlineDetectV2.findPageBarLinesCnnOnlyAsync === 'function') {
+            if (!options.skipProgressYield) {
+                await updateBarlineDetectionProgress(pagenum, 0, systemsForDetection.length);
             }
             if (options.isCurrent && !options.isCurrent()) return false;
-            const system = systemsForDetection[index];
-            const perSystemOpts = Object.assign({}, detectionOpts, { diagnostics: [], perfStats: {} });
-            const detected = detectionJobs[index].legacyBarlines ||
-                await Promise.resolve(BarlineDetectV2.findBarLinesV2(system, stride, pixelData, width, perSystemOpts));
-            if (options.isCurrent && !options.isCurrent()) return false;
-            systemDiagnostics[index] = perSystemOpts.diagnostics.slice();
-            systemPerf[index] = perSystemOpts.perfStats;
-            systemRenderGeometry[index] = runMode !== 'cnn_only' && systemSupportsRenderGeometryFit(system)
-                ? BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width)
-                : null;
-            v2Barlines.push(detected);
-        }
-        if (runMode === 'cnn_only') {
-            await updateBarlineDetectionProgress(pagenum, systemsForDetection.length, systemsForDetection.length);
+            const cnnIndices = [];
+            const cnnSystems = [];
+            const cnnOptsList = [];
+            v2Barlines = new Array(systemsForDetection.length);
+            for (let index = 0; index < systemsForDetection.length; index++) {
+                systemDiagnostics[index] = [];
+                systemPerf[index] = {};
+                systemRenderGeometry[index] = null;
+                if (detectionJobs[index].legacyBarlines) {
+                    v2Barlines[index] = detectionJobs[index].legacyBarlines;
+                } else {
+                    cnnIndices.push(index);
+                    cnnSystems.push(systemsForDetection[index]);
+                    cnnOptsList.push(Object.assign({}, detectionOpts, {
+                        diagnostics: systemDiagnostics[index],
+                        perfStats: systemPerf[index]
+                    }));
+                }
+            }
+            if (cnnSystems.length > 0) {
+                const pageDetected = await BarlineDetectV2.findPageBarLinesCnnOnlyAsync(
+                    cnnSystems, stride, pixelData, width, cnnOptsList
+                );
+                if (options.isCurrent && !options.isCurrent()) return false;
+                for (let ci = 0; ci < cnnIndices.length; ci++) {
+                    v2Barlines[cnnIndices[ci]] = pageDetected[ci];
+                }
+            }
+            if (!options.skipProgressYield) {
+                await updateBarlineDetectionProgress(pagenum, systemsForDetection.length, systemsForDetection.length);
+            }
+        } else {
+            for (let index = 0; index < systemsForDetection.length; index++) {
+                if (runMode === 'cnn_only' && !options.skipProgressYield) {
+                    await updateBarlineDetectionProgress(pagenum, index, systemsForDetection.length);
+                }
+                if (options.isCurrent && !options.isCurrent()) return false;
+                const system = systemsForDetection[index];
+                const perSystemOpts = Object.assign({}, detectionOpts, { diagnostics: [], perfStats: {} });
+                const detected = detectionJobs[index].legacyBarlines ||
+                    await Promise.resolve(BarlineDetectV2.findBarLinesV2(system, stride, pixelData, width, perSystemOpts));
+                if (options.isCurrent && !options.isCurrent()) return false;
+                systemDiagnostics[index] = perSystemOpts.diagnostics.slice();
+                systemPerf[index] = perSystemOpts.perfStats;
+                systemRenderGeometry[index] = runMode !== 'cnn_only' && systemSupportsRenderGeometryFit(system)
+                    ? BarlineDetectV2.buildRenderGeometry(system, pixelData, stride, width)
+                    : null;
+                v2Barlines.push(detected);
+            }
+            if (runMode === 'cnn_only' && !options.skipProgressYield) {
+                await updateBarlineDetectionProgress(pagenum, systemsForDetection.length, systemsForDetection.length);
+            }
         }
         if (options.isCurrent && !options.isCurrent()) return false;
 
@@ -6207,7 +6294,7 @@ $(document).ready(function () {
             );
 
             // Persist the updated live metric array before re-rendering.
-            if (!persistMetricData()) {
+            if (!options.skipPersist && !persistMetricData()) {
                 alert("Could not save updated barlines. Aborting refresh.");
                 return false;
             }
@@ -6287,40 +6374,273 @@ $(document).ready(function () {
         var isCurrent = options.isCurrent || function () { return true; };
         if (batchDetectionInProgress || divisiSplitInProgress) return;
         if (runMode !== 'cnn_only') return;
-        if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf || deMetriek$$module$synpdf.length <= 1) {
+
+        var sourceDoc = (typeof pdfDoc$$module$synpdf !== 'undefined' && pdfDoc$$module$synpdf && typeof pdfDoc$$module$synpdf.getPage === 'function')
+            ? pdfDoc$$module$synpdf
+            : null;
+        var canRenderOffscreen = !!(sourceDoc &&
+            typeof renderMetricPage$$module$synpdf === 'function' &&
+            typeof document !== 'undefined' &&
+            typeof document.createElement === 'function');
+
+        if (typeof deMetriek$$module$synpdf === 'undefined' || !deMetriek$$module$synpdf ||
+            (!canRenderOffscreen && deMetriek$$module$synpdf.length <= 1)) {
             alert('No metric data loaded.');
             return;
         }
 
-        var lastPage = deMetriek$$module$synpdf.length - 1;
+        var lastPage = canRenderOffscreen ? (sourceDoc.numPages || 0) : (deMetriek$$module$synpdf.length - 1);
+        if (lastPage < 1) {
+            alert('No metric data loaded.');
+            return;
+        }
+        if (canRenderOffscreen) {
+            for (var initP = 1; initP <= lastPage; initP++) {
+                if (!deMetriek$$module$synpdf[initP]) {
+                    deMetriek$$module$synpdf[initP] = { cxs: [], bxs: [] };
+                }
+            }
+        }
+
         batchDetectionInProgress = true;
         startBarlineDetectionProgress(lastPage);
         var error = null;
+        var extraLoadingTasks = [];
         try {
             if (!isCurrent()) return false;
-            await prepareBarlineDetectionModel();
-            for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
-                if (!isCurrent()) return false;
-                setBatchButtonState(true, pageNum, lastPage, 'cnn');
-                await updateBarlineDetectionProgress(pageNum, 0, 0);
-                if (getDisplayedPageNumber() !== pageNum) {
-                    await goToRenderedPage(pageNum, { forceRerender: true, isCurrent: isCurrent });
+
+            if (!canRenderOffscreen) {
+                await prepareBarlineDetectionModel();
+                for (var pageNum = 1; pageNum <= lastPage; pageNum++) {
+                    if (!isCurrent()) return false;
+                    setBatchButtonState(true, pageNum, lastPage, 'cnn');
+                    await updateBarlineDetectionProgress(pageNum, 0, 0);
+                    if (getDisplayedPageNumber() !== pageNum) {
+                        await goToRenderedPage(pageNum, { forceRerender: true, isCurrent: isCurrent });
+                    }
+                    if (!isCurrent()) return false;
+                    // Navigation restores per-page options, including onestf. Apply
+                    // single-staff mode on each page and rebuild immediately before
+                    // inference, exactly as the current-page CNN button does.
+                    setSingleStaffMode(true);
+                    var pageOptions = { suppressRefresh: true };
+                    if (options.automatic) Object.assign(pageOptions, { allowEmptyPages: true, isCurrent: isCurrent });
+                    var ok = await runPageBarlineDetection(runMode, pageOptions);
+                    if (!isCurrent()) return false;
+                    if (!ok) {
+                        throw new Error('Detection failed on page ' + pageNum);
+                    }
+                    barlineDetectionProgress.completedPages++;
                 }
+                await goToRenderedPage(1, { forceRerender: true, isCurrent: isCurrent });
                 if (!isCurrent()) return false;
-                // Navigation restores per-page options, including onestf. Apply
-                // single-staff mode on each page and rebuild immediately before
-                // inference, exactly as the current-page CNN button does.
-                setSingleStaffMode(true);
-                var pageOptions = { suppressRefresh: true };
-                if (options.automatic) Object.assign(pageOptions, { allowEmptyPages: true, isCurrent: isCurrent });
-                var ok = await runPageBarlineDetection(runMode, pageOptions);
-                if (!isCurrent()) return false;
-                if (!ok) {
-                    throw new Error('Detection failed on page ' + pageNum);
-                }
-                barlineDetectionProgress.completedPages++;
+                console.log('CNN-only dev detection completed for all pages.');
+                return true;
             }
-            await goToRenderedPage(1, { forceRerender: true, isCurrent: isCurrent });
+
+            // Fast offscreen pipelined path: initialize the CNN model, decode PDF
+            // pages across parallel PDF.js workers, and overlap JS scanning with
+            // async CNN inference across pages.
+            var modelReadyPromise = prepareBarlineDetectionModel();
+            var targetWidth = Number(deMetriek$$module$synpdf[0]) || Number(opt$$module$synpdf.fixwd) || 2000;
+            var displayedPageNum = getDisplayedPageNumber();
+            var cachedDisplayedImage = null;
+            if (displayedPageNum >= 1 && displayedPageNum <= lastPage) {
+                var liveImg = getCurrentPageImageData();
+                if (liveImg && liveImg.width === targetWidth && liveImg.pixelData && liveImg.pixelData.length) {
+                    cachedDisplayedImage = {
+                        pageNum: displayedPageNum,
+                        imageData: liveImg
+                    };
+                }
+            }
+
+            var renderDocs = [sourceDoc];
+            var extraDocsPromise = (async function () {
+                if (lastPage < 4 || typeof pdfjsLib === 'undefined' || !pdfjsLib.getDocument ||
+                    !sourceDoc.getData || !sourceDoc.getPermissions) {
+                    return [];
+                }
+                try {
+                    if (await sourceDoc.getPermissions() !== null || !isCurrent()) return [];
+                    var pdfBytes = await sourceDoc.getData();
+                    if (!isCurrent()) return [];
+                    var hc = (typeof navigator !== 'undefined' && Number(navigator.hardwareConcurrency)) || 4;
+                    var extraCount = Math.min(2, Math.max(1, Math.floor((hc - 1) / 2)));
+                    if (lastPage < 6) extraCount = 1;
+                    var spawned = [];
+                    for (var e = 0; e < extraCount; e++) {
+                        var task = pdfjsLib.getDocument({ data: pdfBytes.slice() });
+                        task.onPassword = function () { task.destroy(); };
+                        extraLoadingTasks.push(task);
+                        spawned.push(task.promise.catch(function () { return null; }));
+                    }
+                    var resolved = await Promise.all(spawned);
+                    return resolved.filter(Boolean);
+                } catch (_err) {
+                    return [];
+                }
+            })();
+
+            // Bounded lookahead render queue (max 3 rendered pages buffered).
+            var nextRenderPage = 1;
+            var maxBuffered = 3;
+            var readyByPage = new Map();
+            var waitersByPage = new Map();
+            var renderError = null;
+            var bufferNotify = [];
+
+            function wakeBufferProducers() {
+                while (bufferNotify.length) bufferNotify.shift()();
+            }
+
+            function publishRenderedPage(pNum, imageData) {
+                readyByPage.set(pNum, imageData);
+                var waiter = waitersByPage.get(pNum);
+                if (waiter) {
+                    waitersByPage.delete(pNum);
+                    waiter.resolve(imageData);
+                }
+            }
+
+            function failAllRenderWaiters(err) {
+                renderError = renderError || err;
+                waitersByPage.forEach(function (waiter) { waiter.reject(renderError); });
+                waitersByPage.clear();
+                wakeBufferProducers();
+            }
+
+            function takeRenderedPage(pNum) {
+                if (readyByPage.has(pNum)) {
+                    var img = readyByPage.get(pNum);
+                    readyByPage.delete(pNum);
+                    wakeBufferProducers();
+                    return Promise.resolve(img);
+                }
+                if (renderError) return Promise.reject(renderError);
+                return new Promise(function (resolve, reject) {
+                    waitersByPage.set(pNum, {
+                        resolve: function (img) {
+                            readyByPage.delete(pNum);
+                            wakeBufferProducers();
+                            resolve(img);
+                        },
+                        reject: reject
+                    });
+                });
+            }
+
+            async function runPdfRenderWorker(doc) {
+                var canvas = document.createElement('canvas');
+                try {
+                    while (isCurrent() && !renderError && nextRenderPage <= lastPage) {
+                        while (isCurrent() && !renderError && readyByPage.size >= maxBuffered) {
+                            await new Promise(function (resolve) { bufferNotify.push(resolve); });
+                        }
+                        if (!isCurrent() || renderError || nextRenderPage > lastPage) break;
+                        var pNum = nextRenderPage++;
+                        if (cachedDisplayedImage && cachedDisplayedImage.pageNum === pNum) {
+                            publishRenderedPage(pNum, cachedDisplayedImage.imageData);
+                            cachedDisplayedImage = null;
+                            continue;
+                        }
+                        var page = await doc.getPage(pNum);
+                        if (!isCurrent() || renderError) {
+                            if (page && page.cleanup) page.cleanup();
+                            break;
+                        }
+                        await renderMetricPage$$module$synpdf(page, canvas, targetWidth);
+                        if (!isCurrent() || renderError) {
+                            if (page && page.cleanup) page.cleanup();
+                            break;
+                        }
+                        var ctx = canvas.getContext('2d', { willReadFrequently: true });
+                        var rawPixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                        var renderedImage = {
+                            pixelData: rawPixels,
+                            stride: canvas.width * 4,
+                            width: canvas.width,
+                            height: canvas.height
+                        };
+                        if (page && page.cleanup) page.cleanup();
+                        publishRenderedPage(pNum, renderedImage);
+                    }
+                } catch (err) {
+                    failAllRenderWaiters(err);
+                } finally {
+                    canvas.width = canvas.height = 0;
+                }
+            }
+
+            // Start rendering immediately with primary doc, and add extra workers as they open.
+            var renderWorkerPromises = [runPdfRenderWorker(sourceDoc)];
+            extraDocsPromise.then(function (docs) {
+                for (var di = 0; di < docs.length; di++) {
+                    if (isCurrent() && !renderError && nextRenderPage <= lastPage) {
+                        renderDocs.push(docs[di]);
+                        renderWorkerPromises.push(runPdfRenderWorker(docs[di]));
+                    }
+                }
+            });
+
+            await modelReadyPromise;
+            if (!isCurrent()) return false;
+
+            setSingleStaffMode(true);
+            var nextProcessPage = 1;
+            var pipelineError = null;
+            var pageConcurrency = Math.min(lastPage, 3);
+
+            async function runPagePipelineWorker() {
+                while (isCurrent() && !pipelineError && nextProcessPage <= lastPage) {
+                    var pNum = nextProcessPage++;
+                    var pageImageData = await takeRenderedPage(pNum);
+                    if (!isCurrent() || pipelineError) break;
+                    setBatchButtonState(true, Math.min(lastPage, barlineDetectionProgress.completedPages + 1), lastPage, 'cnn');
+                    var pageOptions = {
+                        suppressRefresh: true,
+                        pageNum: pNum,
+                        pageImageData: pageImageData,
+                        skipPersist: true,
+                        skipProgressYield: true,
+                        allowEmptyPages: !!options.automatic,
+                        isCurrent: isCurrent
+                    };
+                    var ok = await runPageBarlineDetection(runMode, pageOptions);
+                    // Release pixel data immediately after this page completes.
+                    pageImageData.pixelData = null;
+                    pageImageData.analysis = null;
+                    if (!isCurrent()) break;
+                    if (!ok) {
+                        throw new Error('Detection failed on page ' + pNum);
+                    }
+                    barlineDetectionProgress.completedPages++;
+                    await updateBarlineDetectionProgress(pNum, 1, 1);
+                }
+            }
+
+            var pipelineWorkers = [];
+            for (var pw = 0; pw < pageConcurrency; pw++) {
+                pipelineWorkers.push(runPagePipelineWorker());
+            }
+            var pipelineOutcomes = await Promise.allSettled(pipelineWorkers);
+            for (var po = 0; po < pipelineOutcomes.length; po++) {
+                if (pipelineOutcomes[po].status === 'rejected') {
+                    pipelineError = pipelineOutcomes[po].reason;
+                    failAllRenderWaiters(pipelineError);
+                    throw pipelineError;
+                }
+            }
+            if (!isCurrent()) return false;
+
+            if (!persistMetricData()) {
+                throw new Error('Could not save updated barlines.');
+            }
+            if (getDisplayedPageNumber() === 1) {
+                requestRefresh({ preferLiveData: true });
+            } else {
+                await goToRenderedPage(1, { forceRerender: true, isCurrent: isCurrent });
+            }
             if (!isCurrent()) return false;
             console.log('CNN-only dev detection completed for all pages.');
             return true;
@@ -6331,6 +6651,11 @@ $(document).ready(function () {
             if (!options.automatic) alert('All-pages CNN detection stopped: ' + err.message);
             return false;
         } finally {
+            for (var t = 0; t < extraLoadingTasks.length; t++) {
+                if (extraLoadingTasks[t] && !extraLoadingTasks[t].destroyed) {
+                    try { await extraLoadingTasks[t].destroy(); } catch (_err) { /* ignore */ }
+                }
+            }
             batchDetectionInProgress = false;
             setBatchButtonState(false);
             if (isCurrent()) finishBarlineDetectionProgress(error);
@@ -6343,7 +6668,7 @@ $(document).ready(function () {
 
     function runCurrentPagePianoNormalize(options) {
         options = options || {};
-        const pageImageData = getCurrentPageImageData();
+        const pageImageData = options.pageImageData || getCurrentPageImageData();
         if (!pageImageData) {
             alert("No page pixel data available from the current canvas. Please reload the page.");
             return false;
@@ -6384,7 +6709,7 @@ $(document).ready(function () {
 
     function runCurrentPageFullScoreNormalize(options) {
         options = options || {};
-        const pageImageData = getCurrentPageImageData();
+        const pageImageData = options.pageImageData || getCurrentPageImageData();
         if (!pageImageData) {
             alert("No page pixel data available from the current canvas. Please reload the page.");
             return false;
@@ -6459,7 +6784,7 @@ $(document).ready(function () {
 
     async function runCurrentPagePianoCnnDetection(options) {
         options = options || {};
-        const pageImageData = getCurrentPageImageData();
+        const pageImageData = options.pageImageData || getCurrentPageImageData();
         if (!pageImageData) {
             alert("No page pixel data available from the current canvas. Please reload the page.");
             return false;
@@ -6639,6 +6964,7 @@ $(document).ready(function () {
 
     window.SynpdfBarlineDetection = {
         runAllPages: runAllPagesBarlineDetection,
+        supportsDirectPdfRender: true,
         get busy() { return batchDetectionInProgress; }
     };
 

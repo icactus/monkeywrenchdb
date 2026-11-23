@@ -1,4 +1,26 @@
-<!DOCTYPE HTML>
+<?php
+if (file_exists('session_config.php')) {
+    require_once 'session_config.php';
+} elseif (file_exists('../session_config.php')) {
+    require_once '../session_config.php';
+} elseif (file_exists('../../session_config.php')) {
+    require_once '../../session_config.php';
+} else {
+    session_start();
+}
+
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+header('Cross-Origin-Opener-Policy: same-origin');
+header('Cross-Origin-Embedder-Policy: require-corp');
+header('Cross-Origin-Resource-Policy: same-origin');
+
+// ADMIN CHECK
+if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+    die("<h1>Access Denied</h1><p>You must be an Administrator to access this page.</p><p><a href='/'>Go Home</a></p>");
+}
+?><!DOCTYPE HTML>
 <html>
 
 <head>
@@ -10,36 +32,14 @@
     <title>Edit Mode</title>
     <link rel="stylesheet" href="part-pdf-queue.css?v=7">
     <script src="part-pdf-queue.js?v=21" defer></script>
-    <script src="auto-barline-detection.js?v=5" defer></script>
+    <script src="auto-barline-detection.js?v=6" defer></script>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
-    <?php
-    if (file_exists('session_config.php')) {
-        require_once 'session_config.php';
-    } elseif (file_exists('../session_config.php')) {
-        require_once '../session_config.php';
-    } elseif (file_exists('../../session_config.php')) {
-        require_once '../../session_config.php';
-    } else {
-        session_start();
-    }
-
-    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-    header('Pragma: no-cache');
-    header('Expires: 0');
-    header('Cross-Origin-Opener-Policy: same-origin');
-    header('Cross-Origin-Embedder-Policy: require-corp');
-    header('Cross-Origin-Resource-Policy: same-origin');
-
-    // ADMIN CHECK
-    if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
-        die("<h1>Access Denied</h1><p>You must be an Administrator to access this page.</p><p><a href='/'>Go Home</a></p>");
-    }
-    ?>
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 
     <?php
     $ortJsVer = file_exists('vendor/onnxruntime/ort.wasm.min.js') ? filemtime('vendor/onnxruntime/ort.wasm.min.js') : time();
+    $ortFullJsVer = file_exists('vendor/onnxruntime/ort.min.js') ? filemtime('vendor/onnxruntime/ort.min.js') : 0;
     $barlineCnnRuntimeVer = file_exists('barline-patch-cnn-runtime.js') ? filemtime('barline-patch-cnn-runtime.js') : time();
     $editModeToolsVer = file_exists('edit-mode-tools.js') ? filemtime('edit-mode-tools.js') : time();
     $barlineDetectVer = file_exists('barline-detect-v2.js') ? filemtime('barline-detect-v2.js') : time();
@@ -52,9 +52,8 @@
     $pianoBarlineCnnOnnxMetaVer = file_exists('../models/piano-barline-patch-cnn.onnx.json') ? filemtime('../models/piano-barline-patch-cnn.onnx.json') : 0;
     $pianoBarlineCnnOnnxEnabled = $pianoBarlineCnnOnnxVer > 0 && $pianoBarlineCnnOnnxMetaVer > 0;
     $onnxWasmRoot = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/synpdf_182/editmode/synpdf-edit-mode.php'), '/\\') . '/vendor/onnxruntime/';
-    $serverHost = $_SERVER['HTTP_HOST'] ?? '';
-    $isLocalHost = preg_match('/^(localhost|127\.0\.0\.1)(:\d+)?$/', $serverHost) === 1;
-    $onnxWasmThreads = $isLocalHost ? 1 : 4;
+    $ortWasmScriptUrl = $onnxWasmRoot . 'ort.wasm.min.js?v=' . $ortJsVer;
+    $ortWebGpuScriptUrl = $ortFullJsVer > 0 ? ($onnxWasmRoot . 'ort.min.js?v=' . $ortFullJsVer) : null;
     ?>
     <script src="metric-store.js?v=2"></script>
     <script src="correction-log-tools.js?v=25"></script>
@@ -64,20 +63,22 @@
             modelUrl: <?php echo json_encode('../models/barline-patch-cnn-3x6.onnx?v=' . ($barlineCnnOnnxVer ?: time())); ?>,
             metadataUrl: <?php echo json_encode('../models/barline-patch-cnn-3x6.onnx.json?v=' . ($barlineCnnOnnxMetaVer ?: time())); ?>,
             wasmRoot: <?php echo json_encode($onnxWasmRoot); ?>,
-            wasmThreads: <?php echo (int)$onnxWasmThreads; ?>
+            ortWasmScriptUrl: <?php echo json_encode($ortWasmScriptUrl); ?>,
+            ortWebGpuScriptUrl: <?php echo json_encode($ortWebGpuScriptUrl); ?>
         };
         window.PianoBarlinePatchCnnOnnxConfig = {
             enabled: <?php echo $pianoBarlineCnnOnnxEnabled ? 'true' : 'false'; ?>,
             modelUrl: <?php echo json_encode('../models/piano-barline-patch-cnn.onnx?v=' . ($pianoBarlineCnnOnnxVer ?: time())); ?>,
             metadataUrl: <?php echo json_encode('../models/piano-barline-patch-cnn.onnx.json?v=' . ($pianoBarlineCnnOnnxMetaVer ?: time())); ?>,
             wasmRoot: <?php echo json_encode($onnxWasmRoot); ?>,
-            wasmThreads: <?php echo (int)$onnxWasmThreads; ?>
+            ortWasmScriptUrl: <?php echo json_encode($ortWasmScriptUrl); ?>,
+            ortWebGpuScriptUrl: <?php echo json_encode($ortWebGpuScriptUrl); ?>
         };
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
     <script src="/js/part-jumps.js?v=4"></script>
-    <script src="synpdf-edit-mode.js?v=109"></script>
+    <script src="synpdf-edit-mode.js?v=110"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="part-jump-editor.js?v=2" defer></script>
     <script src="part-count-check.js?v=7" defer></script>

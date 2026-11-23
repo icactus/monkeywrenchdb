@@ -81,8 +81,10 @@
         loading.show('document', 'Loading PDF…');
         function documentReady() {
             if (ticket !== generation) return;
+            const skipGroupedWait = running && window.SynpdfBarlineDetection?.supportsDirectPdfRender;
             if (!window.pdfDoc$$module$synpdf?.numPages || window.rendering$$module$synpdf ||
-                window.metricPrecomputeInProgress$$module$synpdf || !window.hasCompleteMetricPages$$module$synpdf?.()) {
+                window.metricPrecomputeInProgress$$module$synpdf ||
+                (!skipGroupedWait && !window.hasCompleteMetricPages$$module$synpdf?.())) {
                 loading.show('document', window.pdfDoc$$module$synpdf?.numPages && !window.rendering$$module$synpdf
                     ? 'Finding staff systems…' : 'Loading PDF…');
                 setTimeout(documentReady, 100);
@@ -108,12 +110,16 @@
         }
         setPreparation('running');
         report('Loading PDF…');
+        // Warm up the ONNX runtime / worker pool while PDF.js loads and renders page 1.
+        if (window.BarlinePatchCNN?.loadAsync && window.BarlinePatchCNN?.isOnnxConfigured?.()) {
+            Promise.resolve().then(() => window.BarlinePatchCNN.loadAsync()).catch(() => {});
+        }
         async function ready() {
             if (ticket !== generation) return;
             const doc = window.pdfDoc$$module$synpdf;
             const detector = window.SynpdfBarlineDetection;
             if (!doc?.numPages || window.rendering$$module$synpdf || window.metricPrecomputeInProgress$$module$synpdf ||
-                !window.hasCompleteMetricPages$$module$synpdf?.() || !detector || detector.busy) {
+                (!detector?.supportsDirectPdfRender && !window.hasCompleteMetricPages$$module$synpdf?.()) || !detector || detector.busy) {
                 report(!doc?.numPages || window.rendering$$module$synpdf ? 'Loading PDF…' :
                     'Finding staff systems…');
                 setTimeout(ready, 100);
@@ -125,12 +131,20 @@
                 const completed = await detector.runAllPages('cnn_only', { automatic: true, isCurrent });
                 if (isCurrent()) {
                     setPreparation(completed === true ? 'complete' : 'failed');
-                    if (completed !== true) report('Barline detection did not finish. Use Rerun detection to try again.');
+                    if (completed !== true) {
+                        report('Barline detection did not finish. Use Rerun detection to try again.');
+                        if (!window.hasCompleteMetricPages$$module$synpdf?.()) {
+                            window.precomputeAdvancedMetrics$$module$synpdf?.();
+                        }
+                    }
                 }
             } catch (error) {
                 if (isCurrent()) {
                     setPreparation('failed');
                     report('Barline detection stopped: ' + error.message);
+                    if (!window.hasCompleteMetricPages$$module$synpdf?.()) {
+                        window.precomputeAdvancedMetrics$$module$synpdf?.();
+                    }
                 }
             } finally {
                 if (ticket === generation && running) setPreparation('failed');

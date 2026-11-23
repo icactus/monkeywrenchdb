@@ -1,4 +1,26 @@
-<!DOCTYPE HTML>
+<?php
+if (file_exists('session_config.php')) {
+    require_once 'session_config.php';
+} elseif (file_exists('../session_config.php')) {
+    require_once '../session_config.php';
+} elseif (file_exists('../../session_config.php')) {
+    require_once '../../session_config.php';
+} else {
+    session_start();
+}
+
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+header('Cross-Origin-Opener-Policy: same-origin');
+header('Cross-Origin-Embedder-Policy: require-corp');
+header('Cross-Origin-Resource-Policy: same-origin');
+
+// ADMIN CHECK
+if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+    die("<h1>Access Denied</h1><p>You must be an Administrator to access this page.</p><p><a href='/'>Go Home</a></p>");
+}
+?><!DOCTYPE HTML>
 <html>
 
 <head>
@@ -9,34 +31,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>ML Data Labeler</title>
     <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
-    <?php
-    if (file_exists('session_config.php')) {
-        require_once 'session_config.php';
-    } elseif (file_exists('../session_config.php')) {
-        require_once '../session_config.php';
-    } elseif (file_exists('../../session_config.php')) {
-        require_once '../../session_config.php';
-    } else {
-        session_start();
-    }
-
-    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-    header('Pragma: no-cache');
-    header('Expires: 0');
-    header('Cross-Origin-Opener-Policy: same-origin');
-    header('Cross-Origin-Embedder-Policy: require-corp');
-    header('Cross-Origin-Resource-Policy: same-origin');
-
-    // ADMIN CHECK
-    if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
-        die("<h1>Access Denied</h1><p>You must be an Administrator to access this page.</p><p><a href='/'>Go Home</a></p>");
-    }
-    ?>
     <script src="jquery.min.js"></script>
     <script src="pdf.min.js"></script>
 
     <?php
     $ortJsVer = file_exists('vendor/onnxruntime/ort.wasm.min.js') ? filemtime('vendor/onnxruntime/ort.wasm.min.js') : time();
+    $ortFullJsVer = file_exists('vendor/onnxruntime/ort.min.js') ? filemtime('vendor/onnxruntime/ort.min.js') : 0;
     $barlineCnnRuntimeVer = file_exists('barline-patch-cnn-runtime.js') ? filemtime('barline-patch-cnn-runtime.js') : time();
     $editModeToolsVer = file_exists('edit-mode-tools.js') ? filemtime('edit-mode-tools.js') : time();
     $barlineDetectVer = file_exists('barline-detect-v2.js') ? filemtime('barline-detect-v2.js') : time();
@@ -45,9 +45,8 @@
     $barlineCnnOnnxMetaVer = file_exists('../models/barline-patch-cnn-3x6.onnx.json') ? filemtime('../models/barline-patch-cnn-3x6.onnx.json') : 0;
     $barlineCnnOnnxEnabled = $barlineCnnOnnxVer > 0 && $barlineCnnOnnxMetaVer > 0;
     $onnxWasmRoot = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/synpdf_182/editmode/ml-label-editor.php'), '/\\') . '/vendor/onnxruntime/';
-    $serverHost = $_SERVER['HTTP_HOST'] ?? '';
-    $isLocalHost = preg_match('/^(localhost|127\.0\.0\.1)(:\d+)?$/', $serverHost) === 1;
-    $onnxWasmThreads = $isLocalHost ? 1 : 4;
+    $ortWasmScriptUrl = $onnxWasmRoot . 'ort.wasm.min.js?v=' . $ortJsVer;
+    $ortWebGpuScriptUrl = $ortFullJsVer > 0 ? ($onnxWasmRoot . 'ort.min.js?v=' . $ortFullJsVer) : null;
     ?>
     <script src="metric-store.js?v=2"></script>
     <script src="correction-log-tools.js?v=25"></script>
@@ -57,13 +56,14 @@
             modelUrl: <?php echo json_encode('../models/barline-patch-cnn-3x6.onnx?v=' . ($barlineCnnOnnxVer ?: time())); ?>,
             metadataUrl: <?php echo json_encode('../models/barline-patch-cnn-3x6.onnx.json?v=' . ($barlineCnnOnnxMetaVer ?: time())); ?>,
             wasmRoot: <?php echo json_encode($onnxWasmRoot); ?>,
-            wasmThreads: <?php echo (int)$onnxWasmThreads; ?>
+            ortWasmScriptUrl: <?php echo json_encode($ortWasmScriptUrl); ?>,
+            ortWebGpuScriptUrl: <?php echo json_encode($ortWebGpuScriptUrl); ?>
         };
     </script>
     <script src="vendor/onnxruntime/ort.wasm.min.js?v=<?php echo $ortJsVer; ?>"></script>
     <script src="barline-patch-cnn-runtime.js?v=<?php echo $barlineCnnRuntimeVer; ?>"></script>
     <script src="/js/part-jumps.js?v=4"></script>
-    <script src="synpdf-edit-mode.js?v=109"></script>
+    <script src="synpdf-edit-mode.js?v=110"></script>
     <script src="edit-mode-tools.js?v=<?php echo $editModeToolsVer; ?>"></script>
     <script src="part-jump-editor.js?v=2" defer></script>
     <script src="../models/barline-patch-cnn-3x6-browser.js?v=<?php echo $barlineCnnBrowserJsVer; ?>"></script>
